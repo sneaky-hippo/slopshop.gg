@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SLOPSHOP Docs - API Reference</title>
+<meta name="description" content="Complete documentation for all 420 Slopshop APIs. Guides, SDK reference, CLI, pipes, and self-hosting.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F99E;</text></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#09090b;--s1:#18181b;--s2:#27272a;--s3:#3f3f46;--b:#27272a;--t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;--r:#ef4444;--o:#f97316;--g:#22c55e;--c:#06b6d4;--v:#8b5cf6;--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;--sidebar:260px}
+html{scroll-behavior:smooth;scroll-padding-top:60px}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
+
+/* Top bar */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:200;height:50px;background:rgba(9,9,11,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 20px}
+.topbar-inner{display:flex;align-items:center;width:100%;gap:16px}
+.topbar .logo{font-family:var(--mono);font-weight:800;font-size:0.85rem;color:var(--r);letter-spacing:0.08em;white-space:nowrap}
+.topbar .logo b{color:var(--t)}
+.topbar .logo-link{text-decoration:none}
+.topbar .logo-link:hover{text-decoration:none}
+.topbar-links{display:flex;gap:4px;margin-left:auto;align-items:center}
+.topbar-links a{color:var(--t3);font-family:var(--mono);font-size:0.7rem;padding:5px 10px;border-radius:5px;transition:.15s}
+.topbar-links a:hover{color:var(--t);background:var(--s1);text-decoration:none}
+.pill{background:#7f1d1d;color:#fca5a5;font-size:0.6rem;font-family:var(--mono);font-weight:700;padding:3px 10px;border-radius:99px}
+
+/* Sidebar */
+.sidebar{position:fixed;top:50px;left:0;bottom:0;width:var(--sidebar);background:var(--s1);border-right:1px solid var(--b);overflow-y:auto;z-index:100;transition:transform .3s}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{background:var(--s3);border-radius:4px}
+.sidebar-inner{padding:16px 0 80px}
+.sidebar .search-box{padding:0 12px;margin-bottom:12px}
+.sidebar .search-box input{width:100%;background:var(--bg);border:1px solid var(--b);border-radius:6px;padding:8px 10px 8px 30px;color:var(--t);font-family:var(--mono);font-size:0.72rem;outline:none;transition:.15s}
+.sidebar .search-box input:focus{border-color:var(--r)}
+.sidebar .search-box input::placeholder{color:var(--t4)}
+.sidebar .search-box{position:relative}
+.sidebar .search-icon{position:absolute;left:20px;top:50%;transform:translateY(-50%);color:var(--t4);font-size:0.7rem;pointer-events:none}
+.sb-section{padding:0 8px;margin-bottom:4px}
+.sb-link{display:block;padding:6px 12px;font-size:0.73rem;font-family:var(--mono);color:var(--t3);border-radius:5px;transition:.15s;cursor:pointer;text-decoration:none}
+.sb-link:hover{color:var(--t);background:var(--s2);text-decoration:none}
+.sb-link.active{color:var(--r);background:rgba(239,68,68,0.08)}
+.sb-divider{height:1px;background:var(--b);margin:10px 12px}
+.sb-cat-header{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;font-size:0.68rem;font-family:var(--mono);font-weight:700;color:var(--t2);cursor:pointer;border-radius:5px;transition:.15s;user-select:none;margin-top:4px}
+.sb-cat-header:hover{background:var(--s2)}
+.sb-cat-header .arrow{font-size:0.55rem;color:var(--t4);transition:transform .2s}
+.sb-cat-header.collapsed .arrow{transform:rotate(-90deg)}
+.sb-cat-header .cnt{font-size:0.58rem;color:var(--t4);font-weight:600;background:var(--s2);padding:1px 6px;border-radius:3px;margin-left:6px}
+.sb-cat-items{overflow:hidden;transition:max-height .3s ease}
+.sb-cat-items.collapsed{max-height:0 !important;overflow:hidden}
+.sb-api-link{display:block;padding:3px 12px 3px 24px;font-size:0.66rem;font-family:var(--mono);color:var(--t4);border-radius:4px;transition:.15s;cursor:pointer;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sb-api-link:hover{color:var(--t2);background:var(--s2);text-decoration:none}
+.sb-api-link.active{color:var(--r);background:rgba(239,68,68,0.06)}
+
+/* Main content */
+.main{margin-left:var(--sidebar);padding:70px 48px 120px;max-width:920px}
+.main h1{font-family:var(--mono);font-size:2rem;font-weight:800;margin-bottom:8px;color:var(--t)}
+.main h2{font-family:var(--mono);font-size:1.4rem;font-weight:800;margin:48px 0 12px;padding-top:20px;color:var(--t);border-top:1px solid var(--b)}
+.main h2:first-of-type{border-top:none;margin-top:24px}
+.main h3{font-family:var(--mono);font-size:1rem;font-weight:700;margin:32px 0 8px;color:var(--t)}
+.main p{color:var(--t2);font-size:0.88rem;line-height:1.8;margin-bottom:12px}
+.main ul,.main ol{color:var(--t2);font-size:0.88rem;line-height:1.8;margin:0 0 12px 20px}
+.main li{margin-bottom:4px}
+.main strong{color:var(--t)}
+.main code{font-family:var(--mono);font-size:0.82rem;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--o)}
+
+/* Code blocks */
+.code-block{position:relative;background:var(--s1);border:1px solid var(--b);border-radius:8px;margin:12px 0 20px;overflow:hidden}
+.code-block .code-header{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--s2);border-bottom:1px solid var(--b);font-family:var(--mono);font-size:0.65rem;color:var(--t3)}
+.code-block pre{padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:0.78rem;line-height:1.7;color:var(--t2)}
+.code-block pre code{background:none;padding:0;font-size:inherit;color:inherit}
+.copy-btn{background:var(--s2);border:1px solid var(--b);color:var(--t3);font-family:var(--mono);font-size:0.62rem;padding:3px 8px;border-radius:4px;cursor:pointer;transition:.15s}
+.copy-btn:hover{color:var(--t);border-color:var(--s3)}
+.copy-btn.copied{color:var(--g);border-color:var(--g)}
+
+/* Tables */
+.doc-table{width:100%;border-collapse:collapse;margin:12px 0 20px;font-size:0.82rem}
+.doc-table th{text-align:left;padding:8px 12px;background:var(--s2);border:1px solid var(--b);font-family:var(--mono);font-weight:700;color:var(--t);font-size:0.75rem}
+.doc-table td{padding:8px 12px;border:1px solid var(--b);color:var(--t2);vertical-align:top}
+.doc-table tr:hover td{background:var(--s1)}
+
+/* Badges */
+.badge{display:inline-block;font-family:var(--mono);font-size:0.62rem;font-weight:700;padding:2px 8px;border-radius:4px;margin-right:4px}
+.badge-compute{background:rgba(34,197,94,0.12);color:var(--g)}
+.badge-llm{background:rgba(139,92,246,0.12);color:var(--v)}
+.badge-network{background:rgba(6,182,212,0.12);color:var(--c)}
+.badge-cat{background:var(--s2);color:var(--t3)}
+.badge-credits{background:rgba(249,115,22,0.12);color:var(--o)}
+
+/* API card in docs */
+.api-doc{border:1px solid var(--b);border-radius:10px;padding:24px;margin:16px 0 28px;background:var(--s1)}
+.api-doc-header{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.api-doc-header h4{font-family:var(--mono);font-size:0.95rem;font-weight:700;color:var(--t)}
+.api-doc-meta{display:flex;gap:6px;flex-wrap:wrap}
+.api-doc p.api-desc{color:var(--t2);font-size:0.84rem;margin-bottom:14px}
+.api-doc .endpoint{font-family:var(--mono);font-size:0.78rem;color:var(--c);background:var(--bg);border:1px solid var(--b);border-radius:6px;padding:8px 14px;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.api-doc .endpoint .method{color:var(--g);font-weight:700}
+
+/* Category header */
+.cat-header{margin:48px 0 8px;padding:16px 0 8px;border-top:2px solid var(--b)}
+.cat-header h3{font-family:var(--mono);font-size:1.15rem;font-weight:800;color:var(--t);margin:0 0 4px}
+.cat-header p{color:var(--t3);font-size:0.82rem;margin:0}
+
+/* Pipe card */
+.pipe-card{border:1px solid var(--b);border-radius:8px;padding:18px;margin:10px 0;background:var(--s1)}
+.pipe-card h4{font-family:var(--mono);font-weight:700;font-size:0.88rem;margin-bottom:4px}
+.pipe-card p{font-size:0.82rem;color:var(--t2);margin-bottom:8px}
+.pipe-steps{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-bottom:8px}
+.pipe-step{font-family:var(--mono);font-size:0.68rem;background:var(--s2);border:1px solid var(--b);padding:3px 8px;border-radius:4px;color:var(--c)}
+.pipe-arrow{color:var(--t4);font-size:0.7rem}
+
+/* Tabs */
+.tabs{display:flex;gap:0;margin-bottom:0;border-bottom:1px solid var(--b)}
+.tab{padding:6px 14px;font-family:var(--mono);font-size:0.7rem;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:.15s}
+.tab:hover{color:var(--t)}
+.tab.active{color:var(--r);border-bottom-color:var(--r)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+
+/* Mobile */
+.menu-toggle{display:none;background:none;border:none;color:var(--t);font-size:1.2rem;cursor:pointer;padding:4px 8px}
+.sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:99}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .sidebar-overlay.open{display:block}
+  .main{margin-left:0;padding:60px 16px 80px}
+  .menu-toggle{display:block}
+  .topbar-links a:not(:last-child){display:none}
+}
+
+/* Loading */
+.loading{text-align:center;padding:60px;color:var(--t3);font-family:var(--mono);font-size:0.85rem}
+.loading .spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--b);border-top-color:var(--r);border-radius:50%;animation:spin .6s linear infinite;margin-bottom:12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Scroll indicator */
+.scroll-top{position:fixed;bottom:24px;right:24px;width:40px;height:40px;background:var(--r);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1rem;display:none;align-items:center;justify-content:center;z-index:50;transition:.15s;box-shadow:0 4px 12px rgba(0,0,0,0.4)}
+.scroll-top:hover{background:#dc2626}
+.scroll-top.show{display:flex}
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div class="topbar-inner">
+    <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">&#9776;</button>
+    <a href="/" class="logo-link"><span class="logo">SLOP<b>SHOP</b><span style="color:var(--t4)">.GG</span></span></a>
+    <div class="topbar-links">
+      <a href="/">Home</a>
+      <a href="/docs.html" style="color:var(--r)">Docs</a>
+      <span class="pill">420 APIs</span>
+    </div>
+  </div>
+</div>
+
+<!-- Sidebar overlay for mobile -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-inner">
+    <div class="search-box">
+      <span class="search-icon">&#128269;</span>
+      <input type="text" id="sidebarSearch" placeholder="Search APIs..." autocomplete="off">
+    </div>
+    <div class="sb-section">
+      <a class="sb-link" href="#getting-started">Getting Started</a>
+      <a class="sb-link" href="#authentication">Authentication</a>
+      <a class="sb-link" href="#credits-billing">Credits &amp; Billing</a>
+      <a class="sb-link" href="#cli-reference">CLI Reference</a>
+      <a class="sb-link" href="#sdk-reference">SDK Reference</a>
+      <a class="sb-link" href="#pipes">Pipes</a>
+      <a class="sb-link" href="#self-hosting">Self-Hosting</a>
+    </div>
+    <div class="sb-divider"></div>
+    <div id="sidebarCategories">
+      <!-- Populated by JS -->
+    </div>
+  </div>
+</aside>
+
+<!-- Main content -->
+<div class="main" id="mainContent">
+  <div class="loading" id="loadingState">
+    <div class="spinner"></div>
+    <div>Loading API catalog...</div>
+  </div>
+
+  <div id="docsContent" style="display:none">
+
+    <!-- GETTING STARTED -->
+    <h1 id="getting-started">Getting Started</h1>
+    <p>
+      <strong>Slopshop</strong> is the API bazaar for AI agents and developers -- 420 real APIs that actually process your data, return real results, and charge by the credit. Every response includes <code>_engine: "real"</code> to prove your data was genuinely processed, not mocked. It is self-hostable, open source, and designed to be called by agents, scripts, or humans alike.
+    </p>
+
+    <h3>Quick Install</h3>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>npm install -g slopshop</code></pre></div>
+
+    <h3>Set Your API Key</h3>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>export SLOPSHOP_KEY=sk_live_your_key_here</code></pre></div>
+
+    <h3>Make Your First Call</h3>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>slop call crypto-hash-sha256 --data "hello"</code></pre></div>
+    <p>You will get back a JSON response with the SHA256 hash of "hello", along with metadata including <code>_engine: "real"</code> confirming it was actually computed.</p>
+
+    <h3>What <code>_engine: "real"</code> Means</h3>
+    <p>
+      Every Slopshop response includes <code>"_engine": "real"</code> to signal that the result was genuinely computed, not cached from a template or mocked. This is Slopshop's core guarantee: when you call an API, your data is actually processed. Hash APIs run real cryptographic functions. Network APIs make real DNS/HTTP calls. LLM APIs send real prompts to Claude or GPT. There are no fake responses.
+    </p>
+
+    <!-- AUTHENTICATION -->
+    <h2 id="authentication">Authentication</h2>
+    <p>All API calls require a Bearer token in the <code>Authorization</code> header.</p>
+
+    <h3>Using Your Key</h3>
+    <div class="code-block"><div class="code-header"><span>HTTP Header</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>Authorization: Bearer sk_live_your_key_here</code></pre></div>
+
+    <h3>Generating Keys</h3>
+    <p>Create a new API key by posting to the keys endpoint:</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/keys \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-agent"}'</code></pre></div>
+    <p>The response includes your key and initial credit balance. <strong>Store your key securely</strong> -- it cannot be retrieved after creation.</p>
+
+    <h3>Demo Key</h3>
+    <p>For testing, you can use the demo key <code>sk_demo_slopshop</code> which comes with 100 credits and is rate-limited to 10 requests per minute. The demo key works for all compute-tier APIs.</p>
+
+    <!-- CREDITS & BILLING -->
+    <h2 id="credits-billing">Credits &amp; Billing</h2>
+    <p>Slopshop uses a credit system. Every API call costs a specific number of credits based on its complexity.</p>
+
+    <h3>Credit Cost Tiers</h3>
+    <table class="doc-table">
+      <thead><tr><th>Cost Level</th><th>Credits</th><th>Examples</th></tr></thead>
+      <tbody>
+        <tr><td><strong>Trivial</strong></td><td>1</td><td>UUID generation, base64 encode, hashing, date parse</td></tr>
+        <tr><td><strong>Simple</strong></td><td>1</td><td>Text processing, validation, regex, password hash</td></tr>
+        <tr><td><strong>Medium</strong></td><td>3</td><td>CSV parse, diff, statistics, JSON schema generation</td></tr>
+        <tr><td><strong>Complex</strong></td><td>5</td><td>Network calls (DNS, HTTP, SSL), multi-step compute</td></tr>
+        <tr><td><strong>LLM Small</strong></td><td>5</td><td>Short LLM calls: sentiment, summarize, classify</td></tr>
+        <tr><td><strong>LLM Medium</strong></td><td>10</td><td>Medium LLM calls: blog outline, code review, translate</td></tr>
+        <tr><td><strong>LLM Large</strong></td><td>20</td><td>Long LLM calls: blog draft, code generation, proposals</td></tr>
+      </tbody>
+    </table>
+
+    <h3>Checking Balance</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/balance \
+  -H "Authorization: Bearer sk_live_your_key"</code></pre></div>
+
+    <h3>Buying Credits</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/buy \
+  -H "Authorization: Bearer sk_live_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"amount": 1000}'</code></pre></div>
+
+    <h3>Auto-Reload</h3>
+    <p>Configure auto-reload to automatically purchase more credits when your balance drops below a threshold. Set <code>auto_reload_threshold</code> and <code>auto_reload_amount</code> on your account to enable this.</p>
+
+    <h3>Agent-to-Agent Credit Transfer</h3>
+    <p>Agents can transfer credits between accounts for agent-to-agent commerce:</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/transfer \
+  -H "Authorization: Bearer sk_live_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"to": "sk_live_recipient_key", "amount": 50}'</code></pre></div>
+
+    <!-- API REFERENCE -->
+    <h2 id="api-reference">API Reference</h2>
+    <p>All 420 APIs documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/tools/{slug}</code>.</p>
+    <div id="apiReferenceContent">
+      <!-- Populated by JS -->
+    </div>
+
+    <!-- CLI REFERENCE -->
+    <h2 id="cli-reference">CLI Reference</h2>
+    <p>The Slopshop CLI lets you call any API from the terminal. Install globally with npm.</p>
+
+    <h3><code>slop call &lt;slug&gt;</code></h3>
+    <p>Call any API by slug. Pass data with <code>--data</code> or <code>-d</code>, or pipe JSON via stdin.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Simple call with inline data
+slop call crypto-hash-sha256 --data "hello world"
+
+# Pass JSON body
+slop call text-word-count -d '{"text": "Count these words please"}'
+
+# Pipe from file
+cat document.txt | slop call llm-summarize</code></pre></div>
+
+    <h3><code>slop pipe &lt;slug&gt;</code></h3>
+    <p>Run a pre-built pipe (multi-step workflow) by slug.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>slop pipe content-machine -d '{"topic": "AI agents", "keywords": "automation"}'
+slop pipe security-audit -d '{"data": "{}", "domain": "example.com"}'</code></pre></div>
+
+    <h3><code>slop search &lt;query&gt;</code></h3>
+    <p>Search available APIs by name or description.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>slop search hash
+slop search "json convert"
+slop search dns</code></pre></div>
+
+    <h3><code>slop list</code></h3>
+    <p>List all available APIs grouped by category.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>slop list
+slop list --category "Crypto & Security"</code></pre></div>
+
+    <h3><code>slop balance</code></h3>
+    <p>Check your current credit balance.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>slop balance</code></pre></div>
+
+    <h3><code>slop buy &lt;amount&gt;</code></h3>
+    <p>Purchase credits.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>slop buy 1000</code></pre></div>
+
+    <h3><code>slop health</code></h3>
+    <p>Check API server health and status.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>slop health</code></pre></div>
+
+    <h3><code>slop help</code></h3>
+    <p>Show help and list all available commands.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>slop help
+slop call --help</code></pre></div>
+
+    <!-- SDK REFERENCE -->
+    <h2 id="sdk-reference">SDK Reference</h2>
+
+    <h3>Python SDK</h3>
+
+    <p><strong>Install</strong></p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>pip install slopshop</code></pre></div>
+
+    <p><strong>Initialize</strong></p>
+    <div class="code-block"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>from slopshop import Slop
+
+client = Slop(api_key="sk_live_your_key")
+# Or use SLOPSHOP_KEY environment variable
+client = Slop()</code></pre></div>
+
+    <p><strong>Call an API</strong></p>
+    <div class="code-block"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>result = client.call("crypto-hash-sha256", data="hello world")
+print(result["hash"])</code></pre></div>
+
+    <p><strong>Batch Calls</strong></p>
+    <div class="code-block"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>results = client.batch([
+    ("crypto-hash-sha256", {"data": "hello"}),
+    ("crypto-hash-md5", {"data": "hello"}),
+    ("crypto-uuid", {}),
+])
+for r in results:
+    print(r)</code></pre></div>
+
+    <p><strong>Run a Pipe</strong></p>
+    <div class="code-block"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>result = client.pipe("content-machine", topic="AI agents", keywords="automation")
+print(result["steps"])</code></pre></div>
+
+    <p><strong>Resolve (call with auto-retry)</strong></p>
+    <div class="code-block"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>result = client.resolve("llm-summarize", text="Long document...", retries=3)
+print(result["summary"])</code></pre></div>
+
+    <h3>Node.js SDK</h3>
+
+    <p><strong>Install</strong></p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>npm install slopshop</code></pre></div>
+
+    <p><strong>Initialize</strong></p>
+    <div class="code-block"><div class="code-header"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>const { Slop } = require('slopshop');
+
+const client = new Slop({ apiKey: 'sk_live_your_key' });
+// Or use SLOPSHOP_KEY environment variable
+const client = new Slop();</code></pre></div>
+
+    <p><strong>Call an API</strong></p>
+    <div class="code-block"><div class="code-header"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>const result = await client.call('crypto-hash-sha256', { data: 'hello world' });
+console.log(result.hash);</code></pre></div>
+
+    <p><strong>Batch Calls</strong></p>
+    <div class="code-block"><div class="code-header"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>const results = await client.batch([
+  ['crypto-hash-sha256', { data: 'hello' }],
+  ['crypto-hash-md5', { data: 'hello' }],
+  ['crypto-uuid', {}],
+]);
+results.forEach(r => console.log(r));</code></pre></div>
+
+    <p><strong>Run a Pipe</strong></p>
+    <div class="code-block"><div class="code-header"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>const result = await client.pipe('content-machine', {
+  topic: 'AI agents',
+  keywords: 'automation',
+});
+console.log(result.steps);</code></pre></div>
+
+    <p><strong>Resolve (call with auto-retry)</strong></p>
+    <div class="code-block"><div class="code-header"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>const result = await client.resolve('llm-summarize', {
+  text: 'Long document...',
+}, { retries: 3 });
+console.log(result.summary);</code></pre></div>
+
+    <!-- PIPES -->
+    <h2 id="pipes">Pipes</h2>
+    <p>
+      Pipes are pre-built multi-step workflows that chain multiple APIs together. A single pipe call executes all steps in sequence, passing data between them automatically. You pay the total credit cost of all steps combined.
+    </p>
+
+    <h3>Running a Pipe</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/pipes/content-machine \
+  -H "Authorization: Bearer sk_live_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "How AI agents use APIs", "keywords": "slopshop, automation"}'</code></pre></div>
+
+    <h3>Listing All Pipes</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/pipes</code></pre></div>
+
+    <h3>All 14 Pipes</h3>
+
+    <div class="pipe-card">
+      <h4>Lead from Text <span class="badge badge-credits">7 credits</span></h4>
+      <p>Extract emails from text, validate they exist, generate prospect profiles.</p>
+      <div class="pipe-steps"><span class="pipe-step">text-extract-emails</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">net-email-validate</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">gen-fake-user</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>lead-from-text</code> | Category: Sales</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Content Machine <span class="badge badge-credits">35 credits</span></h4>
+      <p>Generate blog outline, draft the post, score readability.</p>
+      <div class="pipe-steps"><span class="pipe-step">llm-blog-outline</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">llm-blog-draft</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-readability-score</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>content-machine</code> | Category: Content</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Security Audit <span class="badge badge-credits">7 credits</span></h4>
+      <p>Checksum content, validate JSON, check SSL certificate.</p>
+      <div class="pipe-steps"><span class="pipe-step">crypto-checksum</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-json-validate</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">net-ssl-check</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>security-audit</code> | Category: Security</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Code Ship <span class="badge badge-credits">35 credits</span></h4>
+      <p>Review code, generate tests, get diff stats.</p>
+      <div class="pipe-steps"><span class="pipe-step">llm-code-review</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">llm-code-test-generate</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">code-diff-stats</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>code-ship</code> | Category: Dev</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Data Clean <span class="badge badge-credits">5 credits</span></h4>
+      <p>Parse CSV to JSON, deduplicate, validate output.</p>
+      <div class="pipe-steps"><span class="pipe-step">text-csv-to-json</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-deduplicate-lines</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-json-validate</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>data-clean</code> | Category: Data</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Email Intelligence <span class="badge badge-credits">4 credits</span></h4>
+      <p>Extract emails from text, extract URLs, extract phone numbers, get word stats.</p>
+      <div class="pipe-steps"><span class="pipe-step">text-extract-emails</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-extract-urls</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-extract-phones</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-word-count</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>email-intel</code> | Category: Analysis</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Hash Everything <span class="badge badge-credits">4 credits</span></h4>
+      <p>Compute MD5, SHA256, SHA512, and full checksum of input data.</p>
+      <div class="pipe-steps"><span class="pipe-step">crypto-hash-md5</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-hash-sha256</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-hash-sha512</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-checksum</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>hash-everything</code> | Category: Security</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Text Analyzer <span class="badge badge-credits">4 credits</span></h4>
+      <p>Word count, readability score, keyword extraction, language detection.</p>
+      <div class="pipe-steps"><span class="pipe-step">text-word-count</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-readability-score</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-keyword-extract</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-language-detect</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>text-analyze</code> | Category: Analysis</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>JSON Pipeline <span class="badge badge-credits">5 credits</span></h4>
+      <p>Validate JSON, format it, generate schema, flatten to dot-notation.</p>
+      <div class="pipe-steps"><span class="pipe-step">text-json-validate</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-json-format</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-json-schema-generate</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">text-json-flatten</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>json-pipeline</code> | Category: Data</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Meeting to Actions <span class="badge badge-credits">20 credits</span></h4>
+      <p>Summarize meeting notes, extract action items, draft follow-up email.</p>
+      <div class="pipe-steps"><span class="pipe-step">llm-summarize</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">llm-extract-action-items</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">llm-email-draft</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>meeting-to-actions</code> | Category: Business</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Code Explainer <span class="badge badge-credits">30 credits</span></h4>
+      <p>Explain code, document it, generate tests.</p>
+      <div class="pipe-steps"><span class="pipe-step">llm-explain-code</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">llm-code-document</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">llm-code-test-generate</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>code-explain</code> | Category: Dev</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Crypto Toolkit <span class="badge badge-credits">4 credits</span></h4>
+      <p>Generate UUID, password, OTP, and a random encryption key.</p>
+      <div class="pipe-steps"><span class="pipe-step">crypto-uuid</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-password-generate</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-otp-generate</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-random-bytes</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>crypto-toolkit</code> | Category: Security</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Domain Recon <span class="badge badge-credits">20 credits</span></h4>
+      <p>DNS lookup, SSL check, HTTP status, email validation for a domain.</p>
+      <div class="pipe-steps"><span class="pipe-step">net-dns-a</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">net-ssl-check</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">net-http-status</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">net-email-validate</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>domain-recon</code> | Category: Network</div>
+    </div>
+
+    <div class="pipe-card">
+      <h4>Onboarding Pack <span class="badge badge-credits">3 credits</span></h4>
+      <p>Generate fake test user, create a JWT for them, hash their password.</p>
+      <div class="pipe-steps"><span class="pipe-step">gen-fake-user</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-jwt-sign</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-password-hash</span></div>
+      <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>onboarding-pack</code> | Category: Dev</div>
+    </div>
+
+    <!-- SELF-HOSTING -->
+    <h2 id="self-hosting">Self-Hosting</h2>
+    <p>Slopshop is fully self-hostable. Run your own instance with zero external dependencies for compute-tier APIs.</p>
+
+    <h3>Quick Start</h3>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>git clone https://github.com/slopshop/slopshop.git
+cd slopshop
+npm install
+node server-v2.js</code></pre></div>
+    <p>The server starts on port 3000 by default.</p>
+
+    <h3>Docker</h3>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>docker build -t slopshop .
+docker run -p 3000:3000 \
+  -e ANTHROPIC_API_KEY=sk-ant-... \
+  -e OPENAI_API_KEY=sk-... \
+  slopshop</code></pre></div>
+
+    <h3>Environment Variables</h3>
+    <table class="doc-table">
+      <thead><tr><th>Variable</th><th>Required</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>PORT</code></td><td>No</td><td>Server port (default: 3000)</td></tr>
+        <tr><td><code>ANTHROPIC_API_KEY</code></td><td>For LLM APIs</td><td>Anthropic API key for Claude-powered APIs</td></tr>
+        <tr><td><code>OPENAI_API_KEY</code></td><td>For LLM APIs</td><td>OpenAI API key (fallback if Anthropic not set)</td></tr>
+        <tr><td><code>SLOPSHOP_SECRET</code></td><td>No</td><td>Secret for JWT signing and key generation</td></tr>
+        <tr><td><code>DEMO_CREDITS</code></td><td>No</td><td>Credits for demo key (default: 100)</td></tr>
+        <tr><td><code>RATE_LIMIT</code></td><td>No</td><td>Max requests per minute per key (default: 60)</td></tr>
+      </tbody>
+    </table>
+
+  </div><!-- end docsContent -->
+</div><!-- end main -->
+
+<!-- Scroll to top -->
+<button class="scroll-top" id="scrollTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">&uarr;</button>
+
+<script>
+// ============================================================
+// DATA: All 420 API definitions embedded from registry.js
+// We fetch from /v1/tools to stay in sync, with a static fallback
+// ============================================================
+const STATIC_APIS = {
+  'text-word-count': { cat: 'Text Processing', name: 'Word Count', desc: 'Count words, characters, sentences, and paragraphs in text.', credits: 1, tier: 'compute' },
+  'text-char-count': { cat: 'Text Processing', name: 'Character Count', desc: 'Count characters with and without spaces, by type.', credits: 1, tier: 'compute' },
+  'text-extract-emails': { cat: 'Text Processing', name: 'Extract Emails', desc: 'Extract all email addresses from text using pattern matching.', credits: 1, tier: 'compute' },
+  'text-extract-urls': { cat: 'Text Processing', name: 'Extract URLs', desc: 'Extract all URLs from text.', credits: 1, tier: 'compute' },
+  'text-extract-phones': { cat: 'Text Processing', name: 'Extract Phones', desc: 'Extract phone numbers from text.', credits: 1, tier: 'compute' },
+  'text-extract-numbers': { cat: 'Text Processing', name: 'Extract Numbers', desc: 'Extract all numeric values from text.', credits: 1, tier: 'compute' },
+  'text-extract-dates': { cat: 'Text Processing', name: 'Extract Dates', desc: 'Extract date-like strings from text.', credits: 1, tier: 'compute' },
+  'text-extract-mentions': { cat: 'Text Processing', name: 'Extract @Mentions', desc: 'Extract @mentions from text.', credits: 1, tier: 'compute' },
+  'text-extract-hashtags': { cat: 'Text Processing', name: 'Extract #Hashtags', desc: 'Extract #hashtags from text.', credits: 1, tier: 'compute' },
+  'text-regex-test': { cat: 'Text Processing', name: 'Regex Test', desc: 'Test a regex pattern against text. Returns all matches with positions.', credits: 1, tier: 'compute' },
+  'text-regex-replace': { cat: 'Text Processing', name: 'Regex Replace', desc: 'Find and replace using regex pattern.', credits: 1, tier: 'compute' },
+  'text-diff': { cat: 'Text Processing', name: 'Text Diff', desc: 'Line-by-line diff of two texts. Returns added, removed, unchanged.', credits: 3, tier: 'compute' },
+  'text-slugify': { cat: 'Text Processing', name: 'Slugify', desc: 'Convert text to URL-safe slug.', credits: 1, tier: 'compute' },
+  'text-truncate': { cat: 'Text Processing', name: 'Smart Truncate', desc: 'Truncate text at word boundary with ellipsis.', credits: 1, tier: 'compute' },
+  'text-language-detect': { cat: 'Text Processing', name: 'Language Detect', desc: 'Detect language of text using word frequency heuristics.', credits: 1, tier: 'compute' },
+  'text-profanity-check': { cat: 'Text Processing', name: 'Profanity Check', desc: 'Check text for profanity against word list.', credits: 1, tier: 'compute' },
+  'text-readability-score': { cat: 'Text Processing', name: 'Readability Score', desc: 'Flesch-Kincaid readability grade level and score.', credits: 1, tier: 'compute' },
+  'text-keyword-extract': { cat: 'Text Processing', name: 'Keyword Extract', desc: 'Extract top keywords by frequency, excluding stop words.', credits: 3, tier: 'compute' },
+  'text-sentence-split': { cat: 'Text Processing', name: 'Sentence Split', desc: 'Split text into individual sentences.', credits: 1, tier: 'compute' },
+  'text-deduplicate-lines': { cat: 'Text Processing', name: 'Deduplicate Lines', desc: 'Remove duplicate lines from text.', credits: 1, tier: 'compute' },
+  'text-sort-lines': { cat: 'Text Processing', name: 'Sort Lines', desc: 'Sort lines alphabetically or numerically.', credits: 1, tier: 'compute' },
+  'text-reverse': { cat: 'Text Processing', name: 'Reverse Text', desc: 'Reverse a string.', credits: 1, tier: 'compute' },
+  'text-case-convert': { cat: 'Text Processing', name: 'Case Convert', desc: 'Convert between camelCase, snake_case, UPPER, lower, Title Case, kebab-case.', credits: 1, tier: 'compute' },
+  'text-lorem-ipsum': { cat: 'Text Processing', name: 'Lorem Ipsum', desc: 'Generate placeholder text of specified length.', credits: 1, tier: 'compute' },
+  'text-count-frequency': { cat: 'Text Processing', name: 'Frequency Analysis', desc: 'Character and word frequency analysis.', credits: 1, tier: 'compute' },
+  'text-strip-html': { cat: 'Text Processing', name: 'Strip HTML', desc: 'Remove all HTML tags from text.', credits: 1, tier: 'compute' },
+  'text-escape-html': { cat: 'Text Processing', name: 'Escape HTML', desc: 'Escape HTML entities (&lt; &gt; &amp; etc).', credits: 1, tier: 'compute' },
+  'text-unescape-html': { cat: 'Text Processing', name: 'Unescape HTML', desc: 'Convert HTML entities back to characters.', credits: 1, tier: 'compute' },
+  'text-rot13': { cat: 'Text Processing', name: 'ROT13', desc: 'ROT13 encode/decode text.', credits: 1, tier: 'compute' },
+  'text-html-to-text': { cat: 'Text Processing', name: 'HTML to Text', desc: 'Strip HTML tags, decode entities, normalize to clean readable text.', credits: 1, tier: 'compute' },
+  'text-table-format': { cat: 'Text Processing', name: 'Table Format', desc: 'Format JSON array into aligned ASCII table.', credits: 1, tier: 'compute' },
+  'text-tree-format': { cat: 'Text Processing', name: 'Tree Format', desc: 'Format nested object as ASCII tree (like tree command).', credits: 1, tier: 'compute' },
+  'text-diff-unified': { cat: 'Text Processing', name: 'Unified Diff', desc: 'Generate unified diff format (like diff -u) between two texts.', credits: 3, tier: 'compute' },
+  'text-markdown-to-html': { cat: 'Data Transform', name: 'Markdown to HTML', desc: 'Convert Markdown to HTML.', credits: 1, tier: 'compute' },
+  'text-csv-to-json': { cat: 'Data Transform', name: 'CSV to JSON', desc: 'Parse CSV text into JSON array of objects.', credits: 3, tier: 'compute' },
+  'text-json-to-csv': { cat: 'Data Transform', name: 'JSON to CSV', desc: 'Convert JSON array to CSV text.', credits: 3, tier: 'compute' },
+  'text-xml-to-json': { cat: 'Data Transform', name: 'XML to JSON', desc: 'Parse XML to JSON object.', credits: 3, tier: 'compute' },
+  'text-yaml-to-json': { cat: 'Data Transform', name: 'YAML to JSON', desc: 'Parse YAML key:value pairs to JSON.', credits: 3, tier: 'compute' },
+  'text-json-validate': { cat: 'Data Transform', name: 'JSON Validate', desc: 'Validate JSON syntax, return errors if invalid.', credits: 1, tier: 'compute' },
+  'text-json-format': { cat: 'Data Transform', name: 'JSON Format', desc: 'Pretty-print or minify JSON.', credits: 1, tier: 'compute' },
+  'text-json-path': { cat: 'Data Transform', name: 'JSON Path Query', desc: 'Extract value at a dot-notation path from JSON.', credits: 1, tier: 'compute' },
+  'text-json-flatten': { cat: 'Data Transform', name: 'JSON Flatten', desc: 'Flatten nested JSON to dot-notation keys.', credits: 1, tier: 'compute' },
+  'text-json-unflatten': { cat: 'Data Transform', name: 'JSON Unflatten', desc: 'Unflatten dot-notation keys back to nested JSON.', credits: 1, tier: 'compute' },
+  'text-json-diff': { cat: 'Data Transform', name: 'JSON Diff', desc: 'Diff two JSON objects, return added/removed/changed keys.', credits: 3, tier: 'compute' },
+  'text-json-merge': { cat: 'Data Transform', name: 'JSON Deep Merge', desc: 'Deep merge two JSON objects.', credits: 1, tier: 'compute' },
+  'text-json-schema-generate': { cat: 'Data Transform', name: 'JSON Schema Generate', desc: 'Generate JSON Schema from example data.', credits: 3, tier: 'compute' },
+  'text-base64-encode': { cat: 'Data Transform', name: 'Base64 Encode', desc: 'Encode text to Base64.', credits: 1, tier: 'compute' },
+  'text-base64-decode': { cat: 'Data Transform', name: 'Base64 Decode', desc: 'Decode Base64 to text.', credits: 1, tier: 'compute' },
+  'text-url-encode': { cat: 'Data Transform', name: 'URL Encode', desc: 'URL-encode a string.', credits: 1, tier: 'compute' },
+  'text-url-decode': { cat: 'Data Transform', name: 'URL Decode', desc: 'URL-decode a string.', credits: 1, tier: 'compute' },
+  'text-url-parse': { cat: 'Data Transform', name: 'URL Parse', desc: 'Parse URL into protocol, host, port, path, query params, hash.', credits: 1, tier: 'compute' },
+  'text-hex-encode': { cat: 'Data Transform', name: 'Hex Encode', desc: 'Convert string to hexadecimal.', credits: 1, tier: 'compute' },
+  'text-hex-decode': { cat: 'Data Transform', name: 'Hex Decode', desc: 'Convert hexadecimal to string.', credits: 1, tier: 'compute' },
+  'crypto-hash-sha256': { cat: 'Crypto & Security', name: 'SHA256 Hash', desc: 'Compute SHA256 hash of input data.', credits: 1, tier: 'compute' },
+  'crypto-hash-sha512': { cat: 'Crypto & Security', name: 'SHA512 Hash', desc: 'Compute SHA512 hash of input data.', credits: 1, tier: 'compute' },
+  'crypto-hash-md5': { cat: 'Crypto & Security', name: 'MD5 Hash', desc: 'Compute MD5 hash of input data.', credits: 1, tier: 'compute' },
+  'crypto-hmac': { cat: 'Crypto & Security', name: 'HMAC-SHA256', desc: 'Compute HMAC-SHA256 with secret key.', credits: 1, tier: 'compute' },
+  'crypto-uuid': { cat: 'Crypto & Security', name: 'UUID v4', desc: 'Generate cryptographically random UUID v4.', credits: 1, tier: 'compute' },
+  'crypto-nanoid': { cat: 'Crypto & Security', name: 'Nanoid', desc: 'Generate compact unique ID (21 chars, URL-safe).', credits: 1, tier: 'compute' },
+  'crypto-password-generate': { cat: 'Crypto & Security', name: 'Generate Password', desc: 'Generate secure random password with configurable length and character sets.', credits: 1, tier: 'compute' },
+  'crypto-password-hash': { cat: 'Crypto & Security', name: 'Hash Password', desc: 'Hash password using PBKDF2 with random salt.', credits: 1, tier: 'compute' },
+  'crypto-password-verify': { cat: 'Crypto & Security', name: 'Verify Password', desc: 'Verify password against PBKDF2 hash.', credits: 1, tier: 'compute' },
+  'crypto-random-bytes': { cat: 'Crypto & Security', name: 'Random Bytes', desc: 'Generate cryptographic random bytes (hex output).', credits: 1, tier: 'compute' },
+  'crypto-random-int': { cat: 'Crypto & Security', name: 'Random Integer', desc: 'Generate random integer in a range.', credits: 1, tier: 'compute' },
+  'crypto-jwt-sign': { cat: 'Crypto & Security', name: 'JWT Sign', desc: 'Create and sign a JWT with HS256.', credits: 1, tier: 'compute' },
+  'crypto-jwt-verify': { cat: 'Crypto & Security', name: 'JWT Verify', desc: 'Verify JWT signature and check expiry.', credits: 1, tier: 'compute' },
+  'crypto-jwt-decode': { cat: 'Crypto & Security', name: 'JWT Decode', desc: 'Decode JWT payload without verification (unsafe inspect).', credits: 1, tier: 'compute' },
+  'crypto-otp-generate': { cat: 'Crypto & Security', name: 'Generate OTP', desc: 'Generate numeric one-time password.', credits: 1, tier: 'compute' },
+  'crypto-encrypt-aes': { cat: 'Crypto & Security', name: 'AES Encrypt', desc: 'AES-256-GCM encrypt data with key.', credits: 1, tier: 'compute' },
+  'crypto-decrypt-aes': { cat: 'Crypto & Security', name: 'AES Decrypt', desc: 'AES-256-GCM decrypt data with key.', credits: 1, tier: 'compute' },
+  'crypto-checksum': { cat: 'Crypto & Security', name: 'Checksum', desc: 'Compute MD5 + SHA256 checksums of content.', credits: 1, tier: 'compute' },
+  'crypto-totp-generate': { cat: 'Crypto & Security', name: 'TOTP Generate', desc: 'Generate time-based OTP (Google Authenticator compatible).', credits: 1, tier: 'compute' },
+  'math-evaluate': { cat: 'Math & Numbers', name: 'Evaluate Expression', desc: 'Safely evaluate a math expression (no eval). Supports +,-,*,/,^,%,parentheses.', credits: 1, tier: 'compute' },
+  'math-statistics': { cat: 'Math & Numbers', name: 'Statistics', desc: 'Compute mean, median, mode, stddev, min, max, sum, count from number array.', credits: 3, tier: 'compute' },
+  'math-percentile': { cat: 'Math & Numbers', name: 'Percentile', desc: 'Calculate percentile value from number array.', credits: 1, tier: 'compute' },
+  'math-histogram': { cat: 'Math & Numbers', name: 'Histogram', desc: 'Build histogram bins from number array.', credits: 3, tier: 'compute' },
+  'math-currency-convert': { cat: 'Math & Numbers', name: 'Currency Convert', desc: 'Convert between currencies using rates (static rates, updated periodically).', credits: 1, tier: 'compute' },
+  'math-unit-convert': { cat: 'Math & Numbers', name: 'Unit Convert', desc: 'Convert between units: length, weight, temperature, volume, speed, data.', credits: 1, tier: 'compute' },
+  'math-color-convert': { cat: 'Math & Numbers', name: 'Color Convert', desc: 'Convert between hex, RGB, and HSL color formats.', credits: 1, tier: 'compute' },
+  'math-number-format': { cat: 'Math & Numbers', name: 'Number Format', desc: 'Format numbers with locale, currency, percentage, scientific notation.', credits: 1, tier: 'compute' },
+  'math-compound-interest': { cat: 'Math & Numbers', name: 'Compound Interest', desc: 'Calculate compound interest with principal, rate, time, frequency.', credits: 1, tier: 'compute' },
+  'math-loan-payment': { cat: 'Math & Numbers', name: 'Loan Payment', desc: 'Calculate monthly loan payment, total interest, amortization.', credits: 1, tier: 'compute' },
+  'math-roi-calculate': { cat: 'Math & Numbers', name: 'ROI Calculator', desc: 'Calculate ROI, payback period from cost and revenue figures.', credits: 1, tier: 'compute' },
+  'math-percentage-change': { cat: 'Math & Numbers', name: 'Percentage Change', desc: 'Calculate percentage change between two values.', credits: 1, tier: 'compute' },
+  'math-fibonacci': { cat: 'Math & Numbers', name: 'Fibonacci', desc: 'Generate fibonacci sequence up to n terms.', credits: 1, tier: 'compute' },
+  'math-prime-check': { cat: 'Math & Numbers', name: 'Prime Check', desc: 'Check if a number is prime. Return true/false + nearest primes.', credits: 1, tier: 'compute' },
+  'math-gcd': { cat: 'Math & Numbers', name: 'GCD', desc: 'Greatest common divisor of two or more numbers.', credits: 1, tier: 'compute' },
+  'math-lcm': { cat: 'Math & Numbers', name: 'LCM', desc: 'Least common multiple of two or more numbers.', credits: 1, tier: 'compute' },
+  'math-base-convert': { cat: 'Math & Numbers', name: 'Base Convert', desc: 'Convert numbers between bases (binary, octal, decimal, hex).', credits: 1, tier: 'compute' },
+  'math-mortgage-amortize': { cat: 'Math & Numbers', name: 'Mortgage Amortize', desc: 'Full amortization schedule with monthly payments, principal, interest, balance.', credits: 3, tier: 'compute' },
+  'math-tax-estimate': { cat: 'Math & Numbers', name: 'Tax Estimate', desc: 'US federal income tax estimate by bracket for any income and filing status.', credits: 3, tier: 'compute' },
+  'math-matrix-multiply': { cat: 'Math & Numbers', name: 'Matrix Multiply', desc: 'Multiply two matrices. Validates dimensions.', credits: 3, tier: 'compute' },
+  'date-parse': { cat: 'Date & Time', name: 'Date Parse', desc: 'Parse any date string to structured output (ISO, unix, components).', credits: 1, tier: 'compute' },
+  'date-format': { cat: 'Date & Time', name: 'Date Format', desc: 'Format date using pattern tokens (YYYY, MM, DD, HH, mm, ss).', credits: 1, tier: 'compute' },
+  'date-diff': { cat: 'Date & Time', name: 'Date Diff', desc: 'Difference between two dates in days, hours, minutes, seconds.', credits: 1, tier: 'compute' },
+  'date-add': { cat: 'Date & Time', name: 'Date Add', desc: 'Add days/hours/minutes to a date.', credits: 1, tier: 'compute' },
+  'date-weekday': { cat: 'Date & Time', name: 'Weekday', desc: 'Get day of week for a date.', credits: 1, tier: 'compute' },
+  'date-is-business-day': { cat: 'Date & Time', name: 'Is Business Day', desc: 'Check if date is a weekday (M-F).', credits: 1, tier: 'compute' },
+  'date-business-days-between': { cat: 'Date & Time', name: 'Business Days Between', desc: 'Count business days between two dates.', credits: 1, tier: 'compute' },
+  'date-cron-parse': { cat: 'Date & Time', name: 'Cron Parse', desc: 'Parse cron expression to human-readable description.', credits: 1, tier: 'compute' },
+  'date-cron-next': { cat: 'Date & Time', name: 'Cron Next Runs', desc: 'Calculate next N run times for a cron expression.', credits: 3, tier: 'compute' },
+  'date-unix-to-iso': { cat: 'Date & Time', name: 'Unix to ISO', desc: 'Convert unix timestamp to ISO 8601 string.', credits: 1, tier: 'compute' },
+  'date-iso-to-unix': { cat: 'Date & Time', name: 'ISO to Unix', desc: 'Convert ISO 8601 string to unix timestamp.', credits: 1, tier: 'compute' },
+  'date-relative': { cat: 'Date & Time', name: 'Relative Time', desc: 'Convert timestamp to "3 days ago" / "in 2 hours" format.', credits: 1, tier: 'compute' },
+  'date-holidays': { cat: 'Date & Time', name: 'US Holidays', desc: 'List all US federal holidays for a given year.', credits: 1, tier: 'compute' },
+  'code-json-to-typescript': { cat: 'Code Utilities', name: 'JSON to TypeScript', desc: 'Generate TypeScript interface from JSON example.', credits: 3, tier: 'compute' },
+  'code-json-to-python-class': { cat: 'Code Utilities', name: 'JSON to Python Class', desc: 'Generate Python dataclass from JSON example.', credits: 3, tier: 'compute' },
+  'code-json-to-go-struct': { cat: 'Code Utilities', name: 'JSON to Go Struct', desc: 'Generate Go struct from JSON example.', credits: 3, tier: 'compute' },
+  'code-sql-format': { cat: 'Code Utilities', name: 'SQL Format', desc: 'Format/indent SQL query with keyword capitalization.', credits: 1, tier: 'compute' },
+  'code-cron-explain': { cat: 'Code Utilities', name: 'Cron Explain', desc: 'Explain cron expression in plain English.', credits: 1, tier: 'compute' },
+  'code-regex-explain': { cat: 'Code Utilities', name: 'Regex Explain', desc: 'Explain regex pattern token by token in plain English.', credits: 3, tier: 'compute' },
+  'code-semver-compare': { cat: 'Code Utilities', name: 'Semver Compare', desc: 'Compare two semantic version strings.', credits: 1, tier: 'compute' },
+  'code-semver-bump': { cat: 'Code Utilities', name: 'Semver Bump', desc: 'Bump semver by patch, minor, or major.', credits: 1, tier: 'compute' },
+  'code-diff-stats': { cat: 'Code Utilities', name: 'Diff Stats', desc: 'Parse unified diff, return files changed, additions, deletions.', credits: 3, tier: 'compute' },
+  'code-env-parse': { cat: 'Code Utilities', name: 'Parse .env', desc: 'Parse .env file content to JSON object.', credits: 1, tier: 'compute' },
+  'code-jwt-inspect': { cat: 'Code Utilities', name: 'JWT Inspect', desc: 'Decode and display JWT header and claims with expiry check.', credits: 1, tier: 'compute' },
+  'code-openapi-validate': { cat: 'Code Utilities', name: 'OpenAPI Validate', desc: 'Validate OpenAPI/Swagger spec for required fields, paths, and structure.', credits: 3, tier: 'compute' },
+  'code-dockerfile-lint': { cat: 'Code Utilities', name: 'Dockerfile Lint', desc: 'Lint Dockerfile for common issues: missing FROM, latest tag, apt-get without -y, ADD vs COPY.', credits: 3, tier: 'compute' },
+  'code-gitignore-generate': { cat: 'Code Utilities', name: 'Gitignore Generate', desc: 'Generate .gitignore for languages: node, python, go, rust, java, ruby.', credits: 1, tier: 'compute' },
+  'text-cron-to-english': { cat: 'Code Utilities', name: 'Cron to English', desc: 'Convert cron expression to detailed plain English description.', credits: 1, tier: 'compute' },
+  'gen-fake-name': { cat: 'Generate', name: 'Fake Name', desc: 'Generate realistic fake full name.', credits: 1, tier: 'compute' },
+  'gen-fake-email': { cat: 'Generate', name: 'Fake Email', desc: 'Generate fake email address.', credits: 1, tier: 'compute' },
+  'gen-fake-company': { cat: 'Generate', name: 'Fake Company', desc: 'Generate fake company name.', credits: 1, tier: 'compute' },
+  'gen-fake-address': { cat: 'Generate', name: 'Fake Address', desc: 'Generate fake US address.', credits: 1, tier: 'compute' },
+  'gen-fake-phone': { cat: 'Generate', name: 'Fake Phone', desc: 'Generate fake phone number.', credits: 1, tier: 'compute' },
+  'gen-fake-user': { cat: 'Generate', name: 'Fake User Profile', desc: 'Generate full fake user profile (name, email, company, address, phone).', credits: 1, tier: 'compute' },
+  'gen-fake-credit-card': { cat: 'Generate', name: 'Fake Credit Card', desc: 'Generate Luhn-valid fake CC number (NOT real, for testing only).', credits: 1, tier: 'compute' },
+  'gen-color-palette': { cat: 'Generate', name: 'Color Palette', desc: 'Generate harmonious color palette from base hex color.', credits: 1, tier: 'compute' },
+  'gen-short-id': { cat: 'Generate', name: 'Short ID', desc: 'Generate compact URL-safe unique ID.', credits: 1, tier: 'compute' },
+  'gen-avatar-svg': { cat: 'Generate', name: 'Avatar SVG', desc: 'Generate deterministic identicon SVG from any string (hash-based grid).', credits: 1, tier: 'compute' },
+  'gen-qr-svg': { cat: 'Generate', name: 'QR Code SVG', desc: 'Generate QR-style visual matrix as SVG from input data.', credits: 3, tier: 'compute' },
+  'net-dns-a': { cat: 'Network & DNS', name: 'DNS A Lookup', desc: 'Resolve A records (IPv4) for a domain.', credits: 5, tier: 'network' },
+  'net-dns-aaaa': { cat: 'Network & DNS', name: 'DNS AAAA Lookup', desc: 'Resolve AAAA records (IPv6) for a domain.', credits: 5, tier: 'network' },
+  'net-dns-mx': { cat: 'Network & DNS', name: 'DNS MX Lookup', desc: 'Resolve MX records for a domain.', credits: 5, tier: 'network' },
+  'net-dns-txt': { cat: 'Network & DNS', name: 'DNS TXT Lookup', desc: 'Resolve TXT records for a domain.', credits: 5, tier: 'network' },
+  'net-dns-ns': { cat: 'Network & DNS', name: 'DNS NS Lookup', desc: 'Resolve nameserver records for a domain.', credits: 5, tier: 'network' },
+  'net-dns-all': { cat: 'Network & DNS', name: 'DNS Full Lookup', desc: 'All record types (A, AAAA, MX, TXT, NS) for a domain.', credits: 5, tier: 'network' },
+  'net-http-status': { cat: 'Network & DNS', name: 'HTTP Status Check', desc: 'HEAD request to URL, return status code, headers, timing.', credits: 5, tier: 'network' },
+  'net-http-headers': { cat: 'Network & DNS', name: 'HTTP Headers', desc: 'Fetch all response headers for a URL.', credits: 5, tier: 'network' },
+  'net-http-redirect-chain': { cat: 'Network & DNS', name: 'Redirect Chain', desc: 'Follow redirects and return full chain of URLs + status codes.', credits: 5, tier: 'network' },
+  'net-ssl-check': { cat: 'Network & DNS', name: 'SSL Certificate Check', desc: 'Inspect SSL certificate: issuer, expiry, days remaining, validity.', credits: 5, tier: 'network' },
+  'net-email-validate': { cat: 'Network & DNS', name: 'Email Validate', desc: 'Validate email format + check MX records exist for domain.', credits: 5, tier: 'network' },
+  'net-ip-validate': { cat: 'Network & DNS', name: 'IP Validate', desc: 'Validate IP address, detect version (v4/v6), check if private.', credits: 1, tier: 'compute' },
+  'net-cidr-contains': { cat: 'Network & DNS', name: 'CIDR Contains', desc: 'Check if an IP falls within a CIDR range.', credits: 1, tier: 'compute' },
+  'net-url-parse': { cat: 'Network & DNS', name: 'URL Parse', desc: 'Parse URL into structured components.', credits: 1, tier: 'compute' },
+  'llm-blog-outline': { cat: 'AI: Content', name: 'Blog Outline', desc: 'Generate SEO blog outline from topic + keywords.', credits: 10, tier: 'llm' },
+  'llm-blog-draft': { cat: 'AI: Content', name: 'Blog Draft', desc: 'Generate full blog post draft from topic or outline.', credits: 20, tier: 'llm' },
+  'llm-landing-page-copy': { cat: 'AI: Content', name: 'Landing Page Copy', desc: 'Generate headline, subheadline, bullets, CTA for landing page.', credits: 10, tier: 'llm' },
+  'llm-product-description': { cat: 'AI: Content', name: 'Product Description', desc: 'Generate product description from specs and features.', credits: 5, tier: 'llm' },
+  'llm-email-draft': { cat: 'AI: Content', name: 'Email Draft', desc: 'Draft email from context + intent.', credits: 5, tier: 'llm' },
+  'llm-email-reply': { cat: 'AI: Content', name: 'Email Reply', desc: 'Draft reply to an email thread.', credits: 5, tier: 'llm' },
+  'llm-cold-outreach': { cat: 'AI: Content', name: 'Cold Outreach', desc: 'Personalized cold outreach email from prospect info.', credits: 10, tier: 'llm' },
+  'llm-ad-copy': { cat: 'AI: Content', name: 'Ad Copy', desc: 'Generate ad copy variants (headline + description).', credits: 5, tier: 'llm' },
+  'llm-social-post': { cat: 'AI: Content', name: 'Social Post', desc: 'Generate social media post for any platform.', credits: 5, tier: 'llm' },
+  'llm-video-script': { cat: 'AI: Content', name: 'Video Script', desc: 'Generate video script with hook, body, CTA.', credits: 20, tier: 'llm' },
+  'llm-press-release': { cat: 'AI: Content', name: 'Press Release', desc: 'Generate press release from news/event info.', credits: 20, tier: 'llm' },
+  'llm-tagline': { cat: 'AI: Content', name: 'Tagline Generator', desc: 'Generate tagline options for brand/product.', credits: 5, tier: 'llm' },
+  'llm-summarize': { cat: 'AI: Analysis', name: 'Summarize', desc: 'Summarize any text. Configurable length and format.', credits: 5, tier: 'llm' },
+  'llm-summarize-thread': { cat: 'AI: Analysis', name: 'Thread Summary', desc: 'Summarize email/chat thread with decisions + action items.', credits: 10, tier: 'llm' },
+  'llm-sentiment': { cat: 'AI: Analysis', name: 'Sentiment Analysis', desc: 'Analyze sentiment with aspect-level detail and confidence.', credits: 5, tier: 'llm' },
+  'llm-classify': { cat: 'AI: Analysis', name: 'Text Classify', desc: 'Classify text into your provided categories.', credits: 5, tier: 'llm' },
+  'llm-extract-entities': { cat: 'AI: Analysis', name: 'Entity Extraction', desc: 'Extract people, orgs, dates, amounts, locations from text.', credits: 5, tier: 'llm' },
+  'llm-extract-action-items': { cat: 'AI: Analysis', name: 'Action Items', desc: 'Extract action items with owners and deadlines from text.', credits: 5, tier: 'llm' },
+  'llm-extract-key-points': { cat: 'AI: Analysis', name: 'Key Points', desc: 'Extract key points and takeaways from document.', credits: 5, tier: 'llm' },
+  'llm-tone-analyze': { cat: 'AI: Analysis', name: 'Tone Analysis', desc: 'Analyze writing tone (formal/casual/urgent/friendly/etc).', credits: 5, tier: 'llm' },
+  'llm-translate': { cat: 'AI: Analysis', name: 'Translate', desc: 'Translate text to any language, preserving tone.', credits: 10, tier: 'llm' },
+  'llm-rewrite': { cat: 'AI: Analysis', name: 'Rewrite', desc: 'Rewrite text in different tone, style, or reading level.', credits: 10, tier: 'llm' },
+  'llm-proofread': { cat: 'AI: Analysis', name: 'Proofread', desc: 'Check grammar and spelling, return corrections.', credits: 5, tier: 'llm' },
+  'llm-explain-code': { cat: 'AI: Code', name: 'Explain Code', desc: 'Explain what code does in plain English.', credits: 5, tier: 'llm' },
+  'llm-explain-error': { cat: 'AI: Code', name: 'Explain Error', desc: 'Explain error message with fix suggestions.', credits: 5, tier: 'llm' },
+  'llm-explain-command': { cat: 'AI: Code', name: 'Explain Command', desc: 'Explain shell command in plain English.', credits: 5, tier: 'llm' },
+  'llm-explain-regex': { cat: 'AI: Code', name: 'Explain Regex (AI)', desc: 'Explain regex pattern with examples using AI.', credits: 5, tier: 'llm' },
+  'llm-explain-sql': { cat: 'AI: Code', name: 'Explain SQL', desc: 'Explain SQL query in plain English.', credits: 5, tier: 'llm' },
+  'llm-code-generate': { cat: 'AI: Code', name: 'Code Generate', desc: 'Generate code from natural language description.', credits: 20, tier: 'llm' },
+  'llm-code-review': { cat: 'AI: Code', name: 'Code Review', desc: 'Review code for bugs, security issues, performance.', credits: 10, tier: 'llm' },
+  'llm-code-refactor': { cat: 'AI: Code', name: 'Refactor Suggest', desc: 'Suggest refactoring for cleaner code.', credits: 10, tier: 'llm' },
+  'llm-code-test-generate': { cat: 'AI: Code', name: 'Test Generate', desc: 'Generate unit tests for code.', credits: 20, tier: 'llm' },
+  'llm-code-document': { cat: 'AI: Code', name: 'Code Document', desc: 'Generate documentation and docstrings.', credits: 10, tier: 'llm' },
+  'llm-code-convert': { cat: 'AI: Code', name: 'Code Convert', desc: 'Convert code between programming languages.', credits: 20, tier: 'llm' },
+  'llm-sql-generate': { cat: 'AI: Code', name: 'SQL Generate', desc: 'Generate SQL from natural language query.', credits: 10, tier: 'llm' },
+  'llm-regex-generate': { cat: 'AI: Code', name: 'Regex Generate', desc: 'Generate regex from natural language description.', credits: 5, tier: 'llm' },
+  'llm-commit-message': { cat: 'AI: Code', name: 'Commit Message', desc: 'Generate commit message from diff.', credits: 5, tier: 'llm' },
+  'llm-pr-description': { cat: 'AI: Code', name: 'PR Description', desc: 'Generate pull request description from diff/commits.', credits: 10, tier: 'llm' },
+  'llm-meeting-prep': { cat: 'AI: Business', name: 'Meeting Prep', desc: 'Generate meeting prep notes from attendees + topic.', credits: 10, tier: 'llm' },
+  'llm-decision-analyze': { cat: 'AI: Business', name: 'Decision Analysis', desc: 'Analyze pros/cons/risks of a business decision.', credits: 10, tier: 'llm' },
+  'llm-job-description': { cat: 'AI: Business', name: 'Job Description', desc: 'Generate job description from role requirements.', credits: 10, tier: 'llm' },
+  'llm-interview-questions': { cat: 'AI: Business', name: 'Interview Questions', desc: 'Generate interview questions for a specific role.', credits: 10, tier: 'llm' },
+  'llm-performance-review': { cat: 'AI: Business', name: 'Performance Review', desc: 'Draft performance review from notes/observations.', credits: 20, tier: 'llm' },
+  'llm-proposal-draft': { cat: 'AI: Business', name: 'Proposal Draft', desc: 'Draft business proposal from specs/requirements.', credits: 20, tier: 'llm' },
+  'llm-contract-summarize': { cat: 'AI: Business', name: 'Contract Summary', desc: 'Summarize contract key terms, obligations, and risks.', credits: 20, tier: 'llm' },
+  'llm-legal-clause-explain': { cat: 'AI: Business', name: 'Legal Clause Explain', desc: 'Explain legal clause in plain English.', credits: 5, tier: 'llm' },
+  'llm-support-reply': { cat: 'AI: Business', name: 'Support Reply', desc: 'Generate customer support reply from ticket context.', credits: 5, tier: 'llm' },
+  'llm-competitor-brief': { cat: 'AI: Business', name: 'Competitor Brief', desc: 'Generate competitor analysis brief from company info.', credits: 10, tier: 'llm' },
+};
+
+// Category metadata
+const CATEGORY_META = {
+  'Text Processing': { icon: '\uD83D\uDCDD', desc: 'Extract, transform, analyze, and manipulate text.' },
+  'Crypto & Security': { icon: '\uD83D\uDD10', desc: 'Hashing, encryption, JWT, passwords, random generation.' },
+  'Math & Numbers': { icon: '\uD83E\uDDEE', desc: 'Statistics, conversions, financial calculations.' },
+  'Date & Time': { icon: '\uD83D\uDCC5', desc: 'Parse, format, diff, and calculate dates.' },
+  'Data Transform': { icon: '\uD83D\uDD04', desc: 'JSON, CSV, XML, YAML, Markdown conversions.' },
+  'Code Utilities': { icon: '\uD83D\uDCBB', desc: 'JSON to TypeScript, SQL formatting, semver, diff stats.' },
+  'Generate': { icon: '\u2728', desc: 'UUIDs, passwords, fake data, color palettes, short IDs.' },
+  'Network & DNS': { icon: '\uD83C\uDF10', desc: 'DNS lookups, HTTP checks, SSL inspection, email validation.' },
+  'AI: Content': { icon: '\uD83E\uDD16', desc: 'Blog posts, emails, ad copy, social posts. Powered by Claude/GPT.' },
+  'AI: Analysis': { icon: '\uD83E\uDDE0', desc: 'Summarize, classify, extract, translate, sentiment analysis.' },
+  'AI: Code': { icon: '\u2699\uFE0F', desc: 'Generate code, review, test, document, convert.' },
+  'AI: Business': { icon: '\uD83D\uDCBC', desc: 'Meeting prep, proposals, job descriptions, contract analysis.' },
+};
+
+// Example input data for building example requests
+const EXAMPLE_INPUTS = {
+  'text-': { text: 'The quick brown fox jumps over the lazy dog.' },
+  'text-diff': { text_a: 'Hello World', text_b: 'Hello Slopshop' },
+  'text-diff-unified': { text_a: 'Hello World', text_b: 'Hello Slopshop' },
+  'text-regex-test': { text: 'Contact us at hello@test.com', pattern: '[\\w.]+@[\\w.]+' },
+  'text-regex-replace': { text: 'Hello World', pattern: 'World', replacement: 'Slopshop' },
+  'text-slugify': { text: 'Hello World! This is a Test' },
+  'text-truncate': { text: 'This is a long sentence that should be truncated', length: 20 },
+  'text-case-convert': { text: 'hello world test', to: 'camelCase' },
+  'text-lorem-ipsum': { paragraphs: 2 },
+  'text-sort-lines': { text: 'banana\\napple\\ncherry', order: 'asc' },
+  'text-table-format': { data: [{ name: 'Alice', score: 90 }, { name: 'Bob', score: 85 }] },
+  'text-tree-format': { data: { src: { index: 'js', utils: { helper: 'js' } }, README: 'md' } },
+  'text-markdown-to-html': { markdown: '# Hello\\n\\nThis is **bold** text.' },
+  'text-csv-to-json': { data: 'name,age\\nAlice,30\\nBob,25' },
+  'text-json-to-csv': { data: [{ name: 'Alice', age: 30 }, { name: 'Bob', age: 25 }] },
+  'text-xml-to-json': { xml: '<root><name>Alice</name><age>30</age></root>' },
+  'text-yaml-to-json': { yaml: 'name: Alice\\nage: 30' },
+  'text-json-validate': { data: '{"name": "Alice", "age": 30}' },
+  'text-json-format': { data: '{"name":"Alice","age":30}', indent: 2 },
+  'text-json-path': { data: { user: { name: 'Alice' } }, path: 'user.name' },
+  'text-json-flatten': { data: { user: { name: 'Alice', address: { city: 'NYC' } } } },
+  'text-json-unflatten': { data: { 'user.name': 'Alice', 'user.address.city': 'NYC' } },
+  'text-json-diff': { a: { name: 'Alice', age: 30 }, b: { name: 'Alice', age: 31 } },
+  'text-json-merge': { a: { name: 'Alice' }, b: { age: 30 } },
+  'text-json-schema-generate': { data: { name: 'Alice', age: 30, tags: ['dev'] } },
+  'text-base64-encode': { data: 'Hello, World!' },
+  'text-base64-decode': { data: 'SGVsbG8sIFdvcmxkIQ==' },
+  'text-url-encode': { data: 'hello world & foo=bar' },
+  'text-url-decode': { data: 'hello%20world%20%26%20foo%3Dbar' },
+  'text-url-parse': { url: 'https://slopshop.gg/v1/tools/crypto-hash-sha256?format=hex' },
+  'text-hex-encode': { data: 'Hello' },
+  'text-hex-decode': { data: '48656c6c6f' },
+  'crypto-hash-sha256': { data: 'hello world' },
+  'crypto-hash-sha512': { data: 'hello world' },
+  'crypto-hash-md5': { data: 'hello world' },
+  'crypto-hmac': { data: 'hello world', secret: 'my-secret-key' },
+  'crypto-uuid': {},
+  'crypto-nanoid': {},
+  'crypto-password-generate': { length: 24 },
+  'crypto-password-hash': { password: 'my-secure-password' },
+  'crypto-password-verify': { password: 'my-secure-password', hash: '<hash_from_password_hash>' },
+  'crypto-random-bytes': { length: 32 },
+  'crypto-random-int': { min: 1, max: 100 },
+  'crypto-jwt-sign': { payload: { sub: 'user123', role: 'admin' }, secret: 'my-secret' },
+  'crypto-jwt-verify': { token: '<jwt_token>', secret: 'my-secret' },
+  'crypto-jwt-decode': { token: '<jwt_token>' },
+  'crypto-otp-generate': { length: 6 },
+  'crypto-encrypt-aes': { data: 'secret message', key: 'my-32-char-encryption-key-here!' },
+  'crypto-decrypt-aes': { encrypted: '<encrypted_data>', key: 'my-32-char-encryption-key-here!', iv: '<iv>', tag: '<tag>' },
+  'crypto-checksum': { data: 'important document content' },
+  'crypto-totp-generate': { secret: 'JBSWY3DPEHPK3PXP' },
+  'math-evaluate': { expression: '(2 + 3) * 4 / 2' },
+  'math-statistics': { numbers: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100] },
+  'math-percentile': { numbers: [10, 20, 30, 40, 50], percentile: 90 },
+  'math-histogram': { numbers: [1, 2, 2, 3, 3, 3, 4, 4, 5], bins: 5 },
+  'math-currency-convert': { amount: 100, from: 'USD', to: 'EUR' },
+  'math-unit-convert': { value: 100, from: 'km', to: 'miles' },
+  'math-color-convert': { color: '#ef4444' },
+  'math-number-format': { number: 1234567.89, locale: 'en-US', style: 'currency', currency: 'USD' },
+  'math-compound-interest': { principal: 10000, rate: 5, years: 10, frequency: 12 },
+  'math-loan-payment': { principal: 250000, rate: 6.5, years: 30 },
+  'math-roi-calculate': { cost: 50000, revenue: 75000 },
+  'math-percentage-change': { from: 100, to: 150 },
+  'math-fibonacci': { n: 10 },
+  'math-prime-check': { number: 97 },
+  'math-gcd': { numbers: [12, 18, 24] },
+  'math-lcm': { numbers: [4, 6, 8] },
+  'math-base-convert': { number: '255', from: 10, to: 16 },
+  'math-mortgage-amortize': { principal: 300000, rate: 6.5, years: 30 },
+  'math-tax-estimate': { income: 120000, filing_status: 'single' },
+  'math-matrix-multiply': { a: [[1, 2], [3, 4]], b: [[5, 6], [7, 8]] },
+  'date-parse': { date: 'March 25, 2026' },
+  'date-format': { date: '2026-03-25T10:30:00Z', format: 'YYYY/MM/DD HH:mm' },
+  'date-diff': { from: '2026-01-01', to: '2026-12-31' },
+  'date-add': { date: '2026-03-25', days: 30 },
+  'date-weekday': { date: '2026-03-25' },
+  'date-is-business-day': { date: '2026-03-25' },
+  'date-business-days-between': { from: '2026-03-01', to: '2026-03-31' },
+  'date-cron-parse': { expression: '0 9 * * 1-5' },
+  'date-cron-next': { expression: '0 9 * * 1-5', count: 5 },
+  'date-unix-to-iso': { timestamp: 1774675200 },
+  'date-iso-to-unix': { date: '2026-03-25T12:00:00Z' },
+  'date-relative': { date: '2026-03-20T10:00:00Z' },
+  'date-holidays': { year: 2026 },
+  'code-json-to-typescript': { json: { name: 'Alice', age: 30, active: true } },
+  'code-json-to-python-class': { json: { name: 'Alice', age: 30, active: true } },
+  'code-json-to-go-struct': { json: { name: 'Alice', age: 30, active: true } },
+  'code-sql-format': { sql: 'select id,name,email from users where active=1 order by name limit 10' },
+  'code-cron-explain': { expression: '*/5 * * * *' },
+  'code-regex-explain': { pattern: '^[\\w.]+@[\\w.]+\\.\\w{2,}$' },
+  'code-semver-compare': { a: '1.2.3', b: '1.3.0' },
+  'code-semver-bump': { version: '1.2.3', type: 'minor' },
+  'code-diff-stats': { diff: '--- a/file.js\\n+++ b/file.js\\n@@ -1,3 +1,4 @@\\n line1\\n-old line\\n+new line\\n+added line\\n line3' },
+  'code-env-parse': { data: 'DB_HOST=localhost\\nDB_PORT=5432\\nDB_NAME=mydb' },
+  'code-jwt-inspect': { token: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ1c2VyMTIzIn0.abc' },
+  'code-openapi-validate': { spec: { openapi: '3.0.0', info: { title: 'My API', version: '1.0' }, paths: {} } },
+  'code-dockerfile-lint': { dockerfile: 'FROM node:latest\\nRUN apt-get install curl\\nADD . /app' },
+  'code-gitignore-generate': { language: 'node' },
+  'text-cron-to-english': { expression: '0 0 * * 0' },
+  'gen-fake-name': {},
+  'gen-fake-email': {},
+  'gen-fake-company': {},
+  'gen-fake-address': {},
+  'gen-fake-phone': {},
+  'gen-fake-user': {},
+  'gen-fake-credit-card': {},
+  'gen-color-palette': { color: '#ef4444' },
+  'gen-short-id': {},
+  'gen-avatar-svg': { input: 'alice@example.com' },
+  'gen-qr-svg': { data: 'https://slopshop.gg' },
+  'net-dns-a': { domain: 'slopshop.gg' },
+  'net-dns-aaaa': { domain: 'slopshop.gg' },
+  'net-dns-mx': { domain: 'slopshop.gg' },
+  'net-dns-txt': { domain: 'slopshop.gg' },
+  'net-dns-ns': { domain: 'slopshop.gg' },
+  'net-dns-all': { domain: 'slopshop.gg' },
+  'net-http-status': { url: 'https://slopshop.gg' },
+  'net-http-headers': { url: 'https://slopshop.gg' },
+  'net-http-redirect-chain': { url: 'http://slopshop.gg' },
+  'net-ssl-check': { domain: 'slopshop.gg' },
+  'net-email-validate': { email: 'hello@slopshop.gg' },
+  'net-ip-validate': { ip: '192.168.1.1' },
+  'net-cidr-contains': { ip: '192.168.1.50', cidr: '192.168.1.0/24' },
+  'net-url-parse': { url: 'https://slopshop.gg/v1/tools/crypto-hash-sha256' },
+  'llm-blog-outline': { topic: 'How AI agents use APIs', keywords: 'slopshop, automation, credits' },
+  'llm-blog-draft': { topic: 'The future of API-first development' },
+  'llm-landing-page-copy': { product: 'Slopshop', audience: 'developers', value_prop: '420 real APIs for agents' },
+  'llm-product-description': { product: 'Slopshop API Platform', features: ['420 APIs', 'credit-based', 'self-hostable'] },
+  'llm-email-draft': { context: 'Following up on partnership discussion', intent: 'schedule a demo call' },
+  'llm-email-reply': { thread: 'Hi, I am interested in your API platform. What pricing plans do you offer?' },
+  'llm-cold-outreach': { prospect: 'CTO at TechCorp', company: 'TechCorp', product: 'Slopshop' },
+  'llm-ad-copy': { product: 'Slopshop', audience: 'developers', platform: 'Google Ads' },
+  'llm-social-post': { topic: 'Launch of 420 real APIs', platform: 'twitter' },
+  'llm-video-script': { topic: 'Getting started with Slopshop', duration: '60 seconds' },
+  'llm-press-release': { headline: 'Slopshop launches 420 real APIs for AI agents', details: 'Credit-based, self-hostable API platform' },
+  'llm-tagline': { brand: 'Slopshop', description: 'API bazaar for AI agents' },
+  'llm-summarize': { text: 'Long document text to be summarized...' },
+  'llm-summarize-thread': { thread: 'Email thread with multiple messages...' },
+  'llm-sentiment': { text: 'I absolutely love this product! It works perfectly.' },
+  'llm-classify': { text: 'My order has not arrived yet', categories: ['support', 'sales', 'billing', 'feedback'] },
+  'llm-extract-entities': { text: 'Alice from Acme Corp signed a $50k deal on March 25, 2026 in New York.' },
+  'llm-extract-action-items': { text: 'Alice to prepare deck by Friday. Bob to review the contract. Follow up with client next week.' },
+  'llm-extract-key-points': { text: 'Long document with several important points...' },
+  'llm-tone-analyze': { text: 'We need this fixed immediately. This is unacceptable.' },
+  'llm-translate': { text: 'Hello, how are you?', to: 'Spanish' },
+  'llm-rewrite': { text: 'This thing is really cool and stuff', tone: 'professional' },
+  'llm-proofread': { text: 'Their going to the store too buy some supplys for there project.' },
+  'llm-explain-code': { code: 'const fib = n => n <= 1 ? n : fib(n-1) + fib(n-2);', language: 'javascript' },
+  'llm-explain-error': { error: 'TypeError: Cannot read properties of undefined (reading "map")', context: 'React component rendering a list' },
+  'llm-explain-command': { command: 'find . -name "*.log" -mtime +7 -exec rm {} \\;' },
+  'llm-explain-regex': { pattern: '^(?=.*[A-Z])(?=.*\\d)[A-Za-z\\d@$!%*?&]{8,}$' },
+  'llm-explain-sql': { sql: 'SELECT u.name, COUNT(o.id) FROM users u LEFT JOIN orders o ON u.id = o.user_id GROUP BY u.name HAVING COUNT(o.id) > 5' },
+  'llm-code-generate': { description: 'A function that validates email addresses using regex', language: 'python' },
+  'llm-code-review': { code: 'function add(a,b) { return a + b; }', language: 'javascript' },
+  'llm-code-refactor': { code: 'if (x == 1) { return true; } else if (x == 2) { return true; } else { return false; }', language: 'javascript' },
+  'llm-code-test-generate': { code: 'function add(a, b) { return a + b; }', language: 'javascript' },
+  'llm-code-document': { code: 'function calculateTax(income, rate) { return income * rate; }', language: 'javascript' },
+  'llm-code-convert': { code: 'def greet(name):\\n    return f"Hello, {name}!"', from: 'python', to: 'javascript' },
+  'llm-sql-generate': { description: 'Get all users who signed up in the last 30 days, ordered by name' },
+  'llm-regex-generate': { description: 'Match valid email addresses' },
+  'llm-commit-message': { diff: '+function add(a, b) {\\n+  return a + b;\\n+}' },
+  'llm-pr-description': { diff: 'Added email validation to user registration flow', commits: ['Add email regex', 'Add MX check', 'Add tests'] },
+  'llm-meeting-prep': { topic: 'Q2 product roadmap review', attendees: ['CEO', 'CTO', 'PM Lead'] },
+  'llm-decision-analyze': { decision: 'Should we migrate from MongoDB to PostgreSQL?', context: 'Growing data complexity, team experience with SQL' },
+  'llm-job-description': { role: 'Senior Backend Engineer', team: 'Platform', requirements: ['Node.js', 'PostgreSQL', '5+ years'] },
+  'llm-interview-questions': { role: 'Senior Backend Engineer', focus: 'system design and Node.js' },
+  'llm-performance-review': { employee: 'Alice', observations: 'Led API migration, mentored 2 juniors, missed one deadline' },
+  'llm-proposal-draft': { project: 'API Platform Integration', client: 'TechCorp', scope: 'Integrate 50 APIs into existing workflow' },
+  'llm-contract-summarize': { contract: 'This agreement between Party A and Party B establishes terms for API usage...' },
+  'llm-legal-clause-explain': { clause: 'Notwithstanding the foregoing, neither party shall be liable for consequential damages...' },
+  'llm-support-reply': { ticket: 'My API key is not working. I keep getting 401 errors.', tone: 'friendly' },
+  'llm-competitor-brief': { company: 'RapidAPI', industry: 'API marketplace' },
+};
+
+// ============================================================
+// Initialize
+// ============================================================
+let allApis = {};
+let categories = {};
+
+async function init() {
+  // Try to fetch from server first, fall back to static
+  try {
+    const res = await fetch('/v1/tools');
+    if (res.ok) {
+      const data = await res.json();
+      // Build allApis from server response
+      if (data.categories) {
+        for (const cat of data.categories) {
+          for (const api of cat.apis) {
+            allApis[api.slug] = {
+              cat: cat.name,
+              name: api.name,
+              desc: api.desc,
+              credits: api.credits,
+              tier: api.tier,
+            };
+          }
+        }
+      }
+    } else {
+      throw new Error('not ok');
+    }
+  } catch (e) {
+    allApis = { ...STATIC_APIS };
+  }
+
+  // If fetch gave us nothing, use static
+  if (Object.keys(allApis).length === 0) {
+    allApis = { ...STATIC_APIS };
+  }
+
+  // Build categories
+  categories = {};
+  for (const [slug, api] of Object.entries(allApis)) {
+    if (!categories[api.cat]) {
+      categories[api.cat] = [];
+    }
+    categories[api.cat].push({ slug, ...api });
+  }
+
+  buildSidebar();
+  buildApiReference();
+  document.getElementById('loadingState').style.display = 'none';
+  document.getElementById('docsContent').style.display = 'block';
+  setupScrollSpy();
+}
+
+// ============================================================
+// Build sidebar categories
+// ============================================================
+function buildSidebar() {
+  const container = document.getElementById('sidebarCategories');
+  const catOrder = [
+    'Text Processing', 'Data Transform', 'Crypto & Security', 'Math & Numbers',
+    'Date & Time', 'Code Utilities', 'Generate', 'Network & DNS',
+    'AI: Content', 'AI: Analysis', 'AI: Code', 'AI: Business'
+  ];
+
+  let html = '';
+  for (const catName of catOrder) {
+    const apis = categories[catName];
+    if (!apis) continue;
+    const meta = CATEGORY_META[catName] || { icon: '', desc: '' };
+    const catId = 'cat-' + catName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+
+    html += `<div class="sb-section">
+      <div class="sb-cat-header" onclick="toggleCategory(this)" data-cat="${catId}">
+        <span>${meta.icon} ${catName} <span class="cnt">${apis.length}</span></span>
+        <span class="arrow">&#9660;</span>
+      </div>
+      <div class="sb-cat-items" id="${catId}-items">`;
+
+    for (const api of apis) {
+      html += `<a class="sb-api-link" href="#${api.slug}" data-slug="${api.slug}">${api.slug}</a>`;
+    }
+    html += '</div></div>';
+  }
+  container.innerHTML = html;
+}
+
+function toggleCategory(el) {
+  const catId = el.dataset.cat;
+  const items = document.getElementById(catId + '-items');
+  el.classList.toggle('collapsed');
+  items.classList.toggle('collapsed');
+}
+
+// ============================================================
+// Build API reference content
+// ============================================================
+function buildApiReference() {
+  const container = document.getElementById('apiReferenceContent');
+  const catOrder = [
+    'Text Processing', 'Data Transform', 'Crypto & Security', 'Math & Numbers',
+    'Date & Time', 'Code Utilities', 'Generate', 'Network & DNS',
+    'AI: Content', 'AI: Analysis', 'AI: Code', 'AI: Business'
+  ];
+
+  let html = '';
+  for (const catName of catOrder) {
+    const apis = categories[catName];
+    if (!apis) continue;
+    const meta = CATEGORY_META[catName] || { icon: '', desc: '' };
+
+    html += `<div class="cat-header" id="cat-${catName.toLowerCase().replace(/[^a-z0-9]/g, '-')}">
+      <h3>${meta.icon} ${catName}</h3>
+      <p>${meta.desc}</p>
+    </div>`;
+
+    for (const api of apis) {
+      const tierClass = `badge-${api.tier}`;
+      const tierLabel = api.tier.charAt(0).toUpperCase() + api.tier.slice(1);
+      const exInput = getExampleInput(api.slug);
+      const exJson = JSON.stringify(exInput, null, 2);
+      const exJsonInline = JSON.stringify(exInput);
+      const tabId = api.slug.replace(/[^a-z0-9-]/g, '');
+
+      html += `<div class="api-doc" id="${api.slug}">
+        <div class="api-doc-header">
+          <h4>${api.name}</h4>
+          <div class="api-doc-meta">
+            <span class="badge badge-cat">${catName}</span>
+            <span class="badge ${tierClass}">${tierLabel}</span>
+            <span class="badge badge-credits">${api.credits} credit${api.credits !== 1 ? 's' : ''}</span>
+          </div>
+        </div>
+        <p class="api-desc">${api.desc}</p>
+        <div class="endpoint"><span class="method">POST</span> /v1/tools/${api.slug}</div>
+
+        <div class="tabs">
+          <div class="tab active" onclick="switchTab(this, '${tabId}', 'curl')">curl</div>
+          <div class="tab" onclick="switchTab(this, '${tabId}', 'python')">Python</div>
+          <div class="tab" onclick="switchTab(this, '${tabId}', 'cli')">CLI</div>
+        </div>
+
+        <div class="tab-content active" id="${tabId}-curl">
+          <div class="code-block" style="border-top:none;border-radius:0 0 8px 8px"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/tools/${api.slug} \\
+  -H "Authorization: Bearer sk_live_your_key" \\
+  -H "Content-Type: application/json" \\
+  -d '${exJsonInline.replace(/'/g, "'\\''")}'</code></pre></div>
+        </div>
+
+        <div class="tab-content" id="${tabId}-python">
+          <div class="code-block" style="border-top:none;border-radius:0 0 8px 8px"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>from slopshop import Slop
+
+client = Slop(api_key="sk_live_your_key")
+result = client.call("${api.slug}", ${pythonKwargs(exInput)})
+print(result)</code></pre></div>
+        </div>
+
+        <div class="tab-content" id="${tabId}-cli">
+          <div class="code-block" style="border-top:none;border-radius:0 0 8px 8px"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>slop call ${api.slug} -d '${exJsonInline.replace(/'/g, "'\\''")}'</code></pre></div>
+        </div>
+
+        <h5 style="font-family:var(--mono);font-size:0.78rem;margin:12px 0 6px;color:var(--t3)">Input Fields</h5>
+        <div style="font-size:0.82rem;color:var(--t2);line-height:1.7">${describeInputs(api.slug, exInput)}</div>
+      </div>`;
+    }
+  }
+  container.innerHTML = html;
+}
+
+function getExampleInput(slug) {
+  if (EXAMPLE_INPUTS[slug]) return EXAMPLE_INPUTS[slug];
+  // Fallback: find by prefix
+  for (const prefix of Object.keys(EXAMPLE_INPUTS)) {
+    if (slug.startsWith(prefix) && prefix.endsWith('-')) {
+      return EXAMPLE_INPUTS[prefix];
+    }
+  }
+  return { data: 'example input' };
+}
+
+function pythonKwargs(obj) {
+  if (!obj || Object.keys(obj).length === 0) return '';
+  return Object.entries(obj).map(([k, v]) => {
+    if (typeof v === 'string') return `${k}="${v.replace(/"/g, '\\"')}"`;
+    if (Array.isArray(v)) return `${k}=${JSON.stringify(v)}`;
+    if (typeof v === 'object') return `${k}=${JSON.stringify(v)}`;
+    return `${k}=${v}`;
+  }).join(', ');
+}
+
+function describeInputs(slug, exInput) {
+  if (!exInput || Object.keys(exInput).length === 0) {
+    return '<code>No required inputs</code> -- this API generates output without input data.';
+  }
+  return Object.entries(exInput).map(([k, v]) => {
+    let type = typeof v;
+    if (Array.isArray(v)) type = 'array';
+    return `<code>${k}</code> <span style="color:var(--t4)">(${type})</span> -- ${describeField(slug, k)}`;
+  }).join('<br>');
+}
+
+function describeField(slug, field) {
+  const descs = {
+    text: 'The input text to process',
+    data: 'The input data to process',
+    text_a: 'First text for comparison',
+    text_b: 'Second text for comparison',
+    pattern: 'Regular expression pattern',
+    replacement: 'Replacement string',
+    to: 'Target format, language, or case style',
+    from: 'Source format, currency, or language',
+    length: 'Desired length or count',
+    url: 'Target URL',
+    domain: 'Target domain name',
+    email: 'Email address to validate',
+    ip: 'IP address to check',
+    cidr: 'CIDR range notation',
+    password: 'Password to hash or verify',
+    hash: 'Previously generated hash for verification',
+    secret: 'Secret key for signing',
+    payload: 'JWT payload object',
+    token: 'JWT token string',
+    key: 'Encryption key',
+    encrypted: 'Encrypted data to decrypt',
+    iv: 'Initialization vector',
+    tag: 'Authentication tag',
+    expression: 'Math or cron expression',
+    numbers: 'Array of numbers',
+    number: 'Numeric value',
+    percentile: 'Target percentile (0-100)',
+    bins: 'Number of histogram bins',
+    amount: 'Numeric amount',
+    value: 'Input value',
+    date: 'Date string',
+    format: 'Output format pattern',
+    days: 'Number of days',
+    count: 'Number of results to return',
+    timestamp: 'Unix timestamp',
+    year: 'Year number',
+    json: 'JSON data or example object',
+    sql: 'SQL query string',
+    xml: 'XML string',
+    yaml: 'YAML string',
+    markdown: 'Markdown text',
+    indent: 'Indentation level',
+    path: 'Dot-notation path into object',
+    a: 'First value or object for comparison',
+    b: 'Second value or object for comparison',
+    version: 'Semantic version string',
+    type: 'Type of operation (patch/minor/major)',
+    diff: 'Unified diff text or description',
+    dockerfile: 'Dockerfile content',
+    language: 'Programming language',
+    spec: 'OpenAPI specification object',
+    code: 'Source code to process',
+    topic: 'Topic or subject',
+    keywords: 'SEO keywords',
+    product: 'Product name or description',
+    audience: 'Target audience',
+    value_prop: 'Value proposition',
+    features: 'Product features list',
+    context: 'Additional context',
+    intent: 'Purpose or intent of the communication',
+    thread: 'Email or chat thread',
+    prospect: 'Prospect name or description',
+    company: 'Company name',
+    platform: 'Social media or ad platform',
+    duration: 'Duration or time length',
+    headline: 'Press release headline',
+    details: 'Additional details',
+    brand: 'Brand name',
+    description: 'Natural language description',
+    categories: 'Array of classification categories',
+    tone: 'Desired tone of writing',
+    error: 'Error message string',
+    command: 'Shell command to explain',
+    focus: 'Focus area for questions',
+    role: 'Job role title',
+    team: 'Team name',
+    requirements: 'Requirements list',
+    employee: 'Employee name',
+    observations: 'Performance observations',
+    project: 'Project name',
+    client: 'Client name',
+    scope: 'Project scope',
+    contract: 'Contract text',
+    clause: 'Legal clause text',
+    ticket: 'Support ticket content',
+    industry: 'Industry category',
+    attendees: 'List of attendees',
+    decision: 'Decision to analyze',
+    commits: 'List of commit messages',
+    color: 'Base hex color value',
+    input: 'Input string for generation',
+    principal: 'Principal amount',
+    rate: 'Interest or tax rate',
+    years: 'Number of years',
+    frequency: 'Compounding frequency',
+    filing_status: 'Tax filing status',
+    income: 'Annual income',
+    min: 'Minimum value',
+    max: 'Maximum value',
+    paragraphs: 'Number of paragraphs',
+    order: 'Sort order (asc/desc)',
+    style: 'Output style',
+    currency: 'Currency code',
+    locale: 'Locale code',
+    revenue: 'Revenue amount',
+    cost: 'Cost amount',
+    n: 'Number of terms',
+    column: 'Column to operate on',
+  };
+  return descs[field] || 'Input parameter';
+}
+
+// ============================================================
+// Tab switching
+// ============================================================
+function switchTab(el, tabId, type) {
+  const parent = el.parentElement;
+  parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+
+  const apiDoc = parent.parentElement;
+  apiDoc.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  document.getElementById(`${tabId}-${type}`).classList.add('active');
+}
+
+// ============================================================
+// Copy button
+// ============================================================
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  const text = pre.textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = 'Copy';
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+// ============================================================
+// Sidebar search
+// ============================================================
+document.getElementById('sidebarSearch').addEventListener('input', function(e) {
+  const q = e.target.value.toLowerCase().trim();
+  const links = document.querySelectorAll('.sb-api-link');
+  const catHeaders = document.querySelectorAll('.sb-cat-header');
+  const catItems = document.querySelectorAll('.sb-cat-items');
+
+  if (!q) {
+    links.forEach(l => l.style.display = '');
+    catHeaders.forEach(h => h.style.display = '');
+    catItems.forEach(c => {
+      if (!c.classList.contains('collapsed')) c.style.maxHeight = '';
+    });
+    return;
+  }
+
+  // Also filter the main content API docs
+  const apiDocs = document.querySelectorAll('.api-doc');
+  const catHeaderDocs = document.querySelectorAll('.cat-header');
+
+  catHeaders.forEach(h => h.style.display = 'none');
+
+  links.forEach(l => {
+    const slug = l.dataset.slug;
+    const api = allApis[slug];
+    const match = slug.includes(q) ||
+      (api && api.name.toLowerCase().includes(q)) ||
+      (api && api.desc.toLowerCase().includes(q)) ||
+      (api && api.cat.toLowerCase().includes(q));
+    l.style.display = match ? '' : 'none';
+  });
+
+  // Show cat headers that have visible items
+  document.querySelectorAll('.sb-section').forEach(sec => {
+    const visibleLinks = sec.querySelectorAll('.sb-api-link:not([style*="display: none"])');
+    const header = sec.querySelector('.sb-cat-header');
+    const items = sec.querySelector('.sb-cat-items');
+    if (header) {
+      header.style.display = visibleLinks.length > 0 ? '' : 'none';
+    }
+    if (items && visibleLinks.length > 0) {
+      items.classList.remove('collapsed');
+      if (header) header.classList.remove('collapsed');
+    }
+  });
+});
+
+// ============================================================
+// Sidebar toggle (mobile)
+// ============================================================
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+}
+
+// Close sidebar when clicking a link on mobile
+document.addEventListener('click', function(e) {
+  if (e.target.matches('.sb-link, .sb-api-link') && window.innerWidth <= 768) {
+    document.getElementById('sidebar').classList.remove('open');
+    document.getElementById('sidebarOverlay').classList.remove('open');
+  }
+});
+
+// ============================================================
+// Scroll spy - highlight current section in sidebar
+// ============================================================
+function setupScrollSpy() {
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const id = entry.target.id;
+        if (!id) return;
+
+        // Update sidebar links
+        document.querySelectorAll('.sb-link, .sb-api-link').forEach(l => l.classList.remove('active'));
+
+        // Check if it is a guide section
+        const guideLink = document.querySelector(`.sb-link[href="#${id}"]`);
+        if (guideLink) {
+          guideLink.classList.add('active');
+        }
+
+        // Check if it is an API
+        const apiLink = document.querySelector(`.sb-api-link[data-slug="${id}"]`);
+        if (apiLink) {
+          apiLink.classList.add('active');
+          // Scroll sidebar to show the active link
+          apiLink.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        }
+      }
+    });
+  }, { rootMargin: '-60px 0px -70% 0px', threshold: 0 });
+
+  // Observe guide sections
+  ['getting-started', 'authentication', 'credits-billing', 'cli-reference', 'sdk-reference', 'pipes', 'self-hosting', 'api-reference'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el);
+  });
+
+  // Observe API docs
+  document.querySelectorAll('.api-doc').forEach(el => {
+    if (el.id) observer.observe(el);
+  });
+}
+
+// ============================================================
+// Scroll to top button
+// ============================================================
+window.addEventListener('scroll', function() {
+  const btn = document.getElementById('scrollTop');
+  if (window.scrollY > 500) {
+    btn.classList.add('show');
+  } else {
+    btn.classList.remove('show');
+  }
+});
+
+// ============================================================
+// Boot
+// ============================================================
+init();
+</script>
+</body>
+</html>

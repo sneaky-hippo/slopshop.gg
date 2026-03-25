@@ -1,0 +1,18 @@
+{
+  "buildCommand": "",
+  "outputDirectory": ".",
+  "cleanUrls": true,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" }
+      ]
+    }
+  ],
+  "rewrites": [
+    { "source": "/v1/:path*", "destination": "https://api.slopshop.gg/v1/:path*" },
+    { "source": "/zapier/:path*", "destination": "https://api.slopshop.gg/zapier/:path*" }
+  ]
+}

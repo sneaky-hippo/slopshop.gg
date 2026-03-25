@@ -1,0 +1,1315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SLOPSHOP Dashboard</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+:root {
+  --bg:        #09090b;
+  --surface:   #111113;
+  --surface2:  #18181b;
+  --border:    #27272a;
+  --border2:   #3f3f46;
+  --text:      #fafafa;
+  --muted:     #71717a;
+  --muted2:    #52525b;
+  --accent:    #ef4444;
+  --green:     #22c55e;
+  --amber:     #f59e0b;
+  --red:       #ef4444;
+  --blue:      #3b82f6;
+  --cyan:      #06b6d4;
+  --purple:    #a855f7;
+}
+
+html { font-size: 14px; }
+
+body {
+  font-family: 'JetBrains Mono', 'Courier New', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 0;
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+/* ===== TOP BAR ===== */
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(9, 9, 11, 0.92);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 0 24px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.topbar-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+.logo-lobster {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.logo-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: 0.04em;
+}
+
+.logo-title span {
+  color: var(--accent);
+}
+
+.topbar-sep {
+  width: 1px;
+  height: 28px;
+  background: var(--border);
+  flex-shrink: 0;
+}
+
+.live-indicator {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--muted2);
+  flex-shrink: 0;
+  transition: background 0.3s;
+  position: relative;
+}
+
+.live-dot.online {
+  background: var(--green);
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4);
+  animation: pulse-green 2s infinite;
+}
+
+.live-dot.offline {
+  background: var(--red);
+}
+
+@keyframes pulse-green {
+  0%   { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.4); }
+  70%  { box-shadow: 0 0 0 6px rgba(34, 197, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
+}
+
+.topbar-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.last-updated {
+  font-size: 0.68rem;
+  color: var(--muted2);
+  white-space: nowrap;
+}
+
+.toggle-btn {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 6px 14px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: var(--surface2);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all 0.15s;
+  text-transform: uppercase;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.toggle-btn:hover { border-color: var(--border2); color: var(--text); background: #27272a; }
+.toggle-btn.active { border-color: var(--green); color: var(--green); background: rgba(34, 197, 94, 0.08); }
+
+/* ===== MAIN CONTENT ===== */
+.main {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ===== SECTION LABEL ===== */
+.section-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  margin-bottom: 10px;
+}
+
+/* ===== GRID ROWS ===== */
+.row { display: flex; flex-direction: column; gap: 10px; }
+
+.grid-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.grid-3 {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+/* ===== CARD ===== */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.card:hover { border-color: var(--border2); }
+
+.card-label {
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  margin-bottom: 10px;
+}
+
+.card-value {
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--text);
+  transition: color 0.3s;
+}
+
+.card-value.animated {
+  animation: pop 0.35s ease-out;
+}
+
+@keyframes pop {
+  0%   { transform: scale(1); }
+  40%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.card-sub {
+  font-size: 0.68rem;
+  color: var(--muted);
+  margin-top: 6px;
+}
+
+/* ===== STATUS BADGE ===== */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 0.63rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.badge-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.badge.green  { background: rgba(34,197,94,0.12);  color: var(--green);  border: 1px solid rgba(34,197,94,0.25); }
+.badge.green .badge-dot  { background: var(--green); }
+.badge.amber  { background: rgba(245,158,11,0.12); color: var(--amber);  border: 1px solid rgba(245,158,11,0.25); }
+.badge.amber .badge-dot  { background: var(--amber); }
+.badge.red    { background: rgba(239,68,68,0.12);  color: var(--red);    border: 1px solid rgba(239,68,68,0.25); }
+.badge.red .badge-dot    { background: var(--red); }
+.badge.blue   { background: rgba(59,130,246,0.12); color: var(--blue);   border: 1px solid rgba(59,130,246,0.25); }
+.badge.blue .badge-dot   { background: var(--blue); }
+.badge.muted  { background: rgba(113,113,122,0.1);  color: var(--muted); border: 1px solid rgba(113,113,122,0.2); }
+.badge.muted .badge-dot  { background: var(--muted); }
+.badge.purple { background: rgba(168,85,247,0.12); color: var(--purple); border: 1px solid rgba(168,85,247,0.25); }
+.badge.purple .badge-dot { background: var(--purple); }
+
+/* ===== TIER CARDS ===== */
+.tier-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.tier-card:hover { border-color: var(--border2); }
+
+.tier-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.tier-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text);
+}
+
+.tier-count {
+  font-size: 2.2rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.tier-count.green { color: var(--green); }
+.tier-count.amber { color: var(--amber); }
+.tier-count.blue  { color: var(--blue);  }
+
+.tier-note {
+  font-size: 0.65rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ===== SERVER INFO ===== */
+.info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.info-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.info-row:last-child { border-bottom: none; }
+
+.info-key {
+  font-size: 0.68rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.info-val {
+  font-size: 0.72rem;
+  color: var(--text);
+  font-weight: 600;
+  text-align: right;
+}
+
+/* ===== BAR CHART ===== */
+.bar-chart {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bar-label {
+  font-size: 0.63rem;
+  color: var(--muted);
+  width: 120px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bar-track {
+  flex: 1;
+  height: 8px;
+  background: var(--surface2);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.bar-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  background: var(--accent);
+}
+
+.bar-fill.compute { background: var(--green); }
+.bar-fill.network { background: var(--blue); }
+.bar-fill.llm     { background: var(--purple); }
+
+.bar-count {
+  font-size: 0.63rem;
+  color: var(--muted2);
+  width: 28px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* ===== ACTIVITY TABLE ===== */
+.activity-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+}
+
+.activity-table th {
+  text-align: left;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  padding: 0 10px 10px 10px;
+  border-bottom: 1px solid var(--border);
+}
+
+.activity-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid rgba(39,39,42,0.6);
+  vertical-align: middle;
+  color: var(--text);
+}
+
+.activity-table tr:last-child td { border-bottom: none; }
+
+.activity-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+.cell-time { color: var(--muted2); font-size: 0.63rem; white-space: nowrap; }
+.cell-api  { color: var(--cyan); font-weight: 600; }
+.cell-cr   { color: var(--amber); text-align: right; }
+.cell-lat  { color: var(--muted); text-align: right; }
+.cell-eng  { text-align: right; }
+
+.no-activity {
+  padding: 36px;
+  text-align: center;
+  color: var(--muted2);
+  font-size: 0.72rem;
+  font-style: italic;
+}
+
+/* ===== PIPES ===== */
+.pipes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 10px;
+}
+
+.pipe-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  transition: border-color 0.2s;
+}
+
+.pipe-card:hover { border-color: var(--border2); }
+
+.pipe-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.pipe-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.pipe-cat {
+  font-size: 0.6rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted2);
+  padding: 2px 7px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.pipe-desc {
+  font-size: 0.65rem;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.pipe-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.pipe-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  flex: 1;
+}
+
+.step-chip {
+  font-size: 0.58rem;
+  padding: 2px 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.pipe-credits {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--amber);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ===== OFFLINE OVERLAY ===== */
+.offline-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(9, 9, 11, 0.92);
+  backdrop-filter: blur(8px);
+  z-index: 999;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.offline-overlay.visible { display: flex; }
+
+.offline-icon {
+  font-size: 3rem;
+  line-height: 1;
+}
+
+.offline-title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--red);
+  letter-spacing: -0.01em;
+}
+
+.offline-sub {
+  font-size: 0.78rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.offline-retry {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 10px 24px;
+  border-radius: 7px;
+  border: 1px solid var(--red);
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--red);
+  cursor: pointer;
+  margin-top: 8px;
+  transition: all 0.15s;
+}
+
+.offline-retry:hover { background: rgba(239, 68, 68, 0.2); }
+
+/* ===== PROGRESS RING ===== */
+.refresh-ring {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.ring-track { fill: none; stroke: var(--border2); stroke-width: 2; }
+.ring-fill  { fill: none; stroke: var(--green); stroke-width: 2; stroke-linecap: round;
+              stroke-dasharray: 40; stroke-dashoffset: 40;
+              transform-origin: center; transform: rotate(-90deg);
+              transition: stroke-dashoffset 0.1s linear; }
+
+/* ===== SKELETON ===== */
+.skeleton {
+  background: linear-gradient(90deg, var(--surface2) 25%, #222225 50%, var(--surface2) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 4px;
+  color: transparent !important;
+  pointer-events: none;
+  user-select: none;
+}
+
+@keyframes shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ===== COVERAGE BAR ===== */
+.coverage-bar {
+  height: 4px;
+  background: var(--surface2);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 10px;
+}
+
+.coverage-fill {
+  height: 100%;
+  background: var(--green);
+  border-radius: 2px;
+  transition: width 0.6s ease-out;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 1100px) {
+  .grid-4 { grid-template-columns: repeat(2, 1fr); }
+}
+
+@media (max-width: 900px) {
+  .grid-3 { grid-template-columns: 1fr 1fr; }
+}
+
+@media (max-width: 700px) {
+  .grid-4, .grid-3, .grid-2 { grid-template-columns: 1fr; }
+  .main { padding: 14px; }
+  .topbar { padding: 0 14px; }
+}
+
+/* ===== UTILITY ===== */
+.flex-between { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.flex-gap     { display: flex; align-items: center; gap: 8px; }
+.mt-2  { margin-top: 2px; }
+.mt-4  { margin-top: 4px; }
+.mt-8  { margin-top: 8px; }
+.mt-12 { margin-top: 12px; }
+.text-green  { color: var(--green) !important; }
+.text-amber  { color: var(--amber) !important; }
+.text-red    { color: var(--red)   !important; }
+.text-blue   { color: var(--blue)  !important; }
+.text-purple { color: var(--purple) !important; }
+.text-muted  { color: var(--muted) !important; }
+.fw700 { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<!-- OFFLINE OVERLAY -->
+<div class="offline-overlay" id="offlineOverlay">
+  <div class="offline-icon">&#x1F534;</div>
+  <div class="offline-title">Server Offline</div>
+  <div class="offline-sub">Cannot reach the Slopshop API server.<br>Make sure it is running on <span id="offlineUrl">http://localhost:3000</span>.</div>
+  <button class="offline-retry" onclick="retryNow()">Retry Now</button>
+</div>
+
+<!-- TOP BAR -->
+<header class="topbar">
+  <div class="topbar-logo">
+    <span class="logo-lobster">&#x1F99E;</span>
+    <span class="logo-title"><span>SLOP</span>SHOP Dashboard</span>
+  </div>
+
+  <div class="topbar-sep"></div>
+
+  <div class="live-indicator">
+    <div class="live-dot" id="liveDot"></div>
+    <span id="liveLabel">Connecting</span>
+  </div>
+
+  <div class="topbar-sep"></div>
+
+  <svg class="refresh-ring" viewBox="0 0 16 16" id="refreshRing">
+    <circle class="ring-track" cx="8" cy="8" r="6"/>
+    <circle class="ring-fill"  cx="8" cy="8" r="6" id="ringFill"/>
+  </svg>
+
+  <div class="topbar-right">
+    <span class="last-updated" id="lastUpdated">--</span>
+    <button class="toggle-btn active" id="autoRefreshBtn" onclick="toggleAutoRefresh()">
+      Auto-Refresh ON
+    </button>
+  </div>
+</header>
+
+<!-- MAIN CONTENT -->
+<main class="main">
+
+  <!-- ROW 1: KEY METRICS -->
+  <div class="row">
+    <div class="section-label">Key Metrics</div>
+    <div class="grid-4">
+      <!-- Total APIs -->
+      <div class="card">
+        <div class="card-label">Total APIs</div>
+        <div class="card-value" id="metricApis">--</div>
+        <div class="card-sub" id="metricHandlers">-- handlers</div>
+        <div class="coverage-bar mt-8"><div class="coverage-fill" id="coverageFill" style="width:0%"></div></div>
+        <div class="card-sub mt-2" id="coveragePct">-- coverage</div>
+      </div>
+
+      <!-- Uptime -->
+      <div class="card">
+        <div class="card-label">Uptime</div>
+        <div class="card-value" style="font-size:1.45rem;letter-spacing:-0.01em;" id="metricUptime">--</div>
+        <div class="card-sub mt-4">
+          <span class="badge green" id="serverStatus">
+            <span class="badge-dot"></span>operational
+          </span>
+        </div>
+      </div>
+
+      <!-- Total Calls -->
+      <div class="card">
+        <div class="card-label">Total Calls</div>
+        <div class="card-value" id="metricCalls">--</div>
+        <div class="card-sub" id="metricCallsSub">since server start</div>
+      </div>
+
+      <!-- Memory -->
+      <div class="card">
+        <div class="card-label">Memory Usage</div>
+        <div class="card-value" id="metricMemory">--</div>
+        <div class="card-sub">MB heap used</div>
+        <div class="coverage-bar mt-8"><div class="coverage-fill" id="memFill" style="width:0%;background:var(--amber)"></div></div>
+        <div class="card-sub mt-2" id="memSub">heap utilization</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2: TIER HEALTH -->
+  <div class="row">
+    <div class="section-label">Tier Health</div>
+    <div class="grid-3">
+      <!-- Compute -->
+      <div class="tier-card">
+        <div class="tier-header">
+          <div>
+            <div class="tier-name">Compute</div>
+            <div class="tier-note mt-2">Pure computation &mdash; no external deps</div>
+          </div>
+          <span class="badge green" id="computeStatus">
+            <span class="badge-dot"></span>all_live
+          </span>
+        </div>
+        <div class="tier-count green" id="computeCount">--</div>
+        <div class="tier-note" id="computeNote">Always available</div>
+      </div>
+
+      <!-- Network -->
+      <div class="tier-card">
+        <div class="tier-header">
+          <div>
+            <div class="tier-name">Network</div>
+            <div class="tier-note mt-2">Real DNS / HTTP / SSL calls</div>
+          </div>
+          <span class="badge blue" id="networkStatus">
+            <span class="badge-dot"></span>live
+          </span>
+        </div>
+        <div class="tier-count blue" id="networkCount">--</div>
+        <div class="tier-note" id="networkNote">External network required</div>
+      </div>
+
+      <!-- LLM -->
+      <div class="tier-card">
+        <div class="tier-header">
+          <div>
+            <div class="tier-name">LLM</div>
+            <div class="tier-note mt-2" id="llmProvider">Provider: checking...</div>
+          </div>
+          <span class="badge muted" id="llmStatus">
+            <span class="badge-dot"></span>checking
+          </span>
+        </div>
+        <div class="tier-count" id="llmCount" style="color:var(--purple)">--</div>
+        <div class="tier-note" id="llmNote">Requires API key</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 3: SYSTEM DETAILS -->
+  <div class="row">
+    <div class="section-label">System Details</div>
+    <div class="grid-2">
+      <!-- Server Info -->
+      <div class="card">
+        <div class="card-label">Server Info</div>
+        <div class="info-grid" id="serverInfo">
+          <div class="info-row">
+            <span class="info-key">Version</span>
+            <span class="info-val skeleton" id="siVersion">2.0.0</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Status</span>
+            <span class="info-val skeleton" id="siStatus">operational</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Uptime (sec)</span>
+            <span class="info-val skeleton" id="siUptimeSec">--</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Total APIs</span>
+            <span class="info-val skeleton" id="siApis">--</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Handlers</span>
+            <span class="info-val skeleton" id="siHandlers">--</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Missing</span>
+            <span class="info-val skeleton" id="siMissing">--</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Memory (MB)</span>
+            <span class="info-val skeleton" id="siMemory">--</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">LLM Provider</span>
+            <span class="info-val skeleton" id="siLlm">--</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Categories</span>
+            <span class="info-val skeleton" id="siCats">--</span>
+          </div>
+          <div class="info-row">
+            <span class="info-key">Uptime %</span>
+            <span class="info-val skeleton" id="siUptimePct">--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- API Breakdown by Tier -->
+      <div class="card">
+        <div class="flex-between">
+          <div class="card-label">API Breakdown by Tier</div>
+          <div class="card-label" id="barTotalApis" style="color:var(--muted)">-- total</div>
+        </div>
+        <div class="bar-chart mt-12" id="barChart">
+          <div class="bar-row">
+            <span class="bar-label">Compute</span>
+            <div class="bar-track"><div class="bar-fill compute" id="barCompute" style="width:0%"></div></div>
+            <span class="bar-count" id="barComputeN">--</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">Network</span>
+            <div class="bar-track"><div class="bar-fill network" id="barNetwork" style="width:0%"></div></div>
+            <span class="bar-count" id="barNetworkN">--</span>
+          </div>
+          <div class="bar-row">
+            <span class="bar-label">LLM</span>
+            <div class="bar-track"><div class="bar-fill llm" id="barLlm" style="width:0%"></div></div>
+            <span class="bar-count" id="barLlmN">--</span>
+          </div>
+        </div>
+        <div class="mt-12">
+          <div class="flex-between" style="margin-bottom:8px;">
+            <div class="card-label">API Categories</div>
+          </div>
+          <div class="bar-chart" id="catBarChart">
+            <!-- populated by JS -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 4: RECENT ACTIVITY -->
+  <div class="row">
+    <div class="section-label">Recent Activity</div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="padding:16px 20px 0 20px;" class="flex-between">
+        <div class="card-label" style="margin-bottom:0">Last 20 Calls</div>
+        <div style="font-size:0.65rem;color:var(--muted2)" id="activityNote">Requires authenticated calls to accumulate</div>
+      </div>
+      <div id="activityWrap" style="overflow-x:auto;padding:12px 0 0 0;">
+        <div class="no-activity" id="noActivity">No activity recorded yet &mdash; make some API calls first.</div>
+        <table class="activity-table" id="activityTable" style="display:none;">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>API</th>
+              <th style="text-align:right">Credits</th>
+              <th style="text-align:right">Latency</th>
+              <th style="text-align:right">Engine</th>
+            </tr>
+          </thead>
+          <tbody id="activityBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 5: PIPES -->
+  <div class="row">
+    <div class="section-label">Pre-built Pipes &mdash; <span id="pipeCount" style="color:var(--text);font-weight:700">--</span> workflows</div>
+    <div class="pipes-grid" id="pipesGrid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+</main>
+
+<script>
+(function () {
+  'use strict';
+
+  // ===== CONFIG =====
+  const BASE_URL   = window.location.origin || 'http://localhost:3000';
+  const INTERVAL   = 5000;
+  const RING_CIRC  = 2 * Math.PI * 6; // r=6
+
+  // ===== STATE =====
+  let autoRefresh  = true;
+  let online       = false;
+  let timer        = null;
+  let countdown    = null;
+  let tickStart    = Date.now();
+  let prevValues   = {};
+
+  // ===== DOM REFS =====
+  const liveDot         = document.getElementById('liveDot');
+  const liveLabel       = document.getElementById('liveLabel');
+  const lastUpdated     = document.getElementById('lastUpdated');
+  const autoRefreshBtn  = document.getElementById('autoRefreshBtn');
+  const offlineOverlay  = document.getElementById('offlineOverlay');
+  const ringFill        = document.getElementById('ringFill');
+  document.getElementById('offlineUrl').textContent = BASE_URL;
+
+  // ===== RING ANIMATION =====
+  function setRingProgress(pct) {
+    // pct: 0-1. Offset = CIRC when empty, 0 when full
+    const offset = RING_CIRC * (1 - pct);
+    ringFill.style.strokeDasharray  = RING_CIRC;
+    ringFill.style.strokeDashoffset = offset;
+  }
+
+  function startCountdownRing() {
+    clearInterval(countdown);
+    tickStart = Date.now();
+    countdown = setInterval(() => {
+      const elapsed = Date.now() - tickStart;
+      const pct = Math.min(elapsed / INTERVAL, 1);
+      setRingProgress(pct);
+    }, 50);
+  }
+
+  // ===== HELPERS =====
+  function fmtTime(iso) {
+    try {
+      const d = new Date(iso);
+      return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+    } catch { return iso; }
+  }
+
+  function fmtNumber(n) {
+    if (n === null || n === undefined || n === '--') return '--';
+    return Number(n).toLocaleString('en-US');
+  }
+
+  function animateChange(el, newVal) {
+    if (!el) return;
+    const key = el.id;
+    const prev = prevValues[key];
+    const displayVal = typeof newVal === 'number' ? fmtNumber(newVal) : String(newVal);
+    el.textContent = displayVal;
+    el.classList.remove('skeleton');
+    if (prev !== undefined && prev !== newVal) {
+      el.classList.remove('animated');
+      void el.offsetWidth; // reflow
+      el.classList.add('animated');
+    }
+    prevValues[key] = newVal;
+  }
+
+  function setVal(id, val, raw) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    animateChange(el, raw !== undefined ? raw : val);
+    if (val !== undefined && val !== raw) el.textContent = val;
+  }
+
+  function setBadge(id, cls, text) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.className = 'badge ' + cls;
+    const dot = el.querySelector('.badge-dot') || (() => {
+      const d = document.createElement('span');
+      d.className = 'badge-dot';
+      el.prepend(d);
+      return d;
+    })();
+    el.innerHTML = '';
+    el.appendChild(dot);
+    el.appendChild(document.createTextNode(text));
+  }
+
+  function setBarWidth(id, pct) {
+    const el = document.getElementById(id);
+    if (el) el.style.width = Math.min(100, Math.max(0, pct)) + '%';
+  }
+
+  // ===== FETCH WRAPPER =====
+  async function fetchJSON(path) {
+    const r = await fetch(BASE_URL + path, { cache: 'no-store' });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.json();
+  }
+
+  // ===== APPLY HEALTH =====
+  function applyHealth(d) {
+    animateChange(document.getElementById('metricApis'), d.apis);
+    document.getElementById('metricHandlers').textContent = fmtNumber(d.handlers) + ' handlers';
+    // coverage
+    const cov = d.apis > 0 ? Math.round((d.handlers / d.apis) * 100) : 0;
+    setBarWidth('coverageFill', cov);
+    document.getElementById('coveragePct').textContent = cov + '% coverage';
+
+    // server info
+    setVal('siVersion',   d.version  || '2.0.0');
+    setVal('siStatus',    d.status);
+    animateChange(document.getElementById('siUptimeSec'), d.uptime_sec);
+    animateChange(document.getElementById('siApis'),      d.apis);
+    animateChange(document.getElementById('siHandlers'),  d.handlers);
+    const missingEl = document.getElementById('siMissing');
+    if (missingEl) {
+      missingEl.textContent = d.missing_handlers || 0;
+      missingEl.className   = 'info-val' + (d.missing_handlers ? ' text-red' : ' text-green');
+    }
+  }
+
+  // ===== APPLY UPTIME =====
+  function applyUptime(d) {
+    document.getElementById('metricUptime').textContent = d.uptime_human || '--';
+
+    animateChange(document.getElementById('metricCalls'), d.traffic && d.traffic.total_calls != null ? d.traffic.total_calls : 0);
+
+    const mem = d.memory_mb || 0;
+    animateChange(document.getElementById('metricMemory'), mem);
+    // naive usage indicator: assume 512MB ceiling for bar
+    const memPct = Math.min((mem / 512) * 100, 100);
+    setBarWidth('memFill', memPct);
+    document.getElementById('memSub').textContent = memPct.toFixed(0) + '% of 512 MB';
+
+    // tiers
+    if (d.tiers) {
+      animateChange(document.getElementById('computeCount'), d.tiers.compute || 0);
+      animateChange(document.getElementById('networkCount'), d.tiers.network || 0);
+      animateChange(document.getElementById('llmCount'),     d.tiers.llm    || 0);
+    }
+
+    // compute / network notes
+    if (d.compute) document.getElementById('computeNote').textContent = d.compute.note || 'Always available';
+    if (d.network) document.getElementById('networkNote').textContent = d.network.note || 'External network required';
+
+    // llm
+    if (d.llm) {
+      const configured = d.llm.configured;
+      const provider   = d.llm.provider || 'none';
+      setBadge('llmStatus', configured ? 'purple' : 'amber', configured ? 'configured' : 'locked');
+      document.getElementById('llmProvider').textContent = 'Provider: ' + provider;
+      document.getElementById('llmNote').textContent     = configured
+        ? (d.llm.apis_unlocked || 0) + ' APIs unlocked'
+        : (d.llm.apis_locked   || 0) + ' APIs locked';
+      setVal('siLlm', provider);
+    }
+
+    setVal('siMemory', (d.memory_mb || '--') + ' MB');
+  }
+
+  // ===== APPLY STATUS =====
+  function applyStatus(d) {
+    setBadge('serverStatus', d.status === 'operational' ? 'green' : 'amber', d.status || 'unknown');
+    setVal('siStatus',    d.status   || 'unknown');
+    setVal('siCats',      d.categories != null ? d.categories : '--');
+    setVal('siUptimePct', d.uptime_pct != null ? d.uptime_pct + '%' : '--');
+    const upEl = document.getElementById('siUptimePct');
+    if (upEl) upEl.className = 'info-val text-green';
+
+    // bar chart
+    if (d.by_tier) {
+      const tiers = d.by_tier;
+      const total = (tiers.compute || 0) + (tiers.network || 0) + (tiers.llm || 0);
+      document.getElementById('barTotalApis').textContent = fmtNumber(total) + ' total';
+      if (total > 0) {
+        setBarWidth('barCompute', (tiers.compute / total) * 100);
+        setBarWidth('barNetwork', (tiers.network / total) * 100);
+        setBarWidth('barLlm',     (tiers.llm     / total) * 100);
+      }
+      animateChange(document.getElementById('barComputeN'), tiers.compute || 0);
+      animateChange(document.getElementById('barNetworkN'), tiers.network || 0);
+      animateChange(document.getElementById('barLlmN'),     tiers.llm    || 0);
+    }
+  }
+
+  // ===== APPLY PIPES =====
+  function applyPipes(d) {
+    const pipes = d.pipes || [];
+    document.getElementById('pipeCount').textContent = pipes.length;
+
+    const grid = document.getElementById('pipesGrid');
+    grid.innerHTML = '';
+
+    const catColors = {
+      Sales:    'green',
+      Content:  'purple',
+      Security: 'amber',
+      Dev:      'blue',
+      Data:     'cyan',
+      Analysis: 'muted',
+      Network:  'blue',
+      Business: 'amber',
+    };
+
+    pipes.forEach(p => {
+      const catCls = catColors[p.category] || 'muted';
+      const stepsHtml = (p.steps || []).map(s =>
+        `<span class="step-chip">${escHtml(s)}</span>`
+      ).join('');
+
+      const card = document.createElement('div');
+      card.className = 'pipe-card';
+      card.innerHTML = `
+        <div class="pipe-header">
+          <span class="pipe-name">${escHtml(p.name)}</span>
+          <span class="pipe-cat">${escHtml(p.category || '')}</span>
+        </div>
+        <div class="pipe-desc">${escHtml(p.desc || '')}</div>
+        <div class="pipe-footer">
+          <div class="pipe-steps">${stepsHtml}</div>
+          <span class="pipe-credits">${p.credits} cr</span>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+  }
+
+  // ===== APPLY TOOLS (category breakdown) =====
+  function applyTools(d) {
+    const apis = d.apis || [];
+    const cats = {};
+    apis.forEach(a => { cats[a.category] = (cats[a.category] || 0) + 1; });
+
+    const sorted = Object.entries(cats).sort((a, b) => b[1] - a[1]);
+    const max    = sorted.length ? sorted[0][1] : 1;
+    const chart  = document.getElementById('catBarChart');
+    chart.innerHTML = '';
+
+    const colors = ['#ef4444','#f59e0b','#22c55e','#3b82f6','#a855f7','#06b6d4','#f97316','#84cc16'];
+
+    sorted.forEach(([cat, cnt], i) => {
+      const row = document.createElement('div');
+      row.className = 'bar-row';
+      const pct = (cnt / max) * 100;
+      row.innerHTML = `
+        <span class="bar-label" title="${escHtml(cat)}">${escHtml(cat)}</span>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:${pct}%;background:${colors[i % colors.length]}"></div>
+        </div>
+        <span class="bar-count">${cnt}</span>
+      `;
+      chart.appendChild(row);
+    });
+  }
+
+  // ===== ACTIVITY (from /v1/dashboard if exists, else from uptime auditLog) =====
+  function applyActivity(entries) {
+    const body    = document.getElementById('activityBody');
+    const table   = document.getElementById('activityTable');
+    const noAct   = document.getElementById('noActivity');
+
+    if (!entries || entries.length === 0) {
+      table.style.display  = 'none';
+      noAct.style.display  = 'block';
+      return;
+    }
+
+    table.style.display  = '';
+    noAct.style.display  = 'none';
+    body.innerHTML       = '';
+
+    const last20 = entries.slice(-20).reverse();
+    last20.forEach(e => {
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td class="cell-time">${fmtTime(e.ts || e.time || e.timestamp || '')}</td>
+        <td class="cell-api">${escHtml(e.api || e.name || '--')}</td>
+        <td class="cell-cr">${e.credits != null ? e.credits : '--'}</td>
+        <td class="cell-lat">${e.latency_ms != null ? e.latency_ms + ' ms' : '--'}</td>
+        <td class="cell-eng"><span class="badge muted" style="font-size:0.58rem">${escHtml(e.engine || e._engine || 'unknown')}</span></td>
+      `;
+      body.appendChild(tr);
+    });
+  }
+
+  // ===== ESCAPE HTML =====
+  function escHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  // ===== SET ONLINE/OFFLINE =====
+  function setOnline(state) {
+    online = state;
+    liveDot.className  = 'live-dot ' + (state ? 'online' : 'offline');
+    liveLabel.textContent = state ? 'Live' : 'Offline';
+    if (state) {
+      offlineOverlay.classList.remove('visible');
+    } else {
+      offlineOverlay.classList.add('visible');
+    }
+  }
+
+  // ===== MAIN POLL =====
+  async function poll() {
+    startCountdownRing();
+
+    let healthData = null;
+    try {
+      healthData = await fetchJSON('/v1/health');
+      setOnline(true);
+    } catch (e) {
+      setOnline(false);
+      return;
+    }
+
+    // update timestamp
+    lastUpdated.textContent = 'Updated ' + new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+
+    applyHealth(healthData);
+
+    // Parallel fetch remaining endpoints
+    const [uptimeRes, statusRes, pipesRes, toolsRes, dashRes] = await Promise.allSettled([
+      fetchJSON('/v1/uptime'),
+      fetchJSON('/v1/status'),
+      fetchJSON('/v1/pipes'),
+      fetchJSON('/v1/tools?limit=500'),
+      fetchJSON('/v1/dashboard'),
+    ]);
+
+    if (uptimeRes.status === 'fulfilled') applyUptime(uptimeRes.value);
+    if (statusRes.status === 'fulfilled') applyStatus(statusRes.value);
+    if (pipesRes.status  === 'fulfilled') applyPipes(pipesRes.value);
+    if (toolsRes.status  === 'fulfilled') applyTools(toolsRes.value);
+
+    // Activity: prefer /v1/dashboard, fall back to uptime traffic
+    if (dashRes.status === 'fulfilled' && dashRes.value) {
+      const d = dashRes.value;
+      const entries = d.recent_calls || d.calls || d.activity || d.log || [];
+      applyActivity(entries);
+    } else if (uptimeRes.status === 'fulfilled') {
+      // No dashboard endpoint - show placeholder
+      const traffic = uptimeRes.value.traffic;
+      if (traffic && traffic.total_calls > 0) {
+        document.getElementById('activityNote').textContent = traffic.total_calls + ' total calls recorded (no per-call log available)';
+      }
+      applyActivity([]);
+    }
+  }
+
+  // ===== SCHEDULE =====
+  function scheduleNext() {
+    if (!autoRefresh) return;
+    timer = setTimeout(() => {
+      poll().finally(scheduleNext);
+    }, INTERVAL);
+  }
+
+  // ===== TOGGLE =====
+  window.toggleAutoRefresh = function () {
+    autoRefresh = !autoRefresh;
+    if (autoRefresh) {
+      autoRefreshBtn.textContent = 'Auto-Refresh ON';
+      autoRefreshBtn.className   = 'toggle-btn active';
+      poll().finally(scheduleNext);
+    } else {
+      autoRefreshBtn.textContent = 'Auto-Refresh OFF';
+      autoRefreshBtn.className   = 'toggle-btn';
+      clearTimeout(timer);
+      clearInterval(countdown);
+      setRingProgress(0);
+    }
+  };
+
+  window.retryNow = function () {
+    offlineOverlay.classList.remove('visible');
+    poll().finally(scheduleNext);
+  };
+
+  // ===== INIT =====
+  poll().finally(scheduleNext);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,8 @@
+node_modules/
+.data/
+.env
+*.log
+stress-dashboard.html
+.DS_Store
+
+.vercel
