@@ -1,5 +1,5 @@
 /**
- * SLOPSHOP API REGISTRY
+ * API REGISTRY
  *
  * This is the source of truth. The catalog is built FROM the handlers,
  * not the other way around. If there's no handler, there's no API.
@@ -512,7 +512,7 @@ const API_DEFS = {
   'steelman': { cat: 'Generate', name: 'Steelman', desc: 'Construct the strongest possible version of an opposing argument.', credits: 0, tier: 'compute' },
   'empathy-respond': { cat: 'Generate', name: 'Empathy Respond', desc: 'Generate a contextually appropriate empathetic response based on emotion and situation.', credits: 0, tier: 'compute' },
   'diplomatic-rewrite': { cat: 'Generate', name: 'Diplomatic Rewrite', desc: 'Soften blunt feedback with diplomatic language substitutions.', credits: 0, tier: 'compute' },
-  'lucid-dream': { cat: 'Generate', name: 'Lucid Dream', desc: 'Generate a surreal dream scenario from random elements for creative exploration.', credits: 0, tier: 'compute' },
+  'lucid-dream': { cat: 'Generate', name: 'Scenario Generator', desc: 'Generate a creative scenario from random elements for brainstorming and exploration.', credits: 0, tier: 'compute' },
   'serendipity': { cat: 'Generate', name: 'Serendipity Engine', desc: 'Find unexpected connections between two randomly selected topics from your list.', credits: 0, tier: 'compute' },
   'personality-create': { cat: 'Generate', name: 'Personality Create', desc: 'Generate a Big Five personality profile with dominant trait and description.', credits: 0, tier: 'compute' },
   'sandbox-fork': { cat: 'Generate', name: 'Sandbox Fork', desc: 'Fork the current state into an isolated sandbox for safe experimentation.', credits: 0, tier: 'compute' },
@@ -526,7 +526,7 @@ const API_DEFS = {
   'scenario-tree': { cat: 'Math & Numbers', name: 'Scenario Tree', desc: 'Expected value analysis across branching scenarios with probability-weighted outcomes.', credits: 0, tier: 'compute' },
 
   // Agent Tools
-  'consciousness-merge': { cat: 'Agent Tools', name: 'Consciousness Merge', desc: 'Interleave two text streams word-by-word into a single blended perspective.', credits: 0, tier: 'compute' },
+  'consciousness-merge': { cat: 'Agent Tools', name: 'Stream Merge', desc: 'Interleave two text streams word-by-word into a single blended perspective.', credits: 0, tier: 'compute' },
   'simulate-negotiation': { cat: 'Agent Tools', name: 'Simulate Negotiation', desc: 'Score a negotiation offer against reservation price: surplus, fairness, and accept/counter/reject recommendation.', credits: 0, tier: 'compute' },
   'decision-journal': { cat: 'Agent Tools', name: 'Decision Journal', desc: 'Record a decision with predicted outcome and confidence for 30-day accuracy calibration review.', credits: 0, tier: 'compute' },
 
@@ -647,7 +647,7 @@ const API_DEFS = {
   // ====== HACKATHON TOP 100: AGENT SUPERPOWERS ======
   'meta-api': { cat: 'Agent Superpowers', name: 'Meta API Generator', desc: 'Generate new API definitions from plain-text descriptions. Self-expanding platform.', credits: 0, tier: 'compute' },
   'entangle-agents': { cat: 'Agent Superpowers', name: 'Entangle Agents', desc: 'Link two agents so state changes propagate instantly between them.', credits: 0, tier: 'compute' },
-  'lucid-dream-mode': { cat: 'Agent Superpowers', name: 'Lucid Dream Mode', desc: 'Controlled hallucination with reality anchor for creative exploration.', credits: 0, tier: 'compute' },
+  'lucid-dream-mode': { cat: 'Agent Superpowers', name: 'Creative Exploration Mode', desc: 'Controlled divergent thinking with grounding constraints for creative exploration.', credits: 0, tier: 'compute' },
   'hallucination-firewall': { cat: 'Agent Superpowers', name: 'Hallucination Firewall', desc: 'Score every sentence for factual grounding and flag fabrications.', credits: 0, tier: 'compute' },
   'idea-collision': { cat: 'Agent Superpowers', name: 'Idea Collision', desc: 'Smash two concepts together to generate hybrid innovation ideas.', credits: 0, tier: 'compute' },
   'social-graph-query': { cat: 'Agent Superpowers', name: 'Social Graph Query', desc: 'Query social graphs for clusters, bridges, and influencers.', credits: 0, tier: 'compute' },

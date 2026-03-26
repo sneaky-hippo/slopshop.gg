@@ -3450,7 +3450,7 @@ module.exports = {
     return { _engine: 'real', problem_received: problem.slice(0, 200), clarifying_questions: questions, method: 'rubber-duck-debugging', note: 'Answer each question out loud. The act of explaining often reveals the bug.' };
   },
 
-  // ===== SUPERPOWER BATCH 1: COMPUTE FEATURES =====
+  // ===== EXTENDED COMPUTE FEATURES =====
 
   'fortune-cookie': () => {
     const fortunes = [
@@ -3614,7 +3614,7 @@ module.exports = {
     return { _engine: 'real', trend, slope: Math.round(slope * 1000) / 1000, intercept: Math.round(intercept * 1000) / 1000, forecast, input_points: n };
   },
 
-  // ====== SUPERPOWER-1000 BATCH ======
+  // ====== ADVANCED COMPUTE BATCH ======
 
   'consciousness-merge': ({ stream_a, stream_b }) => {
     if (!stream_a || !stream_b) return { _engine: 'real', error: 'Provide stream_a and stream_b' };
@@ -4364,7 +4364,7 @@ module.exports = {
 
   'data-aggregate': ({data, key, operation}) => { if (!Array.isArray(data) || !key) return {_engine:'real', error: 'Provide data array and key'}; const values = data.map(d=>d[key]).filter(v=>typeof v==='number'); const ops = { sum: values.reduce((a,b)=>a+b,0), avg: values.reduce((a,b)=>a+b,0)/values.length, min: Math.min(...values), max: Math.max(...values), count: values.length }; return {_engine:'real', ...ops, operation: operation || 'all'}; },
 
-  // ─── HACKATHON TOP 100: AGENT SUPERPOWERS ──────────────────────────────────
+  // ─── UTILITY HANDLERS ─────────────────────────────────────────────────────
 
   'meta-api': ({name, description, input_fields, output_fields}) => {
     const slug = (name||'custom-tool').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');

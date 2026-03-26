@@ -1,7 +1,7 @@
 /**
  * SLOPSHOP MCP SERVER
  *
- * Model Context Protocol server that exposes all 1,049 Slopshop APIs
+ * Model Context Protocol server that exposes all 1,149 Slopshop APIs
  * as native tools for Claude Code, Cursor, and any MCP-compatible client.
  *
  * Usage:
@@ -23,8 +23,12 @@
 const http = require('http');
 const https = require('https');
 
-const KEY = process.env.SLOPSHOP_KEY || 'sk-slop-demo-key-12345678';
+const KEY = process.env.SLOPSHOP_KEY;
 const BASE = (process.env.SLOPSHOP_BASE || 'https://slopshop.gg').replace(/\/$/, '');
+
+if (!KEY) {
+  process.stderr.write('Warning: SLOPSHOP_KEY not set. API calls will fail without authentication.\n');
+}
 
 // MCP protocol over stdio
 const readline = require('readline');
@@ -58,7 +62,7 @@ function apiCall(method, path, body) {
 }
 
 // Essential tools only - the 30 that Claude Code ACTUALLY benefits from
-// Not dumping 1,049 tools into context (causes bloat, see agentpmt.com/articles/bloat-tax)
+// Not dumping 1,149 tools into context (causes bloat, see agentpmt.com/articles/bloat-tax)
 const ESSENTIAL_SLUGS = new Set([
   // Tier A: Claude CANNOT do these (network/side effects)
   'net-http-status', 'net-ssl-check', 'net-dns-a', 'net-dns-mx', 'net-dns-all',
@@ -90,7 +94,7 @@ async function loadTools() {
     if (offset >= res.total) break;
   }
   // For MCP: only expose essential tools to avoid context bloat
-  // All 1,049 are still callable via the API, just not listed as MCP tools
+  // All 1,149 are still callable via the API, just not listed as MCP tools
   toolList = all.filter(t => ESSENTIAL_SLUGS.has(t.slug));
   process.stderr.write(`Loaded ${toolList.length} essential tools (${all.length} total available via API)\n`);
   return toolList;

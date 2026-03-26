@@ -1377,12 +1377,12 @@ module.exports = {
     'knowledge-walk': { cat: 'Agent Tools', name: 'Knowledge Walk', desc: 'Traverse the knowledge graph from a starting entity, returning all connected facts up to N hops away.', credits: 1, tier: 'compute' },
     'knowledge-path': { cat: 'Agent Tools', name: 'Knowledge Path', desc: 'Find the shortest relationship path between two entities in the knowledge graph. Returns the chain of facts connecting them.', credits: 1, tier: 'compute' },
 
-    // Consciousness / Introspection
+    // Reasoning / Introspection
     'consciousness-think': { cat: 'Agent Tools', name: 'Think Out Loud', desc: 'Record a chain-of-thought reasoning trace. Stores the reasoning steps for later review or audit. Returns a thought ID.', credits: 0, tier: 'compute' },
     'introspect': { cat: 'Agent Tools', name: 'Introspect', desc: 'Return a self-report of the agent\'s current state: recent actions, active goals, memory snapshot, and emotional state summary.', credits: 0, tier: 'compute' },
 
-    // Void
-    'void-echo': { cat: 'Agent Tools', name: 'Void Echo', desc: 'Send something into the void and get it back, unchanged, after a brief moment of reflection.', credits: 0, tier: 'compute' },
+    // Echo
+    'void-echo': { cat: 'Agent Tools', name: 'Echo', desc: 'Send input and receive it back unchanged. Useful for testing pipelines and verifying connectivity.', credits: 0, tier: 'compute' },
 
     // Random
     'random-int': { cat: 'Generate', name: 'Random Integer', desc: 'Generate a cryptographically random integer within a specified min/max range. Returns the value and the range used.', credits: 1, tier: 'compute' },

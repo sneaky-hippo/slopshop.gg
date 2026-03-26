@@ -221,7 +221,7 @@ const handlers = {
     return {_engine:'real', edges, edge_count:edges.length, segments:edges.length+1, sensitivity:s, sharpest:edges.sort((a,b)=>b.magnitude-a.magnitude)[0]||null};
   },
 
-  // ─── TRIBAL DYNAMICS ──────────────────────────────────────
+  // ─── GROUP ANALYSIS ────────────────────────────────────────
   'tribe-formation-seed': ({individuals}) => {
     const inds=individuals||[{id:'a',values:['speed','innovation']},{id:'b',values:['quality','reliability']},{id:'c',values:['speed','quality']},{id:'d',values:['innovation','creativity']}];
     const tribes={};
@@ -233,7 +233,7 @@ const handlers = {
     const vals=core_values||['excellence','resilience'];
     const d=difficulty||'medium';
     const challenges=vals.map(v=>({value_tested:v,challenge:'Demonstrate '+v+' under pressure by completing a task that specifically requires it',pass_criteria:'Evaluated by existing members',difficulty:d}));
-    return {_engine:'real', rite:{stages:['preparation','challenge','evaluation','acceptance'],challenges,total_duration:'3 phases',difficulty:d}, note:'Initiation builds belonging through shared challenge'};
+    return {_engine:'real', rite:{stages:['preparation','challenge','evaluation','acceptance'],challenges,total_duration:'3 phases',difficulty:d}, note:'Challenges are generated based on provided core values'};
   },
 
   'totem-synthesizer': ({history, values, language_patterns}) => {

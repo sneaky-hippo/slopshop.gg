@@ -1,7 +1,7 @@
 'use strict';
 
 /**
- * HACKATHON REGISTRY — Auto-generated entries for 250 new superpower handlers.
+ * Extended API Registry — Auto-generated entries for extended compute handlers.
  * Categories assigned by slug prefix and semantic grouping.
  */
 
@@ -79,17 +79,17 @@ const CATEGORY_MAP = {
   'phantom-': 'Sensory Simulation',
   'perceptual-': 'Sensory Simulation',
   'edge-detection-': 'Sensory Simulation',
-  // Tribal Dynamics
-  'tribe-': 'Tribal Dynamics',
-  'initiation-': 'Tribal Dynamics',
-  'totem-': 'Tribal Dynamics',
-  'schism-': 'Tribal Dynamics',
-  'sacred-': 'Tribal Dynamics',
-  'defection-': 'Tribal Dynamics',
-  'group-polarization-': 'Tribal Dynamics',
-  'free-rider-': 'Tribal Dynamics',
-  'ritual-': 'Tribal Dynamics',
-  'coalition-': 'Tribal Dynamics',
+  // Group Dynamics
+  'tribe-': 'Group Dynamics',
+  'initiation-': 'Group Dynamics',
+  'totem-': 'Group Dynamics',
+  'schism-': 'Group Dynamics',
+  'sacred-': 'Group Dynamics',
+  'defection-': 'Group Dynamics',
+  'group-polarization-': 'Group Dynamics',
+  'free-rider-': 'Group Dynamics',
+  'ritual-': 'Group Dynamics',
+  'coalition-': 'Group Dynamics',
   // Strategic Warfare
   'fog-of-war-': 'Strategic Warfare',
   'supply-line-': 'Strategic Warfare',
@@ -107,55 +107,55 @@ const CATEGORY_MAP = {
   'biodiversity-': 'Ecosystem Engineering',
   'symbiosis-': 'Ecosystem Engineering',
   'terraforming-': 'Ecosystem Engineering',
-  // Memetic Engineering
-  'idea-virality-': 'Memetic Engineering',
-  'belief-': 'Memetic Engineering',
-  'counter-narrative-': 'Memetic Engineering',
-  'memetic-': 'Memetic Engineering',
-  'overton-': 'Memetic Engineering',
-  'echo-chamber-': 'Memetic Engineering',
-  // Dream Architecture
-  'dream-': 'Dream Architecture',
-  'nightmare-': 'Dream Architecture',
-  'inception-': 'Dream Architecture',
-  'shared-unconscious-': 'Dream Architecture',
-  'lucid-trigger-': 'Dream Architecture',
-  // Bureaucratic Hacking
-  'loophole-': 'Bureaucratic Hacking',
-  'red-tape-': 'Bureaucratic Hacking',
-  'compliance-shortcut-': 'Bureaucratic Hacking',
-  'bureaucratic-': 'Bureaucratic Hacking',
-  'appeals-': 'Bureaucratic Hacking',
-  'sunset-': 'Bureaucratic Hacking',
-  'form-dependency-': 'Bureaucratic Hacking',
-  'rubber-stamp-': 'Bureaucratic Hacking',
-  'jurisdiction-': 'Bureaucratic Hacking',
-  'committee-': 'Bureaucratic Hacking',
-  'regulatory-': 'Bureaucratic Hacking',
-  // Emotional Engineering
-  'mood-': 'Emotional Engineering',
-  'empathy-': 'Emotional Engineering',
-  'catharsis-': 'Emotional Engineering',
-  'emotional-contagion-': 'Emotional Engineering',
-  'sentiment-inertia': 'Emotional Engineering',
-  'grief-': 'Emotional Engineering',
-  'affective-': 'Emotional Engineering',
-  // Knowledge Alchemy
-  'concept-fusion-': 'Knowledge Alchemy',
-  'insight-': 'Knowledge Alchemy',
-  'wisdom-half-': 'Knowledge Alchemy',
-  'eureka-': 'Knowledge Alchemy',
-  'knowledge-': 'Knowledge Alchemy',
-  'analogy-': 'Knowledge Alchemy',
-  'paradox-resolver': 'Knowledge Alchemy',
-  'question-': 'Knowledge Alchemy',
-  // Agent Archaeology
-  'behavioral-fossil-': 'Agent Archaeology',
-  'artifact-carbon-': 'Agent Archaeology',
-  'legacy-': 'Agent Archaeology',
-  'decision-fossil-': 'Agent Archaeology',
-  'cultural-drift-': 'Agent Archaeology',
-  'ruin-': 'Agent Archaeology',
+  // Information Propagation
+  'idea-virality-': 'Information Propagation',
+  'belief-': 'Information Propagation',
+  'counter-narrative-': 'Information Propagation',
+  'memetic-': 'Information Propagation',
+  'overton-': 'Information Propagation',
+  'echo-chamber-': 'Information Propagation',
+  // State Management
+  'dream-': 'State Management',
+  'nightmare-': 'State Management',
+  'inception-': 'State Management',
+  'shared-unconscious-': 'State Management',
+  'lucid-trigger-': 'State Management',
+  // Process Optimization
+  'loophole-': 'Process Optimization',
+  'red-tape-': 'Process Optimization',
+  'compliance-shortcut-': 'Process Optimization',
+  'bureaucratic-': 'Process Optimization',
+  'appeals-': 'Process Optimization',
+  'sunset-': 'Process Optimization',
+  'form-dependency-': 'Process Optimization',
+  'rubber-stamp-': 'Process Optimization',
+  'jurisdiction-': 'Process Optimization',
+  'committee-': 'Process Optimization',
+  'regulatory-': 'Process Optimization',
+  // Sentiment Modeling
+  'mood-': 'Sentiment Modeling',
+  'empathy-': 'Sentiment Modeling',
+  'catharsis-': 'Sentiment Modeling',
+  'emotional-contagion-': 'Sentiment Modeling',
+  'sentiment-inertia': 'Sentiment Modeling',
+  'grief-': 'Sentiment Modeling',
+  'affective-': 'Sentiment Modeling',
+  // Knowledge Processing
+  'concept-fusion-': 'Knowledge Processing',
+  'insight-': 'Knowledge Processing',
+  'wisdom-half-': 'Knowledge Processing',
+  'eureka-': 'Knowledge Processing',
+  'knowledge-': 'Knowledge Processing',
+  'analogy-': 'Knowledge Processing',
+  'paradox-resolver': 'Knowledge Processing',
+  'question-': 'Knowledge Processing',
+  // Behavioral Analysis
+  'behavioral-fossil-': 'Behavioral Analysis',
+  'artifact-carbon-': 'Behavioral Analysis',
+  'legacy-': 'Behavioral Analysis',
+  'decision-fossil-': 'Behavioral Analysis',
+  'cultural-drift-': 'Behavioral Analysis',
+  'ruin-': 'Behavioral Analysis',
   // Physics Simulation
   'idea-momentum': 'Physics Simulation',
   'scope-creep-': 'Physics Simulation',
@@ -391,7 +391,7 @@ function slugToDesc(slug) {
   return slugToName(slug) + ' — pure compute superpower for AI agents.';
 }
 
-// Auto-generate registry entries for all hackathon handlers
+// Auto-generate registry entries for all extended compute handlers
 function buildHackathonDefs() {
   const files = [
     'compute-hackathon-1', 'compute-hackathon-2', 'compute-hackathon-3',
@@ -413,7 +413,7 @@ function buildHackathonDefs() {
         };
       }
     } catch (e) {
-      console.warn('Hackathon registry skip:', file, e.message);
+      console.warn('Extended registry skip:', file, e.message);
     }
   }
   return defs;

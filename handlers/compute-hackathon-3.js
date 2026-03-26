@@ -3,7 +3,7 @@ const crypto = require('crypto');
 
 const handlers = {
 
-  // ─── STRATEGIC WARFARE (Team 11) ──────────────────────────
+  // ─── STRATEGIC ANALYSIS ────────────────────────────────────
   'fog-of-war-simulator': ({units, sight_range}) => {
     const us=units||[{id:'a',x:0,y:0,team:1},{id:'b',x:5,y:5,team:2}];
     const sr=sight_range||3;
@@ -73,7 +73,7 @@ const handlers = {
     return {_engine:'real', equilibria, count:equilibria.length, matrix_size:rows+'x'+cols, note:equilibria.length===0?'No pure Nash equilibrium — mixed strategy needed':'Pure Nash equilibrium found'};
   },
 
-  // ─── ECOSYSTEM ENGINEERING (Team 12) ──────────────────────
+  // ─── ECOSYSTEM MODELING ────────────────────────────────────
   'carrying-capacity-estimator': ({resources, consumption_rate, regeneration_rate}) => {
     const res=resources||1000; const cons=consumption_rate||10; const regen=regeneration_rate||8;
     const capacity=Math.floor(res*regen/Math.max(cons,0.01));
@@ -161,7 +161,7 @@ const handlers = {
     return {_engine:'real', phases, total_phases:phases.length, estimated_total:'120 cycles', feasibility:phases.length<=3?'achievable':'complex'};
   },
 
-  // ─── MEMETIC ENGINEERING (Team 13) ────────────────────────
+  // ─── INFORMATION PROPAGATION ───────────────────────────────
   'idea-virality-predictor': ({message, emotional_valence, simplicity, novelty}) => {
     const ev=emotional_valence||0.5; const sim=simplicity||0.5; const nov=novelty||0.5;
     const r0=Math.round((ev*0.4+sim*0.3+nov*0.3)*5*100)/100;
@@ -211,7 +211,7 @@ const handlers = {
     return {_engine:'real', groups:chambers, echo_chambers:chambers.filter(c=>c.is_echo_chamber).length, total_groups:chambers.length};
   },
 
-  // ─── DREAM ARCHITECTURE (Team 14) ─────────────────────────
+  // ─── STATE MANAGEMENT ─────────────────────────────────────
   'dream-level-stabilizer': ({levels}) => {
     const ls=levels||[{depth:1,coherence:0.9},{depth:2,coherence:0.6},{depth:3,coherence:0.3}];
     const stabilized=ls.map(l=>({...l,anchor_needed:l.coherence<0.5,anchor_type:l.coherence<0.3?'totem':l.coherence<0.5?'music':'none',stabilized_coherence:Math.min(l.coherence+0.3,1)}));
@@ -267,7 +267,7 @@ const handlers = {
     return {_engine:'real', blueprint:{rooms:rms,connections:conns,gravity:grav}, complexity_score:complexity, paradox_count:paradoxes.length, stability:paradoxes.length>rms.length*0.5?'unstable':'stable', navigation_difficulty:paradoxes.length>0?'disorienting':'straightforward'};
   },
 
-  // ─── BUREAUCRATIC HACKING (Team 15) ───────────────────────
+  // ─── PROCESS OPTIMIZATION ──────────────────────────────────
   'loophole-scanner': ({rules}) => {
     const rs=rules||[{id:1,condition:'age > 18',action:'allow'},{id:2,condition:'age <= 18',action:'deny'}];
     const gaps=[];

@@ -1,17 +1,17 @@
 # 🦞 SLOPSHOP.GG
 
-**1,049 real tools. Zero mocks. Credit-based. Self-hostable. For terminal lobsters.**
+**1,149 real tools. Zero mocks. Credit-based. Self-hostable.**
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tools](https://img.shields.io/badge/Tools-1049-brightgreen)](https://slopshop.gg)
+[![Tools](https://img.shields.io/badge/Tools-1149-brightgreen)](https://slopshop.gg)
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-purple)](https://modelcontextprotocol.io)
 
 ---
 
 ## What is Slopshop?
 
-Slopshop is a self-hostable API bazaar that gives you 422 production-grade, actually-functional APIs — text processing, cryptography, date math, data transforms, network/DNS tools, and LLM-powered AI utilities — all behind a single credit-based key. Every endpoint runs real computation against your input: no mocks, no canned responses, no `Math.random()` masquerading as a hash. You can see proof in every response with `_engine: "real"`.
+Slopshop is a self-hostable API platform with 1,149 production-grade tools — text processing, cryptography, date math, data transforms, network/DNS tools, and LLM-powered AI utilities — all behind a single credit-based key. Every endpoint runs real computation against your input: no mocks, no canned responses, no `Math.random()` masquerading as a hash. You can see proof in every response with `_engine: "real"`.
 
 The key differentiator: **every API actually computes from your input.** Send the same string twice and get the same hash. Send a real domain and get its live DNS records. Send actual code and get a real review. `_engine: "real"` appears in every response as a guarantee.
 
@@ -22,7 +22,7 @@ The key differentiator: **every API actually computes from your input.** Send th
 ```bash
 npm install -g slopshop
 export SLOPSHOP_KEY="sk-slop-demo-key-12345678"
-slop call crypto-hash-sha256 --data "hello lobster"
+slop call crypto-hash-sha256 --data "hello world"
 ```
 
 Expected output:
@@ -38,7 +38,7 @@ Expected output:
 
 ## API Catalog
 
-422 APIs across 12 categories. Every one ships a real handler.
+1,149 APIs across 63 categories. Every one ships a real handler.
 
 ---
 
@@ -394,7 +394,7 @@ slop help
 
 ```bash
 # Hash some text
-slop call crypto-hash-sha256 --data "hello lobster"
+slop call crypto-hash-sha256 --data "hello world"
 
 # Generate a UUID
 slop call crypto-uuid
@@ -429,7 +429,7 @@ slop buy 10000
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
 | `SLOPSHOP_KEY` | Yes | — | Your API key (`sk-slop-...`) |
-| `SLOPSHOP_BASE` | No | `http://localhost:3000` | Server base URL |
+| `SLOPSHOP_BASE` | No | `https://slopshop.gg` | Server base URL |
 
 ---
 
@@ -448,7 +448,7 @@ const s = new Slop(); // reads SLOPSHOP_KEY from env
 // or: new Slop('sk-slop-your-key', { baseUrl: 'https://api.slopshop.gg' })
 
 // Call any API
-const result = await s.call('crypto-hash-sha256', { data: 'hello lobster' });
+const result = await s.call('crypto-hash-sha256', { data: 'hello world' });
 console.log(result.data);           // { hash: '...', algorithm: 'sha256' }
 console.log(result.creditsUsed);    // 1
 console.log(result.creditsRemaining); // 9999
@@ -461,7 +461,7 @@ const batch = await s.batch([
 ]);
 
 // Async fire-and-forget for LLM APIs
-const job = await s.asyncCall('llm-blog-draft', { topic: 'AI and lobsters' });
+const job = await s.asyncCall('llm-blog-draft', { topic: 'AI agents and API automation' });
 const status = await s.job(job.job_id); // poll for completion
 
 // Semantic search — describe what you need
@@ -482,7 +482,7 @@ s = Slop()  # reads SLOPSHOP_KEY from env
 # or: Slop(key='sk-slop-your-key', base_url='https://api.slopshop.gg')
 
 # Call any API
-result = s.call('crypto-hash-sha256', {'data': 'hello lobster'})
+result = s.call('crypto-hash-sha256', {'data': 'hello world'})
 print(result.data)             # {'hash': '...', 'algorithm': 'sha256'}
 print(result.credits_used)     # 1
 print(result.credits_remaining) # 9999
@@ -507,7 +507,7 @@ print(balance['balance'])  # 9998
 
 ## MCP Integration
 
-Slopshop ships an MCP (Model Context Protocol) server that exposes all 422 APIs as native tools inside Claude Code, Cursor, and any MCP-compatible client. Claude can call `slop-crypto-hash-sha256`, `slop-llm-summarize`, etc. as first-class tools.
+Slopshop ships an MCP (Model Context Protocol) server that exposes all 1,149 APIs as native tools inside Claude Code, Cursor, and any MCP-compatible client. Claude can call `slop-crypto-hash-sha256`, `slop-llm-summarize`, etc. as first-class tools.
 
 ### Add to Claude Code
 
@@ -521,7 +521,7 @@ Edit your Claude Code `settings.json` (usually `~/.claude/settings.json`):
       "args": ["/path/to/slopshop/mcp-server.js"],
       "env": {
         "SLOPSHOP_KEY": "sk-slop-your-key-here",
-        "SLOPSHOP_BASE": "http://localhost:3000"
+        "SLOPSHOP_BASE": "https://slopshop.gg"
       }
     }
   }
@@ -556,7 +556,7 @@ SLOPSHOP_KEY=sk-slop-your-key node mcp-server.js
 
 ## Zapier
 
-Slopshop integrates natively with Zapier. All 422 APIs are available as Zapier actions.
+Slopshop integrates natively with Zapier. All 1,149 APIs are available as Zapier actions.
 
 ### Setup
 
@@ -623,7 +623,7 @@ Response:
 |----------|--------|-------------|
 | `/zapier/app.json` | GET | Full Zapier app definition |
 | `/zapier/auth/test` | GET | Test authentication |
-| `/zapier/actions` | GET | List all 422 actions |
+| `/zapier/actions` | GET | List all 1,149 actions |
 | `/zapier/call/:slug` | POST | Call any API (Zapier-friendly flat I/O) |
 | `/zapier/webhook` | POST | Receive and process webhook from Zapier |
 | `/zapier/subscribe` | POST | Register webhook subscription |
@@ -680,7 +680,7 @@ GET /v1/pipes
 Run your own Slopshop instance. Zero external dependencies for compute APIs. LLM APIs require `ANTHROPIC_API_KEY` or `OPENAI_API_KEY`.
 
 ```bash
-git clone https://github.com/your-org/slopshop
+git clone https://github.com/sneaky-hippo/slopshop.gg
 cd slopshop
 npm install
 node server-v2.js
@@ -710,7 +710,7 @@ curl http://localhost:3000/v1/health
 ```json
 {
   "status": "operational",
-  "apis_loaded": 422,
+  "apis_loaded": 1149,
   "uptime_seconds": 42,
   "version": "2.0.0"
 }
@@ -727,7 +727,7 @@ All endpoints are under `/v1/`. Authentication via `Authorization: Bearer <key>`
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/v1/health` | GET | No | Server health, API count, uptime, version |
-| `/v1/tools` | GET | No | List all 422 APIs with metadata. Supports `?category=` and `?format=native` |
+| `/v1/tools` | GET | No | List all 1,149 APIs with metadata. Supports `?category=` and `?format=native` |
 | `/v1/resolve` | POST | No | Semantic search: `{ "query": "hash a string" }` → best matching API slug |
 | `/v1/:slug` | POST | Yes | Call any API by slug |
 | `/v1/batch` | POST | Yes | Call multiple APIs in one request: `{ "calls": [{ "api": "slug", "input": {} }] }` |
@@ -749,7 +749,7 @@ All endpoints are under `/v1/`. Authentication via `Authorization: Bearer <key>`
 curl -X POST https://api.slopshop.gg/v1/crypto-hash-sha256 \
   -H "Authorization: Bearer sk-slop-your-key" \
   -H "Content-Type: application/json" \
-  -d '{"data": "hello lobster"}'
+  -d '{"data": "hello world"}'
 ```
 
 ### Response format
@@ -803,7 +803,7 @@ Every response includes metadata fields:
 
 ```
 server-v2.js          Express server, auth middleware, routing
-  └── registry.js     Source of truth: all 422 API definitions
+  └── registry.js     Source of truth: all 1,149 API definitions
   └── handlers/
         compute.js    Pure compute: hashes, text, math, dates, codegen
         llm.js        LLM calls: Claude/GPT content, analysis, code, business
@@ -833,4 +833,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-*Built for terminal lobsters. 🦞*
+*Built for developers and AI agents.*

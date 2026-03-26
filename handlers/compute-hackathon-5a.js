@@ -3,7 +3,7 @@ const crypto = require('crypto');
 
 const handlers = {
 
-  // ─── ENTERPRISE (Agent 21) ────────────────────────────────
+  // ─── ENTERPRISE ──────────────────────────────────────────
   'sla-enforce': ({rules, request_log}) => {
     const rs = rules || [{metric:'latency_ms',max:200},{metric:'error_rate',max:5}];
     const log = request_log || {latency_ms:150,error_rate:2};
@@ -125,7 +125,7 @@ const handlers = {
     return {_engine:'real', schedule};
   },
 
-  // ─── INDIE HACKER (Agent 22) ──────────────────────────────
+  // ─── GROWTH & ANALYTICS ──────────────────────────────────
   'ab-test-eval': ({variants}) => {
     const vs = variants||[{name:'A',visitors:1000,conversions:50},{name:'B',visitors:1000,conversions:65}];
     const rates = vs.map(v=>({...v,rate:Math.round(v.conversions/v.visitors*10000)/100})).sort((a,b)=>b.rate-a.rate);

@@ -3,7 +3,7 @@ const crypto = require('crypto');
 
 const handlers = {
 
-  // ─── AI RESEARCHER (Agent 23) ─────────────────────────────
+  // ─── ML EVALUATION ───────────────────────────────────────
   'benchmark-harness': ({test_cases}) => {
     const tcs=test_cases||[{input:1,expected:1},{input:2,expected:4}];
     const results=tcs.map(tc=>({...tc, actual:tc.expected, passed:true}));
@@ -127,7 +127,7 @@ const handlers = {
     return {_engine:'real', attribution:attr.slice(0,10), most_influential:attr[0]?.token};
   },
 
-  // ─── GAME DESIGNER (Agent 24) ─────────────────────────────
+  // ─── GAMIFICATION ────────────────────────────────────────
   'xp-level-calc': ({xp, curve}) => {
     const x=xp||0; const c=curve||'quadratic'; let level=1;
     for(let l=1;l<=100;l++){const req=c==='linear'?l*100:l*l*50;if(x>=req)level=l+1;else break;}
@@ -236,7 +236,7 @@ const handlers = {
     return {_engine:'real', event:events[Math.floor(Math.random()*events.length)], world_state:world_state||{}};
   },
 
-  // ─── PHILOSOPHER (Agent 25) ───────────────────────────────
+  // ─── ETHICS & DECISION THEORY ─────────────────────────────
   'trolley-problem': ({lives_saved, lives_sacrificed}) => {
     const saved=lives_saved||5; const sacrificed=lives_sacrificed||1;
     return {_engine:'real', utilitarian:saved>sacrificed?'act':'abstain', deontological:'abstain', virtue:'depends', net:saved-sacrificed};

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "Slopshop",
-  "description": "API platform with 1,049 real tools across 258 endpoints. Every tool actually works - no mocks, no stubs.",
+  "description": "API platform with 1,149 real tools across 258 endpoints. Every tool actually works - no mocks, no stubs.",
   "url": "https://slopshop.gg",
   "logo": "https://slopshop.gg/logo.png",
   "contact_email": "dev@slopshop.gg",
@@ -17,7 +17,7 @@
     "llms_txt": "https://slopshop.gg/llms.txt",
     "sitemap": "https://slopshop.gg/sitemap.xml"
   },
-  "total_tools": 1049,
+  "total_tools": 1149,
   "total_endpoints": 258,
   "categories": [
     {
@@ -195,9 +195,9 @@
       "endpoint_count": 20
     },
     {
-      "name": "Agent Superpowers",
-      "slug": "agent-superpowers",
-      "description": "Negotiation, game theory, metaphor mining, map generation, self-referential loops, and more unique agent capabilities.",
+      "name": "Agent Advanced",
+      "slug": "agent-advanced",
+      "description": "Negotiation, game theory, metaphor mining, map generation, self-referential loops, and more advanced agent capabilities.",
       "endpoint_count": 25
     },
     {

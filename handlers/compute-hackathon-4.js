@@ -3,7 +3,7 @@ const crypto = require('crypto');
 
 const handlers = {
 
-  // ─── EMOTIONAL ENGINEERING ────────────────────────────────
+  // ─── SENTIMENT ANALYSIS ──────────────────────────────────
   'mood-decay-curve': ({initial_mood, hours_elapsed, half_life}) => {
     const m0=initial_mood||100; const h=hours_elapsed||12; const hl=half_life||24;
     const current=Math.round(m0*Math.pow(0.5,h/hl)*100)/100;
@@ -56,7 +56,7 @@ const handlers = {
     return {_engine:'real', state_a:a, state_b:b, contrast_ratio:contrast, perceptible:contrast>0.5, dramatic:contrast>1.0, note:'Higher contrast = more emotionally impactful transition'};
   },
 
-  // ─── KNOWLEDGE ALCHEMY ────────────────────────────────────
+  // ─── KNOWLEDGE PROCESSING ─────────────────────────────────
   'concept-fusion-reactor': ({concept_a, concept_b}) => {
     const a=concept_a||'democracy'; const b=concept_b||'algorithm';
     const fusionName=a.slice(0,Math.ceil(a.length/2))+b.slice(Math.floor(b.length/2));
@@ -119,7 +119,7 @@ const handlers = {
     return {_engine:'real', original:q, refined:refinements[refinements.length-1].question, steps:refinements, improvement:'From vague to actionable in 3 steps'};
   },
 
-  // ─── AGENT ARCHAEOLOGY ────────────────────────────────────
+  // ─── BEHAVIORAL ANALYSIS ──────────────────────────────────
   'behavioral-fossil-extract': ({action_log}) => {
     const log=action_log||[];
     const patterns={};
@@ -171,7 +171,7 @@ const handlers = {
     return {_engine:'real', original:fragment||{}, reconstructed, inferred_fields:1, confidence:0.6, note:'Gaps filled with probabilistic reconstruction'};
   },
 
-  // ─── PHYSICS SIMULATION ───────────────────────────────────
+  // ─── SYSTEM DYNAMICS ──────────────────────────────────────
   'idea-momentum': ({mass, velocity, friction}) => {
     const m=mass||10; const v=velocity||5; const f=friction||3;
     const momentum=m*v;
@@ -236,7 +236,7 @@ const handlers = {
     return {_engine:'real', assignments, attractors:as.map(a=>a.name)};
   },
 
-  // ─── MUSICAL INTELLIGENCE ─────────────────────────────────
+  // ─── PATTERN ANALYSIS ────────────────────────────────────
   'workflow-rhythm-score': ({timestamps}) => {
     const ts=timestamps||[];
     if(ts.length<2) return {_engine:'real', rhythm:'insufficient_data'};

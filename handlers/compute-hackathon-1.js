@@ -138,7 +138,7 @@ const handlers = {
     return {_engine:'real', agreements, disagreements, agreement_rate:Math.round(agreements.length/Math.max(allKeys.length,1)*100)/100, productive_conflicts:disagreements.length};
   },
 
-  // ─── SWARM INTELLIGENCE ──────────────────────────────────────
+  // ─── DISTRIBUTED COORDINATION ────────────────────────────────
 
   'swarm-consensus-vote': ({options, voter_count}) => {
     const opts = options||['A','B','C'];

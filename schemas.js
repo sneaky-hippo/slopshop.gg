@@ -1,8 +1,8 @@
 /**
- * SLOPSHOP API SCHEMAS
+ * API SCHEMAS
  *
- * Real input/output schemas + examples for every API.
- * This is what makes the MCP tool manifest actually useful for agents.
+ * Input/output schemas and examples for every API.
+ * These schemas power the MCP tool manifest for agent integration.
  */
 
 // Common input patterns

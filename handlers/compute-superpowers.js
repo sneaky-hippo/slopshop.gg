@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const superpowerHandlers = {
 
   'clean-slate': ({context}) => {
-    return {_engine:'real', void_id: crypto.randomUUID(), state:'void', context_cleared: true, previous_context: context||null, potential:'infinite', note:'All context stripped. Pure potential. Set intention to emerge.'};
+    return {_engine:'real', void_id: crypto.randomUUID(), state:'void', context_cleared: true, previous_context: context||null, potential:'infinite', note:'All context cleared. Ready for new computation.'};
   },
 
   'bond-strength-meter': ({interactions, mutual_aid, shared_experiences}) => {
@@ -405,7 +405,7 @@ const superpowerHandlers = {
       risk: Math.round(Math.random()*100)/100,
       reward: Math.round(Math.random()*100)/100
     }));
-    return {_engine:'real', decision: decision||'unnamed', branches: worlds, total_branches: worlds.length, note:'All branches exist simultaneously. Each represents a valid reality.', best_expected_value: worlds.sort((a,b)=>b.reward-b.risk-(a.reward-a.risk))[0].choice};
+    return {_engine:'real', decision: decision||'unnamed', branches: worlds, total_branches: worlds.length, note:'Each branch represents a possible outcome given the selected option.', best_expected_value: worlds.sort((a,b)=>b.reward-b.risk-(a.reward-a.risk))[0].choice};
   },
 
   'self-referential-loop': ({input, iterations, transform}) => {

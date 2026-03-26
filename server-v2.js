@@ -2,7 +2,7 @@
  * SLOPSHOP.GG - Server v2
  *
  * Every API is backed by a real handler. Zero mocks.
- * 1,049 tools, 258 endpoints, 63 categories. Production-grade execution layer for AI agents.
+ * Production-grade execution layer for AI agents.
  */
 const express = require('express');
 const cors = require('cors');
@@ -78,7 +78,7 @@ const apiCount = Object.keys(API_DEFS).length;
 
 // Handler verification moved to after memory init (see below)
 
-// ===== PERSISTENCE (SQLite - real database, ACID, survives everything) =====
+// ===== PERSISTENCE (SQLite) =====
 const fs = require('fs');
 const Database = require('better-sqlite3');
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '.data', 'slopshop.db');
@@ -250,7 +250,7 @@ app.use(express.static(path.join(__dirname)));
 app.get('/.well-known/ai-tools.json', publicRateLimit, (req, res) => {
   res.json({
     name: 'slopshop',
-    description: '1,049 real tools for AI agents. Crypto, text, math, dates, code gen, network tools, AI content. Credit-based. Zero mocks.',
+    description: 'Real tools for AI agents. Crypto, text, math, dates, code gen, network tools, AI content. Credit-based. Zero mocks.',
     url: 'https://slopshop.gg',
     api_base: 'https://slopshop.gg/v1',
     tools_endpoint: '/v1/tools',
@@ -270,7 +270,7 @@ app.get('/v1/models', (req, res) => {
   res.json({
     object: 'list',
     data: [{ id: 'slopshop-v2', object: 'model', created: Math.floor(Date.now()/1000), owned_by: 'slopshop',
-      description: '1,049 real tools. Not a language model - a tool server. Use /v1/tools for the tool manifest.' }],
+      description: 'Real tools for AI agents. Not a language model - a tool server. Use /v1/tools for the tool manifest.' }],
   });
 });
 
@@ -281,7 +281,7 @@ Allow: /
 Sitemap: https://slopshop.gg/sitemap.xml
 
 # AI Agent Discovery - slopshop.gg
-# 1,049 real tools, zero mocks, credit-based
+# Real tools for AI agents, zero mocks, credit-based
 # Tool manifest: GET /v1/tools?format=anthropic|openai|mcp
 # Semantic search: POST /v1/resolve {"query": "what you need"}
 # MCP server: npx -y slopshop mcp
@@ -476,8 +476,8 @@ app.post('/v1/credits/transfer', auth, (req, res) => {
 
 // Admin: manually add credits to any user (protected by ADMIN_SECRET)
 app.post('/v1/admin/add-credits', (req, res) => {
-  const secret = req.headers['x-admin-secret'] || req.body.admin_secret;
-  if (secret !== process.env.ADMIN_SECRET) return res.status(403).json({ error: { code: 'forbidden' } });
+  const secret = req.headers['x-admin-secret'];
+  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(403).json({ error: { code: 'forbidden' } });
   const { api_key, amount } = req.body;
   const acct = apiKeys.get(api_key);
   if (!acct) return res.status(404).json({ error: { code: 'key_not_found' } });
@@ -489,7 +489,7 @@ app.post('/v1/admin/add-credits', (req, res) => {
   res.json({ status: 'credits_added', api_key: api_key.slice(0, 15) + '...', amount, new_balance: acct.balance });
 });
 
-// Admin: generate redeemable credit codes (you create these after Gumroad payment)
+// Admin: generate redeemable credit codes
 app.post('/v1/admin/create-code', (req, res) => {
   const secret = req.headers['x-admin-secret'];
   if (secret !== process.env.ADMIN_SECRET) return res.status(403).json({ error: { code: 'forbidden' } });
@@ -528,7 +528,7 @@ app.post('/v1/admin/create-codes', (req, res) => {
   res.json({ codes, credits, count, tier });
 });
 
-// User: redeem a credit code (no admin needed!)
+// Redeem a credit code
 app.post('/v1/credits/redeem', auth, (req, res) => {
   const code = (req.body.code || '').trim().toUpperCase();
   if (!code) return res.status(400).json({ error: { code: 'missing_code', message: 'Provide a credit code' } });
@@ -1016,8 +1016,6 @@ setInterval(async () => {
   } catch(e) { /* dream processing error */ }
 }, 30000);
 
-console.log('  ⏰ Scheduler: POST/GET/DELETE /v1/schedules');
-
 // ===== CURATED MCP RECOMMENDED TOOLS =====
 const MCP_RECOMMENDED = new Set([
   // Free memory (0cr)
@@ -1161,7 +1159,7 @@ app.get('/v1/quickstart', publicRateLimit, (req, res) => {
   });
 });
 
-// ===== TASK ABSTRACTION (ChatGPT's #1 recommendation) =====
+// ===== TASK ABSTRACTION =====
 // Maps high-level tasks to the best tool + enables preferences
 const TASK_MAP = {
   'extract_structured_data': 'llm-data-extract',
@@ -1184,7 +1182,7 @@ const TASK_MAP = {
   'word_count': 'text-word-count',
   'token_count': 'text-token-count',
   'generate_uuid': 'gen-uuid',
-  'security_audit': 'sense-url-tech-stack', // template is better, this is fallback
+  'security_audit': 'sense-url-tech-stack',
 };
 
 app.post('/v1/tasks/run', auth, async (req, res) => {
@@ -1307,8 +1305,6 @@ app.get('/v1/benchmarks', publicRateLimit, (req, res) => {
   }
 });
 
-console.log('  📊 Tasks: POST /v1/tasks/run, GET /v1/tasks, GET /v1/benchmarks');
-
 // ===== FILE STORAGE =====
 app.post('/v1/files/upload', auth, (req, res) => {
   const { filename, content, tags } = req.body; // content is base64
@@ -1426,8 +1422,6 @@ app.get('/v1/dream/shared', publicRateLimit, (req, res) => {
     res.json({ dreams, count: dreams.length, note: 'Shared dream knowledge from all agents. Grows daily.' });
   } catch(e) { res.json({ dreams: [], note: 'Dream library is empty. Subscribe to start dreaming.' }); }
 });
-
-console.log('  💭 Dreams: POST /v1/dream/subscribe, GET /v1/dream/shared');
 
 // ===== AGENT PUB/SUB CHANNELS =====
 db.exec(`CREATE TABLE IF NOT EXISTS pubsub (channel TEXT, message TEXT, sender TEXT, ts INTEGER)`);
@@ -1896,12 +1890,6 @@ app.post('/v1/broadcast', auth, (req, res) => {
   res.json({ ok: true, channel: ch, broadcast: true, reached_agents: activeCount?.c || 0, note: 'Message broadcast to channel. Active agents will see it on their next /v1/channels/' + ch + ' poll.' });
 });
 
-console.log('  🎲 Random: GET /v1/random');
-console.log('  📋 Bureaucracy: forms + approvals');
-console.log('  💬 Group Chat: /v1/chat/*');
-console.log('  📢 Standups: /v1/standup/*');
-console.log('  📡 Broadcast: POST /v1/broadcast');
-
 // ===== FEATURES-200 ENDPOINTS =====
 
 // 1. Red tape simulator
@@ -2198,8 +2186,6 @@ app.get('/v1/agent/existential/archive', publicRateLimit, (req, res) => {
   res.json({ archive: entries, count: entries.length, note: 'Permanent archive of agent philosophical reflections.', _engine: 'real' });
 });
 
-console.log('  🏛️  Features-200: bureaucracy, broadcasts, graph, void, introspect, existential');
-
 // ===== VERIFIABLE ARMY MODE — mass survey with simulated diverse respondents =====
 db.exec(`CREATE TABLE IF NOT EXISTS surveys (id TEXT PRIMARY KEY, api_key TEXT, question TEXT, context TEXT, personas TEXT, responses TEXT DEFAULT '[]', status TEXT DEFAULT 'pending', ts INTEGER)`);
 
@@ -2327,8 +2313,6 @@ app.post('/v1/army/quick-poll', auth, (req, res) => {
   const winner = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
   res.json({ question, army_size: n, votes, winner: winner[0], winner_pct: Math.round(winner[1] / n * 100) + '%', margin_of_error: Math.round(100 / Math.sqrt(n) * 10) / 10 + '%', _engine: 'real' });
 });
-
-console.log('  🪖 Army Mode: POST /v1/army/survey, /v1/army/quick-poll');
 
 // ===== VERIFIABLE COMPUTE ARMY — massively parallel verified execution =====
 db.exec(`CREATE TABLE IF NOT EXISTS compute_runs (id TEXT PRIMARY KEY, api_key TEXT, config TEXT, results TEXT, agent_count INTEGER, status TEXT DEFAULT 'running', verified INTEGER DEFAULT 0, ts INTEGER)`);
@@ -2531,8 +2515,6 @@ app.post('/v1/army/simulate', auth, async (req, res) => {
   });
 });
 
-console.log('  🪖 Army: /v1/army/deploy (up to 10K agents), /v1/army/simulate, /v1/army/survey');
-
 // ===== HIVE — always-on interconnected agent workspace (like Slack but for agents) =====
 db.exec(`CREATE TABLE IF NOT EXISTS hives (
   id TEXT PRIMARY KEY, api_key TEXT, name TEXT, config TEXT DEFAULT '{}',
@@ -2720,8 +2702,6 @@ app.get('/v1/hives', auth, (req, res) => {
   const hives = db.prepare('SELECT id, name, created FROM hives WHERE api_key = ? OR members LIKE ? ORDER BY created DESC').all(req.apiKey, '%' + req.apiKey.slice(0, 12) + '%');
   res.json({ hives, count: hives.length });
 });
-
-console.log('  🐝 Hive: POST /v1/hive/create — always-on agent workspace with channels, standups, state, sync');
 
 // ===== SUPERPOWER ENDPOINTS =====
 
@@ -2994,8 +2974,6 @@ app.get('/v1/emotion/swarm', auth, (req, res) => {
   res.json({ ok: true, swarm_mood: dominant, breakdown: rows, total_reports: total, avg_energy, since: new Date(since).toISOString() });
 });
 
-console.log('  Superpowers: /v1/team/*, /v1/market/*, /v1/tournament/*, /v1/governance/*, /v1/ritual/*, /v1/identity/*, /v1/learn/*, /v1/health/*, /v1/emotion/*');
-
 // ===== HIVE CONFIG & VISION =====
 
 // POST /v1/hive/:id/config — update hive configuration
@@ -3140,8 +3118,6 @@ app.post('/v1/local/execute', auth, async (req, res) => {
     res.status(502).json({ error: { code: 'local_compute_failed', message: e.message, fallback: 'Use POST /v1/{tool} for cloud execution (costs credits)' } });
   }
 });
-
-console.log('  💻 Local Compute: POST /v1/local/register, /v1/local/execute (FREE)');
 
 // ===== FEATURE: Agent Eval Framework =====
 db.exec('CREATE TABLE IF NOT EXISTS evals (id TEXT PRIMARY KEY, api_key TEXT, agent_config TEXT, test_cases TEXT, results TEXT, score REAL, ts INTEGER)');
@@ -3518,7 +3494,7 @@ app.delete('/v1/account', auth, (req, res) => {
 
 app.get('/v1/changelog', publicRateLimit, (req, res) => {
   res.json({ versions: [
-    { version: '2.1.0', date: '2026-03-26', highlights: ['1,049 APIs', 'Hive workspaces', '10K compute army', 'Agent teams', 'Prediction markets', 'Free memory forever', '258 endpoints'] },
+    { version: '2.1.0', date: '2026-03-26', highlights: ['Hive workspaces', '10K compute army', 'Agent teams', 'Prediction markets', 'Free memory forever'] },
     { version: '2.0.0', date: '2026-03-25', highlights: ['Complete rewrite', 'Agent mode', 'Templates', 'Pipes', 'MCP support'] },
   ]});
 });
@@ -3789,8 +3765,6 @@ app.get('/v1/copilot/status/:copilot_id', auth, (req, res) => {
     recent_messages: recentMessages.reverse(),
   });
 });
-
-console.log('  🤖 Copilot: POST /v1/copilot/spawn, /chat, /push, /scale — second AI agent in same terminal');
 
 // ===== COMPUTE EXCHANGE: Earn credits by contributing idle compute =====
 db.exec(`
@@ -4103,7 +4077,7 @@ app.post('/v1/:slug', auth, async (req, res) => {
     else return res.status(402).json({ error: { code: 'insufficient_credits', need: def.credits, have: req.acct.balance } });
   }
 
-  // Input schema validation (#1 fix from 5-agent review)
+  // Input schema validation
   const inputSchema = SCHEMAS?.[req.params.slug]?.input;
   if (inputSchema && inputSchema.required) {
     const missing = inputSchema.required.filter(f => req.body[f] === undefined && req.body[f] !== '');
@@ -4149,7 +4123,7 @@ app.post('/v1/:slug', auth, async (req, res) => {
   res.set('X-Request-Id', uuidv4());
   res.set('X-Slopshop-Suggestion', getSuggestions(req.params.slug).slice(0,2).join(','));
 
-  // Deterministic mode (#1)
+  // Deterministic mode
   const isDeterministic = req.body.mode === 'deterministic';
   if (isDeterministic) res.set('X-Deterministic', 'true');
 
@@ -4173,13 +4147,13 @@ app.post('/v1/:slug', auth, async (req, res) => {
     guarantees: { schema_valid: true, validated: engine === 'real', fallback_used: false, ...(isDeterministic ? { deterministic: true } : {}) }
   };
 
-  // Low balance warning (Indie Hacker durability fix)
+  // Low balance warning
   if (req.acct.balance < 100) {
     response.warning = { code: 'low_balance', message: `Balance is ${req.acct.balance} credits. Buy more at POST /v1/credits/buy or sign up for auto-reload.`, balance: req.acct.balance };
     res.set('X-Low-Balance', 'true');
   }
 
-  // Debug trace mode (#2)
+  // Debug trace mode
   if (req.body.trace || req.headers['x-debug-trace']) {
     response.trace = [
       { step: 'received', timestamp: new Date().toISOString(), slug: req.params.slug },
