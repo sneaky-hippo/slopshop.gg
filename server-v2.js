@@ -701,22 +701,24 @@ app.post('/v1/batch', auth, async (req, res) => {
   }
   if (req.acct.balance < totalCr) return res.status(402).json({ error: { code: 'insufficient_credits', need: totalCr, have: req.acct.balance } });
   req.acct.balance -= totalCr;
-  const results = [];
   let hasFailure = false, hasSuccess = false;
   const batchStart = Date.now();
-  for (const c of calls) {
+  // Execute all calls in parallel using Promise.allSettled
+  const promises = calls.map(c => {
     const slug = c.slug || c.api;
     const handler = allHandlers[slug];
     const callStart = Date.now();
-    try {
-      const data = await handler(c.input || {});
-      results.push({ slug, data, credits: apiMap.get(slug).credits, latency_ms: Date.now() - callStart });
-      hasSuccess = true;
-    } catch (e) {
-      results.push({ slug, error: e.message, credits: apiMap.get(slug).credits, latency_ms: Date.now() - callStart });
-      hasFailure = true;
-    }
-  }
+    return Promise.resolve()
+      .then(() => handler(c.input || {}))
+      .then(data => ({ slug, data, credits: apiMap.get(slug).credits, latency_ms: Date.now() - callStart }))
+      .catch(e => ({ slug, error: e.message, credits: apiMap.get(slug).credits, latency_ms: Date.now() - callStart }));
+  });
+  const settled = await Promise.allSettled(promises);
+  const results = settled.map(s => {
+    const r = s.value;
+    if (r.error) hasFailure = true; else hasSuccess = true;
+    return r;
+  });
   const partial = hasSuccess && hasFailure;
   // Emit usage events for each call in batch
   const keyPrefix = req.apiKey.slice(0, 12);
@@ -2879,11 +2881,16 @@ app.post('/v1/market/create', auth, (req, res) => {
 app.post('/v1/market/:id/bet', auth, (req, res) => {
   const { position, amount = 10 } = req.body;
   if (!position) return res.status(400).json({ error: 'position required' });
+  const betAmount = Math.max(1, Math.floor(amount));
   const mkt = db.prepare('SELECT * FROM sp_markets WHERE id = ?').get(req.params.id);
   if (!mkt) return res.status(404).json({ error: 'market_not_found' });
   if (mkt.status !== 'open') return res.status(400).json({ error: 'market_closed' });
-  db.prepare('INSERT INTO sp_market_bets (market_id, agent_key, position, amount, ts) VALUES (?, ?, ?, ?, ?)').run(req.params.id, req.apiKey.slice(0, 12), position, amount, Date.now());
-  res.json({ ok: true, market_id: req.params.id, position, amount });
+  // Deduct bet amount from bettor's balance
+  if (req.acct.balance < betAmount) return res.status(402).json({ error: { code: 'insufficient_credits', need: betAmount, have: req.acct.balance } });
+  req.acct.balance -= betAmount;
+  persistKey(req.apiKey);
+  db.prepare('INSERT INTO sp_market_bets (market_id, agent_key, position, amount, ts) VALUES (?, ?, ?, ?, ?)').run(req.params.id, req.apiKey.slice(0, 12), position, betAmount, Date.now());
+  res.json({ ok: true, market_id: req.params.id, position, amount: betAmount, balance: req.acct.balance });
 });
 
 app.post('/v1/market/:id/resolve', auth, (req, res) => {
@@ -2891,9 +2898,27 @@ app.post('/v1/market/:id/resolve', auth, (req, res) => {
   if (!outcome) return res.status(400).json({ error: 'outcome required' });
   const mkt = db.prepare('SELECT * FROM sp_markets WHERE id = ?').get(req.params.id);
   if (!mkt) return res.status(404).json({ error: 'market_not_found' });
+  if (mkt.status === 'resolved') return res.status(400).json({ error: 'market_already_resolved' });
   db.prepare('UPDATE sp_markets SET status = ?, outcome = ? WHERE id = ?').run('resolved', outcome, req.params.id);
-  const winners = db.prepare('SELECT * FROM sp_market_bets WHERE market_id = ? AND position = ?').all(req.params.id, outcome);
-  res.json({ ok: true, market_id: req.params.id, outcome, winners_count: winners.length, total_won: winners.reduce((a, b) => a + b.amount, 0) });
+  // Pay out winners proportionally from the total pot
+  const allBets = db.prepare('SELECT * FROM sp_market_bets WHERE market_id = ?').all(req.params.id);
+  const totalPot = allBets.reduce((a, b) => a + b.amount, 0);
+  const winners = allBets.filter(b => b.position === outcome);
+  const winnerTotal = winners.reduce((a, b) => a + b.amount, 0);
+  const payouts = [];
+  if (winners.length > 0 && totalPot > 0) {
+    for (const w of winners) {
+      const share = winnerTotal > 0 ? Math.floor(totalPot * (w.amount / winnerTotal)) : 0;
+      // Credit the winner's account
+      const winnerAcct = [...apiKeys.entries()].find(([k]) => k.slice(0, 12) === w.agent_key);
+      if (winnerAcct) {
+        winnerAcct[1].balance += share;
+        persistKey(winnerAcct[0]);
+      }
+      payouts.push({ agent: w.agent_key, bet: w.amount, payout: share });
+    }
+  }
+  res.json({ ok: true, market_id: req.params.id, outcome, total_pot: totalPot, winners_count: winners.length, payouts });
 });
 
 app.get('/v1/market/:id', auth, (req, res) => {
@@ -2953,7 +2978,11 @@ app.post('/v1/governance/vote', auth, (req, res) => {
   if (!proposal_id || !vote) return res.status(400).json({ error: 'proposal_id and vote required' });
   const prop = db.prepare('SELECT * FROM sp_governance WHERE id = ? AND status = ?').get(proposal_id, 'active');
   if (!prop) return res.status(404).json({ error: 'proposal_not_found_or_closed' });
-  db.prepare('INSERT INTO sp_governance_votes (proposal_id, voter, vote, ts) VALUES (?, ?, ?, ?)').run(proposal_id, req.apiKey.slice(0, 12), vote, Date.now());
+  // Check if this agent already voted
+  const voter = req.apiKey.slice(0, 12);
+  const existingVote = db.prepare('SELECT proposal_id FROM sp_governance_votes WHERE proposal_id = ? AND voter = ?').get(proposal_id, voter);
+  if (existingVote) return res.status(409).json({ error: { code: 'already_voted', message: 'You have already voted on this proposal' } });
+  db.prepare('INSERT INTO sp_governance_votes (proposal_id, voter, vote, ts) VALUES (?, ?, ?, ?)').run(proposal_id, voter, vote, Date.now());
   const tally = db.prepare('SELECT vote, COUNT(*) as count FROM sp_governance_votes WHERE proposal_id = ? GROUP BY vote').all(proposal_id);
   res.json({ ok: true, proposal_id, your_vote: vote, tally });
 });
@@ -3752,20 +3781,80 @@ app.post('/v1/copilot/chat', auth, (req, res) => {
   db.prepare('INSERT INTO copilot_messages (copilot_id, role, content) VALUES (?, ?, ?)').run(copilot_id, 'user', message);
   db.prepare('UPDATE copilot_sessions SET message_count = message_count + 1 WHERE id = ?').run(copilot_id);
 
-  // Build structured acknowledgment (no real LLM call)
+  // Build a real structured response based on message analysis
   const messageCount = db.prepare('SELECT COUNT(*) as cnt FROM copilot_messages WHERE copilot_id = ?').get(copilot_id).cnt;
-  const acknowledgment = `[Copilot ${copilot_id}] Message received and queued. Context: ${messageCount} messages in session. Role: ${session.role}.`;
+  const msgLower = message.toLowerCase();
+
+  let responseText = '';
+  let suggestedTools = [];
+  let suggestedCall = null;
+
+  // Analyze the message and produce a useful response
+  if (msgLower.includes('tool') || msgLower.includes('api') || msgLower.includes('find') || msgLower.includes('search') || msgLower.includes('what can')) {
+    // Search the registry for relevant tools
+    const words = msgLower.split(/\s+/).filter(w => w.length > 2 && !['the','and','for','can','you','what','how','find','tool','api','search'].includes(w));
+    const matches = [];
+    for (const [slug, def] of apiMap.entries()) {
+      const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
+      let score = 0;
+      words.forEach(w => { if (text.includes(w)) score++; if (slug.includes(w)) score += 2; });
+      if (score > 0) matches.push({ slug, name: def.name, desc: def.desc, credits: def.credits, score });
+    }
+    matches.sort((a, b) => b.score - a.score);
+    suggestedTools = matches.slice(0, 5).map(m => ({ slug: m.slug, name: m.name, description: m.desc, credits: m.credits }));
+    responseText = suggestedTools.length > 0
+      ? `Found ${matches.length} relevant tool(s). Top matches: ${suggestedTools.map(t => t.slug).join(', ')}. Use POST /v1/{slug} to call any of them.`
+      : `No tools matched your query. Try GET /v1/tools to browse all ${apiMap.size} available APIs, or POST /v1/resolve with a natural language query.`;
+  } else if (msgLower.includes('run') || msgLower.includes('call') || msgLower.includes('execute') || msgLower.includes('use')) {
+    // Extract a potential slug from the message
+    const slugMatch = msgLower.match(/(?:run|call|execute|use)\s+([a-z0-9-]+)/);
+    if (slugMatch) {
+      const slug = slugMatch[1];
+      const def = apiMap.get(slug);
+      if (def) {
+        suggestedCall = { method: 'POST', url: `/v1/${slug}`, cost: def.credits, description: def.desc };
+        responseText = `To call "${slug}" (${def.name}): POST /v1/${slug} with your input. It costs ${def.credits} credit(s). ${def.desc}`;
+      } else {
+        responseText = `Tool "${slug}" not found. Try POST /v1/resolve {"query": "${slug}"} to search for matching tools.`;
+      }
+    } else {
+      responseText = `To run a tool, use POST /v1/{tool-slug} with input JSON. Use POST /v1/agent/run {"task": "your description"} to auto-discover and chain tools.`;
+    }
+  } else if (msgLower.includes('balance') || msgLower.includes('credit') || msgLower.includes('cost')) {
+    responseText = `Check your balance with GET /v1/auth/me. Add credits with POST /v1/auth/topup. Use ?preview=true on any call to see costs before executing.`;
+  } else if (msgLower.includes('help') || msgLower.includes('how') || msgLower.includes('start') || msgLower.includes('getting started')) {
+    responseText = `Slopshop has ${apiMap.size} real tools. Key endpoints: GET /v1/tools (browse), POST /v1/resolve (search), POST /v1/batch (parallel calls), POST /v1/agent/run (auto-chain tools). All require Bearer auth. Docs at /docs.html.`;
+  } else {
+    // Generic: search for anything relevant
+    const words = msgLower.split(/\s+/).filter(w => w.length > 3);
+    const matches = [];
+    for (const [slug, def] of apiMap.entries()) {
+      const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
+      let score = 0;
+      words.forEach(w => { if (text.includes(w)) score++; });
+      if (score > 0) matches.push({ slug, name: def.name, credits: def.credits, score });
+    }
+    matches.sort((a, b) => b.score - a.score);
+    if (matches.length > 0) {
+      suggestedTools = matches.slice(0, 3).map(m => ({ slug: m.slug, name: m.name, credits: m.credits }));
+      responseText = `Based on your message, these tools might help: ${suggestedTools.map(t => `${t.slug} (${t.name})`).join(', ')}. Use POST /v1/{slug} to call them.`;
+    } else {
+      responseText = `I can help you find and use tools. Try asking about specific capabilities (e.g., "find tools for hashing"), or say "help" for an overview. ${apiMap.size} tools available.`;
+    }
+  }
 
   // Store the copilot response
-  db.prepare('INSERT INTO copilot_messages (copilot_id, role, content) VALUES (?, ?, ?)').run(copilot_id, 'assistant', acknowledgment);
+  db.prepare('INSERT INTO copilot_messages (copilot_id, role, content) VALUES (?, ?, ?)').run(copilot_id, 'assistant', responseText);
   db.prepare('UPDATE copilot_sessions SET message_count = message_count + 1 WHERE id = ?').run(copilot_id);
 
   const response = {
     copilot_id,
-    response: acknowledgment,
+    response: responseText,
     message_count: messageCount,
     context_from_main: null,
     llm_available: !!process.env.ANTHROPIC_API_KEY,
+    ...(suggestedTools.length > 0 ? { suggested_tools: suggestedTools } : {}),
+    ...(suggestedCall ? { suggested_call: suggestedCall } : {}),
   };
 
   if (!process.env.ANTHROPIC_API_KEY) {
@@ -4977,6 +5066,83 @@ app.get('/v1/rate-limits/status', auth, (req, res) => {
 });
 
 // ===== END ENTERPRISE FEATURES =====
+
+// ===== AGENT RUN (real tool-chaining agent loop) =====
+app.post('/v1/agent/run', auth, async (req, res) => {
+  const { task, tools, max_steps } = req.body;
+  if (!task) return res.status(400).json({ error: { code: 'task_required' } });
+
+  const steps = Math.min(max_steps || 5, 10);
+  const chain = [];
+  let lastResult = null;
+
+  // Find relevant tools
+  const taskWords = task.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  let toolSlugs = tools || [];
+
+  if (!toolSlugs.length) {
+    // Auto-discover tools from task description
+    const scored = [];
+    for (const [slug, def] of apiMap.entries()) {
+      const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
+      let score = 0;
+      taskWords.forEach(w => { if (text.includes(w)) score++; if (slug.includes(w)) score += 2; });
+      if (score > 0 && def.credits <= 5) scored.push({ slug, score, credits: def.credits });
+    }
+    toolSlugs = scored.sort((a, b) => b.score - a.score).slice(0, steps).map(t => t.slug);
+  }
+
+  // Execute tool chain
+  let totalCredits = 0;
+  for (const slug of toolSlugs.slice(0, steps)) {
+    const def = apiMap.get(slug);
+    if (!def) continue;
+    const handler = allHandlers[slug];
+    if (!handler) continue;
+
+    if (req.acct.balance < def.credits) break;
+    req.acct.balance -= def.credits;
+    totalCredits += def.credits;
+
+    const input = lastResult ? { ...req.body, _previous: lastResult, task } : { ...req.body, task };
+    try {
+      const start = Date.now();
+      const result = await handler(input);
+      chain.push({ step: chain.length + 1, tool: slug, credits: def.credits, latency_ms: Date.now() - start, result });
+      lastResult = result;
+    } catch (e) {
+      chain.push({ step: chain.length + 1, tool: slug, error: e.message });
+      // Refund on error
+      req.acct.balance += def.credits;
+      totalCredits -= def.credits;
+    }
+  }
+
+  persistKey(req.apiKey);
+
+  // Auto-persist to memory if agent mode
+  if (chain.length > 0 && lastResult) {
+    try {
+      const memHandler = allHandlers['memory-set'];
+      if (memHandler) {
+        const ns = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+        memHandler({ namespace: ns, key: 'agent_last_run_' + Date.now(), value: JSON.stringify({ task, result: lastResult, steps: chain.length }) });
+      }
+    } catch(e) {}
+  }
+
+  res.json({
+    ok: true,
+    task,
+    steps: chain,
+    total_steps: chain.length,
+    total_credits: totalCredits,
+    final_result: lastResult,
+    tools_used: chain.map(c => c.tool),
+    balance: req.acct.balance,
+    _engine: 'real'
+  });
+});
 
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, async (req, res) => {

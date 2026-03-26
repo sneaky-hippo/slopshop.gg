@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Run 10K AI Agents in Parallel | Slopshop</title>
+<meta name="description" content="Run up to 10,000 AI agents in parallel with Army Mode. Fan-out tasks, collect verified results, and aggregate outputs. Built-in coordination and progress tracking.">
+<meta name="keywords" content="parallel ai agents, run multiple agents, agent army mode, concurrent ai agents, parallel agent execution, fan-out agents">
+<link rel="canonical" href="https://slopshop.gg/parallel-ai-agents">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://slopshop.gg/parallel-ai-agents">
+<meta property="og:title" content="Run 10,000 AI Agents in Parallel with Army Mode">
+<meta property="og:description" content="Fan out tasks to 10,000 parallel agents. Verified results, automatic aggregation, built-in progress tracking.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Run 10,000 AI Agents in Parallel with Army Mode">
+<meta name="twitter:description" content="Parallel agent execution at scale. Fan-out, verify, aggregate. Up to 10K concurrent agents.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Run 10,000 AI Agents in Parallel with Army Mode",
+  "description": "How to run thousands of AI agents simultaneously using Slopshop Army Mode. Covers fan-out, result verification, and aggregation.",
+  "url": "https://slopshop.gg/parallel-ai-agents",
+  "author": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"},
+  "publisher": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg", "logo": {"@type": "ImageObject", "url": "https://slopshop.gg/og.png"}},
+  "datePublished": "2026-03-27",
+  "dateModified": "2026-03-27"
+}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff6644'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;--b:#1a1a1a;--b2:#2a2a2a;--t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;--r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);--o:#ff8800;--og:rgba(255,136,0,0.1);--g:#00cc66;--gg:rgba(0,204,102,0.1);--c:#00aaff;--cg:rgba(0,170,255,0.1);--v:#8855ff;--vg:rgba(136,85,255,0.1);--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+.page-wrap{max-width:860px;margin:0 auto;padding:100px 32px 80px}
+.page-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(255,51,51,0.15);color:var(--r2);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:700;margin-bottom:24px;font-family:var(--mono)}
+h1{font-family:var(--mono);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:20px}h1 .accent{color:var(--r)}
+.lead{color:var(--t2);font-size:1rem;line-height:1.8;margin-bottom:48px;max-width:680px}
+h2{font-family:var(--mono);font-size:1.2rem;font-weight:700;margin:48px 0 16px;letter-spacing:-0.02em}
+p{color:var(--t2);line-height:1.8;margin-bottom:16px}
+ul,ol{color:var(--t2);line-height:1.9;padding-left:20px;margin-bottom:16px}li{margin-bottom:4px}
+code{font-family:var(--mono);font-size:0.8em;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--r2)}
+.step-list{list-style:none;padding:0;counter-reset:steps}
+.step-list li{counter-increment:steps;padding:16px 16px 16px 52px;background:var(--s1);border:1px solid var(--b);border-radius:10px;margin-bottom:10px;position:relative;color:var(--t2);line-height:1.7}
+.step-list li::before{content:counter(steps);position:absolute;left:16px;top:16px;font-family:var(--mono);font-size:0.75rem;font-weight:800;color:var(--r);background:var(--rg);width:24px;height:24px;border-radius:6px;display:flex;align-items:center;justify-content:center}
+.cta-block{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:40px;text-align:center;margin-top:64px}
+.cta-block h2{margin:0 0 10px;font-size:1.4rem}.cta-block p{color:var(--t3);margin-bottom:28px}
+.cta-terminal{background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.78rem;color:var(--o);text-align:left;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto}
+.cta-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--r);color:#fff;transition:box-shadow 0.2s,transform 0.15s}.btn-primary:hover{box-shadow:0 0 24px rgba(255,51,51,0.3);transform:translateY(-1px);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2)}.btn-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.internal-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:40px;padding-top:32px;border-top:1px solid var(--b)}
+.internal-links a{font-family:var(--mono);font-size:0.72rem;color:var(--t3);padding:6px 14px;border:1px solid var(--b);border-radius:6px;transition:0.15s}.internal-links a:hover{color:var(--t);border-color:var(--b2);opacity:1}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b);margin-top:80px}
+.footer-inner{max-width:1200px;margin:0 auto}.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:8px}.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono)}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}.footer-col a:hover{color:var(--t);opacity:1}
+@media(max-width:768px){nav{padding:0 12px;height:50px}.nav-links a:nth-child(n+4){display:none}.page-wrap{padding:80px 16px 60px}h1{font-size:1.9rem}.footer-grid{grid-template-columns:1fr 1fr;gap:24px}.cta-buttons{flex-direction:column;align-items:center}.btn-primary,.btn-secondary{width:100%;justify-content:center}}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo"><svg width="22" height="22" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="ng" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#ng)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg><span>SLOPSHOP</span><span class="gg">.GG</span></a>
+  <div class="nav-links"><a href="/tools">Tools</a><a href="/playbooks">Playbooks</a><a href="/pricing">Pricing</a><a href="/docs">Docs</a><a href="/about">About</a><div class="live-badge"><div class="live-dot"></div>live</div></div>
+</div></nav>
+
+<div class="page-wrap">
+  <div class="page-tag">army mode</div>
+  <h1>Run 10,000 <span class="accent">AI Agents</span> in Parallel</h1>
+  <p class="lead">Sequential agent execution is a bottleneck. Army Mode fans out tasks to thousands of parallel agents, collects verified results, and returns aggregated output. Turn hours of serial work into minutes.</p>
+
+  <h2>Why parallel agents matter</h2>
+  <p>A single agent processing 1,000 research queries takes hours. Ten agents take a tenth of the time. Ten thousand agents finish in seconds. The bottleneck in most agent workloads is not intelligence -- it is throughput. Army Mode removes that bottleneck.</p>
+  <p>Common use cases for massive parallelism:</p>
+  <ul>
+    <li><strong>Research at scale</strong> -- analyze thousands of URLs, papers, or documents simultaneously</li>
+    <li><strong>Data processing</strong> -- transform, clean, and validate large datasets in parallel</li>
+    <li><strong>Testing and verification</strong> -- run the same prompt through multiple models or configurations</li>
+    <li><strong>Content generation</strong> -- produce hundreds of variations, descriptions, or summaries at once</li>
+    <li><strong>Competitive analysis</strong> -- monitor thousands of competitors, products, or markets concurrently</li>
+  </ul>
+
+  <h2>How Army Mode works</h2>
+  <ol class="step-list">
+    <li>Define the task template and the list of inputs (up to 10,000 items)</li>
+    <li>Army Mode dispatches each input to a separate agent executing in parallel</li>
+    <li>Each agent runs the task, calls any Slopshop tools it needs, and returns a result</li>
+    <li>Results are verified against your success criteria (schema validation, content checks)</li>
+    <li>Failed tasks are automatically retried up to 3 times</li>
+    <li>Aggregated results are returned as a single structured response</li>
+  </ol>
+
+  <h2>Built-in verification</h2>
+  <p>Parallel execution is useless if you cannot trust the results. Army Mode includes built-in verification: define a JSON schema for expected output, and each result is validated before inclusion. Results that fail validation are retried automatically. You get a final report showing success rate, failures, and retry counts.</p>
+  <p>This is critical for production workloads where you need every result to be usable, not just most of them.</p>
+
+  <h2>Progress tracking and partial results</h2>
+  <p>For long-running Army deployments, you can poll for progress. The API returns completed count, pending count, failed count, and partial results as they come in. Build dashboards, set up alerts, or stream results to downstream systems in real time.</p>
+
+  <h2>Cost control</h2>
+  <p>Each parallel agent consumes credits for the tools it calls. Memory operations remain free even at scale. You can set a total credit budget for the Army deployment -- if the budget is exhausted, remaining tasks are paused rather than failing silently. This prevents runaway costs on large deployments. <a href="/pricing">See pricing details</a>.</p>
+  <p>For most workloads, the per-task cost is 1-5 credits, making even a 10,000-task deployment affordable. Compare that to running 10,000 LLM calls through OpenAI -- the tool execution cost is a fraction of the inference cost.</p>
+
+  <div class="cta-block">
+    <h2>Deploy your first Army</h2>
+    <p>2,000 credits on signup. Army Mode available on all plans.</p>
+    <div class="cta-terminal">$ npx slopshop init</div>
+    <div class="cta-buttons">
+      <a href="/getting-started" class="btn-primary">Get started free</a>
+      <a href="/parallel-agent-execution-api" class="btn-secondary">Army API docs</a>
+    </div>
+  </div>
+
+  <div class="internal-links">
+    <a href="/tools">All 1,244 tools</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/getting-started">Getting started</a>
+    <a href="/why">Why Slopshop</a>
+    <a href="/ai-agent-hive-workspace">Hive workspaces</a>
+    <a href="/ai-agent-orchestration-guide">Orchestration guide</a>
+  </div>
+</div>
+
+<footer><div class="footer-inner">
+  <div class="footer-grid">
+    <div class="footer-col"><h4>Product</h4><a href="/tools">Tools</a><a href="/pricing">Pricing</a><a href="/getting-started">Getting Started</a><a href="/templates">Templates</a></div>
+    <div class="footer-col"><h4>Docs</h4><a href="/docs">API Reference</a><a href="/playbooks">Playbooks</a><a href="/for-agents">For Agents</a><a href="/security">Security</a></div>
+    <div class="footer-col"><h4>Compare</h4><a href="/composio-alternative">vs Composio</a><a href="/langchain-alternative-api">vs LangChain</a><a href="/compare">All Comparisons</a></div>
+    <div class="footer-col"><h4>Company</h4><a href="/about">About</a><a href="/savings">Savings Calculator</a><a href="https://x.com/slopshopgg">Twitter / X</a></div>
+  </div>
+  <div class="footer-brand">SLOPSHOP<span class="gg">.GG</span></div>
+  <div class="footer-copy">&copy; 2026 Slopshop. All rights reserved.</div>
+</div></footer>
+
+</body>
+</html>

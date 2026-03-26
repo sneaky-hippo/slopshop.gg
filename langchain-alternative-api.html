@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Slopshop vs LangChain Tools | Slopshop</title>
+<meta name="description" content="Slopshop vs LangChain: which agent tool layer is better? Compare tool count, latency, pricing, and developer experience side by side.">
+<meta name="keywords" content="langchain alternative, slopshop vs langchain, langchain tools comparison, agent tool layer, langchain replacement">
+<link rel="canonical" href="https://slopshop.gg/langchain-alternative-api">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://slopshop.gg/langchain-alternative-api">
+<meta property="og:title" content="Slopshop vs LangChain: Which Agent Tool Layer is Better?">
+<meta property="og:description" content="Head-to-head comparison of Slopshop and LangChain for AI agent tools. Coverage, latency, reliability, and cost.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop vs LangChain: Which Agent Tool Layer is Better?">
+<meta name="twitter:description" content="1,244 production tools vs LangChain's built-in toolkit. Latency, coverage, and cost compared.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Slopshop vs LangChain: Which Agent Tool Layer is Better?",
+  "description": "Detailed comparison of Slopshop and LangChain as agent tool platforms. Covers tool count, latency, pricing, and developer experience.",
+  "url": "https://slopshop.gg/langchain-alternative-api",
+  "author": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"},
+  "publisher": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg", "logo": {"@type": "ImageObject", "url": "https://slopshop.gg/og.png"}},
+  "datePublished": "2026-03-27",
+  "dateModified": "2026-03-27"
+}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff6644'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;--b:#1a1a1a;--b2:#2a2a2a;--t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;--r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);--o:#ff8800;--og:rgba(255,136,0,0.1);--g:#00cc66;--gg:rgba(0,204,102,0.1);--c:#00aaff;--cg:rgba(0,170,255,0.1);--v:#8855ff;--vg:rgba(136,85,255,0.1);--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+.page-wrap{max-width:860px;margin:0 auto;padding:100px 32px 80px}
+.page-tag{display:inline-flex;align-items:center;gap:6px;background:var(--og);border:1px solid rgba(255,136,0,0.2);color:var(--o);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:700;margin-bottom:24px;font-family:var(--mono)}
+h1{font-family:var(--mono);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:20px}h1 .accent{color:var(--o)}
+.lead{color:var(--t2);font-size:1rem;line-height:1.8;margin-bottom:48px;max-width:680px}
+h2{font-family:var(--mono);font-size:1.2rem;font-weight:700;margin:48px 0 16px;letter-spacing:-0.02em}
+p{color:var(--t2);line-height:1.8;margin-bottom:16px}
+ul,ol{color:var(--t2);line-height:1.9;padding-left:20px;margin-bottom:16px}li{margin-bottom:4px}
+code{font-family:var(--mono);font-size:0.8em;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--r2)}
+.vs-table{width:100%;border-collapse:collapse;margin:24px 0;font-size:0.78rem}
+.vs-table th{font-family:var(--mono);font-size:0.68rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--t3);padding:12px 14px;border-bottom:2px solid var(--b2);text-align:left}
+.vs-table td{padding:12px 14px;border-bottom:1px solid var(--b);color:var(--t2)}
+.vs-table tr:hover td{background:var(--s1)}
+.vs-table .win{color:var(--g);font-weight:700}
+.cta-block{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:40px;text-align:center;margin-top:64px}
+.cta-block h2{margin:0 0 10px;font-size:1.4rem}.cta-block p{color:var(--t3);margin-bottom:28px}
+.cta-terminal{background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.78rem;color:var(--o);text-align:left;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto}
+.cta-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--r);color:#fff;transition:box-shadow 0.2s,transform 0.15s}.btn-primary:hover{box-shadow:0 0 24px rgba(255,51,51,0.3);transform:translateY(-1px);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2)}.btn-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.internal-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:40px;padding-top:32px;border-top:1px solid var(--b)}
+.internal-links a{font-family:var(--mono);font-size:0.72rem;color:var(--t3);padding:6px 14px;border:1px solid var(--b);border-radius:6px;transition:0.15s}.internal-links a:hover{color:var(--t);border-color:var(--b2);opacity:1}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b);margin-top:80px}
+.footer-inner{max-width:1200px;margin:0 auto}.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:8px}.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono)}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}.footer-col a:hover{color:var(--t);opacity:1}
+@media(max-width:768px){nav{padding:0 12px;height:50px}.nav-links a:nth-child(n+4){display:none}.page-wrap{padding:80px 16px 60px}h1{font-size:1.9rem}.vs-table{font-size:0.7rem}.footer-grid{grid-template-columns:1fr 1fr;gap:24px}.cta-buttons{flex-direction:column;align-items:center}.btn-primary,.btn-secondary{width:100%;justify-content:center}}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo"><svg width="22" height="22" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="ng" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#ng)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg><span>SLOPSHOP</span><span class="gg">.GG</span></a>
+  <div class="nav-links"><a href="/tools">Tools</a><a href="/playbooks">Playbooks</a><a href="/pricing">Pricing</a><a href="/docs">Docs</a><a href="/about">About</a><div class="live-badge"><div class="live-dot"></div>live</div></div>
+</div></nav>
+
+<div class="page-wrap">
+  <div class="page-tag">comparison</div>
+  <h1>Slopshop vs <span class="accent">LangChain</span></h1>
+  <p class="lead">LangChain is an LLM orchestration framework. Slopshop is an API platform that gives agents real tools. They solve different problems -- but if you are choosing a tool layer for your agent, here is how they compare.</p>
+
+  <h2>Different architectures, different tradeoffs</h2>
+  <p>LangChain is a Python/JS framework that wraps LLM calls, manages chains, and provides a small set of built-in tools (web search, calculator, Wikipedia, etc.). You write Python code, import tool classes, and compose them into chains or agents. The tools run in your process.</p>
+  <p>Slopshop is a hosted (or self-hosted) API server. Your agent makes HTTP calls to run tools. The tools run on the server, return structured JSON, and you never import a library or manage dependencies. This architectural difference has consequences for every dimension you care about.</p>
+
+  <table class="vs-table">
+    <thead><tr><th>Dimension</th><th>Slopshop</th><th>LangChain</th></tr></thead>
+    <tbody>
+      <tr><td>Built-in tools</td><td class="win">1,244</td><td>~60</td></tr>
+      <tr><td>Tool execution</td><td class="win">Server-side (no deps)</td><td>In-process (pip install)</td></tr>
+      <tr><td>Language</td><td class="win">Any (HTTP API)</td><td>Python / JS</td></tr>
+      <tr><td>Persistent memory</td><td class="win">Built-in, free</td><td>Bring your own</td></tr>
+      <tr><td>Compute latency</td><td class="win">18ms avg</td><td>Varies (in-process)</td></tr>
+      <tr><td>LLM orchestration</td><td>Not included</td><td class="win">Full framework</td></tr>
+      <tr><td>Self-hostable</td><td class="win">Yes (single binary)</td><td>Yes (it is your code)</td></tr>
+      <tr><td>Pricing</td><td>Credits (2,000 free)</td><td class="win">Open source</td></tr>
+    </tbody>
+  </table>
+
+  <h2>When to use Slopshop instead of LangChain tools</h2>
+  <p>Choose Slopshop when you need broad tool coverage without managing Python dependencies. If your agent needs to hash strings, parse CSVs, run regex, format SQL, analyze time series, detect PII, generate documents, and store state -- Slopshop covers all of that out of the box. With LangChain, you would need to find, install, and configure separate packages for each capability.</p>
+  <p>Slopshop also wins if you are not building in Python. The API is plain HTTP with JSON. Call it from Rust, Go, TypeScript, or any language. LangChain's tool ecosystem is Python-first.</p>
+
+  <h2>When to stick with LangChain</h2>
+  <p>If you need LLM orchestration features -- chains, agents, memory abstractions, retrieval-augmented generation pipelines, output parsers -- LangChain provides those and Slopshop does not. Slopshop is a tool layer, not a framework. Many developers use both: LangChain for orchestration, Slopshop for the actual tool calls. They are not mutually exclusive.</p>
+  <p>Check the <a href="/integrate-langchain">LangChain integration guide</a> for instructions on using Slopshop as a tool provider inside LangChain agents.</p>
+
+  <h2>The best of both worlds</h2>
+  <p>Use LangChain to orchestrate your agent's reasoning loop. Use Slopshop to give it tools. This combination gives you LangChain's mature agent patterns with Slopshop's 1,244 production-ready APIs. The integration is straightforward -- define a custom tool that calls the Slopshop API, and LangChain handles the rest.</p>
+
+  <div class="cta-block">
+    <h2>Try Slopshop free</h2>
+    <p>2,000 credits. 1,244 tools. Works with LangChain, CrewAI, AutoGen, or standalone.</p>
+    <div class="cta-terminal">$ npx slopshop init</div>
+    <div class="cta-buttons">
+      <a href="/getting-started" class="btn-primary">Get started free</a>
+      <a href="/tools" class="btn-secondary">Browse all tools</a>
+    </div>
+  </div>
+
+  <div class="internal-links">
+    <a href="/tools">All 1,244 tools</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/getting-started">Getting started</a>
+    <a href="/why">Why Slopshop</a>
+    <a href="/composio-alternative">vs Composio</a>
+    <a href="/ai-agent-api-comparison">Full comparison</a>
+  </div>
+</div>
+
+<footer><div class="footer-inner">
+  <div class="footer-grid">
+    <div class="footer-col"><h4>Product</h4><a href="/tools">Tools</a><a href="/pricing">Pricing</a><a href="/getting-started">Getting Started</a><a href="/templates">Templates</a></div>
+    <div class="footer-col"><h4>Docs</h4><a href="/docs">API Reference</a><a href="/playbooks">Playbooks</a><a href="/for-agents">For Agents</a><a href="/security">Security</a></div>
+    <div class="footer-col"><h4>Compare</h4><a href="/composio-alternative">vs Composio</a><a href="/langchain-alternative-api">vs LangChain</a><a href="/compare">All Comparisons</a></div>
+    <div class="footer-col"><h4>Company</h4><a href="/about">About</a><a href="/savings">Savings Calculator</a><a href="https://x.com/slopshopgg">Twitter / X</a></div>
+  </div>
+  <div class="footer-brand">SLOPSHOP<span class="gg">.GG</span></div>
+  <div class="footer-copy">&copy; 2026 Slopshop. All rights reserved.</div>
+</div></footer>
+
+</body>
+</html>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Free AI Agent Memory — No Limits | Slopshop</title>
+<meta name="description" content="Give your AI agent free persistent memory with no expiry and no storage limits. Key-value, queues, counters, and semantic search. Zero setup required.">
+<meta name="keywords" content="free ai agent memory, persistent memory api, agent state storage, ai memory no expiry, free kv store for agents">
+<link rel="canonical" href="https://slopshop.gg/free-ai-agent-memory">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://slopshop.gg/free-ai-agent-memory">
+<meta property="og:title" content="Free Persistent Memory for AI Agents — No Expiry, No Limits">
+<meta property="og:description" content="Key-value store, queues, counters for AI agents. Free on every plan. No database setup. No expiration.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Free Persistent Memory for AI Agents — No Expiry, No Limits">
+<meta name="twitter:description" content="Agent memory that never expires. KV store, queues, counters. Free forever on Slopshop.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Free Persistent Memory for AI Agents — No Expiry, No Limits",
+  "description": "How to give AI agents free persistent memory using Slopshop's KV store, queues, and counters with no expiry or storage limits.",
+  "url": "https://slopshop.gg/free-ai-agent-memory",
+  "author": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"},
+  "publisher": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg", "logo": {"@type": "ImageObject", "url": "https://slopshop.gg/og.png"}},
+  "datePublished": "2026-03-27",
+  "dateModified": "2026-03-27"
+}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff6644'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;--b:#1a1a1a;--b2:#2a2a2a;--t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;--r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);--o:#ff8800;--og:rgba(255,136,0,0.1);--g:#00cc66;--gg:rgba(0,204,102,0.1);--c:#00aaff;--cg:rgba(0,170,255,0.1);--v:#8855ff;--vg:rgba(136,85,255,0.1);--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+.page-wrap{max-width:860px;margin:0 auto;padding:100px 32px 80px}
+.page-tag{display:inline-flex;align-items:center;gap:6px;background:var(--gg);border:1px solid rgba(0,204,102,0.2);color:var(--g);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:700;margin-bottom:24px;font-family:var(--mono)}
+h1{font-family:var(--mono);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:20px}h1 .accent{color:var(--g)}
+.lead{color:var(--t2);font-size:1rem;line-height:1.8;margin-bottom:48px;max-width:680px}
+h2{font-family:var(--mono);font-size:1.2rem;font-weight:700;margin:48px 0 16px;letter-spacing:-0.02em}
+p{color:var(--t2);line-height:1.8;margin-bottom:16px}
+ul,ol{color:var(--t2);line-height:1.9;padding-left:20px;margin-bottom:16px}li{margin-bottom:4px}
+code{font-family:var(--mono);font-size:0.8em;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--r2)}
+.free-banner{background:var(--gg);border:1px solid rgba(0,204,102,0.2);border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:12px;margin:24px 0}
+.free-banner .fb-badge{font-family:var(--mono);font-size:0.72rem;font-weight:800;color:var(--g);white-space:nowrap}
+.free-banner p{font-size:0.82rem;color:var(--t2);margin:0;line-height:1.5}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin:20px 0}
+.code-header{background:var(--s2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-label{font-family:var(--mono);font-size:0.68rem;color:var(--t3);font-weight:500}
+.code-lang{font-family:var(--mono);font-size:0.62rem;color:var(--g);font-weight:700;background:var(--gg);padding:2px 8px;border-radius:4px}
+pre{padding:20px;font-family:var(--mono);font-size:0.78rem;line-height:1.8;overflow-x:auto;color:var(--t2)}
+pre .str{color:var(--g)}pre .key{color:var(--c)}pre .val{color:var(--o)}
+.cta-block{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:40px;text-align:center;margin-top:64px}
+.cta-block h2{margin:0 0 10px;font-size:1.4rem}.cta-block p{color:var(--t3);margin-bottom:28px}
+.cta-terminal{background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.78rem;color:var(--o);text-align:left;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto}
+.cta-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--r);color:#fff;transition:box-shadow 0.2s,transform 0.15s}.btn-primary:hover{box-shadow:0 0 24px rgba(255,51,51,0.3);transform:translateY(-1px);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2)}.btn-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.internal-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:40px;padding-top:32px;border-top:1px solid var(--b)}
+.internal-links a{font-family:var(--mono);font-size:0.72rem;color:var(--t3);padding:6px 14px;border:1px solid var(--b);border-radius:6px;transition:0.15s}.internal-links a:hover{color:var(--t);border-color:var(--b2);opacity:1}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b);margin-top:80px}
+.footer-inner{max-width:1200px;margin:0 auto}.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:8px}.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono)}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}.footer-col a:hover{color:var(--t);opacity:1}
+@media(max-width:768px){nav{padding:0 12px;height:50px}.nav-links a:nth-child(n+4){display:none}.page-wrap{padding:80px 16px 60px}h1{font-size:1.9rem}.footer-grid{grid-template-columns:1fr 1fr;gap:24px}.cta-buttons{flex-direction:column;align-items:center}.btn-primary,.btn-secondary{width:100%;justify-content:center}}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo"><svg width="22" height="22" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="ng" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#ng)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg><span>SLOPSHOP</span><span class="gg">.GG</span></a>
+  <div class="nav-links"><a href="/tools">Tools</a><a href="/playbooks">Playbooks</a><a href="/pricing">Pricing</a><a href="/docs">Docs</a><a href="/about">About</a><div class="live-badge"><div class="live-dot"></div>live</div></div>
+</div></nav>
+
+<div class="page-wrap">
+  <div class="page-tag">0 credits -- free forever</div>
+  <h1>Free Persistent <span class="accent">Memory</span> for AI Agents</h1>
+  <p class="lead">Your AI agent forgets everything between sessions. Slopshop gives it a persistent key-value store, queues, and counters -- free on every plan, with no expiry and no storage limits.</p>
+
+  <h2>Why agents need persistent memory</h2>
+  <p>Every LLM call starts from scratch. The context window is not memory -- it is a temporary scratchpad that gets wiped when the session ends. This means your agent cannot remember user preferences, accumulate knowledge over time, or share state with other agents.</p>
+  <p>The traditional fix is to provision a database -- Redis for fast KV access, Postgres for structured data, maybe a vector store for semantic search. But that is a lot of infrastructure for a prototype. You need connection strings, schema migrations, serialization logic, and deployment config before you have even tested whether the agent works.</p>
+
+  <h2>Slopshop memory: what you get for free</h2>
+  <div class="free-banner">
+    <span class="fb-badge">0cr -- FREE</span>
+    <p>All memory operations cost zero credits. Not a trial. Not rate-limited. Free on every plan including the free tier, forever.</p>
+  </div>
+  <p>The memory API includes five primitives that cover the vast majority of agent state management needs:</p>
+  <ul>
+    <li><strong>Key-value store</strong> -- <code>memory-set</code> and <code>memory-get</code> for storing and retrieving arbitrary JSON values. Keys never expire.</li>
+    <li><strong>Key listing</strong> -- <code>memory-keys</code> returns all stored keys, optionally filtered by prefix. Useful for namespace-based organization.</li>
+    <li><strong>Counters</strong> -- <code>counter-increment</code> for atomic counters. Track usage, count events, implement rate limiting.</li>
+    <li><strong>Queues</strong> -- <code>queue-push</code> and <code>queue-pop</code> for FIFO task queues. Coordinate work between multiple agents.</li>
+    <li><strong>Delete</strong> -- <code>memory-delete</code> to remove keys when you no longer need them.</li>
+  </ul>
+
+  <h2>Example: agent that remembers user preferences</h2>
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Store a preference</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/tools/run \
+  -H <span class="str">"Authorization: Bearer YOUR_KEY"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"tool":"memory-set","input":{"key":"user:alice:prefs","value":{"timezone":"US/Pacific","format":"markdown"}}}'</span></pre>
+  </div>
+  <p>Next session, the agent calls <code>memory-get</code> with the same key and instantly has Alice's preferences. No database, no config, no TTL to worry about.</p>
+
+  <h2>No expiry means real long-term memory</h2>
+  <p>Most caching services expire data after hours or days. Slopshop memory keys persist indefinitely. An agent can store something in January and retrieve it in December. This enables genuine long-term learning: the agent accumulates context over weeks and months, building a richer understanding of the tasks it handles.</p>
+  <p>This is especially powerful for <a href="/ai-agent-hive-workspace">multi-agent hive workspaces</a> where a team of agents shares a common memory namespace. One agent researches, another writes, a third reviews -- and they all read from the same persistent state.</p>
+
+  <h2>No limits on storage</h2>
+  <p>There is no cap on the number of keys or the total storage size on paid plans. The free tier is generous enough for most prototypes and side projects. If your agent needs to store thousands of research notes, conversation summaries, or extracted data points, it can do so without worrying about hitting a wall.</p>
+  <p>Compare this to platforms that charge per read/write operation or impose tight storage quotas. With Slopshop, memory is infrastructure you do not have to think about. It is just there. <a href="/free-persistent-memory-for-ai-agents">See the full memory API reference</a>.</p>
+
+  <div class="cta-block">
+    <h2>Start building with free memory</h2>
+    <p>2,000 credits on signup. Memory is free forever. No credit card required.</p>
+    <div class="cta-terminal">$ npx slopshop init</div>
+    <div class="cta-buttons">
+      <a href="/getting-started" class="btn-primary">Get started free</a>
+      <a href="/tools" class="btn-secondary">Browse all tools</a>
+    </div>
+  </div>
+
+  <div class="internal-links">
+    <a href="/tools">All 1,244 tools</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/getting-started">Getting started</a>
+    <a href="/why">Why Slopshop</a>
+    <a href="/free-persistent-memory-for-ai-agents">Memory API docs</a>
+    <a href="/ai-agent-api-comparison">API comparison</a>
+  </div>
+</div>
+
+<footer><div class="footer-inner">
+  <div class="footer-grid">
+    <div class="footer-col"><h4>Product</h4><a href="/tools">Tools</a><a href="/pricing">Pricing</a><a href="/getting-started">Getting Started</a><a href="/templates">Templates</a></div>
+    <div class="footer-col"><h4>Docs</h4><a href="/docs">API Reference</a><a href="/playbooks">Playbooks</a><a href="/for-agents">For Agents</a><a href="/security">Security</a></div>
+    <div class="footer-col"><h4>Compare</h4><a href="/composio-alternative">vs Composio</a><a href="/langchain-alternative-api">vs LangChain</a><a href="/compare">All Comparisons</a></div>
+    <div class="footer-col"><h4>Company</h4><a href="/about">About</a><a href="/savings">Savings Calculator</a><a href="https://x.com/slopshopgg">Twitter / X</a></div>
+  </div>
+  <div class="footer-brand">SLOPSHOP<span class="gg">.GG</span></div>
+  <div class="footer-copy">&copy; 2026 Slopshop. All rights reserved.</div>
+</div></footer>
+
+</body>
+</html>
