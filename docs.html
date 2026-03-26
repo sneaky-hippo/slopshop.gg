@@ -3,8 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>SLOPSHOP Docs - API Reference</title>
-<meta name="description" content="Complete documentation for all 1,049 Slopshop APIs. Guides, SDK reference, CLI, pipes, and self-hosting.">
+<title>API Documentation | Slopshop — 1,152 APIs for AI Agents</title>
+<meta name="description" content="Complete API reference for all 1,152 Slopshop APIs. Quickstart guides, SDK reference, CLI, MCP setup, and self-hosting docs. Start building now.">
+<meta name="keywords" content="slopshop docs, slopshop api reference, slopshop documentation, agent api docs, MCP documentation">
+<link rel="canonical" href="https://slopshop.gg/docs">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/docs">
+<meta property="og:title" content="API Documentation | Slopshop">
+<meta property="og:description" content="Complete API reference for 1,152 Slopshop APIs. Quickstart, SDK, CLI, pipes, and MCP setup.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="API Documentation | Slopshop">
+<meta name="twitter:description" content="Complete API reference for 1,152 Slopshop APIs. Guides, SDK, CLI, MCP.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for 1,152 Slopshop APIs.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F99E;</text></svg>">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -153,7 +166,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
     <div class="topbar-links">
       <a href="/">Home</a>
       <a href="/docs.html" style="color:var(--r)">Docs</a>
-      <span class="pill">1,049 APIs</span>
+      <span class="pill">1,152 APIs</span>
     </div>
   </div>
 </div>
@@ -199,7 +212,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
     <!-- GETTING STARTED -->
     <h1 id="getting-started">Getting Started</h1>
     <p>
-      <strong>Slopshop</strong> is the API bazaar for AI agents and developers -- 1,049 real APIs that actually process your data, return real results, and charge by the credit. Every response includes <code>_engine: "real"</code> to prove your data was genuinely processed, not mocked. It is self-hostable, open source, and designed to be called by agents, scripts, or humans alike.
+      <strong>Slopshop</strong> is the API bazaar for AI agents and developers -- 1,152 real APIs that actually process your data, return real results, and charge by the credit. Every response includes <code>_engine: "real"</code> to prove your data was genuinely processed, not mocked. It is self-hostable, open source, and designed to be called by agents, scripts, or humans alike.
     </p>
 
     <h3>Quick Install</h3>
@@ -353,7 +366,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
 
     <!-- API REFERENCE -->
     <h2 id="api-reference">API Reference</h2>
-    <p>All 1,049 APIs documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
+    <p>All 1,152 APIs documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
     <div id="apiReferenceContent">
       <!-- Populated by JS -->
     </div>
@@ -819,7 +832,7 @@ docker run -p 3000:3000 \
 
 <script>
 // ============================================================
-// DATA: All 1,049 API definitions embedded from registry.js
+// DATA: All 1,152 API definitions embedded from registry.js
 // We fetch from /v1/tools to stay in sync, with a static fallback
 // ============================================================
 const STATIC_APIS = {
@@ -1162,15 +1175,15 @@ const EXAMPLE_INPUTS = {
   'net-url-parse': { url: 'https://slopshop.gg/v1/tools/crypto-hash-sha256' },
   'llm-blog-outline': { topic: 'How AI agents use APIs', keywords: 'slopshop, automation, credits' },
   'llm-blog-draft': { topic: 'The future of API-first development' },
-  'llm-landing-page-copy': { product: 'Slopshop', audience: 'developers', value_prop: '1,049 real APIs for agents' },
-  'llm-product-description': { product: 'Slopshop API Platform', features: ['1,049 APIs', 'credit-based', 'self-hostable'] },
+  'llm-landing-page-copy': { product: 'Slopshop', audience: 'developers', value_prop: '1,152 real APIs for agents' },
+  'llm-product-description': { product: 'Slopshop API Platform', features: ['1,152 APIs', 'credit-based', 'self-hostable'] },
   'llm-email-draft': { context: 'Following up on partnership discussion', intent: 'schedule a demo call' },
   'llm-email-reply': { thread: 'Hi, I am interested in your API platform. What pricing plans do you offer?' },
   'llm-cold-outreach': { prospect: 'CTO at TechCorp', company: 'TechCorp', product: 'Slopshop' },
   'llm-ad-copy': { product: 'Slopshop', audience: 'developers', platform: 'Google Ads' },
-  'llm-social-post': { topic: 'Launch of 1,049 real APIs', platform: 'twitter' },
+  'llm-social-post': { topic: 'Launch of 1,152 real APIs', platform: 'twitter' },
   'llm-video-script': { topic: 'Getting started with Slopshop', duration: '60 seconds' },
-  'llm-press-release': { headline: 'Slopshop launches 1,049 real APIs for AI agents', details: 'Credit-based, self-hostable API platform' },
+  'llm-press-release': { headline: 'Slopshop launches 1,152 real APIs for AI agents', details: 'Credit-based, self-hostable API platform' },
   'llm-tagline': { brand: 'Slopshop', description: 'API bazaar for AI agents' },
   'llm-summarize': { text: 'Long document text to be summarized...' },
   'llm-summarize-thread': { thread: 'Email thread with multiple messages...' },

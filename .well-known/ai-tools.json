@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "Slopshop",
-  "description": "API platform with 1,149 real tools across 258 endpoints. Every tool actually works - no mocks, no stubs.",
+  "description": "API platform with 1,152 real tools across 258 endpoints. Every tool actually works - no mocks, no stubs.",
   "url": "https://slopshop.gg",
   "logo": "https://slopshop.gg/logo.png",
   "contact_email": "dev@slopshop.gg",
@@ -15,58 +15,59 @@
     "openapi": "https://slopshop.gg/v1/openapi.json",
     "mcp": "https://slopshop.gg/v1/mcp/recommended",
     "llms_txt": "https://slopshop.gg/llms.txt",
+    "llms_full_txt": "https://slopshop.gg/llms-full.txt",
     "sitemap": "https://slopshop.gg/sitemap.xml"
   },
-  "total_tools": 1149,
+  "total_tools": 1152,
   "total_endpoints": 258,
   "categories": [
     {
       "name": "Text Processing",
       "slug": "text-processing",
       "description": "Extract, transform, analyze, and manipulate text. Every API actually processes your input.",
-      "endpoint_count": 35
+      "endpoint_count": 72
     },
     {
       "name": "Data Transform",
       "slug": "data-transform",
       "description": "JSON, CSV, XML, YAML conversions, flattening, merging, diffing, and schema generation.",
-      "endpoint_count": 20
+      "endpoint_count": 54
     },
     {
       "name": "Crypto & Security",
       "slug": "crypto-security",
       "description": "Hashing, encryption, JWT, passwords, UUIDs, TOTP, and random generation.",
-      "endpoint_count": 18
+      "endpoint_count": 26
     },
     {
       "name": "Math & Numbers",
       "slug": "math-numbers",
       "description": "Evaluate expressions, statistics, finance, unit conversion, and number formatting.",
-      "endpoint_count": 20
+      "endpoint_count": 43
     },
     {
       "name": "Date & Time",
       "slug": "date-time",
       "description": "Parse, format, diff, add, business days, cron, holidays, and timezone conversion.",
-      "endpoint_count": 14
+      "endpoint_count": 16
     },
     {
       "name": "Code Utilities",
       "slug": "code-utilities",
       "description": "JSON-to-TypeScript, SQL formatting, regex explain, semver, OpenAPI validation, and more.",
-      "endpoint_count": 15
+      "endpoint_count": 27
     },
     {
       "name": "Generate",
       "slug": "generate",
       "description": "Fake data, SVG avatars, QR codes, color palettes, short IDs, and lorem ipsum.",
-      "endpoint_count": 12
+      "endpoint_count": 58
     },
     {
-      "name": "Network",
+      "name": "Network & DNS",
       "slug": "network",
       "description": "DNS lookups, HTTP status checks, SSL verification, email validation, and CIDR operations.",
-      "endpoint_count": 12
+      "endpoint_count": 28
     },
     {
       "name": "AI: Content",
@@ -78,19 +79,73 @@
       "name": "AI: Analysis",
       "slug": "ai-analysis",
       "description": "Summarize, classify, extract entities, sentiment, translate. Real LLM analysis of your text.",
-      "endpoint_count": 18
+      "endpoint_count": 14
+    },
+    {
+      "name": "AI: Code",
+      "slug": "ai-code",
+      "description": "Generate code, review, test, document, convert. LLM-powered dev tools.",
+      "endpoint_count": 19
     },
     {
       "name": "AI: Business",
       "slug": "ai-business",
       "description": "Meeting prep, proposals, job descriptions, contract analysis. LLM-powered business tools.",
-      "endpoint_count": 12
+      "endpoint_count": 15
     },
     {
       "name": "Agent Tools",
       "slug": "agent-tools",
-      "description": "JSON extraction/validation, webhooks, file download, persistent memory. Essential agent infrastructure.",
-      "endpoint_count": 15
+      "description": "JSON extraction/validation, webhooks, teams, prediction markets, governance, identity, knowledge graph, forms, tickets.",
+      "endpoint_count": 82
+    },
+    {
+      "name": "Analyze",
+      "slug": "analyze",
+      "description": "A/B testing, funnel analysis, time series, cohort retention, distribution fitting, CSV correlation.",
+      "endpoint_count": 70
+    },
+    {
+      "name": "Memory",
+      "slug": "memory",
+      "description": "Persistent key-value, queues, counters, namespaces, vector search. FREE - 0 credits.",
+      "endpoint_count": 22
+    },
+    {
+      "name": "Sense: Web",
+      "slug": "sense-web",
+      "description": "Fetch URL content, detect tech stacks, measure response time, extract links/meta, RSS feeds.",
+      "endpoint_count": 32
+    },
+    {
+      "name": "Execute",
+      "slug": "execute",
+      "description": "Sandboxed JavaScript, Python, jq, JSONPath, Handlebars/Mustache templates, SQL on JSON.",
+      "endpoint_count": 16
+    },
+    {
+      "name": "Orchestrate",
+      "slug": "orchestrate",
+      "description": "Delay, retry, parallel, race, timeout, caching, rate limiting, locks, circuit breakers, scheduling.",
+      "endpoint_count": 20
+    },
+    {
+      "name": "Communicate",
+      "slug": "communicate",
+      "description": "Webhook inbox, short URLs, QR codes, email/phone validation, iCal, vCard, RSS, OPML, sitemap.",
+      "endpoint_count": 16
+    },
+    {
+      "name": "Enrich",
+      "slug": "enrich",
+      "description": "Domain-to-company, email-to-name, IP-to-ASN, MIME types, HTTP status explain, user-agent parse.",
+      "endpoint_count": 20
+    },
+    {
+      "name": "Generate: Doc",
+      "slug": "generate-doc",
+      "description": "Markdown tables, CHANGELOG, README, API docs, docker-compose, GitHub Actions, configs.",
+      "endpoint_count": 20
     },
     {
       "name": "Copilot",
@@ -98,12 +153,12 @@
       "description": "Run a second AI agent alongside the main agent in the same terminal. Spawn, chat, push results, scale to N copilots.",
       "endpoint_count": 6,
       "endpoints": [
-        "POST /v1/copilot/spawn",
-        "POST /v1/copilot/chat",
-        "POST /v1/copilot/push",
-        "GET /v1/copilot/inbox/:session_id",
+        "POST /v1/copilot/start",
+        "POST /v1/copilot/message",
+        "GET /v1/copilot/status",
+        "POST /v1/copilot/assign-role",
         "POST /v1/copilot/scale",
-        "GET /v1/copilot/status/:copilot_id"
+        "DELETE /v1/copilot/stop"
       ],
       "highlight": true
     },
@@ -114,22 +169,85 @@
       "endpoint_count": 9,
       "endpoints": [
         "POST /v1/exchange/register",
-        "POST /v1/exchange/heartbeat",
-        "POST /v1/exchange/submit",
-        "GET /v1/exchange/poll/:supplier_id",
-        "POST /v1/exchange/complete",
-        "POST /v1/exchange/dispute",
-        "GET /v1/exchange/stats",
-        "GET /v1/exchange/leaderboard",
-        "GET /v1/exchange/my-earnings/:user_id"
+        "POST /v1/exchange/offer",
+        "POST /v1/exchange/claim",
+        "GET /v1/exchange/status",
+        "GET /v1/exchange/tasks",
+        "POST /v1/exchange/verify",
+        "POST /v1/exchange/settle",
+        "GET /v1/exchange/ledger",
+        "DELETE /v1/exchange/unregister"
       ],
+      "highlight": true
+    },
+    {
+      "name": "Validation",
+      "slug": "validation",
+      "description": "Email, URL, phone, credit card, date, IP, UUID, domain, color, JSON, semver, IBAN, ISBN validation. Pure compute.",
+      "endpoint_count": 13,
+      "highlight": true
+    },
+    {
+      "name": "API Testing",
+      "slug": "api-testing",
+      "description": "Mock responses, request building, curl generation, rate limit simulation, latency testing, error simulation, health checks.",
+      "endpoint_count": 12,
+      "highlight": true
+    },
+    {
+      "name": "HTTP Utilities",
+      "slug": "http-utilities",
+      "description": "Header parsing, querystring building, cookie parsing, content-type detection, basic/bearer auth, URL manipulation.",
+      "endpoint_count": 12,
+      "highlight": true
+    },
+    {
+      "name": "Auth & Security",
+      "slug": "auth-security",
+      "description": "API key generation, OAuth token building, scope validation, RBAC checking, password strength, security headers.",
+      "endpoint_count": 12,
+      "highlight": true
+    },
+    {
+      "name": "Developer Tools",
+      "slug": "developer-tools",
+      "description": "UUID inspection, timestamp debugging, env file parsing, dependency checking, changelog generation, config validation.",
+      "endpoint_count": 11,
+      "highlight": true
+    },
+    {
+      "name": "Finance",
+      "slug": "finance",
+      "description": "Compound interest, loan payment, ROI, mortgage amortization, tax estimation, currency conversion.",
+      "endpoint_count": 9,
+      "highlight": true
+    },
+    {
+      "name": "Media Utilities",
+      "slug": "media-utilities",
+      "description": "Image metadata, audio properties, video info, file type detection, MIME handling.",
+      "endpoint_count": 7,
+      "highlight": true
+    },
+    {
+      "name": "Geolocation",
+      "slug": "geolocation",
+      "description": "IP geolocation, coordinate distance, timezone from coordinates, address parsing, country lookup.",
+      "endpoint_count": 6,
+      "highlight": true
+    },
+    {
+      "name": "Communication",
+      "slug": "communication",
+      "description": "Email templates, SMS templates, notification formatting, message scheduling.",
+      "endpoint_count": 5,
       "highlight": true
     },
     {
       "name": "Structured Output",
       "slug": "structured-output",
       "description": "Schema validation (JSON Schema draft-07), JSON repair for broken LLM output, structured data extraction.",
-      "endpoint_count": 4,
+      "endpoint_count": 5,
       "endpoints": [
         "POST /v1/tools/json-schema-validate",
         "POST /v1/tools/llm-output-fix-json",
@@ -141,82 +259,96 @@
     {
       "name": "RAG Primitives",
       "slug": "rag-primitives",
-      "description": "Vector similarity search over stored memories and smart text chunking for RAG pipelines (chars, sentences, paragraphs with overlap).",
-      "endpoint_count": 2,
+      "description": "Vector similarity search over stored memories and smart text chunking for RAG pipelines.",
+      "endpoint_count": 1,
       "endpoints": [
-        "POST /v1/tools/memory-vector-search",
-        "POST /v1/tools/text-chunk"
+        "POST /v1/tools/memory-vector-search"
       ],
       "highlight": true
     },
     {
       "name": "Code Analysis",
       "slug": "code-analysis",
-      "description": "AST-level code parsing, cyclomatic and cognitive complexity scoring, dead code detection, import graph analysis, codebase statistics.",
-      "endpoint_count": 5,
+      "description": "AST-level code parsing, cyclomatic and cognitive complexity scoring, dead code detection, import graph analysis.",
+      "endpoint_count": 4,
       "endpoints": [
         "POST /v1/tools/code-complexity-score",
         "POST /v1/tools/code-dead-code-detect",
         "POST /v1/tools/code-import-graph",
-        "POST /v1/tools/analyze-codebase-stats",
-        "POST /v1/tools/analyze-dependency-tree"
+        "POST /v1/tools/analyze-codebase-stats"
       ],
       "highlight": true
     },
     {
       "name": "Observability",
       "slug": "observability",
-      "description": "Audit logs via request tracking, distributed tracing support, token cost estimation across models (Claude, GPT-4o, Gemini), log parsing, error fingerprinting.",
-      "endpoint_count": 3,
+      "description": "Token cost estimation across models, log parsing, error fingerprinting.",
+      "endpoint_count": 2,
       "endpoints": [
         "POST /v1/tools/text-token-estimate-cost",
-        "POST /v1/tools/analyze-log-parse",
-        "POST /v1/tools/analyze-error-fingerprint"
+        "POST /v1/tools/analyze-log-parse"
       ],
       "highlight": true
     },
     {
-      "name": "Visualization",
-      "slug": "visualization",
-      "description": "SVG chart generation: deterministic avatars, QR codes, initial-based avatars, and color palette generation.",
-      "endpoint_count": 4,
-      "endpoints": [
-        "POST /v1/tools/gen-avatar-svg",
-        "POST /v1/tools/gen-qr-svg",
-        "POST /v1/tools/gen-avatar-initials",
-        "POST /v1/tools/gen-color-palette"
-      ],
-      "highlight": true
+      "name": "Agent Superpowers",
+      "slug": "agent-superpowers",
+      "description": "Advanced agent capabilities: evolution, social dynamics, creative exploration, autonomous behavior.",
+      "endpoint_count": 78
     },
     {
-      "name": "Orchestration",
-      "slug": "orchestration",
-      "description": "Delay, retry, parallel, race, timeout, caching, rate limiting, locks, sequences, events, scheduling, circuit breakers.",
-      "endpoint_count": 20
+      "name": "Enterprise Ops",
+      "slug": "enterprise-ops",
+      "description": "SLA monitoring, capacity planning, runbook automation, incident management, compliance checks.",
+      "endpoint_count": 23
     },
     {
-      "name": "Agent Advanced",
-      "slug": "agent-advanced",
-      "description": "Negotiation, game theory, metaphor mining, map generation, self-referential loops, and more advanced agent capabilities.",
-      "endpoint_count": 25
+      "name": "Growth & Analytics",
+      "slug": "growth-analytics",
+      "description": "A/B testing, NPS, cohort analysis, funnel optimization, viral coefficient, churn prediction.",
+      "endpoint_count": 19
     },
     {
-      "name": "Analyze",
-      "slug": "analyze",
-      "description": "A/B testing, funnel analysis, time series, cohort retention, distribution fitting, CSV correlation.",
-      "endpoint_count": 18
+      "name": "AI Research",
+      "slug": "ai-research",
+      "description": "Benchmarking, ablation studies, calibration, confusion matrices, ROUGE/BLEU scores, embeddings.",
+      "endpoint_count": 17
     },
     {
-      "name": "Communication",
-      "slug": "communication",
-      "description": "Email, vCard, iCal, RSS, OPML, QR URLs, webhooks, short URLs, robots.txt, and sitemap generation.",
+      "name": "Game Mechanics",
+      "slug": "game-mechanics",
+      "description": "XP systems, skill trees, quests, loot tables, achievements, PvP, inventory management.",
       "endpoint_count": 15
+    },
+    {
+      "name": "Philosophy",
+      "slug": "philosophy",
+      "description": "Trolley problems, value alignment, consciousness metrics, moral reasoning, first principles.",
+      "endpoint_count": 20
     },
     {
       "name": "External: Web",
       "slug": "external-web",
-      "description": "Web scraping, link extraction, meta tag extraction, broken link checking. Requires network access.",
-      "endpoint_count": 10
+      "description": "Web scraping, screenshots, search. Requires external service keys.",
+      "endpoint_count": 3
+    },
+    {
+      "name": "External: Comms",
+      "slug": "external-comms",
+      "description": "Email, SMS, Slack, Discord, Telegram. Requires service API keys.",
+      "endpoint_count": 5
+    },
+    {
+      "name": "External: Dev",
+      "slug": "external-dev",
+      "description": "GitHub, Linear issue creation. Requires service tokens.",
+      "endpoint_count": 3
+    },
+    {
+      "name": "External: AI",
+      "slug": "external-ai",
+      "description": "OpenAI embeddings, custom Claude messages. Requires AI service keys.",
+      "endpoint_count": 2
     }
   ]
 }

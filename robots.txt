@@ -18,8 +18,9 @@ Allow: /
 User-agent: Applebot
 Allow: /
 
-# API discovery files
+# AI agent discovery files
 # https://slopshop.gg/llms.txt - AI agent tool discovery
+# https://slopshop.gg/llms-full.txt - Complete API catalog
 # https://slopshop.gg/.well-known/ai-tools.json - Agent tools manifest
 # https://slopshop.gg/v1/openapi.json - OpenAPI 3.0.3 spec
 # https://slopshop.gg/v1/mcp/recommended - MCP curated tools
