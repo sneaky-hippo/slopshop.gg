@@ -371,6 +371,39 @@ const CATEGORY_MAP = {
   'auth-rbac-': 'Auth & Security',
   'auth-password-': 'Auth & Security',
   'security-': 'Auth & Security',
+  // Power Tools
+  'string-': 'Text Processing',
+  'regex-': 'Text Processing',
+  'fuzzy-': 'Text Processing',
+  'text-diff-': 'Text Processing',
+  'text-ngrams': 'Text Processing',
+  'text-tokenize': 'Text Processing',
+  'encode-': 'Crypto & Security',
+  'format-table': 'Data Transform',
+  'format-list': 'Data Transform',
+  'format-tree': 'Data Transform',
+  'type-': 'Data Transform',
+  'id-': 'Generate',
+  'hash-': 'Crypto & Security',
+  'math-matrix-': 'Math & Numbers',
+  'math-linear-': 'Math & Numbers',
+  'math-moving-': 'Math & Numbers',
+  'math-normalize': 'Math & Numbers',
+  'math-interpolate': 'Math & Numbers',
+  'math-probability': 'Math & Numbers',
+  'math-combination': 'Math & Numbers',
+  'math-percentile': 'Math & Numbers',
+  'biz-': 'Business Logic',
+  'devops-': 'DevOps',
+  'ai-': 'AI Utilities',
+  'graphql-': 'Protocol Helpers',
+  'jwt-': 'Auth & Security',
+  'webhook-payload-': 'Auth & Security',
+  'url-build': 'HTTP Utilities',
+  'url-parse-': 'HTTP Utilities',
+  'cron-next-': 'Date & Time',
+  'task-': 'Agent Workflow',
+  'workflow-retry-': 'Agent Workflow',
 };
 
 function categorize(slug) {
@@ -398,6 +431,7 @@ function buildHackathonDefs() {
     'compute-hackathon-4', 'compute-hackathon-5a', 'compute-hackathon-5b',
     'compute-competitor-1', 'compute-competitor-2',
     'compute-rapidapi-1', 'compute-rapidapi-2', 'compute-rapidapi-3',
+    'compute-power-1', 'compute-power-2',
   ];
   const defs = {};
   for (const file of files) {

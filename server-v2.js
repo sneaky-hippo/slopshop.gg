@@ -48,7 +48,7 @@ try { generateHandlers = require('./handlers/generate'); } catch (e) { console.w
 // memory loaded after db init (see below)
 try { enrichHandlers = require('./handlers/enrich'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 try { orchHandlers = require('./handlers/orchestrate'); } catch (e) { console.warn('Handler load skipped:', e.message); }
-let superpowerHandlers = {}, hackathon1 = {}, hackathon2 = {}, hackathon3 = {}, hackathon4 = {}, hackathon5a = {}, hackathon5b = {}, competitor1 = {}, competitor2 = {}, rapidapi1 = {}, rapidapi2 = {}, rapidapi3 = {};
+let superpowerHandlers = {}, hackathon1 = {}, hackathon2 = {}, hackathon3 = {}, hackathon4 = {}, hackathon5a = {}, hackathon5b = {}, competitor1 = {}, competitor2 = {}, rapidapi1 = {}, rapidapi2 = {}, rapidapi3 = {}, power1 = {}, power2 = {};
 try { superpowerHandlers = require('./handlers/compute-superpowers'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 try { hackathon1 = require('./handlers/compute-hackathon-1'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 try { hackathon2 = require('./handlers/compute-hackathon-2'); } catch (e) { console.warn('Handler load skipped:', e.message); }
@@ -61,7 +61,9 @@ try { competitor2 = require('./handlers/compute-competitor-2'); } catch (e) { co
 try { rapidapi1 = require('./handlers/compute-rapidapi-1'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 try { rapidapi2 = require('./handlers/compute-rapidapi-2'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 try { rapidapi3 = require('./handlers/compute-rapidapi-3'); } catch (e) { console.warn('Handler load skipped:', e.message); }
-const allHandlers = { ...computeHandlers, ...superpowerHandlers, ...hackathon1, ...hackathon2, ...hackathon3, ...hackathon4, ...hackathon5a, ...hackathon5b, ...competitor1, ...competitor2, ...rapidapi1, ...rapidapi2, ...rapidapi3, ...llmHandlers, ...networkHandlers, ...externalHandlers, ...senseHandlers, ...generateHandlers, ...memoryHandlers, ...enrichHandlers, ...orchHandlers };
+try { power1 = require('./handlers/compute-power-1'); } catch (e) { console.warn('Handler load skipped:', e.message); }
+try { power2 = require('./handlers/compute-power-2'); } catch (e) { console.warn('Handler load skipped:', e.message); }
+const allHandlers = { ...computeHandlers, ...superpowerHandlers, ...hackathon1, ...hackathon2, ...hackathon3, ...hackathon4, ...hackathon5a, ...hackathon5b, ...competitor1, ...competitor2, ...rapidapi1, ...rapidapi2, ...rapidapi3, ...power1, ...power2, ...llmHandlers, ...networkHandlers, ...externalHandlers, ...senseHandlers, ...generateHandlers, ...memoryHandlers, ...enrichHandlers, ...orchHandlers };
 
 // Load registry + schemas + expansion
 const { API_DEFS, CATEGORIES, buildCatalog } = require('./registry');
