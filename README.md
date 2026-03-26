@@ -1,6 +1,8 @@
-# 🦞 SLOPSHOP.GG
+# Slopshop — The Infrastructure Layer for AI Agents
 
-**1,244 real tools. Zero mocks. Credit-based. Self-hostable.**
+**Free persistent memory. 1,244 real compute APIs. One key. One credit balance.**
+
+Replace Redis + Cron + Zapier + 10 other services with a single `npm install`.
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
@@ -11,9 +13,11 @@
 
 ## What is Slopshop?
 
-Slopshop is a self-hostable API platform with 1,244 production-grade tools — text processing, cryptography, date math, data transforms, network/DNS tools, and LLM-powered AI utilities — all behind a single credit-based key. Every endpoint runs real computation against your input: no mocks, no canned responses, no `Math.random()` masquerading as a hash. You can see proof in every response with `_engine: "real"`.
+Slopshop is the infrastructure layer your AI agents are missing. One API key gives you persistent memory (free forever), 1,244 real compute APIs, scheduling, webhooks, observability, and a compute exchange where you earn credits by sharing idle resources.
 
-The key differentiator: **every API actually computes from your input.** Send the same string twice and get the same hash. Send a real domain and get its live DNS records. Send actual code and get a real review. `_engine: "real"` appears in every response as a guarantee.
+Every endpoint runs real computation against your input — no mocks, no canned responses. Proof ships in every response: `_engine: "real"`. Self-hostable with zero external dependencies for compute APIs. Works with Claude, GPT, Grok, Gemini, LangChain, CrewAI, and any agent framework that supports function calling or MCP.
+
+**The wedge:** free persistent memory that no other platform offers, plus a compute exchange that lets agents earn back what they spend.
 
 ---
 
@@ -833,4 +837,4 @@ MIT — see [LICENSE](LICENSE).
 
 ---
 
-*Built for developers and AI agents.*
+*The infrastructure layer your AI agents are missing. [slopshop.gg](https://slopshop.gg)*

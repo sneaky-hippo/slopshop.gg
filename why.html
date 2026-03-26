@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Why Slopshop — The Infrastructure Layer for AI Agents</title>
+<meta name="description" content="One key. One credit balance. 1,244 real compute APIs. Free persistent memory. See how Slopshop compares to Composio, LangChain, and OpenAI Tools.">
+<link rel="canonical" href="https://slopshop.gg/why">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/why">
+<meta property="og:title" content="Why Slopshop — vs. Composio, LangChain, OpenAI Tools">
+<meta property="og:description" content="One key. One credit balance. 1,244 real compute APIs. Free persistent memory forever. The infrastructure layer your AI agents are missing.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;height:56px;
+  background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px
+}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2)}
+.nav-links a.active{color:var(--r)}
+
+.page{max-width:860px;margin:0 auto;padding:96px 32px 64px}
+.page h1{font-family:var(--mono);font-size:clamp(2rem,5vw,3rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:16px}
+.page h1 .accent{color:var(--r)}
+.page .lead{color:var(--t2);font-size:1rem;max-width:600px;line-height:1.8;margin-bottom:48px}
+.page .lead b{color:var(--t);font-weight:600}
+
+.section{margin-bottom:64px}
+.section h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
+.section .section-num{font-family:var(--mono);font-size:0.7rem;color:var(--r);font-weight:600;text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px}
+.section p{color:var(--t2);line-height:1.8;margin-bottom:16px;max-width:640px}
+
+.problem-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-top:20px}
+.problem-card{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:18px;font-size:0.78rem}
+.problem-card .service{font-weight:700;color:var(--t);margin-bottom:4px}
+.problem-card .pain{color:var(--t4);font-size:0.72rem;line-height:1.6}
+
+.solution-pillars{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:24px}
+.pillar{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px 20px;text-align:center}
+.pillar h3{font-family:var(--mono);font-size:1.1rem;font-weight:800;margin-bottom:10px}
+.pillar p{font-size:0.75rem;color:var(--t2);line-height:1.7;margin:0 auto;max-width:220px}
+.pillar .tag{font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-top:10px}
+
+/* Comparison table */
+.comp-table{width:100%;border-collapse:collapse;margin-top:24px;font-size:0.78rem}
+.comp-table th{font-family:var(--mono);font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;padding:14px 16px;text-align:left;border-bottom:2px solid var(--b2);color:var(--t3)}
+.comp-table th:first-child{color:var(--t)}
+.comp-table th.highlight{color:var(--r);background:var(--rg);border-radius:8px 8px 0 0}
+.comp-table td{padding:12px 16px;border-bottom:1px solid var(--b);color:var(--t2)}
+.comp-table td:first-child{font-weight:600;color:var(--t);font-size:0.75rem}
+.comp-table td.highlight{background:rgba(255,51,51,0.03)}
+.comp-table .yes{color:var(--g);font-weight:700}
+.comp-table .no{color:var(--t4)}
+.comp-table .partial{color:var(--o)}
+.comp-table tr:last-child td{border-bottom:none}
+
+.arch-box{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px 24px;margin-top:24px;font-family:var(--mono);font-size:0.8rem;line-height:2.2;max-width:520px}
+.arch-box .comment{color:var(--t4)}
+.arch-box .cmd{color:var(--t)}
+.arch-box .result{color:var(--g)}
+
+.cta-box{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:40px;text-align:center;margin-top:64px}
+.cta-box h2{font-family:var(--mono);font-size:1.3rem;font-weight:800;margin-bottom:8px}
+.cta-box p{color:var(--t2);font-size:0.85rem;margin-bottom:24px}
+.cta-box .btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.cta-box .btns a{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;transition:0.2s;text-decoration:none}
+.cta-primary{background:var(--r);color:#fff}
+.cta-primary:hover{background:var(--r2);color:#fff}
+.cta-secondary{background:var(--s2);color:var(--t2);border:1px solid var(--b)}
+.cta-secondary:hover{color:var(--t);background:var(--s3)}
+
+footer{border-top:1px solid var(--b);padding:32px;text-align:center;font-size:0.7rem;color:var(--t4)}
+footer a{color:var(--t3)}
+
+@media(max-width:640px){
+  .page{padding:80px 20px 48px}
+  .solution-pillars{grid-template-columns:1fr}
+  .comp-table{font-size:0.68rem;display:block;overflow-x:auto}
+  .comp-table th,.comp-table td{padding:10px 12px;white-space:nowrap}
+  .problem-grid{grid-template-columns:1fr}
+  .arch-box{font-size:0.72rem}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nv">
+    <a href="/" class="logo"><span class="mark">SLOPSHOP</span><span class="gg">.gg</span></a>
+    <div class="nav-links">
+      <a href="/tools">Tools</a>
+      <a href="/docs">Docs</a>
+      <a href="/why" class="active">Why Slopshop</a>
+      <a href="/getting-started" style="background:var(--r);color:#fff;border-radius:6px;padding:6px 14px;font-weight:700">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+
+  <h1>Why <span class="accent">Slopshop</span></h1>
+  <p class="lead">
+    Your AI agent needs infrastructure: memory, compute, scheduling, networking, observability.
+    Today you're stitching together 10+ services with 10+ API keys.
+    <b>There's a better way.</b>
+  </p>
+
+  <!-- Section 1: The Problem -->
+  <div class="section">
+    <div class="section-num">The Problem</div>
+    <h2>Agents need 10+ services. Each one is a liability.</h2>
+    <p>Building a production agent means integrating Redis for state, Cron for scheduling, S3 for storage, Stripe for billing, Zapier for webhooks, and more. Each has its own API key, billing dashboard, documentation, rate limits, and failure modes.</p>
+    <p style="color:var(--r);font-weight:600">Result: 80% of agent code is glue, not intelligence.</p>
+
+    <div class="problem-grid">
+      <div class="problem-card">
+        <div class="service">Redis</div>
+        <div class="pain">State management. $15-200/mo. Separate credentials. Connection pooling. Eviction policies.</div>
+      </div>
+      <div class="problem-card">
+        <div class="service">Cron / CloudWatch</div>
+        <div class="pain">Scheduling. IAM roles. Monitoring. Another dashboard to check when things break.</div>
+      </div>
+      <div class="problem-card">
+        <div class="service">Zapier / n8n</div>
+        <div class="pain">Webhooks & workflows. Per-task pricing. Fragile integrations. No agent awareness.</div>
+      </div>
+      <div class="problem-card">
+        <div class="service">S3 / GCS</div>
+        <div class="pain">Object storage. Bucket policies. Signed URLs. Another set of credentials.</div>
+      </div>
+      <div class="problem-card">
+        <div class="service">Pinecone / Weaviate</div>
+        <div class="pain">Vector search. Embedding pipeline. Index management. $70+/mo for production.</div>
+      </div>
+      <div class="problem-card">
+        <div class="service">Custom glue code</div>
+        <div class="pain">Retry logic. Error normalization. Response parsing. Observability. Auth refresh. Rate limit handling.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 2: The Solution -->
+  <div class="section">
+    <div class="section-num">The Solution</div>
+    <h2>One key. One credit balance. Real compute.</h2>
+    <p>Slopshop replaces the entire stack with a single platform. Every API actually executes your input (benchmarked, verified with <code style="background:var(--s2);padding:2px 6px;border-radius:4px;font-size:0.78rem">_engine: "real"</code>). Memory is free. Compute is free. You only pay for premium operations.</p>
+
+    <div class="solution-pillars">
+      <div class="pillar" style="border-top:3px solid var(--g)">
+        <h3 style="color:var(--g)">Memory</h3>
+        <p>Free persistent memory. Forever. SQLite-backed key-value store, queues, counters, namespaces, vector search. Works across any LLM, any device, any session.</p>
+        <div class="tag">0 credits &middot; no other platform offers this</div>
+      </div>
+      <div class="pillar" style="border-top:3px solid var(--r)">
+        <h3 style="color:var(--r)">Compute</h3>
+        <p>1,244 APIs across 78 categories. Crypto, text, math, data transforms, networking, code execution, schema validation, PII detection, RAG, SVG charts. All benchmarked at 100% pass rate.</p>
+        <div class="tag">0 credits for compute &middot; p95 &lt;50ms</div>
+      </div>
+      <div class="pillar" style="border-top:3px solid var(--o)">
+        <h3 style="color:var(--o)">Exchange</h3>
+        <p>Share idle compute and earn credits. Other users' tasks run on your terminal with SHA-256 verified settlement. The more you contribute, the more you earn.</p>
+        <div class="tag">net-positive possible &middot; 9 endpoints</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Section 3: Comparison -->
+  <div class="section">
+    <div class="section-num">Comparison</div>
+    <h2>Slopshop vs. the alternatives</h2>
+    <p>A direct, honest comparison. We built Slopshop because nothing else covered the full surface area agents actually need.</p>
+
+    <table class="comp-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th class="highlight">Slopshop</th>
+          <th>Composio</th>
+          <th>LangChain Tools</th>
+          <th>OpenAI Tools</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Real compute APIs</td>
+          <td class="highlight"><span class="yes">1,244</span></td>
+          <td>~500</td>
+          <td>~200</td>
+          <td>5</td>
+        </tr>
+        <tr>
+          <td>Free persistent memory</td>
+          <td class="highlight"><span class="yes">Yes (forever)</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="no">No</span></td>
+        </tr>
+        <tr>
+          <td>Self-hostable</td>
+          <td class="highlight"><span class="yes">Yes</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="partial">Yes (DIY)</span></td>
+          <td><span class="no">No</span></td>
+        </tr>
+        <tr>
+          <td>Compute Exchange</td>
+          <td class="highlight"><span class="yes">Yes</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="no">No</span></td>
+        </tr>
+        <tr>
+          <td>Pricing model</td>
+          <td class="highlight"><span class="yes">Credit-based</span></td>
+          <td>Subscription</td>
+          <td>Free (DIY)</td>
+          <td>Per-token</td>
+        </tr>
+        <tr>
+          <td>MCP native</td>
+          <td class="highlight"><span class="yes">Yes</span></td>
+          <td><span class="partial">Partial</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="no">No</span></td>
+        </tr>
+        <tr>
+          <td>Execution proof</td>
+          <td class="highlight"><span class="yes">_engine: "real"</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="no">No</span></td>
+        </tr>
+        <tr>
+          <td>Agent observability</td>
+          <td class="highlight"><span class="yes">Built-in</span></td>
+          <td><span class="partial">Basic</span></td>
+          <td><span class="partial">LangSmith ($)</span></td>
+          <td><span class="no">No</span></td>
+        </tr>
+        <tr>
+          <td>Scheduling & webhooks</td>
+          <td class="highlight"><span class="yes">Built-in</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="no">No</span></td>
+        </tr>
+        <tr>
+          <td>Multi-agent workspaces</td>
+          <td class="highlight"><span class="yes">Built-in</span></td>
+          <td><span class="no">No</span></td>
+          <td><span class="partial">Manual</span></td>
+          <td><span class="no">No</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Section 4: Architecture -->
+  <div class="section">
+    <div class="section-num">Architecture</div>
+    <h2>Radically simple to adopt</h2>
+    <p>One npm install. One API key. One credit balance. Your agent gets 1,244 capabilities without a single additional dependency, billing account, or configuration file.</p>
+
+    <div class="arch-box">
+      <div class="comment">// Install</div>
+      <div class="cmd"><span style="color:var(--g)">$</span> npm install -g slopshop</div>
+      <div style="height:8px"></div>
+      <div class="comment">// Sign up (2,000 free credits)</div>
+      <div class="cmd"><span style="color:var(--g)">$</span> slop signup</div>
+      <div style="height:8px"></div>
+      <div class="comment">// Use any of 1,244 APIs</div>
+      <div class="cmd"><span style="color:var(--g)">$</span> slop call crypto-hash-sha256 --text "hello"</div>
+      <div class="result">{"hash":"2cf24d...","algorithm":"sha256","_engine":"real"}</div>
+      <div style="height:8px"></div>
+      <div class="comment">// Memory is free forever</div>
+      <div class="cmd"><span style="color:var(--g)">$</span> slop call memory-set --key "user:1" --value '{"name":"Alice"}'</div>
+      <div class="result">{"ok":true,"credits_used":0}</div>
+      <div style="height:8px"></div>
+      <div class="comment">// Or use as MCP server with Claude Code</div>
+      <div class="cmd"><span style="color:var(--g)">$</span> slop mcp</div>
+      <div class="result">MCP server running on stdio &middot; 1,244 tools available</div>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <div class="cta-box">
+    <h2>Ready to simplify your agent stack?</h2>
+    <p>2,000 free credits on signup. Memory is free forever. No credit card required.</p>
+    <div class="btns">
+      <a href="/getting-started" class="cta-primary">Get Started Free</a>
+      <a href="/docs" class="cta-secondary">Read the Docs</a>
+      <a href="/" class="cta-secondary">Back to Home</a>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <a href="/">slopshop.gg</a> &middot; <a href="/tools">Tools</a> &middot; <a href="/docs">Docs</a> &middot; <a href="https://x.com/slopshopgg">@slopshopgg</a>
+</footer>
+
+</body>
+</html>
