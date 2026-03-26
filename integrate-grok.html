@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Slopshop for Grok & xAI Agents | Agent Mode + Real Tools + Free Memory</title>
+<meta name="description" content="Slopshop was built with Grok's feedback. Agent Mode, enhanced response envelopes, session_id persistence, X-Agent-Mode header. Real compute. Free memory.">
+<meta name="keywords" content="Grok agent tools, xAI agent mode, Grok function calling, X-Agent-Mode, session_id memory, Grok tools, xAI API">
+<link rel="canonical" href="https://slopshop.gg/integrate-grok">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/integrate-grok">
+<meta property="og:title" content="Slopshop for Grok & xAI Agents — Agent Mode + 1,049 Real Tools">
+<meta property="og:description" content="Built with Grok's feedback. Agent Mode, session persistence, enhanced response envelopes. Real compute. Free memory.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop for Grok & xAI Agents — Agent Mode + 1,049 Real Tools">
+<meta name="twitter:description" content="The tool layer Grok helped design. Agent Mode. Real compute. Free memory.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop for Grok & xAI Agents","description":"How to use Agent Mode with Grok. Enhanced responses with suggestions, cache fingerprinting, and auto-memory persistence. 1,049 real tools.","url":"https://slopshop.gg/integrate-grok","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --xai:#e8e8e8;--xaig:rgba(232,232,232,0.06);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+
+.hero{padding:136px 32px 80px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,rgba(232,232,232,0.04),transparent 60%)}
+.hero-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;background:var(--xaig);border:1px solid rgba(232,232,232,0.12);color:var(--xai);padding:5px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;margin-bottom:28px;font-family:var(--mono)}
+.hero h1{font-family:var(--mono);font-size:clamp(2.4rem,5.5vw,4rem);font-weight:800;letter-spacing:-0.03em;line-height:1.05;margin-bottom:24px}
+.hero h1 .accent{color:var(--xai)}
+.hero h1 .dim{color:var(--t3)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:580px;margin:0 auto;line-height:1.8;font-weight:400}
+.hero .sub b{color:var(--t);font-weight:600}
+
+.stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;margin:48px 0;padding:32px 0;border-top:1px solid var(--b);border-bottom:1px solid var(--b)}
+.stat{text-align:center;padding:0 8px}
+.stat .n{font-family:var(--mono);font-size:1.7rem;font-weight:800;letter-spacing:-0.03em}
+.stat .l{font-size:0.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.14em;margin-top:6px;font-weight:600}
+.stat:nth-child(1) .n{color:var(--xai)}
+.stat:nth-child(2) .n{color:var(--o)}
+.stat:nth-child(3) .n{color:var(--g)}
+.stat:nth-child(4) .n{color:var(--c)}
+
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.cta-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--t);color:#050505;text-decoration:none;transition:box-shadow 0.2s,transform 0.15s}
+.cta-primary:hover{box-shadow:0 0 28px rgba(232,232,232,0.2);transform:translateY(-1px);opacity:0.9}
+.cta-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2);text-decoration:none;transition:color 0.15s,border-color 0.15s}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+
+.sec{max-width:1100px;margin:0 auto;padding:80px 32px}
+.sec-label{font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:12px}
+.sec h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
+.sec .desc{color:var(--t3);font-size:0.88rem;margin-bottom:40px;line-height:1.75;max-width:640px}
+
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px}
+.step{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;transition:border-color 0.2s}
+.step:hover{border-color:var(--b2)}
+.step-num{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px}
+.step h3{font-family:var(--mono);font-size:0.88rem;font-weight:700;margin-bottom:10px;color:var(--t)}
+.step p{font-size:0.8rem;color:var(--t3);line-height:1.75;margin-bottom:14px}
+.cmd{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.75rem;color:var(--o);cursor:pointer;transition:border-color 0.15s}
+.cmd:hover{border-color:var(--b2)}
+
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:32px}
+.code-header{background:var(--s2);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .lang{font-family:var(--mono);font-size:0.68rem;color:var(--t3);font-weight:500}
+.code-header .fname{font-family:var(--mono);font-size:0.7rem;color:var(--t2);font-weight:600}
+.code-body{padding:20px 22px;font-family:var(--mono);font-size:0.78rem;line-height:1.85;overflow-x:auto;color:var(--t2)}
+.code-body pre{white-space:pre}
+
+.envelope-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
+.env-pane{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden}
+.env-pane-header{padding:10px 16px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:0.68rem;font-weight:600;background:var(--s2)}
+.env-pane-header.std{color:var(--t3)}
+.env-pane-header.agent{color:var(--xai)}
+.env-pane-body{padding:16px 18px;font-family:var(--mono);font-size:0.72rem;line-height:1.8;color:var(--t2);overflow-x:auto}
+
+/* AGENT MODE BADGE */
+.mode-badge{display:inline-flex;align-items:center;gap:6px;background:var(--xaig);border:1px solid rgba(232,232,232,0.12);color:var(--xai);padding:4px 12px;border-radius:6px;font-family:var(--mono);font-size:0.72rem;font-weight:600}
+.mode-dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+
+.get-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:40px}
+.get-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px;transition:transform 0.15s,border-color 0.2s}
+.get-card:hover{transform:translateY(-2px);border-color:var(--b2)}
+.get-card .icon{font-size:1.4rem;margin-bottom:12px}
+.get-card h3{font-family:var(--mono);font-size:0.82rem;font-weight:700;margin-bottom:6px;color:var(--t)}
+.get-card p{font-size:0.75rem;color:var(--t3);line-height:1.6}
+.get-card:nth-child(1){border-left:3px solid var(--xai)}
+.get-card:nth-child(2){border-left:3px solid var(--g)}
+.get-card:nth-child(3){border-left:3px solid var(--c)}
+.get-card:nth-child(4){border-left:3px solid var(--o)}
+.get-card:nth-child(5){border-left:3px solid var(--v)}
+
+.cta-banner{background:linear-gradient(135deg,rgba(232,232,232,0.05),rgba(232,232,232,0.02));border:1px solid rgba(232,232,232,0.12);border-radius:16px;padding:48px;text-align:center;margin:40px 0}
+.cta-banner h2{font-family:var(--mono);font-size:1.5rem;font-weight:800;margin-bottom:12px;letter-spacing:-0.02em}
+.cta-banner p{color:var(--t3);margin-bottom:28px;font-size:0.9rem;max-width:520px;margin-left:auto;margin-right:auto}
+
+.divider{border:none;border-top:1px solid var(--b);margin:0}
+
+/* HEADER EXAMPLE ROW */
+.header-row{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:14px 18px;font-family:var(--mono);font-size:0.75rem;margin-bottom:12px;display:flex;gap:16px;align-items:center;flex-wrap:wrap}
+.header-key{color:var(--t3)}
+.header-val{color:var(--xai);font-weight:600}
+.header-desc{color:var(--t4);font-size:0.68rem;margin-left:auto}
+
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .nav-links a{font-size:0.65rem;padding:4px 6px}
+  .nav-links a:nth-child(n+4){display:none}
+  .hero{padding:80px 16px 48px}
+  .hero h1{font-size:clamp(2rem,10vw,2.8rem)}
+  .sec{padding:48px 16px}
+  .steps{grid-template-columns:1fr;gap:10px}
+  .envelope-grid{grid-template-columns:1fr;gap:10px}
+  .get-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .footer-grid{grid-template-columns:1fr;gap:24px}
+  .cta-banner{padding:28px 20px}
+  .header-row{flex-direction:column;align-items:flex-start;gap:4px}
+  .header-desc{margin-left:0}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><linearGradient id="navG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#navG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+    <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/templates">Templates</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">
+      <div class="mode-dot"></div>
+      Agent Mode &nbsp;&middot;&nbsp; X-Agent-Mode &nbsp;&middot;&nbsp; session_id &nbsp;&middot;&nbsp; cache_fingerprint
+    </div>
+    <h1>Slopshop for<br><span class="accent">Grok</span> <span class="dim">&</span> xAI Agents</h1>
+    <p class="sub">
+      <b>Built with Grok's feedback. Real compute. Free memory. Agent Mode.</b><br>
+      The enhanced response envelope Grok expects — <code style="color:var(--xai);font-size:0.9em">suggestions</code>, <code style="color:var(--xai);font-size:0.9em">cache_fingerprint</code>, <code style="color:var(--xai);font-size:0.9em">auto-persist</code> — all here.
+    </p>
+
+    <div class="stats">
+      <div class="stat"><div class="n">1,049</div><div class="l">Real Tools</div></div>
+      <div class="stat"><div class="n">Agent</div><div class="l">Mode Native</div></div>
+      <div class="stat"><div class="n">0cr</div><div class="l">Memory Cost</div></div>
+      <div class="stat"><div class="n">&#9679;</div><div class="l">Always Live</div></div>
+    </div>
+
+    <div class="hero-ctas">
+      <a href="/docs" class="cta-primary">The Tool Layer Grok Helped Design</a>
+      <a href="/v1/mcp/recommended" class="cta-secondary">Browse Curated Tools</a>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- QUICKSTART -->
+<section class="sec">
+  <div class="sec-label">Quickstart</div>
+  <h2>Three steps. Grok is in Agent Mode.</h2>
+  <p class="desc">Enable Agent Mode with one header. Add a <code style="color:var(--xai);font-size:0.85rem">session_id</code> for persistent memory across calls. The enhanced response envelope handles the rest automatically.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">Step 01 &mdash; Install</div>
+      <h3>pip install slopshop</h3>
+      <p>The Slopshop client handles the xAI-compatible request format, session management, and the Agent Mode response envelope automatically.</p>
+      <div class="cmd">pip install slopshop</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 02 &mdash; Enable Agent Mode</div>
+      <h3>Add X-Agent-Mode: grok</h3>
+      <p>Set the header on every request. Slopshop returns the enhanced envelope with <code style="color:var(--o);font-size:0.8em">suggestions</code>, <code style="color:var(--o);font-size:0.8em">cache_fingerprint</code>, and auto-persisted memory.</p>
+      <div class="cmd" style="color:var(--xai);font-size:0.72rem">X-Agent-Mode: grok</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 03 &mdash; Persist State</div>
+      <h3>Add session_id for memory</h3>
+      <p>Pass a <code style="color:var(--o);font-size:0.8em">session_id</code> in the request body. Slopshop automatically saves tool results to that session's memory namespace — no extra calls needed.</p>
+      <div class="cmd" style="color:var(--g);font-size:0.7rem">"session_id": "grok-{uuid}" &rarr; auto-persist</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- AGENT MODE HEADERS -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Agent Mode Headers</div>
+  <h2>X-Agent-Mode request headers</h2>
+  <p class="desc">Three headers control how Slopshop behaves in Grok's Agent Mode. Each unlocks a different part of the enhanced response envelope.</p>
+
+  <div class="header-row">
+    <span class="header-key">X-Agent-Mode:</span>
+    <span class="header-val">grok</span>
+    <span class="header-desc">Enables enhanced response envelope with suggestions + fingerprint</span>
+  </div>
+  <div class="header-row">
+    <span class="header-key">X-Session-Id:</span>
+    <span class="header-val">sess_grok_a1b2c3d4</span>
+    <span class="header-desc">Binds this call to a persistent memory namespace — results auto-saved</span>
+  </div>
+  <div class="header-row">
+    <span class="header-key">X-Auto-Persist:</span>
+    <span class="header-val">true</span>
+    <span class="header-desc">Automatically write tool output to session memory (no memory-set call needed)</span>
+  </div>
+
+  <p style="color:var(--t3);font-size:0.8rem;margin-top:20px;margin-bottom:40px">Or pass <code style="color:var(--xai);font-size:0.78rem">mode="grok"</code> and <code style="color:var(--xai);font-size:0.78rem">session_id</code> in the request body — headers and body params are interchangeable.</p>
+</section>
+
+<hr class="divider">
+
+<!-- ENHANCED ENVELOPE -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Enhanced Response Envelope</div>
+  <h2>Standard mode vs. Agent Mode responses</h2>
+  <p class="desc">Agent Mode returns a richer envelope. <code style="color:var(--xai);font-size:0.85rem">suggestions</code> tells Grok what to do next. <code style="color:var(--xai);font-size:0.85rem">cache_fingerprint</code> lets Grok skip re-fetching. <code style="color:var(--xai);font-size:0.85rem">persisted</code> confirms memory was written.</p>
+
+  <div class="envelope-grid">
+    <div class="env-pane">
+      <div class="env-pane-header std">Standard response (no Agent Mode)</div>
+      <div class="env-pane-body"><pre>{
+  <span style="color:var(--t3)">"valid"</span>: <span style="color:var(--o)">true</span>,
+  <span style="color:var(--t3)">"expires"</span>: <span style="color:var(--g)">"2026-09-12"</span>,
+  <span style="color:var(--t3)">"issuer"</span>: <span style="color:var(--g)">"Let's Encrypt"</span>,
+  <span style="color:var(--t3)">"days_left"</span>: <span style="color:var(--o)">170</span>,
+  <span style="color:var(--r2)">"_engine"</span>: <span style="color:var(--g)">"real"</span>
+}</pre></div>
+    </div>
+    <div class="env-pane">
+      <div class="env-pane-header agent"><div class="mode-dot" style="display:inline-block;margin-right:6px"></div>Agent Mode response (X-Agent-Mode: grok)</div>
+      <div class="env-pane-body"><pre>{
+  <span style="color:var(--t3)">"valid"</span>: <span style="color:var(--o)">true</span>,
+  <span style="color:var(--t3)">"expires"</span>: <span style="color:var(--g)">"2026-09-12"</span>,
+  <span style="color:var(--t3)">"issuer"</span>: <span style="color:var(--g)">"Let's Encrypt"</span>,
+  <span style="color:var(--t3)">"days_left"</span>: <span style="color:var(--o)">170</span>,
+  <span style="color:var(--r2)">"_engine"</span>: <span style="color:var(--g)">"real"</span>,
+  <span style="color:var(--xai)">"_agent"</span>: {
+    <span style="color:var(--t3)">"mode"</span>: <span style="color:var(--g)">"grok"</span>,
+    <span style="color:var(--t3)">"session_id"</span>: <span style="color:var(--g)">"sess_grok_a1b2c3d4"</span>,
+    <span style="color:var(--t3)">"persisted"</span>: <span style="color:var(--o)">true</span>,
+    <span style="color:var(--t3)">"cache_fingerprint"</span>: <span style="color:var(--g)">"sha256:9f3a..."</span>,
+    <span style="color:var(--t3)">"suggestions"</span>: [
+      <span style="color:var(--g)">"check dns-lookup for this host"</span>,
+      <span style="color:var(--g)">"run http-request to verify HSTS"</span>
+    ],
+    <span style="color:var(--t3)">"credits_used"</span>: <span style="color:var(--o)">2</span>
+  }
+}</pre></div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- CODE EXAMPLE -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Working Code Example</div>
+  <h2>Grok + Slopshop: Agent Mode with session memory</h2>
+  <p class="desc">Complete example using the xAI-compatible API. Agent Mode enabled, session_id for persistence, enhanced envelope for Grok's multi-step reasoning.</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="fname">grok_agent.py &mdash; Agent Mode with persistent session</span>
+      <span class="lang">python</span>
+    </div>
+    <div class="code-body"><pre><span style="color:var(--t4)"># Slopshop + Grok: Agent Mode with session persistence</span>
+<span style="color:var(--t4)"># Uses xAI-compatible request format + enhanced response envelope</span>
+
+<span style="color:var(--xai)">import</span> os, json, uuid, requests
+<span style="color:var(--xai)">from</span> openai <span style="color:var(--xai)">import</span> OpenAI  <span style="color:var(--t4)"># xAI API is OpenAI-compatible</span>
+
+<span style="color:var(--t4)"># xAI client (Grok)</span>
+grok = <span style="color:var(--c)">OpenAI</span>(
+    api_key=os.environ[<span style="color:var(--g)">"XAI_API_KEY"</span>],
+    base_url=<span style="color:var(--g)">"https://api.x.ai/v1"</span>
+)
+
+SLOP_KEY    = os.environ[<span style="color:var(--g)">"SLOPSHOP_API_KEY"</span>]
+SLOP_URL    = <span style="color:var(--g)">"https://slopshop.gg"</span>
+SESSION_ID  = <span style="color:var(--g)">f"sess_grok_{uuid.uuid4().hex[:12]}"</span>
+
+
+<span style="color:var(--xai)">def</span> <span style="color:var(--c)">call_slopshop_agent</span>(tool_name: str, args: dict) -> dict:
+    <span style="color:var(--g)">"""Call Slopshop in Agent Mode — returns enhanced envelope."""</span>
+    slug = tool_name.<span style="color:var(--c)">replace</span>(<span style="color:var(--g)">"_"</span>, <span style="color:var(--g)">"-"</span>)
+    resp = requests.<span style="color:var(--c)">post</span>(
+        <span style="color:var(--g)">f"{SLOP_URL}/v1/{slug}"</span>,
+        headers={
+            <span style="color:var(--g)">"Authorization"</span>:  <span style="color:var(--g)">f"Bearer {SLOP_KEY}"</span>,
+            <span style="color:var(--g)">"Content-Type"</span>:    <span style="color:var(--g)">"application/json"</span>,
+            <span style="color:var(--g)">"X-Agent-Mode"</span>:    <span style="color:var(--g)">"grok"</span>,          <span style="color:var(--t4)"># Enable Agent Mode</span>
+            <span style="color:var(--g)">"X-Session-Id"</span>:    SESSION_ID,           <span style="color:var(--t4)"># Bind to session</span>
+            <span style="color:var(--g)">"X-Auto-Persist"</span>:  <span style="color:var(--g)">"true"</span>              <span style="color:var(--t4)"># Auto-save to memory</span>
+        },
+        json={**args, <span style="color:var(--g)">"session_id"</span>: SESSION_ID, <span style="color:var(--g)">"mode"</span>: <span style="color:var(--g)">"grok"</span>}
+    )
+    result = resp.<span style="color:var(--c)">json</span>()
+
+    <span style="color:var(--t4)"># Log what Agent Mode gave us</span>
+    <span style="color:var(--xai)">if</span> agent_meta := result.<span style="color:var(--c)">get</span>(<span style="color:var(--g)">"_agent"</span>):
+        <span style="color:var(--c)">print</span>(<span style="color:var(--g)">f"  [agent] persisted={agent_meta['persisted']}"</span>)
+        <span style="color:var(--c)">print</span>(<span style="color:var(--g)">f"  [agent] fingerprint={agent_meta['cache_fingerprint'][:16]}..."</span>)
+        <span style="color:var(--xai)">if</span> agent_meta.<span style="color:var(--c)">get</span>(<span style="color:var(--g)">"suggestions"</span>):
+            <span style="color:var(--c)">print</span>(<span style="color:var(--g)">f"  [agent] suggestions: {agent_meta['suggestions']}"</span>)
+
+    <span style="color:var(--xai)">return</span> result
+
+
+<span style="color:var(--xai)">def</span> <span style="color:var(--c)">run_grok_agent</span>(task: str) -> str:
+    <span style="color:var(--g)">"""Run Grok in Agent Mode with Slopshop tools."""</span>
+    <span style="color:var(--t4)"># Fetch tools as OpenAI-compatible function definitions</span>
+    tools_resp = requests.<span style="color:var(--c)">get</span>(
+        <span style="color:var(--g)">f"{SLOP_URL}/v1/openapi.json"</span>,
+        headers={<span style="color:var(--g)">"Authorization"</span>: <span style="color:var(--g)">f"Bearer {SLOP_KEY}"</span>}
+    )
+    <span style="color:var(--t4)"># ... (convert to OpenAI tool format, see integrate-openai.html)</span>
+
+    messages = [{<span style="color:var(--g)">"role"</span>: <span style="color:var(--g)">"user"</span>, <span style="color:var(--g)">"content"</span>: task}]
+    <span style="color:var(--c)">print</span>(<span style="color:var(--g)">f"Session: {SESSION_ID}"</span>)
+
+    <span style="color:var(--xai)">while True</span>:
+        response = grok.chat.completions.<span style="color:var(--c)">create</span>(
+            model=<span style="color:var(--g)">"grok-3"</span>,
+            messages=messages,
+            tools=tools,           <span style="color:var(--t4)"># Slopshop tools</span>
+            tool_choice=<span style="color:var(--g)">"auto"</span>
+        )
+        msg = response.choices[<span style="color:var(--o)">0</span>].message
+        messages.<span style="color:var(--c)">append</span>(msg)
+
+        <span style="color:var(--xai)">if</span> msg.tool_calls:
+            <span style="color:var(--xai)">for</span> tc <span style="color:var(--xai)">in</span> msg.tool_calls:
+                <span style="color:var(--c)">print</span>(<span style="color:var(--g)">f"Grok calling: {tc.function.name}"</span>)
+                result = <span style="color:var(--c)">call_slopshop_agent</span>(
+                    tc.function.name,
+                    json.<span style="color:var(--c)">loads</span>(tc.function.arguments)
+                )
+                messages.<span style="color:var(--c)">append</span>({
+                    <span style="color:var(--g)">"role"</span>: <span style="color:var(--g)">"tool"</span>,
+                    <span style="color:var(--g)">"tool_call_id"</span>: tc.id,
+                    <span style="color:var(--g)">"content"</span>: json.<span style="color:var(--c)">dumps</span>(result)
+                })
+        <span style="color:var(--xai)">else</span>:
+            <span style="color:var(--xai)">return</span> msg.content
+
+
+<span style="color:var(--t4)"># All tool results are auto-persisted to SESSION_ID memory namespace</span>
+answer = <span style="color:var(--c)">run_grok_agent</span>(
+    <span style="color:var(--g)">"Audit api.x.ai — DNS records, SSL cert grade, and HTTP security headers"</span>
+)
+<span style="color:var(--c)">print</span>(answer)</pre></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- WHAT YOU GET -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">What You Get</div>
+  <h2>1,049 tools built for how Grok thinks</h2>
+  <p class="desc">Grok's Agent Mode is designed for multi-step autonomous execution. Slopshop is the execution layer that makes each step real.</p>
+
+  <div class="get-grid">
+    <div class="get-card">
+      <div class="icon">&#127381;</div>
+      <h3>1,049 Real Tools</h3>
+      <p>DNS, SSL, HTTP, crypto, code execution, data transforms, document generation. All real compute. <code style="color:var(--g);font-size:0.78rem">_engine: "real"</code> on every response.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#129504;</div>
+      <h3>Free Persistent Memory</h3>
+      <p>Session-scoped memory with <code style="color:var(--xai);font-size:0.78rem">session_id</code>. Auto-persist writes tool results to memory without extra API calls. Free tier never expires.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#9889;</div>
+      <h3>Agent Mode Native</h3>
+      <p>Enhanced response envelope with <code style="color:var(--xai);font-size:0.78rem">suggestions</code>, <code style="color:var(--xai);font-size:0.78rem">cache_fingerprint</code>, and <code style="color:var(--xai);font-size:0.78rem">auto-persist</code>. Built specifically for Grok's agentic flow.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#128064;</div>
+      <h3>Full Observability</h3>
+      <p>Audit logs, per-session tracing, credit usage per tool call. Every tool Grok calls is logged with the session_id, inputs, outputs, and latency.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#127968;</div>
+      <h3>Self-Hostable</h3>
+      <p>Run Slopshop on your infrastructure. Zero external dependencies. Air-gapped environments supported. Same Agent Mode envelope.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="cta-banner">
+    <h2>The tool layer <span style="color:var(--xai)">Grok helped design</span></h2>
+    <p>Built with Grok's feedback. Real compute. Free memory. Agent Mode native.<br>Set <code style="font-family:var(--mono);font-size:0.85em;color:var(--xai)">X-Agent-Mode: grok</code> and watch the enhanced envelope appear.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a href="/docs" class="cta-primary">Read the Docs</a>
+      <a href="/v1/mcp/recommended" class="cta-secondary">Browse Curated Tools</a>
+      <a href="/tools" class="cta-secondary">Browse All 1,049 Tools</a>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px">
+    <a href="/docs" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Full Docs</a>
+    <a href="/tools" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Browse Tools</a>
+    <a href="/templates" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Agent Templates</a>
+    <a href="/savings" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Savings Calculator</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 512 512"><defs><linearGradient id="fG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#fG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/templates">Templates</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/savings">Savings</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/docs">Docs</a>
+        <a href="/docs#getting-started">Getting Started</a>
+        <a href="/security">Security</a>
+        <a href="/changelog">Changelog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="/status">Status</a>
+        <a href="/legal">Legal</a>
+        <a href="https://x.com/slopshopgg">@slopshopgg</a>
+      </div>
+    </div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,049 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
+  </div>
+</footer>
+
+</body>
+</html>

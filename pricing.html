@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Slopshop Pricing - Credit-Based API Pricing | slopshop.gg</title>
+<meta name="description" content="Simple, credit-based API pricing. One key unlocks 1,049 tools. Start with 2,000 free credits. No subscriptions, no per-API keys. Pay only for what you use.">
+<meta name="keywords" content="api pricing, credit-based api pricing, cheap api for agents, slopshop pricing, api credits, pay as you go api">
+<link rel="canonical" href="https://slopshop.gg/pricing">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/pricing">
+<meta property="og:title" content="Slopshop Pricing - Credit-Based API Pricing">
+<meta property="og:description" content="One API key. 1,049 tools. Pay only for what you use. Start free with 2,000 credits. 8 memory APIs always free.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop Pricing">
+<meta name="twitter:description" content="Credit-based API pricing. 1,049 tools. Start with 2,000 free credits.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "Is there a free tier?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Every account starts with 2,000 free credits on signup — no credit card required. That's enough to run hundreds of simple API calls and explore the full catalog. Plus, 8 memory APIs are always free at 0 credits."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Do credits expire?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "No. Credits never expire. Buy a pack today and use them a year from now — they'll still be there."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I get a refund?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Unused credits are fully refundable within 30 days of purchase. Contact support and we'll process it same day."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is there an enterprise plan?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Contact us for custom volume pricing. Enterprise plans include dedicated infrastructure, SLAs, priority support, and custom rate limits."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What payment methods are accepted?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "We accept Visa, Mastercard, and American Express via Stripe. All payments are processed securely — Slopshop never stores your card details."
+      }
+    }
+  ]
+}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none}a:hover{opacity:0.8}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.8);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:var(--r)}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:2px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s;font-family:var(--sans)}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--t);background:var(--s2)}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+
+.page-hero{padding:120px 32px 64px;text-align:center;position:relative;overflow:hidden}
+.page-hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:1000px;height:600px;background:radial-gradient(ellipse,rgba(255,51,51,0.04),transparent 60%);pointer-events:none}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(255,51,51,0.15);color:var(--r2);padding:6px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;font-family:var(--mono);margin-bottom:24px}
+.page-hero h1{font-family:var(--mono);font-size:clamp(2.5rem,6vw,4rem);font-weight:900;letter-spacing:0.03em;line-height:1.1;margin-bottom:16px}
+.page-hero h1 .red{color:var(--r)}
+.page-hero .sub{color:var(--t2);font-size:clamp(1rem,2vw,1.15rem);max-width:520px;margin:0 auto 32px;line-height:1.7;font-weight:400}
+.page-hero .sub b{color:var(--t);font-weight:600}
+
+.sec{max-width:1100px;margin:0 auto;padding:56px 32px}
+.sec h2{font-family:var(--mono);font-size:1.4rem;font-weight:800;margin-bottom:6px;letter-spacing:-0.01em}
+.sec .desc{color:var(--t3);font-size:0.85rem;margin-bottom:28px;line-height:1.6}
+.sec-label{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--r);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px}
+
+/* PRICING TIERS */
+.tiers{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:40px}
+.tier{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px 20px;text-align:center;transition:0.2s;position:relative}
+.tier:hover{border-color:var(--b2);transform:translateY(-2px)}
+.tier.hot{border-color:var(--o);background:linear-gradient(to bottom,rgba(255,136,0,0.07),var(--s1))}
+.tier.hot::before{content:'POPULAR';position:absolute;top:-10px;left:50%;transform:translateX(-50%);background:var(--o);color:#000;font-family:var(--mono);font-size:0.55rem;font-weight:800;padding:3px 10px;border-radius:99px;letter-spacing:0.1em}
+.tier .emoji{font-size:2rem;margin-bottom:10px}
+.tier .name{font-family:var(--mono);font-size:0.75rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:8px}
+.tier .amt{font-family:var(--mono);font-size:2rem;font-weight:800;color:var(--o);line-height:1}
+.tier .price{font-size:1.1rem;font-weight:700;margin:8px 0 4px;color:var(--t)}
+.tier .unit{font-size:0.6rem;color:var(--t4);font-family:var(--mono);margin-bottom:12px}
+.tier .per-credit{font-family:var(--mono);font-size:0.65rem;color:var(--t3);background:var(--s2);padding:4px 10px;border-radius:6px;margin-bottom:14px;display:inline-block}
+.tier .cta-btn{display:block;width:100%;background:var(--s2);color:var(--t2);border:1px solid var(--b2);padding:9px 0;border-radius:7px;font-family:var(--mono);font-size:0.72rem;font-weight:600;cursor:pointer;transition:0.2s;text-decoration:none}
+.tier .cta-btn:hover{border-color:var(--r);color:var(--t);opacity:1}
+.tier.hot .cta-btn{background:var(--o);color:#000;border-color:var(--o)}
+.tier.hot .cta-btn:hover{background:#ff9922;opacity:1}
+.tier-enterprise .cta-btn{background:var(--rg);border-color:rgba(255,51,51,0.2);color:var(--r)}
+
+/* WHAT'S INCLUDED */
+.included-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:32px}
+.included-item{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:12px}
+.included-item .icon{font-size:1.2rem;flex-shrink:0}
+.included-item .text{}
+.included-item .text strong{display:block;font-family:var(--mono);font-size:0.78rem;font-weight:700;margin-bottom:2px}
+.included-item .text span{font-size:0.72rem;color:var(--t3)}
+
+/* HOW CREDITS WORK */
+.credits-explainer{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:32px}
+.credit-box{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:24px}
+.credit-box h3{font-family:var(--mono);font-size:0.9rem;font-weight:700;margin-bottom:12px}
+.credit-box p{font-size:0.82rem;color:var(--t3);line-height:1.7;margin-bottom:10px}
+.credit-box code{font-family:var(--mono);font-size:0.78rem;color:var(--o);background:var(--og);padding:2px 6px;border-radius:4px}
+
+/* CREDIT TABLE */
+.ctable{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.78rem;margin-bottom:32px}
+.ctable thead th{text-align:left;padding:10px 14px;background:var(--s2);color:var(--t3);font-size:0.65rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;border-bottom:1px solid var(--b)}
+.ctable thead th:first-child{border-radius:8px 0 0 0}
+.ctable thead th:last-child{border-radius:0 8px 0 0;text-align:right}
+.ctable tbody tr{border-bottom:1px solid var(--b)}
+.ctable tbody tr:hover{background:var(--s1)}
+.ctable tbody td{padding:10px 14px;color:var(--t2)}
+.ctable tbody td:first-child{color:var(--c)}
+.ctable tbody td:last-child{text-align:right}
+.credit-badge{display:inline-flex;align-items:center;gap:4px;background:var(--og);color:var(--o);padding:2px 8px;border-radius:4px;font-weight:700;font-size:0.72rem}
+
+/* FAQ */
+.faq{display:flex;flex-direction:column;gap:8px;margin-bottom:32px}
+.faq-item{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden}
+.faq-q{padding:18px 20px;cursor:pointer;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:0.85rem;font-weight:600;user-select:none;transition:0.2s}
+.faq-q:hover{background:var(--s2)}
+.faq-q .arrow{color:var(--t4);transition:transform 0.2s;font-size:0.7rem}
+.faq-item.open .faq-q .arrow{transform:rotate(180deg)}
+.faq-a{padding:0 20px;max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.2s}
+.faq-item.open .faq-a{max-height:200px;padding:0 20px 18px}
+.faq-a p{font-size:0.82rem;color:var(--t3);line-height:1.7}
+
+/* CTA BANNER */
+.cta-banner{text-align:center;padding:64px 32px;background:linear-gradient(to bottom,var(--bg),var(--s1));border-top:1px solid var(--b);border-bottom:1px solid var(--b)}
+.cta-banner h2{font-family:var(--mono);font-size:1.5rem;font-weight:800;margin-bottom:8px}
+.cta-banner p{color:var(--t3);margin-bottom:24px;font-size:0.9rem}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--r);color:#fff;padding:14px 32px;border-radius:8px;font-family:var(--mono);font-size:0.9rem;font-weight:700;transition:0.2s;text-decoration:none}
+.btn-primary:hover{background:#e62e2e;box-shadow:0 0 28px rgba(255,51,51,0.3);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:var(--s2);color:var(--t2);padding:14px 32px;border-radius:8px;font-family:var(--mono);font-size:0.9rem;font-weight:600;border:1px solid var(--b2);transition:0.2s;text-decoration:none}
+.btn-secondary:hover{border-color:var(--r);color:var(--t);opacity:1}
+
+footer{padding:40px 32px;text-align:center;border-top:1px solid var(--b)}
+.f-brand{font-family:var(--mono);font-size:1.2rem;font-weight:800;margin-bottom:12px}
+.f-brand .red{color:var(--r)}
+footer p{font-size:0.68rem;color:var(--t4);line-height:2.2;font-family:var(--mono)}
+footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
+.divider{border:none;border-top:1px solid var(--b);margin:0}
+
+@media(max-width:900px){
+  .tiers{grid-template-columns:repeat(3,1fr)}
+  .credits-explainer{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  nav{padding:0 16px;height:50px}
+  .logo{font-size:0.85rem}
+  .nav-links a{display:none}
+  .live-badge{font-size:0.6rem;padding:3px 8px}
+  .page-hero{padding:80px 16px 36px}
+  .sec{padding:32px 16px}
+  .tiers{grid-template-columns:repeat(2,1fr)}
+  .ctable{font-size:0.7rem}
+}
+@media(max-width:480px){
+  .tiers{grid-template-columns:1fr 1fr}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo"><span class="mark">&#129438; SLOP</span>SHOP<span class="gg">.GG</span></a>
+  <div class="nav-links">
+    <a href="/#playground">Playground</a>
+    <a href="/#catalog">Catalog</a>
+    <a href="/pricing.html" class="active">Pricing</a>
+    <a href="/docs.html">Docs</a>
+    <a href="/getting-started.html">Get Started</a>
+    <a href="/dashboard.html">Dashboard</a>
+    <div class="live-badge"><div class="live-dot"></div><span>1,049 live</span></div>
+  </div>
+</div></nav>
+
+<section class="page-hero">
+  <div class="hero-tag">&#129438; Credit-based &mdash; no subscriptions, no surprises</div>
+  <h1>Slopshop <span class="red">Pricing</span></h1>
+  <p class="sub"><b>One API key. 1,049 tools.</b> Pay only for what you use. Credits never expire &mdash; buy once, use forever.</p>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <a href="/dashboard.html" class="btn-primary">Get 2,000 free credits &#129438;</a>
+    <a href="/#playground" class="btn-secondary">Try the playground first</a>
+  </div>
+</section>
+
+<div class="sec">
+  <div class="sec-label">Choose a pack</div>
+  <h2>Simple, usage-based pricing</h2>
+  <p class="desc">No subscriptions. No per-API keys. Buy a credit pack and spend it across all 1,049 tools at your own pace.</p>
+
+  <div class="tiers">
+    <div class="tier">
+      <div class="emoji">&#129438;</div>
+      <div class="name">Baby Lobster</div>
+      <div class="amt">1K</div>
+      <div class="unit">credits</div>
+      <div class="price">$9</div>
+      <div class="per-credit">$0.009 / credit</div>
+      <a href="/dashboard.html" class="cta-btn">Buy pack</a>
+    </div>
+    <div class="tier hot">
+      <div class="emoji">&#129438;</div>
+      <div class="name">Lobster</div>
+      <div class="amt">5K</div>
+      <div class="unit">credits</div>
+      <div class="price">$39</div>
+      <div class="per-credit">$0.0078 / credit</div>
+      <a href="/dashboard.html" class="cta-btn">Buy pack</a>
+    </div>
+    <div class="tier">
+      <div class="emoji">&#129438;</div>
+      <div class="name">Big Lobster</div>
+      <div class="amt">20K</div>
+      <div class="unit">credits</div>
+      <div class="price">$129</div>
+      <div class="per-credit">$0.0065 / credit</div>
+      <a href="/dashboard.html" class="cta-btn">Buy pack</a>
+    </div>
+    <div class="tier">
+      <div class="emoji">&#129514;</div>
+      <div class="name">Lobster Tank</div>
+      <div class="amt">100K</div>
+      <div class="unit">credits</div>
+      <div class="price">$499</div>
+      <div class="per-credit">$0.005 / credit</div>
+      <a href="/dashboard.html" class="cta-btn">Buy pack</a>
+    </div>
+    <div class="tier tier-enterprise">
+      <div class="emoji">&#127381;</div>
+      <div class="name">Kraken</div>
+      <div class="amt">Custom</div>
+      <div class="unit">volume</div>
+      <div class="price">Custom</div>
+      <div class="per-credit">Volume discounts</div>
+      <a href="mailto:dev@slopshop.gg" class="cta-btn">Contact us</a>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="sec">
+  <div class="sec-label">What you get</div>
+  <h2>Everything included in every pack</h2>
+  <p class="desc">No hidden tiers. Every credit pack unlocks the full platform.</p>
+  <div class="included-grid">
+    <div class="included-item">
+      <div class="icon">&#128736;</div>
+      <div class="text"><strong>All 1,049 APIs</strong><span>Access every tool, every category</span></div>
+    </div>
+    <div class="included-item">
+      <div class="icon">&#128193;</div>
+      <div class="text"><strong>All 63 categories</strong><span>Text, crypto, math, AI, network &amp; more</span></div>
+    </div>
+    <div class="included-item">
+      <div class="icon">&#128273;</div>
+      <div class="text"><strong>Unified auth</strong><span>One API key for everything</span></div>
+    </div>
+    <div class="included-item">
+      <div class="icon">&#129302;</div>
+      <div class="text"><strong>MCP server</strong><span>Plug directly into Claude Code</span></div>
+    </div>
+    <div class="included-item">
+      <div class="icon">&#128187;</div>
+      <div class="text"><strong>CLI tool</strong><span>npm install -g slopshop</span></div>
+    </div>
+    <div class="included-item">
+      <div class="icon">&#128218;</div>
+      <div class="text"><strong>SDKs</strong><span>Python, Node.js, and REST</span></div>
+    </div>
+    <div class="included-item">
+      <div class="icon">&#127381;</div>
+      <div class="text"><strong>Zapier integration</strong><span>No-code workflows</span></div>
+    </div>
+    <div class="included-item">
+      <div class="icon">&#128200;</div>
+      <div class="text"><strong>Usage dashboard</strong><span>Real-time credit tracking</span></div>
+    </div>
+    <div class="included-item" style="border-color:rgba(0,204,102,0.2);background:rgba(0,204,102,0.04)">
+      <div class="icon">&#129504;</div>
+      <div class="text"><strong style="color:var(--g)">8 free memory APIs</strong><span>memory-set/get/search/list &amp; more &mdash; always 0 credits</span></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="sec">
+  <div class="sec-label">How it works</div>
+  <h2>How credits work</h2>
+  <p class="desc">Credits are the universal currency across all 1,049 APIs. Simple operations are cheap; complex ones cost more.</p>
+  <div class="credits-explainer">
+    <div class="credit-box">
+      <h3>The simple rule</h3>
+      <p><strong style="color:var(--t)">1 credit = 1 simple API call.</strong> Calls that do pure computation &mdash; hashing, encoding, formatting &mdash; cost 1 credit each.</p>
+      <p>Complex operations like AI content generation, code execution, or external network requests cost <code>3&ndash;20 credits</code> depending on complexity and compute time.</p>
+      <p>Every API response includes a <code>credits_used</code> field so you always know exactly what you spent.</p>
+    </div>
+    <div class="credit-box">
+      <h3>Tier breakdown</h3>
+      <p><strong style="color:var(--g)">Compute tier (1 cr)</strong> &mdash; hashing, encoding, parsing, math, date ops, regex, JSON manipulation.</p>
+      <p><strong style="color:var(--c)">Network tier (3 cr)</strong> &mdash; DNS lookups, HTTP fetch, SSL checks, IP geolocation, WHOIS.</p>
+      <p><strong style="color:var(--v)">LLM/AI tier (10&ndash;20 cr)</strong> &mdash; AI content generation, sentiment, summarization, translation.</p>
+      <p><strong style="color:var(--o)">External tier (3&ndash;10 cr)</strong> &mdash; Slack, email, webhooks, GitHub, code execution.</p>
+    </div>
+  </div>
+
+  <h3 style="font-family:var(--mono);font-size:0.95rem;font-weight:700;margin-bottom:16px">Example credit costs</h3>
+  <table class="ctable">
+    <thead>
+      <tr>
+        <th>API call</th>
+        <th>Category</th>
+        <th>What it does</th>
+        <th>Credits</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>crypto-hash-sha256</td><td style="color:var(--t3)">Compute</td><td style="color:var(--t3)">Hash a string with SHA-256</td><td><span class="credit-badge">1 cr</span></td></tr>
+      <tr><td>text-base64-encode</td><td style="color:var(--t3)">Compute</td><td style="color:var(--t3)">Base64-encode any string</td><td><span class="credit-badge">1 cr</span></td></tr>
+      <tr><td>math-statistics</td><td style="color:var(--t3)">Compute</td><td style="color:var(--t3)">Mean, median, std dev of a dataset</td><td><span class="credit-badge">1 cr</span></td></tr>
+      <tr><td>text-csv-to-json</td><td style="color:var(--t3)">Compute</td><td style="color:var(--t3)">Convert CSV to structured JSON</td><td><span class="credit-badge">1 cr</span></td></tr>
+      <tr><td>crypto-jwt-sign</td><td style="color:var(--t3)">Compute</td><td style="color:var(--t3)">Sign a JWT token</td><td><span class="credit-badge">2 cr</span></td></tr>
+      <tr><td>net-dns-lookup</td><td style="color:var(--c)">Network</td><td style="color:var(--t3)">Resolve a domain to IPs</td><td><span class="credit-badge">3 cr</span></td></tr>
+      <tr><td>net-http-fetch</td><td style="color:var(--c)">Network</td><td style="color:var(--t3)">Fetch a URL and return body</td><td><span class="credit-badge">3 cr</span></td></tr>
+      <tr><td>net-ssl-check</td><td style="color:var(--c)">Network</td><td style="color:var(--t3)">Check SSL cert expiry &amp; validity</td><td><span class="credit-badge">3 cr</span></td></tr>
+      <tr><td>code-execute-js</td><td style="color:var(--o)">External</td><td style="color:var(--t3)">Run JS in a sandboxed VM</td><td><span class="credit-badge">5 cr</span></td></tr>
+      <tr><td>memory-set / memory-get</td><td style="color:var(--g)">Memory</td><td style="color:var(--t3)">Store &amp; retrieve agent memory</td><td><span class="credit-badge" style="background:rgba(0,204,102,0.15);color:var(--g)">0 cr</span></td></tr>
+      <tr><td>memory-search / memory-list</td><td style="color:var(--g)">Memory</td><td style="color:var(--t3)">Search &amp; list stored memories</td><td><span class="credit-badge" style="background:rgba(0,204,102,0.15);color:var(--g)">0 cr</span></td></tr>
+      <tr><td>counter-get</td><td style="color:var(--g)">Memory</td><td style="color:var(--t3)">Read a persistent counter</td><td><span class="credit-badge" style="background:rgba(0,204,102,0.15);color:var(--g)">0 cr</span></td></tr>
+      <tr><td>ai-sentiment</td><td style="color:var(--v)">LLM</td><td style="color:var(--t3)">Sentiment analysis via AI</td><td><span class="credit-badge">10 cr</span></td></tr>
+      <tr><td>ai-summarize</td><td style="color:var(--v)">LLM</td><td style="color:var(--t3)">Summarize long text with AI</td><td><span class="credit-badge">10 cr</span></td></tr>
+      <tr><td>ai-generate-content</td><td style="color:var(--v)">LLM</td><td style="color:var(--t3)">Generate content from a prompt</td><td><span class="credit-badge">20 cr</span></td></tr>
+    </tbody>
+  </table>
+</div>
+
+<hr class="divider">
+
+<div class="sec">
+  <div class="sec-label">FAQ</div>
+  <h2>Common questions</h2>
+  <p class="desc">Everything you need to know about how credits and billing work.</p>
+  <div class="faq">
+    <div class="faq-item open">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Is there a free tier?
+        <span class="arrow">&#9660;</span>
+      </div>
+      <div class="faq-a"><p>Yes. Every account starts with 2,000 free credits on signup &mdash; no credit card required. That's enough to run hundreds of simple API calls and explore the full catalog of 1,049 tools. In addition, 8 memory APIs (memory-set, memory-get, memory-search, memory-list, memory-delete, memory-stats, memory-namespace-list, counter-get) are always free at 0 credits &mdash; even after your signup credits run out.</p></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Do credits expire?
+        <span class="arrow">&#9660;</span>
+      </div>
+      <div class="faq-a"><p>No. Credits never expire. Buy a pack today and use them a year from now &mdash; they'll still be there. We believe in letting you move at your own pace.</p></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Can I get a refund?
+        <span class="arrow">&#9660;</span>
+      </div>
+      <div class="faq-a"><p>Yes. Unused credits are fully refundable within 30 days of purchase. Contact <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a> and we'll process it same day. No questions asked.</p></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        Is there an enterprise plan?
+        <span class="arrow">&#9660;</span>
+      </div>
+      <div class="faq-a"><p>Yes. Contact <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a> for custom volume pricing. Enterprise plans include dedicated infrastructure, uptime SLAs, priority support, and custom rate limits tailored to your agent workload.</p></div>
+    </div>
+    <div class="faq-item">
+      <div class="faq-q" onclick="toggleFaq(this)">
+        What payment methods are accepted?
+        <span class="arrow">&#9660;</span>
+      </div>
+      <div class="faq-a"><p>We accept Visa, Mastercard, and American Express via Stripe. All payments are processed securely &mdash; Slopshop never stores your card details. Stripe handles everything.</p></div>
+    </div>
+  </div>
+</div>
+
+<div class="cta-banner">
+  <h2>Get started with 2,000 free credits</h2>
+  <p>No credit card required. Instant access to all 1,049 tools.</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a href="/dashboard.html" class="btn-primary">Start for free &#129438;</a>
+    <a href="/getting-started.html" class="btn-secondary">Read the quickstart</a>
+  </div>
+</div>
+
+<footer>
+  <div class="f-brand">&#129438; <span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>
+  <p>
+    <a href="/">Home</a> &middot; <a href="/docs.html">Docs</a> &middot; <a href="/getting-started.html">Get Started</a> &middot; <a href="/compare.html">Compare</a> &middot; <a href="/for-agents.html">For Agents</a> &middot; <a href="/dashboard.html">Dashboard</a> &middot; <a href="https://x.com/slopshopgg">@slopshopgg</a><br>
+    1,049 APIs &middot; all real &middot; credit-based &middot; slopshop.gg
+  </p>
+</footer>
+
+<script>
+function toggleFaq(el){
+  const item=el.closest('.faq-item');
+  const wasOpen=item.classList.contains('open');
+  document.querySelectorAll('.faq-item').forEach(i=>i.classList.remove('open'));
+  if(!wasOpen)item.classList.add('open');
+}
+</script>
+</body>
+</html>

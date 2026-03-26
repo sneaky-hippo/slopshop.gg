@@ -103,7 +103,7 @@ handlers['ext-email-send'] = async (input) => {
   try {
     const res = await post('api.sendgrid.com', '/v3/mail/send', { Authorization: `Bearer ${key}` }, {
       personalizations: [{ to: [{ email: input.to }] }],
-      from: { email: input.from || 'noreply@slopshop.gg' },
+      from: { email: input.from || 'dev@slopshop.gg' },
       subject: input.subject || 'Message from Slopshop',
       content: [{ type: 'text/plain', value: input.text || input.body || input.input }],
     });

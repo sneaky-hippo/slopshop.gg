@@ -17,7 +17,7 @@ import urllib.error
 
 __version__ = "1.0.0"
 
-DEFAULT_BASE = "https://api.slopshop.gg"
+DEFAULT_BASE = "https://slopshop.gg"
 
 
 class SlopError(Exception):

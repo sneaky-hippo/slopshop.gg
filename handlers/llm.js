@@ -66,9 +66,12 @@ function httpsPost(hostname, path, headers, body) {
 // CORE LLM CALLER
 // ============================================================
 
-async function callLLM(systemPrompt, userMessage) {
+async function callLLM(systemPrompt, userMessage, input = {}) {
   const provider = getProvider();
   if (!provider) throw new Error('No API key configured');
+
+  const model = input.model || process.env.DEFAULT_LLM_MODEL || 'claude-sonnet-4-20250514';
+  const temperature = input.temperature !== undefined ? input.temperature : 0.7;
 
   if (provider === 'anthropic') {
     const resp = await httpsPost(
@@ -79,8 +82,9 @@ async function callLLM(systemPrompt, userMessage) {
         'anthropic-version': '2023-06-01',
       },
       {
-        model: 'claude-sonnet-4-20250514',
+        model,
         max_tokens: 1024,
+        temperature,
         system: systemPrompt,
         messages: [{ role: 'user', content: userMessage }],
       }
@@ -91,17 +95,19 @@ async function callLLM(systemPrompt, userMessage) {
     }
 
     const text = resp.body?.content?.[0]?.text ?? '';
-    return { text, model: resp.body?.model ?? 'claude-sonnet-4-20250514', provider: 'anthropic' };
+    return { text, model: resp.body?.model ?? model, provider: 'anthropic' };
   }
 
   // OpenAI
+  const openaiModel = input.model || process.env.DEFAULT_LLM_MODEL || 'gpt-4o-mini';
   const resp = await httpsPost(
     'api.openai.com',
     '/v1/chat/completions',
     { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
     {
-      model: 'gpt-4o-mini',
+      model: openaiModel,
       max_tokens: 1024,
+      temperature,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userMessage },
@@ -114,7 +120,7 @@ async function callLLM(systemPrompt, userMessage) {
   }
 
   const text = resp.body?.choices?.[0]?.message?.content ?? '';
-  return { text, model: resp.body?.model ?? 'gpt-4o-mini', provider: 'openai' };
+  return { text, model: resp.body?.model ?? openaiModel, provider: 'openai' };
 }
 
 // ============================================================
@@ -155,7 +161,7 @@ function makeHandler(slug, systemPrompt, buildUserMessage) {
 
     try {
       const userMessage = buildUserMessage(input);
-      const { text, model, provider } = await callLLM(systemPrompt, userMessage);
+      const { text, model, provider } = await callLLM(systemPrompt, userMessage, input);
       const parsed = extractJSON(text);
       return { _engine: 'llm', _model: model, _provider: provider, ...parsed };
     } catch (err) {

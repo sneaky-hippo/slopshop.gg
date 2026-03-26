@@ -2,7 +2,7 @@
   "$schema": "https://registry.modelcontextprotocol.io/schemas/server.json",
   "mcpName": "slopshop",
   "displayName": "Slopshop",
-  "description": "178 real APIs for AI agents. Crypto, text, math, dates, code gen, network tools, AI content. Credit-based. Zero mocks.",
+  "description": "1,049 real APIs for AI agents. Crypto, text, math, dates, code gen, network tools, AI content. Credit-based. Zero mocks.",
   "version": "2.0.0",
   "homepage": "https://slopshop.gg",
   "repository": "https://github.com/slopshop/slopshop",
@@ -23,7 +23,7 @@
     }
   },
   "tools": {
-    "count": 178,
+    "count": 1049,
     "categories": [
       "Text Processing (29 tools)",
       "Data Transform (20 tools)",

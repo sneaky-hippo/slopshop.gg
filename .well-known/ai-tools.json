@@ -1,0 +1,222 @@
+{
+  "schema_version": "1.0",
+  "name": "Slopshop",
+  "description": "API platform with 1,049 real tools across 258 endpoints. Every tool actually works - no mocks, no stubs.",
+  "url": "https://slopshop.gg",
+  "logo": "https://slopshop.gg/logo.png",
+  "contact_email": "dev@slopshop.gg",
+  "updated": "2026-03-27",
+  "auth": {
+    "type": "bearer",
+    "signup_url": "https://slopshop.gg/getting-started.html",
+    "docs_url": "https://slopshop.gg/docs.html"
+  },
+  "discovery": {
+    "openapi": "https://slopshop.gg/v1/openapi.json",
+    "mcp": "https://slopshop.gg/v1/mcp/recommended",
+    "llms_txt": "https://slopshop.gg/llms.txt",
+    "sitemap": "https://slopshop.gg/sitemap.xml"
+  },
+  "total_tools": 1049,
+  "total_endpoints": 258,
+  "categories": [
+    {
+      "name": "Text Processing",
+      "slug": "text-processing",
+      "description": "Extract, transform, analyze, and manipulate text. Every API actually processes your input.",
+      "endpoint_count": 35
+    },
+    {
+      "name": "Data Transform",
+      "slug": "data-transform",
+      "description": "JSON, CSV, XML, YAML conversions, flattening, merging, diffing, and schema generation.",
+      "endpoint_count": 20
+    },
+    {
+      "name": "Crypto & Security",
+      "slug": "crypto-security",
+      "description": "Hashing, encryption, JWT, passwords, UUIDs, TOTP, and random generation.",
+      "endpoint_count": 18
+    },
+    {
+      "name": "Math & Numbers",
+      "slug": "math-numbers",
+      "description": "Evaluate expressions, statistics, finance, unit conversion, and number formatting.",
+      "endpoint_count": 20
+    },
+    {
+      "name": "Date & Time",
+      "slug": "date-time",
+      "description": "Parse, format, diff, add, business days, cron, holidays, and timezone conversion.",
+      "endpoint_count": 14
+    },
+    {
+      "name": "Code Utilities",
+      "slug": "code-utilities",
+      "description": "JSON-to-TypeScript, SQL formatting, regex explain, semver, OpenAPI validation, and more.",
+      "endpoint_count": 15
+    },
+    {
+      "name": "Generate",
+      "slug": "generate",
+      "description": "Fake data, SVG avatars, QR codes, color palettes, short IDs, and lorem ipsum.",
+      "endpoint_count": 12
+    },
+    {
+      "name": "Network",
+      "slug": "network",
+      "description": "DNS lookups, HTTP status checks, SSL verification, email validation, and CIDR operations.",
+      "endpoint_count": 12
+    },
+    {
+      "name": "AI: Content",
+      "slug": "ai-content",
+      "description": "Blog posts, landing pages, email drafts, social posts, ad copy via real LLM calls.",
+      "endpoint_count": 15
+    },
+    {
+      "name": "AI: Analysis",
+      "slug": "ai-analysis",
+      "description": "Summarize, classify, extract entities, sentiment, translate. Real LLM analysis of your text.",
+      "endpoint_count": 18
+    },
+    {
+      "name": "AI: Business",
+      "slug": "ai-business",
+      "description": "Meeting prep, proposals, job descriptions, contract analysis. LLM-powered business tools.",
+      "endpoint_count": 12
+    },
+    {
+      "name": "Agent Tools",
+      "slug": "agent-tools",
+      "description": "JSON extraction/validation, webhooks, file download, persistent memory. Essential agent infrastructure.",
+      "endpoint_count": 15
+    },
+    {
+      "name": "Copilot",
+      "slug": "copilot",
+      "description": "Run a second AI agent alongside the main agent in the same terminal. Spawn, chat, push results, scale to N copilots.",
+      "endpoint_count": 6,
+      "endpoints": [
+        "POST /v1/copilot/spawn",
+        "POST /v1/copilot/chat",
+        "POST /v1/copilot/push",
+        "GET /v1/copilot/inbox/:session_id",
+        "POST /v1/copilot/scale",
+        "GET /v1/copilot/status/:copilot_id"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Compute Exchange",
+      "slug": "compute-exchange",
+      "description": "Peer-to-peer compute marketplace. Earn credits by contributing idle compute, submit tasks to the network, track earnings.",
+      "endpoint_count": 9,
+      "endpoints": [
+        "POST /v1/exchange/register",
+        "POST /v1/exchange/heartbeat",
+        "POST /v1/exchange/submit",
+        "GET /v1/exchange/poll/:supplier_id",
+        "POST /v1/exchange/complete",
+        "POST /v1/exchange/dispute",
+        "GET /v1/exchange/stats",
+        "GET /v1/exchange/leaderboard",
+        "GET /v1/exchange/my-earnings/:user_id"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Structured Output",
+      "slug": "structured-output",
+      "description": "Schema validation (JSON Schema draft-07), JSON repair for broken LLM output, structured data extraction.",
+      "endpoint_count": 4,
+      "endpoints": [
+        "POST /v1/tools/json-schema-validate",
+        "POST /v1/tools/llm-output-fix-json",
+        "POST /v1/tools/llm-output-extract-json",
+        "POST /v1/tools/llm-output-validate"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "RAG Primitives",
+      "slug": "rag-primitives",
+      "description": "Vector similarity search over stored memories and smart text chunking for RAG pipelines (chars, sentences, paragraphs with overlap).",
+      "endpoint_count": 2,
+      "endpoints": [
+        "POST /v1/tools/memory-vector-search",
+        "POST /v1/tools/text-chunk"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Code Analysis",
+      "slug": "code-analysis",
+      "description": "AST-level code parsing, cyclomatic and cognitive complexity scoring, dead code detection, import graph analysis, codebase statistics.",
+      "endpoint_count": 5,
+      "endpoints": [
+        "POST /v1/tools/code-complexity-score",
+        "POST /v1/tools/code-dead-code-detect",
+        "POST /v1/tools/code-import-graph",
+        "POST /v1/tools/analyze-codebase-stats",
+        "POST /v1/tools/analyze-dependency-tree"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Observability",
+      "slug": "observability",
+      "description": "Audit logs via request tracking, distributed tracing support, token cost estimation across models (Claude, GPT-4o, Gemini), log parsing, error fingerprinting.",
+      "endpoint_count": 3,
+      "endpoints": [
+        "POST /v1/tools/text-token-estimate-cost",
+        "POST /v1/tools/analyze-log-parse",
+        "POST /v1/tools/analyze-error-fingerprint"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Visualization",
+      "slug": "visualization",
+      "description": "SVG chart generation: deterministic avatars, QR codes, initial-based avatars, and color palette generation.",
+      "endpoint_count": 4,
+      "endpoints": [
+        "POST /v1/tools/gen-avatar-svg",
+        "POST /v1/tools/gen-qr-svg",
+        "POST /v1/tools/gen-avatar-initials",
+        "POST /v1/tools/gen-color-palette"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Orchestration",
+      "slug": "orchestration",
+      "description": "Delay, retry, parallel, race, timeout, caching, rate limiting, locks, sequences, events, scheduling, circuit breakers.",
+      "endpoint_count": 20
+    },
+    {
+      "name": "Agent Superpowers",
+      "slug": "agent-superpowers",
+      "description": "Negotiation, game theory, metaphor mining, map generation, self-referential loops, and more unique agent capabilities.",
+      "endpoint_count": 25
+    },
+    {
+      "name": "Analyze",
+      "slug": "analyze",
+      "description": "A/B testing, funnel analysis, time series, cohort retention, distribution fitting, CSV correlation.",
+      "endpoint_count": 18
+    },
+    {
+      "name": "Communication",
+      "slug": "communication",
+      "description": "Email, vCard, iCal, RSS, OPML, QR URLs, webhooks, short URLs, robots.txt, and sitemap generation.",
+      "endpoint_count": 15
+    },
+    {
+      "name": "External: Web",
+      "slug": "external-web",
+      "description": "Web scraping, link extraction, meta tag extraction, broken link checking. Requires network access.",
+      "endpoint_count": 10
+    }
+  ]
+}

@@ -190,14 +190,14 @@ const SCHEMAS = {
     example: { input: { text: '# Hello\n**bold**' }, output: { html: '<h1>Hello</h1>\n<strong>bold</strong>' } },
   },
   'text-csv-to-json': {
-    input: { data: { type: 'string', description: 'CSV text', required: true }, separator: { type: 'string', description: 'Delimiter (default: ,)' } },
+    input: { text: { type: 'string', description: 'CSV text', required: true }, separator: { type: 'string', description: 'Delimiter (default: ,)' } },
     output: { rows: 'object[]', headers: 'string[]', count: 'number' },
-    example: { input: { data: 'name,age\nalice,30' }, output: { rows: [{ name: 'alice', age: '30' }], count: 1 } },
+    example: { input: { text: 'name,age\nalice,30' }, output: { rows: [{ name: 'alice', age: '30' }], count: 1 } },
   },
   'text-json-to-csv': {
-    input: { rows: { type: 'array', description: 'Array of objects', required: true } },
+    input: { data: { type: 'array', description: 'Array of objects to convert to CSV', required: true } },
     output: { csv: 'string', count: 'number' },
-    example: { input: { rows: [{ name: 'alice', age: 30 }] }, output: { csv: 'name,age\nalice,30' } },
+    example: { input: { data: [{ name: 'alice', age: 30 }] }, output: { csv: 'name,age\nalice,30' } },
   },
   'text-xml-to-json': {
     input: { text: { type: 'string', description: 'XML text', required: true } },
@@ -220,19 +220,19 @@ const SCHEMAS = {
     example: { input: { text: '{"a":1}', indent: 2 }, output: { result: '{\n  "a": 1\n}' } },
   },
   'text-json-path': {
-    input: { json: { type: 'object', description: 'JSON to query', required: true }, path: { type: 'string', description: 'Dot-notation path (e.g. "user.name")', required: true } },
+    input: { text: { type: 'string', description: 'JSON string to query', required: true }, path: { type: 'string', description: 'Dot-notation path (e.g. "user.name")', required: true } },
     output: { value: 'any', found: 'boolean' },
-    example: { input: { json: { user: { name: 'Alice' } }, path: 'user.name' }, output: { value: 'Alice', found: true } },
+    example: { input: { text: '{"user":{"name":"Alice"}}', path: 'user.name' }, output: { value: 'Alice', found: true } },
   },
   'text-json-flatten': {
-    input: { json: { type: 'object', description: 'Nested JSON to flatten', required: true } },
+    input: { data: { type: 'object', description: 'Nested JSON object to flatten', required: true } },
     output: { result: 'object', keys: 'number' },
-    example: { input: { json: { a: { b: 1 } } }, output: { result: { 'a.b': 1 } } },
+    example: { input: { data: { a: { b: 1 } } }, output: { result: { 'a.b': 1 } } },
   },
   'text-json-unflatten': {
-    input: { json: { type: 'object', description: 'Flat JSON with dot-notation keys', required: true } },
+    input: { data: { type: 'object', description: 'Flat JSON object with dot-notation keys', required: true } },
     output: { result: 'object' },
-    example: { input: { json: { 'a.b': 1 } }, output: { result: { a: { b: 1 } } } },
+    example: { input: { data: { 'a.b': 1 } }, output: { result: { a: { b: 1 } } } },
   },
   'text-json-diff': {
     input: { a: { type: 'object', description: 'First JSON', required: true }, b: { type: 'object', description: 'Second JSON', required: true } },
@@ -245,9 +245,9 @@ const SCHEMAS = {
     example: { input: { a: { x: 1 }, b: { y: 2 } }, output: { result: { x: 1, y: 2 } } },
   },
   'text-json-schema-generate': {
-    input: { json: { type: 'object', description: 'Example JSON to generate schema from', required: true } },
+    input: { data: { type: 'object', description: 'Example JSON object to generate schema from', required: true } },
     output: { schema: 'object' },
-    example: { input: { json: { name: 'Alice', age: 30 } }, output: { schema: { type: 'object', properties: { name: { type: 'string' }, age: { type: 'number' } } } } },
+    example: { input: { data: { name: 'Alice', age: 30 } }, output: { schema: { type: 'object', properties: { name: { type: 'string' }, age: { type: 'number' } } } } },
   },
   'text-base64-encode': {
     input: { text: { type: 'string', required: true } },
@@ -262,25 +262,25 @@ const SCHEMAS = {
   'text-url-encode': { input: { text: { type: 'string', required: true } }, output: { result: 'string' }, example: { input: { text: 'hello world' }, output: { result: 'hello%20world' } } },
   'text-url-decode': { input: { text: { type: 'string', required: true } }, output: { result: 'string' }, example: { input: { text: 'hello%20world' }, output: { result: 'hello world' } } },
   'text-url-parse': {
-    input: { text: { type: 'string', description: 'URL to parse', required: true } },
+    input: { url: { type: 'string', description: 'URL to parse', required: true } },
     output: { protocol: 'string', hostname: 'string', port: 'string', pathname: 'string', params: 'object' },
-    example: { input: { text: 'https://slopshop.gg/v1/tools?limit=10' }, output: { hostname: 'slopshop.gg', pathname: '/v1/tools' } },
+    example: { input: { url: 'https://slopshop.gg/v1/tools?limit=10' }, output: { hostname: 'slopshop.gg', pathname: '/v1/tools' } },
   },
   'text-hex-encode': { input: { text: { type: 'string', required: true } }, output: { result: 'string' }, example: { input: { text: 'hi' }, output: { result: '6869' } } },
   'text-hex-decode': { input: { text: { type: 'string', required: true } }, output: { result: 'string' }, example: { input: { text: '6869' }, output: { result: 'hi' } } },
 
   // === CRYPTO ===
   'crypto-hash-sha256': {
-    input: { data: { type: 'string', description: 'Data to hash', required: true } },
+    input: { text: { type: 'string', description: 'Text to hash', required: true } },
     output: { hash: 'string', algorithm: 'string' },
-    example: { input: { data: 'hello' }, output: { hash: '2cf24dba...', algorithm: 'sha256' } },
+    example: { input: { text: 'hello' }, output: { hash: '2cf24dba...', algorithm: 'sha256' } },
   },
-  'crypto-hash-sha512': { input: { data: { type: 'string', required: true } }, output: { hash: 'string' }, example: { input: { data: 'hello' }, output: { hash: '9b71d224...' } } },
-  'crypto-hash-md5': { input: { data: { type: 'string', required: true } }, output: { hash: 'string' }, example: { input: { data: 'hello' }, output: { hash: '5d41402a...' } } },
+  'crypto-hash-sha512': { input: { text: { type: 'string', description: 'Text to hash', required: true } }, output: { hash: 'string' }, example: { input: { text: 'hello' }, output: { hash: '9b71d224...' } } },
+  'crypto-hash-md5': { input: { text: { type: 'string', description: 'Text to hash', required: true } }, output: { hash: 'string' }, example: { input: { text: 'hello' }, output: { hash: '5d41402a...' } } },
   'crypto-hmac': {
-    input: { data: { type: 'string', required: true }, secret: { type: 'string', description: 'HMAC secret key', required: true } },
+    input: { text: { type: 'string', description: 'Text to sign', required: true }, secret: { type: 'string', description: 'HMAC secret key', required: true } },
     output: { hmac: 'string', algorithm: 'string' },
-    example: { input: { data: 'hello', secret: 'key' }, output: { hmac: 'f7bc83f4...' } },
+    example: { input: { text: 'hello', secret: 'key' }, output: { hmac: 'f7bc83f4...' } },
   },
   'crypto-uuid': { input: {}, output: { uuid: 'string', version: 'number' }, example: { input: {}, output: { uuid: '550e8400-...', version: 4 } } },
   'crypto-nanoid': { input: { length: { type: 'number', description: 'Length (default: 21)' } }, output: { id: 'string' }, example: { input: { length: 12 }, output: { id: 'V1StGXR8_Z5j' } } },
@@ -322,16 +322,16 @@ const SCHEMAS = {
     example: { input: { length: 6 }, output: { otp: '847291', expires_in: 300 } },
   },
   'crypto-encrypt-aes': {
-    input: { data: { type: 'string', description: 'Data to encrypt', required: true }, key: { type: 'string', description: 'Encryption key', required: true } },
+    input: { text: { type: 'string', description: 'Text to encrypt', required: true }, key: { type: 'string', description: 'Encryption key', required: true } },
     output: { encrypted: 'string', iv: 'string', tag: 'string', algorithm: 'string' },
-    example: { input: { data: 'secret', key: 'my-key' }, output: { algorithm: 'aes-256-gcm' } },
+    example: { input: { text: 'secret', key: 'my-key' }, output: { algorithm: 'aes-256-gcm' } },
   },
   'crypto-decrypt-aes': {
     input: { encrypted: { type: 'string', required: true }, key: { type: 'string', required: true }, iv: { type: 'string', required: true }, tag: { type: 'string', required: true } },
     output: { decrypted: 'string' },
     example: { input: { encrypted: '...', key: 'my-key', iv: '...', tag: '...' }, output: { decrypted: 'secret' } },
   },
-  'crypto-checksum': { input: { data: { type: 'string', required: true } }, output: { md5: 'string', sha256: 'string', size_bytes: 'number' }, example: { input: { data: 'hello' }, output: { md5: '5d41402a...', sha256: '2cf24dba...' } } },
+  'crypto-checksum': { input: { content: { type: 'string', description: 'Content to checksum', required: true } }, output: { md5: 'string', sha256: 'string', size_bytes: 'number' }, example: { input: { content: 'hello' }, output: { md5: '5d41402a...', sha256: '2cf24dba...' } } },
   'crypto-totp-generate': {
     input: { secret: { type: 'string', description: 'Base32 secret (e.g. JBSWY3DPEHPK3PXP)', required: true } },
     output: { otp: 'string', remaining_seconds: 'number', period: 'number' },
@@ -608,9 +608,9 @@ const SCHEMAS = {
     example: { input: { ip: '10.0.1.5', cidr: '10.0.0.0/8' }, output: { contains: true } },
   },
   'net-url-parse': {
-    input: { text: { type: 'string', required: true } },
+    input: { url: { type: 'string', description: 'URL to parse', required: true } },
     output: { protocol: 'string', hostname: 'string', pathname: 'string', params: 'object' },
-    example: { input: { text: 'https://slopshop.gg/v1/tools?limit=10' }, output: { hostname: 'slopshop.gg' } },
+    example: { input: { url: 'https://slopshop.gg/v1/tools?limit=10' }, output: { hostname: 'slopshop.gg' } },
   },
 
   // === LLM APIs (all have same basic schema but different descriptions) ===

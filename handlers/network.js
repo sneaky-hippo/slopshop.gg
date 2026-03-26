@@ -647,6 +647,38 @@ const netUrlNormalize = async (input) => {
 };
 
 // ---------------------------------------------------------------------------
+// WHOIS Lookup
+// ---------------------------------------------------------------------------
+
+const netWhois = async ({ domain }) => {
+  if (!domain) return { _engine: 'real', error: 'Provide domain' };
+  const net = require('net');
+  return new Promise((resolve) => {
+    const client = net.createConnection({ host: 'whois.iana.org', port: 43 }, () => {
+      client.write(domain + '\r\n');
+    });
+    let data = '';
+    client.on('data', (chunk) => { data += chunk.toString(); });
+    client.on('end', () => {
+      // Parse the refer field to find the right WHOIS server
+      const refer = data.match(/refer:\s+(\S+)/i)?.[1];
+      if (refer) {
+        const client2 = net.createConnection({ host: refer, port: 43 }, () => { client2.write(domain + '\r\n'); });
+        let data2 = '';
+        client2.on('data', (c) => { data2 += c.toString(); });
+        client2.on('end', () => { resolve({ _engine: 'real', domain, whois_server: refer, raw: data2.trim().slice(0, 4000) }); });
+        client2.on('error', () => { resolve({ _engine: 'real', domain, raw: data.trim().slice(0, 4000) }); });
+        client2.setTimeout(10000, () => { client2.destroy(); resolve({ _engine: 'real', domain, raw: data.trim().slice(0, 4000) }); });
+      } else {
+        resolve({ _engine: 'real', domain, raw: data.trim().slice(0, 4000) });
+      }
+    });
+    client.on('error', (e) => { resolve({ _engine: 'real', domain, error: e.message }); });
+    client.setTimeout(10000, () => { client.destroy(); resolve({ _engine: 'real', domain, error: 'Timeout' }); });
+  });
+};
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 
@@ -677,4 +709,26 @@ module.exports = {
   'net-url-parse':          netUrlParse,
   'net-url-build':          netUrlBuild,
   'net-url-normalize':      netUrlNormalize,
+
+  'net-whois':              netWhois,
+
+  'sense-ct-logs': async ({ domain }) => {
+    if (!domain) return { _engine: 'real', error: 'Provide domain' };
+    const https = require('https');
+    return new Promise((resolve) => {
+      const req = https.get(`https://crt.sh/?q=%25.${encodeURIComponent(domain)}&output=json`, { timeout: 15000 }, (res) => {
+        let data = '';
+        res.on('data', c => data += c);
+        res.on('end', () => {
+          try {
+            const certs = JSON.parse(data).slice(0, 50);
+            const domains = [...new Set(certs.map(c => c.name_value).flatMap(n => n.split('\n')))];
+            resolve({ _engine: 'real', domain, certificates: certs.length, unique_domains: domains.length, domains: domains.slice(0, 100), source: 'crt.sh' });
+          } catch(e) { resolve({ _engine: 'real', domain, error: 'Could not parse CT data', raw: data.slice(0, 500) }); }
+        });
+      });
+      req.on('error', e => resolve({ _engine: 'real', domain, error: e.message }));
+      req.on('timeout', () => { req.destroy(); resolve({ _engine: 'real', domain, error: 'Timeout' }); });
+    });
+  },
 };

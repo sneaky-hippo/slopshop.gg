@@ -1,0 +1,10 @@
+<!-- OPTION C: "The Bolt" — A stylized S made from two connected angular strokes.
+     Concept: energy, speed, the S in Slopshop.
+     Inspired by lightning bolts but geometric. Like Figma's pen tool made angular.
+     Two strokes, one mark. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#ff3333"/>
+  <!-- The S-bolt — two connected angular strokes -->
+  <path d="M312 128 L200 240 L312 240 L200 384"
+    stroke="white" stroke-width="48" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

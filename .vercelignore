@@ -4,3 +4,16 @@ handlers
 *.log
 stress-dashboard.html
 package-lock.json
+deep-simulate.js
+simulate.js
+stress-test.js
+lobster-test.js
+generate-seo.js
+js_block.txt
+launch-qa.js
+launch-qa-report.json
+STRATEGY.md
+LAUNCH.md
+TODO.md
+audit.js
+brand/

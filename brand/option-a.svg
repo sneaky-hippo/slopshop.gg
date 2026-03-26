@@ -1,0 +1,12 @@
+<!-- OPTION A: "The Execute Mark" — A bold geometric > with a dot.
+     Concept: execution/forward motion. The dot = the result.
+     Inspired by terminal prompts, play buttons, and forward arrows.
+     Works at any size. One color. Pure geometry. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#ff3333"/>
+  <!-- The chevron — thick, geometric, offset left -->
+  <path d="M176 140 L320 256 L176 372"
+    stroke="white" stroke-width="52" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- The dot — the result of execution -->
+  <circle cx="370" cy="256" r="26" fill="white"/>
+</svg>

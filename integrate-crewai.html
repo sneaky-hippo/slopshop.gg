@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Slopshop for CrewAI | 1,049 Real Tools as CrewAI Tools</title>
+<meta name="description" content="Give your CrewAI agents 1,049 real Slopshop tools. Define Slopshop endpoints as BaseTool subclasses. DNS, SSL, HTTP, crypto and more — all verified real execution for your crew.">
+<meta name="keywords" content="CrewAI tools, CrewAI integration, crewai BaseTool, multi-agent tools CrewAI, crewai agent tools, Slopshop CrewAI, crew definition tools">
+<link rel="canonical" href="https://slopshop.gg/integrate-crewai">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/integrate-crewai">
+<meta property="og:title" content="Slopshop for CrewAI — 1,049 Real Tools for Your Multi-Agent Crew">
+<meta property="og:description" content="Define Slopshop tools as CrewAI BaseTool subclasses. 1,049 real tools for your crew. Free memory. Verified results.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop for CrewAI — 1,049 Real Tools for Multi-Agent Crews">
+<meta name="twitter:description" content="CrewAI + Slopshop: define Slopshop endpoints as CrewAI BaseTool. 1,049 real tools for your agents. Free memory.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#00D4FF">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop for CrewAI","description":"How to define Slopshop tools as CrewAI BaseTool subclasses and assign them to agents in a crew definition.","url":"https://slopshop.gg/integrate-crewai","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"about":{"@type":"SoftwareApplication","name":"Slopshop","applicationCategory":"DeveloperApplication"}}</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--o:#ff8800;--g:#00cc66;--c:#00aaff;--v:#8855ff;
+  --acc:#00D4FF;--accg:rgba(0,212,255,0.08);--accb:rgba(0,212,255,0.18);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--acc);color:#000}
+a{color:var(--acc);text-decoration:none;transition:opacity 0.15s}
+a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2)}
+.hero{padding:136px 32px 80px;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(0,212,255,0.05),transparent 60%)}
+.hero-inner{max-width:1100px;margin:0 auto}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;background:var(--accg);border:1px solid var(--accb);color:var(--acc);padding:5px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;margin-bottom:28px;font-family:var(--mono)}
+.hero h1{font-family:var(--mono);font-size:clamp(2.4rem,5.5vw,4rem);font-weight:800;letter-spacing:-0.03em;line-height:1.05;margin-bottom:24px}
+.hero h1 .accent{color:var(--acc)}.hero h1 .dim{color:var(--t3)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:560px;margin:0 auto;line-height:1.8}
+.hero .sub b{color:var(--t);font-weight:600}
+.stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;margin:48px 0;padding:32px 0;border-top:1px solid var(--b);border-bottom:1px solid var(--b)}
+.stat{text-align:center;padding:0 8px}
+.stat .n{font-family:var(--mono);font-size:1.7rem;font-weight:800;letter-spacing:-0.03em}
+.stat .l{font-size:0.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.14em;margin-top:6px;font-weight:600}
+.stat:nth-child(1) .n{color:var(--acc)}.stat:nth-child(2) .n{color:var(--o)}.stat:nth-child(3) .n{color:var(--g)}.stat:nth-child(4) .n{color:var(--c)}
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.cta-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--acc);color:#000;text-decoration:none;transition:box-shadow 0.2s,transform 0.15s}
+.cta-primary:hover{box-shadow:0 0 28px rgba(0,212,255,0.35);transform:translateY(-1px);opacity:1}
+.cta-secondary{display:inline-flex;align-items:center;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2);text-decoration:none;transition:color 0.15s}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.sec{max-width:1100px;margin:0 auto;padding:80px 32px}
+.sec-label{font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--acc);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:12px}
+.sec h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
+.sec .desc{color:var(--t3);font-size:0.88rem;margin-bottom:40px;line-height:1.75;max-width:640px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px}
+.step{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;transition:border-color 0.2s}
+.step:hover{border-color:var(--b2)}
+.step-num{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px}
+.step h3{font-family:var(--mono);font-size:0.88rem;font-weight:700;margin-bottom:10px}
+.step p{font-size:0.8rem;color:var(--t3);line-height:1.75;margin-bottom:14px}
+.cmd{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.75rem;color:var(--o);cursor:pointer;position:relative}
+.cmd .copy-hint{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.58rem;color:var(--t4)}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:32px}
+.code-header{background:var(--s2);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .lang{font-family:var(--mono);font-size:0.68rem;color:var(--t3)}
+.code-header .fname{font-family:var(--mono);font-size:0.7rem;color:var(--acc);font-weight:600}
+.code-body{padding:20px 22px;font-family:var(--mono);font-size:0.78rem;line-height:1.85;overflow-x:auto;color:var(--t2)}
+.code-body .cm{color:var(--t4)}.code-body .kw{color:var(--acc)}.code-body .str{color:var(--g)}.code-body .fn{color:var(--c)}.code-body .num{color:var(--o)}
+.get-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:40px}
+.get-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px;transition:transform 0.15s}
+.get-card:hover{transform:translateY(-2px)}
+.get-card .icon{font-size:1.4rem;margin-bottom:12px}
+.get-card h3{font-family:var(--mono);font-size:0.82rem;font-weight:700;margin-bottom:6px}
+.get-card p{font-size:0.75rem;color:var(--t3);line-height:1.6}
+.get-card:nth-child(1){border-left:3px solid var(--acc)}.get-card:nth-child(2){border-left:3px solid var(--g)}
+.get-card:nth-child(3){border-left:3px solid var(--c)}.get-card:nth-child(4){border-left:3px solid var(--o)}.get-card:nth-child(5){border-left:3px solid var(--v)}
+.cta-banner{background:linear-gradient(135deg,rgba(0,212,255,0.06),rgba(0,212,255,0.02));border:1px solid rgba(0,212,255,0.15);border-radius:16px;padding:48px;text-align:center;margin:40px 0}
+.cta-banner h2{font-family:var(--mono);font-size:1.5rem;font-weight:800;margin-bottom:12px}
+.cta-banner h2 .accent{color:var(--acc)}
+.cta-banner p{color:var(--t3);margin-bottom:28px;font-size:0.9rem;max-width:480px;margin-left:auto;margin-right:auto}
+.divider{border:none;border-top:1px solid var(--b);margin:0}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t)}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}.nav-links a:nth-child(n+4){display:none}
+  .hero{padding:80px 16px 48px}.hero h1{font-size:clamp(2rem,10vw,2.8rem)}
+  .sec{padding:48px 16px}.steps{grid-template-columns:1fr}
+  .get-grid{grid-template-columns:1fr 1fr}.footer-grid{grid-template-columns:1fr;gap:24px}.cta-banner{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><linearGradient id="navG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#navG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+    <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/templates">Templates</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      BaseTool &nbsp;&middot;&nbsp; Agent &nbsp;&middot;&nbsp; Task &nbsp;&middot;&nbsp; Crew &nbsp;&middot;&nbsp; multi-agent framework
+    </div>
+    <h1>Slopshop for<br><span class="accent">CrewAI</span></h1>
+    <p class="sub">
+      Define Slopshop endpoints as <b>CrewAI BaseTool</b> subclasses. Assign them to agents. Wire agents into a crew. <b>1,049 real tools</b> — DNS, SSL, HTTP, crypto — available to every agent in your crew.<br>
+      Free persistent memory. Every result verified.
+    </p>
+
+    <div class="stats">
+      <div class="stat"><div class="n">422</div><div class="l">Real Tools</div></div>
+      <div class="stat"><div class="n">Any</div><div class="l">LLM Backend</div></div>
+      <div class="stat"><div class="n">Crew</div><div class="l">Multi-Agent</div></div>
+      <div class="stat"><div class="n">100%</div><div class="l">Verified Results</div></div>
+    </div>
+
+    <div class="hero-ctas">
+      <a href="/docs" class="cta-primary">Get Started Free</a>
+      <a href="/v1/openapi.json" class="cta-secondary">View OpenAPI Schema</a>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec">
+  <div class="sec-label">Quickstart</div>
+  <h2>Three steps. Your crew has tools.</h2>
+  <p class="desc">CrewAI tools are Python classes that subclass <code style="color:var(--acc)">BaseTool</code>. Each Slopshop endpoint becomes one tool class — define name, description, args_schema, and a <code style="color:var(--acc)">_run</code> method that calls Slopshop.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">Step 01 &mdash; Install</div>
+      <h3>pip install crewai</h3>
+      <p>Install CrewAI and requests. CrewAI works with any LLM backend — OpenAI, Anthropic, Groq, Ollama. Slopshop handles tool execution regardless.</p>
+      <div class="cmd">pip install crewai crewai-tools requests<span class="copy-hint">click to copy</span></div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 02 &mdash; Define Tools</div>
+      <h3>Subclass BaseTool for each endpoint</h3>
+      <p>Create one <code style="color:var(--acc)">BaseTool</code> subclass per Slopshop tool. The <code style="color:var(--acc)">_run</code> method POSTs to Slopshop's REST API and returns the JSON result.</p>
+      <div class="cmd" style="color:var(--t3);font-size:0.68rem">class DnsLookupTool(BaseTool): _run(self, ...)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 03 &mdash; Assign to Agents</div>
+      <h3>Pass tools to Agent, build Crew</h3>
+      <p>Pass tool instances to your <code style="color:var(--acc)">Agent</code> objects in the <code style="color:var(--acc)">tools=[]</code> list. Define tasks and kickoff the crew.</p>
+      <div class="cmd" style="color:var(--g);font-size:0.7rem">1,049 tools &middot; any agent &middot; verified execution</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Code Example</div>
+  <h2>Slopshop tools in a CrewAI crew definition</h2>
+  <p class="desc">A complete example showing a factory function to generate CrewAI tool classes from Slopshop's OpenAPI schema, then a crew with two agents — a researcher and an executor.</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="fname">crewai_agent.py</span>
+      <span class="lang">python</span>
+    </div>
+    <div class="code-body"><pre><span class="kw">import</span> os, json, requests
+<span class="kw">from</span> typing <span class="kw">import</span> Type, Any
+<span class="kw">from</span> pydantic <span class="kw">import</span> BaseModel, Field
+<span class="kw">from</span> crewai <span class="kw">import</span> Agent, Task, Crew, Process
+<span class="kw">from</span> crewai.tools <span class="kw">import</span> BaseTool
+
+SLOP_KEY = os.environ[<span class="str">"SLOPSHOP_API_KEY"</span>]
+SLOP_URL = <span class="str">"https://slopshop.gg"</span>
+
+<span class="cm"># Factory: generate a CrewAI BaseTool class for any Slopshop endpoint</span>
+<span class="kw">def</span> <span class="fn">make_slopshop_tool</span>(slug: str, description: str, schema: dict) -> Type[BaseTool]:
+    <span class="cm"># Build a Pydantic model from the OpenAPI schema properties</span>
+    fields = {}
+    props = schema.<span class="fn">get</span>(<span class="str">"properties"</span>, {})
+    required = schema.<span class="fn">get</span>(<span class="str">"required"</span>, [])
+    <span class="kw">for</span> field_name, field_schema <span class="kw">in</span> props.<span class="fn">items</span>():
+        default = ... <span class="kw">if</span> field_name <span class="kw">in</span> required <span class="kw">else</span> <span class="kw">None</span>
+        fields[field_name] = (<span class="fn">str</span>, <span class="fn">Field</span>(default, description=field_schema.<span class="fn">get</span>(<span class="str">"description"</span>, <span class="str">""</span>)))
+
+    ArgsModel = <span class="fn">type</span>(
+        <span class="str">f"{slug.replace('-','_').title()}Args"</span>,
+        (BaseModel,),
+        {<span class="str">"__annotations__"</span>: {k: v[<span class="num">0</span>] <span class="kw">for</span> k, v <span class="kw">in</span> fields.<span class="fn">items</span>()},
+         **{k: v[<span class="num">1</span>] <span class="kw">for</span> k, v <span class="kw">in</span> fields.<span class="fn">items</span>()}}
+    )
+
+    <span class="kw">def</span> <span class="fn">_run</span>(self, **kwargs) -> str:
+        res = requests.<span class="fn">post</span>(
+            <span class="str">f"{SLOP_URL}/v1/{slug}"</span>,
+            json={k: v <span class="kw">for</span> k, v <span class="kw">in</span> kwargs.<span class="fn">items</span>() <span class="kw">if</span> v <span class="kw">is not None</span>},
+            headers={<span class="str">"Authorization"</span>: <span class="str">f"Bearer {SLOP_KEY}"</span>}
+        )
+        <span class="kw">return</span> json.<span class="fn">dumps</span>(res.<span class="fn">json</span>())
+
+    <span class="kw">return</span> <span class="fn">type</span>(
+        <span class="str">f"Slopshop{slug.replace('-','').title()}Tool"</span>,
+        (BaseTool,),
+        {
+            <span class="str">"name"</span>: slug,
+            <span class="str">"description"</span>: description,
+            <span class="str">"args_schema"</span>: ArgsModel,
+            <span class="str">"_run"</span>: _run
+        }
+    )
+
+<span class="cm"># Load Slopshop tools from OpenAPI schema</span>
+<span class="kw">def</span> <span class="fn">load_tools</span>(slugs: list[str]) -> list[BaseTool]:
+    schema = requests.<span class="fn">get</span>(
+        <span class="str">f"{SLOP_URL}/v1/openapi.json"</span>,
+        headers={<span class="str">"Authorization"</span>: <span class="str">f"Bearer {SLOP_KEY}"</span>}
+    ).<span class="fn">json</span>()
+    tools = []
+    <span class="kw">for</span> slug <span class="kw">in</span> slugs:
+        path = schema[<span class="str">"paths"</span>].<span class="fn">get</span>(<span class="str">f"/v1/{slug}"</span>, {}).<span class="fn">get</span>(<span class="str">"post"</span>, {})
+        <span class="kw">if not</span> path:
+            <span class="kw">continue</span>
+        params = path[<span class="str">"requestBody"</span>][<span class="str">"content"</span>][<span class="str">"application/json"</span>][<span class="str">"schema"</span>]
+        ToolClass = <span class="fn">make_slopshop_tool</span>(slug, path.<span class="fn">get</span>(<span class="str">"summary"</span>, slug), params)
+        tools.<span class="fn">append</span>(<span class="fn">ToolClass</span>())
+    <span class="kw">return</span> tools
+
+<span class="cm"># Build the tool set</span>
+network_tools = <span class="fn">load_tools</span>([<span class="str">"dns-lookup"</span>, <span class="str">"ssl-check"</span>, <span class="str">"whois"</span>, <span class="str">"http-request"</span>])
+memory_tools  = <span class="fn">load_tools</span>([<span class="str">"memory-set"</span>, <span class="str">"memory-get"</span>])
+crypto_tools  = <span class="fn">load_tools</span>([<span class="str">"hash"</span>])
+
+<span class="cm"># Define agents with role-specific tool sets</span>
+researcher = <span class="fn">Agent</span>(
+    role=<span class="str">"Infrastructure Researcher"</span>,
+    goal=<span class="str">"Gather accurate infrastructure data about target domains"</span>,
+    backstory=<span class="str">"You are a network analyst who investigates domain infrastructure using real-time DNS and SSL data."</span>,
+    tools=network_tools,
+    verbose=<span class="kw">True</span>
+)
+
+analyst = <span class="fn">Agent</span>(
+    role=<span class="str">"Security Analyst"</span>,
+    goal=<span class="str">"Analyze infrastructure data, identify issues, and save findings to memory"</span>,
+    backstory=<span class="str">"You analyze infrastructure reports and save structured findings for future reference."</span>,
+    tools=memory_tools + crypto_tools,
+    verbose=<span class="kw">True</span>
+)
+
+<span class="cm"># Define tasks</span>
+gather_task = <span class="fn">Task</span>(
+    description=<span class="str">"Look up DNS records, SSL certificate, and WHOIS data for slopshop.gg"</span>,
+    agent=researcher,
+    expected_output=<span class="str">"DNS records, SSL cert details, WHOIS registration info as JSON"</span>
+)
+
+analyze_task = <span class="fn">Task</span>(
+    description=<span class="str">"Analyze the infrastructure findings and save a summary to memory key 'audit-slopshop'"</span>,
+    agent=analyst,
+    expected_output=<span class="str">"Summary of findings saved to Slopshop memory. Key risks flagged."</span>
+)
+
+<span class="cm"># Assemble and run the crew</span>
+crew = <span class="fn">Crew</span>(
+    agents=[researcher, analyst],
+    tasks=[gather_task, analyze_task],
+    process=Process.sequential,
+    verbose=<span class="kw">True</span>
+)
+
+result = crew.<span class="fn">kickoff</span>()
+<span class="fn">print</span>(result)</pre></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">What You Get</div>
+  <h2>Real tools for every agent in your crew</h2>
+  <p class="desc">CrewAI orchestrates. Slopshop executes. Every agent in your crew gets access to 1,049 real tools — no mocking, no simulation, no hallucinated execution.</p>
+
+  <div class="get-grid">
+    <div class="get-card"><div class="icon">&#127381;</div><h3>1,049 Real Tools</h3><p>DNS, SSL, HTTP, crypto, hashing, code execution, data transforms. Assign any subset to any agent in your crew.</p></div>
+    <div class="get-card"><div class="icon">&#129504;</div><h3>Free Persistent Memory</h3><p>Crew agents can write to and read from Slopshop's key-value store at zero credit cost. Share state between agents without a database.</p></div>
+    <div class="get-card"><div class="icon">&#128279;</div><h3>BaseTool Pattern</h3><p>Each Slopshop endpoint maps to a clean BaseTool subclass. Typed args via Pydantic. No raw HTTP in your agent code.</p></div>
+    <div class="get-card"><div class="icon">&#128064;</div><h3>Full Observability</h3><p>Audit logs per tool call. See exactly which agent called which tool, with what arguments, and what Slopshop returned.</p></div>
+    <div class="get-card"><div class="icon">&#127968;</div><h3>Self-Hostable</h3><p>Run Slopshop on your own infrastructure. Works with air-gapped CrewAI deployments and private LLM backends.</p></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="cta-banner">
+    <h2>Give your crew <span class="accent">1,049 real tools</span></h2>
+    <p>BaseTool subclasses. 1,049 Slopshop endpoints. Free shared memory.<br>CrewAI orchestrates — Slopshop executes.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a href="/docs" class="cta-primary">Get Started Free</a>
+      <a href="/v1/openapi.json" class="cta-secondary">OpenAPI Schema</a>
+      <a href="/tools" class="cta-secondary">Browse All 1,049 Tools</a>
+    </div>
+  </div>
+  <div style="display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px">
+    <a href="/docs" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Full Docs</a>
+    <a href="/tools" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Browse Tools</a>
+    <a href="/templates" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Agent Templates</a>
+    <a href="/savings" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Savings Calculator</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 512 512"><defs><linearGradient id="fG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#fG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col"><h4>Product</h4><a href="/tools">Tools</a><a href="/templates">Templates</a><a href="/#pricing">Pricing</a><a href="/savings">Savings</a></div>
+      <div class="footer-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/docs#getting-started">Getting Started</a><a href="/security">Security</a><a href="/changelog">Changelog</a></div>
+      <div class="footer-col"><h4>Company</h4><a href="/about">About</a><a href="/status">Status</a><a href="/legal">Legal</a><a href="https://x.com/slopshopgg">@slopshopgg</a></div>
+    </div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,049 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
+  </div>
+</footer>
+
+</body>
+</html>

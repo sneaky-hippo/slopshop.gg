@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>SHA256 Hash API - Compute SHA256 Online | Slopshop.gg</title>
+<meta name="description" content="Compute SHA256 hash of any string or data via API. Returns hex digest instantly. 1 credit per call. curl, Python, Node.js examples.">
+<meta name="keywords" content="sha256 api, sha256 hash api, compute sha256, sha256 online, hash api, generate sha256">
+<link rel="canonical" href="https://slopshop.gg/api/crypto-hash-sha256">
+<meta property="og:type" content="website">
+<meta property="og:title" content="SHA256 Hash API - Compute SHA256 Online">
+<meta property="og:description" content="Compute SHA256 hash of any string or data via API. Returns hex digest instantly. 1 credit per call. curl, Python, Node.js examples.">
+<meta property="og:url" content="https://slopshop.gg/api/crypto-hash-sha256">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="SHA256 Hash API - Compute SHA256 Online">
+<meta name="twitter:description" content="Compute SHA256 hash of any string or data via API. Returns hex digest instantly. 1 credit per call. curl, Python, Node.js examples.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"SHA256 Hash API","url":"https://slopshop.gg/api/crypto-hash-sha256","description":"Compute SHA256 hash of any string or data via API. Returns hex digest instantly. 1 credit per call. curl, Python, Node.js examples.","applicationCategory":"DeveloperApplication","operatingSystem":"Any","provider":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"offers":{"@type":"Offer","price":0.001,"priceCurrency":"USD","description":"1 credit per API call"}}</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none}a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.8);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:var(--r)}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:2px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s;font-family:var(--sans)}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+main{max-width:860px;margin:0 auto;padding:88px 32px 64px}
+.breadcrumb{font-family:var(--mono);font-size:0.7rem;color:var(--t4);margin-bottom:20px}
+.breadcrumb a{color:var(--t3)}
+.api-badge{display:inline-flex;align-items:center;gap:8px;margin-bottom:16px}
+.badge{font-family:var(--mono);font-size:0.62rem;font-weight:700;padding:3px 10px;border-radius:4px;text-transform:uppercase}
+.badge-cat{background:var(--s2);color:var(--t3)}
+.badge-credits{background:var(--og);color:var(--o)}
+h1{font-family:var(--mono);font-size:clamp(1.6rem,4vw,2.4rem);font-weight:800;letter-spacing:-0.02em;margin-bottom:16px;line-height:1.15}
+.lead{font-size:1.05rem;color:var(--t2);line-height:1.8;margin-bottom:40px;max-width:720px}
+.lead code{background:var(--s2);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:0.88em;color:var(--t)}
+.lead a{color:var(--r)}
+h2{font-family:var(--mono);font-size:1.15rem;font-weight:700;margin:40px 0 14px;padding-bottom:8px;border-bottom:1px solid var(--b)}
+h3{font-family:var(--mono);font-size:0.9rem;font-weight:700;margin:20px 0 10px;color:var(--t2)}
+p{color:var(--t2);line-height:1.8;margin-bottom:14px}
+p code{background:var(--s2);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:0.88em;color:var(--t)}
+p a{color:var(--r)}
+ul{color:var(--t2);padding-left:20px;line-height:2}
+ul li{margin-bottom:4px}
+pre{background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:16px 18px;overflow-x:auto;margin:12px 0 20px}
+pre code{font-family:var(--mono);font-size:0.78rem;line-height:1.8;color:var(--t2)}
+table{width:100%;border-collapse:collapse;margin:12px 0 24px;font-size:0.82rem}
+th{text-align:left;padding:8px 12px;border-bottom:1px solid var(--b2);font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.06em}
+td{padding:10px 12px;border-bottom:1px solid var(--b);color:var(--t2);vertical-align:top}
+td code{background:var(--s2);padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:0.82em;color:var(--t)}
+.pricing-box{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:24px;margin:12px 0 24px;display:flex;gap:40px;flex-wrap:wrap}
+.pricing-item .label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.1em;color:var(--t4);font-family:var(--mono);margin-bottom:4px}
+.pricing-item .value{font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--o)}
+.pricing-item .sub{font-size:0.7rem;color:var(--t4);margin-top:2px}
+.tier-badge{display:inline-block;font-family:var(--mono);font-size:0.65rem;font-weight:700;padding:3px 10px;border-radius:4px;text-transform:uppercase;color:var(--g);background:rgba(0,0,0,0.3);border:1px solid var(--g)30}
+.related-grid{display:grid;grid-template-columns:1fr;gap:0}
+.related-grid li{list-style:none;padding:10px 0;border-bottom:1px solid var(--b)}
+.related-grid li:last-child{border-bottom:none}
+.related-grid li a{font-family:var(--mono);font-size:0.82rem;font-weight:600}
+.related-grid li{font-size:0.8rem;color:var(--t3)}
+.try-btn{display:inline-block;background:var(--r);color:#fff;padding:12px 28px;border-radius:8px;font-family:var(--mono);font-size:0.82rem;font-weight:700;margin:16px 0 24px;transition:0.2s}
+.try-btn:hover{background:#e62e2e;box-shadow:0 0 20px rgba(255,51,51,0.3);opacity:1}
+.example-cards{display:grid;grid-template-columns:1fr;gap:16px;margin:16px 0 24px}
+.example-card{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden}
+.example-card-header{padding:14px 18px 10px;border-bottom:1px solid var(--b)}
+.example-card-num{font-family:var(--mono);font-size:0.6rem;font-weight:700;color:var(--r);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px}
+.example-card-title{font-family:var(--mono);font-size:0.88rem;font-weight:700;color:var(--t);margin-bottom:4px}
+.example-card-desc{font-size:0.78rem;color:var(--t3);line-height:1.5}
+.example-card pre{margin:0;border:none;border-radius:0;background:var(--bg);padding:14px 18px}
+.example-card pre code{font-size:0.75rem}
+footer{padding:40px 32px;text-align:center;border-top:1px solid var(--b)}
+.f-brand{font-family:var(--mono);font-weight:800;font-size:1rem;margin-bottom:10px}
+.f-brand .red{color:var(--r)}
+footer p{font-size:0.68rem;color:var(--t4);line-height:2.2;font-family:var(--mono)}
+footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
+@media(max-width:768px){nav{padding:0 16px}.nav-links a{display:none}main{padding:72px 16px 48px}h1{font-size:1.4rem}.lead{font-size:0.92rem}.pricing-box{gap:20px}}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo"><span class="mark">&#129438; SLOP</span>SHOP<span class="gg">.GG</span></a>
+  <div class="nav-links">
+    <a href="/#playground">Playground</a>
+    <a href="/#catalog">Catalog</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="https://github.com/slopshop/slopshop">GitHub</a>
+  </div>
+</div></nav>
+
+<main>
+  <div class="breadcrumb">
+    <a href="/">slopshop.gg</a> / <a href="/api/">API catalog</a> / crypto-hash-sha256
+  </div>
+
+  <div class="api-badge">
+    <span class="badge badge-cat">Crypto & Security</span>
+    <span class="badge badge-credits">1 credit</span>
+    <span class="tier-badge">COMPUTE</span>
+  </div>
+
+  <h1>SHA256 Hash API</h1>
+
+  <p class="lead">Compute cryptographic SHA256 hashes programmatically via a simple REST API. Send any string or binary data and receive the 64-character hex digest — the same output as <code>openssl dgst -sha256</code> or Python's <code>hashlib.sha256</code>.</p>
+
+  <a href="https://slopshop.gg/#playground" class="try-btn">Try it live &#8594;</a>
+
+  <h2>How it works</h2>
+  <p>POST your input data as a JSON string. The API computes a SHA-256 digest using Node.js's built-in <code>crypto</code> module (no external dependencies) and returns the lowercase hex-encoded 32-byte hash. Processing is deterministic: the same input always produces the same output.</p>
+
+  <h2>Use cases</h2>
+  <ul>
+    <li>Verify file integrity — hash a downloaded file and compare to a published checksum</li>
+          <li>Generate cache keys — create a stable identifier for any piece of content</li>
+          <li>Build content-addressable storage systems or deduplication pipelines</li>
+          <li>Implement API request signing where SHA256 is the required digest algorithm</li>
+          <li>Generate unique identifiers from composite fields without a database sequence</li>
+  </ul>
+
+  <h2>API Reference</h2>
+  <pre><code>POST https://slopshop.gg/v1/crypto-hash-sha256
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json</code></pre>
+
+  <h3>Input parameters</h3>
+  <table>
+    <thead>
+      <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+    </thead>
+    <tbody>
+            <tr>
+              <td><code>input / data</code></td>
+              <td>string</td>
+              <td><span style="color:var(--r)">required</span></td>
+              <td>The input data to hash or process</td>
+            </tr>
+    </tbody>
+  </table>
+
+  <h3>Example response</h3>
+  <pre><code>{
+  "data": {
+    "hash": "a665a45920422f9d417e4867efdc4fb8a04a1f3fff1fa07e998e86f7f7a27ae3",
+    "algorithm": "sha256",
+    "input_length": 11
+  },
+  "meta": {
+    "credits_used": 1,
+    "engine": "real",
+    "ms": 4
+  }
+}</code></pre>
+
+  <h2>Examples</h2>
+  <p>Three real-world scenarios showing how developers use SHA256 Hash in production.</p>
+  <div class="example-cards">
+    <div class="example-card">
+      <div class="example-card-header">
+        <div class="example-card-num">Example 1</div>
+        <div class="example-card-title">Hash a password</div>
+        <div class="example-card-desc">Generate a SHA256 digest of a user password for comparison (use crypto-password-hash for actual storage).</div>
+      </div>
+      <pre><code>curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer $SLOPSHOP_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"data": "mysecretpassword"}'</code></pre>
+    </div>
+    <div class="example-card">
+      <div class="example-card-header">
+        <div class="example-card-num">Example 2</div>
+        <div class="example-card-title">Generate cache key</div>
+        <div class="example-card-desc">Create a stable cache key from a composite identifier.</div>
+      </div>
+      <pre><code>curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer $SLOPSHOP_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"data": "user:42:profile:settings"}'</code></pre>
+    </div>
+    <div class="example-card">
+      <div class="example-card-header">
+        <div class="example-card-num">Example 3</div>
+        <div class="example-card-title">Verify file integrity</div>
+        <div class="example-card-desc">Hash a file's contents to check for tampering or corruption.</div>
+      </div>
+      <pre><code>curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer $SLOPSHOP_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"data": "contents of important document..."}'</code></pre>
+    </div>
+  </div>
+
+  <h2>Code examples</h2>
+
+  <h3>curl</h3>
+  <pre><code>curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "your data here"}'</code></pre>
+
+  <h3>Python</h3>
+  <pre><code>import requests
+
+response = requests.post(
+    "https://slopshop.gg/v1/crypto-hash-sha256",
+    headers={"Authorization": "Bearer YOUR_API_KEY"},
+    json={"input": "your data here"}
+)
+result = response.json()
+print(result["data"])</code></pre>
+
+  <h3>Node.js</h3>
+  <pre><code>const response = await fetch("https://slopshop.gg/v1/crypto-hash-sha256", {
+  method: "POST",
+  headers: {
+    "Authorization": "Bearer YOUR_API_KEY",
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ input: "your data here" })
+});
+const { data } = await response.json();
+console.log(data);</code></pre>
+
+  <h3>CLI</h3>
+  <pre><code># Install the Slopshop CLI
+npm install -g slopshop
+
+# Set your API key
+export SLOPSHOP_KEY=your_api_key
+
+# Call crypto-hash-sha256
+slop crypto-hash-sha256 '{"input": "your data here"}'</code></pre>
+
+  <h2>Pricing</h2>
+  <div class="pricing-box">
+    <div class="pricing-item">
+      <div class="label">Credits per call</div>
+      <div class="value">1</div>
+      <div class="sub">credits</div>
+    </div>
+    <div class="pricing-item">
+      <div class="label">Cost per call</div>
+      <div class="value">$0.001</div>
+      <div class="sub">at Starter tier</div>
+    </div>
+    <div class="pricing-item">
+      <div class="label">Tier</div>
+      <div class="value" style="font-size:0.9rem;color:var(--g)">COMPUTE</div>
+      <div class="sub">Pure compute</div>
+    </div>
+  </div>
+  <p>Credits are purchased in bundles starting at $1 for 1,000 credits. All compute APIs like this one use 1 credit per call — that's $0.001. <a href="/#pricing">See all pricing tiers</a>.</p>
+
+  <h2>Related APIs in Crypto & Security</h2>
+  <ul class="related-grid">
+    <li><a href="/api/crypto-hash-sha512">SHA512 Hash API</a> — Compute SHA512 hash of input data.</li>
+          <li><a href="/api/crypto-hash-md5">MD5 Hash API</a> — Compute MD5 hash of input data.</li>
+          <li><a href="/api/crypto-hmac">HMAC-SHA256 API</a> — Compute HMAC-SHA256 with secret key.</li>
+          <li><a href="/api/crypto-uuid">UUID v4 API</a> — Generate cryptographically random UUID v4.</li>
+          <li><a href="/api/crypto-nanoid">Nanoid API</a> — Generate compact unique ID (21 chars, URL-safe).</li>
+  </ul>
+
+  <p style="margin-top:40px;font-size:0.8rem;color:var(--t4)">
+    View the full <a href="/api/">API catalog</a> &middot;
+    <a href="https://slopshop.gg/#playground">Try in playground</a> &middot;
+    <a href="/docs">Documentation</a>
+  </p>
+</main>
+
+<footer>
+  <div class="f-brand">&#129438; <span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>
+  <p>
+    <a href="/docs">Docs</a> &middot; <a href="/dashboard">Dashboard</a> &middot; <a href="https://github.com/slopshop/slopshop">GitHub</a> &middot; <a href="/v1/tools">API</a> &middot; <a href="/v1/health">Status</a><br>
+    422 APIs &middot; all real &middot; MIT License &middot; slopshop.gg
+  </p>
+</footer>
+
+</body>
+</html>

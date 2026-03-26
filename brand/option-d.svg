@@ -1,0 +1,15 @@
+<!-- OPTION D: "The Refined {·}" — The original concept but massively upgraded.
+     Thinner strokes, perfect geometry, larger center dot, more breathing room.
+     This keeps brand continuity while making it feel 10x more premium.
+     Think: the Apple evolution — same concept, refined over decades. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#ff3333"/>
+  <!-- Left brace — thin, elegant, mathematically precise -->
+  <path d="M206 128 C178 128 166 148 166 172 L166 228 C166 248 152 260 136 260 C152 260 166 272 166 292 L166 340 C166 364 178 384 206 384"
+    stroke="white" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Right brace -->
+  <path d="M306 128 C334 128 346 148 346 172 L346 228 C346 248 360 260 376 260 C360 260 346 272 346 292 L346 340 C346 364 334 384 306 384"
+    stroke="white" stroke-width="24" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <!-- Center dot — larger, more presence -->
+  <circle cx="256" cy="260" r="22" fill="white"/>
+</svg>

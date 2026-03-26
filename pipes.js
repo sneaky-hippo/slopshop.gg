@@ -110,7 +110,7 @@ const PIPES = {
     steps: ['net-dns-a', 'net-ssl-check', 'net-http-status', 'net-email-validate'],
     credits: 20,
     category: 'Network',
-    example_input: { domain: 'slopshop.gg', url: 'https://slopshop.gg', email: 'hello@slopshop.gg' },
+    example_input: { domain: 'slopshop.gg', url: 'https://slopshop.gg', email: 'dev@slopshop.gg' },
   },
   'onboarding-pack': {
     name: 'Onboarding Pack',
@@ -119,6 +119,49 @@ const PIPES = {
     credits: 3,
     category: 'Dev',
     example_input: { secret: 'my-app-secret' },
+  },
+
+  // === OUTCOME-FOCUSED PIPES ===
+
+  'website-report': {
+    name: 'Website Report',
+    desc: 'Full analysis of any website: content summary, tech stack, SSL grade, response time, sitemap check, and link extraction. Returns a complete report.',
+    steps: ['sense-url-content', 'sense-url-tech-stack', 'sense-ssl-check', 'sense-url-response-time', 'sense-url-links'],
+    credits: 15,
+    category: 'Research',
+    example_input: { url: 'https://stripe.com' },
+  },
+  'data-clean': {
+    name: 'Data Clean & Analyze',
+    desc: 'Take raw JSON data, compute statistics, filter outliers, sort by key field, and return clean analyzed data.',
+    steps: ['analyze-json-stats', 'exec-filter-json', 'exec-sort-json'],
+    credits: 5,
+    category: 'Data',
+    example_input: { data: [{"name":"a","score":95},{"name":"b","score":12},{"name":"c","score":87}], sort_key: 'score', filter: 'score > 50' },
+  },
+  'competitor-snapshot': {
+    name: 'Competitor Snapshot',
+    desc: 'Quick competitive intelligence: fetch a competitor URL, detect their tech stack, check their SSL and performance, extract all outbound links.',
+    steps: ['sense-url-tech-stack', 'sense-url-response-time', 'sense-ssl-check', 'sense-url-links', 'sense-url-meta'],
+    credits: 15,
+    category: 'Research',
+    example_input: { url: 'https://competitor.com' },
+  },
+  'hash-everything': {
+    name: 'Hash Everything',
+    desc: 'Hash input data with SHA-256, SHA-512, MD5, and generate a checksum. Returns all hashes for verification.',
+    steps: ['crypto-hash-sha256', 'crypto-hash-sha512', 'crypto-hash-md5', 'crypto-checksum'],
+    credits: 4,
+    category: 'Security',
+    example_input: { data: 'important document content' },
+  },
+  'text-intelligence': {
+    name: 'Text Intelligence',
+    desc: 'Full text analysis: word count, readability score, token count, extract all emails/URLs/numbers, and detect language.',
+    steps: ['text-word-count', 'text-readability-score', 'text-token-count', 'text-extract-emails', 'text-extract-urls'],
+    credits: 5,
+    category: 'Content',
+    example_input: { text: 'Contact us at hello@example.com or visit https://example.com for more info. We process over 10000 requests daily.' },
   },
 };
 

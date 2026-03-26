@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Legal - Slopshop.gg</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#050505;color:#ccc;font-family:'Inter',sans-serif;line-height:1.8;padding:80px 24px 60px}
+.content{max-width:720px;margin:0 auto}
+h1{color:#f5f5f5;font-size:2rem;margin-bottom:32px}
+h2{color:#f5f5f5;font-size:1.2rem;margin:32px 0 12px;border-bottom:1px solid #1a1a1a;padding-bottom:8px}
+p,li{font-size:0.9rem;margin-bottom:12px}
+ul{padding-left:20px}
+a{color:#ff3333}
+.updated{color:#666;font-size:0.8rem;margin-bottom:24px}
+nav{position:fixed;top:0;left:0;right:0;height:50px;background:rgba(5,5,5,0.9);backdrop-filter:blur(20px);border-bottom:1px solid #1a1a1a;display:flex;align-items:center;padding:0 24px}
+nav a{color:#f5f5f5;font-family:monospace;font-weight:800;font-size:0.9rem;text-decoration:none}
+</style>
+</head>
+<body>
+<nav><a href="/">SLOPSHOP.GG</a></nav>
+<div class="content">
+
+<h1>Terms of Service</h1>
+<p class="updated">Last updated: March 26, 2026</p>
+
+<h2>1. Acceptance of Terms</h2>
+<p>By accessing or using Slopshop.gg ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, do not use the Service.</p>
+
+<h2>2. Description of Service</h2>
+<p>Slopshop.gg provides a credit-based API platform with tools for computation, text processing, AI content generation, network operations, and related services. The Service is provided "as is" and may be modified at any time.</p>
+
+<h2>3. Accounts</h2>
+<ul>
+<li>You must provide a valid email address and password to create an account.</li>
+<li>You are responsible for maintaining the security of your API key.</li>
+<li>You are responsible for all activity under your account.</li>
+<li>One account per person. Duplicate accounts may be terminated.</li>
+</ul>
+
+<h2>4. Credits and Payments</h2>
+<ul>
+<li>New accounts receive free credits upon signup. The amount of free credits may change at any time.</li>
+<li>Additional credits may be purchased through our payment partners.</li>
+<li>Credits are non-transferable between accounts unless using the API transfer endpoint.</li>
+<li>Credits do not expire.</li>
+<li>Refunds are available for unused credit balances within 30 days of purchase.</li>
+<li>We reserve the right to modify credit pricing, including the price per credit and the credit cost of individual APIs, at any time. Changes take effect immediately for new API calls. Purchased credits retain their monetary value — if pricing changes, your existing credit balance remains valid.</li>
+</ul>
+
+<h2>4a. Free Tier APIs</h2>
+<ul>
+<li>Certain APIs may be designated as "free" (0 credits per call) at our discretion.</li>
+<li>The designation of any API as free is a promotional offering and may be changed, modified, or revoked at any time without prior notice.</li>
+<li>Free tier APIs are subject to the same rate limits, acceptable use policies, and terms as paid APIs.</li>
+<li>We may introduce credit costs for previously free APIs, apply usage caps to free APIs, or remove APIs from the free tier entirely, at our sole discretion.</li>
+<li>Continued availability of free tier APIs is not guaranteed and does not create any obligation to maintain free pricing.</li>
+</ul>
+
+<h2>5. Acceptable Use</h2>
+<p>You agree NOT to:</p>
+<ul>
+<li>Use the Service for illegal activities</li>
+<li>Attempt to bypass rate limits or authentication</li>
+<li>Resell API access without authorization</li>
+<li>Send spam, malware, or harmful content through the Service</li>
+<li>Overload the Service with automated requests designed to degrade performance</li>
+<li>Use the AI APIs to generate content that violates applicable laws</li>
+<li>Scrape or harvest user data from the Service</li>
+</ul>
+
+<h2>6. API Usage</h2>
+<ul>
+<li>API calls are metered by credits. Each API has a published credit cost, which is subject to change.</li>
+<li>The current credit cost of any API is returned in the API response headers (<code>X-Credits-Used</code>) and reflected in your balance. The published cost at the time of the call is the cost charged.</li>
+<li>Rate limits may apply. Exceeding limits results in HTTP 429 responses.</li>
+<li>We do not guarantee 100% uptime. Service interruptions may occur.</li>
+<li>API responses include <code>_engine</code> field indicating computation method.</li>
+<li>We may add, remove, or modify APIs at any time. Removal of an API does not entitle you to a refund of credits previously spent on that API.</li>
+</ul>
+
+<h2>7. Data and Privacy</h2>
+<ul>
+<li>We store your email address and hashed password for authentication.</li>
+<li>API call inputs are processed and discarded. We do not store your API call data permanently.</li>
+<li>Audit logs record API slug, credit cost, and timing (not input/output data).</li>
+<li>We do not sell your personal data to third parties.</li>
+<li>You may request account deletion by contacting us.</li>
+</ul>
+
+<h2>8. AI-Generated Content</h2>
+<ul>
+<li>AI-powered APIs (llm-*) generate content using third-party AI models.</li>
+<li>AI outputs may be inaccurate, biased, or inappropriate. You are responsible for reviewing and validating AI outputs before use.</li>
+<li>We are not liable for decisions made based on AI-generated content.</li>
+</ul>
+
+<h2>9. Marketplace</h2>
+<ul>
+<li>Third-party APIs submitted to the marketplace are reviewed before approval.</li>
+<li>Marketplace API providers earn 80% of credits spent on their APIs.</li>
+<li>We reserve the right to remove marketplace APIs at any time.</li>
+<li>We are not responsible for the accuracy or reliability of third-party marketplace APIs.</li>
+</ul>
+
+<h2>10. Limitation of Liability</h2>
+<p>THE SERVICE IS PROVIDED "AS IS" WITHOUT WARRANTY OF ANY KIND. IN NO EVENT SHALL SLOPSHOP BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES, INCLUDING LOSS OF PROFITS, DATA, OR BUSINESS OPPORTUNITIES, ARISING FROM YOUR USE OF THE SERVICE.</p>
+
+<h2>11. Indemnification</h2>
+<p>You agree to indemnify and hold harmless Slopshop and its operators from any claims, damages, or expenses arising from your use of the Service or violation of these terms.</p>
+
+<h2>12. Termination</h2>
+<p>We may suspend or terminate your account at any time for violation of these terms. You may delete your account at any time. Upon termination, unused purchased credits may be refunded within 30 days.</p>
+
+<h2>13. Changes to Terms</h2>
+<p>We may update these terms at any time. Continued use of the Service after changes constitutes acceptance. Material changes will be communicated via email to registered users.</p>
+
+<h2>14. Contact</h2>
+<p>For questions about these terms: dev@slopshop.gg</p>
+
+<br><br>
+<h1>Privacy Policy</h1>
+<p class="updated">Last updated: March 26, 2026</p>
+
+<h2>What We Collect</h2>
+<ul>
+<li><strong>Account data:</strong> Email address, hashed password (PBKDF2, never stored in plaintext).</li>
+<li><strong>Usage data:</strong> API calls made (slug, credits used, timestamp). We do NOT store your input data or API responses.</li>
+<li><strong>Payment data:</strong> Processed by our payment partners (Gumroad/Stripe). We do not store card numbers.</li>
+<li><strong>Waitlist:</strong> Email addresses submitted voluntarily.</li>
+</ul>
+
+<h2>How We Use It</h2>
+<ul>
+<li>Authentication and account management</li>
+<li>Credit billing and usage tracking</li>
+<li>Service improvement and debugging</li>
+<li>Communication about service updates (opt-out available)</li>
+</ul>
+
+<h2>What We Don't Do</h2>
+<ul>
+<li>We do NOT sell your data</li>
+<li>We do NOT share your data with advertisers</li>
+<li>We do NOT track you across websites</li>
+<li>We do NOT store your API call inputs or outputs</li>
+</ul>
+
+<h2>Data Retention</h2>
+<ul>
+<li>Account data: retained until you delete your account</li>
+<li>Audit logs: retained for 90 days</li>
+<li>Waitlist emails: retained until you unsubscribe</li>
+</ul>
+
+<h2>Your Rights</h2>
+<ul>
+<li>Access your data: GET /v1/auth/me</li>
+<li>Export your data: GET /v1/usage</li>
+<li>Delete your account: contact dev@slopshop.gg</li>
+</ul>
+
+<h2>Cookies</h2>
+<p>We do not use cookies or tracking pixels.</p>
+
+<h2>Contact</h2>
+<p>Privacy questions: dev@slopshop.gg</p>
+
+</div>
+</body>
+</html>

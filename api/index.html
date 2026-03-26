@@ -1,0 +1,2368 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>API Catalog - All 422 APIs | Slopshop.gg</title>
+<meta name="description" content="Browse all 1,049 Slopshop APIs grouped by category. Crypto, AI, data transform, network, code execution, agent memory, and more. All real. Credit-based.">
+<link rel="canonical" href="https://slopshop.gg/api/">
+<meta property="og:title" content="Slopshop API Catalog - All 422 APIs">
+<meta property="og:description" content="Browse all 1,049 Slopshop APIs. Crypto, AI, data transform, network, code execution, agent memory, and more.">
+<meta property="og:url" content="https://slopshop.gg/api/">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased}
+a{color:var(--r);text-decoration:none}a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.8);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em}
+.logo .mark{color:var(--r)}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+main{max-width:1000px;margin:0 auto;padding:88px 32px 64px}
+h1{font-family:var(--mono);font-size:2rem;font-weight:800;margin-bottom:8px}
+.subtitle{color:var(--t3);margin-bottom:40px;font-size:0.9rem}
+.search-bar{width:100%;background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:12px 16px;color:var(--t);font-family:var(--mono);font-size:0.82rem;outline:none;margin-bottom:32px;transition:0.2s}
+.search-bar:focus{border-color:var(--r);box-shadow:0 0 0 3px var(--rg)}
+.cat-section{margin-bottom:40px}
+h2{font-family:var(--mono);font-size:0.95rem;font-weight:700;color:var(--t3);margin-bottom:12px;padding:8px 0;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:8px}
+.cat-count{background:var(--s2);color:var(--t4);padding:2px 8px;border-radius:4px;font-size:0.65rem}
+.api-list{list-style:none;display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:4px}
+.api-list li{background:var(--s1);border:1px solid var(--b);border-radius:6px;padding:10px 14px;display:flex;flex-direction:column;gap:3px;transition:0.2s}
+.api-list li:hover{border-color:var(--r);box-shadow:0 2px 12px rgba(255,51,51,0.06)}
+.api-list li a{font-family:var(--mono);font-size:0.78rem;font-weight:600;color:var(--t)}
+.api-list li a:hover{color:var(--r);opacity:1}
+.api-desc{font-size:0.72rem;color:var(--t3);line-height:1.5}
+.api-cr{font-family:var(--mono);font-size:0.6rem;color:var(--o);font-weight:700;margin-top:2px}
+footer{padding:40px 32px;text-align:center;border-top:1px solid var(--b)}
+.f-brand{font-family:var(--mono);font-weight:800;font-size:1rem;margin-bottom:10px}
+.f-brand .red{color:var(--r)}
+footer p{font-size:0.68rem;color:var(--t4);line-height:2.2;font-family:var(--mono)}
+footer a{color:var(--t3)}
+@media(max-width:768px){nav{padding:0 16px}.nav-links a{display:none}main{padding:72px 16px 48px}.api-list{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo"><span class="mark">&#129438; SLOP</span>SHOP<span class="gg">.GG</span></a>
+  <div class="nav-links">
+    <a href="/#playground">Playground</a>
+    <a href="/#catalog">Catalog</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="https://github.com/slopshop/slopshop">GitHub</a>
+  </div>
+</div></nav>
+
+<main>
+  <h1>&#129438; API Catalog</h1>
+  <p class="subtitle">1,049 real tools grouped by category &mdash; all computed from your actual input, no mocked data.</p>
+
+  <input class="search-bar" type="search" id="search" placeholder="Search APIs by name, category, or description..." oninput="filterApis(this.value)">
+
+  <div id="catalog">
+    
+      <section class="cat-section">
+        <h2>Agent Tools <span class="cat-count">10</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/llm-output-extract-json">Extract JSON from LLM</a>
+            <span class="api-desc">Extract JSON from messy LLM output (markdown, code fences, explanation text). The #1 agent pain point solved.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-output-validate">Validate LLM Output</a>
+            <span class="api-desc">Validate LLM output against a JSON schema. Check types, required fields, enums, patterns.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-output-fix-json">Fix Broken JSON</a>
+            <span class="api-desc">Fix broken JSON from LLMs: single quotes, trailing commas, missing braces, JS comments.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/json-schema-validate">JSON Schema Validate</a>
+            <span class="api-desc">Validate data against JSON Schema (draft-07). Types, required, enum, min/max, pattern.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-token-estimate-cost">Token Cost Estimate</a>
+            <span class="api-desc">Estimate token count and USD cost for Claude, GPT-4o, Gemini. Essential for budget-aware agents.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/webhook-send">Webhook Send</a>
+            <span class="api-desc">POST to any URL with any JSON payload. Agents need this to notify external systems.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/file-download">File Download</a>
+            <span class="api-desc">Download file from URL, return content as string. Agents cannot fetch URLs natively.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/kv-get">KV Get</a>
+            <span class="api-desc">Get value from persistent key-value store. Survives across sessions.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/kv-set">KV Set</a>
+            <span class="api-desc">Set value in persistent key-value store. Survives across sessions.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/kv-list">KV List Keys</a>
+            <span class="api-desc">List all keys in a KV namespace.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>AI: Analysis <span class="cat-count">14</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/llm-summarize">Summarize</a>
+            <span class="api-desc">Summarize any text. Configurable length and format.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-summarize-thread">Thread Summary</a>
+            <span class="api-desc">Summarize email/chat thread with decisions + action items.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-sentiment">Sentiment Analysis</a>
+            <span class="api-desc">Analyze sentiment with aspect-level detail and confidence.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-classify">Text Classify</a>
+            <span class="api-desc">Classify text into your provided categories.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-extract-entities">Entity Extraction</a>
+            <span class="api-desc">Extract people, orgs, dates, amounts, locations from text.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-extract-action-items">Action Items</a>
+            <span class="api-desc">Extract action items with owners and deadlines from text.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-extract-key-points">Key Points</a>
+            <span class="api-desc">Extract key points and takeaways from document.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-tone-analyze">Tone Analysis</a>
+            <span class="api-desc">Analyze writing tone (formal/casual/urgent/friendly/etc).</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-translate">Translate</a>
+            <span class="api-desc">Translate text to any language, preserving tone.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-rewrite">Rewrite</a>
+            <span class="api-desc">Rewrite text in different tone, style, or reading level.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-proofread">Proofread</a>
+            <span class="api-desc">Check grammar and spelling, return corrections.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-data-extract">Data Extract</a>
+            <span class="api-desc">Extract structured data from unstructured text into a specified JSON schema.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-executive-summary">Executive Summary</a>
+            <span class="api-desc">Generate executive summary from detailed report or data.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-slack-summary">Slack Summary</a>
+            <span class="api-desc">Summarize Slack channel messages into daily digest.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>AI: Business <span class="cat-count">15</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/llm-meeting-prep">Meeting Prep</a>
+            <span class="api-desc">Generate meeting prep notes from attendees + topic.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-decision-analyze">Decision Analysis</a>
+            <span class="api-desc">Analyze pros/cons/risks of a business decision.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-job-description">Job Description</a>
+            <span class="api-desc">Generate job description from role requirements.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-interview-questions">Interview Questions</a>
+            <span class="api-desc">Generate interview questions for a specific role.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-performance-review">Performance Review</a>
+            <span class="api-desc">Draft performance review from notes/observations.</span>
+            <span class="api-cr">20cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-proposal-draft">Proposal Draft</a>
+            <span class="api-desc">Draft business proposal from specs/requirements.</span>
+            <span class="api-cr">20cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-contract-summarize">Contract Summary</a>
+            <span class="api-desc">Summarize contract key terms, obligations, and risks.</span>
+            <span class="api-cr">20cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-legal-clause-explain">Legal Clause Explain</a>
+            <span class="api-desc">Explain legal clause in plain English.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-support-reply">Support Reply</a>
+            <span class="api-desc">Generate customer support reply from ticket context.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-competitor-brief">Competitor Brief</a>
+            <span class="api-desc">Generate competitor analysis brief from company info.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-user-story">User Story</a>
+            <span class="api-desc">Generate user stories from feature description: "As a X, I want Y, so that Z"</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-okr-generate">OKR Generate</a>
+            <span class="api-desc">Generate objectives and key results from team goals.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-persona-create">Persona Create</a>
+            <span class="api-desc">Generate detailed user persona from target audience description.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-swot-analysis">SWOT Analysis</a>
+            <span class="api-desc">Generate SWOT analysis (Strengths, Weaknesses, Opportunities, Threats).</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-meeting-agenda">Meeting Agenda</a>
+            <span class="api-desc">Generate meeting agenda from topic, attendees, and goals.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>AI: Code <span class="cat-count">19</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/llm-explain-code">Explain Code</a>
+            <span class="api-desc">Explain what code does in plain English.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-explain-error">Explain Error</a>
+            <span class="api-desc">Explain error message with fix suggestions.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-explain-command">Explain Command</a>
+            <span class="api-desc">Explain shell command in plain English.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-explain-regex">Explain Regex (AI)</a>
+            <span class="api-desc">Explain regex pattern with examples using AI.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-explain-sql">Explain SQL</a>
+            <span class="api-desc">Explain SQL query in plain English.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-code-generate">Code Generate</a>
+            <span class="api-desc">Generate code from natural language description.</span>
+            <span class="api-cr">20cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-code-review">Code Review</a>
+            <span class="api-desc">Review code for bugs, security issues, performance.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-code-refactor">Refactor Suggest</a>
+            <span class="api-desc">Suggest refactoring for cleaner code.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-code-test-generate">Test Generate</a>
+            <span class="api-desc">Generate unit tests for code.</span>
+            <span class="api-cr">20cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-code-document">Code Document</a>
+            <span class="api-desc">Generate documentation and docstrings.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-code-convert">Code Convert</a>
+            <span class="api-desc">Convert code between programming languages.</span>
+            <span class="api-cr">20cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-sql-generate">SQL Generate</a>
+            <span class="api-desc">Generate SQL from natural language query.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-regex-generate">Regex Generate</a>
+            <span class="api-desc">Generate regex from natural language description.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-commit-message">Commit Message</a>
+            <span class="api-desc">Generate commit message from diff.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-pr-description">PR Description</a>
+            <span class="api-desc">Generate pull request description from diff/commits.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-changelog">Changelog Entry</a>
+            <span class="api-desc">Generate changelog entry from git diff or commit messages.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-api-doc">API Documentation</a>
+            <span class="api-desc">Generate API endpoint documentation from code or route definition.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-bug-report">Bug Report</a>
+            <span class="api-desc">Generate structured bug report from error log or user description.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-release-notes">Release Notes</a>
+            <span class="api-desc">Generate user-facing release notes from technical changelog/commits.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>AI: Content <span class="cat-count">15</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/llm-blog-outline">Blog Outline</a>
+            <span class="api-desc">Generate SEO blog outline from topic + keywords.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-blog-draft">Blog Draft</a>
+            <span class="api-desc">Generate full blog post draft from topic or outline.</span>
+            <span class="api-cr">20cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-landing-page-copy">Landing Page Copy</a>
+            <span class="api-desc">Generate headline, subheadline, bullets, CTA for landing page.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-product-description">Product Description</a>
+            <span class="api-desc">Generate product description from specs and features.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-email-draft">Email Draft</a>
+            <span class="api-desc">Draft email from context + intent.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-email-reply">Email Reply</a>
+            <span class="api-desc">Draft reply to an email thread.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-cold-outreach">Cold Outreach</a>
+            <span class="api-desc">Personalized cold outreach email from prospect info.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-ad-copy">Ad Copy</a>
+            <span class="api-desc">Generate ad copy variants (headline + description).</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-social-post">Social Post</a>
+            <span class="api-desc">Generate social media post for any platform.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-video-script">Video Script</a>
+            <span class="api-desc">Generate video script with hook, body, CTA.</span>
+            <span class="api-cr">20cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-press-release">Press Release</a>
+            <span class="api-desc">Generate press release from news/event info.</span>
+            <span class="api-cr">20cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-tagline">Tagline Generator</a>
+            <span class="api-desc">Generate tagline options for brand/product.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-email-subject">Email Subject</a>
+            <span class="api-desc">Generate compelling email subject lines from email body/context.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-seo-meta">SEO Meta Tags</a>
+            <span class="api-desc">Generate SEO title, description, and keywords from page content.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+          <li>
+            <a href="/api/llm-faq-generate">FAQ Generate</a>
+            <span class="api-desc">Generate FAQ section from product/service description.</span>
+            <span class="api-cr">10cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Analyze <span class="cat-count">20</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/analyze-json-stats">JSON Array Statistical Summary</a>
+            <span class="api-desc">Compute statistical summaries for every numeric field across a JSON array of objects: count, sum, mean, median, mode, standard deviation, variance, min, max, and percentiles (p25, p75, p90, p99).</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-json-schema-diff">Diff Two JSON Schemas</a>
+            <span class="api-desc">Compare two JSON Schema documents and return a structured diff: fields added, fields removed, fields with changed types, fields with changed constraints (min/max, pattern, enum values), and breaking vs non-breaking change classification.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-text-entities">Extract Text Entities</a>
+            <span class="api-desc">Extract named entities from text using pattern matching: email addresses, URLs, phone numbers, dates and times, monetary amounts (with currency symbols), percentages, IP addresses, and version numbers. Returns each entity with its position.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-text-ngrams">Generate Text N-grams</a>
+            <span class="api-desc">Generate n-grams (unigrams, bigrams, trigrams, or arbitrary N) from a text string. Returns each n-gram with its frequency count, sorted by frequency descending. Supports optional stopword removal.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-text-tfidf">TF-IDF Keyword Extraction</a>
+            <span class="api-desc">Compute TF-IDF scores across a collection of text documents to identify the most distinctive keywords in each document relative to the corpus. Returns top-N keywords per document with their TF-IDF scores.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-csv-summary">CSV Column Summary</a>
+            <span class="api-desc">Parse a CSV string and return summary statistics for each column: inferred type (numeric/date/categorical/boolean), count, null count, unique value count, and type-appropriate stats (mean/range for numeric, top values for categorical).</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-csv-correlate">CSV Column Correlation</a>
+            <span class="api-desc">Parse a CSV string and compute the Pearson correlation coefficient between all pairs of numeric columns. Returns a correlation matrix with values from -1 to 1, highlighting strongly correlated (>0.7) and inversely correlated (<-0.7) pairs.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-time-series-trend">Time Series Trend Detection</a>
+            <span class="api-desc">Analyze an array of timestamped numeric values and determine the overall trend direction (up, down, flat, volatile), compute linear regression slope, R-squared fit, and identify the trend change points.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-time-series-anomaly">Time Series Anomaly Detection</a>
+            <span class="api-desc">Detect outlier data points in a time series using the IQR method and Z-score thresholding. Returns indices and values of anomalous points, expected value range, and a severity classification (mild/moderate/extreme) for each anomaly.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-distribution-fit">Data Distribution Fit</a>
+            <span class="api-desc">Given an array of numeric values, determine whether the data fits a normal, log-normal, uniform, exponential, or power-law distribution. Returns best-fit distribution, goodness-of-fit score, and distribution parameters.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-ab-test">A/B Test Significance</a>
+            <span class="api-desc">Compute the statistical significance of an A/B experiment. Accepts control and variant conversion counts and sample sizes. Returns p-value, confidence interval, relative lift, whether the result is statistically significant, and required sample size for 80% power.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-funnel">Funnel Conversion Analysis</a>
+            <span class="api-desc">Analyze a conversion funnel from an array of steps, each with a step name and count. Returns conversion rate between each consecutive step, overall funnel conversion, the step with the biggest drop-off, and comparison to a provided benchmark.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-cohort-retention">Cohort Retention Analysis</a>
+            <span class="api-desc">Compute cohort retention from a matrix of cohort sizes and retained users at each period (day/week/month). Returns a formatted retention table, average retention curve, and the period where retention typically stabilizes.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-dependency-tree">Dependency Tree Analysis</a>
+            <span class="api-desc">Parse package.json or requirements.txt content and build a structured dependency tree. Returns direct vs transitive dependency count, depth of dependency tree, duplicate packages at different versions, and known deprecated packages.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-codebase-stats">Codebase Statistics</a>
+            <span class="api-desc">Analyze a provided file listing with line counts and compute codebase statistics: breakdown by programming language, total lines of code, estimated comment ratio per language, file count per type, and largest files.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-log-parse">Parse Structured Logs</a>
+            <span class="api-desc">Parse log data in common formats (JSON Lines, Apache Combined Log, Nginx access log, syslog) into structured records. Auto-detects format. Returns parsed entries with timestamps, severity levels, messages, and extracted fields.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-error-fingerprint">Error Deduplication Fingerprint</a>
+            <span class="api-desc">Generate a stable fingerprint hash for an error or exception to enable deduplication across occurrences. Normalizes stack traces by stripping memory addresses and line numbers, then hashes the structural signature. Returns fingerprint and normalized stack.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-url-params">Analyze URL Query Parameters</a>
+            <span class="api-desc">Parse query parameters across an array of URLs and return an aggregate analysis: all unique parameter names found, value distributions per parameter, UTM parameter detection, URL patterns and commonalities, and parameters present in all vs some URLs.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-headers-fingerprint">HTTP Headers Server Fingerprint</a>
+            <span class="api-desc">Analyze a set of HTTP response headers and infer the server software, framework, CDN provider, and deployment platform from characteristic header patterns and values. Returns identified components with confidence scores.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/analyze-json-size">JSON Payload Size Breakdown</a>
+            <span class="api-desc">Measure the byte size contribution of every field and nested structure within a JSON object. Returns a sorted breakdown of which fields are consuming the most space, total payload size, estimated gzipped size, and suggestions for reducing payload.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Code Utilities <span class="cat-count">23</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/code-json-to-typescript">JSON to TypeScript</a>
+            <span class="api-desc">Generate TypeScript interface from JSON example.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-json-to-python-class">JSON to Python Class</a>
+            <span class="api-desc">Generate Python dataclass from JSON example.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-json-to-go-struct">JSON to Go Struct</a>
+            <span class="api-desc">Generate Go struct from JSON example.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-sql-format">SQL Format</a>
+            <span class="api-desc">Format/indent SQL query with keyword capitalization.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/code-cron-explain">Cron Explain</a>
+            <span class="api-desc">Explain cron expression in plain English.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/code-regex-explain">Regex Explain</a>
+            <span class="api-desc">Explain regex pattern token by token in plain English.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-semver-compare">Semver Compare</a>
+            <span class="api-desc">Compare two semantic version strings.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/code-semver-bump">Semver Bump</a>
+            <span class="api-desc">Bump semver by patch, minor, or major.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/code-diff-stats">Diff Stats</a>
+            <span class="api-desc">Parse unified diff, return files changed, additions, deletions.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-env-parse">Parse .env</a>
+            <span class="api-desc">Parse .env file content to JSON object.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/code-jwt-inspect">JWT Inspect</a>
+            <span class="api-desc">Decode and display JWT header and claims with expiry check.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/code-openapi-validate">OpenAPI Validate</a>
+            <span class="api-desc">Validate OpenAPI/Swagger spec for required fields, paths, and structure.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-dockerfile-lint">Dockerfile Lint</a>
+            <span class="api-desc">Lint Dockerfile for common issues: missing FROM, latest tag, apt-get without -y, ADD vs COPY.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-gitignore-generate">Gitignore Generate</a>
+            <span class="api-desc">Generate .gitignore for languages: node, python, go, rust, java, ruby.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-cron-to-english">Cron to English</a>
+            <span class="api-desc">Convert cron expression to detailed plain English description.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/code-json-to-zod">JSON to Zod</a>
+            <span class="api-desc">Generate Zod validation schema from JSON example. Essential for TypeScript.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-css-minify">CSS Minify</a>
+            <span class="api-desc">Minify CSS: strip comments, collapse whitespace, optimize.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/code-js-minify">JS Minify</a>
+            <span class="api-desc">Basic JavaScript minification: strip comments, collapse whitespace.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/code-html-minify">HTML Minify</a>
+            <span class="api-desc">Minify HTML: strip comments, collapse whitespace between tags.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/code-package-json-generate">Package.json Generate</a>
+            <span class="api-desc">Generate package.json from name, description, and dependencies.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-complexity-score">Complexity Score</a>
+            <span class="api-desc">Compute cyclomatic + cognitive complexity of code. Claude estimates, Slopshop computes exactly.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-import-graph">Import Graph</a>
+            <span class="api-desc">Parse imports/requires from JS/TS/Python code. Map dependencies, separate local vs external.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/code-dead-code-detect">Dead Code Detect</a>
+            <span class="api-desc">Find unused variables, uncalled functions, unreachable code in JS/TS.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Communicate <span class="cat-count">15</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/comm-webhook-get">Create Temporary Webhook Inbox</a>
+            <span class="api-desc">Create a unique temporary URL that can receive incoming HTTP requests (GET, POST, etc.) and store them. Returns the inbox URL and an inbox ID. Incoming requests are stored for up to 24 hours for later inspection.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-webhook-check">Check Webhook Inbox</a>
+            <span class="api-desc">Check an inbox created by comm-webhook-get for any received HTTP requests since the last check. Returns request method, headers, body, query params, and timestamp for each received request.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-short-url">Create Short Redirect URL</a>
+            <span class="api-desc">Create a short redirect URL that forwards visitors to a long target URL. Returns the short URL. Optional expiry time in seconds. Useful for sharing long URLs in messages, QR codes, or limited-space contexts.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-qr-url">Generate QR Code as SVG</a>
+            <span class="api-desc">Generate a QR code for any string (URL, text, contact data) and return it as an SVG string. Configurable error correction level (L/M/Q/H) and module size. SVG can be embedded in HTML or saved as a file.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-email-validate-deep">Deep Email Validation</a>
+            <span class="api-desc">Validate an email address beyond syntax: check MX records to confirm the domain can receive mail, detect disposable/temporary email domains, check for common typos in domain names, and verify format compliance.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-phone-validate">Validate Phone Number</a>
+            <span class="api-desc">Validate a phone number string, detect its country from the international dialing prefix, determine line type (mobile/landline/VOIP/toll-free), and return the number in E.164, national, and international formats.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-ical-create">Create iCal Event</a>
+            <span class="api-desc">Generate a valid iCalendar (.ics) file content for a calendar event. Accepts title, description, start/end datetime with timezone, location, URL, organizer, attendees, recurrence rule, and alarm offset.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-vcard-create">Create vCard Contact</a>
+            <span class="api-desc">Generate a valid vCard 3.0/4.0 (.vcf) file content for a contact. Accepts name, organization, title, email addresses, phone numbers, postal address, website URL, notes, and photo URL.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-markdown-email">Convert Markdown to Email HTML</a>
+            <span class="api-desc">Convert a Markdown string to email-safe HTML with inline CSS styling. Outputs a complete HTML email template compatible with major email clients (Gmail, Outlook, Apple Mail). Optional theme color parameter.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-csv-email">Format Data as CSV for Email</a>
+            <span class="api-desc">Convert a JSON array of objects to a properly formatted CSV string ready for email attachment or download. Handles quoting, escaping, custom delimiter, optional BOM for Excel compatibility, and custom header labels.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-rss-create">Generate RSS Feed XML</a>
+            <span class="api-desc">Generate a valid RSS 2.0 feed XML string from a list of items. Accepts channel metadata (title, link, description, language) and an array of items each with title, link, description, pubDate, and guid.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-opml-create">Generate OPML Feed List</a>
+            <span class="api-desc">Generate a valid OPML 2.0 XML file from a list of RSS/Atom feeds. Each feed entry includes title, XML URL, HTML URL, and type. OPML files are used to export/import subscriptions across feed readers.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-sitemap-create">Generate Sitemap XML</a>
+            <span class="api-desc">Generate a valid sitemap.xml from an array of URLs. Each URL entry can specify last-modified date, change frequency (daily/weekly/monthly), and priority (0.0–1.0). Automatically splits into sitemap index for large sets.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-robots-create">Generate robots.txt</a>
+            <span class="api-desc">Generate a valid robots.txt file from a structured rules object. Specify allow/disallow rules per user-agent, crawl-delay values, and sitemap URLs. Supports wildcard patterns and common presets (block all, allow all, block AI scrapers).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/comm-mailto-link">Generate mailto: Link</a>
+            <span class="api-desc">Generate a properly encoded mailto: link with pre-filled fields: to, cc, bcc, subject, and body. All values are URL-encoded correctly. Returns the full mailto: URI and an HTML anchor tag version.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Crypto & Security <span class="cat-count">20</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/crypto-hash-sha256">SHA256 Hash</a>
+            <span class="api-desc">Compute SHA256 hash of input data.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-hash-sha512">SHA512 Hash</a>
+            <span class="api-desc">Compute SHA512 hash of input data.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-hash-md5">MD5 Hash</a>
+            <span class="api-desc">Compute MD5 hash of input data.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-hmac">HMAC-SHA256</a>
+            <span class="api-desc">Compute HMAC-SHA256 with secret key.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-uuid">UUID v4</a>
+            <span class="api-desc">Generate cryptographically random UUID v4.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-nanoid">Nanoid</a>
+            <span class="api-desc">Generate compact unique ID (21 chars, URL-safe).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-password-generate">Generate Password</a>
+            <span class="api-desc">Generate secure random password with configurable length and character sets.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-password-hash">Hash Password</a>
+            <span class="api-desc">Hash password using PBKDF2 with random salt.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-password-verify">Verify Password</a>
+            <span class="api-desc">Verify password against PBKDF2 hash.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-random-bytes">Random Bytes</a>
+            <span class="api-desc">Generate cryptographic random bytes (hex output).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-random-int">Random Integer</a>
+            <span class="api-desc">Generate random integer in a range.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-jwt-sign">JWT Sign</a>
+            <span class="api-desc">Create and sign a JWT with HS256.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-jwt-verify">JWT Verify</a>
+            <span class="api-desc">Verify JWT signature and check expiry.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-jwt-decode">JWT Decode</a>
+            <span class="api-desc">Decode JWT payload without verification (unsafe inspect).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-otp-generate">Generate OTP</a>
+            <span class="api-desc">Generate numeric one-time password.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-encrypt-aes">AES Encrypt</a>
+            <span class="api-desc">AES-256-GCM encrypt data with key.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-decrypt-aes">AES Decrypt</a>
+            <span class="api-desc">AES-256-GCM decrypt data with key.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-checksum">Checksum</a>
+            <span class="api-desc">Compute MD5 + SHA256 checksums of content.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-totp-generate">TOTP Generate</a>
+            <span class="api-desc">Generate time-based OTP (Google Authenticator compatible).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/crypto-hash-compare">Hash Compare</a>
+            <span class="api-desc">Constant-time hash comparison (timing-attack safe).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Data Transform <span class="cat-count">21</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/text-markdown-to-html">Markdown to HTML</a>
+            <span class="api-desc">Convert Markdown to HTML.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-csv-to-json">CSV to JSON</a>
+            <span class="api-desc">Parse CSV text into JSON array of objects.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-json-to-csv">JSON to CSV</a>
+            <span class="api-desc">Convert JSON array to CSV text.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-xml-to-json">XML to JSON</a>
+            <span class="api-desc">Parse XML to JSON object.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-yaml-to-json">YAML to JSON</a>
+            <span class="api-desc">Parse YAML key:value pairs to JSON.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-json-validate">JSON Validate</a>
+            <span class="api-desc">Validate JSON syntax, return errors if invalid.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-json-format">JSON Format</a>
+            <span class="api-desc">Pretty-print or minify JSON.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-json-path">JSON Path Query</a>
+            <span class="api-desc">Extract value at a dot-notation path from JSON.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-json-flatten">JSON Flatten</a>
+            <span class="api-desc">Flatten nested JSON to dot-notation keys.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-json-unflatten">JSON Unflatten</a>
+            <span class="api-desc">Unflatten dot-notation keys back to nested JSON.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-json-diff">JSON Diff</a>
+            <span class="api-desc">Diff two JSON objects, return added/removed/changed keys.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-json-merge">JSON Deep Merge</a>
+            <span class="api-desc">Deep merge two JSON objects.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-json-schema-generate">JSON Schema Generate</a>
+            <span class="api-desc">Generate JSON Schema from example data.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-base64-encode">Base64 Encode</a>
+            <span class="api-desc">Encode text to Base64.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-base64-decode">Base64 Decode</a>
+            <span class="api-desc">Decode Base64 to text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-url-encode">URL Encode</a>
+            <span class="api-desc">URL-encode a string.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-url-decode">URL Decode</a>
+            <span class="api-desc">URL-decode a string.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-url-parse">URL Parse</a>
+            <span class="api-desc">Parse URL into protocol, host, port, path, query params, hash.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-hex-encode">Hex Encode</a>
+            <span class="api-desc">Convert string to hexadecimal.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-hex-decode">Hex Decode</a>
+            <span class="api-desc">Convert hexadecimal to string.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/data-pivot">Data Pivot</a>
+            <span class="api-desc">Pivot tabular data: group by index, spread columns, aggregate values.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Date & Time <span class="cat-count">13</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/date-parse">Date Parse</a>
+            <span class="api-desc">Parse any date string to structured output (ISO, unix, components).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-format">Date Format</a>
+            <span class="api-desc">Format date using pattern tokens (YYYY, MM, DD, HH, mm, ss).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-diff">Date Diff</a>
+            <span class="api-desc">Difference between two dates in days, hours, minutes, seconds.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-add">Date Add</a>
+            <span class="api-desc">Add days/hours/minutes to a date.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-weekday">Weekday</a>
+            <span class="api-desc">Get day of week for a date.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-is-business-day">Is Business Day</a>
+            <span class="api-desc">Check if date is a weekday (M-F).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-business-days-between">Business Days Between</a>
+            <span class="api-desc">Count business days between two dates.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-cron-parse">Cron Parse</a>
+            <span class="api-desc">Parse cron expression to human-readable description.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-cron-next">Cron Next Runs</a>
+            <span class="api-desc">Calculate next N run times for a cron expression.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/date-unix-to-iso">Unix to ISO</a>
+            <span class="api-desc">Convert unix timestamp to ISO 8601 string.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-iso-to-unix">ISO to Unix</a>
+            <span class="api-desc">Convert ISO 8601 string to unix timestamp.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-relative">Relative Time</a>
+            <span class="api-desc">Convert timestamp to "3 days ago" / "in 2 hours" format.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/date-holidays">US Holidays</a>
+            <span class="api-desc">List all US federal holidays for a given year.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Enrich <span class="cat-count">20</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/enrich-url-to-title">Get Page Title from URL</a>
+            <span class="api-desc">Fetch a URL and extract only its HTML page title tag content. Lightweight single-purpose call that avoids downloading the full page body. Falls back to og:title if title tag is missing.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-domain-to-company">Guess Company Name from Domain</a>
+            <span class="api-desc">Attempt to derive a human-readable company or brand name from a domain name. Strips TLD and common subdomains, applies capitalization rules, expands known abbreviations, and checks a common-brand lookup table.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-email-to-domain">Extract Domain from Email</a>
+            <span class="api-desc">Extract and normalize the domain portion from an email address. Returns the domain, subdomain if present, TLD, whether it is a known free/consumer email provider, and whether it appears to be a corporate domain.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-email-to-name">Guess Name from Email</a>
+            <span class="api-desc">Attempt to infer a person's full name from their email address local part. Handles dot-separated, underscore-separated, and hyphenated patterns. Returns guessed first name, last name, and confidence score.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-phone-to-country">Detect Country from Phone Prefix</a>
+            <span class="api-desc">Identify the country (and sometimes region) of a phone number from its international dialing code prefix. Returns country name, ISO 2-letter code, calling code, and whether the prefix is ambiguous.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-ip-to-asn">IP Address to ASN Info</a>
+            <span class="api-desc">Look up the Autonomous System Number (ASN) for an IP address using a built-in BGP prefix table. Returns ASN number, organization name, network prefix, and whether the ASN belongs to a known cloud provider or CDN.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-country-code">Convert Country Codes</a>
+            <span class="api-desc">Convert between any country identifier format: full English name, ISO 3166-1 alpha-2 (US), alpha-3 (USA), numeric (840), or common abbreviation. Returns all formats at once plus region, subregion, and capital city.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-language-code">Convert Language Codes</a>
+            <span class="api-desc">Convert between language identifier formats: English name (Spanish), ISO 639-1 two-letter code (es), ISO 639-2/T (spa), and BCP 47 tag. Returns all formats plus native name, script, and direction (LTR/RTL).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-mime-type">MIME Type Lookup</a>
+            <span class="api-desc">Look up the MIME type for a file extension (e.g. .pdf → application/pdf) or the canonical file extension for a MIME type. Returns primary MIME type, common aliases, whether it is compressible, and whether it is binary.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-http-status-explain">Explain HTTP Status Code</a>
+            <span class="api-desc">Return a full explanation of an HTTP status code: official name, plain-English meaning, which RFC defines it, when it should be used, common mistakes, and what a client should do upon receiving it.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-port-service">Port Number to Service</a>
+            <span class="api-desc">Look up the well-known service(s) associated with a TCP/UDP port number (e.g. 443 → HTTPS, 5432 → PostgreSQL). Returns service name, protocol, description, and whether it is an IANA-registered or commonly-used unofficial port.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-useragent-parse">Parse User-Agent String</a>
+            <span class="api-desc">Parse a browser User-Agent string into structured components: browser name and version, rendering engine, operating system and version, device type (desktop/mobile/tablet/bot), and whether it is a known crawler.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-accept-language-parse">Parse Accept-Language Header</a>
+            <span class="api-desc">Parse an HTTP Accept-Language header string (e.g. en-US,en;q=0.9,fr;q=0.8) into a ranked list of language tags with quality weights. Returns language name, region, and BCP 47 tag for each entry.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-crontab-explain">Explain Crontab Expression</a>
+            <span class="api-desc">Parse a cron expression and return a detailed human-readable description, the next 10 scheduled execution times in a specified timezone, and validation errors if the expression is malformed. Supports 5 and 6-field formats.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-semver-explain">Explain Semver Range</a>
+            <span class="api-desc">Parse a semantic versioning range string (^1.2.3, ~2.0, >=1.0.0 <2.0.0, etc.) and explain in plain English what versions it matches. Returns the range type, minimum version, maximum version, and example matching versions.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-license-explain">Explain Software License</a>
+            <span class="api-desc">Given a software license name or SPDX identifier (MIT, Apache-2.0, GPL-3.0, etc.), return a plain-English summary: what it permits, what it requires, what it prohibits, whether it is copyleft, and compatibility with common other licenses.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-timezone-info">Timezone Details</a>
+            <span class="api-desc">Return detailed information about an IANA timezone identifier: current UTC offset, whether DST is active, DST transition dates for the current year, standard and daylight abbreviations, and major cities in the timezone.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-emoji-info">Emoji Information</a>
+            <span class="api-desc">Given an emoji character or shortcode (:tada:), return its official Unicode name, Unicode codepoint(s), emoji category and subcategory, introduction version (Emoji 1.0 through current), skin-tone modifier support, and HTML/CSS escape codes.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-color-name">Nearest Named Color from Hex</a>
+            <span class="api-desc">Given a hex color code, return the nearest human-recognizable color name using perceptual color distance (CIEDE2000). Returns the closest CSS named color, the closest Pantone name, the exact hex, and the distance score.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/enrich-file-extension-info">File Extension Explainer</a>
+            <span class="api-desc">Given a file extension (e.g. .parquet, .wasm, .avro), return a comprehensive explanation: full format name, what it is used for, which programs open it, whether it is binary or text, whether it is compressed, and related formats.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Execute <span class="cat-count">15</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/exec-javascript">Run JavaScript in Sandbox</a>
+            <span class="api-desc">Execute a JavaScript code string in an isolated Node.js vm sandbox with no access to the filesystem, network, or process. Returns the return value, console output, execution time, and any thrown errors. Timeout enforced.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-evaluate-math">Evaluate Math Expression</a>
+            <span class="api-desc">Evaluate a complex mathematical expression string including variables, functions (sin, cos, log, sqrt, factorial), and constants (pi, e). Supports unit awareness and returns both numeric result and step-by-step breakdown.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-jq">Run jq Query on JSON</a>
+            <span class="api-desc">Apply a jq-compatible filter expression to a JSON input and return the result. Supports field selection, array indexing, pipes, map, select, and common jq functions. No shell execution — pure JS implementation.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-regex-all">Regex Match All Groups</a>
+            <span class="api-desc">Apply a regular expression to a text string and return every match with all capture group values, match positions (start/end indices), and match count. Supports named capture groups. Returns structured results.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-jsonpath">JSONPath Query</a>
+            <span class="api-desc">Run a JSONPath expression (e.g. $.store.book[*].author) against a JSON object and return all matching values. Like XPath for JSON. Supports recursive descent, wildcards, filters, and array slices.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-handlebars">Render Handlebars Template</a>
+            <span class="api-desc">Render a Handlebars template string with a provided data object. Supports {{variable}}, {{#if}}, {{#each}}, {{#with}}, partials passed as extra argument, and custom helpers: eq, gt, lt, and, or, not.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-mustache">Render Mustache Template</a>
+            <span class="api-desc">Render a Mustache template string with a provided data object. Supports {{variable}}, {{#section}}, {{^inverted}}, {{{unescaped}}}, and {{>partial}} with partials passed as additional argument.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-sql-on-json">Run SQL on JSON Array</a>
+            <span class="api-desc">Execute a SQL SELECT statement against a JSON array treated as a database table. Supports WHERE clauses, ORDER BY, GROUP BY, HAVING, LIMIT, OFFSET, aggregate functions (COUNT, SUM, AVG, MIN, MAX), and JOINs between multiple named arrays.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-filter-json">Filter JSON Array</a>
+            <span class="api-desc">Filter a JSON array of objects by a set of conditions (field equals, contains, greater than, less than, in list, regex match). Supports AND/OR logic. Returns filtered array and count of matching items.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-sort-json">Sort JSON Array</a>
+            <span class="api-desc">Sort a JSON array of objects by one or more fields, each with ascending or descending direction. Supports string (locale-aware), numeric, and date sorting. Returns the sorted array.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-group-json">Group JSON Array by Field</a>
+            <span class="api-desc">Group a JSON array of objects by the value of one or more fields. Returns an object where keys are the group values and values are arrays of matching items. Optionally include group counts.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-map-json">Transform JSON Array Items</a>
+            <span class="api-desc">Apply a transformation to each item in a JSON array using a field mapping spec: pick fields, rename fields, add computed fields (string templates, math expressions on other fields), and drop fields.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-reduce-json">Reduce JSON Array</a>
+            <span class="api-desc">Reduce a JSON array to a single value using a built-in reducer: sum/avg/min/max of a numeric field, concatenation of a string field, merge all objects, or collect unique values of a field.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-join-json">Join Two JSON Arrays</a>
+            <span class="api-desc">Perform an inner, left, or full outer join between two JSON arrays on a shared key field. Returns a merged array where matching objects are combined. Handles duplicate keys by suffixing field names.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/exec-unique-json">Deduplicate JSON Array</a>
+            <span class="api-desc">Remove duplicate items from a JSON array. Deduplication can be by full object equality, by a specific field value, or by a set of fields. Returns deduplicated array and count of removed duplicates.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>External: AI <span class="cat-count">2</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/ext-openai-embedding">OpenAI Embedding</a>
+            <span class="api-desc">Generate embeddings via OpenAI. Needs: OPENAI_API_KEY</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/ext-anthropic-message">Claude Message</a>
+            <span class="api-desc">Send custom message to Claude. Needs: ANTHROPIC_API_KEY</span>
+            <span class="api-cr">10cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>External: Comms <span class="cat-count">5</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/ext-email-send">Send Email</a>
+            <span class="api-desc">Send email via SendGrid/Resend. Needs: SENDGRID_API_KEY</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/ext-sms-send">Send SMS</a>
+            <span class="api-desc">Send SMS via Twilio. Needs: TWILIO_SID + TWILIO_TOKEN</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/ext-slack-post">Slack Post</a>
+            <span class="api-desc">Post message to Slack channel. Needs: SLACK_WEBHOOK_URL</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/ext-discord-post">Discord Post</a>
+            <span class="api-desc">Post to Discord channel. Needs: DISCORD_WEBHOOK_URL</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/ext-telegram-send">Telegram Send</a>
+            <span class="api-desc">Send Telegram message. Needs: TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID</span>
+            <span class="api-cr">5cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>External: Dev <span class="cat-count">3</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/ext-github-issue">GitHub Issue Create</a>
+            <span class="api-desc">Create GitHub issue. Needs: GITHUB_TOKEN</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/ext-github-pr-comment">GitHub PR Comment</a>
+            <span class="api-desc">Comment on GitHub PR. Needs: GITHUB_TOKEN</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/ext-linear-issue">Linear Issue Create</a>
+            <span class="api-desc">Create Linear issue. Needs: LINEAR_API_KEY</span>
+            <span class="api-cr">5cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>External: Productivity <span class="cat-count">1</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/ext-notion-page">Notion Page Create</a>
+            <span class="api-desc">Create Notion page. Needs: NOTION_API_KEY</span>
+            <span class="api-cr">5cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>External: Storage <span class="cat-count">1</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/ext-s3-upload">S3 Upload</a>
+            <span class="api-desc">Upload to S3/R2. Needs: AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY + S3_BUCKET</span>
+            <span class="api-cr">5cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>External: Web <span class="cat-count">3</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/ext-web-screenshot">Web Screenshot</a>
+            <span class="api-desc">Screenshot any URL as PNG. Needs: npm install puppeteer + PUPPETEER=1</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/ext-web-scrape">Web Scrape</a>
+            <span class="api-desc">Extract text/links/images from URL. Needs: npm install cheerio</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/ext-google-search">Google Search</a>
+            <span class="api-desc">Search Google and return results. Needs: GOOGLE_API_KEY + GOOGLE_CX</span>
+            <span class="api-cr">5cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Generate <span class="cat-count">13</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/gen-avatar-svg">Avatar SVG</a>
+            <span class="api-desc">Generate deterministic identicon SVG from any string (hash-based grid).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-qr-svg">QR Code SVG</a>
+            <span class="api-desc">Generate QR-style visual matrix as SVG from input data.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-fake-name">Fake Name</a>
+            <span class="api-desc">Generate realistic fake full name.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-fake-email">Fake Email</a>
+            <span class="api-desc">Generate fake email address.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-fake-company">Fake Company</a>
+            <span class="api-desc">Generate fake company name.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-fake-address">Fake Address</a>
+            <span class="api-desc">Generate fake US address.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-fake-phone">Fake Phone</a>
+            <span class="api-desc">Generate fake phone number.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-fake-user">Fake User Profile</a>
+            <span class="api-desc">Generate full fake user profile (name, email, company, address, phone).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-fake-credit-card">Fake Credit Card</a>
+            <span class="api-desc">Generate Luhn-valid fake CC number (NOT real, for testing only).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-color-palette">Color Palette</a>
+            <span class="api-desc">Generate harmonious color palette from base hex color.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-short-id">Short ID</a>
+            <span class="api-desc">Generate compact URL-safe unique ID.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-cron-expression">English to Cron</a>
+            <span class="api-desc">Convert English schedule to cron: "every weekday at 9am" -> "0 9 * * 1-5"</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-lorem-code">Lorem Code</a>
+            <span class="api-desc">Generate realistic placeholder code in JS, Python, Go, or Rust.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Generate: Doc <span class="cat-count">20</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/gen-doc-markdown-table">Generate Markdown Table</a>
+            <span class="api-desc">Convert a JSON array of objects to a formatted Markdown table. Supports custom column order, custom header labels, column alignment (left/center/right), and optional row numbering. Handles missing fields gracefully.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-markdown-badges">Generate Markdown Badges</a>
+            <span class="api-desc">Generate shields.io badge Markdown for common project metadata: npm version, GitHub stars, license, build status, coverage percentage, code size, last commit, and custom label/value/color badges.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-changelog">Generate CHANGELOG.md</a>
+            <span class="api-desc">Generate a Keep a Changelog format CHANGELOG.md from an array of version entries. Each entry includes version number, release date, and categorized changes (Added, Changed, Deprecated, Removed, Fixed, Security).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-readme-template">Generate README Template</a>
+            <span class="api-desc">Generate a structured README.md template for a project type (npm-library, cli-tool, web-app, api-service, chrome-extension, etc.). Fills in provided project name, description, and tech stack into appropriate sections.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-api-endpoint">Generate API Endpoint Docs</a>
+            <span class="api-desc">Generate Markdown documentation for an API endpoint from a structured definition: method, path, description, request parameters, request body schema, response schema, example request/response, and error codes.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-env-template">Generate .env.example</a>
+            <span class="api-desc">Generate a .env.example file from an array of environment variable definitions. Each entry includes variable name, description, whether it is required or optional, example value, and type hint. Groups related vars with section comments.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-docker-compose">Generate docker-compose.yml</a>
+            <span class="api-desc">Generate a docker-compose.yml file from an array of service definitions. Each service specifies image, environment variables, port mappings, volumes, depends_on, healthcheck, and restart policy.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-github-action">Generate GitHub Actions Workflow</a>
+            <span class="api-desc">Generate a GitHub Actions workflow YAML file from a spec: trigger events, runner OS, steps with uses/run/env, matrix strategy, secrets references, and artifact upload/download. Supports common presets: CI, release, deploy.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-makefile">Generate Makefile</a>
+            <span class="api-desc">Generate a Makefile from an array of task definitions. Each task includes a name, shell command(s), description (for help target), dependencies on other tasks, and whether it is phony. Auto-generates a help target.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-license">Generate License Text</a>
+            <span class="api-desc">Generate the full text of a software license by SPDX identifier (MIT, Apache-2.0, GPL-3.0-only, ISC, BSD-2-Clause, etc.) with year and copyright holder filled in. Returns the license text ready to save as LICENSE file.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-contributing">Generate CONTRIBUTING.md</a>
+            <span class="api-desc">Generate a CONTRIBUTING.md file for an open-source project. Covers how to report bugs, suggest features, set up the dev environment, coding standards, commit message conventions, pull request process, and code of conduct reference.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-issue-template">Generate GitHub Issue Template</a>
+            <span class="api-desc">Generate a GitHub issue template YAML file for bug reports or feature requests. Fills in the provided project context, required fields, dropdown options, checkboxes, and assignee/label defaults.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-pr-template">Generate GitHub PR Template</a>
+            <span class="api-desc">Generate a GitHub pull request template Markdown file. Includes sections for description, type of change checkboxes, testing checklist, screenshots placeholder, related issues linkage, and deployment notes.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-gitattributes">Generate .gitattributes</a>
+            <span class="api-desc">Generate a .gitattributes file appropriate for a given project language or stack. Sets correct line-ending normalization, marks binary files, configures linguist overrides for language detection, and sets diff drivers.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-editorconfig">Generate .editorconfig</a>
+            <span class="api-desc">Generate an .editorconfig file from style preferences: indent style (tabs/spaces), indent size, line endings (lf/crlf), charset, trim trailing whitespace, final newline. Supports per-file-extension overrides.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-tsconfig">Generate tsconfig.json</a>
+            <span class="api-desc">Generate a tsconfig.json appropriate for a given project type (node-commonjs, node-esm, react, next, vite-react, library, monorepo-root). Returns a complete, commented configuration with sensible defaults.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-eslint-config">Generate ESLint Config</a>
+            <span class="api-desc">Generate an .eslintrc.js or eslint.config.js (flat config) from preferences: language (JS/TS), environment (browser/node), framework (react/vue/none), style guide (airbnb/standard/google/none), and custom rule overrides.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-prettier-config">Generate Prettier Config</a>
+            <span class="api-desc">Generate a .prettierrc JSON config from formatting preferences: print width, tab width, tabs vs spaces, semicolons, single vs double quotes, trailing commas, bracket spacing, and JSX-specific options.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-jest-config">Generate Jest Config</a>
+            <span class="api-desc">Generate a jest.config.js for a project setup: TypeScript support, module aliases, coverage thresholds, test environment (node/jsdom), transform configuration, module name mapper, and setup files.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/gen-doc-tailwind-config">Generate Tailwind Config</a>
+            <span class="api-desc">Generate a tailwind.config.js skeleton from project parameters: content paths, custom color palette, custom font families, spacing scale extensions, dark mode strategy, and enabled plugins list.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Math & Numbers <span class="cat-count">23</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/math-evaluate">Evaluate Expression</a>
+            <span class="api-desc">Safely evaluate a math expression (no eval). Supports +,-,*,/,^,%,parentheses.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-statistics">Statistics</a>
+            <span class="api-desc">Compute mean, median, mode, stddev, min, max, sum, count from number array.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/math-percentile">Percentile</a>
+            <span class="api-desc">Calculate percentile value from number array.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-histogram">Histogram</a>
+            <span class="api-desc">Build histogram bins from number array.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/math-currency-convert">Currency Convert</a>
+            <span class="api-desc">Convert between currencies using rates (static rates, updated periodically).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-unit-convert">Unit Convert</a>
+            <span class="api-desc">Convert between units: length, weight, temperature, volume, speed, data.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-color-convert">Color Convert</a>
+            <span class="api-desc">Convert between hex, RGB, and HSL color formats.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-number-format">Number Format</a>
+            <span class="api-desc">Format numbers with locale, currency, percentage, scientific notation.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-compound-interest">Compound Interest</a>
+            <span class="api-desc">Calculate compound interest with principal, rate, time, frequency.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-loan-payment">Loan Payment</a>
+            <span class="api-desc">Calculate monthly loan payment, total interest, amortization.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-roi-calculate">ROI Calculator</a>
+            <span class="api-desc">Calculate ROI, payback period from cost and revenue figures.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-percentage-change">Percentage Change</a>
+            <span class="api-desc">Calculate percentage change between two values.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-fibonacci">Fibonacci</a>
+            <span class="api-desc">Generate fibonacci sequence up to n terms.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-prime-check">Prime Check</a>
+            <span class="api-desc">Check if a number is prime. Return true/false + nearest primes.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-gcd">GCD</a>
+            <span class="api-desc">Greatest common divisor of two or more numbers.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-lcm">LCM</a>
+            <span class="api-desc">Least common multiple of two or more numbers.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-base-convert">Base Convert</a>
+            <span class="api-desc">Convert numbers between bases (binary, octal, decimal, hex).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/math-mortgage-amortize">Mortgage Amortize</a>
+            <span class="api-desc">Full amortization schedule with monthly payments, principal, interest, balance.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/math-tax-estimate">Tax Estimate</a>
+            <span class="api-desc">US federal income tax estimate by bracket for any income and filing status.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/math-matrix-multiply">Matrix Multiply</a>
+            <span class="api-desc">Multiply two matrices. Validates dimensions.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/math-moving-average">Moving Average</a>
+            <span class="api-desc">Compute moving average over a sliding window of numbers.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/math-linear-regression">Linear Regression</a>
+            <span class="api-desc">Simple linear regression: slope, intercept, R-squared from x,y data.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/math-expression-to-latex">Expression to LaTeX</a>
+            <span class="api-desc">Convert math expression to LaTeX notation.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Memory <span class="cat-count">20</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/memory-set">Store Memory</a>
+            <span class="api-desc">Store a named memory with a string or JSON value, optional tags for organization, and an optional namespace for isolation. Persists across agent sessions. Returns confirmation with storage timestamp.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-get">Retrieve Memory</a>
+            <span class="api-desc">Retrieve a stored memory by its key within an optional namespace. Returns the value, creation timestamp, last-updated timestamp, and associated tags. Returns null if key does not exist.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-search">Search Memories</a>
+            <span class="api-desc">Search stored memories by tag match, key substring, or value substring within an optional namespace. Returns all matching key-value pairs with their metadata, sorted by last-updated date.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-list">List All Memories</a>
+            <span class="api-desc">List all stored memory keys in a namespace, with optional filtering by tag. Returns key names, creation dates, value sizes, and tags. Does not return values themselves (use memory-get for that).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-delete">Delete Memory</a>
+            <span class="api-desc">Delete a stored memory by key within an optional namespace. Returns confirmation including the deleted key and a timestamp. Silently succeeds if key does not exist.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-expire">Set Memory TTL</a>
+            <span class="api-desc">Set a time-to-live (TTL) on an existing memory key. The memory will be automatically deleted after N seconds. Passing TTL of 0 removes any existing expiry. Returns the absolute expiry timestamp.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-increment">Atomic Increment Memory</a>
+            <span class="api-desc">Atomically increment (or decrement with negative delta) a numeric memory value by a given amount. Creates the key with value 0 before incrementing if it does not exist. Returns the new value.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-append">Append to Array Memory</a>
+            <span class="api-desc">Atomically append one or more items to a memory that stores a JSON array. Creates the array if the key does not exist. Optional max-length parameter trims oldest items. Returns new array length.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-history">Memory Version History</a>
+            <span class="api-desc">Retrieve the last N versions of a memory key (default 10), including the value at each version and the timestamp of each change. Provides an audit trail of how a memory evolved over time.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-export">Export All Memories</a>
+            <span class="api-desc">Export all memories in a namespace as a JSON object, including keys, values, tags, timestamps, and TTLs. Useful for backup, migration, or passing state to another agent instance.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-import">Import Memories from JSON</a>
+            <span class="api-desc">Import a set of memories from a JSON object (as produced by memory-export). Supports merge mode (preserve existing keys) or overwrite mode. Returns count of imported, skipped, and overwritten entries.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-stats">Memory Namespace Statistics</a>
+            <span class="api-desc">Return statistics for a memory namespace: total key count, total stored bytes, oldest entry timestamp, newest entry timestamp, number of keys with TTLs set, and breakdown by tag.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-namespace-list">List Memory Namespaces</a>
+            <span class="api-desc">List all existing memory namespaces accessible to the current API key. Returns namespace names, key counts, and last-activity timestamps. Helps agents manage isolated state spaces.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/memory-namespace-clear">Clear Memory Namespace</a>
+            <span class="api-desc">Delete all memory keys within a specified namespace. Requires explicit confirmation string to prevent accidental data loss. Returns count of deleted entries and the namespace name.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/queue-push">Push to Queue</a>
+            <span class="api-desc">Push one or more items onto a named persistent queue (FIFO). Items can be any JSON-serializable value. Returns the new queue depth and the item IDs assigned. Queues are created automatically.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/queue-pop">Pop from Queue</a>
+            <span class="api-desc">Remove and return the next item (or N items) from the front of a named queue. Returns the item values, their IDs, and the remaining queue depth. Returns null if the queue is empty.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/queue-peek">Peek at Queue Front</a>
+            <span class="api-desc">Inspect the next item in a named queue without removing it. Returns the item value, its ID, how long it has been in the queue, and the total queue depth. Non-destructive read.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/queue-size">Get Queue Size</a>
+            <span class="api-desc">Return the current number of items in a named queue, plus the oldest item age in seconds and the total byte size of all queued data. Returns 0 for non-existent queues without error.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/counter-increment">Atomic Counter Increment</a>
+            <span class="api-desc">Increment a named persistent counter by a given amount (default 1). Creates the counter at 0 before incrementing if it does not exist. Useful for tracking events, calls, or usage across agent sessions.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/counter-get">Get Counter Value</a>
+            <span class="api-desc">Return the current value of a named persistent counter, along with its creation timestamp and last-incremented timestamp. Returns 0 for counters that have never been set.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Network & DNS <span class="cat-count">14</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/net-dns-a">DNS A Lookup</a>
+            <span class="api-desc">Resolve A records (IPv4) for a domain.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-dns-aaaa">DNS AAAA Lookup</a>
+            <span class="api-desc">Resolve AAAA records (IPv6) for a domain.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-dns-mx">DNS MX Lookup</a>
+            <span class="api-desc">Resolve MX records for a domain.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-dns-txt">DNS TXT Lookup</a>
+            <span class="api-desc">Resolve TXT records for a domain.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-dns-ns">DNS NS Lookup</a>
+            <span class="api-desc">Resolve nameserver records for a domain.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-dns-all">DNS Full Lookup</a>
+            <span class="api-desc">All record types (A, AAAA, MX, TXT, NS) for a domain.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-http-status">HTTP Status Check</a>
+            <span class="api-desc">HEAD request to URL, return status code, headers, timing.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-http-headers">HTTP Headers</a>
+            <span class="api-desc">Fetch all response headers for a URL.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-http-redirect-chain">Redirect Chain</a>
+            <span class="api-desc">Follow redirects and return full chain of URLs + status codes.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-ssl-check">SSL Certificate Check</a>
+            <span class="api-desc">Inspect SSL certificate: issuer, expiry, days remaining, validity.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-email-validate">Email Validate</a>
+            <span class="api-desc">Validate email format + check MX records exist for domain.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/net-ip-validate">IP Validate</a>
+            <span class="api-desc">Validate IP address, detect version (v4/v6), check if private.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/net-cidr-contains">CIDR Contains</a>
+            <span class="api-desc">Check if an IP falls within a CIDR range.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/net-url-parse">URL Parse</a>
+            <span class="api-desc">Parse URL into structured components.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Orchestrate <span class="cat-count">20</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/orch-delay">Async Delay</a>
+            <span class="api-desc">Wait for a specified number of milliseconds (max 30000ms) before returning. Useful for implementing rate limiting, respecting API cooldown windows, or adding intentional pacing between steps in an agent workflow.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-retry">Retry API Call with Backoff</a>
+            <span class="api-desc">Retry a Slopshop API call up to N times with configurable backoff strategy (linear, exponential, or fixed) and jitter. Specify which error codes should trigger a retry vs abort. Returns the first successful response or final error.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-parallel">Parallel API Calls</a>
+            <span class="api-desc">Execute multiple Slopshop API calls concurrently and return all results when all complete (or when any fail, depending on mode). Each call is specified as slug + input. Returns results in input order with per-call timing.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-race">Race API Calls</a>
+            <span class="api-desc">Execute multiple Slopshop API calls concurrently and return the result of whichever completes first. Remaining calls are cancelled. Useful for calling multiple redundant sources and taking the fastest successful response.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-timeout">API Call with Timeout</a>
+            <span class="api-desc">Execute a Slopshop API call and fail with a timeout error if it does not complete within the specified milliseconds. Returns the result on success or a structured timeout error with elapsed time on failure.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-cache-get">Get Cached API Response</a>
+            <span class="api-desc">Retrieve a previously cached API response by providing the API slug and a cache key (typically a hash of the inputs). Returns the cached result and its age in seconds, or a cache miss indicator.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-cache-set">Cache API Response</a>
+            <span class="api-desc">Store an API response in the cache with a given key and TTL in seconds. Subsequent calls to orch-cache-get with the same key will return this value until TTL expires. Useful for expensive or rate-limited API results.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-cache-invalidate">Invalidate Cache Entries</a>
+            <span class="api-desc">Delete cached entries by exact key, key prefix pattern, or API slug (clears all cached results for that API). Returns the count of invalidated cache entries.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-rate-limit-check">Check Rate Limit Status</a>
+            <span class="api-desc">Check the current status of a named rate limiter: how many requests have been made in the current window, how many remain, when the window resets, and whether the limit is currently exceeded.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-rate-limit-consume">Consume Rate Limit Token</a>
+            <span class="api-desc">Consume one (or N) tokens from a named rate limiter bucket. Returns whether the request was allowed or rejected, remaining tokens, and time until the next token is available. Creates the limiter on first use with provided max/window config.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-lock-acquire">Acquire Distributed Lock</a>
+            <span class="api-desc">Attempt to acquire a named mutex lock for exclusive access to a shared resource. Returns immediately with success or failure (does not block). Lock is automatically released after a TTL to prevent deadlocks. Returns lock token for release.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-lock-release">Release Distributed Lock</a>
+            <span class="api-desc">Release a previously acquired named mutex lock using the lock token returned by orch-lock-acquire. Prevents accidental release of a lock held by a different agent instance. Returns confirmation of release.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-sequence-next">Get Next Sequence Value</a>
+            <span class="api-desc">Get the next value from a named auto-incrementing sequence, starting at 1 by default. Atomic and safe for concurrent use across agent instances. Useful for generating unique IDs, job numbers, or ordered event indices.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-event-emit">Emit Named Event</a>
+            <span class="api-desc">Emit a named event with an arbitrary JSON payload. Events are stored in a named channel and can be polled by other agent instances using orch-event-poll. Events expire after a configurable TTL (default 1 hour).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-event-poll">Poll for Events</a>
+            <span class="api-desc">Retrieve all events emitted to a named channel since a given cursor (event ID or timestamp). Returns new events in order, a new cursor for the next poll, and the count of events available. Enables agent-to-agent signaling.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-schedule-once">Schedule Future Webhook Call</a>
+            <span class="api-desc">Schedule a single HTTP POST to a target webhook URL at a specified future time (ISO 8601 or Unix timestamp). Returns a schedule ID. The webhook will receive the provided payload as the request body.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-schedule-cancel">Cancel Scheduled Call</a>
+            <span class="api-desc">Cancel a previously scheduled webhook call using its schedule ID. Returns confirmation if cancelled successfully or an error if the schedule ID does not exist or has already fired.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-health-check">Parallel Health Check</a>
+            <span class="api-desc">Check the health of multiple URLs concurrently by making HTTP GET requests to each. Returns per-URL results: HTTP status, response time, whether the response body contains expected content (if specified), and overall up/down verdict.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-circuit-breaker-check">Circuit Breaker Status Check</a>
+            <span class="api-desc">Check whether the circuit breaker for a named service is currently open (blocking calls), closed (allowing calls), or half-open (testing recovery). Returns current state, failure count, and time until next state transition.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/orch-circuit-breaker-record">Record Circuit Breaker Outcome</a>
+            <span class="api-desc">Record a success or failure event for a named circuit breaker. Configurable failure threshold and recovery window. When the failure threshold is exceeded the circuit opens; after the recovery window it transitions to half-open. Returns updated state.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Sense: Web <span class="cat-count">30</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/sense-url-content">Fetch URL as Clean Text</a>
+            <span class="api-desc">Fetch a URL and return clean readable text content, stripping all HTML tags, scripts, and styles. Returns the main textual content a human would read.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-links">Extract Links from URL</a>
+            <span class="api-desc">Fetch a URL and extract all hyperlinks (href attributes), returning absolute URLs with their anchor text and whether they are internal or external.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-meta">Get URL Metadata</a>
+            <span class="api-desc">Fetch a URL and extract meta information: page title, meta description, Open Graph tags (og:title, og:image, og:description), Twitter card tags, and canonical URL.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-tech-stack">Detect Website Tech Stack</a>
+            <span class="api-desc">Fetch a URL and detect technologies in use: JavaScript frameworks (React, Vue, Angular), CMS generators (WordPress, Ghost), analytics tools, CDNs, and server software from headers and HTML patterns.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-response-time">Measure URL Response Time</a>
+            <span class="api-desc">Make multiple HTTP requests to a URL and return min, max, and average response times in milliseconds. Useful for detecting latency patterns and slowdowns.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-sitemap">Fetch and Parse Sitemap</a>
+            <span class="api-desc">Fetch a domain's sitemap.xml (or sitemap index), parse it, and return all listed URLs with their last-modified dates and change frequencies.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-robots">Fetch and Parse robots.txt</a>
+            <span class="api-desc">Fetch a domain's robots.txt, parse it, and return structured rules: which user-agents are allowed or disallowed which paths, crawl-delay directives, and sitemap references.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-feed">Fetch and Parse RSS/Atom Feed</a>
+            <span class="api-desc">Fetch a URL that contains an RSS or Atom feed, parse the XML, and return structured feed metadata (title, description, link) plus all items with titles, links, dates, and summaries.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-rss-latest">Get Latest RSS Items</a>
+            <span class="api-desc">Fetch an RSS or Atom feed URL and return only the latest N items (default 10), sorted by publication date descending. Each item includes title, link, pubDate, and content summary.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-accessibility">Basic Accessibility Check</a>
+            <span class="api-desc">Fetch a URL and run basic accessibility checks: missing alt text on images, heading hierarchy issues, missing form labels, links without descriptive text, and color contrast warnings from inline styles.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-whois">WHOIS Domain Lookup</a>
+            <span class="api-desc">Perform a WHOIS lookup for a domain name and return parsed registration data: registrar, creation date, expiry date, name servers, registrant organization (when public), and status flags.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-ip-geo">IP Geolocation</a>
+            <span class="api-desc">Resolve an IP address to its approximate geographic location using a built-in IP range database: country, region, city, latitude/longitude, and timezone. No external API key required.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-time-now">Current Time in Any Timezone</a>
+            <span class="api-desc">Return the current accurate time in any IANA timezone (e.g. America/New_York, Europe/Berlin). Returns ISO 8601 timestamp, human-readable format, UTC offset, and whether DST is active. Fixes the agent's unreliable internal clock.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-time-zones">List All Timezones</a>
+            <span class="api-desc">Return a complete list of all IANA timezones with their current UTC offsets, DST status, and representative city names. Useful for building timezone pickers or converting between zones.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-crypto-price">Get Cryptocurrency Price</a>
+            <span class="api-desc">Fetch the current price of a cryptocurrency (BTC, ETH, etc.) in a specified fiat currency from a public price API. Returns current price, 24h change percentage, and market cap when available.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-github-repo">GitHub Repo Info</a>
+            <span class="api-desc">Fetch public information about a GitHub repository using the GitHub API (no auth required): star count, fork count, open issues, primary language, description, topics, license, and last push date.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-github-releases">GitHub Latest Releases</a>
+            <span class="api-desc">Fetch the latest releases from a public GitHub repository: version tags, release names, publish dates, whether they are pre-releases, and release note bodies. Returns most recent N releases.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-npm-package">npm Package Info</a>
+            <span class="api-desc">Fetch metadata for an npm package from the npm registry: latest version, description, weekly downloads, author, homepage, repository URL, license, and direct dependency count.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-pypi-package">PyPI Package Info</a>
+            <span class="api-desc">Fetch metadata for a Python package from PyPI: latest version, description, author, homepage, license, release date, and required Python version.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-domain-expiry">Domain Expiry Check</a>
+            <span class="api-desc">Check when a domain name expires by querying WHOIS data. Returns expiry date, days remaining, registrar, and a warning flag if expiry is within 30 days.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-http-headers-security">Analyze Security Headers</a>
+            <span class="api-desc">Make an HTTP request to a URL and analyze the security-relevant response headers: presence and quality of Content-Security-Policy, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy, and Permissions-Policy. Grades each header.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-broken-links">Check for Broken Links</a>
+            <span class="api-desc">Fetch a URL, extract all hyperlinks from the page, then check each link with a HEAD request to detect 404s and other errors. Returns a categorized list of working and broken links.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-dns-propagation">DNS Propagation Check</a>
+            <span class="api-desc">Resolve a DNS record (A, AAAA, MX, TXT, CNAME) from multiple geographic resolvers and return all responses. Shows whether DNS changes have propagated globally and highlights inconsistencies.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-port-open">Check if Port is Open</a>
+            <span class="api-desc">Attempt a TCP connection to a host and port, reporting whether the port is open, closed, or filtered. Includes response time. Useful for checking if a service is reachable before making application-level calls.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-performance">URL Performance Metrics</a>
+            <span class="api-desc">Measure web performance for a URL: DNS resolution time, TCP connection time, time to first byte (TTFB), and total download time. Returns a breakdown of where time is spent.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-word-count">URL Word Count</a>
+            <span class="api-desc">Fetch a live URL, strip HTML, and return word count, sentence count, paragraph count, estimated reading time in minutes, and the 20 most frequent non-stopword terms.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-diff">Compare Two URLs</a>
+            <span class="api-desc">Fetch two URLs, extract their clean text content, and return a structured diff showing added lines, removed lines, and unchanged context. Useful for detecting content changes between page versions.</span>
+            <span class="api-cr">5cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-github-user">GitHub User Profile</a>
+            <span class="api-desc">Fetch a public GitHub user's profile information: display name, bio, company, location, website, followers, following, public repo count, and account creation date.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-url-screenshot-text">URL Visible Text Extraction</a>
+            <span class="api-desc">Fetch a URL and extract only the text that would be visible to a sighted user: excluding hidden elements, scripts, styles, and nav boilerplate. Returns structured sections like a screen reader would present them.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/sense-uptime-check">Uptime and Latency Check</a>
+            <span class="api-desc">Check if a URL is accessible and measure round-trip latency. Returns HTTP status code, response time in ms, whether the response body is non-empty, and a simple up/down verdict.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+        </ul>
+      </section>
+      <section class="cat-section">
+        <h2>Text Processing <span class="cat-count">45</span></h2>
+        <ul class="api-list">
+          
+          <li>
+            <a href="/api/text-word-count">Word Count</a>
+            <span class="api-desc">Count words, characters, sentences, and paragraphs in text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-char-count">Character Count</a>
+            <span class="api-desc">Count characters with and without spaces, by type.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-extract-emails">Extract Emails</a>
+            <span class="api-desc">Extract all email addresses from text using pattern matching.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-extract-urls">Extract URLs</a>
+            <span class="api-desc">Extract all URLs from text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-extract-phones">Extract Phones</a>
+            <span class="api-desc">Extract phone numbers from text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-extract-numbers">Extract Numbers</a>
+            <span class="api-desc">Extract all numeric values from text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-extract-dates">Extract Dates</a>
+            <span class="api-desc">Extract date-like strings from text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-extract-mentions">Extract @Mentions</a>
+            <span class="api-desc">Extract @mentions from text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-extract-hashtags">Extract #Hashtags</a>
+            <span class="api-desc">Extract #hashtags from text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-regex-test">Regex Test</a>
+            <span class="api-desc">Test a regex pattern against text. Returns all matches with positions.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-regex-replace">Regex Replace</a>
+            <span class="api-desc">Find and replace using regex pattern.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-diff">Text Diff</a>
+            <span class="api-desc">Line-by-line diff of two texts. Returns added, removed, unchanged.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-slugify">Slugify</a>
+            <span class="api-desc">Convert text to URL-safe slug.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-truncate">Smart Truncate</a>
+            <span class="api-desc">Truncate text at word boundary with ellipsis.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-language-detect">Language Detect</a>
+            <span class="api-desc">Detect language of text using word frequency heuristics.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-profanity-check">Profanity Check</a>
+            <span class="api-desc">Check text for profanity against word list.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-readability-score">Readability Score</a>
+            <span class="api-desc">Flesch-Kincaid readability grade level and score.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-keyword-extract">Keyword Extract</a>
+            <span class="api-desc">Extract top keywords by frequency, excluding stop words.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-sentence-split">Sentence Split</a>
+            <span class="api-desc">Split text into individual sentences.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-deduplicate-lines">Deduplicate Lines</a>
+            <span class="api-desc">Remove duplicate lines from text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-sort-lines">Sort Lines</a>
+            <span class="api-desc">Sort lines alphabetically or numerically.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-reverse">Reverse Text</a>
+            <span class="api-desc">Reverse a string.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-case-convert">Case Convert</a>
+            <span class="api-desc">Convert between camelCase, snake_case, UPPER, lower, Title Case, kebab-case.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-lorem-ipsum">Lorem Ipsum</a>
+            <span class="api-desc">Generate placeholder text of specified length.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-count-frequency">Frequency Analysis</a>
+            <span class="api-desc">Character and word frequency analysis.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-strip-html">Strip HTML</a>
+            <span class="api-desc">Remove all HTML tags from text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-escape-html">Escape HTML</a>
+            <span class="api-desc">Escape HTML entities (&lt; &gt; &amp; etc).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-unescape-html">Unescape HTML</a>
+            <span class="api-desc">Convert HTML entities back to characters.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-rot13">ROT13</a>
+            <span class="api-desc">ROT13 encode/decode text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-html-to-text">HTML to Text</a>
+            <span class="api-desc">Strip HTML tags, decode entities, normalize to clean readable text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-table-format">Table Format</a>
+            <span class="api-desc">Format JSON array into aligned ASCII table.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-tree-format">Tree Format</a>
+            <span class="api-desc">Format nested object as ASCII tree (like tree command).</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-diff-unified">Unified Diff</a>
+            <span class="api-desc">Generate unified diff format (like diff -u) between two texts.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-token-count">Token Count</a>
+            <span class="api-desc">Estimate LLM token count (~4 chars/token). Essential for context window management.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-chunk">Text Chunker</a>
+            <span class="api-desc">Split text into chunks for RAG pipelines. By chars, sentences, or paragraphs with overlap.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-template">Template Render</a>
+            <span class="api-desc">Render {{variable}} templates with data. Handlebars-lite.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-sanitize">Sanitize HTML</a>
+            <span class="api-desc">Strip XSS: remove script tags, event handlers, javascript: URLs.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-markdown-toc">Markdown TOC</a>
+            <span class="api-desc">Generate table of contents from markdown headings with anchor links.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-indent">Indent/Dedent</a>
+            <span class="api-desc">Indent or dedent text by N spaces.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-wrap">Word Wrap</a>
+            <span class="api-desc">Word-wrap text at specified column width.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-detect-encoding">Detect Encoding</a>
+            <span class="api-desc">Detect if text is ASCII/UTF-8, has unicode, emoji, CJK characters.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-markdown-lint">Markdown Lint</a>
+            <span class="api-desc">Lint markdown: trailing spaces, missing blank lines, inconsistent lists.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+          <li>
+            <a href="/api/text-compare-similarity">Text Similarity</a>
+            <span class="api-desc">Compare two texts: Jaccard similarity, Levenshtein ratio, word overlap. Dedup, plagiarism, relevance.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-grammar-check">Grammar Check</a>
+            <span class="api-desc">Rule-based grammar/style checker. Double spaces, repeated words, passive voice, long sentences.</span>
+            <span class="api-cr">3cr</span>
+          </li>
+          <li>
+            <a href="/api/text-reading-time">Reading Time</a>
+            <span class="api-desc">Estimate reading time (238 wpm) and speaking time (150 wpm) from text.</span>
+            <span class="api-cr">1cr</span>
+          </li>
+        </ul>
+      </section>
+  </div>
+</main>
+
+<footer>
+  <div class="f-brand">&#129438; <span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>
+  <p>
+    <a href="/docs">Docs</a> &middot; <a href="/dashboard">Dashboard</a> &middot; <a href="https://github.com/slopshop/slopshop">GitHub</a> &middot; <a href="/v1/tools">API</a><br>
+    422 APIs &middot; all real &middot; MIT License &middot; slopshop.gg
+  </p>
+</footer>
+
+<script>
+function filterApis(q) {
+  q = q.toLowerCase().trim();
+  document.querySelectorAll('.api-list li').forEach(li => {
+    const text = li.textContent.toLowerCase();
+    li.style.display = (!q || text.includes(q)) ? '' : 'none';
+  });
+  document.querySelectorAll('.cat-section').forEach(sec => {
+    const visible = [...sec.querySelectorAll('.api-list li')].some(li => li.style.display !== 'none');
+    sec.style.display = visible ? '' : 'none';
+  });
+}
+</script>
+</body>
+</html>

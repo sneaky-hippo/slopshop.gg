@@ -31,7 +31,7 @@ const yellow = (s) => `${C.yellow}${s}${C.reset}`;
 // CONFIG
 // ============================================================
 const API_KEY  = process.env.SLOPSHOP_KEY;
-const BASE_URL = (process.env.SLOPSHOP_BASE || 'http://localhost:3000').replace(/\/$/, '');
+const BASE_URL = (process.env.SLOPSHOP_BASE || 'https://slopshop.gg').replace(/\/$/, '');
 
 // ============================================================
 // HTTP HELPER
@@ -465,6 +465,10 @@ ${C.reset}`;
   console.log(`    ${cyan('slop pipe')} <api1> <api2> ${dim('...')}             Chain APIs together`);
   console.log(`    ${cyan('slop search')} <query>                    Semantic search for APIs`);
   console.log(`    ${cyan('slop list')} ${dim('[category]')}                    List available APIs`);
+  console.log(`    ${cyan('slop signup')}                            Create a new account`);
+  console.log(`    ${cyan('slop login')}                             Log in to your account`);
+  console.log(`    ${cyan('slop whoami')}                            Show current user info`);
+  console.log(`    ${cyan('slop config')} ${dim('[key] [value]')}              View or set config`);
   console.log(`    ${cyan('slop balance')}                           Check credit balance`);
   console.log(`    ${cyan('slop buy')} <amount>                      Buy credits (1k/10k/100k/1M)`);
   console.log(`    ${cyan('slop health')}                            Server health check`);
@@ -484,7 +488,7 @@ ${C.reset}`;
   console.log(`    ${cyan('slop list text')}\n`);
   console.log(`  ${bold('ENVIRONMENT')}`);
   console.log(`    ${yellow('SLOPSHOP_KEY')}   ${dim('Required. Your API key.')}`);
-  console.log(`    ${yellow('SLOPSHOP_BASE')}  ${dim(`Optional. Server URL. Default: http://localhost:3000`)}\n`);
+  console.log(`    ${yellow('SLOPSHOP_BASE')}  ${dim(`Optional. Server URL. Default: https://slopshop.gg`)}\n`);
   console.log(`  ${dim('Get a key: POST /v1/keys   |   slopshop.gg')}\n`);
 }
 
@@ -529,6 +533,201 @@ function formatUptime(seconds) {
 }
 
 // ============================================================
+// CONFIG FILE HELPERS
+// ============================================================
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
+
+const CONFIG_DIR = path.join(os.homedir(), '.slopshop');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+
+function loadConfig() {
+  try {
+    if (fs.existsSync(CONFIG_FILE)) {
+      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
+    }
+  } catch (e) { /* ignore */ }
+  return {};
+}
+
+function saveConfig(cfg) {
+  if (!fs.existsSync(CONFIG_DIR)) {
+    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+  }
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2));
+}
+
+function prompt(question) {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stderr, terminal: true });
+  return new Promise((resolve) => {
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim());
+    });
+  });
+}
+
+function promptSecret(question) {
+  return new Promise((resolve) => {
+    process.stderr.write(question);
+    const rl = readline.createInterface({ input: process.stdin, terminal: false });
+    if (process.stdin.isTTY) process.stdin.setRawMode(true);
+    let pwd = '';
+    const onData = (ch) => {
+      const c = ch.toString();
+      if (c === '\n' || c === '\r' || c === '\u0004') {
+        if (process.stdin.isTTY) process.stdin.setRawMode(false);
+        process.stdin.removeListener('data', onData);
+        process.stderr.write('\n');
+        rl.close();
+        resolve(pwd);
+      } else if (c === '\u007F' || c === '\b') {
+        if (pwd.length > 0) {
+          pwd = pwd.slice(0, -1);
+          process.stderr.write('\b \b');
+        }
+      } else if (c === '\u0003') {
+        process.exit(1);
+      } else {
+        pwd += c;
+        process.stderr.write('*');
+      }
+    };
+    process.stdin.on('data', onData);
+    if (!process.stdin.isTTY) {
+      rl.on('line', (line) => {
+        rl.close();
+        resolve(line.trim());
+      });
+    }
+  });
+}
+
+// ============================================================
+// AUTH COMMANDS
+// ============================================================
+
+async function cmdSignup() {
+  console.log(`\n  ${bold('Sign up for Slopshop')}\n`);
+
+  const email = await prompt('  Email: ');
+  if (!email) die('Email is required.');
+
+  const password = await promptSecret('  Password: ');
+  if (!password) die('Password is required.');
+
+  console.log(dim('  Creating account...'));
+
+  try {
+    const res = await request('POST', '/v1/auth/signup', { email, password }, false);
+    const d = res.data;
+    const apiKey = d.api_key || d.key || d.token;
+
+    console.log(`\n  ${green('Account created!')}  Welcome to Slopshop.`);
+    if (apiKey) {
+      console.log(`  ${bold('API Key:')}  ${cyan(apiKey)}`);
+      const cfg = loadConfig();
+      cfg.api_key = apiKey;
+      cfg.email = email;
+      cfg.base_url = BASE_URL;
+      saveConfig(cfg);
+      console.log(dim(`  Saved to ${CONFIG_FILE}`));
+      console.log(`\n  Set your key:  ${yellow('export SLOPSHOP_KEY=' + apiKey)}\n`);
+    }
+  } catch (err) {
+    handleError(err);
+  }
+}
+
+async function cmdLogin() {
+  console.log(`\n  ${bold('Log in to Slopshop')}\n`);
+
+  const email = await prompt('  Email: ');
+  if (!email) die('Email is required.');
+
+  const password = await promptSecret('  Password: ');
+  if (!password) die('Password is required.');
+
+  console.log(dim('  Logging in...'));
+
+  try {
+    const res = await request('POST', '/v1/auth/login', { email, password }, false);
+    const d = res.data;
+    const apiKey = d.api_key || d.key || d.token;
+
+    console.log(`\n  ${green('Logged in!')}  Welcome back.`);
+    if (apiKey) {
+      console.log(`  ${bold('API Key:')}  ${cyan(apiKey)}`);
+      const cfg = loadConfig();
+      cfg.api_key = apiKey;
+      cfg.email = email;
+      cfg.base_url = BASE_URL;
+      saveConfig(cfg);
+      console.log(dim(`  Saved to ${CONFIG_FILE}`));
+      console.log(`\n  Set your key:  ${yellow('export SLOPSHOP_KEY=' + apiKey)}\n`);
+    }
+  } catch (err) {
+    handleError(err);
+  }
+}
+
+async function cmdWhoami() {
+  requireKey();
+
+  try {
+    const res = await request('GET', '/v1/auth/me');
+    const d = res.data;
+    console.log(`\n  ${bold('Email:')}    ${d.email || dim('unknown')}`);
+    console.log(`  ${bold('Tier:')}     ${cyan(d.tier || 'free')}`);
+    console.log(`  ${bold('Balance:')}  ${green(String(d.balance ?? d.credits ?? 'unknown'))} credits`);
+    if (d.created_at) console.log(`  ${bold('Joined:')}   ${dim(d.created_at)}`);
+  } catch (err) {
+    handleError(err);
+  }
+}
+
+function cmdConfig(args) {
+  const cfg = loadConfig();
+
+  if (args.length === 0) {
+    // Show current config
+    console.log(`\n  ${bold('Slopshop Config')}  ${dim(CONFIG_FILE)}\n`);
+    if (Object.keys(cfg).length === 0) {
+      console.log(dim('  No config set. Use `slop config <key> <value>` to set values.\n'));
+    } else {
+      for (const [k, v] of Object.entries(cfg)) {
+        const display = k === 'api_key' ? v.slice(0, 12) + '...' : v;
+        console.log(`  ${cyan(k)}  ${display}`);
+      }
+      console.log('');
+    }
+    console.log(`  ${bold('Settable keys:')}`);
+    console.log(`    ${cyan('api_key')}    ${dim('Your SLOPSHOP_KEY')}`);
+    console.log(`    ${cyan('base_url')}   ${dim('Server URL (default: https://slopshop.gg)')}\n`);
+    return;
+  }
+
+  const key = args[0];
+  const val = args.slice(1).join(' ');
+
+  if (!val) {
+    // Get a single key
+    if (cfg[key] !== undefined) {
+      console.log(cfg[key]);
+    } else {
+      console.log(dim(`  Key "${key}" not set.`));
+    }
+    return;
+  }
+
+  // Set a key
+  cfg[key] = val;
+  saveConfig(cfg);
+  console.log(green(`  Set ${key}`));
+}
+
+// ============================================================
 // MAIN ENTRYPOINT
 // ============================================================
 async function main() {
@@ -547,6 +746,10 @@ async function main() {
     case 'balance': await cmdBalance();    break;
     case 'buy':     await cmdBuy(args);    break;
     case 'health':  await cmdHealth();     break;
+    case 'signup':  await cmdSignup();     break;
+    case 'login':   await cmdLogin();      break;
+    case 'whoami':  await cmdWhoami();     break;
+    case 'config':  cmdConfig(args);       break;
     default:
       console.error(red(`\n  Unknown command: ${cmd}`));
       console.error(dim('  Run `slop help` for usage.\n'));

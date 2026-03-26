@@ -1,0 +1,13 @@
+<!-- OPTION B: "The Stack" — Three horizontal bars, center one offset right.
+     Concept: layers/stacking of tools. The offset = action/motion.
+     Inspired by hamburger menus evolved into something meaningful.
+     Similar energy to Stripe's parallel lines but distinct. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#ff3333"/>
+  <!-- Top bar -->
+  <rect x="136" y="156" width="180" height="36" rx="18" fill="white"/>
+  <!-- Middle bar — shifted right (the action) -->
+  <rect x="196" y="238" width="180" height="36" rx="18" fill="white"/>
+  <!-- Bottom bar -->
+  <rect x="136" y="320" width="180" height="36" rx="18" fill="white"/>
+</svg>

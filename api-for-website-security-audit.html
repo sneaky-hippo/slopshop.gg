@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Website Security Audit API — Tech Stack, SSL, Headers in One Call | Slopshop</title>
+<meta name="description" content="Run a full website security audit via API. One call checks tech stack fingerprinting, SSL certificate validity, HTTP security headers, and response time. 23 credits. Real output for stripe.com included.">
+<link rel="canonical" href="https://slopshop.gg/api-for-website-security-audit">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://slopshop.gg/api-for-website-security-audit">
+<meta property="og:title" content="Website Security Audit API — Tech Stack, SSL, Headers in One Call | Slopshop">
+<meta property="og:description" content="Full website security audit via API. Tech stack, SSL, HTTP headers, response time — one POST. 23 credits, 2,000 free on signup.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:creator" content="@slopshopgg">
+<meta name="twitter:title" content="Website Security Audit API — Tech Stack, SSL, Headers in One Call | Slopshop">
+<meta name="twitter:description" content="Website security audit via API. SSL, headers, tech stack, response time. 23 credits per audit.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Website Security Audit API — Tech Stack, SSL, Headers in One Call",
+  "description": "How to run a full website security audit via API — tech stack fingerprinting, SSL certificate validation, HTTP security headers, and response time — in a single POST request.",
+  "url": "https://slopshop.gg/api-for-website-security-audit",
+  "author": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"},
+  "publisher": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg", "logo": {"@type": "ImageObject", "url": "https://slopshop.gg/og.png"}},
+  "datePublished": "2025-01-01",
+  "dateModified": "2026-03-26"
+}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff6644'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+.page-wrap{max-width:860px;margin:0 auto;padding:100px 32px 80px}
+.page-tag{display:inline-flex;align-items:center;gap:6px;background:var(--cg);border:1px solid rgba(0,170,255,0.2);color:var(--c);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:700;margin-bottom:24px;font-family:var(--mono)}
+h1{font-family:var(--mono);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:20px}
+h1 .accent{color:var(--c)}
+.lead{color:var(--t2);font-size:1rem;line-height:1.8;margin-bottom:48px;max-width:680px}
+h2{font-family:var(--mono);font-size:1.2rem;font-weight:700;margin:48px 0 16px;letter-spacing:-0.02em}
+h3{font-family:var(--mono);font-size:0.95rem;font-weight:700;margin:28px 0 12px;color:var(--t2)}
+p{color:var(--t2);line-height:1.8;margin-bottom:16px}
+ul,ol{color:var(--t2);line-height:1.9;padding-left:20px;margin-bottom:16px}
+li{margin-bottom:4px}
+code{font-family:var(--mono);font-size:0.8em;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--c)}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin:20px 0}
+.code-header{background:var(--s2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-label{font-family:var(--mono);font-size:0.68rem;color:var(--t3);font-weight:500}
+.code-lang{font-family:var(--mono);font-size:0.62rem;color:var(--c);font-weight:700;background:var(--cg);padding:2px 8px;border-radius:4px}
+pre{padding:20px;font-family:var(--mono);font-size:0.78rem;line-height:1.8;overflow-x:auto;color:var(--t2)}
+pre .cm{color:var(--t4)}
+pre .kw{color:var(--r)}
+pre .str{color:var(--g)}
+pre .key{color:var(--c)}
+pre .val{color:var(--o)}
+pre .ok{color:var(--g)}
+pre .warn{color:var(--o)}
+pre .fail{color:var(--r)}
+.checks-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:24px 0}
+.check-card{background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--c);border-radius:10px;padding:18px}
+.check-card .cc-label{font-family:var(--mono);font-size:0.72rem;font-weight:700;color:var(--c);margin-bottom:6px}
+.check-card ul{margin:0;padding-left:16px;font-size:0.76rem;color:var(--t3);line-height:1.7}
+.check-card ul li{margin-bottom:2px}
+.score-box{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px;margin:20px 0;display:flex;align-items:center;gap:24px}
+.score-num{font-family:var(--mono);font-size:3rem;font-weight:800;color:var(--g);line-height:1}
+.score-details{flex:1}
+.score-details .sd-label{font-family:var(--mono);font-size:0.68rem;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px}
+.score-details .sd-bar{height:4px;background:var(--b2);border-radius:2px;margin-bottom:4px}
+.score-details .sd-fill{height:100%;border-radius:2px;background:var(--g)}
+.score-details .sd-item{display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.7rem;color:var(--t3);margin-bottom:2px}
+.score-details .sd-item .pass{color:var(--g)}
+.score-details .sd-item .warn{color:var(--o)}
+.score-details .sd-item .fail{color:var(--r)}
+.cta-block{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:40px;text-align:center;margin-top:64px}
+.cta-block h2{margin:0 0 10px;font-size:1.4rem}
+.cta-block p{color:var(--t3);margin-bottom:28px}
+.cta-terminal{background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.78rem;color:var(--o);text-align:left;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto}
+.cta-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--r);color:#fff;transition:box-shadow 0.2s,transform 0.15s}
+.btn-primary:hover{box-shadow:0 0 24px rgba(255,51,51,0.3);transform:translateY(-1px);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2)}
+.btn-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.internal-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:40px;padding-top:32px;border-top:1px solid var(--b)}
+.internal-links a{font-family:var(--mono);font-size:0.72rem;color:var(--t3);padding:6px 14px;border:1px solid var(--b);border-radius:6px;transition:0.15s}
+.internal-links a:hover{color:var(--t);border-color:var(--b2);opacity:1}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b);margin-top:80px}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono)}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .nav-links a:nth-child(n+4){display:none}
+  .page-wrap{padding:80px 16px 60px}
+  h1{font-size:1.9rem}
+  .checks-grid{grid-template-columns:1fr}
+  .score-box{flex-direction:column;align-items:flex-start}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:24px}
+  .cta-buttons{flex-direction:column;align-items:center}
+  .btn-primary,.btn-secondary{width:100%;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="22" height="22" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="ng" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#ng)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+    <span>SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/playbooks">Playbooks</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+    <div class="live-badge"><div class="live-dot"></div>live</div>
+  </div>
+</div></nav>
+
+<div class="page-wrap">
+  <div class="page-tag">// security audit API</div>
+  <h1><span class="accent">Website Security Audit</span> API — Tech Stack, SSL, Headers</h1>
+  <p class="lead">You want to check a site's security posture — maybe for a client report, a competitor review, or an automated monitoring pipeline. Doing it manually means four separate tools, a spreadsheet, and 20 minutes. Here it's one POST call.</p>
+
+  <h2>What a security audit actually checks</h2>
+  <p>A useful security audit covers more than just "is SSL on?" Here's what Slopshop's audit template checks, in a single request:</p>
+
+  <div class="checks-grid">
+    <div class="check-card">
+      <div class="cc-label">SSL Certificate</div>
+      <ul>
+        <li>Valid and not expired</li>
+        <li>Days until expiry</li>
+        <li>Issuer and chain</li>
+        <li>TLS version (1.2 / 1.3)</li>
+        <li>Certificate transparency</li>
+      </ul>
+    </div>
+    <div class="check-card">
+      <div class="cc-label">HTTP Security Headers</div>
+      <ul>
+        <li>Strict-Transport-Security (HSTS)</li>
+        <li>Content-Security-Policy</li>
+        <li>X-Frame-Options</li>
+        <li>X-Content-Type-Options</li>
+        <li>Referrer-Policy</li>
+        <li>Permissions-Policy</li>
+      </ul>
+    </div>
+    <div class="check-card">
+      <div class="cc-label">Tech Stack</div>
+      <ul>
+        <li>Server software and version</li>
+        <li>CDN / proxy detection</li>
+        <li>Framework fingerprinting</li>
+        <li>CMS detection</li>
+        <li>Version disclosure checks</li>
+      </ul>
+    </div>
+    <div class="check-card">
+      <div class="cc-label">Performance + Reachability</div>
+      <ul>
+        <li>Response time (ms)</li>
+        <li>HTTP status code</li>
+        <li>Redirect chain</li>
+        <li>IPv6 support</li>
+        <li>DNSSEC status</li>
+      </ul>
+    </div>
+  </div>
+
+  <h2>The API call</h2>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Run a security audit</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/agent/template/security-audit \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{"domain": "stripe.com"}'</span></pre>
+  </div>
+
+  <h2>Real example output — stripe.com</h2>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">stripe.com audit response</span><span class="code-lang">json</span></div>
+    <pre>{
+  <span class="key">"ok"</span>: <span class="ok">true</span>,
+  <span class="key">"domain"</span>: <span class="str">"stripe.com"</span>,
+  <span class="key">"score"</span>: <span class="val">94</span>,
+  <span class="key">"grade"</span>: <span class="str">"A"</span>,
+
+  <span class="key">"ssl"</span>: {
+    <span class="key">"valid"</span>: <span class="ok">true</span>,
+    <span class="key">"issuer"</span>: <span class="str">"DigiCert Inc"</span>,
+    <span class="key">"expires"</span>: <span class="str">"2026-08-14"</span>,
+    <span class="key">"days_remaining"</span>: <span class="val">141</span>,
+    <span class="key">"tls_version"</span>: <span class="str">"TLSv1.3"</span>,
+    <span class="key">"grade"</span>: <span class="str">"A+"</span>
+  },
+
+  <span class="key">"headers"</span>: {
+    <span class="key">"strict_transport_security"</span>: {
+      <span class="key">"present"</span>: <span class="ok">true</span>,
+      <span class="key">"value"</span>: <span class="str">"max-age=63072000; includeSubDomains; preload"</span>
+    },
+    <span class="key">"content_security_policy"</span>: {
+      <span class="key">"present"</span>: <span class="ok">true</span>,
+      <span class="key">"value"</span>: <span class="str">"default-src 'self' ..."</span>
+    },
+    <span class="key">"x_frame_options"</span>: {
+      <span class="key">"present"</span>: <span class="ok">true</span>,
+      <span class="key">"value"</span>: <span class="str">"SAMEORIGIN"</span>
+    },
+    <span class="key">"x_content_type_options"</span>: {
+      <span class="key">"present"</span>: <span class="ok">true</span>,
+      <span class="key">"value"</span>: <span class="str">"nosniff"</span>
+    },
+    <span class="key">"referrer_policy"</span>: {
+      <span class="key">"present"</span>: <span class="ok">true</span>,
+      <span class="key">"value"</span>: <span class="str">"strict-origin-when-cross-origin"</span>
+    },
+    <span class="key">"permissions_policy"</span>: {
+      <span class="key">"present"</span>: <span class="ok">true</span>
+    }
+  },
+
+  <span class="key">"tech_stack"</span>: {
+    <span class="key">"server"</span>: <span class="str">"nginx"</span>,
+    <span class="key">"cdn"</span>: <span class="str">"Cloudflare"</span>,
+    <span class="key">"version_disclosed"</span>: <span class="ok">false</span>,
+    <span class="key">"fingerprint"</span>: [<span class="str">"nginx"</span>, <span class="str">"Cloudflare"</span>, <span class="str">"Next.js"</span>]
+  },
+
+  <span class="key">"performance"</span>: {
+    <span class="key">"response_time_ms"</span>: <span class="val">87</span>,
+    <span class="key">"status_code"</span>: <span class="val">200</span>,
+    <span class="key">"redirects"</span>: <span class="val">0</span>,
+    <span class="key">"ipv6"</span>: <span class="ok">true</span>
+  },
+
+  <span class="key">"findings"</span>: [],
+  <span class="key">"credits_used"</span>: <span class="val">23</span>,
+  <span class="key">"_engine"</span>: <span class="str">"real"</span>
+}</pre>
+  </div>
+
+  <h2>Score breakdown</h2>
+  <div class="score-box">
+    <div class="score-num">94</div>
+    <div class="score-details">
+      <div class="sd-label">stripe.com security score</div>
+      <div style="font-family:var(--mono);font-size:0.72rem">
+        <div class="sd-item"><span>SSL / TLS</span><span class="pass">25 / 25</span></div>
+        <div class="sd-item"><span>HSTS</span><span class="pass">20 / 20</span></div>
+        <div class="sd-item"><span>Security headers</span><span class="pass">30 / 30</span></div>
+        <div class="sd-item"><span>Version disclosure</span><span class="pass">10 / 10</span></div>
+        <div class="sd-item"><span>Response time</span><span class="pass">9 / 10</span></div>
+        <div class="sd-item" style="margin-top:6px;padding-top:6px;border-top:1px solid var(--b)"><span><strong>Total</strong></span><span class="pass"><strong>94 / 100 · Grade A</strong></span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Practical uses</h2>
+  <ul>
+    <li><strong>Automated monitoring</strong> — schedule daily audits, alert when SSL expiry falls below 30 days or a header goes missing</li>
+    <li><strong>Client reports</strong> — generate security posture data for a site before handing it off</li>
+    <li><strong>Competitive research</strong> — understand what stack a site is running without manual inspection</li>
+    <li><strong>CI/CD gate</strong> — run a post-deploy security check and fail the pipeline if headers are misconfigured</li>
+    <li><strong>Agent-driven auditing</strong> — give your agent a list of domains, run batch audits, store results to memory</li>
+  </ul>
+
+  <h2>Batch audits</h2>
+  <p>To audit a list of domains, use the batch endpoint. Pass an array of domains, get an array of results. Each domain costs 23 credits.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Batch audit — multiple domains</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/agent/template/security-audit/batch \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span> \
+  -d <span class="str">'{
+    "domains": ["github.com", "vercel.com", "railway.app"],
+    "include_findings": true
+  }'</span>
+
+<span class="cm"># Returns an array of audit results.</span>
+<span class="cm"># Total: 3 domains × 23 credits = 69 credits.</span></pre>
+  </div>
+
+  <h2>Pricing</h2>
+  <p>Security audits cost <strong style="color:var(--o)">23 credits per domain</strong>. You get <strong style="color:var(--g)">2,000 free credits</strong> on signup — that's 86 full audits before you pay anything. After that, 10,000 credits for $9. See <a href="/pricing">full pricing</a>.</p>
+
+  <div class="internal-links">
+    <a href="/docs">API Docs</a>
+    <a href="/tools">All 1,049 Tools</a>
+    <a href="/getting-started">Getting Started</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/how-to-give-ai-agent-tools">Agent Tools</a>
+  </div>
+
+  <div class="cta-block">
+    <h2>Run your first audit</h2>
+    <p>23 credits per audit. 2,000 free on signup. Takes about 3 seconds.</p>
+    <div class="cta-terminal">
+      $ npm install -g slopshop<br>
+      $ slopshop signup<br>
+      $ slopshop audit yourdomain.com<br>
+      <span style="color:var(--g)">✓ Audit complete. Score: 87 / 100</span>
+    </div>
+    <div class="cta-buttons">
+      <a href="/getting-started" class="btn-primary">Get Started Free</a>
+      <a href="/docs" class="btn-secondary">API Reference</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand"><span>SLOPSHOP</span><span class="gg">.GG</span></div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/playbooks">Playbooks</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/getting-started">Get Started</a>
+      </div>
+      <div class="footer-col">
+        <h4>Developers</h4>
+        <a href="/docs">Docs</a>
+        <a href="/docs/api">API Reference</a>
+        <a href="/docs/mcp">MCP Server</a>
+        <a href="/docs/self-host">Self-Hosting</a>
+      </div>
+      <div class="footer-col">
+        <h4>Use Cases</h4>
+        <a href="/how-to-extract-structured-data">Extract Structured Data</a>
+        <a href="/how-to-give-ai-agent-tools">Agent Tools</a>
+        <a href="/free-persistent-memory-for-ai-agents">Agent Memory</a>
+        <a href="/run-python-code-api">Python Execution</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="https://x.com/slopshopgg">Twitter</a>
+      </div>
+    </div>
+    <div class="footer-copy">© 2026 Slopshop. Built for developers who ship.</div>
+  </div>
+</footer>
+
+</body>
+</html>

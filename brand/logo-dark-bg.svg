@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 200" fill="none">
+  <rect width="400" height="200" fill="#050505"/>
+  <!-- Logo mark centered -->
+  <rect x="120" y="60" width="56" height="56" rx="11" fill="#ff3333"/>
+  <path d="M139.6 74c-4.2 0-5.6 2.8-5.6 5.6v5.6c0 2.8-1.4 4.2-4.2 4.2 2.8 0 4.2 1.4 4.2 4.2v5.6c0 2.8 1.4 5.6 5.6 5.6" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <path d="M156.4 74c4.2 0 5.6 2.8 5.6 5.6v5.6c0 2.8 1.4 4.2 4.2 4.2-2.8 0-4.2 1.4-4.2 4.2v5.6c0 2.8-1.4 5.6-5.6 5.6" stroke="white" stroke-width="3.5" stroke-linecap="round" fill="none"/>
+  <circle cx="148" cy="89.4" r="3.5" fill="white"/>
+  <!-- Text -->
+  <text x="192" y="96" font-family="monospace" font-size="28" font-weight="800" letter-spacing="3">
+    <tspan fill="#ff3333">SLOP</tspan><tspan fill="#f5f5f5">SHOP</tspan><tspan fill="#666" font-weight="500" font-size="18">.GG</tspan>
+  </text>
+  <!-- Tagline -->
+  <text x="200" y="130" font-family="sans-serif" font-size="12" fill="#666">1 API. 420 real tools. For agents.</text>
+</svg>

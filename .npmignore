@@ -1,8 +1,50 @@
+# Test/build files
 stress-test.js
 stress-dashboard.html
 audit.js
+benchmark.js
+benchmark-results.json
 Dockerfile
 fly.toml
 server.json
 .env
+.env.example
 *.log
+deep-simulate.js
+simulate.js
+lobster-test.js
+generate-seo.js
+js_block.txt
+launch-qa.js
+launch-qa-report.json
+
+# Docs
+STRATEGY.md
+LAUNCH.md
+TODO.md
+FEATURES-200.md
+SUPERPOWER-1000.md
+HACKATHON-1000.md
+
+# Frontend/static (served by Vercel, not npm)
+*.html
+sitemap.xml
+robots.txt
+favicon.svg
+logo.svg
+og.svg
+og.png
+site.webmanifest
+catalog-embed.json
+slopshop2026indexnow.txt
+social-card.html
+pitch-deck.html
+docker-compose.yml
+
+# Directories
+.data/
+.vercel/
+.well-known/
+brand/
+api/
+sdk/python/

@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+Sitemap: https://slopshop.gg/sitemap.xml
+
+# AI agent discovery
+User-agent: GPTBot
+Allow: /
+User-agent: ClaudeBot
+Allow: /
+User-agent: Googlebot
+Allow: /
+User-agent: Bingbot
+Allow: /
+User-agent: YandexBot
+Allow: /
+User-agent: DuckDuckBot
+Allow: /
+User-agent: Applebot
+Allow: /
+
+# API discovery files
+# https://slopshop.gg/llms.txt - AI agent tool discovery
+# https://slopshop.gg/.well-known/ai-tools.json - Agent tools manifest
+# https://slopshop.gg/v1/openapi.json - OpenAPI 3.0.3 spec
+# https://slopshop.gg/v1/mcp/recommended - MCP curated tools

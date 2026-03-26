@@ -14,6 +14,19 @@ primary_region = "iad"
   auto_start_machines = true
   min_machines_running = 1
 
+  [http_service.checks]
+    [http_service.checks.health]
+      grace_period = "10s"
+      interval = "30s"
+      method = "GET"
+      path = "/v1/health"
+      protocol = "http"
+      timeout = "5s"
+
+[[mounts]]
+  source = "slopshop_data"
+  destination = "/app/.data"
+
 [[vm]]
   size = "shared-cpu-1x"
   memory = "512mb"

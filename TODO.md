@@ -18,8 +18,8 @@
   ```
   Then set env vars in Railway dashboard:
   ```
-  ANTHROPIC_API_KEY=sk-ant-api03-Vqcl...
-  STRIPE_SECRET_KEY=sk_test_51TEu...
+  ANTHROPIC_API_KEY=sk-ant-api03-YOUR_KEY
+  STRIPE_SECRET_KEY=sk_test_YOUR_KEY
   PORT=3000
   BASE_URL=https://your-railway-url.up.railway.app
   ```

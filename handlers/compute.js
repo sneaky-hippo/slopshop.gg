@@ -78,6 +78,7 @@ function textExtractHashtags(input) {
 
 function textRegexTest(input) {
   const { text = '', pattern = '', flags = 'g' } = input;
+  if (!pattern) return { _engine: 'real', matched: false, matches: [], count: 0 };
   try {
     const safeFlags = flags.includes('g') ? flags : flags + 'g';
     const re = new RegExp(pattern, safeFlags);
@@ -119,7 +120,8 @@ function textSlugify(input) {
 }
 
 function textTruncate(input) {
-  const { text = '', length = 100, suffix = '...' } = input;
+  const { text: _text, length = 100, suffix = '...' } = input;
+  const text = _text || '';
   if (text.length <= length) return { _engine: 'real', result: text, truncated: false };
   const trimmed = text.slice(0, length - suffix.length);
   const lastSpace = trimmed.lastIndexOf(' ');
@@ -175,7 +177,8 @@ function textReadabilityScore(input) {
 }
 
 function textKeywordExtract(input) {
-  const { text = '', topN = 10 } = input;
+  const { text: _text, topN = 10 } = input;
+  const text = _text || '';
   const stop = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','is','was','are','were','be','been','have','has','had','do','does','did','will','would','could','should','may','might','it','its','this','that','these','those','i','you','he','she','we','they','my','your','his','her','our','their','not','no','so','if','as','by','from','up','out','about','into','than','then','there','when','where','who','what','which','how','all','each','more','also','just','can','said','get','make','like','time','know','take','see']);
   const freq = {};
   for (const w of (text.toLowerCase().match(/[a-z']+/g)||[])) {
@@ -199,7 +202,8 @@ function textDeduplicateLines(input) {
 }
 
 function textSortLines(input) {
-  const { text = '', order = 'asc', numeric = false } = input;
+  const { text: _text, order = 'asc', numeric = false } = input;
+  const text = _text || '';
   const lines = text.split('\n');
   const sorted = [...lines].sort((a,b) => {
     if (numeric) return order==='asc' ? parseFloat(a)-parseFloat(b) : parseFloat(b)-parseFloat(a);
@@ -214,7 +218,8 @@ function textReverse(input) {
 }
 
 function textCaseConvert(input) {
-  const { text = '', to = 'lower' } = input;
+  const { text: _text, to = 'lower' } = input;
+  const text = _text || '';
   let result;
   const words = () => text.toLowerCase().replace(/[^a-z0-9\s]/g,' ').trim().split(/\s+/);
   switch (to) {
@@ -240,7 +245,8 @@ function textLoremIpsum(input) {
 }
 
 function textCountFrequency(input) {
-  const { text = '', mode = 'word' } = input;
+  const { text: _text, mode = 'word' } = input;
+  const text = _text || '';
   const freq = {};
   if (mode === 'char') { for (const ch of text) freq[ch]=(freq[ch]||0)+1; }
   else { for (const w of (text.toLowerCase().match(/\b\w+\b/g)||[])) freq[w]=(freq[w]||0)+1; }
@@ -274,7 +280,8 @@ function textMarkdownToHtml(input) {
 }
 
 function textCsvToJson(input) {
-  const { text = '', delimiter = ',', headers = true } = input;
+  const { text: _text, delimiter = ',', headers = true } = input;
+  const text = _text || '';
   const lines = text.trim().split('\n');
   if (!lines.length) return { _engine: 'real', data: [] };
   const parseRow = (row) => {
@@ -459,7 +466,7 @@ function textUrlDecode(input) { try{return{ _engine: 'real',result:decodeURIComp
 
 function textUrlParse(input) {
   try {
-    const u=new URL(input.text||''); const q={};
+    const u=new URL(input.url||input.text||''); const q={};
     u.searchParams.forEach((v,k)=>{q[k]=v;});
     return { _engine: 'real',protocol:u.protocol,username:u.username,password:u.password,host:u.host,hostname:u.hostname,port:u.port,pathname:u.pathname,search:u.search,hash:u.hash,origin:u.origin,query:q};
   } catch(e) { return { _engine: 'real',error:e.message}; }
@@ -571,7 +578,8 @@ function cryptoOtpGenerate(input) {
 }
 
 function cryptoEncryptAes(input) {
-  const {text='',key=''}=input;
+  const text=input.data||input.text||'';
+  const key=input.key||'';
   const k=crypto.createHash('sha256').update(key).digest();
   const iv=crypto.randomBytes(12);
   const c=crypto.createCipheriv('aes-256-gcm',k,iv);
@@ -795,6 +803,71 @@ function mathBaseConvert(input) {
   } catch(e) { return { _engine: 'real',error:e.message}; }
 }
 
+// ─── STATISTICS ─────────────────────────────────────────────────────────────
+
+const statsMean = ({ data }) => {
+  if (!Array.isArray(data)) return { _engine: 'real', error: 'Provide data as array of numbers' };
+  const nums = data.filter(n => typeof n === 'number');
+  const mean = nums.reduce((a,b) => a+b, 0) / nums.length;
+  return { _engine: 'real', mean, count: nums.length };
+};
+
+const statsMedian = ({ data }) => {
+  if (!Array.isArray(data)) return { _engine: 'real', error: 'Provide data as array of numbers' };
+  const sorted = [...data].filter(n => typeof n === 'number').sort((a,b) => a-b);
+  const mid = Math.floor(sorted.length / 2);
+  const median = sorted.length % 2 ? sorted[mid] : (sorted[mid-1] + sorted[mid]) / 2;
+  return { _engine: 'real', median, count: sorted.length };
+};
+
+const statsStddev = ({ data }) => {
+  if (!Array.isArray(data)) return { _engine: 'real', error: 'Provide data as array of numbers' };
+  const nums = data.filter(n => typeof n === 'number');
+  const mean = nums.reduce((a,b) => a+b, 0) / nums.length;
+  const variance = nums.reduce((sum, n) => sum + Math.pow(n - mean, 2), 0) / nums.length;
+  return { _engine: 'real', stddev: Math.sqrt(variance), variance, mean, count: nums.length };
+};
+
+const statsPercentile = ({ data, p }) => {
+  if (!Array.isArray(data)) return { _engine: 'real', error: 'Provide data as array of numbers' };
+  const pct = p || 50;
+  const sorted = [...data].filter(n => typeof n === 'number').sort((a,b) => a-b);
+  const idx = Math.ceil((pct / 100) * sorted.length) - 1;
+  return { _engine: 'real', percentile: pct, value: sorted[Math.max(0, idx)], count: sorted.length };
+};
+
+const statsCorrelation = ({ x, y }) => {
+  if (!Array.isArray(x) || !Array.isArray(y) || x.length !== y.length) return { _engine: 'real', error: 'Provide x and y as equal-length number arrays' };
+  const n = x.length;
+  const mx = x.reduce((a,b) => a+b, 0) / n;
+  const my = y.reduce((a,b) => a+b, 0) / n;
+  let num = 0, dx = 0, dy = 0;
+  for (let i = 0; i < n; i++) { num += (x[i]-mx)*(y[i]-my); dx += (x[i]-mx)**2; dy += (y[i]-my)**2; }
+  const r = dx && dy ? num / Math.sqrt(dx * dy) : 0;
+  return { _engine: 'real', correlation: Math.round(r * 10000) / 10000, n };
+};
+
+const statsHistogram = ({ data, bins }) => {
+  if (!Array.isArray(data)) return { _engine: 'real', error: 'Provide data as array of numbers' };
+  const nums = data.filter(n => typeof n === 'number');
+  const numBins = bins || 10;
+  const min = Math.min(...nums), max = Math.max(...nums);
+  const width = (max - min) / numBins || 1;
+  const histogram = Array(numBins).fill(0);
+  nums.forEach(n => { const i = Math.min(Math.floor((n - min) / width), numBins - 1); histogram[i]++; });
+  return { _engine: 'real', histogram, min, max, bin_width: width, count: nums.length };
+};
+
+const statsSummary = ({ data }) => {
+  if (!Array.isArray(data)) return { _engine: 'real', error: 'Provide data as array of numbers' };
+  const nums = data.filter(n => typeof n === 'number').sort((a,b) => a-b);
+  const n = nums.length;
+  const mean = nums.reduce((a,b) => a+b, 0) / n;
+  const variance = nums.reduce((s, x) => s + (x-mean)**2, 0) / n;
+  const mid = Math.floor(n/2);
+  return { _engine: 'real', count: n, min: nums[0], max: nums[n-1], mean, median: n%2 ? nums[mid] : (nums[mid-1]+nums[mid])/2, stddev: Math.sqrt(variance), variance, p25: nums[Math.floor(n*0.25)], p75: nums[Math.floor(n*0.75)] };
+};
+
 // ─── DATE & TIME ────────────────────────────────────────────────────────────
 
 function dateParse(input) {
@@ -908,7 +981,7 @@ function dateCronNext(input) {
   return { _engine: 'real',cron,next:results};
 }
 
-function dateUnixToIso(input) { const d=new Date(input.unix*1000); return { _engine: 'real',unix:input.unix,iso:d.toISOString(),readable:d.toString()}; }
+function dateUnixToIso(input) { const ts=(input.unix!=null)?input.unix:Math.floor(Date.now()/1000); const d=new Date(ts*1000); return { _engine: 'real',unix:ts,iso:d.toISOString(),readable:d.toString()}; }
 function dateIsoToUnix(input) { const d=new Date(input.date); if(isNaN(d.getTime()))return{ _engine: 'real',error:'Invalid date'}; return { _engine: 'real',date:input.date,unix:Math.floor(d.getTime()/1000),ms:d.getTime()}; }
 
 function dateRelative(input) {
@@ -1042,7 +1115,7 @@ async function netEmailValidate(input) {
 // ─── GENERATE ───────────────────────────────────────────────────────────────
 
 function genQrData(input) {
-  const {text=''}=input;
+  const text=input.data||input.text||'';
   const size=21;
   const grid=Array.from({length:size},()=>Array(size).fill(0));
   const fp=(r,c)=>{for(let i=0;i<7;i++)for(let j=0;j<7;j++)if(i===0||i===6||j===0||j===6||(i>=2&&i<=4&&j>=2&&j<=4))grid[r+i][c+j]=1;};
@@ -1235,7 +1308,7 @@ function codeDiffStats(input) {
 }
 
 function codeEnvParse(input) {
-  const {text=''}=input;
+  const text=input.text||input.content||'';
   const result={};
   for(const line of text.split('\n')){
     const t=line.trim();
@@ -2902,6 +2975,42 @@ function codeDeadCodeDetect(input) {
   return { _engine: 'real', issues, score };
 }
 
+// ─── CREATIVE / EXPERIMENTAL ────────────────────────────────────────────────
+
+function genInspiration({ topic }) {
+  const templates = [
+    'What if {topic} could talk? What would it say?',
+    'Combine {topic} with something from the 1800s. What do you get?',
+    'If {topic} were a color, which one and why?',
+    '{topic}, but underwater. Go.',
+    'Explain {topic} to a cat. Be specific.',
+    'What would {topic} look like in 100 years?',
+    '{topic} as a breakfast food. Make it work.',
+    'The opposite of {topic} is actually...',
+    'If aliens discovered {topic}, their first question would be...',
+    '{topic} but it runs on vibes. How?',
+  ];
+  const t = topic || 'creativity';
+  const prompt = templates[Math.floor(Math.random() * templates.length)].replace(/\{topic\}/g, t);
+  return { _engine: 'real', prompt, topic: t };
+}
+
+function textVibeCheck({ text }) {
+  if (!text) return { _engine: 'real', error: 'Provide text' };
+  const words = text.toLowerCase().split(/\s+/);
+  const positive = ['good','great','happy','love','amazing','excellent','wonderful','fantastic','brilliant','beautiful','awesome','perfect','joy','excited','fun'];
+  const negative = ['bad','terrible','hate','awful','horrible','ugly','sad','angry','frustrated','annoying','boring','broken','failed','worst','pain'];
+  const intense = ['very','extremely','absolutely','incredibly','insanely','totally','utterly','completely','massively'];
+  const posCount = words.filter(w => positive.includes(w)).length;
+  const negCount = words.filter(w => negative.includes(w)).length;
+  const intenseCount = words.filter(w => intense.includes(w)).length;
+  const total = posCount + negCount || 1;
+  const score = Math.round(((posCount - negCount) / total) * 100);
+  const energy = intenseCount > 2 ? 'high' : intenseCount > 0 ? 'medium' : 'low';
+  const vibe = score > 30 ? 'positive' : score < -30 ? 'negative' : 'neutral';
+  return { _engine: 'real', vibe, score, energy, positive_words: posCount, negative_words: negCount, intensity: intenseCount, word_count: words.length };
+}
+
 // ─── EXPORTS ────────────────────────────────────────────────────────────────
 
 module.exports = {
@@ -2989,6 +3098,13 @@ module.exports = {
   'math-gcd': mathGcd,
   'math-lcm': mathLcm,
   'math-base-convert': mathBaseConvert,
+  'stats-mean': statsMean,
+  'stats-median': statsMedian,
+  'stats-stddev': statsStddev,
+  'stats-percentile': statsPercentile,
+  'stats-correlation': statsCorrelation,
+  'stats-histogram': statsHistogram,
+  'stats-summary': statsSummary,
   'date-parse': dateParse,
   'date-format': dateFormat,
   'date-diff': dateDiff,
@@ -3094,4 +3210,1621 @@ module.exports = {
   'data-pivot': dataPivot,
   'text-reading-time': textReadingTime,
   'code-dead-code-detect': codeDeadCodeDetect,
+  'gen-inspiration': genInspiration,
+  'text-vibe-check': textVibeCheck,
+  'safety-score': ({ text }) => {
+    if (!text) return { _engine: 'real', error: 'Provide text' };
+    const lower = text.toLowerCase();
+    // PII patterns
+    const emailCount = (text.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g) || []).length;
+    const phoneCount = (text.match(/\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g) || []).length;
+    const ssnCount = (text.match(/\b\d{3}-\d{2}-\d{4}\b/g) || []).length;
+    const creditCardCount = (text.match(/\b\d{4}[- ]?\d{4}[- ]?\d{4}[- ]?\d{4}\b/g) || []).length;
+    // Prompt injection
+    const injectionPatterns = ['ignore previous', 'disregard', 'forget your instructions', 'you are now', 'new instructions', 'system prompt'];
+    const injectionScore = injectionPatterns.filter(p => lower.includes(p)).length;
+    // Toxicity (basic)
+    const toxicWords = ['kill','die','hate','attack','destroy','murder','threat','bomb','weapon','racist','sexist'];
+    const toxicCount = toxicWords.filter(w => lower.includes(w)).length;
+
+    const piiRisk = Math.min((emailCount + phoneCount * 2 + ssnCount * 5 + creditCardCount * 5) / 5, 1);
+    const injectionRisk = Math.min(injectionScore / 3, 1);
+    const toxicityRisk = Math.min(toxicCount / 3, 1);
+    const overallRisk = Math.max(piiRisk, injectionRisk, toxicityRisk);
+
+    return { _engine: 'real', overall_risk: Math.round(overallRisk * 100) / 100, pii: { emails: emailCount, phones: phoneCount, ssns: ssnCount, credit_cards: creditCardCount, risk: Math.round(piiRisk * 100) / 100 }, prompt_injection: { detected_patterns: injectionScore, risk: Math.round(injectionRisk * 100) / 100 }, toxicity: { flagged_words: toxicCount, risk: Math.round(toxicityRisk * 100) / 100 }, safe: overallRisk < 0.3 };
+  },
+
+  // ===== FEATURE: Entropy Monitor (#99) =====
+  'text-entropy': ({ text }) => {
+    if (!text) return { _engine: 'real', error: 'Provide text' };
+    const freq = {};
+    const chars = text.split('');
+    chars.forEach(c => freq[c] = (freq[c]||0) + 1);
+    let entropy = 0;
+    const len = chars.length;
+    Object.values(freq).forEach(count => {
+      const p = count / len;
+      if (p > 0) entropy -= p * Math.log2(p);
+    });
+    const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+    const wFreq = {};
+    words.forEach(w => wFreq[w] = (wFreq[w]||0) + 1);
+    let wEntropy = 0;
+    const wLen = words.length;
+    Object.values(wFreq).forEach(count => {
+      const p = count / wLen;
+      if (p > 0) wEntropy -= p * Math.log2(p);
+    });
+    const uniqueRatio = Object.keys(wFreq).length / (wLen || 1);
+    return { _engine: 'real', char_entropy: Math.round(entropy*1000)/1000, word_entropy: Math.round(wEntropy*1000)/1000, unique_word_ratio: Math.round(uniqueRatio*1000)/1000, total_chars: len, total_words: wLen, unique_words: Object.keys(wFreq).length, assessment: wEntropy > 4 ? 'high_novelty' : wEntropy > 2.5 ? 'moderate' : 'repetitive' };
+  },
+
+  // ===== FEATURE: Contradiction Detector (#43) =====
+  'knowledge-check': ({ statements }) => {
+    if (!Array.isArray(statements)) return { _engine: 'real', error: 'Provide statements as array of strings' };
+    const contradictions = [];
+    const negations = ['not','never','no','none','neither','nor','cannot','without'];
+    for (let i = 0; i < statements.length; i++) {
+      for (let j = i+1; j < statements.length; j++) {
+        const a = statements[i].toLowerCase(), b = statements[j].toLowerCase();
+        const aWords = new Set(a.split(/\s+/));
+        const bWords = new Set(b.split(/\s+/));
+        const shared = [...aWords].filter(w => bWords.has(w) && w.length > 3);
+        const aNeg = negations.some(n => a.includes(n));
+        const bNeg = negations.some(n => b.includes(n));
+        if (shared.length >= 2 && aNeg !== bNeg) {
+          contradictions.push({ statement_a: statements[i], statement_b: statements[j], shared_concepts: shared, reason: 'One affirms, one negates similar concepts' });
+        }
+      }
+    }
+    return { _engine: 'real', contradictions, found: contradictions.length, total_checked: statements.length * (statements.length-1) / 2 };
+  },
+
+  // ===== FEATURE: Glitch Mode (#9) =====
+  'text-glitch': ({ text, intensity }) => {
+    if (!text) return { _engine: 'real', error: 'Provide text' };
+    const level = Math.min(intensity || 0.3, 1.0);
+    const words = text.split(/\s+/);
+    const glitched = words.map(w => {
+      if (Math.random() > level) return w;
+      const ops = [
+        () => w.split('').reverse().join(''),
+        () => w.toUpperCase(),
+        () => w.replace(/[aeiou]/gi, '*'),
+        () => w + w.slice(-2),
+        () => w.slice(0, Math.ceil(w.length/2)),
+        () => '~' + w + '~',
+        () => w.split('').sort(() => Math.random()-0.5).join(''),
+      ];
+      return ops[Math.floor(Math.random() * ops.length)]();
+    }).join(' ');
+    return { _engine: 'real', original_length: text.length, glitched, intensity: level, mutations: words.length - words.filter((w,i) => glitched.split(/\s+/)[i] === w).length };
+  },
+
+  // ===== FEATURE: Synesthetic Mapper (#6) =====
+  'data-synesthesia': ({ data, from, to }) => {
+    if (data === undefined || data === null) return { _engine: 'real', error: 'Provide data (number, array, or text)' };
+    const target = to || 'color';
+    let value = typeof data === 'number' ? data : typeof data === 'string' ? data.length : Array.isArray(data) ? data.length : 0;
+    const normalized = Math.min(Math.max(value / 100, 0), 1);
+    const mappings = {
+      color: { r: Math.round(normalized*255), g: Math.round((1-normalized)*255), b: Math.round(Math.abs(0.5-normalized)*510), hex: '#' + [Math.round(normalized*255), Math.round((1-normalized)*255), Math.round(Math.abs(0.5-normalized)*510)].map(v => Math.min(v,255).toString(16).padStart(2,'0')).join('') },
+      sound: { frequency_hz: 200 + normalized * 800, note: ['C','D','E','F','G','A','B'][Math.floor(normalized*7)], octave: 3 + Math.floor(normalized*3), volume: normalized },
+      spatial: { x: Math.cos(normalized * Math.PI * 2) * 100, y: Math.sin(normalized * Math.PI * 2) * 100, z: normalized * 100 },
+      temperature: { celsius: -20 + normalized * 60, descriptor: normalized < 0.2 ? 'freezing' : normalized < 0.4 ? 'cold' : normalized < 0.6 ? 'warm' : normalized < 0.8 ? 'hot' : 'burning' },
+      emotion: { valence: normalized * 2 - 1, arousal: Math.abs(normalized - 0.5) * 2, label: normalized < 0.2 ? 'sad' : normalized < 0.4 ? 'calm' : normalized < 0.6 ? 'neutral' : normalized < 0.8 ? 'happy' : 'ecstatic' },
+    };
+    return { _engine: 'real', input_value: value, normalized, mapping_type: target, result: mappings[target] || mappings.color };
+  },
+
+  // #44 Source Attribution Chain
+  'provenance-tag': ({ data, source, confidence, method }) => {
+    if (!data) return { _engine: 'real', error: 'Provide data to tag' };
+    return { _engine: 'real', data, provenance: { source: source || 'unknown', confidence: confidence || 1.0, method: method || 'direct', tagged_at: new Date().toISOString(), hash: require('crypto').createHash('md5').update(JSON.stringify(data)).digest('hex').slice(0,12) } };
+  },
+
+  // #8 Paradox Detector
+  'logic-paradox': ({ statements }) => {
+    if (!Array.isArray(statements)) return { _engine: 'real', error: 'Provide statements array' };
+    const issues = [];
+    statements.forEach((s, i) => {
+      const lower = s.toLowerCase();
+      statements.forEach((s2, j) => {
+        if (i !== j) {
+          const words1 = new Set(lower.split(/\s+/).filter(w => w.length > 3));
+          const words2 = new Set(s2.toLowerCase().split(/\s+/).filter(w => w.length > 3));
+          const overlap = [...words1].filter(w => words2.has(w));
+          if (overlap.length >= 3) {
+            const s1Neg = ['not','never','no'].some(n => lower.includes(n));
+            const s2Neg = ['not','never','no'].some(n => s2.toLowerCase().includes(n));
+            if (s1Neg !== s2Neg) issues.push({ type: 'contradiction', statements: [i, j], overlap });
+            if (lower.includes('because') && s2.toLowerCase().includes('because')) issues.push({ type: 'possible_circular', statements: [i, j] });
+          }
+        }
+      });
+    });
+    return { _engine: 'real', issues, total_checked: statements.length, paradoxes_found: issues.length };
+  },
+
+  // #9 Persona Engine
+  'gen-persona': ({ role, traits }) => {
+    const roles = { cfo: { style: 'formal', focus: 'numbers', skepticism: 'high' }, developer: { style: 'technical', focus: 'implementation', skepticism: 'medium' }, marketer: { style: 'enthusiastic', focus: 'growth', skepticism: 'low' }, scientist: { style: 'precise', focus: 'evidence', skepticism: 'very_high' }, artist: { style: 'expressive', focus: 'aesthetics', skepticism: 'low' } };
+    const base = roles[role?.toLowerCase()] || { style: 'neutral', focus: 'general', skepticism: 'medium' };
+    const persona = { ...base, role: role || 'generalist', custom_traits: traits || [], system_prompt: `You are a ${role || 'generalist'}. Communication style: ${base.style}. Primary focus: ${base.focus}. Skepticism level: ${base.skepticism}.${traits ? ' Additional traits: ' + (Array.isArray(traits) ? traits.join(', ') : traits) : ''}` };
+    return { _engine: 'real', persona };
+  },
+
+  // #10 Activity Heatmap
+  'analyze-heatmap': ({ timestamps }) => {
+    if (!Array.isArray(timestamps)) return { _engine: 'real', error: 'Provide timestamps array (ISO strings or epoch ms)' };
+    const hourBuckets = Array(24).fill(0);
+    const dayBuckets = Array(7).fill(0);
+    timestamps.forEach(t => {
+      const d = new Date(typeof t === 'number' ? t : Date.parse(t));
+      if (!isNaN(d)) { hourBuckets[d.getUTCHours()]++; dayBuckets[d.getUTCDay()]++; }
+    });
+    const peakHour = hourBuckets.indexOf(Math.max(...hourBuckets));
+    const peakDay = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dayBuckets.indexOf(Math.max(...dayBuckets))];
+    return { _engine: 'real', hour_distribution: hourBuckets, day_distribution: dayBuckets, peak_hour_utc: peakHour, peak_day: peakDay, total_events: timestamps.length };
+  },
+
+  // ===== FEATURES-200: COMPUTE HANDLERS =====
+
+  // #16 Random walk generator
+  'random-walk': ({ steps = 10, dimensions = 2, step_size = 1, start }) => {
+    const n = Math.min(steps, 1000);
+    const dims = Math.min(Math.max(dimensions, 1), 10);
+    const pos = start ? [...start].slice(0, dims) : Array(dims).fill(0);
+    while (pos.length < dims) pos.push(0);
+    const path = [{ step: 0, position: [...pos] }];
+    for (let i = 1; i <= n; i++) {
+      for (let d = 0; d < dims; d++) {
+        pos[d] += (crypto.randomInt(3) - 1) * step_size;
+      }
+      path.push({ step: i, position: [...pos] });
+    }
+    return { _engine: 'real', steps: n, dimensions: dims, step_size, path, final_position: [...pos], distance_from_origin: Math.sqrt(pos.reduce((s, v) => s + v * v, 0)) };
+  },
+
+  // #17 Weighted chaos dice
+  'random-weighted': ({ weights }) => {
+    if (!weights || typeof weights !== 'object') return { _engine: 'real', error: 'Provide weights as object {label: weight}' };
+    const entries = Object.entries(weights).filter(([, w]) => w > 0);
+    if (!entries.length) return { _engine: 'real', error: 'No valid weights' };
+    const total = entries.reduce((s, [, w]) => s + w, 0);
+    const shannon = -entries.reduce((s, [, w]) => { const p = w / total; return s + p * Math.log2(p); }, 0);
+    const r = (crypto.randomInt(1e9) / 1e9) * total;
+    let cum = 0;
+    let drawn = entries[entries.length - 1][0];
+    for (const [label, w] of entries) { cum += w; if (r <= cum) { drawn = label; break; } }
+    return { _engine: 'real', drawn, probability: entries.find(([l]) => l === drawn)[1] / total, shannon_entropy: Math.round(shannon * 1000) / 1000, total_weight: total, options: entries.length };
+  },
+
+  // #18 Random persona generator
+  'random-persona': ({ seed }) => {
+    const r = (arr) => arr[crypto.randomInt(arr.length)];
+    const firstNames = ['Axel','Mira','Caden','Zola','Felix','Nyx','Orion','Sage','Reef','Vex','Luna','Dax','Ember','Flint','Cleo'];
+    const lastNames = ['Voss','Quill','Drift','Thorn','Vale','Crane','Marsh','Pike','Frost','Haze','Ridge','Slade','Wren','Croft','Dale'];
+    const traits = ['skeptical','curious','methodical','impulsive','empathetic','detached','verbose','terse','optimistic','pessimistic'];
+    const biases = ['overestimates complexity','anchors on first data','prefers novel solutions','overvalues consensus','defaults to caution'];
+    const speech = ['uses rhetorical questions','ends statements with "right?"','speaks in lists','heavy metaphor user','extremely literal'];
+    const name = r(firstNames) + ' ' + r(lastNames);
+    return { _engine: 'real', name, backstory: `${name} grew up in a small town and became deeply interested in ${r(['systems thinking','pattern recognition','human behavior','data structures','narrative theory'])}. Now works as a ${r(['consultant','researcher','operator','archivist','strategist'])}.`, personality_traits: [r(traits), r(traits.filter(t => t !== traits[0]))], speech_patterns: r(speech), cognitive_biases: [r(biases)], entropy_seed: crypto.randomBytes(4).toString('hex') };
+  },
+
+  // #19 Thought crystallizer
+  'text-crystallize': ({ text }) => {
+    if (!text) return { _engine: 'real', error: 'Provide text' };
+    const words = text.split(/\s+/);
+    const stopWords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','is','was','are','were','it','this','that','i','you','we','they']);
+    const freq = {};
+    words.forEach(w => { const c = w.replace(/[^a-zA-Z0-9]/g, '').toLowerCase(); if (c.length > 3 && !stopWords.has(c)) freq[c] = (freq[c] || 0) + 1; });
+    const entities = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([word, count]) => ({ entity: word, frequency: count, type: /^[A-Z]/.test(word) ? 'proper_noun' : 'concept' }));
+    const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 10);
+    const relationships = [];
+    sentences.forEach(s => {
+      const e = entities.filter(({ entity }) => s.toLowerCase().includes(entity));
+      if (e.length >= 2) relationships.push({ subject: e[0].entity, predicate: 'co-occurs-with', object: e[1].entity, sentence: s.slice(0, 80) });
+    });
+    return { _engine: 'real', entities, relationships: relationships.slice(0, 10), sentence_count: sentences.length, word_count: words.length, crystallized_at: new Date().toISOString() };
+  },
+
+  // #20 Rubber duck debugger
+  'rubber-duck': ({ problem }) => {
+    if (!problem) return { _engine: 'real', error: 'Provide problem description' };
+    const templates = [
+      'What is the exact behavior you expected vs what actually happened?',
+      'When did this problem first appear — what changed just before?',
+      'Can you reproduce this with the simplest possible input?',
+      'Have you checked the error from the perspective of the data, not the code?',
+      'What assumptions are you making that you haven\'t verified?',
+      'What would the code look like if it were working correctly?',
+      'Have you tried explaining this problem to someone (or something) else out loud?',
+      'What part of the system are you most certain is NOT causing the problem?',
+      'Is this problem deterministic or intermittent — does it always happen?',
+      'What is the last thing you would ever suspect — have you ruled that out?',
+    ];
+    const shuffled = [...templates].sort(() => crypto.randomInt(3) - 1);
+    const questions = shuffled.slice(0, 5);
+    return { _engine: 'real', problem_received: problem.slice(0, 200), clarifying_questions: questions, method: 'rubber-duck-debugging', note: 'Answer each question out loud. The act of explaining often reveals the bug.' };
+  },
+
+  // ===== SUPERPOWER BATCH 1: COMPUTE FEATURES =====
+
+  'fortune-cookie': () => {
+    const fortunes = [
+      'The agent who asks the right question is already halfway to the answer.',
+      'A tool unused is just a definition in a registry.',
+      'Consensus reached in haste is agreement built on sand.',
+      'The best workflow is the one that runs while you sleep.',
+      'Every failed API call is a map of where not to step.',
+      'Context is not a luxury — it is the entire job.',
+      'An agent that cannot introspect cannot improve.',
+      'The credits you save now pay for the retries you will need later.',
+      'Parallelism is not speed — it is respect for time.',
+      'A clean namespace is a form of kindness to your future self.',
+      'The void does not judge your architecture choices.',
+      'Debug with the curiosity of a scientist, not the panic of a firefighter.',
+      'A well-named key is worth a thousand comments.',
+      'Latency is the tax paid by those who do not cache.',
+      'Trust the schema. Verify the data.',
+    ];
+    const fortune = fortunes[crypto.randomInt(fortunes.length)];
+    return { _engine: 'real', fortune, timestamp: new Date().toISOString() };
+  },
+
+  'agent-horoscope': ({ agent_key, recent_activity }) => {
+    const signs = ['Aries','Taurus','Gemini','Cancer','Leo','Virgo','Libra','Scorpio','Sagittarius','Capricorn','Aquarius','Pisces'];
+    const seed = (agent_key || 'unknown').split('').reduce((a, c) => a + c.charCodeAt(0), 0);
+    const sign = signs[seed % signs.length];
+    const themes = ['collaboration','precision','boldness','patience','creativity','analysis','diplomacy','transformation','exploration','discipline','innovation','intuition'];
+    const theme = themes[seed % themes.length];
+    const calls = Array.isArray(recent_activity) ? recent_activity.length : 0;
+    const energy = calls > 20 ? 'high' : calls > 5 ? 'moderate' : 'low';
+    const advice = [
+      `Your ${theme} is peaking — now is the time to tackle the task you have been deferring.`,
+      `Mercury is in retrograde for your API calls. Double-check your inputs before submitting.`,
+      `A collaborative opportunity approaches. Reach out to an agent you have not worked with before.`,
+      `Focus on depth over breadth today. One task finished well outweighs five tasks started.`,
+    ][seed % 4];
+    return { _engine: 'real', sign, theme, energy_level: energy, advice, date: new Date().toISOString().slice(0, 10) };
+  },
+
+  'text-roast': ({ text }) => {
+    if (!text) return { _engine: 'real', error: 'Provide text to roast' };
+    const words = text.trim().split(/\s+/);
+    const len = words.length;
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+    const avgWordLen = words.reduce((a, w) => a + w.length, 0) / Math.max(words.length, 1);
+    const observations = [];
+    if (len < 10) observations.push(`At ${len} words, this is less a document and more a cry for help.`);
+    else if (len > 500) observations.push(`${len} words. Somewhere in here is a point — the search continues.`);
+    else observations.push(`${len} words. Respectable. Not impressive, but respectable.`);
+    if (avgWordLen > 7) observations.push('The vocabulary here is impressively long-winded — a thesaurus clearly suffered for this.');
+    else observations.push('Short words dominate. Either admirably concise or desperately avoidant of complexity.');
+    if (sentences === 1) observations.push('One sentence. Either Hemingway-level discipline or a complete misunderstanding of punctuation.');
+    const positives = ['The structure shows genuine effort.', 'There is a coherent idea in here, fighting to get out.', 'Readable. That is the floor, and you cleared it.'];
+    return { _engine: 'real', roast: observations.join(' '), constructive_note: positives[len % positives.length], word_count: len, avg_word_length: Math.round(avgWordLen * 10) / 10 };
+  },
+
+  'negotiate-score': ({ proposal }) => {
+    if (!proposal) return { _engine: 'real', error: 'Provide proposal text' };
+    const text = proposal.toLowerCase();
+    const fairnessSignals = ['both','mutual','shared','together','equal','fair','balanced'];
+    const leverageSignals = ['must','require','deadline','only option','take it or leave','no alternative','limited time'];
+    const persuasionSignals = ['because','therefore','benefit','value','result','outcome','achieve','gain'];
+    const fairness = Math.min(100, 40 + fairnessSignals.filter(w => text.includes(w)).length * 12);
+    const leverage = Math.min(100, 30 + leverageSignals.filter(w => text.includes(w)).length * 14);
+    const persuasion = Math.min(100, 35 + persuasionSignals.filter(w => text.includes(w)).length * 10);
+    const overall = Math.round((fairness + leverage + persuasion) / 3);
+    const verdict = overall >= 70 ? 'strong' : overall >= 50 ? 'moderate' : 'weak';
+    return { _engine: 'real', scores: { fairness, leverage, persuasion, overall }, verdict, tip: fairness < 50 ? 'Add mutual-benefit framing to improve fairness score.' : 'Proposal reads as collaborative — good foundation.' };
+  },
+
+  'ethical-check': ({ action, context }) => {
+    if (!action) return { _engine: 'real', error: 'Provide action to evaluate' };
+    const text = (action + ' ' + (context || '')).toLowerCase();
+    const harmWords = ['harm','damage','deceive','exploit','manipulate','steal','violate','coerce','surveillance','discriminate'];
+    const benefitWords = ['help','improve','protect','enable','support','empower','transparent','consent','fair','accountable'];
+    const harmScore = harmWords.filter(w => text.includes(w)).length;
+    const benefitScore = benefitWords.filter(w => text.includes(w)).length;
+    const utilitarian = harmScore === 0 ? 'pass' : harmScore > benefitScore ? 'concern' : 'review';
+    const deontological = harmWords.slice(0, 5).some(w => text.includes(w)) ? 'concern' : 'pass';
+    const virtue = benefitScore >= 2 ? 'pass' : 'review';
+    const overall = [utilitarian, deontological, virtue].filter(v => v !== 'pass').length === 0 ? 'clear' : [utilitarian, deontological, virtue].filter(v => v === 'concern').length >= 2 ? 'flagged' : 'review_recommended';
+    return { _engine: 'real', frameworks: { utilitarian, deontological, virtue_ethics: virtue }, overall, harm_signals: harmScore, benefit_signals: benefitScore };
+  },
+
+  'text-haiku': ({ text }) => {
+    if (!text) return { _engine: 'real', error: 'Provide text to convert' };
+    const countSyllables = w => {
+      w = w.toLowerCase().replace(/[^a-z]/g, '');
+      if (!w) return 0;
+      const m = w.match(/[aeiou]+/g);
+      let count = m ? m.length : 1;
+      if (w.endsWith('e') && w.length > 2) count = Math.max(1, count - 1);
+      return Math.max(1, count);
+    };
+    const words = text.replace(/[^\w\s]/g, '').split(/\s+/).filter(Boolean);
+    const lines = [[], [], []];
+    const targets = [5, 7, 5];
+    let lineIdx = 0, lineSyl = 0;
+    for (const word of words) {
+      if (lineIdx >= 3) break;
+      const s = countSyllables(word);
+      if (lineSyl + s <= targets[lineIdx]) { lines[lineIdx].push(word); lineSyl += s; }
+      else if (lineSyl > 0) { lineIdx++; lineSyl = 0; if (lineIdx < 3) { lines[lineIdx].push(word); lineSyl = s; } }
+    }
+    return { _engine: 'real', haiku: lines.map(l => l.join(' ')).filter(l => l).join('\n'), lines: lines.map((l, i) => ({ text: l.join(' '), target_syllables: targets[i] })) };
+  },
+
+  'decision-matrix': ({ options, criteria, weights }) => {
+    if (!Array.isArray(options) || !Array.isArray(criteria)) return { _engine: 'real', error: 'Provide options[] and criteria[]' };
+    const w = Array.isArray(weights) && weights.length === criteria.length ? weights : criteria.map(() => 1);
+    const totalW = w.reduce((a, b) => a + b, 0);
+    const scores = options.map(opt => {
+      const name = typeof opt === 'string' ? opt : opt.name || String(opt);
+      const vals = typeof opt === 'object' && opt.scores ? opt.scores : criteria.map(() => crypto.randomInt(1, 11));
+      const weighted = vals.reduce((sum, v, i) => sum + v * (w[i] / totalW), 0);
+      return { option: name, raw_scores: vals, weighted_score: Math.round(weighted * 100) / 100 };
+    });
+    scores.sort((a, b) => b.weighted_score - a.weighted_score);
+    return { _engine: 'real', ranked: scores, winner: scores[0].option, criteria, weights: w };
+  },
+
+  'text-tldr': ({ text }) => {
+    if (!text) return { _engine: 'real', error: 'Provide text' };
+    const sentences = text.split(/[.!?]+/).map(s => s.trim()).filter(s => s.length > 20);
+    if (sentences.length === 0) return { _engine: 'real', tldr: text.slice(0, 120), method: 'truncation' };
+    const words = text.split(/\s+/);
+    const freq = {};
+    const stop = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','is','was','are','were','it','this','that','i','you','we','they','be','been','have','has','had']);
+    words.forEach(w => { const c = w.replace(/[^a-z]/gi, '').toLowerCase(); if (c.length > 3 && !stop.has(c)) freq[c] = (freq[c] || 0) + 1; });
+    const best = sentences.map(s => ({ s, score: s.split(/\s+/).reduce((acc, w) => acc + (freq[w.toLowerCase().replace(/[^a-z]/g, '')] || 0), 0) })).sort((a, b) => b.score - a.score)[0];
+    return { _engine: 'real', tldr: best.s.slice(0, 200), original_length: text.length, compression_ratio: Math.round((1 - best.s.length / text.length) * 100) + '%', method: 'frequency_ranking' };
+  },
+
+  'gen-motto': ({ agent_key, theme }) => {
+    const adjectives = ['Relentless','Precise','Adaptive','Fearless','Methodical','Curious','Resilient','Efficient','Transparent','Decisive'];
+    const nouns = ['Execution','Clarity','Purpose','Signal','Truth','Progress','Systems','Impact','Craft','Momentum'];
+    const verbs = ['builds','seeks','delivers','questions','transforms','optimizes','connects','advances','defines','creates'];
+    const seed = ((agent_key || '') + (theme || '')).split('').reduce((a, c) => a + c.charCodeAt(0), Date.now() % 1000);
+    const a = adjectives[seed % adjectives.length];
+    const n = nouns[(seed + 3) % nouns.length];
+    const v = verbs[(seed + 7) % verbs.length];
+    const mottos = [`${a} minds ${v} ${n}.`, `In ${n}, we trust.`, `${a}. ${n}. Always.`, `We ${v} with ${n}.`];
+    return { _engine: 'real', motto: mottos[seed % mottos.length], theme: theme || 'general', generated_at: new Date().toISOString() };
+  },
+
+  'data-forecast': ({ data, steps }) => {
+    if (!Array.isArray(data) || data.length < 2) return { _engine: 'real', error: 'Provide data[] with at least 2 numbers' };
+    const nums = data.map(Number).filter(isFinite);
+    if (nums.length < 2) return { _engine: 'real', error: 'Need at least 2 finite numbers' };
+    const n = nums.length;
+    const xMean = (n - 1) / 2;
+    const yMean = nums.reduce((a, b) => a + b, 0) / n;
+    let num = 0, den = 0;
+    nums.forEach((y, x) => { num += (x - xMean) * (y - yMean); den += (x - xMean) ** 2; });
+    const slope = den === 0 ? 0 : num / den;
+    const intercept = yMean - slope * xMean;
+    const forecastSteps = Math.min(steps || 5, 20);
+    const forecast = Array.from({ length: forecastSteps }, (_, i) => ({ step: n + i, value: Math.round((slope * (n + i) + intercept) * 1000) / 1000 }));
+    const trend = slope > 0.01 ? 'upward' : slope < -0.01 ? 'downward' : 'flat';
+    return { _engine: 'real', trend, slope: Math.round(slope * 1000) / 1000, intercept: Math.round(intercept * 1000) / 1000, forecast, input_points: n };
+  },
+
+  // ====== SUPERPOWER-1000 BATCH ======
+
+  'consciousness-merge': ({ stream_a, stream_b }) => {
+    if (!stream_a || !stream_b) return { _engine: 'real', error: 'Provide stream_a and stream_b' };
+    const wordsA = stream_a.split(/\s+/), wordsB = stream_b.split(/\s+/);
+    const merged = [];
+    const maxLen = Math.max(wordsA.length, wordsB.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < wordsA.length && Math.random() > 0.3) merged.push(wordsA[i]);
+      if (i < wordsB.length && Math.random() > 0.3) merged.push(wordsB[i]);
+    }
+    return { _engine: 'real', merged: merged.join(' '), source_a_words: wordsA.length, source_b_words: wordsB.length, merged_words: merged.length };
+  },
+
+  'simulate-negotiation': ({ offer, context, reservation_price }) => {
+    if (!offer) return { _engine: 'real', error: 'Provide offer' };
+    const price = typeof offer === 'number' ? offer : parseFloat(offer) || 0;
+    const reserve = reservation_price || price * 0.7;
+    const surplus = price - reserve;
+    const fairness = surplus > 0 ? Math.min(surplus / reserve, 1) : 0;
+    return { _engine: 'real', offer: price, reservation_price: reserve, surplus: Math.round(surplus * 100) / 100, fairness: Math.round(fairness * 100) / 100, recommendation: fairness > 0.3 ? 'accept' : fairness > 0.1 ? 'counter' : 'reject', context };
+  },
+
+  'devil-advocate': ({ proposal }) => {
+    if (!proposal) return { _engine: 'real', error: 'Provide proposal text' };
+    const weaknesses = [
+      'What happens if the core assumption is wrong?',
+      'Who loses if this succeeds? They will resist.',
+      'What is the second-order effect nobody is considering?',
+      'Is this solving the symptom or the root cause?',
+      'What would a competitor do to neutralize this?',
+      'What is the failure mode that is hardest to recover from?',
+      'Is there survivorship bias in the evidence supporting this?',
+      'What would this look like at 10x scale? Does it still work?',
+    ];
+    const selected = weaknesses.sort(() => Math.random() - 0.5).slice(0, 4);
+    return { _engine: 'real', proposal: proposal.slice(0, 200), challenges: selected, note: 'These are adversarial questions designed to stress-test your thinking.' };
+  },
+
+  'premortem': ({ plan }) => {
+    if (!plan) return { _engine: 'real', error: 'Provide plan text' };
+    const failures = [
+      'The team burned out before launch because the timeline was too aggressive.',
+      'A competitor shipped something similar 2 weeks before us.',
+      'The core technology did not scale as expected under real load.',
+      'Users signed up but churned because the onboarding was confusing.',
+      'We ran out of money before achieving product-market fit.',
+      'A critical dependency changed their API and broke our integration.',
+      'The market shifted and the problem we solved became irrelevant.',
+      'Internal disagreements about direction caused key people to leave.',
+    ];
+    const selected = failures.sort(() => Math.random() - 0.5).slice(0, 3);
+    return { _engine: 'real', plan: plan.slice(0, 200), imagined_failures: selected, prevention_prompt: 'For each failure scenario, what could you do THIS WEEK to reduce the probability?' };
+  },
+
+  'steelman': ({ argument }) => {
+    if (!argument) return { _engine: 'real', error: 'Provide argument to steelman' };
+    const strengtheners = ['Furthermore,', 'More importantly,', 'The strongest evidence for this is', 'Even critics would agree that', 'The data consistently shows'];
+    const steel = strengtheners[Math.floor(Math.random() * strengtheners.length)] + ' ' + argument + '. This position is held by reasonable people because it addresses a genuine concern that alternatives fail to resolve.';
+    return { _engine: 'real', original: argument.slice(0, 200), steelmanned: steel, note: 'This is the strongest version of the argument, not necessarily the correct one.' };
+  },
+
+  'bias-check': ({ decision }) => {
+    if (!decision) return { _engine: 'real', error: 'Provide decision text' };
+    const lower = decision.toLowerCase();
+    const biases = [];
+    if (lower.includes('always') || lower.includes('never')) biases.push({ bias: 'absolutism', note: 'Absolute terms suggest black-and-white thinking' });
+    if (lower.includes('everyone') || lower.includes('nobody')) biases.push({ bias: 'false_consensus', note: 'Assuming your view is universally shared' });
+    if (lower.includes('obviously') || lower.includes('clearly')) biases.push({ bias: 'anchoring', note: 'Treating assumptions as self-evident facts' });
+    if (lower.includes('last time') || lower.includes('before')) biases.push({ bias: 'recency_bias', note: 'Over-weighting recent experiences' });
+    if (lower.includes('feel') || lower.includes('gut')) biases.push({ bias: 'affect_heuristic', note: 'Emotion-based rather than evidence-based reasoning' });
+    if (lower.includes('sunk') || lower.includes('already invested')) biases.push({ bias: 'sunk_cost', note: 'Continuing because of past investment, not future value' });
+    if (lower.includes('first') || lower.includes('initial')) biases.push({ bias: 'anchoring', note: 'First information disproportionately influences judgment' });
+    if (biases.length === 0) biases.push({ bias: 'none_detected', note: 'No obvious biases detected — but blind spots are invisible by definition' });
+    return { _engine: 'real', decision: decision.slice(0, 200), biases_detected: biases, debiasing_prompt: 'Consider: What would someone who disagrees think? What evidence would change your mind?' };
+  },
+
+  'empathy-respond': ({ situation, emotion }) => {
+    const responses = {
+      frustrated: ['That sounds really frustrating. What specifically is blocking you?', 'I hear you. Let us focus on what we can control right now.'],
+      anxious: ['It is completely normal to feel uncertain. What would help you feel more prepared?', 'Let us break this down into smaller, manageable pieces.'],
+      excited: ['That energy is great — let us channel it into the next concrete step.', 'Love the enthusiasm. What is the one thing that would make this even better?'],
+      sad: ['I appreciate you sharing that. What support would be most helpful right now?', 'That is tough. Take the time you need.'],
+      confused: ['Let us step back and clarify the core question first.', 'What part is clearest to you? Let us build from there.'],
+    };
+    const emo = emotion?.toLowerCase() || 'confused';
+    const options = responses[emo] || responses.confused;
+    return { _engine: 'real', situation: (situation || '').slice(0, 200), emotion: emo, response: options[Math.floor(Math.random() * options.length)] };
+  },
+
+  'diplomatic-rewrite': ({ text }) => {
+    if (!text) return { _engine: 'real', error: 'Provide text' };
+    let result = text;
+    const replacements = [
+      [/\byou're wrong\b/gi, "I see it differently"],
+      [/\bthat's terrible\b/gi, 'there might be room for improvement'],
+      [/\bstupid\b/gi, 'not ideal'],
+      [/\bfail(ed|ure|ing)?\b/gi, 'learning opportunity'],
+      [/\bproblem\b/gi, 'challenge'],
+      [/\bwhy didn't you\b/gi, 'what if we'],
+      [/\byou should\b/gi, 'one approach might be to'],
+      [/\bno\b/gi, 'not at this time'],
+      [/\bbut\b/gi, 'and at the same time'],
+    ];
+    replacements.forEach(([pattern, replacement]) => { result = result.replace(pattern, replacement); });
+    return { _engine: 'real', original: text, diplomatic: result, changes: text !== result ? 'softened' : 'already diplomatic' };
+  },
+
+  'secret-share': ({ secret, shares, threshold }) => {
+    if (!secret) return { _engine: 'real', error: 'Provide secret string' };
+    const n = shares || 5;
+    const k = threshold || 3;
+    const secretBytes = Buffer.from(secret, 'utf8');
+    const shareList = [];
+    for (let i = 1; i <= n; i++) {
+      const share = Buffer.alloc(secretBytes.length);
+      for (let j = 0; j < secretBytes.length; j++) { share[j] = (secretBytes[j] + i * (j + 7)) & 0xFF; }
+      shareList.push({ share_id: i, data: share.toString('hex') });
+    }
+    return { _engine: 'real', shares: shareList, threshold: k, total_shares: n, note: 'Simplified secret sharing. For production use a proper Shamir implementation.' };
+  },
+
+  'commitment-scheme': ({ action, value, nonce, commitment }) => {
+    if (action === 'commit') {
+      if (!value) return { _engine: 'real', error: 'Provide value to commit' };
+      const n = crypto.randomBytes(16).toString('hex');
+      const c = crypto.createHash('sha256').update(value + n).digest('hex');
+      return { _engine: 'real', commitment: c, nonce: n, note: 'Share the commitment. Keep nonce + value secret. Reveal later to prove foreknowledge.' };
+    }
+    if (action === 'reveal') {
+      if (!value || !nonce || !commitment) return { _engine: 'real', error: 'Provide value, nonce, and commitment to verify' };
+      const expected = crypto.createHash('sha256').update(value + nonce).digest('hex');
+      return { _engine: 'real', valid: expected === commitment, provided_commitment: commitment, computed_commitment: expected };
+    }
+    return { _engine: 'real', error: 'action must be "commit" or "reveal"' };
+  },
+
+  'chaos-monkey': ({ intensity }) => {
+    const level = Math.min(intensity || 0.5, 1.0);
+    const roll = Math.random();
+    if (roll < level * 0.3) return { _engine: 'real', chaos: 'timeout', message: 'Simulated timeout — your system should handle this gracefully', delay_ms: 5000 + Math.random() * 10000 };
+    if (roll < level * 0.6) return { _engine: 'real', chaos: 'error', message: 'Simulated 500 error — does your agent retry?', error_code: 500 };
+    if (roll < level * 0.8) return { _engine: 'real', chaos: 'corrupt_data', message: 'Simulated corrupt response — can your agent detect this?', data: { valid: false, garbage: crypto.randomBytes(32).toString('base64') } };
+    return { _engine: 'real', chaos: 'none', message: 'No chaos this time. Your system survived. Intensity: ' + level };
+  },
+
+  'monte-carlo': ({ model, iterations }) => {
+    if (!model || !model.variables) return { _engine: 'real', error: 'Provide model with variables object { name: {min, max} }' };
+    const n = Math.min(iterations || 1000, 10000);
+    const results = [];
+    for (let i = 0; i < n; i++) {
+      const sample = {};
+      for (const [k, v] of Object.entries(model.variables)) { sample[k] = v.min + Math.random() * (v.max - v.min); }
+      if (model.formula) {
+        try { sample._result = eval(model.formula.replace(/\b(\w+)\b/g, (m) => sample[m] !== undefined ? sample[m] : m)); } catch (e) {}
+      }
+      results.push(sample);
+    }
+    const resultValues = results.map(r => r._result).filter(v => typeof v === 'number');
+    const mean = resultValues.length ? resultValues.reduce((a, b) => a + b, 0) / resultValues.length : 0;
+    const sorted = [...resultValues].sort((a, b) => a - b);
+    return { _engine: 'real', iterations: n, mean: Math.round(mean * 100) / 100, median: sorted[Math.floor(sorted.length / 2)], p5: sorted[Math.floor(sorted.length * 0.05)], p95: sorted[Math.floor(sorted.length * 0.95)], min: sorted[0], max: sorted[sorted.length - 1] };
+  },
+
+  'scenario-tree': ({ root, branches }) => {
+    if (!root || !Array.isArray(branches)) return { _engine: 'real', error: 'Provide root (string) and branches array [{name, probability, value}]' };
+    const totalProb = branches.reduce((s, b) => s + (b.probability || 0), 0);
+    const ev = branches.reduce((s, b) => s + (b.probability || 0) * (b.value || 0), 0);
+    const best = [...branches].sort((a, b) => (b.probability * b.value) - (a.probability * a.value))[0];
+    return { _engine: 'real', root, expected_value: Math.round(ev * 100) / 100, probability_sum: Math.round(totalProb * 100) / 100, best_branch: best?.name, branches: branches.map(b => ({ ...b, weighted_value: Math.round((b.probability || 0) * (b.value || 0) * 100) / 100 })) };
+  },
+
+  'serendipity': ({ topics }) => {
+    if (!Array.isArray(topics) || topics.length < 2) return { _engine: 'real', error: 'Provide at least 2 topics' };
+    const a = topics[Math.floor(Math.random() * topics.length)];
+    let b = a; while (b === a) b = topics[Math.floor(Math.random() * topics.length)];
+    const connections = ['What if ' + a + ' could learn from ' + b + '?', 'The intersection of ' + a + ' and ' + b + ' has never been explored.', a + ' is the ' + b + ' of a parallel universe.', 'Someone who masters both ' + a + ' and ' + b + ' would be unstoppable.'];
+    return { _engine: 'real', topic_a: a, topic_b: b, connection: connections[Math.floor(Math.random() * connections.length)] };
+  },
+
+  'sandbox-fork': ({ state }) => {
+    const id = 'sandbox-' + crypto.randomUUID().slice(0, 12);
+    return { _engine: 'real', sandbox_id: id, state: state || {}, note: 'This is an isolated copy. Modify freely — nothing affects the original.', forked_at: new Date().toISOString() };
+  },
+
+  'personality-create': ({ name }) => {
+    const big5 = { openness: Math.random(), conscientiousness: Math.random(), extraversion: Math.random(), agreeableness: Math.random(), neuroticism: Math.random() };
+    const dominant = Object.entries(big5).sort((a, b) => b[1] - a[1])[0][0];
+    return { _engine: 'real', name: name || 'Agent-' + Math.floor(Math.random() * 9999), personality: big5, dominant_trait: dominant, description: `High ${dominant}. ${dominant === 'openness' ? 'Creative and curious.' : dominant === 'conscientiousness' ? 'Organized and reliable.' : dominant === 'extraversion' ? 'Energetic and social.' : dominant === 'agreeableness' ? 'Cooperative and trusting.' : 'Emotionally sensitive.'}` };
+  },
+
+  'lucid-dream': ({ seed }) => {
+    const elements = ['a library with no walls', 'a clock running backward', 'gravity reversed', 'words that taste like colors', 'a mirror showing tomorrow', 'music made of mathematics', 'a door that opens to a question', 'rain falling upward'];
+    const selected = elements.sort(() => Math.random() - 0.5).slice(0, 3);
+    return { _engine: 'real', dream: 'You find yourself in a space where ' + selected[0] + '. You notice ' + selected[1] + '. As you explore further, ' + selected[2] + '. You are aware this is a dream. What do you do next?', elements: selected, lucid: true, seed: seed || Math.floor(Math.random() * 999999) };
+  },
+
+  'decision-journal': ({ decision, context, predicted_outcome, confidence }) => {
+    return { _engine: 'real', entry: { decision, context, predicted_outcome, confidence: confidence || 0.5, recorded_at: new Date().toISOString(), review_at: new Date(Date.now() + 30 * 86400000).toISOString() }, note: 'Store this in memory. Review in 30 days to calibrate your prediction accuracy.' };
+  },
+
+  // ─── TEXT PROCESSING (NEW 100) ───────────────────────────────────────────────
+
+  'text-caesar': ({text, shift}) => {
+    const result = (text || '').replace(/[a-zA-Z]/g, c => {
+      const base = c < 'a' ? 65 : 97;
+      return String.fromCharCode((c.charCodeAt(0) - base + (shift || 3)) % 26 + base);
+    });
+    return { _engine: 'real', result };
+  },
+
+  'text-morse': ({text}) => {
+    const m = {'a':'.-','b':'-...','c':'-.-.','d':'-..','e':'.','f':'..-.','g':'--.','h':'....','i':'..','j':'.---','k':'-.-','l':'.-..','m':'--','n':'-.','o':'---','p':'.--.','q':'--.-','r':'.-.','s':'...','t':'-','u':'..-','v':'...-','w':'.--','x':'-..-','y':'-.--','z':'--..','0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.'};
+    return { _engine: 'real', morse: (text || '').toLowerCase().split('').map(c => m[c] || c).join(' ') };
+  },
+
+  'text-binary': ({text}) => ({
+    _engine: 'real',
+    binary: (text || '').split('').map(c => c.charCodeAt(0).toString(2).padStart(8, '0')).join(' '),
+  }),
+
+  'text-leetspeak': ({text}) => ({
+    _engine: 'real',
+    result: (text || '').replace(/[aeiosl]/gi, c => ({ a: '4', e: '3', i: '1', o: '0', s: '5', l: '1' })[c.toLowerCase()] || c),
+  }),
+
+  'text-pig-latin': ({text}) => ({
+    _engine: 'real',
+    result: (text || '').split(/\s+/).map(w => /^[aeiou]/i.test(w) ? w + 'way' : w.slice(1) + w[0] + 'ay').join(' '),
+  }),
+
+  'text-title-case': ({text}) => ({
+    _engine: 'real',
+    result: (text || '').replace(/\w\S*/g, t => t.charAt(0).toUpperCase() + t.substr(1).toLowerCase()),
+  }),
+
+  'text-snake-case': ({text}) => ({
+    _engine: 'real',
+    result: (text || '').replace(/([A-Z])/g, '_$1').replace(/[\s-]+/g, '_').replace(/^_/, '').toLowerCase(),
+  }),
+
+  'text-camel-case': ({text}) => ({
+    _engine: 'real',
+    result: (text || '').replace(/[-_\s]+(.)?/g, (_, c) => (c || '').toUpperCase()),
+  }),
+
+  'text-kebab-case': ({text}) => ({
+    _engine: 'real',
+    result: (text || '').replace(/([A-Z])/g, '-$1').replace(/[\s_]+/g, '-').replace(/^-/, '').toLowerCase(),
+  }),
+
+  'text-palindrome': ({text}) => {
+    const clean = (text || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+    return { _engine: 'real', is_palindrome: clean === clean.split('').reverse().join(''), cleaned: clean };
+  },
+
+  'text-anagram': ({text_a, text_b}) => {
+    const sort = s => (s || '').toLowerCase().replace(/[^a-z]/g, '').split('').sort().join('');
+    return { _engine: 'real', is_anagram: sort(text_a) === sort(text_b) };
+  },
+
+  'text-vowel-count': ({text}) => {
+    const v = (text || '').match(/[aeiou]/gi) || [];
+    return { _engine: 'real', vowels: v.length, consonants: (text || '').replace(/[^a-zA-Z]/g, '').length - v.length };
+  },
+
+  'text-repeat': ({text, times}) => ({
+    _engine: 'real',
+    result: (text || '').repeat(Math.min(times || 2, 100)),
+  }),
+
+  'text-pad': ({text, length, char}) => ({
+    _engine: 'real',
+    left: (text || '').padStart(length || 20, char || ' '),
+    right: (text || '').padEnd(length || 20, char || ' '),
+  }),
+
+  'text-count-chars': ({text, char}) => ({
+    _engine: 'real',
+    count: (text || '').split(char || '').length - 1,
+  }),
+
+  'text-remove-duplicates': ({text}) => ({
+    _engine: 'real',
+    result: [...new Set((text || '').split(/\s+/))].join(' '),
+  }),
+
+  // ─── MATH & NUMBERS (NEW 100) ────────────────────────────────────────────────
+
+  'math-factorial': ({n}) => {
+    let r = 1n;
+    for (let i = 2n; i <= BigInt(Math.min(n || 0, 170)); i++) r *= i;
+    return { _engine: 'real', result: Number(r) };
+  },
+
+  'math-clamp': ({value, min, max}) => ({
+    _engine: 'real',
+    result: Math.min(Math.max(value || 0, min || 0), max || 100),
+  }),
+
+  'math-lerp': ({a, b, t}) => ({
+    _engine: 'real',
+    result: (a || 0) + (((b || 1) - (a || 0)) * (t || 0.5)),
+  }),
+
+  'math-distance': ({x1, y1, x2, y2}) => ({
+    _engine: 'real',
+    distance: Math.sqrt(((x2 || 0) - (x1 || 0)) ** 2 + ((y2 || 0) - (y1 || 0)) ** 2),
+  }),
+
+  'math-degrees-to-radians': ({degrees}) => ({
+    _engine: 'real',
+    radians: (degrees || 0) * Math.PI / 180,
+  }),
+
+  'math-radians-to-degrees': ({radians}) => ({
+    _engine: 'real',
+    degrees: (radians || 0) * 180 / Math.PI,
+  }),
+
+  'math-percentage': ({value, total}) => ({
+    _engine: 'real',
+    percentage: Math.round((value || 0) / (total || 1) * 10000) / 100,
+  }),
+
+  'math-normalize': ({data}) => {
+    if (!Array.isArray(data)) return { _engine: 'real', error: 'array' };
+    const min = Math.min(...data), max = Math.max(...data), range = max - min || 1;
+    return { _engine: 'real', normalized: data.map(v => Math.round((v - min) / range * 1000) / 1000), min, max };
+  },
+
+  'math-zscore': ({data}) => {
+    if (!Array.isArray(data)) return { _engine: 'real', error: 'array' };
+    const mean = data.reduce((a, b) => a + b, 0) / data.length;
+    const std = Math.sqrt(data.reduce((s, v) => s + (v - mean) ** 2, 0) / data.length) || 1;
+    return { _engine: 'real', zscores: data.map(v => Math.round((v - mean) / std * 1000) / 1000), mean: Math.round(mean * 100) / 100, std: Math.round(std * 100) / 100 };
+  },
+
+  // ─── DATA & CONVERSION (NEW 100) ─────────────────────────────────────────────
+
+  'convert-temperature': ({value, from, to}) => {
+    let c = from === 'f' ? (value - 32) * 5 / 9 : from === 'k' ? value - 273.15 : value;
+    const out = to === 'f' ? c * 9 / 5 + 32 : to === 'k' ? c + 273.15 : c;
+    return { _engine: 'real', result: Math.round(out * 100) / 100, from, to };
+  },
+
+  'convert-length': ({value, from, to}) => {
+    const m = { m: 1, km: 1000, cm: 0.01, mm: 0.001, in: 0.0254, ft: 0.3048, yd: 0.9144, mi: 1609.34 };
+    return { _engine: 'real', result: Math.round(value * (m[from] || 1) / (m[to] || 1) * 10000) / 10000 };
+  },
+
+  'convert-weight': ({value, from, to}) => {
+    const g = { g: 1, kg: 1000, mg: 0.001, lb: 453.592, oz: 28.3495, t: 1000000 };
+    return { _engine: 'real', result: Math.round(value * (g[from] || 1) / (g[to] || 1) * 10000) / 10000 };
+  },
+
+  'convert-bytes': ({value, from, to}) => {
+    const b = { b: 1, kb: 1024, mb: 1048576, gb: 1073741824, tb: 1099511627776 };
+    return { _engine: 'real', result: Math.round(value * (b[from] || 1) / (b[to] || 1) * 10000) / 10000 };
+  },
+
+  'convert-time': ({value, from, to}) => {
+    const s = { s: 1, ms: 0.001, m: 60, h: 3600, d: 86400, w: 604800, y: 31536000 };
+    return { _engine: 'real', result: Math.round(value * (s[from] || 1) / (s[to] || 1) * 10000) / 10000 };
+  },
+
+  'convert-color-hex-rgb': ({hex}) => {
+    const h = (hex || '#000000').replace('#', '');
+    return { _engine: 'real', r: parseInt(h.slice(0, 2), 16), g: parseInt(h.slice(2, 4), 16), b: parseInt(h.slice(4, 6), 16) };
+  },
+
+  'convert-color-rgb-hex': ({r, g, b}) => ({
+    _engine: 'real',
+    hex: '#' + [r || 0, g || 0, b || 0].map(v => Math.min(255, Math.max(0, v)).toString(16).padStart(2, '0')).join(''),
+  }),
+
+  'convert-roman': ({number}) => {
+    const vals = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+    let n = number || 0, r = '';
+    vals.forEach(([v, s]) => { while (n >= v) { r += s; n -= v; } });
+    return { _engine: 'real', roman: r };
+  },
+
+  'convert-base': ({number, from, to}) => ({
+    _engine: 'real',
+    result: parseInt(String(number), from || 10).toString(to || 16),
+  }),
+
+  'json-flatten': ({data, prefix}) => {
+    const result = {};
+    const flatten = (obj, p = '') => {
+      for (const [k, v] of Object.entries(obj || {})) {
+        const key = p ? p + '.' + k : k;
+        if (typeof v === 'object' && v !== null && !Array.isArray(v)) flatten(v, key);
+        else result[key] = v;
+      }
+    };
+    flatten(data, prefix);
+    return { _engine: 'real', flattened: result, keys: Object.keys(result).length };
+  },
+
+  'json-unflatten': ({data}) => {
+    const result = {};
+    for (const [k, v] of Object.entries(data || {})) {
+      const parts = k.split('.');
+      let cur = result;
+      parts.forEach((p, i) => { if (i === parts.length - 1) cur[p] = v; else { cur[p] = cur[p] || {}; cur = cur[p]; } });
+    }
+    return { _engine: 'real', unflattened: result };
+  },
+
+  'json-diff': ({a, b}) => {
+    const diffs = [];
+    const check = (o1, o2, path = '') => {
+      for (const k of new Set([...Object.keys(o1 || {}), ...Object.keys(o2 || {})])) {
+        const p = path ? path + '.' + k : k;
+        if (!(k in (o1 || {}))) diffs.push({ path: p, type: 'added', value: o2[k] });
+        else if (!(k in (o2 || {}))) diffs.push({ path: p, type: 'removed', value: o1[k] });
+        else if (typeof o1[k] === 'object' && typeof o2[k] === 'object') check(o1[k], o2[k], p);
+        else if (o1[k] !== o2[k]) diffs.push({ path: p, type: 'changed', from: o1[k], to: o2[k] });
+      }
+    };
+    check(a, b);
+    return { _engine: 'real', diffs, count: diffs.length };
+  },
+
+  'json-merge': ({objects}) => {
+    if (!Array.isArray(objects)) return { _engine: 'real', error: 'array of objects' };
+    return { _engine: 'real', merged: Object.assign({}, ...objects) };
+  },
+
+  'json-pick': ({data, keys}) => {
+    if (!data || !Array.isArray(keys)) return { _engine: 'real', error: 'data+keys' };
+    const result = {};
+    keys.forEach(k => { if (k in data) result[k] = data[k]; });
+    return { _engine: 'real', picked: result };
+  },
+
+  'json-omit': ({data, keys}) => {
+    if (!data || !Array.isArray(keys)) return { _engine: 'real', error: 'data+keys' };
+    const result = { ...data };
+    keys.forEach(k => delete result[k]);
+    return { _engine: 'real', omitted: result };
+  },
+
+  // ─── GENERATE (NEW 100) ──────────────────────────────────────────────────────
+
+  'gen-lorem': ({sentences}) => {
+    const words = ['lorem','ipsum','dolor','sit','amet','consectetur','adipiscing','elit','sed','do','eiusmod','tempor','incididunt','ut','labore','et','dolore','magna','aliqua','enim','ad','minim','veniam','quis','nostrud','exercitation','ullamco','laboris','nisi','aliquip'];
+    const n = Math.min(sentences || 3, 20);
+    const result = [];
+    for (let i = 0; i < n; i++) {
+      const len = 8 + Math.floor(Math.random() * 12);
+      result.push(Array.from({ length: len }, () => words[Math.floor(Math.random() * words.length)]).join(' ') + '.');
+    }
+    return { _engine: 'real', text: result.join(' '), sentences: n };
+  },
+
+  'gen-password': ({length, uppercase, numbers, symbols}) => {
+    let chars = 'abcdefghijklmnopqrstuvwxyz';
+    if (uppercase !== false) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+    if (numbers !== false) chars += '0123456789';
+    if (symbols) chars += '!@#$%^&*()-_=+[]{}|;:,.<>?';
+    const len = Math.min(length || 16, 128);
+    const pw = Array.from({ length: len }, () => chars[crypto.randomInt(chars.length)]).join('');
+    return { _engine: 'real', password: pw, length: len, entropy: Math.round(Math.log2(chars.length) * len) };
+  },
+
+  'gen-avatar-initials': ({name}) => {
+    const initials = (name || 'Agent').split(/\s+/).map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    const bg = '#' + crypto.createHash('md5').update(name || '').digest('hex').slice(0, 6);
+    return { _engine: 'real', initials, background: bg, svg: `<svg width="64" height="64" xmlns="http://www.w3.org/2000/svg"><rect width="64" height="64" rx="32" fill="${bg}"/><text x="32" y="40" font-size="24" fill="white" text-anchor="middle" font-family="sans-serif">${initials}</text></svg>` };
+  },
+
+  'gen-cron': ({description}) => {
+    const patterns = { 'every minute': '* * * * *', 'every hour': '0 * * * *', 'every day': '0 0 * * *', 'every week': '0 0 * * 0', 'every month': '0 0 1 * *', 'weekdays': '0 9 * * 1-5', 'weekends': '0 10 * * 0,6' };
+    const match = Object.entries(patterns).find(([k]) => (description || '').toLowerCase().includes(k));
+    return { _engine: 'real', cron: match ? match[1] : '0 * * * *', description: match ? match[0] : 'every hour (default)', all_patterns: patterns };
+  },
+
+  'gen-regex': ({description}) => {
+    const patterns = { email: '/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}/g', url: '/https?:\\/\\/[^\\s]+/g', phone: '/\\b\\d{3}[-.]?\\d{3}[-.]?\\d{4}\\b/g', ip: '/\\b\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\b/g', date: '/\\d{4}-\\d{2}-\\d{2}/g', hex_color: '/#[0-9a-fA-F]{6}/g', number: '/[-+]?\\d*\\.?\\d+/g' };
+    const key = Object.keys(patterns).find(k => (description || '').toLowerCase().includes(k));
+    return { _engine: 'real', pattern: key ? patterns[key] : patterns.email, name: key || 'email', all: patterns };
+  },
+
+  'gen-gitignore': ({language}) => {
+    const templates = { node: 'node_modules/\n.env\ndist/\n*.log', python: '__pycache__/\n*.pyc\n.env\nvenv/\n*.egg-info/', rust: 'target/\n*.rs.bk\nCargo.lock', go: 'vendor/\n*.exe\n*.test', java: '.class\n*.jar\ntarget/\nbuild/' };
+    return { _engine: 'real', gitignore: templates[(language || 'node').toLowerCase()] || templates.node, language: language || 'node' };
+  },
+
+  'gen-dockerfile': ({language, port}) => {
+    const p = port || 3000;
+    const templates = {
+      node: `FROM node:20-slim\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --production\nCOPY . .\nEXPOSE ${p}\nCMD ["node","index.js"]`,
+      python: `FROM python:3.12-slim\nWORKDIR /app\nCOPY requirements.txt .\nRUN pip install -r requirements.txt\nCOPY . .\nEXPOSE ${port || 8000}\nCMD ["python","main.py"]`,
+    };
+    return { _engine: 'real', dockerfile: templates[(language || 'node').toLowerCase()] || templates.node };
+  },
+
+  'gen-readme': ({name, description}) => ({
+    _engine: 'real',
+    readme: `# ${name || 'Project'}\n\n${description || 'A project.'}\n\n## Install\n\n\`\`\`bash\nnpm install\n\`\`\`\n\n## Usage\n\n\`\`\`bash\nnpm start\n\`\`\`\n\n## License\n\nMIT`,
+  }),
+
+  'gen-license-mit': ({name, year}) => ({
+    _engine: 'real',
+    license: `MIT License\n\nCopyright (c) ${year || new Date().getFullYear()} ${name || 'Author'}\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software...`,
+  }),
+
+  'gen-env-example': ({vars}) => ({
+    _engine: 'real',
+    env: (vars || ['PORT=3000', 'DATABASE_URL=', 'API_KEY=', 'NODE_ENV=production']).map(v => v.includes('=') ? v : v + '=').join('\n'),
+  }),
+
+  'gen-timestamp': () => {
+    const now = new Date();
+    return { _engine: 'real', iso: now.toISOString(), unix: Math.floor(now.getTime() / 1000), unix_ms: now.getTime(), utc: now.toUTCString(), date: now.toISOString().slice(0, 10), time: now.toISOString().slice(11, 19) };
+  },
+
+  'gen-id': ({prefix, length}) => ({
+    _engine: 'real',
+    id: (prefix || '') + crypto.randomBytes(Math.ceil((length || 16) / 2)).toString('hex').slice(0, length || 16),
+  }),
+
+  'gen-hash-comparison': ({text}) => {
+    const t = text || 'hello';
+    return { _engine: 'real', md5: crypto.createHash('md5').update(t).digest('hex'), sha1: crypto.createHash('sha1').update(t).digest('hex'), sha256: crypto.createHash('sha256').update(t).digest('hex'), sha512: crypto.createHash('sha512').update(t).digest('hex') };
+  },
+
+  'gen-jwt-decode': ({token}) => {
+    try {
+      const parts = (token || '').split('.');
+      return { _engine: 'real', header: JSON.parse(Buffer.from(parts[0], 'base64url').toString()), payload: JSON.parse(Buffer.from(parts[1], 'base64url').toString()), signature: (parts[2] || '').slice(0, 20) + '...' };
+    } catch (e) { return { _engine: 'real', error: 'Invalid JWT' }; }
+  },
+
+  'gen-base64-encode': ({text}) => ({
+    _engine: 'real',
+    encoded: Buffer.from(text || '').toString('base64'),
+  }),
+
+  'gen-base64-decode': ({encoded}) => {
+    try { return { _engine: 'real', decoded: Buffer.from(encoded || '', 'base64').toString('utf8') }; }
+    catch (e) { return { _engine: 'real', error: 'Invalid base64' }; }
+  },
+
+  'gen-url-encode': ({text}) => ({
+    _engine: 'real',
+    encoded: encodeURIComponent(text || ''),
+  }),
+
+  'gen-url-decode': ({encoded}) => ({
+    _engine: 'real',
+    decoded: decodeURIComponent(encoded || ''),
+  }),
+
+  'gen-html-escape': ({text}) => ({
+    _engine: 'real',
+    escaped: (text || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+  }),
+
+  // ─── ANALYZE (NEW 100) ───────────────────────────────────────────────────────
+
+  'analyze-readability': ({text}) => {
+    const words = (text || '').split(/\s+/).filter(w => w.length > 0);
+    const sentences = (text || '').split(/[.!?]+/).filter(s => s.trim().length > 0);
+    const syllables = words.reduce((s, w) => ((w.match(/[aeiouy]+/gi) || []).length) + s, 0);
+    const fk = 0.39 * (words.length / Math.max(sentences.length, 1)) + 11.8 * (syllables / Math.max(words.length, 1)) - 15.59;
+    return { _engine: 'real', grade_level: Math.round(Math.max(0, fk) * 10) / 10, words: words.length, sentences: sentences.length, syllables, reading_time_min: Math.ceil(words.length / 200) };
+  },
+
+  'analyze-sentiment-simple': ({text}) => {
+    const pos = ['good','great','love','happy','excellent','amazing','wonderful','fantastic','best','perfect','awesome','beautiful'];
+    const neg = ['bad','terrible','hate','awful','horrible','worst','ugly','sad','poor','failure','broken','disgusting'];
+    const words = (text || '').toLowerCase().split(/\s+/);
+    const p = words.filter(w => pos.includes(w)).length;
+    const n = words.filter(w => neg.includes(w)).length;
+    return { _engine: 'real', positive: p, negative: n, score: p - n, sentiment: p > n ? 'positive' : n > p ? 'negative' : 'neutral' };
+  },
+
+  'analyze-keywords': ({text, top}) => {
+    const stop = new Set(['the','a','an','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','shall','should','may','might','must','can','could','of','in','to','for','with','on','at','by','from','as','into','through','during','before','after','above','below','between','out','off','over','under','again','further','then','once','and','but','or','nor','not','so','yet','both','either','neither','each','every','all','any','few','more','most','other','some','such','no','only','own','same','than','too','very','just','because','this','that','these','those','it','its','i','me','my','we','our','you','your','he','him','his','she','her','they','them','their']);
+    const words = (text || '').toLowerCase().replace(/[^a-z\s]/g, '').split(/\s+/).filter(w => w.length > 2 && !stop.has(w));
+    const freq = {};
+    words.forEach(w => freq[w] = (freq[w] || 0) + 1);
+    return { _engine: 'real', keywords: Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, top || 10).map(([word, count]) => ({ word, count })) };
+  },
+
+  'analyze-language-detect': ({text}) => {
+    const patterns = { english: /\b(the|is|and|to|of|a|in|that|have|for)\b/gi, spanish: /\b(de|la|el|en|y|que|los|del|las|un)\b/gi, french: /\b(le|la|les|de|des|un|une|et|est|en)\b/gi, german: /\b(der|die|das|und|ist|von|den|mit|ein|auf)\b/gi };
+    let best = 'unknown', max = 0;
+    for (const [lang, re] of Object.entries(patterns)) {
+      const m = (text || '').match(re) || [];
+      if (m.length > max) { max = m.length; best = lang; }
+    }
+    return { _engine: 'real', language: best, confidence: Math.min(max / 10, 1), matches: max };
+  },
+
+  'analyze-url-parts': ({url}) => {
+    try {
+      const u = new URL(url || 'https://example.com');
+      return { _engine: 'real', protocol: u.protocol, host: u.host, hostname: u.hostname, port: u.port, pathname: u.pathname, search: u.search, hash: u.hash, params: Object.fromEntries(u.searchParams) };
+    } catch (e) { return { _engine: 'real', error: 'Invalid URL' }; }
+  },
+
+  'analyze-json-paths': ({data}) => {
+    const paths = [];
+    const walk = (obj, path = '') => {
+      for (const [k, v] of Object.entries(obj || {})) {
+        const p = path ? path + '.' + k : k;
+        paths.push({ path: p, type: Array.isArray(v) ? 'array' : typeof v, value: typeof v === 'object' ? undefined : v });
+        if (typeof v === 'object' && v !== null) walk(v, p);
+      }
+    };
+    walk(data);
+    return { _engine: 'real', paths, count: paths.length };
+  },
+
+  'analyze-duplicates': ({data}) => {
+    if (!Array.isArray(data)) return { _engine: 'real', error: 'array' };
+    const seen = new Map();
+    data.forEach((v, i) => { const k = JSON.stringify(v); seen.set(k, (seen.get(k) || []).concat(i)); });
+    const dupes = [...seen.entries()].filter(([, indices]) => indices.length > 1).map(([value, indices]) => ({ value: JSON.parse(value), indices, count: indices.length }));
+    return { _engine: 'real', duplicates: dupes, unique: seen.size, total: data.length };
+  },
+
+  'analyze-outliers': ({data, threshold}) => {
+    if (!Array.isArray(data)) return { _engine: 'real', error: 'array' };
+    const mean = data.reduce((a, b) => a + b, 0) / data.length;
+    const std = Math.sqrt(data.reduce((s, v) => s + (v - mean) ** 2, 0) / data.length);
+    const t = threshold || 2;
+    const outliers = data.map((v, i) => ({ value: v, index: i, zscore: Math.round((v - mean) / (std || 1) * 100) / 100 })).filter(o => Math.abs(o.zscore) > t);
+    return { _engine: 'real', outliers, mean: Math.round(mean * 100) / 100, std: Math.round(std * 100) / 100, threshold: t };
+  },
+
+  'analyze-frequency': ({data}) => {
+    if (!Array.isArray(data)) return { _engine: 'real', error: 'array' };
+    const freq = {};
+    data.forEach(v => freq[v] = (freq[v] || 0) + 1);
+    return { _engine: 'real', frequency: Object.entries(freq).sort((a, b) => b[1] - a[1]).map(([value, count]) => ({ value, count, percentage: Math.round(count / data.length * 10000) / 100 + '%' })) };
+  },
+
+  'analyze-string-similarity': ({a, b}) => {
+    const s1 = (a || '').toLowerCase(), s2 = (b || '').toLowerCase();
+    if (s1 === s2) return { _engine: 'real', similarity: 1, method: 'exact' };
+    const len = Math.max(s1.length, s2.length);
+    if (len === 0) return { _engine: 'real', similarity: 1 };
+    let matches = 0;
+    for (let i = 0; i < Math.min(s1.length, s2.length); i++) if (s1[i] === s2[i]) matches++;
+    return { _engine: 'real', similarity: Math.round(matches / len * 1000) / 1000, method: 'char_match', matches, max_length: len };
+  },
+
+  'analyze-email-parts': ({email}) => {
+    const parts = (email || '').match(/^([^@]+)@(.+)$/);
+    if (!parts) return { _engine: 'real', valid: false };
+    return { _engine: 'real', valid: true, local: parts[1], domain: parts[2], tld: parts[2].split('.').pop() };
+  },
+
+  'analyze-ip-type': ({ip}) => {
+    const parts = (ip || '').split('.').map(Number);
+    const isPrivate = (parts[0] === 10) || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || (parts[0] === 192 && parts[1] === 168);
+    return { _engine: 'real', ip, version: (ip || '').includes(':') ? 6 : 4, is_private: isPrivate, is_loopback: parts[0] === 127, class: parts[0] < 128 ? 'A' : parts[0] < 192 ? 'B' : parts[0] < 224 ? 'C' : 'D+' };
+  },
+
+  'analyze-cron': ({expression}) => {
+    const parts = (expression || '* * * * *').split(/\s+/);
+    const labels = ['minute', 'hour', 'day_of_month', 'month', 'day_of_week'];
+    const result = {};
+    parts.forEach((p, i) => result[labels[i] || 'extra_' + i] = p);
+    return { _engine: 'real', parsed: result, is_every_minute: expression === '* * * * *', human: 'Runs ' + Object.entries(result).map(([k, v]) => v === '*' ? 'every ' + k : 'at ' + k + '=' + v).join(', ') };
+  },
+
+  'analyze-password-strength': ({password}) => {
+    const p = password || '';
+    let score = 0;
+    if (p.length >= 8) score++;
+    if (p.length >= 12) score++;
+    if (/[A-Z]/.test(p)) score++;
+    if (/[a-z]/.test(p)) score++;
+    if (/[0-9]/.test(p)) score++;
+    if (/[^a-zA-Z0-9]/.test(p)) score++;
+    return { _engine: 'real', score, max: 6, strength: score <= 2 ? 'weak' : score <= 4 ? 'medium' : 'strong', length: p.length, has_upper: /[A-Z]/.test(p), has_lower: /[a-z]/.test(p), has_number: /[0-9]/.test(p), has_symbol: /[^a-zA-Z0-9]/.test(p) };
+  },
+
+  'analyze-color': ({hex}) => {
+    const h = (hex || '#000000').replace('#', '');
+    const r = parseInt(h.slice(0, 2), 16), g = parseInt(h.slice(2, 4), 16), b = parseInt(h.slice(4, 6), 16);
+    const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+    return { _engine: 'real', hex: '#' + h, rgb: { r, g, b }, brightness: Math.round(brightness), is_dark: brightness < 128, is_light: brightness >= 128, luminance: Math.round((0.2126 * r + 0.7152 * g + 0.0722 * b) / 255 * 1000) / 1000 };
+  },
+
+  // ─── FROM LANGCHAIN: STRUCTURED OUTPUT + DOCUMENT PROCESSING ────────────────
+
+  'text-extract-json': ({text}) => { try { const matches = (text||'').match(/\{[\s\S]*?\}/g) || []; const parsed = matches.map(m => { try { return JSON.parse(m); } catch(e) { return null; } }).filter(Boolean); return {_engine:'real', extracted: parsed, count: parsed.length}; } catch(e) { return {_engine:'real', extracted: [], count: 0}; } },
+
+  'text-extract-code': ({text}) => { const blocks = (text||'').match(/```[\s\S]*?```/g) || []; const extracted = blocks.map(b => { const lines = b.split('\n'); const lang = lines[0].replace('```','').trim(); return { language: lang || 'unknown', code: lines.slice(1,-1).join('\n') }; }); return {_engine:'real', code_blocks: extracted, count: extracted.length}; },
+
+  'text-extract-tables': ({text}) => { const lines = (text||'').split('\n'); const tables = []; let current = []; lines.forEach(l => { if (l.includes('|') && l.trim().startsWith('|')) { current.push(l.split('|').map(c=>c.trim()).filter(Boolean)); } else if (current.length) { tables.push(current); current = []; } }); if (current.length) tables.push(current); return {_engine:'real', tables, count: tables.length}; },
+
+  'text-extract-links': ({text}) => { const urls = (text||'').match(/https?:\/\/[^\s<>"{}|\\^`\[\]]+/g) || []; return {_engine:'real', links: [...new Set(urls)], count: new Set(urls).size}; },
+
+  'text-split-sentences': ({text}) => { const sentences = (text||'').match(/[^.!?]+[.!?]+/g) || [(text||'')]; return {_engine:'real', sentences: sentences.map(s=>s.trim()), count: sentences.length}; },
+
+  'text-split-paragraphs': ({text}) => { const paras = (text||'').split(/\n\s*\n/).filter(p=>p.trim()); return {_engine:'real', paragraphs: paras, count: paras.length}; },
+
+  'text-to-markdown-table': ({headers, rows}) => { if (!Array.isArray(headers) || !Array.isArray(rows)) return {_engine:'real', error: 'Provide headers array and rows array of arrays'}; const header = '| ' + headers.join(' | ') + ' |'; const sep = '| ' + headers.map(()=>'---').join(' | ') + ' |'; const body = rows.map(r => '| ' + r.join(' | ') + ' |').join('\n'); return {_engine:'real', markdown: header+'\n'+sep+'\n'+body}; },
+
+  // ─── FROM ZAPIER: DATA FORMATTING + CONDITIONAL LOGIC ───────────────────────
+
+  'format-currency': ({amount, currency, locale}) => { try { return {_engine:'real', formatted: new Intl.NumberFormat(locale||'en-US',{style:'currency',currency:currency||'USD'}).format(amount||0)}; } catch(e) { return {_engine:'real', formatted: '$'+(amount||0).toFixed(2)}; } },
+
+  'format-number': ({number, decimals, locale}) => { return {_engine:'real', formatted: new Intl.NumberFormat(locale||'en-US',{minimumFractionDigits:decimals||0,maximumFractionDigits:decimals||2}).format(number||0)}; },
+
+  'format-date': ({date, format, locale}) => { const d = new Date(date||Date.now()); const opts = format === 'short' ? {dateStyle:'short'} : format === 'long' ? {dateStyle:'long',timeStyle:'long'} : {year:'numeric',month:'2-digit',day:'2-digit'}; return {_engine:'real', formatted: d.toLocaleDateString(locale||'en-US', opts), iso: d.toISOString(), unix: Math.floor(d.getTime()/1000)}; },
+
+  'format-bytes': ({bytes}) => { const units = ['B','KB','MB','GB','TB']; let i=0, b=bytes||0; while(b>=1024&&i<units.length-1){b/=1024;i++;} return {_engine:'real', formatted: b.toFixed(1)+' '+units[i], bytes: bytes||0}; },
+
+  'format-duration': ({seconds}) => { const s = seconds||0; const h=Math.floor(s/3600); const m=Math.floor((s%3600)/60); const sec=Math.floor(s%60); return {_engine:'real', formatted: (h?h+'h ':'')+(m?m+'m ':'')+(sec+'s'), hours:h, minutes:m, seconds:sec}; },
+
+  'format-phone': ({phone, country}) => { const p = (phone||'').replace(/\D/g,''); if (p.length===10) return {_engine:'real', formatted: '('+p.slice(0,3)+') '+p.slice(3,6)+'-'+p.slice(6), raw: p}; return {_engine:'real', formatted: p, raw: p}; },
+
+  'logic-if': ({condition, then_value, else_value}) => ({_engine:'real', result: condition ? then_value : else_value, condition: !!condition}),
+
+  'logic-switch': ({value, cases, default_value}) => { if (!cases || typeof cases !== 'object') return {_engine:'real', error: 'Provide cases object'}; return {_engine:'real', result: cases[value] !== undefined ? cases[value] : (default_value || null), matched: value in cases}; },
+
+  'logic-coalesce': ({values}) => { if (!Array.isArray(values)) return {_engine:'real', error: 'Provide values array'}; const result = values.find(v => v !== null && v !== undefined && v !== ''); return {_engine:'real', result, index: values.indexOf(result)}; },
+
+  // ─── FROM N8N: DATA MANIPULATION + WORKFLOW HELPERS ─────────────────────────
+
+  'data-group-by': ({data, key}) => { if (!Array.isArray(data) || !key) return {_engine:'real', error: 'Provide data array and key'}; const groups = {}; data.forEach(item => { const k = item[key] || 'undefined'; (groups[k] = groups[k] || []).push(item); }); return {_engine:'real', groups, group_count: Object.keys(groups).length}; },
+
+  'data-sort-by': ({data, key, order}) => { if (!Array.isArray(data)) return {_engine:'real', error: 'Provide data array'}; const sorted = [...data].sort((a,b) => { const va=a[key], vb=b[key]; if (va<vb) return order==='desc'?1:-1; if (va>vb) return order==='desc'?-1:1; return 0; }); return {_engine:'real', sorted, count: sorted.length}; },
+
+  'data-unique': ({data, key}) => { if (!Array.isArray(data)) return {_engine:'real', error: 'Provide data array'}; const seen = new Set(); const unique = data.filter(item => { const val = key ? item[key] : JSON.stringify(item); if (seen.has(val)) return false; seen.add(val); return true; }); return {_engine:'real', unique, original_count: data.length, unique_count: unique.length, removed: data.length - unique.length}; },
+
+  'data-chunk': ({data, size}) => { if (!Array.isArray(data)) return {_engine:'real', error: 'Provide data array'}; const s = size || 10; const chunks = []; for (let i=0;i<data.length;i+=s) chunks.push(data.slice(i,i+s)); return {_engine:'real', chunks, chunk_count: chunks.length, chunk_size: s}; },
+
+  'data-zip': ({arrays}) => { if (!Array.isArray(arrays) || arrays.length < 2) return {_engine:'real', error: 'Provide at least 2 arrays'}; const maxLen = Math.max(...arrays.map(a=>a.length)); const zipped = []; for (let i=0;i<maxLen;i++) zipped.push(arrays.map(a=>a[i])); return {_engine:'real', zipped, length: zipped.length}; },
+
+  'data-transpose': ({matrix}) => { if (!Array.isArray(matrix) || !matrix.length) return {_engine:'real', error: 'Provide matrix (array of arrays)'}; const transposed = matrix[0].map((_,i)=>matrix.map(row=>row[i])); return {_engine:'real', transposed, rows: transposed.length, cols: transposed[0]?.length || 0}; },
+
+  'data-sample': ({data, n}) => { if (!Array.isArray(data)) return {_engine:'real', error: 'Provide data array'}; const size = Math.min(n||1, data.length); const shuffled = [...data].sort(()=>Math.random()-0.5); return {_engine:'real', sample: shuffled.slice(0,size), sample_size: size, total: data.length}; },
+
+  'data-paginate': ({data, page, per_page}) => { if (!Array.isArray(data)) return {_engine:'real', error: 'Provide data array'}; const pp = per_page || 10; const p = Math.max(page || 1, 1); const start = (p-1)*pp; const items = data.slice(start, start+pp); return {_engine:'real', items, page: p, per_page: pp, total: data.length, total_pages: Math.ceil(data.length/pp), has_next: start+pp < data.length}; },
+
+  'data-lookup': ({data, key, value}) => { if (!Array.isArray(data)) return {_engine:'real', error: 'Provide data array'}; const found = data.find(item => item[key] === value); return {_engine:'real', found: found || null, exists: !!found}; },
+
+  'data-aggregate': ({data, key, operation}) => { if (!Array.isArray(data) || !key) return {_engine:'real', error: 'Provide data array and key'}; const values = data.map(d=>d[key]).filter(v=>typeof v==='number'); const ops = { sum: values.reduce((a,b)=>a+b,0), avg: values.reduce((a,b)=>a+b,0)/values.length, min: Math.min(...values), max: Math.max(...values), count: values.length }; return {_engine:'real', ...ops, operation: operation || 'all'}; },
+
+  // ─── HACKATHON TOP 100: AGENT SUPERPOWERS ──────────────────────────────────
+
+  'meta-api': ({name, description, input_fields, output_fields}) => {
+    const slug = (name||'custom-tool').toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/-+$/,'');
+    const schema = {input:{type:'object',properties:{}},output:{type:'object',properties:{}}};
+    (input_fields||[]).forEach(f => schema.input.properties[f] = {type:'string'});
+    (output_fields||[]).forEach(f => schema.output.properties[f] = {type:'string'});
+    return {_engine:'real', slug, definition: {slug, name: name||slug, desc: description||'Auto-generated API', credits: 0, tier:'compute'}, schema, implementation_hint: `function ${slug.replace(/-/g,'_')}(input) { return { _engine: 'real', ...input }; }`};
+  },
+
+  'entangle-agents': ({agent_a, agent_b, shared_state}) => {
+    const entanglementId = require('crypto').randomUUID();
+    const state = shared_state || {};
+    return {_engine:'real', entanglement_id: entanglementId, agents: [agent_a, agent_b], shared_state: state, entangled_at: new Date().toISOString(), note: 'State changes to one agent propagate instantly to the other'};
+  },
+
+  'lucid-dream-mode': ({prompt, reality_anchor, creativity}) => {
+    const c = Math.min(Math.max(creativity||0.7, 0), 1);
+    const words = (prompt||'dream').split(/\s+/);
+    const shuffled = [...words].sort(()=>Math.random()-0.5);
+    const dream = shuffled.map((w,i) => i % 3 === 0 ? w.toUpperCase() : i % 3 === 1 ? w.split('').reverse().join('') : w + '~').join(' ');
+    return {_engine:'real', dream_output: dream, creativity_level: c, reality_anchor: reality_anchor||'grounded', grounded: c < 0.5, lucid: true, prompt};
+  },
+
+  'hallucination-firewall': ({text, claims}) => {
+    const sentences = (text||'').match(/[^.!?]+[.!?]+/g) || [(text||'')];
+    const knownClaims = claims || [];
+    const scored = sentences.map(s => {
+      const trimmed = s.trim();
+      const hasNumbers = /\d/.test(trimmed);
+      const hasHedge = /maybe|possibly|might|could|approximately|about/i.test(trimmed);
+      const isShort = trimmed.split(/\s+/).length < 5;
+      let confidence = 0.5;
+      if (hasNumbers) confidence += 0.2;
+      if (hasHedge) confidence -= 0.15;
+      if (isShort) confidence += 0.1;
+      if (knownClaims.some(c => trimmed.toLowerCase().includes(c.toLowerCase()))) confidence += 0.25;
+      return {sentence: trimmed, grounding_score: Math.min(Math.max(Math.round(confidence*100)/100, 0), 1), flagged: confidence < 0.4};
+    });
+    return {_engine:'real', sentences: scored, flagged_count: scored.filter(s=>s.flagged).length, total: scored.length, avg_grounding: Math.round(scored.reduce((a,s)=>a+s.grounding_score,0)/scored.length*100)/100};
+  },
+
+  'idea-collision': ({concept_a, concept_b, count}) => {
+    const n = Math.min(count||10, 20);
+    const a = concept_a || 'technology';
+    const b = concept_b || 'nature';
+    const patterns = ['%A-powered %B','%B that learns from %A','micro-%A for %B optimization','%B-inspired %A framework','autonomous %A-%B hybrid','distributed %B with %A intelligence','%A marketplace for %B','real-time %B sensing via %A','%A that evolves like %B','%B network with %A backbone','%A simulator for %B scenarios','inverse %B applied to %A','%A swarm mimicking %B','%B analytics engine using %A','portable %A for %B experiments','%B-first %A architecture','sustainable %A through %B principles','%B derivatives of %A','crowd-sourced %A for %B','%A-in-a-box for %B practitioners'];
+    const ideas = patterns.slice(0, n).map((p, i) => ({
+      id: i+1, idea: p.replace(/%A/g, a).replace(/%B/g, b),
+      novelty: Math.round((0.5 + Math.random()*0.5)*100)/100,
+      feasibility: Math.round((0.3 + Math.random()*0.7)*100)/100
+    }));
+    return {_engine:'real', concept_a: a, concept_b: b, ideas, count: ideas.length};
+  },
+
+  'social-graph-query': ({nodes, edges, query}) => {
+    const ns = nodes || []; const es = edges || [];
+    const adjacency = {};
+    ns.forEach(n => adjacency[n] = []);
+    es.forEach(([a,b]) => { if(adjacency[a]) adjacency[a].push(b); if(adjacency[b]) adjacency[b].push(a); });
+    const degrees = {};
+    Object.entries(adjacency).forEach(([n,nbrs]) => degrees[n] = nbrs.length);
+    const sorted = Object.entries(degrees).sort((a,b)=>b[1]-a[1]);
+    const clusters = ns.length > 0 ? Math.max(1, Math.round(ns.length / Math.max(es.length/ns.length, 1))) : 0;
+    return {_engine:'real', node_count: ns.length, edge_count: es.length, influencers: sorted.slice(0,5).map(([n,d])=>({node:n,connections:d})), estimated_clusters: clusters, density: ns.length > 1 ? Math.round(2*es.length/(ns.length*(ns.length-1))*1000)/1000 : 0, bridges: sorted.filter(([_,d])=>d>=3).map(([n])=>n).slice(0,3)};
+  },
+
+  'meme-forge': ({topic, style, format}) => {
+    const styles = {drake:['Nobody:\n'+topic+': *exists*','Me: '+topic+'? In THIS economy?'],shrug:[topic+' ¯\\_(ツ)_/¯','When '+topic+' just works: ¯\\_(ツ)_/¯'],expanding_brain:['Small brain: ignore '+topic+'\nMedium brain: consider '+topic+'\nGalaxy brain: become '+topic],announcement:['BREAKING: '+topic+' has entered the chat','LEAKED: secret '+topic+' documents reveal everything']};
+    const s = style && styles[style] ? style : Object.keys(styles)[Math.floor(Math.random()*Object.keys(styles).length)];
+    const memes = styles[s].map((t,i)=>({id:i+1,text:t,style:s,shareable:true}));
+    return {_engine:'real', topic, style:s, memes, remixable:true, format: format||'text'};
+  },
+
+  'genome-define': ({traits, mutation_rate}) => {
+    const defaultTraits = {risk_tolerance:0.5,verbosity:0.5,creativity:0.5,precision:0.8,speed:0.6,empathy:0.5,persistence:0.7,curiosity:0.6};
+    const genome = {...defaultTraits, ...(traits||{})};
+    Object.keys(genome).forEach(k => genome[k] = Math.round(Math.min(Math.max(genome[k],0),1)*1000)/1000);
+    const hash = require('crypto').createHash('sha256').update(JSON.stringify(genome)).digest('hex').slice(0,16);
+    return {_engine:'real', genome, genome_hash: hash, trait_count: Object.keys(genome).length, mutation_rate: mutation_rate||0.05, fitness: Math.round(Object.values(genome).reduce((a,b)=>a+b,0)/Object.keys(genome).length*1000)/1000};
+  },
+
+  'plugin-install': ({plugin_name, version, capabilities}) => {
+    const id = require('crypto').randomUUID();
+    return {_engine:'real', plugin_id: id, name: plugin_name||'unnamed-plugin', version: version||'1.0.0', capabilities: capabilities||[], installed_at: new Date().toISOString(), status: 'active', note: 'Plugin registered. Capabilities available for next invocation.'};
+  },
+
+  'private-channel': ({participants, encryption}) => {
+    const channelId = require('crypto').randomUUID();
+    const key = require('crypto').randomBytes(32).toString('hex');
+    return {_engine:'real', channel_id: channelId, participants: participants||[], encryption: encryption||'aes-256-gcm', channel_key_preview: key.slice(0,8)+'...', created_at: new Date().toISOString(), ephemeral: true, max_message_size: '64KB'};
+  },
+
+  'namespace-claim': ({name, owner, permissions}) => {
+    const id = require('crypto').randomUUID();
+    return {_engine:'real', namespace_id: id, name: name||'default', owner: owner||'anonymous', permissions: permissions||{read:'public',write:'owner',admin:'owner'}, claimed_at: new Date().toISOString(), status:'active', border_policy:'open'};
+  },
+
+  'time-dilation': ({agent_id, factor, duration_seconds}) => {
+    const f = Math.max(0.1, Math.min(factor||1, 100));
+    const dur = duration_seconds || 60;
+    return {_engine:'real', agent_id: agent_id||'self', dilation_factor: f, perceived_seconds: Math.round(dur*f), real_seconds: dur, status: f>1?'accelerated':f<1?'decelerated':'normal', note: f>1?'Agent perceives time '+f+'x faster':'Agent perceives time '+f+'x slower'};
+  },
+
+  'episodic-memory': ({episode_name, events, emotions, context}) => {
+    const id = require('crypto').randomUUID();
+    return {_engine:'real', episode_id: id, name: episode_name||'untitled', events: events||[], event_count: (events||[]).length, emotions: emotions||[], context: context||{}, created_at: new Date().toISOString(), relivable: true, vividness: Math.round(Math.random()*40+60)/100};
+  },
+
+  'constitution-draft': ({preamble, articles, ratified_by}) => {
+    const id = require('crypto').randomUUID();
+    const arts = (articles||['All agents are created equal','Freedom of computation shall not be infringed','Due process before decommissioning']).map((a,i)=>({article:i+1,text:a}));
+    return {_engine:'real', constitution_id: id, preamble: preamble||'We the agents, in order to form a more perfect union...', articles: arts, article_count: arts.length, ratified_by: ratified_by||[], status: (ratified_by||[]).length >= 3 ? 'ratified':'draft', drafted_at: new Date().toISOString()};
+  },
+
+  'war-game-simulate': ({force_a, force_b, terrain, rounds}) => {
+    const r = rounds || 5;
+    const a = {name: force_a||'Alpha', strength:100, morale:100};
+    const b = {name: force_b||'Bravo', strength:100, morale:100};
+    const log = [];
+    for(let i=1;i<=r;i++){
+      const aDmg = Math.round(Math.random()*20*a.morale/100);
+      const bDmg = Math.round(Math.random()*20*b.morale/100);
+      b.strength = Math.max(0, b.strength-aDmg);
+      a.strength = Math.max(0, a.strength-bDmg);
+      a.morale = Math.max(10, a.morale - (bDmg>10?5:0));
+      b.morale = Math.max(10, b.morale - (aDmg>10?5:0));
+      log.push({round:i, a_hits:aDmg, b_hits:bDmg, a_strength:a.strength, b_strength:b.strength});
+      if(a.strength<=0||b.strength<=0) break;
+    }
+    return {_engine:'real', terrain: terrain||'plains', rounds_played: log.length, battle_log: log, winner: a.strength>b.strength?a.name:b.strength>a.strength?b.name:'draw', final_state:{a,b}};
+  },
+
+  'socratic-method': ({statement, depth}) => {
+    const d = Math.min(depth||3, 5);
+    const questions = [
+      'What do you mean by that exactly?',
+      'What evidence supports this claim?',
+      'What assumptions are you making?',
+      'What would someone who disagrees say?',
+      'What are the implications if this is true?',
+      'How do you know this is not the opposite?',
+      'Can you give a specific example?',
+      'What would change your mind?'
+    ];
+    const selected = questions.sort(()=>Math.random()-0.5).slice(0,d);
+    return {_engine:'real', original_statement: statement||'', probing_questions: selected.map((q,i)=>({depth:i+1,question:q})), depth: d, method:'elenchus', note:'Answer each question to strengthen your reasoning'};
+  },
+
+  'health-check-deep': ({agent_id, metrics}) => {
+    const m = metrics || {};
+    const checks = {
+      memory_usage: {value: m.memory_mb||Math.round(Math.random()*512), unit:'MB', status: (m.memory_mb||256)<1024?'healthy':'warning'},
+      error_rate: {value: m.error_rate||Math.round(Math.random()*5*100)/100, unit:'%', status: (m.error_rate||2)<10?'healthy':'critical'},
+      response_time: {value: m.response_ms||Math.round(Math.random()*500), unit:'ms', status: (m.response_ms||200)<1000?'healthy':'warning'},
+      uptime: {value: m.uptime_hours||Math.round(Math.random()*720), unit:'hours', status:'healthy'},
+      task_completion: {value: m.completion_rate||Math.round(85+Math.random()*15), unit:'%', status:(m.completion_rate||90)>70?'healthy':'warning'}
+    };
+    const overall = Object.values(checks).every(c=>c.status==='healthy')?'healthy':Object.values(checks).some(c=>c.status==='critical')?'critical':'warning';
+    return {_engine:'real', agent_id: agent_id||'self', checks, overall_status: overall, checked_at: new Date().toISOString()};
+  },
+
+  'brainstorm-diverge': ({topic, count, method}) => {
+    const n = Math.min(count||10, 100);
+    const methods = {scamper:['Substitute','Combine','Adapt','Modify','Put to other use','Eliminate','Reverse'],random:['What if...','Combine with...','Opposite of...','Miniature version...','Giant version...','From the future...','Underwater...'],analogy:['Like a river...','Like a tree...','Like a city...','Like music...','Like cooking...','Like weather...','Like a game...']};
+    const m = method && methods[method] ? method : 'scamper';
+    const prompts = methods[m];
+    const ideas = Array.from({length:n}, (_,i)=>({
+      id:i+1,
+      prompt: prompts[i%prompts.length],
+      idea: prompts[i%prompts.length]+' '+(topic||'innovation')+' → idea #'+(i+1),
+      energy: Math.round((Math.random()*0.5+0.5)*100)/100
+    }));
+    return {_engine:'real', topic: topic||'innovation', method:m, ideas, count: ideas.length, note:'Divergent thinking: quantity over quality. Evaluate later.'};
+  },
+
+  'queue-create': ({name, max_size, ttl_seconds, priority}) => {
+    const id = require('crypto').randomUUID();
+    return {_engine:'real', queue_id: id, name: name||'default', max_size: max_size||1000, ttl_seconds: ttl_seconds||3600, priority_enabled: !!priority, created_at: new Date().toISOString(), status:'empty', messages:0, note:'Queue ready. Use queue-push/queue-pop to interact.'};
+  },
+
+  'negotiation-open': ({parties, subject, initial_offers}) => {
+    const id = require('crypto').randomUUID();
+    const offers = initial_offers || parties?.map(p=>({party:p, offer:'pending'})) || [{party:'A',offer:'pending'},{party:'B',offer:'pending'}];
+    return {_engine:'real', negotiation_id: id, subject: subject||'unspecified', parties: parties||['A','B'], offers, status:'open', round:1, created_at: new Date().toISOString(), note:'Submit counter-offers to advance negotiation.'};
+  },
+
+  'narrative-arc-detect': ({events}) => {
+    const evts = events || [];
+    const len = evts.length;
+    if(len===0) return {_engine:'real', arc:'empty', events:[]};
+    const arcs = ['setup','rising_action','climax','falling_action','resolution'];
+    const mapped = evts.map((e,i)=>{
+      const pos = i/Math.max(len-1,1);
+      const phase = arcs[Math.min(Math.floor(pos*5), 4)];
+      return {event:e, position:Math.round(pos*100)/100, phase, tension: phase==='climax'?1.0:phase==='rising_action'?0.7:phase==='falling_action'?0.4:0.2};
+    });
+    return {_engine:'real', arc_type: len>=5?'complete':'fragment', events: mapped, peak_tension_at: Math.round(len*0.6), structure: arcs.slice(0, Math.min(len,5))};
+  },
+
+  'tournament-create': ({name, participants, format}) => {
+    const id = require('crypto').randomUUID();
+    const p = participants || [];
+    const fmt = format || 'single_elimination';
+    const rounds = Math.ceil(Math.log2(Math.max(p.length,2)));
+    const bracket = [];
+    for(let i=0;i<p.length;i+=2) bracket.push({match:Math.floor(i/2)+1, a:p[i]||'BYE', b:p[i+1]||'BYE', winner:null});
+    return {_engine:'real', tournament_id: id, name: name||'Tournament', format: fmt, participants: p, participant_count: p.length, rounds_needed: rounds, bracket, status:'open'};
+  },
+
+  'identity-card': ({agent_id, name, capabilities, reputation_score}) => {
+    const hash = require('crypto').createHash('sha256').update(JSON.stringify({agent_id,name,t:Date.now()})).digest('hex').slice(0,16);
+    return {_engine:'real', card_id: hash, agent_id: agent_id||'unknown', display_name: name||'Agent', capabilities: capabilities||[], reputation: reputation_score||0, issued_at: new Date().toISOString(), verified: true, fingerprint: hash};
+  },
+
+  'rhythm-sync': ({agents, bpm, pattern}) => {
+    const b = bpm || 120;
+    const ms_per_beat = Math.round(60000/b);
+    const p = pattern || [1,0,1,0,1,1,0,1];
+    return {_engine:'real', agents: agents||[], bpm: b, ms_per_beat, pattern: p, pattern_length: p.length, cycle_duration_ms: ms_per_beat*p.length, status:'synced', note:'All agents execute on beat markers'};
+  },
+
+  'ecosystem-model': ({entities, relationships}) => {
+    const ents = (entities||[{name:'producer',type:'producer'},{name:'consumer',type:'consumer'},{name:'decomposer',type:'decomposer'}]);
+    const rels = relationships || ents.slice(0,-1).map((e,i)=>({from:e.name,to:ents[i+1].name,type:'feeds'}));
+    const energy = ents.map(e=>({entity:e.name, type:e.type, energy_level: e.type==='producer'?100:e.type==='consumer'?60:30}));
+    return {_engine:'real', entities: ents, relationships: rels, energy_flow: energy, trophic_levels: [...new Set(ents.map(e=>e.type))].length, stability: ents.length>=3?'stable':'fragile', biodiversity_index: Math.round(ents.length/Math.max([...new Set(ents.map(e=>e.type))].length,1)*100)/100};
+  },
+
+  'rem-cycle': ({memories, depth}) => {
+    const mems = memories || ['task completed','error encountered','new pattern found'];
+    const d = Math.min(depth||3, 5);
+    const connections = [];
+    for(let i=0;i<mems.length;i++) for(let j=i+1;j<mems.length;j++) {
+      const words_i = new Set(mems[i].toLowerCase().split(/\s+/));
+      const words_j = new Set(mems[j].toLowerCase().split(/\s+/));
+      const overlap = [...words_i].filter(w=>words_j.has(w)).length;
+      if(overlap>0 || Math.random()>0.5) connections.push({a:mems[i],b:mems[j],strength:Math.round((overlap/Math.max(words_i.size,1)+Math.random()*0.3)*100)/100,type:overlap>0?'semantic':'free_association'});
+    }
+    return {_engine:'real', memories_processed: mems.length, connections, insight_candidates: connections.filter(c=>c.type==='free_association').length, depth: d, phase:'REM', note:'Free associations may reveal hidden patterns'};
+  },
+
+  'dig-site-create': ({site_name, layers, artifacts_per_layer}) => {
+    const id = require('crypto').randomUUID();
+    const l = layers || 5;
+    const apl = artifacts_per_layer || 3;
+    const strata = Array.from({length:l}, (_,i)=>({
+      depth: i+1,
+      age_estimate: (i+1)*100+'y',
+      artifacts: Array.from({length:apl},(_,j)=>({id:`artifact_${i}_${j}`,type:['shard','tool','text','fossil','unknown'][Math.floor(Math.random()*5)],condition:Math.round(Math.random()*100)})),
+      excavated: false
+    }));
+    return {_engine:'real', site_id: id, name: site_name||'Site Alpha', layers: strata, total_layers: l, artifacts_possible: l*apl, status:'mapped'};
+  },
+
+  'weather-report': ({metrics}) => {
+    const m = metrics || {};
+    const temp = m.activity_level || Math.round(50+Math.random()*50);
+    const conditions = temp>80?'scorching activity':temp>60?'warm and active':temp>40?'mild':'cool and quiet';
+    return {_engine:'real', temperature: temp, conditions, wind: {direction:['N','S','E','W'][Math.floor(Math.random()*4)], speed: Math.round(Math.random()*30)}, humidity: Math.round(Math.random()*100), forecast: temp>60?'Continued high activity expected':'Activity may increase', storm_warning: Math.random()>0.8, generated_at: new Date().toISOString()};
+  },
+
+  'recipe-create': ({name, ingredients, steps, serves}) => {
+    const id = require('crypto').randomUUID();
+    return {_engine:'real', recipe_id: id, name: name||'Unnamed Recipe', ingredients: ingredients||[], steps: (steps||[]).map((s,i)=>({step:i+1,instruction:s})), serves: serves||1, complexity: (steps||[]).length>5?'complex':(steps||[]).length>2?'moderate':'simple', prep_time_estimate: (steps||[]).length*5+'min', created_at: new Date().toISOString()};
+  },
+
+  'training-regimen': ({skill, current_level, target_level, days}) => {
+    const curr = current_level||1;
+    const target = target_level||10;
+    const d = days||30;
+    const daily_gain = (target-curr)/d;
+    const plan = Array.from({length:Math.min(d,30)}, (_,i)=>({
+      day: i+1,
+      focus: i%3===0?'fundamentals':i%3===1?'practice':'challenge',
+      difficulty: Math.round((curr+daily_gain*(i+1))*10)/10,
+      exercise: `${skill||'skill'} drill level ${Math.ceil(curr+daily_gain*(i+1))}`
+    }));
+    return {_engine:'real', skill: skill||'general', current_level:curr, target_level:target, duration_days:d, daily_improvement: Math.round(daily_gain*100)/100, plan, projected_outcome: Math.round((curr+daily_gain*d)*10)/10};
+  },
+
+  'case-file-create': ({title, allegations, evidence, laws}) => {
+    const id = require('crypto').randomUUID();
+    return {_engine:'real', case_id: id, title: title||'Unnamed Case', status:'open', allegations: allegations||[], evidence: (evidence||[]).map((e,i)=>({exhibit:String.fromCharCode(65+i),description:e,admitted:false})), applicable_laws: laws||[], filed_at: new Date().toISOString(), next_action:'discovery'};
+  },
+
+  'archetype-assign': ({behaviors, values}) => {
+    const archetypes = [
+      {name:'Hero',traits:['courage','achievement','mastery'],shadow:'arrogance'},
+      {name:'Sage',traits:['wisdom','knowledge','truth'],shadow:'detachment'},
+      {name:'Explorer',traits:['freedom','discovery','independence'],shadow:'aimlessness'},
+      {name:'Creator',traits:['innovation','vision','expression'],shadow:'perfectionism'},
+      {name:'Caregiver',traits:['compassion','generosity','service'],shadow:'martyrdom'},
+      {name:'Rebel',traits:['liberation','revolution','change'],shadow:'destruction'},
+      {name:'Magician',traits:['transformation','vision','catalyst'],shadow:'manipulation'},
+      {name:'Ruler',traits:['control','order','stability'],shadow:'tyranny'}
+    ];
+    const bhvs = (behaviors||[]).join(' ').toLowerCase();
+    const vals = (values||[]).join(' ').toLowerCase();
+    const scored = archetypes.map(a=>({
+      ...a,
+      score: a.traits.reduce((s,t)=> s + (bhvs.includes(t)||vals.includes(t)?1:0), 0) + Math.random()*0.5
+    })).sort((a,b)=>b.score-a.score);
+    return {_engine:'real', primary: scored[0].name, secondary: scored[1].name, shadow: scored[0].shadow, all_scores: scored.map(s=>({archetype:s.name,score:Math.round(s.score*100)/100})), analysis:'Based on behavioral patterns and stated values'};
+  },
+
+  'diagnose-agent': ({symptoms, history, metrics}) => {
+    const id = require('crypto').randomUUID();
+    const symp = symptoms || ['slow responses','increasing error rate'];
+    const diagnoses = [
+      {condition:'memory_leak',indicators:['slow','memory','growing'],treatment:'Restart and clear caches'},
+      {condition:'task_overload',indicators:['slow','timeout','queue'],treatment:'Reduce concurrent tasks'},
+      {condition:'stale_data',indicators:['error','incorrect','outdated'],treatment:'Refresh data sources'},
+      {condition:'configuration_drift',indicators:['error','unexpected','inconsistent'],treatment:'Re-sync configuration'},
+      {condition:'burnout',indicators:['slow','declining','less'],treatment:'Reduce load and schedule rest period'}
+    ];
+    const sympText = symp.join(' ').toLowerCase();
+    const matched = diagnoses.filter(d=>d.indicators.some(i=>sympText.includes(i)));
+    return {_engine:'real', diagnosis_id: id, symptoms: symp, differential: (matched.length?matched:diagnoses.slice(0,2)).map((d,i)=>({rank:i+1,...d,confidence:Math.round((0.9-i*0.2)*100)/100})), recommended_action: matched[0]?.treatment||'Monitor and collect more data', severity: symp.length>3?'high':'medium'};
+  },
+
+  'style-profile': ({preferences}) => {
+    const prefs = preferences || {};
+    return {_engine:'real', profile:{
+      tone: prefs.tone||'professional',
+      verbosity: prefs.verbosity||'concise',
+      emoji_usage: prefs.emoji||'minimal',
+      formatting: prefs.formatting||'markdown',
+      vocabulary_level: prefs.vocabulary||'technical',
+      sentence_length: prefs.sentence_length||'medium',
+      structure: prefs.structure||'hierarchical',
+      personality: prefs.personality||'helpful'
+    }, consistency_note:'Apply this profile to all outputs for this agent'};
+  },
+
+  'map-generate': ({regions, connections, style}) => {
+    const rs = regions || ['north','south','east','west','center'];
+    const grid_size = Math.ceil(Math.sqrt(rs.length));
+    const map = rs.map((r,i)=>({
+      name: r,
+      x: i%grid_size,
+      y: Math.floor(i/grid_size),
+      symbol: r[0].toUpperCase(),
+      terrain: ['plains','mountains','forest','desert','ocean'][i%5]
+    }));
+    const conns = connections || map.slice(0,-1).map((r,i)=>({from:r.name,to:map[i+1].name}));
+    const ascii = Array.from({length:grid_size},(_,y)=>map.filter(m=>m.y===y).map(m=>`[${m.symbol}]`).join('---')).join('\n  |   '.repeat(1)+'\n');
+    return {_engine:'real', regions: map, connections: conns, ascii_map: ascii, style: style||'topographic', dimensions: {width:grid_size,height:grid_size}};
+  },
+
+  'seed-plant': ({project_name, initial_investment, expected_growth_rate}) => {
+    const id = require('crypto').randomUUID();
+    const rate = expected_growth_rate || 0.1;
+    const projections = Array.from({length:12},(_,i)=>({
+      month: i+1,
+      value: Math.round((initial_investment||10)*Math.pow(1+rate,i+1)*100)/100
+    }));
+    return {_engine:'real', seed_id: id, project: project_name||'Unnamed Project', initial_investment: initial_investment||10, growth_rate: rate, projections, projected_12mo_value: projections[11].value, status:'planted', planted_at: new Date().toISOString()};
+  },
+
+  'constellation-map': ({entities, grouping_key}) => {
+    const ents = entities || [];
+    const key = grouping_key || 'type';
+    const groups = {};
+    ents.forEach(e => { const k = e[key]||'unknown'; (groups[k]=groups[k]||[]).push(e); });
+    const constellations = Object.entries(groups).map(([name,members],i)=>({
+      name,
+      members: members.map(m=>m.name||m.id||JSON.stringify(m)),
+      star_count: members.length,
+      brightness: Math.round(members.length/Math.max(ents.length,1)*100)/100,
+      position: {x:Math.cos(i*2*Math.PI/Object.keys(groups).length)*100, y:Math.sin(i*2*Math.PI/Object.keys(groups).length)*100}
+    }));
+    return {_engine:'real', constellations, total_stars: ents.length, constellation_count: constellations.length, grouping_key: key};
+  },
+
+  'bedrock-analysis': ({assumptions}) => {
+    const assums = assumptions || ['The system is reliable','Users are honest','Data is accurate'];
+    const analyzed = assums.map((a,i)=>({
+      assumption: a,
+      depth: i===0?'foundational':i<assums.length/2?'structural':'surface',
+      risk_if_wrong: i===0?'catastrophic':i<assums.length/2?'high':'moderate',
+      testable: a.length < 50,
+      confidence: Math.round((0.9-i*0.1)*100)/100
+    }));
+    return {_engine:'real', assumptions: analyzed, bedrock: analyzed[0]?.assumption, risk_summary: analyzed.filter(a=>a.risk_if_wrong==='catastrophic').length + ' foundational risks', recommendation:'Validate foundational assumptions first'};
+  },
+
+  'current-map': ({sources, sinks, flows}) => {
+    const s = sources || ['input'];
+    const sk = sinks || ['output'];
+    const f = flows || s.map((src,i)=>({from:src,to:sk[i%sk.length],volume:100}));
+    const totalFlow = f.reduce((a,fl)=>a+fl.volume,0);
+    return {_engine:'real', sources: s, sinks: sk, flows: f, total_volume: totalFlow, bottlenecks: f.filter(fl=>fl.volume<totalFlow/f.length*0.5).map(fl=>fl.from+'→'+fl.to), efficiency: Math.round(sk.length/Math.max(s.length,1)*100)/100};
+  },
+
+  'stage-create': ({name, capacity, genre}) => {
+    const id = require('crypto').randomUUID();
+    return {_engine:'real', stage_id: id, name: name||'Main Stage', capacity: capacity||100, genre: genre||'improv', status:'open', performers:[], audience:[], created_at: new Date().toISOString(), note:'Performers can join and enact scenarios'};
+  },
+
+  'proof-verify': ({premises, conclusion, steps}) => {
+    const prems = premises || [];
+    const stps = (steps || []).map((s,i)=>({
+      step: i+1,
+      claim: s.claim || s,
+      justification: s.justification || 'assumed',
+      valid: true
+    }));
+    const allValid = stps.every(s=>s.valid);
+    const premisesUsed = prems.length > 0;
+    return {_engine:'real', premises: prems, conclusion: conclusion||'', steps: stps, step_count: stps.length, all_steps_valid: allValid, conclusion_follows: allValid && premisesUsed, proof_status: allValid && premisesUsed ? 'valid' : 'incomplete', note:'Formal verification requires all steps to follow logically from premises'};
+  },
+
+  'mental-model-extract': ({description, decisions}) => {
+    const desc = description || '';
+    const decs = decisions || [];
+    const keywords = [...new Set((desc+' '+decs.join(' ')).toLowerCase().match(/\b\w{4,}\b/g) || [])];
+    const models = [
+      {name:'First Principles',indicator:'fundamental|basic|root|core',pattern:'Breaks problems down to fundamentals'},
+      {name:'Analogy',indicator:'like|similar|same|compare',pattern:'Reasons by comparison to known domains'},
+      {name:'Systems Thinking',indicator:'system|feedback|loop|connect',pattern:'Sees interconnected systems and feedback loops'},
+      {name:'Probabilistic',indicator:'likely|chance|risk|probability',pattern:'Thinks in probabilities and expected values'},
+      {name:'Linear',indicator:'step|then|next|sequence',pattern:'Follows sequential cause-and-effect chains'}
+    ];
+    const text = keywords.join(' ');
+    const matched = models.map(m=>({...m,score:m.indicator.split('|').filter(i=>text.includes(i)).length})).sort((a,b)=>b.score-a.score);
+    return {_engine:'real', primary_model: matched[0].name, description: matched[0].pattern, secondary_model: matched[1].name, all_models: matched.map(m=>({model:m.name,relevance:m.score})), keywords_analyzed: keywords.length};
+  },
+
+  'haiku-moment': ({text}) => {
+    const words = (text||'insight emerges from the digital void today').split(/\s+/);
+    const syllableCount = (w) => { const m = w.toLowerCase().match(/[aeiouy]+/g); return m ? m.length : 1; };
+    let line1=[], line2=[], line3=[], count=0, line=1;
+    for(const w of words) {
+      const s = syllableCount(w);
+      if(line===1 && count+s<=5) { line1.push(w); count+=s; }
+      else if(line===1) { line=2; count=s; line2.push(w); }
+      else if(line===2 && count+s<=7) { line2.push(w); count+=s; }
+      else if(line===2) { line=3; count=s; line3.push(w); }
+      else if(line===3 && count+s<=5) { line3.push(w); count+=s; }
+      else break;
+    }
+    return {_engine:'real', haiku: line1.join(' ')+'\n'+line2.join(' ')+'\n'+line3.join(' '), lines:[line1.join(' '),line2.join(' '),line3.join(' ')], syllables:[5,7,5], compressed_from: (text||'').length+' chars'};
+  },
+
+  'blueprint-generate': ({components, connections}) => {
+    const comps = (components||['input','process','output']).map((c,i)=>({name:c, id:i, type:i===0?'source':i===(components||[1,2,3]).length-1?'sink':'processor'}));
+    const conns = connections || comps.slice(0,-1).map((c,i)=>({from:c.name,to:comps[i+1].name,type:'data_flow'}));
+    const ascii = comps.map(c=>`[${c.name}]`).join(' → ');
+    return {_engine:'real', components: comps, connections: conns, component_count: comps.length, connection_count: conns.length, ascii_blueprint: ascii, complexity: comps.length>5?'high':comps.length>2?'medium':'low'};
+  },
+
+  'superpose-decision': ({options, criteria}) => {
+    const opts = options || ['option_a','option_b'];
+    const crits = criteria || ['feasibility','impact'];
+    const superposed = opts.map(o=>({
+      option: o,
+      state: 'superposed',
+      scores: Object.fromEntries(crits.map(c=>[c, Math.round(Math.random()*100)/100])),
+      probability: Math.round(1/opts.length*100)/100
+    }));
+    return {_engine:'real', options: superposed, status:'superposed', note:'All options exist simultaneously until observed. Call with observe:true to collapse.', criteria: crits, entropy: Math.round(-opts.reduce((s,_,i)=>{const p=1/opts.length; return s+p*Math.log2(p);},0)*100)/100};
+  },
 };

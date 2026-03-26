@@ -1,0 +1,16 @@
+{
+  "name": "Slopshop",
+  "short_name": "Slopshop",
+  "description": "The tool layer for AI agents",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#ff3333",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

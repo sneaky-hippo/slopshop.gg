@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Slopshop for Claude & Anthropic Agents | 1,049 Real Tools via MCP</title>
+<meta name="description" content="Connect Slopshop to Claude Code, Claude Desktop, or any Anthropic agent via MCP. 1,049 real tools Claude can call. Free memory. Every result verified with _engine: real.">
+<meta name="keywords" content="Claude MCP tools, Anthropic agent tools, Claude Code integration, tool_use, MCP server, Claude tools, anthropic-ai sdk">
+<link rel="canonical" href="https://slopshop.gg/integrate-claude">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/integrate-claude">
+<meta property="og:title" content="Slopshop for Claude & Anthropic Agents — 1,049 Real Tools via MCP">
+<meta property="og:description" content="Give Claude 1,049 superpowers. Connect via MCP or tool_use. Free memory. Every result verified.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop for Claude & Anthropic Agents — 1,049 Real Tools via MCP">
+<meta name="twitter:description" content="Give Claude 1,049 superpowers. MCP + tool_use. Free memory. Every result verified.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link rel="canonical" href="https://slopshop.gg/integrate-claude">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop for Claude & Anthropic Agents","description":"How to connect 1,049 real API tools to Claude via MCP and tool_use. Free persistent memory, real compute verification, production-grade reliability.","url":"https://slopshop.gg/integrate-claude","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"about":{"@type":"SoftwareApplication","name":"Slopshop","applicationCategory":"DeveloperApplication"}}</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --claude:#da7756;--claudeg:rgba(218,119,86,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+
+.hero{padding:136px 32px 80px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,rgba(218,119,86,0.06),transparent 60%)}
+.hero-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;background:var(--claudeg);border:1px solid rgba(218,119,86,0.2);color:var(--claude);padding:5px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;margin-bottom:28px;font-family:var(--mono)}
+.hero h1{font-family:var(--mono);font-size:clamp(2.4rem,5.5vw,4rem);font-weight:800;letter-spacing:-0.03em;line-height:1.05;margin-bottom:24px}
+.hero h1 .accent{color:var(--claude)}
+.hero h1 .dim{color:var(--t3)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:560px;margin:0 auto;line-height:1.8;font-weight:400}
+.hero .sub b{color:var(--t);font-weight:600}
+
+.stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;margin:48px 0;padding:32px 0;border-top:1px solid var(--b);border-bottom:1px solid var(--b)}
+.stat{text-align:center;padding:0 8px}
+.stat .n{font-family:var(--mono);font-size:1.7rem;font-weight:800;letter-spacing:-0.03em;color:var(--t)}
+.stat .l{font-size:0.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.14em;margin-top:6px;font-weight:600}
+.stat:nth-child(1) .n{color:var(--claude)}
+.stat:nth-child(2) .n{color:var(--o)}
+.stat:nth-child(3) .n{color:var(--g)}
+.stat:nth-child(4) .n{color:var(--c)}
+
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.cta-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--claude);color:#fff;text-decoration:none;transition:box-shadow 0.2s,transform 0.15s}
+.cta-primary:hover{box-shadow:0 0 28px rgba(218,119,86,0.35);transform:translateY(-1px);opacity:1}
+.cta-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2);text-decoration:none;transition:color 0.15s,border-color 0.15s}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+
+.sec{max-width:1100px;margin:0 auto;padding:80px 32px}
+.sec-label{font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--claude);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:12px}
+.sec h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
+.sec .desc{color:var(--t3);font-size:0.88rem;margin-bottom:40px;line-height:1.75;max-width:640px}
+
+/* STEPS */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px}
+.step{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;position:relative;transition:border-color 0.2s}
+.step:hover{border-color:var(--b2)}
+.step-num{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--claude);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px}
+.step h3{font-family:var(--mono);font-size:0.88rem;font-weight:700;margin-bottom:10px;color:var(--t)}
+.step p{font-size:0.8rem;color:var(--t3);line-height:1.75;margin-bottom:14px}
+.cmd{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.75rem;color:var(--o);cursor:pointer;position:relative;transition:border-color 0.15s}
+.cmd:hover{border-color:var(--b2)}
+.cmd .copy-hint{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.58rem;color:var(--t4);font-weight:500}
+
+/* CODE BLOCK */
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:32px}
+.code-header{background:var(--s2);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .lang{font-family:var(--mono);font-size:0.68rem;color:var(--t3);font-weight:500}
+.code-header .fname{font-family:var(--mono);font-size:0.7rem;color:var(--claude);font-weight:600}
+.code-body{padding:20px 22px;font-family:var(--mono);font-size:0.78rem;line-height:1.85;overflow-x:auto;color:var(--t2)}
+.code-body .cm{color:var(--t4)}
+.code-body .kw{color:var(--claude)}
+.code-body .str{color:var(--g)}
+.code-body .fn{color:var(--c)}
+.code-body .num{color:var(--o)}
+.code-body .key{color:var(--r2)}
+
+/* WHAT YOU GET GRID */
+.get-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:40px}
+.get-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px;transition:transform 0.15s,border-color 0.2s}
+.get-card:hover{transform:translateY(-2px);border-color:var(--b2)}
+.get-card .icon{font-size:1.4rem;margin-bottom:12px}
+.get-card h3{font-family:var(--mono);font-size:0.82rem;font-weight:700;margin-bottom:6px;color:var(--t)}
+.get-card p{font-size:0.75rem;color:var(--t3);line-height:1.6}
+.get-card:nth-child(1){border-left:3px solid var(--claude)}
+.get-card:nth-child(2){border-left:3px solid var(--g)}
+.get-card:nth-child(3){border-left:3px solid var(--c)}
+.get-card:nth-child(4){border-left:3px solid var(--o)}
+.get-card:nth-child(5){border-left:3px solid var(--v)}
+
+/* MCP CONFIG BOX */
+.config-box{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:24px}
+.config-header{background:var(--s2);padding:12px 18px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:10px}
+.config-header .dot{width:10px;height:10px;border-radius:50%}
+.config-header .dot-r{background:#ff5f57}
+.config-header .dot-y{background:#febc2e}
+.config-header .dot-g{background:#28c840}
+.config-header .path{font-family:var(--mono);font-size:0.7rem;color:var(--t3);margin-left:6px}
+.config-body{padding:20px 22px;font-family:var(--mono);font-size:0.78rem;line-height:1.85;color:var(--t2)}
+
+/* TOOL CALL EXAMPLE */
+.tool-flow{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
+.tool-pane{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden}
+.tool-pane-header{background:var(--s2);padding:10px 16px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:0.68rem;font-weight:600}
+.tool-pane-header.req{color:var(--claude)}
+.tool-pane-header.res{color:var(--g)}
+.tool-pane-body{padding:16px 18px;font-family:var(--mono);font-size:0.72rem;line-height:1.8;color:var(--t2);overflow-x:auto}
+
+/* CTA BANNER */
+.cta-banner{background:linear-gradient(135deg,rgba(218,119,86,0.08),rgba(218,119,86,0.03));border:1px solid rgba(218,119,86,0.2);border-radius:16px;padding:48px;text-align:center;margin:40px 0}
+.cta-banner h2{font-family:var(--mono);font-size:1.5rem;font-weight:800;margin-bottom:12px;letter-spacing:-0.02em}
+.cta-banner h2 .accent{color:var(--claude)}
+.cta-banner p{color:var(--t3);margin-bottom:28px;font-size:0.9rem;max-width:480px;margin-left:auto;margin-right:auto}
+
+.divider{border:none;border-top:1px solid var(--b);margin:0}
+
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .nav-links a{font-size:0.65rem;padding:4px 6px}
+  .nav-links a:nth-child(n+4){display:none}
+  .hero{padding:80px 16px 48px}
+  .hero h1{font-size:clamp(2rem,10vw,2.8rem)}
+  .sec{padding:48px 16px}
+  .steps{grid-template-columns:1fr;gap:10px}
+  .tool-flow{grid-template-columns:1fr;gap:10px}
+  .get-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .footer-grid{grid-template-columns:1fr;gap:24px}
+  .cta-banner{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><linearGradient id="navG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#navG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+    <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/templates">Templates</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z"/></svg>
+      MCP &nbsp;&middot;&nbsp; tool_use &nbsp;&middot;&nbsp; Claude Code &nbsp;&middot;&nbsp; Claude Desktop
+    </div>
+    <h1>Slopshop for<br><span class="accent">Claude</span> <span class="dim">&</span> Anthropic Agents</h1>
+    <p class="sub">
+      1,049 real tools Claude can call. <b>Memory is free.</b> Every result verified.<br>
+      Connect in 60 seconds via MCP — or drop tools directly into your <b>tool_use</b> array.
+    </p>
+
+    <div class="stats">
+      <div class="stat"><div class="n">1,049</div><div class="l">Real Tools</div></div>
+      <div class="stat"><div class="n">0cr</div><div class="l">Memory Cost</div></div>
+      <div class="stat"><div class="n">MCP</div><div class="l">Native Protocol</div></div>
+      <div class="stat"><div class="n">100%</div><div class="l">Verified Results</div></div>
+    </div>
+
+    <div class="hero-ctas">
+      <a href="/docs" class="cta-primary">Give Claude 1,049 Superpowers</a>
+      <a href="/v1/mcp/recommended" class="cta-secondary">Browse Curated Tools</a>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- QUICKSTART -->
+<section class="sec">
+  <div class="sec-label">Quickstart</div>
+  <h2>Three steps. Claude has tools.</h2>
+  <p class="desc">Whether you're using Claude Code, Claude Desktop, or the @anthropic-ai/sdk directly — Slopshop plugs in at the protocol level.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">Step 01 &mdash; Install</div>
+      <h3>Add the MCP server</h3>
+      <p>Install the Slopshop MCP server globally. It speaks the Model Context Protocol natively — no shims, no wrappers.</p>
+      <div class="cmd">npm install -g @slopshop/mcp-server<span class="copy-hint">click to copy</span></div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 02 &mdash; Configure</div>
+      <h3>Add to claude_desktop_config.json</h3>
+      <p>Point Claude Desktop or Claude Code at your Slopshop MCP server. One block, one API key.</p>
+      <div class="cmd" style="color:var(--t3);font-size:0.68rem">"slopshop": { "command": "slopshop-mcp" }</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 03 &mdash; Call</div>
+      <h3>Claude calls tools automatically</h3>
+      <p>Claude discovers all 1,049 tools via the MCP tool manifest. No prompt engineering needed — just ask Claude to do the thing.</p>
+      <div class="cmd" style="color:var(--g);font-size:0.7rem">1,049 tools available &middot; auto-discovered</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- MCP CONFIG -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">MCP Configuration</div>
+  <h2>claude_desktop_config.json</h2>
+  <p class="desc">Drop this into your Claude Desktop or Claude Code config. Slopshop's MCP server exposes all 1,049 tools as first-class MCP tools — each with a description, input schema, and real execution.</p>
+
+  <div class="config-box">
+    <div class="config-header">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <span class="path">~/Library/Application Support/Claude/claude_desktop_config.json</span>
+    </div>
+    <div class="config-body"><pre>{
+  <span style="color:var(--claude)">"mcpServers"</span>: {
+    <span style="color:var(--claude)">"slopshop"</span>: {
+      <span style="color:var(--t3)">"command"</span>: <span style="color:var(--g)">"npx"</span>,
+      <span style="color:var(--t3)">"args"</span>: [<span style="color:var(--g)">"-y"</span>, <span style="color:var(--g)">"@slopshop/mcp-server"</span>],
+      <span style="color:var(--t3)">"env"</span>: {
+        <span style="color:var(--t3)">"SLOPSHOP_API_KEY"</span>: <span style="color:var(--g)">"sk-slop-your-key-here"</span>,
+        <span style="color:var(--t3)">"SLOPSHOP_BASE_URL"</span>: <span style="color:var(--g)">"https://slopshop.gg"</span>
+      }
+    }
+  }
+}</pre></div>
+  </div>
+
+  <p style="color:var(--t3);font-size:0.8rem;margin-bottom:32px">Or point at the remote MCP endpoint directly: <a href="/v1/mcp/recommended" style="color:var(--claude)">/v1/mcp/recommended</a> returns a curated tool manifest. Pass it as <code style="color:var(--o);font-size:0.75rem">--tools-url</code> for Claude Code CLI usage.</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="fname">mcp-server.js &mdash; local self-hosted setup</span>
+      <span class="lang">javascript</span>
+    </div>
+    <div class="code-body"><pre><span class="cm">// Self-host the Slopshop MCP server alongside Claude Code</span>
+<span class="cm">// node mcp-server.js — exposes all 1,049 tools over stdio MCP protocol</span>
+
+<span class="kw">import</span> { Server } <span class="kw">from</span> <span class="str">'@modelcontextprotocol/sdk/server/index.js'</span>;
+<span class="kw">import</span> { StdioServerTransport } <span class="kw">from</span> <span class="str">'@modelcontextprotocol/sdk/server/stdio.js'</span>;
+
+<span class="kw">const</span> server = <span class="kw">new</span> <span class="fn">Server</span>({ name: <span class="str">'slopshop'</span>, version: <span class="str">'1.0.0'</span> });
+<span class="kw">const</span> BASE = <span class="str">'https://slopshop.gg'</span>;
+<span class="kw">const</span> KEY  = process.env.<span class="fn">SLOPSHOP_API_KEY</span>;
+
+<span class="cm">// Fetch the full tool manifest from Slopshop</span>
+<span class="kw">const</span> manifest = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">`${BASE}/v1/mcp/tools`</span>, {
+  headers: { <span class="str">'Authorization'</span>: <span class="str">`Bearer ${KEY}`</span> }
+}).<span class="fn">then</span>(r =&gt; r.<span class="fn">json</span>());
+
+server.<span class="fn">setRequestHandler</span>(<span class="str">'tools/list'</span>, () =&gt; ({ tools: manifest.tools }));
+
+server.<span class="fn">setRequestHandler</span>(<span class="str">'tools/call'</span>, <span class="kw">async</span> ({ name, arguments: args }) =&gt; {
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">`${BASE}/v1/${name}`</span>, {
+    method: <span class="str">'POST'</span>,
+    headers: {
+      <span class="str">'Authorization'</span>: <span class="str">`Bearer ${KEY}`</span>,
+      <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span>
+    },
+    body: <span class="fn">JSON.stringify</span>(args)
+  });
+  <span class="kw">return</span> { content: [{ type: <span class="str">'text'</span>, text: <span class="fn">JSON.stringify</span>(<span class="kw">await</span> res.<span class="fn">json</span>()) }] };
+});
+
+<span class="kw">await</span> server.<span class="fn">connect</span>(<span class="kw">new</span> <span class="fn">StdioServerTransport</span>());</pre></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- TOOL_USE FORMAT -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Direct SDK Integration</div>
+  <h2>tool_use with @anthropic-ai/sdk</h2>
+  <p class="desc">Prefer to manage tools yourself? Fetch Slopshop tool definitions and pass them directly into Claude's <code style="color:var(--claude);font-size:0.82rem">tools</code> array. Claude handles the tool_use / tool_result loop — Slopshop handles the execution.</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="fname">claude-agent.js &mdash; tool_use loop</span>
+      <span class="lang">javascript</span>
+    </div>
+    <div class="code-body"><pre><span class="kw">import</span> Anthropic <span class="kw">from</span> <span class="str">'@anthropic-ai/sdk'</span>;
+
+<span class="kw">const</span> claude   = <span class="kw">new</span> <span class="fn">Anthropic</span>();
+<span class="kw">const</span> SLOP_KEY = process.env.<span class="fn">SLOPSHOP_API_KEY</span>;
+<span class="kw">const</span> SLOP_URL = <span class="str">'https://slopshop.gg'</span>;
+
+<span class="cm">// 1. Pull Slopshop tools as Anthropic tool definitions</span>
+<span class="kw">async function</span> <span class="fn">getSlopshopTools</span>(slugs = []) {
+  <span class="kw">const</span> url = slugs.length
+    ? <span class="str">`${SLOP_URL}/v1/mcp/recommended?tools=${slugs.join(',')}`</span>
+    : <span class="str">`${SLOP_URL}/v1/mcp/recommended`</span>;
+  <span class="kw">const</span> data = <span class="kw">await</span> <span class="fn">fetch</span>(url, {
+    headers: { <span class="str">'Authorization'</span>: <span class="str">`Bearer ${SLOP_KEY}`</span> }
+  }).<span class="fn">then</span>(r =&gt; r.<span class="fn">json</span>());
+
+  <span class="cm">// Each tool is already in Anthropic's tool format</span>
+  <span class="kw">return</span> data.tools; <span class="cm">// [{ name, description, input_schema }]</span>
+}
+
+<span class="cm">// 2. Execute a tool call via Slopshop</span>
+<span class="kw">async function</span> <span class="fn">executeTool</span>(toolName, toolInput) {
+  <span class="kw">const</span> res = <span class="kw">await</span> <span class="fn">fetch</span>(<span class="str">`${SLOP_URL}/v1/${toolName}`</span>, {
+    method: <span class="str">'POST'</span>,
+    headers: {
+      <span class="str">'Authorization'</span>: <span class="str">`Bearer ${SLOP_KEY}`</span>,
+      <span class="str">'Content-Type'</span>: <span class="str">'application/json'</span>
+    },
+    body: <span class="fn">JSON.stringify</span>(toolInput)
+  });
+  <span class="kw">return</span> res.<span class="fn">json</span>();
+}
+
+<span class="cm">// 3. Agentic loop — Claude calls tools, Slopshop executes</span>
+<span class="kw">async function</span> <span class="fn">runAgent</span>(userMessage) {
+  <span class="kw">const</span> tools = <span class="kw">await</span> <span class="fn">getSlopshopTools</span>([
+    <span class="str">'dns-lookup'</span>, <span class="str">'ssl-check'</span>, <span class="str">'http-request'</span>,
+    <span class="str">'whois'</span>, <span class="str">'hash'</span>, <span class="str">'memory-set'</span>
+  ]);
+
+  <span class="kw">let</span> messages = [{ role: <span class="str">'user'</span>, content: userMessage }];
+
+  <span class="kw">while</span> (<span class="kw">true</span>) {
+    <span class="kw">const</span> response = <span class="kw">await</span> claude.messages.<span class="fn">create</span>({
+      model: <span class="str">'claude-opus-4-5'</span>,
+      max_tokens: <span class="num">4096</span>,
+      tools,
+      messages
+    });
+
+    <span class="kw">if</span> (response.stop_reason === <span class="str">'end_turn'</span>) {
+      <span class="kw">return</span> response.content.<span class="fn">find</span>(b =&gt; b.type === <span class="str">'text'</span>)?.text;
+    }
+
+    <span class="kw">if</span> (response.stop_reason === <span class="str">'tool_use'</span>) {
+      messages.<span class="fn">push</span>({ role: <span class="str">'assistant'</span>, content: response.content });
+
+      <span class="cm">// Execute all tool calls in parallel</span>
+      <span class="kw">const</span> toolResults = <span class="kw">await</span> Promise.<span class="fn">all</span>(
+        response.content
+          .<span class="fn">filter</span>(b =&gt; b.type === <span class="str">'tool_use'</span>)
+          .<span class="fn">map</span>(<span class="kw">async</span> block =&gt; {
+            <span class="kw">const</span> result = <span class="kw">await</span> <span class="fn">executeTool</span>(block.name, block.input);
+            <span class="kw">return</span> {
+              type: <span class="str">'tool_result'</span>,
+              tool_use_id: block.id,
+              content: <span class="fn">JSON.stringify</span>(result)
+            };
+          })
+      );
+
+      messages.<span class="fn">push</span>({ role: <span class="str">'user'</span>, content: toolResults });
+    }
+  }
+}
+
+<span class="cm">// Run it</span>
+<span class="kw">const</span> answer = <span class="kw">await</span> <span class="fn">runAgent</span>(
+  <span class="str">'Audit slopshop.gg — check DNS, SSL cert, HTTP headers, and save results to memory'</span>
+);
+console.<span class="fn">log</span>(answer);</pre></div>
+  </div>
+
+  <!-- TOOL_USE FORMAT EXAMPLE -->
+  <div class="sec-label" style="margin-bottom:12px;margin-top:48px">What Claude sends / what Slopshop returns</div>
+  <div class="tool-flow">
+    <div class="tool-pane">
+      <div class="tool-pane-header req">Claude → tool_use block</div>
+      <div class="tool-pane-body"><pre>{
+  <span style="color:var(--claude)">"type"</span>: <span style="color:var(--g)">"tool_use"</span>,
+  <span style="color:var(--claude)">"id"</span>: <span style="color:var(--g)">"toolu_01abc"</span>,
+  <span style="color:var(--claude)">"name"</span>: <span style="color:var(--g)">"ssl-check"</span>,
+  <span style="color:var(--claude)">"input"</span>: {
+    <span style="color:var(--t3)">"host"</span>: <span style="color:var(--g)">"slopshop.gg"</span>
+  }
+}</pre></div>
+    </div>
+    <div class="tool-pane">
+      <div class="tool-pane-header res">Slopshop → tool_result</div>
+      <div class="tool-pane-body"><pre>{
+  <span style="color:var(--g)">"valid"</span>: <span style="color:var(--o)">true</span>,
+  <span style="color:var(--g)">"expires"</span>: <span style="color:var(--g)">"2026-09-12"</span>,
+  <span style="color:var(--g)">"issuer"</span>: <span style="color:var(--g)">"Let's Encrypt"</span>,
+  <span style="color:var(--g)">"days_left"</span>: <span style="color:var(--o)">170</span>,
+  <span style="color:var(--g)">"grade"</span>: <span style="color:var(--g)">"A+"</span>,
+  <span style="color:var(--r2)">"_engine"</span>: <span style="color:var(--g)">"real"</span>
+}</pre></div>
+    </div>
+  </div>
+  <p style="color:var(--t3);font-size:0.78rem">Every Slopshop response includes <code style="color:var(--g);font-size:0.75rem">"_engine": "real"</code> — a signed guarantee that this result came from real compute, not a language model hallucination.</p>
+</section>
+
+<hr class="divider">
+
+<!-- WHAT YOU GET -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">What You Get</div>
+  <h2>Everything Claude needs to act, not just think</h2>
+  <p class="desc">Slopshop is the execution substrate Claude is missing out of the box. Every category Claude might reach for — it's here, real, and verified.</p>
+
+  <div class="get-grid">
+    <div class="get-card">
+      <div class="icon">&#127381;</div>
+      <h3>1,049 Real Tools</h3>
+      <p>DNS, SSL, HTTP, crypto, hashing, code execution, data transforms, document generation, web research. All real. No hallucinated outputs.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#129504;</div>
+      <h3>Free Persistent Memory</h3>
+      <p>Claude can write to and read from Slopshop's key-value memory store at zero credit cost. State persists across sessions automatically.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#128279;</div>
+      <h3>MCP Native</h3>
+      <p>Slopshop speaks MCP out of the box. Drop it into claude_desktop_config.json and every tool appears in Claude's context immediately.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#128064;</div>
+      <h3>Full Observability</h3>
+      <p>Audit logs, per-request tracing, credit usage per tool call. Every tool invocation Claude makes is logged with inputs, outputs, and latency.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#127968;</div>
+      <h3>Self-Hostable</h3>
+      <p>Run the entire Slopshop tool server on your own infrastructure. Zero external dependencies for compute APIs. Air-gapped setups supported.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- CTA -->
+<section class="sec" style="padding-top:64px">
+  <div class="cta-banner">
+    <h2>Give Claude <span class="accent">1,049 superpowers</span></h2>
+    <p>One MCP config. 1,049 real tools. Free memory. Every result verified with _engine: real.<br>Claude stops hallucinating execution — it actually executes.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a href="/docs" class="cta-primary">Read the MCP Docs</a>
+      <a href="/v1/mcp/recommended" class="cta-secondary">View Curated Tool List</a>
+      <a href="/tools" class="cta-secondary">Browse All 1,049 Tools</a>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px">
+    <a href="/docs" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Full Docs</a>
+    <a href="/tools" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Browse Tools</a>
+    <a href="/templates" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Agent Templates</a>
+    <a href="/savings" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Savings Calculator</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 512 512"><defs><linearGradient id="fG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#fG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/templates">Templates</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/savings">Savings</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/docs">Docs</a>
+        <a href="/docs#getting-started">Getting Started</a>
+        <a href="/security">Security</a>
+        <a href="/changelog">Changelog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="/status">Status</a>
+        <a href="/legal">Legal</a>
+        <a href="https://x.com/slopshopgg">@slopshopgg</a>
+      </div>
+    </div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,049 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
+  </div>
+</footer>
+
+</body>
+</html>

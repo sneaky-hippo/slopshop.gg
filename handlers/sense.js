@@ -1258,4 +1258,21 @@ module.exports = {
   'sense-url-diff':               senseUrlDiff,
   'sense-github-user':            senseGithubUser,
   'sense-url-screenshot-text':    senseUrlScreenshotText,
+
+  'sense-subdomains': async ({ domain }) => {
+    if (!domain) return { _engine: 'real', error: 'Provide domain' };
+    const dns = require('dns').promises;
+    const common = ['www','mail','ftp','admin','api','dev','staging','test','blog','shop','app','cdn','docs','status','beta','demo'];
+    const found = [];
+
+    // Check common subdomains via DNS
+    await Promise.allSettled(common.map(async (sub) => {
+      try {
+        const result = await dns.resolve4(`${sub}.${domain}`);
+        if (result.length) found.push({ subdomain: `${sub}.${domain}`, ips: result });
+      } catch(e) {}
+    }));
+
+    return { _engine: 'real', domain, found: found.length, subdomains: found };
+  },
 };

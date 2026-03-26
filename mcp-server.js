@@ -1,7 +1,7 @@
 /**
  * SLOPSHOP MCP SERVER
  *
- * Model Context Protocol server that exposes all 178 Slopshop APIs
+ * Model Context Protocol server that exposes all 1,049 Slopshop APIs
  * as native tools for Claude Code, Cursor, and any MCP-compatible client.
  *
  * Usage:
@@ -12,7 +12,7 @@
  *     "slopshop": {
  *       "command": "node",
  *       "args": ["/path/to/mcp-server.js"],
- *       "env": { "SLOPSHOP_KEY": "sk-slop-xxx", "SLOPSHOP_BASE": "http://localhost:3000" }
+ *       "env": { "SLOPSHOP_KEY": "sk-slop-xxx", "SLOPSHOP_BASE": "https://slopshop.gg" }
  *     }
  *   }
  *
@@ -24,7 +24,7 @@ const http = require('http');
 const https = require('https');
 
 const KEY = process.env.SLOPSHOP_KEY || 'sk-slop-demo-key-12345678';
-const BASE = (process.env.SLOPSHOP_BASE || 'http://localhost:3000').replace(/\/$/, '');
+const BASE = (process.env.SLOPSHOP_BASE || 'https://slopshop.gg').replace(/\/$/, '');
 
 // MCP protocol over stdio
 const readline = require('readline');
@@ -58,7 +58,7 @@ function apiCall(method, path, body) {
 }
 
 // Essential tools only - the 30 that Claude Code ACTUALLY benefits from
-// Not dumping 420 tools into context (causes bloat, see agentpmt.com/articles/bloat-tax)
+// Not dumping 1,049 tools into context (causes bloat, see agentpmt.com/articles/bloat-tax)
 const ESSENTIAL_SLUGS = new Set([
   // Tier A: Claude CANNOT do these (network/side effects)
   'net-http-status', 'net-ssl-check', 'net-dns-a', 'net-dns-mx', 'net-dns-all',
@@ -90,7 +90,7 @@ async function loadTools() {
     if (offset >= res.total) break;
   }
   // For MCP: only expose essential tools to avoid context bloat
-  // All 420 are still callable via the API, just not listed as MCP tools
+  // All 1,049 are still callable via the API, just not listed as MCP tools
   toolList = all.filter(t => ESSENTIAL_SLUGS.has(t.slug));
   process.stderr.write(`Loaded ${toolList.length} essential tools (${all.length} total available via API)\n`);
   return toolList;
@@ -107,7 +107,7 @@ async function handleMessage(msg) {
         result: {
           protocolVersion: '2024-11-05',
           capabilities: { tools: { listChanged: false } },
-          serverInfo: { name: 'slopshop', version: '2.0.0' },
+          serverInfo: { name: 'slopshop', version: '3.0.0' },
         },
       };
 

@@ -33,7 +33,7 @@ class Slop {
   constructor(key, { baseUrl } = {}) {
     this.key = key || process.env.SLOPSHOP_KEY;
     if (!this.key) throw new SlopError('no_key', 'Set SLOPSHOP_KEY env var or pass key to new Slop(key)');
-    this.base = (baseUrl || process.env.SLOPSHOP_BASE || 'https://api.slopshop.gg').replace(/\/$/, '');
+    this.base = (baseUrl || process.env.SLOPSHOP_BASE || 'https://slopshop.gg').replace(/\/$/, '');
   }
 
   async _req(method, path, body, auth = true) {

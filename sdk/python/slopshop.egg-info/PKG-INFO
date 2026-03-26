@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: slopshop
+Version: 2.0.0
+Summary: 420 real APIs for AI agents. One key. One credit balance.
+Home-page: https://slopshop.gg
+Author: Slopshop
+Author-email: dev@slopshop.gg
+Classifier: Programming Language :: Python :: 3
+Classifier: License :: OSI Approved :: MIT License
+Classifier: Operating System :: OS Independent
+Requires-Python: >=3.7
+Dynamic: author
+Dynamic: author-email
+Dynamic: classifier
+Dynamic: description
+Dynamic: home-page
+Dynamic: requires-python
+Dynamic: summary
+
+Slopshop SDK - call 420 real APIs from Python. Crypto, text, math, AI, network, memory, code execution. See https://slopshop.gg

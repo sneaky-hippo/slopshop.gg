@@ -1,0 +1,6 @@
+setup.py
+slopshop.py
+slopshop.egg-info/PKG-INFO
+slopshop.egg-info/SOURCES.txt
+slopshop.egg-info/dependency_links.txt
+slopshop.egg-info/top_level.txt

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Changelog — Slopshop</title>
+<meta name="description" content="What's new in Slopshop. Version history, new APIs, fixes, and breaking changes.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F99E;</text></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090b;
+  --s1:#18181b;
+  --s2:#27272a;
+  --s3:#3f3f46;
+  --b:#27272a;
+  --t:#fafafa;
+  --t2:#a1a1aa;
+  --t3:#71717a;
+  --t4:#52525b;
+  --r:#ef4444;
+  --o:#f97316;
+  --g:#22c55e;
+  --c:#06b6d4;
+  --v:#8b5cf6;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth;scroll-padding-top:70px}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;min-height:100vh}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Topbar */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:200;height:50px;background:rgba(9,9,11,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 24px}
+.topbar-inner{display:flex;align-items:center;width:100%;gap:16px}
+.logo{font-family:var(--mono);font-weight:800;font-size:0.85rem;color:var(--r);letter-spacing:0.08em;white-space:nowrap;text-decoration:none}
+.logo b{color:var(--t)}
+.logo:hover{text-decoration:none}
+.topbar-links{display:flex;gap:4px;margin-left:auto;align-items:center}
+.topbar-links a{color:var(--t3);font-family:var(--mono);font-size:0.7rem;padding:5px 10px;border-radius:5px;transition:.15s;text-decoration:none}
+.topbar-links a:hover{color:var(--t);background:var(--s1);text-decoration:none}
+.topbar-links a.active{color:var(--t2)}
+
+/* Layout */
+.page{padding:90px 24px 120px;max-width:780px;margin:0 auto}
+
+/* Header */
+.page-header{margin-bottom:56px}
+.page-header h1{font-family:var(--mono);font-size:2rem;font-weight:800;color:var(--t);margin-bottom:10px}
+.page-header p{color:var(--t2);font-size:0.9rem;line-height:1.7}
+.page-header .subscribe-row{display:flex;align-items:center;gap:10px;margin-top:18px}
+.page-header .subscribe-row a{font-family:var(--mono);font-size:0.72rem;color:var(--t3);padding:5px 12px;border:1px solid var(--b);border-radius:6px;transition:.15s;text-decoration:none}
+.page-header .subscribe-row a:hover{color:var(--t);border-color:var(--s3);background:var(--s1);text-decoration:none}
+
+/* Timeline line */
+.timeline{position:relative;padding-left:28px}
+.timeline::before{content:'';position:absolute;left:0;top:8px;bottom:0;width:1px;background:var(--b)}
+
+/* Version entry */
+.version-entry{position:relative;margin-bottom:64px}
+.version-entry::before{content:'';position:absolute;left:-32px;top:10px;width:9px;height:9px;border-radius:50%;background:var(--r);border:2px solid var(--bg);box-shadow:0 0 0 1px var(--r)}
+.version-entry.minor::before{background:var(--c);box-shadow:0 0 0 1px var(--c)}
+.version-entry.major::before{background:var(--r);box-shadow:0 0 0 3px rgba(239,68,68,0.18)}
+.version-entry.initial::before{background:var(--t4);box-shadow:0 0 0 1px var(--t4)}
+
+/* Version heading */
+.version-header{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-bottom:20px}
+.version-number{font-family:var(--mono);font-size:1.45rem;font-weight:800;color:var(--t);line-height:1}
+.version-date{font-family:var(--mono);font-size:0.72rem;color:var(--t4);font-weight:500}
+.version-label{font-family:var(--mono);font-size:0.6rem;font-weight:700;padding:3px 9px;border-radius:4px;text-transform:uppercase;letter-spacing:0.06em}
+.label-major{background:rgba(239,68,68,0.12);color:var(--r);border:1px solid rgba(239,68,68,0.2)}
+.label-minor{background:rgba(6,182,212,0.1);color:var(--c);border:1px solid rgba(6,182,212,0.2)}
+.label-initial{background:var(--s2);color:var(--t3);border:1px solid var(--b)}
+
+/* Change list */
+.change-list{list-style:none;display:flex;flex-direction:column;gap:10px}
+.change-item{display:flex;align-items:flex-start;gap:10px;padding:12px 16px;background:var(--s1);border:1px solid var(--b);border-radius:8px;transition:.15s}
+.change-item:hover{border-color:var(--s3);background:#1c1c1f}
+
+/* Category tags */
+.tag{font-family:var(--mono);font-size:0.6rem;font-weight:700;padding:2px 8px;border-radius:4px;white-space:nowrap;flex-shrink:0;margin-top:1px;letter-spacing:0.04em}
+.tag-feature{background:rgba(34,197,94,0.1);color:var(--g);border:1px solid rgba(34,197,94,0.15)}
+.tag-fix{background:rgba(249,115,22,0.1);color:var(--o);border:1px solid rgba(249,115,22,0.15)}
+.tag-breaking{background:rgba(239,68,68,0.12);color:var(--r);border:1px solid rgba(239,68,68,0.2)}
+.tag-perf{background:rgba(139,92,246,0.1);color:var(--v);border:1px solid rgba(139,92,246,0.15)}
+.tag-dx{background:rgba(6,182,212,0.1);color:var(--c);border:1px solid rgba(6,182,212,0.15)}
+.tag-security{background:rgba(249,115,22,0.1);color:var(--o);border:1px solid rgba(249,115,22,0.15)}
+
+.change-text{font-size:0.84rem;color:var(--t2);line-height:1.6;flex:1}
+.change-text code{font-family:var(--mono);font-size:0.78rem;background:var(--s2);padding:1px 5px;border-radius:3px;color:var(--o)}
+.change-text strong{color:var(--t);font-weight:600}
+
+/* Section heading within entry */
+.change-section{font-family:var(--mono);font-size:0.68rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em;margin:20px 0 8px;padding-left:2px}
+
+/* Footer */
+footer{border-top:1px solid var(--b);padding:40px 24px;max-width:780px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:gap;gap:12px}
+footer .footer-left{font-family:var(--mono);font-size:0.7rem;color:var(--t4)}
+footer .footer-right{display:flex;gap:16px}
+footer .footer-right a{font-family:var(--mono);font-size:0.7rem;color:var(--t4);text-decoration:none;transition:.15s}
+footer .footer-right a:hover{color:var(--t2);text-decoration:none}
+</style>
+</head>
+<body>
+
+<!-- Topbar -->
+<nav class="topbar">
+  <div class="topbar-inner">
+    <a href="/" class="logo">SLOP<b>SHOP</b></a>
+    <div class="topbar-links">
+      <a href="/">Home</a>
+      <a href="/docs">Docs</a>
+      <a href="/tools">Tools</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/changelog" class="active">Changelog</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Main content -->
+<main class="page">
+
+  <!-- Page header -->
+  <div class="page-header">
+    <h1>Changelog</h1>
+    <p>Every release, every fix, every new API. Newest entries first.</p>
+    <div class="subscribe-row">
+      <a href="https://github.com/slopshop/slopshop/releases">GitHub Releases</a>
+      <a href="https://www.npmjs.com/package/slopshop">npm</a>
+    </div>
+  </div>
+
+  <!-- Timeline -->
+  <div class="timeline">
+
+    <!-- v2.1.0 -->
+    <div class="version-entry minor" id="v2.1.0">
+      <div class="version-header">
+        <span class="version-number">v2.1.0</span>
+        <span class="version-date">March 2026</span>
+        <span class="version-label label-minor">Minor</span>
+      </div>
+
+      <div class="change-section">Memory &amp; Billing</div>
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Free memory tier:</strong> 8 memory APIs now cost 0 credits — <code>memory-set</code>, <code>memory-get</code>, <code>memory-search</code>, <code>memory-list</code>, <code>memory-delete</code>, <code>memory-stats</code>, <code>memory-namespace-list</code>, and <code>counter-get</code>. Agents can now read and write persistent state without burning credits.</span>
+        </li>
+      </ul>
+
+      <div class="change-section">Agent System</div>
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Agent templates:</strong> 5 pre-built agent workflows available at <code>POST /v1/agent/template/:id</code>. Templates: <code>security-audit</code>, <code>content-analyzer</code>, <code>data-processor</code>, <code>domain-recon</code>, <code>hash-verify</code>. Pass <code>input</code> and get a structured result back — no prompt engineering needed.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Agent auto-memory:</strong> Every <code>POST /v1/agent/run</code> call now automatically stores the tool chain and result. Retrieve past runs at <code>GET /v1/agent/history</code>. Useful for auditing, debugging, and chaining multi-step agent workflows.</span>
+        </li>
+      </ul>
+
+      <div class="change-section">Site &amp; Pages</div>
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Security &amp; trust page</strong> published at <code>/security</code>. Covers auth model, PBKDF2 key hashing, credit isolation, rate limiting, and responsible disclosure contact.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Dedicated tools catalog</strong> at <code>/tools</code>. Browse all 1,049 APIs by category with credit costs, method badges, and live endpoint links — without opening the full docs.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-dx">DX</span>
+          <span class="change-text">Updated homepage, docs, and pricing with current API counts, correct positioning, and v2.1.0 credit table. Removed stale references to pre-launch pricing.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- v2.0.0 -->
+    <div class="version-entry major" id="v2.0.0">
+      <div class="version-header">
+        <span class="version-number">v2.0.0</span>
+        <span class="version-date">March 2026</span>
+        <span class="version-label label-major">Major</span>
+      </div>
+
+      <div class="change-section">Breaking Changes</div>
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-breaking">Breaking</span>
+          <span class="change-text"><strong>Complete server rewrite.</strong> Old <code>server.js</code> replaced by <code>server-v2.js</code>. API surface expanded from ~50 endpoints to 1,049 real APIs across 63 categories</strong>. All route slugs preserved where possible; new categories are additive.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-breaking">Breaking</span>
+          <span class="change-text"><strong>Auth system replaced.</strong> Plain API keys replaced with a real signup/login flow backed by PBKDF2-hashed keys, stored in SQLite. Existing v1 keys are invalid — regenerate at <code>POST /v1/auth/keys/rotate</code>.</span>
+        </li>
+      </ul>
+
+      <div class="change-section">Core Platform</div>
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Autonomous agent:</strong> <code>POST /v1/agent/run</code> accepts a natural-language task, selects the right tools from the registry, executes them in sequence, and returns a structured summary. Powered by Claude with the full API catalog as its tool set.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Simple Q&amp;A endpoint:</strong> <code>POST /v1/ask</code> for single-turn natural language questions. Lower credit cost than a full agent run; no tool orchestration overhead.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Persistent memory system</strong> — 20 APIs covering namespaced key-value storage, vector-style search, counters, and memory stats. All data lives in SQLite, scoped per API key.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Orchestration suite:</strong> retry, distributed lock, circuit breaker, cache, and rate limit APIs. Build resilient agent workflows without external infrastructure.</span>
+        </li>
+      </ul>
+
+      <div class="change-section">New API Categories</div>
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>World sensing — 30 APIs:</strong> fetch URL content, DNS lookup, SSL certificate inspection, tech stack detection (<code>wappalyzer</code>-style), WHOIS, port scan, redirect chain tracing.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Code execution sandbox:</strong> JavaScript VM (isolated, no <code>require</code>), SQL queries against JSON datasets, array transform pipelines. Useful for agents that need to process structured data mid-run.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text">1,049 APIs across compute, crypto, text, math, dates, AI/LLM, network, memory, orchestration, code, and more. Full list in <a href="/docs">docs</a> or <a href="/tools">tools catalog</a>.</span>
+        </li>
+      </ul>
+
+      <div class="change-section">Billing &amp; Distribution</div>
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Credit system with Gumroad checkout.</strong> Buy credit packs directly from the dashboard. Credits are scoped per key and deducted atomically.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Published to npm and PyPI</strong> as <code>slopshop@2.0.0</code>. Install the CLI: <code>npm i -g slopshop</code> or <code>pip install slopshop</code>.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>MCP server</strong> (<code>mcp-server.js</code>) for Claude Code integration. Run <code>npm run mcp</code> and point Claude Code at the local socket to use all 1,049 APIs as native tools.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Zapier integration</strong> via dedicated endpoints in <code>zapier.js</code>. Trigger any Slopshop API from a Zap without writing code.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>14 pre-built pipes</strong> — composable multi-step workflows (e.g. fetch → extract → summarize → store) available via <code>POST /v1/pipe/:name</code>.</span>
+        </li>
+      </ul>
+
+      <div class="change-section">SEO &amp; Discoverability</div>
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-dx">DX</span>
+          <span class="change-text"><strong>1,049 individual API pages</strong> generated server-side, each with Schema.org <code>SoftwareApplication</code> markup, Open Graph tags, and canonical URLs. Full XML sitemap at <code>/sitemap.xml</code>.</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- v1.0.0 -->
+    <div class="version-entry initial" id="v1.0.0">
+      <div class="version-header">
+        <span class="version-number">v1.0.0</span>
+        <span class="version-date">February 2026</span>
+        <span class="version-label label-initial">Initial Release</span>
+      </div>
+
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Initial launch.</strong> Core compute APIs: hashing, encoding, text utilities, math, date formatting, UUID generation, and basic crypto primitives.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Credit-based billing.</strong> Every API call costs credits. Free tier included on signup. No subscriptions at launch — pay-as-you-go only.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>CLI tool</strong> (<code>slop</code> / <code>slopshop</code>) for running APIs from the terminal. Supports piped input, JSON output, and key management via <code>slop auth</code>.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-dx">DX</span>
+          <span class="change-text">Published package to npm. Node.js &gt;=18 required. MIT licensed, self-hostable.</span>
+        </li>
+      </ul>
+    </div>
+
+  </div><!-- /timeline -->
+</main>
+
+<footer>
+  <div class="footer-left">slopshop.gg &mdash; v2.1.0</div>
+  <div class="footer-right">
+    <a href="/">Home</a>
+    <a href="/docs">Docs</a>
+    <a href="/tools">Tools</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/security">Security</a>
+    <a href="https://github.com/slopshop/slopshop">GitHub</a>
+  </div>
+</footer>
+
+</body>
+</html>

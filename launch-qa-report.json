@@ -1,5 +1,5 @@
 {
-  "timestamp": "2026-03-25T17:01:19.618Z",
+  "timestamp": "2026-03-25T17:33:42.763Z",
   "site_url": "https://agent-apis-ten.vercel.app",
   "api_url": "http://localhost:3038",
   "tests": 68,
@@ -9,7 +9,7 @@
   "pass_details": [
     {
       "test": "Homepage loads",
-      "detail": "131851 bytes"
+      "detail": "133246 bytes"
     },
     {
       "test": "Title contains SLOPSHOP.GG"
@@ -18,7 +18,7 @@
       "test": "Embedded catalog present"
     },
     {
-      "test": "API count in embed: 420"
+      "test": "API count in embed: 1049"
     },
     {
       "test": "SEO: og:title"
@@ -67,11 +67,11 @@
     },
     {
       "test": "API server healthy",
-      "detail": "420 APIs"
+      "detail": "1,049 APIs"
     },
     {
       "test": "Signup works",
-      "detail": "qa-ka842z@test.com"
+      "detail": "qa-xqd3n2@test.com"
     },
     {
       "test": "Login works"
@@ -80,7 +80,7 @@
       "test": "Who am I works"
     },
     {
-      "test": "Balance check: 9607450cr"
+      "test": "Balance check: 10607412cr"
     },
     {
       "test": "GET /v1/health"

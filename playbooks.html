@@ -1,0 +1,1431 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="dns-prefetch" href="https://slopshop-production.up.railway.app">
+<title>Use-Case Playbooks — SLOPSHOP.GG</title>
+<meta name="description" content="Step-by-step playbooks for real problems: invoice processing, security audits, research agents, data pipelines, and file integrity — with exact curl commands, cost estimates, and failure handling.">
+<meta name="keywords" content="AI agent playbooks, API chaining, invoice processing API, security audit API, data pipeline, file hash API, slopshop, agent use cases">
+<link rel="canonical" href="https://slopshop.gg/playbooks">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/playbooks">
+<meta property="og:title" content="Use-Case Playbooks — SLOPSHOP.GG">
+<meta property="og:description" content="Exact recipes for real problems. Which APIs, how to chain them, expected cost, and failure handling — so you go from curious to shipping.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:creator" content="@slopshopgg">
+<meta name="twitter:title" content="Use-Case Playbooks — SLOPSHOP.GG">
+<meta name="twitter:description" content="Exact recipes for real problems. Which APIs, how to chain them, expected cost, and failure handling.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "HowToCollection",
+  "name": "Slopshop Use-Case Playbooks",
+  "url": "https://slopshop.gg/playbooks",
+  "description": "Step-by-step playbooks showing developers exactly how to chain Slopshop APIs to solve real problems, with curl examples, cost estimates, and failure handling.",
+  "publisher": {
+    "@type": "Organization",
+    "name": "Slopshop",
+    "url": "https://slopshop.gg"
+  },
+  "hasPart": [
+    {"@type":"HowTo","name":"Process Invoices Automatically","description":"Extract structured invoice data from raw text using llm-data-extract, validate with text-json-validate, and persist with memory-set."},
+    {"@type":"HowTo","name":"Security Audit Any Website","description":"Run a full security audit using sense-url-tech-stack, sense-ssl-check, sense-url-headers, and sense-url-response-time — or call the one-shot template."},
+    {"@type":"HowTo","name":"Build a Research Agent with Memory","description":"Fetch and analyze web content, then store and recall findings using Slopshop's free persistent memory layer."},
+    {"@type":"HowTo","name":"Clean and Transform Data Pipeline","description":"Convert CSV to JSON, filter, sort, and analyze in a four-step pipeline — or use the pre-built pipe endpoint."},
+    {"@type":"HowTo","name":"Hash and Verify File Integrity","description":"Generate SHA-256, SHA-512, and MD5 hashes for any input in a single chained request or via the hash-everything pipe."}
+  ]
+}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff6644'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><line x1='256' y1='80' x2='256' y2='168' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='256' y1='344' x2='256' y2='432' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='80' y1='256' x2='168' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='344' y1='256' x2='432' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;height:56px;
+  background:rgba(5,5,5,0.85);
+  backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid var(--b);
+  display:flex;align-items:center;padding:0 32px
+}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:inherit;opacity:1}
+.logo:hover{opacity:0.8}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--r);background:var(--rg)}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+.hamburger{display:none;flex-direction:column;gap:4px;cursor:pointer;padding:4px;background:none;border:none}
+.hamburger span{display:block;width:20px;height:2px;background:var(--t2);border-radius:2px;transition:0.2s}
+.mobile-menu{display:none;position:fixed;top:56px;left:0;right:0;background:rgba(5,5,5,0.97);backdrop-filter:blur(20px);border-bottom:1px solid var(--b);padding:16px 24px;z-index:99;flex-direction:column;gap:4px}
+.mobile-menu a{color:var(--t2);font-size:0.85rem;font-weight:500;padding:10px 12px;border-radius:8px;display:block;font-family:var(--mono)}
+.mobile-menu a:hover,.mobile-menu a.active{color:var(--t);background:var(--s2)}
+.mobile-menu a.active{color:var(--r)}
+
+/* HERO */
+.hero{padding:112px 32px 64px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,rgba(255,51,51,0.05),transparent 55%)}
+.hero-inner{max-width:800px;margin:0 auto;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(255,51,51,0.15);color:var(--r2);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:500;margin-bottom:24px}
+.hero h1{font-family:var(--mono);font-size:clamp(2rem,5vw,3.2rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:20px}
+.hero h1 .accent{color:var(--r)}
+.hero p.sub{color:var(--t2);font-size:clamp(0.88rem,1.4vw,0.98rem);max-width:580px;margin:0 auto 32px;line-height:1.8}
+.hero p.sub b{color:var(--t)}
+
+/* TOC */
+.toc-wrap{max-width:900px;margin:0 auto;padding:0 32px 64px}
+.toc{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px 28px}
+.toc h2{font-family:var(--mono);font-size:0.78rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.toc-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px}
+.toc-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;border-radius:8px;border:1px solid transparent;transition:0.15s;cursor:pointer}
+.toc-item:hover{background:var(--s2);border-color:var(--b2)}
+.toc-num{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--r);background:var(--rg);padding:3px 8px;border-radius:6px;flex-shrink:0;margin-top:2px}
+.toc-text strong{display:block;font-size:0.82rem;font-weight:600;color:var(--t);margin-bottom:2px}
+.toc-text span{font-size:0.72rem;color:var(--t3)}
+
+/* PLAYBOOK SECTIONS */
+.pb-wrap{max-width:900px;margin:0 auto;padding:0 32px 120px}
+.pb{margin-bottom:80px;scroll-margin-top:80px}
+.pb-header{display:flex;align-items:flex-start;gap:16px;margin-bottom:24px}
+.pb-num{font-family:var(--mono);font-size:0.72rem;font-weight:800;color:var(--r);background:var(--rg);border:1px solid rgba(255,51,51,0.2);padding:6px 12px;border-radius:8px;flex-shrink:0;letter-spacing:0.04em;margin-top:4px}
+.pb-title-wrap h2{font-family:var(--mono);font-size:clamp(1.1rem,3vw,1.5rem);font-weight:800;color:var(--t);letter-spacing:-0.02em;margin-bottom:6px}
+.pb-title-wrap p{color:var(--t2);font-size:0.88rem;line-height:1.7}
+
+/* COST / META PILLS */
+.pb-meta{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 28px}
+.pill{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:0.68rem;font-weight:600;padding:4px 12px;border-radius:99px}
+.pill-cost{background:var(--og);color:var(--o);border:1px solid rgba(255,136,0,0.2)}
+.pill-tools{background:var(--rg);color:var(--r2);border:1px solid rgba(255,51,51,0.15)}
+.pill-free{background:var(--gg);color:var(--g);border:1px solid rgba(0,204,102,0.2)}
+.pill-shortcut{background:var(--vg);color:var(--v);border:1px solid rgba(136,85,255,0.2)}
+
+/* STEP FLOW */
+.steps{display:flex;flex-direction:column;gap:0;margin-bottom:28px}
+.step{position:relative;padding-left:48px;padding-bottom:32px}
+.step:last-child{padding-bottom:0}
+.step-line{position:absolute;left:15px;top:30px;bottom:0;width:2px;background:var(--b2)}
+.step:last-child .step-line{display:none}
+.step-dot{position:absolute;left:8px;top:4px;width:16px;height:16px;border-radius:50%;background:var(--r);border:2px solid var(--bg);flex-shrink:0;z-index:1}
+.step-dot.free{background:var(--g)}
+.step-num{font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:4px}
+.step h3{font-family:var(--mono);font-size:0.88rem;font-weight:700;color:var(--t);margin-bottom:6px}
+.step h3 .tool-badge{font-size:0.72rem;font-weight:600;color:var(--r2);background:var(--rg);padding:2px 8px;border-radius:5px;margin-left:8px}
+.step h3 .tool-badge.free{color:var(--g);background:var(--gg)}
+.step p{color:var(--t2);font-size:0.82rem;margin-bottom:12px;line-height:1.7}
+
+/* CODE BLOCKS */
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden;margin:12px 0}
+.code-header{background:var(--s2);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-lang{font-family:var(--mono);font-size:0.62rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em}
+.code-label{font-family:var(--mono);font-size:0.62rem;color:var(--t3)}
+.copy-btn{font-family:var(--mono);font-size:0.62rem;font-weight:600;color:var(--t3);background:none;border:1px solid var(--b2);padding:3px 10px;border-radius:5px;cursor:pointer;transition:0.15s}
+.copy-btn:hover{color:var(--t);border-color:var(--r)}
+.copy-btn.copied{color:var(--g);border-color:var(--g)}
+pre{padding:16px 18px;overflow-x:auto;font-family:var(--mono);font-size:0.76rem;line-height:1.75;color:var(--t2)}
+pre .ky{color:var(--r2)}
+pre .vl{color:var(--o)}
+pre .st{color:var(--g)}
+pre .cm{color:var(--t4)}
+pre .url{color:var(--c)}
+pre .flag{color:var(--v)}
+
+/* DIVIDER */
+.or-divider{display:flex;align-items:center;gap:12px;margin:24px 0;color:var(--t4);font-family:var(--mono);font-size:0.72rem;font-weight:600}
+.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--b2)}
+
+/* CALLOUT BOXES */
+.callout{border-radius:10px;padding:16px 18px;margin:16px 0;font-size:0.82rem;line-height:1.75}
+.callout h4{font-family:var(--mono);font-size:0.75rem;font-weight:700;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em}
+.callout ul,.callout ol{padding-left:20px}
+.callout li{margin-bottom:4px;color:var(--t2)}
+.callout-when{background:var(--cg);border:1px solid rgba(0,170,255,0.15);border-left:3px solid var(--c)}
+.callout-when h4{color:var(--c)}
+.callout-pitfall{background:#160a0a;border:1px solid rgba(255,51,51,0.12);border-left:3px solid var(--r)}
+.callout-pitfall h4{color:var(--r)}
+.callout-tip{background:var(--gg);border:1px solid rgba(0,204,102,0.15);border-left:3px solid var(--g)}
+.callout-tip h4{color:var(--g)}
+
+/* PIPE / TEMPLATE CALLOUT */
+.shortcut-box{background:var(--vg);border:1px solid rgba(136,85,255,0.2);border-radius:10px;padding:18px 20px;margin:24px 0;display:flex;align-items:flex-start;gap:14px}
+.shortcut-icon{font-size:1.2rem;flex-shrink:0;margin-top:2px}
+.shortcut-box p{color:var(--t2);font-size:0.82rem;margin-top:4px;line-height:1.7}
+.shortcut-box strong{font-family:var(--mono);font-size:0.85rem;color:var(--v);display:block;margin-bottom:4px}
+.shortcut-box a{color:var(--v)}
+.shortcut-box a:hover{color:#aa88ff}
+
+/* PIPE VERSION */
+.pipe-note{font-family:var(--mono);font-size:0.72rem;color:var(--t3);margin-top:8px;padding:10px 14px;background:var(--s2);border-radius:8px;border-left:3px solid var(--v)}
+
+/* IO DISPLAY */
+.io-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:16px 0}
+.io-box{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden}
+.io-label{padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b);font-family:var(--mono);font-size:0.62rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em}
+.io-label.in{color:var(--o)}
+.io-label.out{color:var(--g)}
+.io-body{padding:14px 16px;font-family:var(--mono);font-size:0.75rem;line-height:1.65;color:var(--t2);word-break:break-all;overflow-x:auto}
+
+/* SEPARATOR */
+.pb-sep{border:none;border-top:1px solid var(--b);margin:80px 0 0}
+
+/* COST SUMMARY */
+.cost-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:0.8rem}
+.cost-table th{font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em;padding:8px 12px;text-align:left;border-bottom:1px solid var(--b)}
+.cost-table td{padding:8px 12px;border-bottom:1px solid rgba(26,26,26,0.6);color:var(--t2);font-family:var(--mono);font-size:0.75rem}
+.cost-table tr:last-child td{border-bottom:none;color:var(--t);font-weight:700}
+.cost-table td:first-child{color:var(--t)}
+.cost-table .free-row td{color:var(--g)}
+
+/* FOOTER */
+footer{border-top:1px solid var(--b);padding:40px 32px}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px}
+.footer-brand{font-family:var(--mono);font-size:0.8rem;font-weight:700;display:flex;align-items:center;gap:8px;color:var(--t2)}
+.footer-brand .gg{color:var(--t4)}
+.footer-links{display:flex;gap:20px;flex-wrap:wrap}
+.footer-links a{font-family:var(--mono);font-size:0.72rem;color:var(--t3)}
+.footer-copy{font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-top:12px;text-align:center}
+
+/* RESPONSIVE */
+@media(max-width:700px){
+  nav{padding:0 18px}
+  .nav-links{display:none}
+  .hamburger{display:flex}
+  .mobile-menu.open{display:flex}
+  .hero{padding:88px 18px 40px}
+  .toc-wrap,.pb-wrap{padding-left:18px;padding-right:18px}
+  .toc-grid{grid-template-columns:1fr}
+  .io-row{grid-template-columns:1fr}
+  .pb-header{flex-direction:column;gap:10px}
+  .pb-num{align-self:flex-start}
+  pre{font-size:0.68rem}
+}
+@media(max-width:480px){
+  .pb-meta{gap:6px}
+  .pill{font-size:0.62rem;padding:3px 9px}
+  .shortcut-box{flex-direction:column}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="navBg" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#navBg)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="128" y1="128" x2="188" y2="188" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><line x1="384" y1="128" x2="324" y2="188" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><line x1="128" y1="384" x2="188" y2="324" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><line x1="384" y1="384" x2="324" y2="324" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+    <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/templates">Templates</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/playbooks" class="active">Playbooks</a>
+    <div class="live-badge"><div class="live-dot"></div><span>live</span></div>
+  </div>
+  <button class="hamburger" onclick="toggleMenu()" aria-label="Menu">
+    <span></span><span></span><span></span>
+  </button>
+</div></nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="/tools">Tools</a>
+  <a href="/templates">Templates</a>
+  <a href="/#pricing">Pricing</a>
+  <a href="/docs">Docs</a>
+  <a href="/playbooks" class="active">Playbooks</a>
+</div>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">5 real-world playbooks &mdash; copy, paste, ship</div>
+    <h1><span class="accent">Recipes</span> for<br>real problems</h1>
+    <p class="sub">Which APIs to call, how to chain them, what it costs, and what breaks. <b>Go from curious to shipping</b> in under 10 minutes.</p>
+  </div>
+</section>
+
+<!-- TABLE OF CONTENTS -->
+<div class="toc-wrap">
+  <div class="toc">
+    <h2>Playbooks</h2>
+    <div class="toc-grid">
+      <a href="#pb1" class="toc-item">
+        <span class="toc-num">01</span>
+        <div class="toc-text">
+          <strong>Process Invoices Automatically</strong>
+          <span>Extract &rarr; Validate &rarr; Store &mdash; ~13 credits</span>
+        </div>
+      </a>
+      <a href="#pb2" class="toc-item">
+        <span class="toc-num">02</span>
+        <div class="toc-text">
+          <strong>Security Audit Any Website</strong>
+          <span>Tech stack, SSL, headers, response time &mdash; ~23 credits</span>
+        </div>
+      </a>
+      <a href="#pb3" class="toc-item">
+        <span class="toc-num">03</span>
+        <div class="toc-text">
+          <strong>Build a Research Agent with Memory</strong>
+          <span>Fetch, analyze, store, recall &mdash; ~4 credits</span>
+        </div>
+      </a>
+      <a href="#pb4" class="toc-item">
+        <span class="toc-num">04</span>
+        <div class="toc-text">
+          <strong>Clean and Transform Data Pipeline</strong>
+          <span>CSV &rarr; JSON &rarr; filter &rarr; sort &rarr; stats &mdash; ~5 credits</span>
+        </div>
+      </a>
+      <a href="#pb5" class="toc-item">
+        <span class="toc-num">05</span>
+        <div class="toc-text">
+          <strong>Hash and Verify File Integrity</strong>
+          <span>SHA-256, SHA-512, MD5 in one flow &mdash; ~4 credits</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- PLAYBOOK SECTION -->
+<div class="pb-wrap">
+
+  <!-- ============================
+       PLAYBOOK 1: INVOICE PROCESSING
+       ============================ -->
+  <div class="pb" id="pb1">
+    <div class="pb-header">
+      <span class="pb-num">PLAYBOOK 01</span>
+      <div class="pb-title-wrap">
+        <h2>Process Invoices Automatically</h2>
+        <p>Drop in raw invoice text, get back clean structured JSON — invoice ID, customer, amount, and date — stored in persistent memory and ready to query.</p>
+      </div>
+    </div>
+
+    <div class="pb-meta">
+      <span class="pill pill-cost">~13 credits total</span>
+      <span class="pill pill-tools">3 API calls</span>
+      <span class="pill pill-free">memory-set is free</span>
+    </div>
+
+    <div class="io-row">
+      <div class="io-box">
+        <div class="io-label in">Input</div>
+        <div class="io-body">Invoice #4471&#10;Acme Corp — 2025-03-01&#10;Services rendered: $2,400.00&#10;Due: 2025-03-31</div>
+      </div>
+      <div class="io-box">
+        <div class="io-label out">Output</div>
+        <div class="io-body">{&#10;  "invoice_id": "4471",&#10;  "customer": "Acme Corp",&#10;  "amount": 2400.00,&#10;  "date": "2025-03-01"&#10;}</div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 1</div>
+        <h3>Extract structured data <span class="tool-badge">llm-data-extract</span></h3>
+        <p>Send raw invoice text to the LLM extraction tool with a schema hint. It returns structured JSON every time — no prompt engineering required.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">10 credits</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><span class="cm"># Step 1 — extract structured fields from raw invoice text</span>
+curl -X POST https://slopshop.gg/v1/tools/llm-data-extract \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "text": "Invoice #4471\nAcme Corp — 2025-03-01\nServices rendered: $2,400.00\nDue: 2025-03-31",
+    "schema": {
+      "invoice_id": "string",
+      "customer":   "string",
+      "amount":     "number",
+      "date":       "string (YYYY-MM-DD)"
+    }
+  }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">response</span>
+            <span class="code-label">save result.extracted</span>
+          </div>
+          <pre>{
+  <span class="ky">"ok"</span>: <span class="vl">true</span>,
+  <span class="ky">"result"</span>: {
+    <span class="ky">"extracted"</span>: {
+      <span class="ky">"invoice_id"</span>: <span class="st">"4471"</span>,
+      <span class="ky">"customer"</span>:   <span class="st">"Acme Corp"</span>,
+      <span class="ky">"amount"</span>:     <span class="vl">2400.00</span>,
+      <span class="ky">"date"</span>:       <span class="st">"2025-03-01"</span>
+    }
+  },
+  <span class="ky">"_engine"</span>: <span class="st">"real"</span>
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 2</div>
+        <h3>Validate the JSON <span class="tool-badge">text-json-validate</span></h3>
+        <p>Before persisting, confirm the shape is exactly right. This catches LLM hallucinations (wrong types, missing fields) before they silently corrupt your records.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">2 credits</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><span class="cm"># Step 2 — validate the extracted JSON against your schema</span>
+curl -X POST https://slopshop.gg/v1/tools/text-json-validate \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "json": "{\"invoice_id\":\"4471\",\"customer\":\"Acme Corp\",\"amount\":2400.00,\"date\":\"2025-03-01\"}",
+    "required_keys": ["invoice_id", "customer", "amount", "date"],
+    "types": {
+      "invoice_id": "string",
+      "amount":     "number"
+    }
+  }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">response</span>
+          </div>
+          <pre>{
+  <span class="ky">"ok"</span>: <span class="vl">true</span>,
+  <span class="ky">"result"</span>: {
+    <span class="ky">"valid"</span>:   <span class="vl">true</span>,
+    <span class="ky">"errors"</span>:  [],
+    <span class="ky">"parsed"</span>:  { <span class="cm">/* the parsed object */</span> }
+  }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-dot free"></div>
+        <div class="step-num">Step 3</div>
+        <h3>Persist to memory <span class="tool-badge free">memory-set — FREE</span></h3>
+        <p>Store the validated invoice JSON under a namespaced key. Retrieve it later with <code style="font-family:var(--mono);color:var(--r2);font-size:0.78rem">memory-search</code> or <code style="font-family:var(--mono);color:var(--r2);font-size:0.78rem">memory-get</code>. Memory operations never consume credits.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">FREE</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><span class="cm"># Step 3 — store to persistent memory (always free)</span>
+curl -X POST https://slopshop.gg/v1/tools/memory-set \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "key":   "invoice:4471",
+    "value": {
+      "invoice_id": "4471",
+      "customer":   "Acme Corp",
+      "amount":     2400.00,
+      "date":       "2025-03-01"
+    },
+    "ttl": 2592000
+  }'</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="or-divider">pipe version</div>
+
+    <p style="color:var(--t2);font-size:0.82rem;margin-bottom:12px">All three steps above can be collapsed into a single piped request. The <code style="font-family:var(--mono);color:var(--r2)">|</code> operator passes each tool's output as the next tool's input.</p>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">bash</span>
+        <span class="code-label">one request, same 12 credits</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><span class="cm"># Pipe version — extract | validate | store in one call</span>
+curl -X POST https://slopshop.gg/v1/pipes/run \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "pipe": [
+      {
+        "tool":  "llm-data-extract",
+        "input": {
+          "text":   "Invoice #4471\nAcme Corp — 2025-03-01\nServices: $2400\nDue: 2025-03-31",
+          "schema": { "invoice_id":"string","customer":"string","amount":"number","date":"string" }
+        }
+      },
+      {
+        "tool":  "text-json-validate",
+        "input": {
+          "json":          "$prev.extracted",
+          "required_keys": ["invoice_id","customer","amount","date"]
+        }
+      },
+      {
+        "tool":  "memory-set",
+        "input": {
+          "key":   "invoice:$prev.parsed.invoice_id",
+          "value": "$prev.parsed"
+        }
+      }
+    ]
+  }'</span></pre>
+    </div>
+
+    <div class="or-divider">cost breakdown</div>
+    <table class="cost-table">
+      <thead><tr><th>Tool</th><th>Credits</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>llm-data-extract</td><td>10</td><td>LLM inference call</td></tr>
+        <tr><td>text-json-validate</td><td>2</td><td>Schema validation + type check</td></tr>
+        <tr class="free-row"><td>memory-set</td><td>0</td><td>Always free</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>~12 credits</strong></td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-when">
+      <h4>When to use this</h4>
+      <ul>
+        <li>Parsing emailed invoices, receipts, or purchase orders into your accounting system</li>
+        <li>Any workflow where structured data arrives as unstructured text (contracts, forms, tickets)</li>
+        <li>Building a queue processor that needs to validate before writing to a database</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-pitfall">
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li><strong>Don't skip validation.</strong> LLMs occasionally hallucinate field names or return strings where you expect numbers. The validate step catches this before it hits your DB.</li>
+        <li><strong>Watch currency symbols.</strong> The extractor strips "$" by default. If your schema expects a string like "$2,400" rather than a number, specify the type explicitly.</li>
+        <li><strong>TTL defaults to forever.</strong> Pass <code style="font-family:var(--mono);color:var(--r2)">ttl</code> in seconds if you want automatic expiry. 2592000 = 30 days.</li>
+        <li><strong>Duplicate keys overwrite.</strong> Use a unique key like <code style="font-family:var(--mono);color:var(--r2)">invoice:&lt;id&gt;</code> rather than a generic <code style="font-family:var(--mono);color:var(--r2)">latest_invoice</code>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="pb-sep">
+
+  <!-- ============================
+       PLAYBOOK 2: SECURITY AUDIT
+       ============================ -->
+  <div class="pb" id="pb2">
+    <div class="pb-header">
+      <span class="pb-num">PLAYBOOK 02</span>
+      <div class="pb-title-wrap">
+        <h2>Security Audit Any Website</h2>
+        <p>Get a full security picture in under a minute — tech stack fingerprint, SSL certificate health, HTTP security headers, and response time baseline.</p>
+      </div>
+    </div>
+
+    <div class="pb-meta">
+      <span class="pill pill-cost">~23 credits total</span>
+      <span class="pill pill-tools">4 API calls</span>
+      <span class="pill pill-shortcut">or 1 template call</span>
+    </div>
+
+    <div class="shortcut-box">
+      <span class="shortcut-icon">&#9889;</span>
+      <div>
+        <strong>One-shot: POST /v1/agent/template/security-audit</strong>
+        <p>Skip the manual steps entirely. Pass a URL and the agent runs all four checks, aggregates findings, and returns a single structured report with risk ratings. Same ~23 credits. <a href="/templates#security-audit">View template docs &rarr;</a></p>
+      </div>
+    </div>
+
+    <div class="steps">
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 1</div>
+        <h3>Fingerprint the tech stack <span class="tool-badge">sense-url-tech-stack</span></h3>
+        <p>Detect frameworks, CDNs, analytics, CMS, and server software. Exposed tech is a primary attack vector — know it before attackers do.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">5 credits</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/sense-url-tech-stack \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{ "url": "https://target.example.com" }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"result"</span>: {
+    <span class="ky">"technologies"</span>: [
+      { <span class="ky">"name"</span>: <span class="st">"WordPress"</span>, <span class="ky">"version"</span>: <span class="st">"6.4.2"</span>, <span class="ky">"confidence"</span>: <span class="vl">98</span> },
+      { <span class="ky">"name"</span>: <span class="st">"PHP"</span>,       <span class="ky">"version"</span>: <span class="st">"8.1"</span>,   <span class="ky">"confidence"</span>: <span class="vl">85</span> },
+      { <span class="ky">"name"</span>: <span class="st">"Cloudflare"</span>, <span class="ky">"version"</span>: <span class="st">null</span>,   <span class="ky">"confidence"</span>: <span class="vl">100</span> }
+    ]
+  }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 2</div>
+        <h3>Check SSL certificate <span class="tool-badge">sense-ssl-check</span></h3>
+        <p>Validate the certificate chain, check expiry, detect weak cipher suites, and flag common misconfigurations like self-signed certs or expired intermediates.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">6 credits</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/sense-ssl-check \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{ "hostname": "target.example.com" }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"result"</span>: {
+    <span class="ky">"valid"</span>:          <span class="vl">true</span>,
+    <span class="ky">"expires_in_days"</span>: <span class="vl">47</span>,
+    <span class="ky">"issuer"</span>:         <span class="st">"Let's Encrypt"</span>,
+    <span class="ky">"grade"</span>:          <span class="st">"A"</span>,
+    <span class="ky">"warnings"</span>:       [<span class="st">"Certificate expires in less than 60 days"</span>]
+  }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 3</div>
+        <h3>Audit HTTP security headers <span class="tool-badge">sense-url-headers</span></h3>
+        <p>Check for <code style="font-family:var(--mono);color:var(--r2);font-size:0.78rem">Content-Security-Policy</code>, <code style="font-family:var(--mono);color:var(--r2);font-size:0.78rem">X-Frame-Options</code>, <code style="font-family:var(--mono);color:var(--r2);font-size:0.78rem">HSTS</code>, and other headers that prevent common web attacks.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">6 credits</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/sense-url-headers \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{ "url": "https://target.example.com", "security_check": true }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"result"</span>: {
+    <span class="ky">"headers"</span>: { <span class="cm">/* all response headers */</span> },
+    <span class="ky">"security"</span>: {
+      <span class="ky">"score"</span>:   <span class="vl">62</span>,
+      <span class="ky">"missing"</span>: [<span class="st">"Content-Security-Policy"</span>, <span class="st">"Permissions-Policy"</span>],
+      <span class="ky">"present"</span>: [<span class="st">"Strict-Transport-Security"</span>, <span class="st">"X-Frame-Options"</span>]
+    }
+  }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-num">Step 4</div>
+        <h3>Measure response time <span class="tool-badge">sense-url-response-time</span></h3>
+        <p>Establish a baseline. Slow pages often indicate server-side bloat, unindexed DB queries, or upstream DDoS protection kicking in. Useful for diff-ing before/after deploys.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">6 credits</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/sense-url-response-time \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{ "url": "https://target.example.com", "samples": 3 }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"result"</span>: {
+    <span class="ky">"avg_ms"</span>:  <span class="vl">312</span>,
+    <span class="ky">"min_ms"</span>:  <span class="vl">287</span>,
+    <span class="ky">"max_ms"</span>:  <span class="vl">341</span>,
+    <span class="ky">"status"</span>:  <span class="vl">200</span>,
+    <span class="ky">"ttfb_ms"</span>: <span class="vl">134</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="or-divider">or: one-shot template</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">bash</span>
+        <span class="code-label">~23 credits — all 4 checks in one call</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><span class="cm"># One-shot: agent runs all checks, returns a ranked report</span>
+curl -X POST https://slopshop.gg/v1/agent/template/security-audit \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{ "url": "https://target.example.com" }'</span></pre>
+    </div>
+    <p class="pipe-note">The template returns a single <code>report</code> object with <code>risk_level</code>, <code>findings[]</code>, and <code>recommendations[]</code> — pre-ranked by severity. Useful when you don't want to aggregate manually.</p>
+
+    <div class="or-divider">cost breakdown</div>
+    <table class="cost-table">
+      <thead><tr><th>Tool</th><th>Credits</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>sense-url-tech-stack</td><td>5</td><td>External HTTP probe</td></tr>
+        <tr><td>sense-ssl-check</td><td>6</td><td>TLS handshake + chain validation</td></tr>
+        <tr><td>sense-url-headers</td><td>6</td><td>Headers + security scoring</td></tr>
+        <tr><td>sense-url-response-time</td><td>6</td><td>3 samples default</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>~23 credits</strong></td><td>&mdash;</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-when">
+      <h4>When to use this</h4>
+      <ul>
+        <li>Auditing a vendor or third-party site before onboarding them</li>
+        <li>Pre-launch security checklist for your own sites</li>
+        <li>Scheduled weekly job to catch certificate expiry before it pages you at 3am</li>
+        <li>Building a security dashboard across a fleet of customer-facing URLs</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-pitfall">
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li><strong>HTTP vs HTTPS.</strong> Pass the full URL with scheme. For SSL checks use the bare hostname without protocol.</li>
+        <li><strong>Cloudflare can obscure the real stack.</strong> If you see only Cloudflare in the tech stack, the origin server is behind a proxy. The report notes this.</li>
+        <li><strong>CSP absence is not critical on every site.</strong> A static marketing page without user data doesn't need the same CSP rigor as a banking app. Context matters.</li>
+        <li><strong>Response time varies by geography.</strong> Slopshop probes from its hosted region. If your users are in a different region, use the template's <code style="font-family:var(--mono);color:var(--r2)">region</code> parameter when available.</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="pb-sep">
+
+  <!-- ============================
+       PLAYBOOK 3: RESEARCH AGENT
+       ============================ -->
+  <div class="pb" id="pb3">
+    <div class="pb-header">
+      <span class="pb-num">PLAYBOOK 03</span>
+      <div class="pb-title-wrap">
+        <h2>Build a Research Agent with Memory</h2>
+        <p>Fetch a URL, analyze the content, store the findings in persistent memory, then search and recall them later — across sessions, across runs.</p>
+      </div>
+    </div>
+
+    <div class="pb-meta">
+      <span class="pill pill-cost">~4 credits total</span>
+      <span class="pill pill-tools">4 API calls</span>
+      <span class="pill pill-free">memory is always free</span>
+    </div>
+
+    <div class="steps">
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 1</div>
+        <h3>Fetch the content <span class="tool-badge">sense-url-content</span></h3>
+        <p>Retrieve the cleaned text content from any URL — no HTML noise, just the readable article or page body, ready for analysis.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">3 credits</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/sense-url-content \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "url":        "https://example.com/research-paper",
+    "clean_html": true,
+    "max_chars":  8000
+  }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"result"</span>: {
+    <span class="ky">"title"</span>:      <span class="st">"Advances in Transformer Architectures"</span>,
+    <span class="ky">"content"</span>:    <span class="st">"The paper introduces..."</span>,
+    <span class="ky">"word_count"</span>: <span class="vl">3847</span>,
+    <span class="ky">"url"</span>:        <span class="st">"https://example.com/research-paper"</span>
+  }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 2</div>
+        <h3>Analyze word count and density <span class="tool-badge">text-word-count</span></h3>
+        <p>Get word count, unique words, top terms, and reading time — useful for tagging and indexing research material so memory-search returns relevant results.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">1 credit</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/text-word-count \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "text":     "The paper introduces...",
+    "top_n":    10,
+    "stopwords": true
+  }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"result"</span>: {
+    <span class="ky">"word_count"</span>:    <span class="vl">3847</span>,
+    <span class="ky">"unique_words"</span>:  <span class="vl">1204</span>,
+    <span class="ky">"reading_time_min"</span>: <span class="vl">15</span>,
+    <span class="ky">"top_terms"</span>: [
+      { <span class="ky">"term"</span>: <span class="st">"transformer"</span>, <span class="ky">"count"</span>: <span class="vl">48</span> },
+      { <span class="ky">"term"</span>: <span class="st">"attention"</span>,   <span class="ky">"count"</span>: <span class="vl">31</span> }
+    ]
+  }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-dot free"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 3</div>
+        <h3>Store in persistent memory <span class="tool-badge free">memory-set — FREE</span></h3>
+        <p>Save the content, metadata, and top terms together. Tag the entry with searchable keywords so you can surface it later from a natural language query.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">FREE</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/memory-set \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "key": "research:transformer-architectures-2025",
+    "value": {
+      "title":    "Advances in Transformer Architectures",
+      "url":      "https://example.com/research-paper",
+      "summary":  "The paper introduces...",
+      "tags":     ["transformer", "attention", "architecture", "ml"],
+      "saved_at": "2025-03-26T10:00:00Z"
+    }
+  }'</span></pre>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step">
+        <div class="step-dot free"></div>
+        <div class="step-num">Step 4</div>
+        <h3>Search and recall later <span class="tool-badge free">memory-search — FREE</span></h3>
+        <p>Retrieve stored research entries by semantic query. Works across all memory you have stored — search by topic, tag, or phrase.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">FREE — days/weeks/sessions later</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre><span class="cm"># Later — find everything you stored about transformers</span>
+curl -X POST https://slopshop.gg/v1/tools/memory-search \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "query":  "transformer architecture papers",
+    "top_k":  5,
+    "prefix": "research:"
+  }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"result"</span>: {
+    <span class="ky">"matches"</span>: [
+      {
+        <span class="ky">"key"</span>:   <span class="st">"research:transformer-architectures-2025"</span>,
+        <span class="ky">"score"</span>: <span class="vl">0.94</span>,
+        <span class="ky">"value"</span>: { <span class="cm">/* the stored object */</span> }
+      }
+    ]
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="or-divider">cost breakdown</div>
+    <table class="cost-table">
+      <thead><tr><th>Tool</th><th>Credits</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>sense-url-content</td><td>3</td><td>External fetch + parsing</td></tr>
+        <tr><td>text-word-count</td><td>1</td><td>Local compute</td></tr>
+        <tr class="free-row"><td>memory-set</td><td>0</td><td>Free</td></tr>
+        <tr class="free-row"><td>memory-search</td><td>0</td><td>Free — unlimited recall queries</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>~4 credits</strong></td><td>Per URL fetched</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-tip">
+      <h4>Pro tip — build a corpus</h4>
+      <ul>
+        <li>Loop this playbook over a list of URLs at ~4 credits each to build a searchable knowledge base.</li>
+        <li>100 articles = ~400 credits. Memory storage and all future searches remain free.</li>
+        <li>Use a consistent key prefix like <code style="font-family:var(--mono);color:var(--g)">research:</code> so you can scope searches to just your research corpus.</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-when">
+      <h4>When to use this</h4>
+      <ul>
+        <li>Giving an AI agent persistent memory that survives across sessions</li>
+        <li>Building a research assistant that accumulates knowledge over time</li>
+        <li>Competitive intelligence — fetch competitor pages, store findings, query later</li>
+        <li>Summarizing and indexing documentation for internal search</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-pitfall">
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li><strong>Memory is per API key.</strong> All agents sharing a key share a memory namespace. Use a key prefix like <code style="font-family:var(--mono);color:var(--r2)">agent-a:research:</code> to namespace per agent.</li>
+        <li><strong>Max value size is 512KB.</strong> For large documents, store a summary + the URL, not the full content.</li>
+        <li><strong>memory-search is semantic but not perfect.</strong> For exact-match retrieval use <code style="font-family:var(--mono);color:var(--r2)">memory-get</code> with a known key.</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="pb-sep">
+
+  <!-- ============================
+       PLAYBOOK 4: DATA PIPELINE
+       ============================ -->
+  <div class="pb" id="pb4">
+    <div class="pb-header">
+      <span class="pb-num">PLAYBOOK 04</span>
+      <div class="pb-title-wrap">
+        <h2>Clean and Transform Data Pipeline</h2>
+        <p>Turn messy CSV into clean, filtered, sorted, statistically annotated JSON — without spinning up a data warehouse.</p>
+      </div>
+    </div>
+
+    <div class="pb-meta">
+      <span class="pill pill-cost">~5 credits total</span>
+      <span class="pill pill-tools">4 API calls</span>
+      <span class="pill pill-shortcut">or 1 pipe call</span>
+    </div>
+
+    <div class="shortcut-box">
+      <span class="shortcut-icon">&#9889;</span>
+      <div>
+        <strong>One-shot: POST /v1/pipes/data-clean</strong>
+        <p>Pass your CSV and cleaning rules, get back clean JSON with stats attached. All four steps run server-side in a single round-trip. <a href="/docs#pipes">View pipe docs &rarr;</a></p>
+      </div>
+    </div>
+
+    <div class="io-row">
+      <div class="io-box">
+        <div class="io-label in">Raw CSV in</div>
+        <div class="io-body">name,age,revenue&#10;Alice,29,14200&#10;Bob,,8100&#10;,31,&#10;Carol,27,19500</div>
+      </div>
+      <div class="io-box">
+        <div class="io-label out">Clean JSON out</div>
+        <div class="io-body">[&#10;  {"name":"Alice","age":29,"revenue":14200},&#10;  {"name":"Carol","age":27,"revenue":19500}&#10;]</div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 1</div>
+        <h3>Parse CSV to JSON <span class="tool-badge">text-csv-to-json</span></h3>
+        <p>Convert the raw CSV string into a typed JSON array. Headers become object keys; types are inferred automatically.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">1 credit</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/text-csv-to-json \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "csv":        "name,age,revenue\nAlice,29,14200\nBob,,8100\n,31,\nCarol,27,19500",
+    "infer_types": true,
+    "trim":       true
+  }'</span></pre>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 2</div>
+        <h3>Filter out incomplete rows <span class="tool-badge">exec-filter-json</span></h3>
+        <p>Remove rows with null or empty required fields. Pass a filter expression — here we keep only rows where both <code style="font-family:var(--mono);color:var(--r2);font-size:0.78rem">name</code> and <code style="font-family:var(--mono);color:var(--r2);font-size:0.78rem">revenue</code> are present.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">1 credit</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/exec-filter-json \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "data":   [ <span class="cm">/* array from step 1 */</span> ],
+    "filter": "item.name != null && item.revenue != null && item.age != null"
+  }'</span></pre>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 3</div>
+        <h3>Sort by revenue descending <span class="tool-badge">exec-sort-json</span></h3>
+        <p>Sort the filtered rows so the highest-revenue records come first. Stable sort preserves original order for ties.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">1 credit</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/exec-sort-json \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "data":      [ <span class="cm">/* filtered array from step 2 */</span> ],
+    "sort_by":   "revenue",
+    "direction": "desc"
+  }'</span></pre>
+        </div>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-num">Step 4</div>
+        <h3>Generate summary statistics <span class="tool-badge">analyze-json-stats</span></h3>
+        <p>Get min, max, mean, median, and standard deviation for all numeric fields. Useful for validation and dashboards.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">2 credits</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/analyze-json-stats \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "data":   [ <span class="cm">/* sorted array from step 3 */</span> ],
+    "fields": ["age", "revenue"]
+  }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"result"</span>: {
+    <span class="ky">"stats"</span>: {
+      <span class="ky">"revenue"</span>: {
+        <span class="ky">"min"</span>: <span class="vl">14200</span>, <span class="ky">"max"</span>: <span class="vl">19500</span>,
+        <span class="ky">"mean"</span>: <span class="vl">16850</span>, <span class="ky">"median"</span>: <span class="vl">16850</span>, <span class="ky">"stddev"</span>: <span class="vl">2650</span>
+      },
+      <span class="ky">"age"</span>: {
+        <span class="ky">"min"</span>: <span class="vl">27</span>, <span class="ky">"max"</span>: <span class="vl">29</span>, <span class="ky">"mean"</span>: <span class="vl">28</span>
+      }
+    },
+    <span class="ky">"row_count"</span>: <span class="vl">2</span>,
+    <span class="ky">"dropped_rows"</span>: <span class="vl">2</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="or-divider">or: one-shot pipe</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">bash</span>
+        <span class="code-label">~5 credits — all steps in one call</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><span class="cm"># Pre-built pipe: CSV in, clean+sorted+stats JSON out</span>
+curl -X POST https://slopshop.gg/v1/pipes/data-clean \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{
+    "csv":            "name,age,revenue\nAlice,29,14200\nBob,,8100\n,31,\nCarol,27,19500",
+    "required_fields": ["name", "revenue", "age"],
+    "sort_by":        "revenue",
+    "direction":      "desc",
+    "stats":          true
+  }'</span></pre>
+    </div>
+
+    <div class="or-divider">cost breakdown</div>
+    <table class="cost-table">
+      <thead><tr><th>Tool</th><th>Credits</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>text-csv-to-json</td><td>1</td><td>Local compute</td></tr>
+        <tr><td>exec-filter-json</td><td>1</td><td>Expression eval, sandboxed</td></tr>
+        <tr><td>exec-sort-json</td><td>1</td><td>Stable sort</td></tr>
+        <tr><td>analyze-json-stats</td><td>2</td><td>Statistical analysis</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>~5 credits</strong></td><td>Per pipeline run</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-when">
+      <h4>When to use this</h4>
+      <ul>
+        <li>Pre-processing data exports before loading into a database or BI tool</li>
+        <li>Cleaning form submissions or survey responses before analysis</li>
+        <li>Any agent that ingests CSV uploads and needs to work with structured data</li>
+        <li>Validating data quality on ingestion (dropped_rows tells you the loss rate)</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-pitfall">
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li><strong>Character encoding issues.</strong> Ensure your CSV is UTF-8 before sending. Latin-1 encoded files with smart quotes will cause parse errors.</li>
+        <li><strong>Filter expressions are sandboxed JS.</strong> Use <code style="font-family:var(--mono);color:var(--r2)">item.field</code> syntax. Avoid <code style="font-family:var(--mono);color:var(--r2)">this</code>, <code style="font-family:var(--mono);color:var(--r2)">eval</code>, or DOM references — they are blocked.</li>
+        <li><strong>Very large datasets.</strong> The API accepts up to 5MB per request. For larger files, chunk the CSV by rows and run the pipeline in batches.</li>
+        <li><strong>Type inference for dates.</strong> Date strings like "2025-03-01" come back as strings, not Date objects. Parse them downstream if you need date arithmetic.</li>
+      </ul>
+    </div>
+  </div>
+
+  <hr class="pb-sep">
+
+  <!-- ============================
+       PLAYBOOK 5: HASH INTEGRITY
+       ============================ -->
+  <div class="pb" id="pb5">
+    <div class="pb-header">
+      <span class="pb-num">PLAYBOOK 05</span>
+      <div class="pb-title-wrap">
+        <h2>Hash and Verify File Integrity</h2>
+        <p>Generate SHA-256, SHA-512, and MD5 hashes for any input in a single chained flow. Use for checksums, deduplication, and tamper detection.</p>
+      </div>
+    </div>
+
+    <div class="pb-meta">
+      <span class="pill pill-cost">~4 credits total</span>
+      <span class="pill pill-tools">3 API calls</span>
+      <span class="pill pill-shortcut">or 1 pipe call</span>
+    </div>
+
+    <div class="shortcut-box">
+      <span class="shortcut-icon">&#9889;</span>
+      <div>
+        <strong>One-shot: POST /v1/pipes/hash-everything</strong>
+        <p>Send any text or base64-encoded binary, get back all three hashes at once. Fastest path when you just need the checksums. <a href="/docs#pipes">View pipe docs &rarr;</a></p>
+      </div>
+    </div>
+
+    <div class="io-row">
+      <div class="io-box">
+        <div class="io-label in">Input</div>
+        <div class="io-body">Hello, Slopshop!</div>
+      </div>
+      <div class="io-box">
+        <div class="io-label out">All three hashes</div>
+        <div class="io-body">sha256: a3f4b2...&#10;sha512: 9c1e87...&#10;md5:    d41d8c...</div>
+      </div>
+    </div>
+
+    <div class="steps">
+      <!-- Step 1 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 1</div>
+        <h3>SHA-256 hash <span class="tool-badge">crypto-hash-sha256</span></h3>
+        <p>The industry-standard hash for file integrity and digital signatures. Use this as your primary checksum.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">1 credit</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/crypto-hash-sha256 \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{ "input": "Hello, Slopshop!" }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"ok"</span>: <span class="vl">true</span>,
+  <span class="ky">"result"</span>: {
+    <span class="ky">"hash"</span>:      <span class="st">"a3f4b2c1d8e5f7a9..."</span>,
+    <span class="ky">"algorithm"</span>: <span class="st">"SHA-256"</span>,
+    <span class="ky">"input_len"</span>: <span class="vl">16</span>
+  },
+  <span class="ky">"_engine"</span>: <span class="st">"real"</span>
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-line"></div>
+        <div class="step-num">Step 2</div>
+        <h3>SHA-512 hash <span class="tool-badge">crypto-hash-sha512</span></h3>
+        <p>Higher security margin for long-term archival or when your threat model requires 512-bit output. Useful for cryptographic key derivation chains.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">1 credit</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/crypto-hash-sha512 \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{ "input": "Hello, Slopshop!" }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"result"</span>: {
+    <span class="ky">"hash"</span>:      <span class="st">"9c1e87f3a2b4d6e8..."</span>,
+    <span class="ky">"algorithm"</span>: <span class="st">"SHA-512"</span>,
+    <span class="ky">"input_len"</span>: <span class="vl">16</span>
+  }
+}</pre>
+        </div>
+      </div>
+
+      <!-- Step 3 -->
+      <div class="step">
+        <div class="step-dot"></div>
+        <div class="step-num">Step 3</div>
+        <h3>MD5 hash <span class="tool-badge">crypto-hash-md5</span></h3>
+        <p>Fast, widely supported, and sufficient for deduplication and non-security checksums. <strong style="color:var(--r2)">Do not use MD5 for passwords or security-critical integrity checks</strong> — it is cryptographically broken for those use cases.</p>
+        <div class="code-block">
+          <div class="code-header">
+            <span class="code-lang">bash</span>
+            <span class="code-label">1 credit</span>
+            <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+          </div>
+          <pre>curl -X POST https://slopshop.gg/v1/tools/crypto-hash-md5 \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{ "input": "Hello, Slopshop!" }'</span></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="code-lang">response</span></div>
+          <pre>{
+  <span class="ky">"result"</span>: {
+    <span class="ky">"hash"</span>:      <span class="st">"d41d8cd98f00b204..."</span>,
+    <span class="ky">"algorithm"</span>: <span class="st">"MD5"</span>
+  }
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="or-divider">or: hash-everything pipe</div>
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">bash</span>
+        <span class="code-label">~3 credits — all three hashes at once</span>
+        <button class="copy-btn" onclick="copyCode(this)">Copy</button>
+      </div>
+      <pre><span class="cm"># Get all three hashes in a single request</span>
+curl -X POST https://slopshop.gg/v1/pipes/hash-everything \
+  -H <span class="st">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="st">"Content-Type: application/json"</span> \
+  -d <span class="st">'{ "input": "Hello, Slopshop!" }'</span></pre>
+    </div>
+    <div class="code-block">
+      <div class="code-header"><span class="code-lang">response</span></div>
+      <pre>{
+  <span class="ky">"ok"</span>: <span class="vl">true</span>,
+  <span class="ky">"result"</span>: {
+    <span class="ky">"sha256"</span>: <span class="st">"a3f4b2c1d8e5f7a9..."</span>,
+    <span class="ky">"sha512"</span>: <span class="st">"9c1e87f3a2b4d6e8..."</span>,
+    <span class="ky">"md5"</span>:    <span class="st">"d41d8cd98f00b204..."</span>,
+    <span class="ky">"input_len"</span>: <span class="vl">16</span>
+  },
+  <span class="ky">"_engine"</span>: <span class="st">"real"</span>
+}</pre>
+    </div>
+
+    <div class="or-divider">cost breakdown</div>
+    <table class="cost-table">
+      <thead><tr><th>Tool</th><th>Credits</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>crypto-hash-sha256</td><td>1</td><td>Local compute, deterministic</td></tr>
+        <tr><td>crypto-hash-sha512</td><td>1</td><td>Local compute</td></tr>
+        <tr><td>crypto-hash-md5</td><td>1</td><td>Local compute</td></tr>
+        <tr><td><strong>Total</strong></td><td><strong>~3 credits</strong></td><td>hash-everything pipe</td></tr>
+      </tbody>
+    </table>
+
+    <div class="callout callout-when">
+      <h4>When to use this</h4>
+      <ul>
+        <li>Generating checksums for file upload verification (user uploads a file + expected SHA-256)</li>
+        <li>Deduplicating content in a pipeline — hash the content, check if the MD5 already exists in memory</li>
+        <li>Publishing software release checksums (SHA-256 or SHA-512 recommended)</li>
+        <li>Building a tamper-detection log — hash each record and store the hash in a separate immutable store</li>
+      </ul>
+    </div>
+
+    <div class="callout callout-pitfall">
+      <h4>Common pitfalls</h4>
+      <ul>
+        <li><strong>Encoding matters.</strong> "Hello" and "Hello\n" produce entirely different hashes. Trim trailing whitespace or newlines before hashing if you want consistent results across systems.</li>
+        <li><strong>Binary files.</strong> Send binary content as base64-encoded string and set <code style="font-family:var(--mono);color:var(--r2)">"encoding": "base64"</code> in the request body.</li>
+        <li><strong>MD5 collision attacks are real.</strong> Never use MD5 to verify that a security-sensitive file hasn't been tampered with by an adversary. Use SHA-256 or SHA-512 instead.</li>
+        <li><strong>Hash comparison must be constant-time.</strong> If you're building a verification flow, use the <code style="font-family:var(--mono);color:var(--r2)">crypto-hmac-verify</code> tool instead of comparing hash strings yourself — naive string comparison is vulnerable to timing attacks.</li>
+      </ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- RELATED PAGES -->
+<div style="max-width:1200px;margin:0 auto;padding:48px 32px 0;border-top:1px solid rgba(255,255,255,0.04)">
+  <div style="font-family:var(--mono);font-size:0.62rem;font-weight:700;letter-spacing:0.18em;text-transform:uppercase;color:var(--t4);margin-bottom:20px">Go deeper</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <a href="/hive" style="display:inline-flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:10px 18px;font-family:var(--mono);font-size:0.78rem;color:var(--c);text-decoration:none;transition:0.15s" onmouseover="this.style.borderColor='var(--b2)';this.style.opacity='1'" onmouseout="this.style.borderColor='var(--b)';this.style.opacity='1'">
+      <span style="font-size:0.65rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em">System</span>
+      <span>Hive — always-on agent workspace &rarr;</span>
+    </a>
+    <a href="/army" style="display:inline-flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:10px 18px;font-family:var(--mono);font-size:0.78rem;color:var(--v);text-decoration:none;transition:0.15s" onmouseover="this.style.borderColor='var(--b2)';this.style.opacity='1'" onmouseout="this.style.borderColor='var(--b)';this.style.opacity='1'">
+      <span style="font-size:0.65rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em">System</span>
+      <span>Army — 10K parallel agents in one call &rarr;</span>
+    </a>
+    <a href="/templates" style="display:inline-flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:10px 18px;font-family:var(--mono);font-size:0.78rem;color:var(--o);text-decoration:none;transition:0.15s">
+      <span style="font-size:0.65rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em">Templates</span>
+      <span>Pre-built agent workflows &rarr;</span>
+    </a>
+    <a href="/tools" style="display:inline-flex;align-items:center;gap:8px;background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:10px 18px;font-family:var(--mono);font-size:0.78rem;color:var(--t2);text-decoration:none;transition:0.15s">
+      <span style="font-size:0.65rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em">Catalog</span>
+      <span>All 1,049 tools &rarr;</span>
+    </a>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-bottom">
+      <div class="footer-brand">
+        <svg width="20" height="20" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#ff3333"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+        SLOPSHOP<span class="gg">.GG</span>
+      </div>
+      <div class="footer-links">
+        <a href="/tools">Tools</a>
+        <a href="/templates">Templates</a>
+        <a href="/docs">Docs</a>
+        <a href="/playbooks">Playbooks</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/about">About</a>
+        <a href="https://x.com/slopshopgg">@slopshopgg</a>
+      </div>
+    </div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,049 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
+  </div>
+</footer>
+
+<script>
+// Mobile menu toggle
+function toggleMenu(){
+  const m = document.getElementById('mobileMenu');
+  m.classList.toggle('open');
+}
+// Close menu on outside click
+document.addEventListener('click', function(e){
+  const menu = document.getElementById('mobileMenu');
+  const btn = document.querySelector('.hamburger');
+  if(menu.classList.contains('open') && !menu.contains(e.target) && !btn.contains(e.target)){
+    menu.classList.remove('open');
+  }
+});
+
+// Copy button
+function copyCode(btn){
+  const pre = btn.closest('.code-block').querySelector('pre');
+  const text = pre.innerText || pre.textContent;
+  navigator.clipboard.writeText(text).then(function(){
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(function(){ btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  }).catch(function(){
+    btn.textContent = 'Error';
+    setTimeout(function(){ btn.textContent = 'Copy'; }, 2000);
+  });
+}
+
+// Smooth scroll for TOC links
+document.querySelectorAll('a[href^="#pb"]').forEach(function(a){
+  a.addEventListener('click', function(e){
+    const target = document.querySelector(this.getAttribute('href'));
+    if(target){
+      e.preventDefault();
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  });
+});
+</script>
+</body>
+</html>

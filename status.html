@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>System Status — SLOPSHOP.GG</title>
+<meta name="description" content="Real-time system status and uptime for Slopshop.gg API services.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='8' fill='%23ff3333'/><path d='M14 10c-3 0-4 2-4 4v4c0 2-1 3-3 3 2 0 3 1 3 3v4c0 2 1 4 4 4' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/><path d='M26 10c3 0 4 2 4 4v4c0 2 1 3 3 3-2 0-3 1-3 3v4c0 2-1 4-4 4' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/><circle cx='20' cy='21' r='2.5' fill='white'/></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;min-height:100vh}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
+  linear-gradient(rgba(255,51,51,0.015) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,51,51,0.015) 1px,transparent 1px);
+  background-size:64px 64px;pointer-events:none;z-index:-1}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none}
+a:hover{opacity:0.8}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px;color:var(--t)}
+.logo .mark{color:var(--r)}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:2px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s;font-family:var(--sans)}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--t);background:var(--s2)}
+
+/* PULSE ANIMATIONS */
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.85)}}
+@keyframes pulseRed{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(255,51,51,0.4)}70%{opacity:0.8;box-shadow:0 0 0 6px rgba(255,51,51,0)}}
+@keyframes pulseGreen{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(0,204,102,0.4)}70%{opacity:0.8;box-shadow:0 0 0 6px rgba(0,204,102,0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes heroGlow{0%{opacity:0.6;transform:translateX(-50%) scale(1)}100%{opacity:1;transform:translateX(-50%) scale(1.05)}}
+@keyframes gradientSlide{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shimmer{0%{background-position:-200% 0}100%{background-position:200% 0}}
+
+/* HERO */
+.hero{padding:120px 32px 56px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:1200px;height:800px;background:radial-gradient(ellipse at center,rgba(0,204,102,0.06) 0%,rgba(0,204,102,0.02) 30%,transparent 60%);pointer-events:none;animation:heroGlow 8s ease-in-out infinite alternate}
+.hero::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:1px;height:80px;background:linear-gradient(to bottom,transparent,var(--g),transparent);opacity:0.25}
+.hero.degraded::before{background:radial-gradient(ellipse at center,rgba(255,51,51,0.06) 0%,rgba(255,51,51,0.02) 30%,transparent 60%)}
+.hero.degraded::after{background:linear-gradient(to bottom,transparent,var(--r),transparent)}
+
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);color:var(--t2);padding:6px 16px;border-radius:99px;font-size:0.72rem;font-weight:500;font-family:var(--mono);margin-bottom:28px;backdrop-filter:blur(8px)}
+
+.big-status{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px}
+.big-dot{width:18px;height:18px;border-radius:50%;flex-shrink:0;transition:background 0.4s}
+.big-dot.green{background:var(--g);animation:pulseGreen 2s infinite}
+.big-dot.red{background:var(--r);animation:pulseRed 2s infinite}
+.big-dot.loading{background:var(--t4);animation:pulse 1.2s infinite}
+
+.hero h1{font-family:var(--mono);font-size:clamp(2rem,5vw,3.2rem);font-weight:900;letter-spacing:-0.02em;line-height:1.1;color:var(--t)}
+.status-label{font-family:var(--mono);font-size:clamp(1.1rem,3vw,1.8rem);font-weight:700;transition:color 0.4s}
+.status-label.green{color:var(--g)}
+.status-label.red{color:var(--r)}
+.status-label.loading{color:var(--t4)}
+
+.last-checked{color:var(--t3);font-size:0.75rem;font-family:var(--mono);margin-top:12px}
+.last-checked span{color:var(--t2)}
+
+/* GRADIENT LINE */
+.gradient-line{height:1px;background:linear-gradient(90deg,transparent,var(--g),var(--c),var(--g),transparent);background-size:200% 100%;animation:gradientSlide 6s ease infinite;margin:0 auto;max-width:400px;opacity:0.35}
+.gradient-line.degraded{background:linear-gradient(90deg,transparent,var(--r),var(--o),var(--r),transparent);background-size:200% 100%;animation:gradientSlide 6s ease infinite}
+
+/* CONTROLS */
+.controls{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:24px;flex-wrap:wrap}
+.refresh-btn{background:var(--r);color:#fff;border:none;padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:700;cursor:pointer;transition:0.2s;letter-spacing:0.04em;display:flex;align-items:center;gap:8px}
+.refresh-btn:hover{background:#e62e2e;box-shadow:0 0 20px rgba(255,51,51,0.25)}
+.refresh-btn:disabled{background:var(--s3);color:var(--t4);cursor:not-allowed;box-shadow:none}
+.refresh-btn svg{transition:transform 0.6s}
+.refresh-btn.spinning svg{animation:spin 0.6s linear infinite}
+.countdown{font-family:var(--mono);font-size:0.72rem;color:var(--t3);display:flex;align-items:center;gap:6px}
+.countdown-num{color:var(--t2);font-weight:600;min-width:2ch;text-align:right}
+
+/* SERVICES SECTION */
+.sec{max-width:900px;margin:0 auto;padding:48px 24px 0}
+.sec-title{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.16em;margin-bottom:16px}
+
+/* SERVICE CARDS */
+.services-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:48px}
+
+.svc-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:20px 24px;transition:border-color 0.3s,box-shadow 0.3s;animation:fadeIn 0.4s ease both;position:relative;overflow:hidden}
+.svc-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px;transition:background 0.4s}
+.svc-card.up::before{background:var(--g)}
+.svc-card.down::before{background:var(--r)}
+.svc-card.unchecked::before{background:var(--t4)}
+.svc-card.loading::before{background:var(--t4)}
+.svc-card.up{border-color:rgba(0,204,102,0.12)}
+.svc-card.down{border-color:rgba(255,51,51,0.15)}
+
+.svc-main{display:flex;align-items:center;gap:16px}
+.svc-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;transition:background 0.4s}
+.svc-dot.green{background:var(--g);animation:pulseGreen 2.5s infinite}
+.svc-dot.red{background:var(--r);animation:pulseRed 2.5s infinite}
+.svc-dot.gray{background:var(--t4)}
+.svc-dot.spinning{background:var(--t4);animation:pulse 1s infinite}
+
+.svc-info{flex:1;min-width:0}
+.svc-name{font-family:var(--mono);font-size:0.9rem;font-weight:700;color:var(--t);margin-bottom:3px}
+.svc-desc{font-size:0.72rem;color:var(--t3);font-family:var(--mono)}
+
+.svc-right{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.svc-status-text{font-family:var(--mono);font-size:0.75rem;font-weight:700;padding:3px 10px;border-radius:99px;white-space:nowrap}
+.svc-status-text.up{color:var(--g);background:var(--gg)}
+.svc-status-text.down{color:var(--r);background:var(--rg)}
+.svc-status-text.unchecked{color:var(--t4);background:var(--s2)}
+.svc-status-text.loading{color:var(--t4);background:var(--s2)}
+
+.svc-meta{display:flex;gap:16px;margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.04);flex-wrap:wrap}
+.svc-meta-item{display:flex;flex-direction:column;gap:2px}
+.svc-meta-label{font-family:var(--mono);font-size:0.58rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em;font-weight:600}
+.svc-meta-value{font-family:var(--mono);font-size:0.75rem;color:var(--t2);font-weight:500}
+.svc-meta-value.green{color:var(--g)}
+.svc-meta-value.red{color:var(--r)}
+.svc-meta-value.blue{color:var(--c)}
+
+/* SKELETON SHIMMER */
+.shimmer{background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:4px;display:inline-block}
+
+/* SUMMARY BAR */
+.summary-bar{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:16px 24px;display:flex;align-items:center;gap:24px;margin-bottom:32px;flex-wrap:wrap}
+.summary-stat{display:flex;flex-direction:column;gap:3px}
+.summary-num{font-family:var(--mono);font-size:1.3rem;font-weight:800;letter-spacing:-0.02em}
+.summary-lbl{font-family:var(--mono);font-size:0.58rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.12em;font-weight:600}
+.summary-divider{width:1px;height:36px;background:var(--b2);flex-shrink:0}
+
+/* FOOTER */
+footer{border-top:1px solid rgba(255,255,255,0.04);padding:40px 32px;margin-top:48px}
+.footer-inner{max-width:900px;margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:24px;align-items:start}
+.footer-text{font-size:0.78rem;color:var(--t3);line-height:1.8;max-width:520px}
+.footer-text strong{color:var(--t2);font-weight:600}
+.footer-links{display:flex;flex-direction:column;gap:10px;align-items:flex-end}
+.footer-links a{font-family:var(--mono);font-size:0.72rem;color:var(--t3);display:flex;align-items:center;gap:6px;transition:color 0.2s}
+.footer-links a:hover{color:var(--t);opacity:1}
+.footer-copy{font-family:var(--mono);font-size:0.62rem;color:var(--t4);margin-top:24px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.04)}
+
+/* MOBILE */
+@media(max-width:640px){
+  nav{padding:0 16px}
+  .nav-links a:not(:last-child){display:none}
+  .hero{padding:100px 20px 48px}
+  .sec{padding:32px 16px 0}
+  .svc-card{padding:16px}
+  .svc-main{gap:12px}
+  .summary-bar{gap:16px}
+  .footer-inner{grid-template-columns:1fr;gap:20px}
+  .footer-links{align-items:flex-start}
+  .big-dot{width:14px;height:14px}
+  .controls{gap:12px}
+}
+@media(max-width:400px){
+  .svc-right{display:none}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nv">
+    <a href="https://slopshop.gg" class="logo">
+      <svg width="18" height="18" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+        <rect width="40" height="40" rx="8" fill="#ff3333"/>
+        <path d="M14 10c-3 0-4 2-4 4v4c0 2-1 3-3 3 2 0 3 1 3 3v4c0 2 1 4 4 4" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <path d="M26 10c3 0 4 2 4 4v4c0 2 1 3 3 3-2 0-3 1-3 3v4c0 2-1 4-4 4" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        <circle cx="20" cy="21" r="2.5" fill="white"/>
+      </svg>
+      <span><span class="mark">SLOP</span>SHOP<span class="gg">.GG</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="https://slopshop.gg">Home</a>
+      <a href="https://slopshop.gg/docs">Docs</a>
+      <a href="/status.html" class="active">Status</a>
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero" id="hero">
+  <div class="hero-tag">
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/><path d="M5 3v2.5L6.5 7" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+    Live System Status
+  </div>
+  <h1 class="hero-h1">System Status</h1>
+  <div class="big-status" style="margin-top:20px">
+    <div class="big-dot loading" id="heroDot"></div>
+    <div class="status-label loading" id="heroLabel">Checking systems…</div>
+  </div>
+  <div class="last-checked" id="lastChecked">Last checked: <span>—</span></div>
+  <div class="controls">
+    <button class="refresh-btn spinning" id="refreshBtn" onclick="runAllChecks()" disabled>
+      <svg id="refreshIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="23 4 23 10 17 10"></polyline>
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+      </svg>
+      Refresh Now
+    </button>
+    <div class="countdown" id="countdown">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Next check in <span class="countdown-num" id="countdownNum">60</span>s
+    </div>
+  </div>
+</section>
+
+<div style="padding:0 24px;max-width:900px;margin:0 auto">
+  <div class="gradient-line" id="gradientLine"></div>
+</div>
+
+<!-- MAIN CONTENT -->
+<div class="sec">
+
+  <!-- SUMMARY BAR -->
+  <div class="summary-bar" id="summaryBar">
+    <div class="summary-stat">
+      <div class="summary-num" id="sumUp" style="color:var(--g)">—</div>
+      <div class="summary-lbl">Services Up</div>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat">
+      <div class="summary-num" id="sumDown" style="color:var(--r)">—</div>
+      <div class="summary-lbl">Services Down</div>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat">
+      <div class="summary-num" id="sumChecking" style="color:var(--t4)">5</div>
+      <div class="summary-lbl">Checking…</div>
+    </div>
+    <div class="summary-divider"></div>
+    <div class="summary-stat">
+      <div class="summary-num" id="sumAvgMs" style="color:var(--c)">—</div>
+      <div class="summary-lbl">Avg Response</div>
+    </div>
+  </div>
+
+  <div class="sec-title">Services</div>
+
+  <!-- SERVICES GRID -->
+  <div class="services-grid" id="servicesGrid">
+
+    <!-- API Server -->
+    <div class="svc-card loading" id="card-api" style="animation-delay:0ms">
+      <div class="svc-main">
+        <div class="svc-dot spinning" id="dot-api"></div>
+        <div class="svc-info">
+          <div class="svc-name">API Server</div>
+          <div class="svc-desc" style="font-family:var(--mono)">slopshop.gg/v1/health — Railway Pro backend</div>
+        </div>
+        <div class="svc-right">
+          <div class="svc-status-text loading" id="status-api">Checking</div>
+        </div>
+      </div>
+      <div class="svc-meta" id="meta-api">
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Response Time</div>
+          <div class="svc-meta-value" id="ms-api">—</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Endpoint</div>
+          <div class="svc-meta-value blue">GET /v1/health</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Last Checked</div>
+          <div class="svc-meta-value" id="time-api">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Compute APIs -->
+    <div class="svc-card loading" id="card-compute" style="animation-delay:80ms">
+      <div class="svc-main">
+        <div class="svc-dot spinning" id="dot-compute"></div>
+        <div class="svc-info">
+          <div class="svc-name">Compute APIs</div>
+          <div class="svc-desc">crypto-hash-sha256 — hash, encode, transform, parse</div>
+        </div>
+        <div class="svc-right">
+          <div class="svc-status-text loading" id="status-compute">Checking</div>
+        </div>
+      </div>
+      <div class="svc-meta" id="meta-compute">
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Response Time</div>
+          <div class="svc-meta-value" id="ms-compute">—</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Engine</div>
+          <div class="svc-meta-value green" id="engine-compute">—</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Endpoint</div>
+          <div class="svc-meta-value blue">POST /v1/crypto-hash-sha256</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Last Checked</div>
+          <div class="svc-meta-value" id="time-compute">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Memory APIs -->
+    <div class="svc-card loading" id="card-memory" style="animation-delay:160ms">
+      <div class="svc-main">
+        <div class="svc-dot spinning" id="dot-memory"></div>
+        <div class="svc-info">
+          <div class="svc-name">Memory APIs</div>
+          <div class="svc-desc">memory-stats — persistent KV store, namespaced memory</div>
+        </div>
+        <div class="svc-right">
+          <div class="svc-status-text loading" id="status-memory">Checking</div>
+        </div>
+      </div>
+      <div class="svc-meta" id="meta-memory">
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Response Time</div>
+          <div class="svc-meta-value" id="ms-memory">—</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Endpoint</div>
+          <div class="svc-meta-value blue">POST /v1/memory-stats</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Last Checked</div>
+          <div class="svc-meta-value" id="time-memory">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Agent Engine -->
+    <div class="svc-card loading" id="card-agent" style="animation-delay:240ms">
+      <div class="svc-main">
+        <div class="svc-dot spinning" id="dot-agent"></div>
+        <div class="svc-info">
+          <div class="svc-name">Agent Engine</div>
+          <div class="svc-desc">AI orchestration layer — inferred from health check</div>
+        </div>
+        <div class="svc-right">
+          <div class="svc-status-text loading" id="status-agent">Checking</div>
+        </div>
+      </div>
+      <div class="svc-meta" id="meta-agent">
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Source</div>
+          <div class="svc-meta-value blue">Derived from /v1/health</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Note</div>
+          <div class="svc-meta-value" style="color:var(--t3)">Not polled directly</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Last Checked</div>
+          <div class="svc-meta-value" id="time-agent">—</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Static Site -->
+    <div class="svc-card loading" id="card-static" style="animation-delay:320ms">
+      <div class="svc-main">
+        <div class="svc-dot spinning" id="dot-static"></div>
+        <div class="svc-info">
+          <div class="svc-name">Static Site (Vercel)</div>
+          <div class="svc-desc">slopshop.gg homepage — Vercel edge CDN</div>
+        </div>
+        <div class="svc-right">
+          <div class="svc-status-text loading" id="status-static">Checking</div>
+        </div>
+      </div>
+      <div class="svc-meta" id="meta-static">
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Response Time</div>
+          <div class="svc-meta-value" id="ms-static">—</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Endpoint</div>
+          <div class="svc-meta-value blue">GET https://slopshop.gg</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">CDN</div>
+          <div class="svc-meta-value" style="color:var(--v)">Vercel Edge</div>
+        </div>
+        <div class="svc-meta-item">
+          <div class="svc-meta-label">Last Checked</div>
+          <div class="svc-meta-value" id="time-static">—</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /services-grid -->
+
+</div><!-- /sec -->
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div>
+      <div class="footer-text">
+        <strong>Slopshop runs on Railway Pro</strong> with automatic TLS and
+        <strong>Vercel edge CDN</strong> for static assets. All checks on this page
+        are performed client-side via fetch() — response times reflect your connection
+        to our servers. CORS-restricted endpoints show "Unable to check" rather than
+        a false "Down" status.
+      </div>
+      <div style="margin-top:14px;font-size:0.75rem;color:var(--t3)">
+        Report issues: <a href="mailto:dev@slopshop.gg" style="color:var(--r)">dev@slopshop.gg</a>
+      </div>
+    </div>
+    <div class="footer-links">
+      <a href="https://x.com/slopshopgg" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.744l7.73-8.835L1.254 2.25H8.08l4.259 5.629 5.905-5.629Zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        @slopshopgg
+      </a>
+      <a href="https://slopshop.gg" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        slopshop.gg
+      </a>
+      <a href="https://slopshop.gg/docs" target="_blank" rel="noopener">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        API Docs
+      </a>
+    </div>
+  </div>
+  <div class="footer-copy" style="max-width:900px;margin:0 auto">
+    &copy; 2025 Slopshop &mdash; Real-time status checks run every 60 seconds in your browser.
+  </div>
+</footer>
+
+<script>
+const DEMO_KEY = 'sk-slop-demo-key-12345678';
+const API_BASE = 'https://slopshop.gg';
+
+// ─── State ───────────────────────────────────────────────────────────────────
+let checkResults = {};   // id -> { status, ms, extra }
+let checkInProgress = false;
+let countdownInterval = null;
+let countdownSecs = 60;
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+function nowStr() {
+  return new Date().toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+}
+
+function isCorsError(err) {
+  // TypeError with no meaningful message usually means CORS / network block
+  return err instanceof TypeError &&
+    (err.message === 'Failed to fetch' ||
+     err.message === 'Load failed' ||
+     err.message.toLowerCase().includes('cors') ||
+     err.message.toLowerCase().includes('network'));
+}
+
+async function timedFetch(url, opts = {}, timeoutMs = 8000) {
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), timeoutMs);
+  const t0 = performance.now();
+  try {
+    const res = await fetch(url, { ...opts, signal: controller.signal });
+    const ms = Math.round(performance.now() - t0);
+    clearTimeout(tid);
+    return { ok: res.ok, status: res.status, ms, res };
+  } catch(err) {
+    clearTimeout(tid);
+    const ms = Math.round(performance.now() - t0);
+    throw Object.assign(err, { ms, isCors: isCorsError(err) });
+  }
+}
+
+// ─── Set card state ───────────────────────────────────────────────────────────
+function setCard(id, state, opts = {}) {
+  const card       = document.getElementById(`card-${id}`);
+  const dot        = document.getElementById(`dot-${id}`);
+  const statusEl   = document.getElementById(`status-${id}`);
+  const msEl       = document.getElementById(`ms-${id}`);
+  const timeEl     = document.getElementById(`time-${id}`);
+
+  // Remove all state classes
+  card.classList.remove('up','down','loading','unchecked');
+  dot.classList.remove('green','red','gray','spinning');
+  statusEl.classList.remove('up','down','loading','unchecked');
+
+  if (state === 'loading') {
+    card.classList.add('loading');
+    dot.classList.add('spinning');
+    statusEl.classList.add('loading');
+    statusEl.textContent = 'Checking';
+    if (msEl) msEl.textContent = '—';
+  } else if (state === 'up') {
+    card.classList.add('up');
+    dot.classList.add('green');
+    statusEl.classList.add('up');
+    statusEl.textContent = 'Operational';
+    if (msEl) { msEl.textContent = opts.ms != null ? `${opts.ms} ms` : '—'; msEl.className = 'svc-meta-value green'; }
+  } else if (state === 'down') {
+    card.classList.add('down');
+    dot.classList.add('red');
+    statusEl.classList.add('down');
+    statusEl.textContent = 'Down';
+    if (msEl) { msEl.textContent = opts.ms != null ? `${opts.ms} ms` : '—'; msEl.className = 'svc-meta-value red'; }
+  } else if (state === 'unchecked') {
+    card.classList.add('unchecked');
+    dot.classList.add('gray');
+    statusEl.classList.add('unchecked');
+    statusEl.textContent = 'Unable to check';
+    if (msEl) { msEl.textContent = '—'; msEl.className = 'svc-meta-value'; }
+  }
+
+  if (timeEl) timeEl.textContent = opts.time || nowStr();
+
+  // Extra fields
+  if (opts.engine) {
+    const engEl = document.getElementById(`engine-${id}`);
+    if (engEl) engEl.textContent = opts.engine;
+  }
+}
+
+// ─── Hero update ─────────────────────────────────────────────────────────────
+function updateHero() {
+  const ids = ['api','compute','memory','agent','static'];
+  const done = ids.filter(id => checkResults[id]);
+  const ups  = done.filter(id => checkResults[id] === 'up').length;
+  const downs= done.filter(id => checkResults[id] === 'down').length;
+  const unchecked = done.filter(id => checkResults[id] === 'unchecked').length;
+
+  const heroDot   = document.getElementById('heroDot');
+  const heroLabel = document.getElementById('heroLabel');
+  const heroEl    = document.getElementById('hero');
+  const glLine    = document.getElementById('gradientLine');
+
+  // Summary bar
+  document.getElementById('sumUp').textContent = ups;
+  document.getElementById('sumDown').textContent = downs;
+  document.getElementById('sumChecking').textContent = ids.length - done.length;
+
+  // Avg response time from cards that have ms
+  const msList = ids.map(id => {
+    const msEl = document.getElementById(`ms-${id}`);
+    if (!msEl) return null;
+    const v = parseInt(msEl.textContent);
+    return isNaN(v) ? null : v;
+  }).filter(v => v != null);
+  if (msList.length) {
+    const avg = Math.round(msList.reduce((a,b)=>a+b,0)/msList.length);
+    document.getElementById('sumAvgMs').textContent = `${avg} ms`;
+  }
+
+  if (done.length < ids.length) return; // still running
+
+  // All done
+  heroDot.classList.remove('loading');
+  heroLabel.classList.remove('loading');
+
+  // Consider unchecked as "not down" for overall status
+  const trueDowns = downs; // only actual confirmed downs
+  if (trueDowns === 0) {
+    heroDot.classList.remove('red'); heroDot.classList.add('green');
+    heroLabel.classList.remove('red'); heroLabel.classList.add('green');
+    heroLabel.textContent = 'All Systems Operational';
+    heroEl.classList.remove('degraded');
+    glLine.classList.remove('degraded');
+  } else {
+    heroDot.classList.remove('green'); heroDot.classList.add('red');
+    heroLabel.classList.remove('green'); heroLabel.classList.add('red');
+    heroLabel.textContent = trueDowns === ids.length ? 'Major Outage' : 'Degraded Performance';
+    heroEl.classList.add('degraded');
+    glLine.classList.add('degraded');
+  }
+
+  // Last checked
+  document.getElementById('lastChecked').innerHTML = `Last checked: <span>${nowStr()}</span>`;
+
+  // Re-enable refresh button
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = false;
+  btn.classList.remove('spinning');
+  checkInProgress = false;
+
+  // Start countdown
+  startCountdown();
+}
+
+// ─── Individual checks ────────────────────────────────────────────────────────
+
+// 1. API Server
+async function checkApi() {
+  setCard('api','loading');
+  const t = nowStr();
+  try {
+    const { ok, ms, res } = await timedFetch(`${API_BASE}/v1/health`);
+    if (ok) {
+      checkResults['api'] = 'up';
+      setCard('api','up',{ ms, time: t });
+    } else {
+      checkResults['api'] = 'down';
+      setCard('api','down',{ ms, time: t });
+    }
+  } catch(err) {
+    if (err.isCors) {
+      checkResults['api'] = 'unchecked';
+      setCard('api','unchecked',{ time: t });
+    } else {
+      checkResults['api'] = 'down';
+      setCard('api','down',{ ms: err.ms, time: t });
+    }
+  }
+  updateHero();
+}
+
+// 2. Compute APIs
+async function checkCompute() {
+  setCard('compute','loading');
+  const t = nowStr();
+  try {
+    const { ok, ms, res } = await timedFetch(`${API_BASE}/v1/crypto-hash-sha256`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEMO_KEY}`
+      },
+      body: JSON.stringify({ data: 'status-check' })
+    });
+    if (ok) {
+      let engine = '—';
+      try {
+        const json = await res.json();
+        if (json._engine) engine = json._engine;
+        else if (json.engine) engine = json.engine;
+      } catch(_) {}
+      checkResults['compute'] = 'up';
+      setCard('compute','up',{ ms, time: t, engine });
+    } else {
+      checkResults['compute'] = 'down';
+      setCard('compute','down',{ ms, time: t });
+    }
+  } catch(err) {
+    if (err.isCors) {
+      checkResults['compute'] = 'unchecked';
+      setCard('compute','unchecked',{ time: t });
+    } else {
+      checkResults['compute'] = 'down';
+      setCard('compute','down',{ ms: err.ms, time: t });
+    }
+  }
+  updateHero();
+}
+
+// 3. Memory APIs
+async function checkMemory() {
+  setCard('memory','loading');
+  const t = nowStr();
+  try {
+    const { ok, ms, res } = await timedFetch(`${API_BASE}/v1/memory-stats`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEMO_KEY}`
+      },
+      body: JSON.stringify({ namespace: 'status-check' })
+    });
+    if (ok) {
+      checkResults['memory'] = 'up';
+      setCard('memory','up',{ ms, time: t });
+    } else {
+      checkResults['memory'] = 'down';
+      setCard('memory','down',{ ms, time: t });
+    }
+  } catch(err) {
+    if (err.isCors) {
+      checkResults['memory'] = 'unchecked';
+      setCard('memory','unchecked',{ time: t });
+    } else {
+      checkResults['memory'] = 'down';
+      setCard('memory','down',{ ms: err.ms, time: t });
+    }
+  }
+  updateHero();
+}
+
+// 4. Agent Engine — derived from health check result
+async function checkAgent() {
+  setCard('agent','loading');
+  // Wait for API result (it runs in parallel but may not be done)
+  // Poll checkResults['api'] for up to 10 seconds
+  let waited = 0;
+  while (checkResults['api'] == null && waited < 10000) {
+    await new Promise(r => setTimeout(r, 200));
+    waited += 200;
+  }
+  const t = nowStr();
+  if (checkResults['api'] === 'up') {
+    checkResults['agent'] = 'up';
+    setCard('agent','up',{ time: t });
+  } else if (checkResults['api'] === 'unchecked') {
+    checkResults['agent'] = 'unchecked';
+    setCard('agent','unchecked',{ time: t });
+  } else {
+    checkResults['agent'] = 'down';
+    setCard('agent','down',{ time: t });
+  }
+  updateHero();
+}
+
+// 5. Static site
+async function checkStatic() {
+  setCard('static','loading');
+  const t = nowStr();
+  try {
+    // Use no-cors so we can at least get a response (opaque)
+    const t0 = performance.now();
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 8000);
+    try {
+      const res = await fetch(`${API_BASE}/`, {
+        method: 'GET',
+        mode: 'no-cors',  // avoids CORS errors for static site
+        signal: controller.signal
+      });
+      clearTimeout(tid);
+      const ms = Math.round(performance.now() - t0);
+      // no-cors returns opaque (type === 'opaque'), which means it succeeded network-wise
+      checkResults['static'] = 'up';
+      setCard('static','up',{ ms, time: t });
+    } catch(err) {
+      clearTimeout(tid);
+      const ms = Math.round(performance.now() - t0);
+      checkResults['static'] = 'down';
+      setCard('static','down',{ ms, time: t });
+    }
+  } catch(err) {
+    checkResults['static'] = 'unchecked';
+    setCard('static','unchecked',{ time: nowStr() });
+  }
+  updateHero();
+}
+
+// ─── Run all checks ───────────────────────────────────────────────────────────
+async function runAllChecks() {
+  if (checkInProgress) return;
+  checkInProgress = true;
+
+  // Reset state
+  checkResults = {};
+  stopCountdown();
+
+  // UI: loading
+  const btn = document.getElementById('refreshBtn');
+  btn.disabled = true;
+  btn.classList.add('spinning');
+
+  const heroDot   = document.getElementById('heroDot');
+  const heroLabel = document.getElementById('heroLabel');
+  heroDot.className  = 'big-dot loading';
+  heroLabel.className= 'status-label loading';
+  heroLabel.textContent = 'Checking systems…';
+  document.getElementById('lastChecked').innerHTML = 'Last checked: <span>Running…</span>';
+  document.getElementById('sumUp').textContent = '—';
+  document.getElementById('sumDown').textContent = '—';
+  document.getElementById('sumChecking').textContent = '5';
+  document.getElementById('sumAvgMs').textContent = '—';
+
+  // Run all in parallel (agent waits on api internally)
+  await Promise.allSettled([
+    checkApi(),
+    checkCompute(),
+    checkMemory(),
+    checkAgent(),
+    checkStatic()
+  ]);
+}
+
+// ─── Countdown timer ─────────────────────────────────────────────────────────
+function startCountdown() {
+  countdownSecs = 60;
+  document.getElementById('countdownNum').textContent = countdownSecs;
+  stopCountdown();
+  countdownInterval = setInterval(() => {
+    countdownSecs--;
+    document.getElementById('countdownNum').textContent = Math.max(0, countdownSecs);
+    if (countdownSecs <= 0) {
+      stopCountdown();
+      runAllChecks();
+    }
+  }, 1000);
+}
+
+function stopCountdown() {
+  if (countdownInterval) {
+    clearInterval(countdownInterval);
+    countdownInterval = null;
+  }
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  runAllChecks();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Slopshop for DeepSeek Agents | 1,049 Real Tools via function_calling</title>
+<meta name="description" content="Connect Slopshop's 1,049 real tools to DeepSeek agents via function_calling. DeepSeek uses an OpenAI-compatible API — drop in Slopshop tools with the openai Python SDK and base_url='https://api.deepseek.com'.">
+<meta name="keywords" content="DeepSeek function calling, DeepSeek tools, deepseek-chat agent, deepseek-coder tools, openai SDK DeepSeek, DeepSeek API integration">
+<link rel="canonical" href="https://slopshop.gg/integrate-deepseek">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/integrate-deepseek">
+<meta property="og:title" content="Slopshop for DeepSeek Agents — 1,049 Real Tools via function_calling">
+<meta property="og:description" content="Give DeepSeek 1,049 real tools. OpenAI-compatible. Free memory. Every result verified with _engine: real.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop for DeepSeek Agents — 1,049 Real Tools via function_calling">
+<meta name="twitter:description" content="DeepSeek + Slopshop: 1,049 tools, free memory, verified results. OpenAI SDK, just swap base_url.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#4D6BFE">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop for DeepSeek Agents","description":"How to connect 1,049 real API tools to DeepSeek via function_calling using the OpenAI-compatible Python SDK.","url":"https://slopshop.gg/integrate-deepseek","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"about":{"@type":"SoftwareApplication","name":"Slopshop","applicationCategory":"DeveloperApplication"}}</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;
+  --o:#ff8800;--g:#00cc66;--c:#00aaff;--v:#8855ff;
+  --acc:#4D6BFE;--accg:rgba(77,107,254,0.1);--accb:rgba(77,107,254,0.2);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--acc);color:#fff}
+a{color:var(--acc);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.hero{padding:136px 32px 80px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,rgba(77,107,254,0.06),transparent 60%)}
+.hero-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;background:var(--accg);border:1px solid var(--accb);color:var(--acc);padding:5px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;margin-bottom:28px;font-family:var(--mono)}
+.hero h1{font-family:var(--mono);font-size:clamp(2.4rem,5.5vw,4rem);font-weight:800;letter-spacing:-0.03em;line-height:1.05;margin-bottom:24px}
+.hero h1 .accent{color:var(--acc)}
+.hero h1 .dim{color:var(--t3)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:560px;margin:0 auto;line-height:1.8;font-weight:400}
+.hero .sub b{color:var(--t);font-weight:600}
+.stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;margin:48px 0;padding:32px 0;border-top:1px solid var(--b);border-bottom:1px solid var(--b)}
+.stat{text-align:center;padding:0 8px}
+.stat .n{font-family:var(--mono);font-size:1.7rem;font-weight:800;letter-spacing:-0.03em;color:var(--t)}
+.stat .l{font-size:0.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.14em;margin-top:6px;font-weight:600}
+.stat:nth-child(1) .n{color:var(--acc)}
+.stat:nth-child(2) .n{color:var(--o)}
+.stat:nth-child(3) .n{color:var(--g)}
+.stat:nth-child(4) .n{color:var(--c)}
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.cta-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--acc);color:#fff;text-decoration:none;transition:box-shadow 0.2s,transform 0.15s}
+.cta-primary:hover{box-shadow:0 0 28px rgba(77,107,254,0.35);transform:translateY(-1px);opacity:1}
+.cta-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2);text-decoration:none;transition:color 0.15s,border-color 0.15s}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.sec{max-width:1100px;margin:0 auto;padding:80px 32px}
+.sec-label{font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--acc);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:12px}
+.sec h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
+.sec .desc{color:var(--t3);font-size:0.88rem;margin-bottom:40px;line-height:1.75;max-width:640px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px}
+.step{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;position:relative;transition:border-color 0.2s}
+.step:hover{border-color:var(--b2)}
+.step-num{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px}
+.step h3{font-family:var(--mono);font-size:0.88rem;font-weight:700;margin-bottom:10px;color:var(--t)}
+.step p{font-size:0.8rem;color:var(--t3);line-height:1.75;margin-bottom:14px}
+.cmd{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.75rem;color:var(--o);cursor:pointer;position:relative;transition:border-color 0.15s}
+.cmd:hover{border-color:var(--b2)}
+.cmd .copy-hint{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.58rem;color:var(--t4);font-weight:500}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:32px}
+.code-header{background:var(--s2);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .lang{font-family:var(--mono);font-size:0.68rem;color:var(--t3);font-weight:500}
+.code-header .fname{font-family:var(--mono);font-size:0.7rem;color:var(--acc);font-weight:600}
+.code-body{padding:20px 22px;font-family:var(--mono);font-size:0.78rem;line-height:1.85;overflow-x:auto;color:var(--t2)}
+.code-body .cm{color:var(--t4)}
+.code-body .kw{color:var(--acc)}
+.code-body .str{color:var(--g)}
+.code-body .fn{color:var(--c)}
+.code-body .num{color:var(--o)}
+.get-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:40px}
+.get-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px;transition:transform 0.15s,border-color 0.2s}
+.get-card:hover{transform:translateY(-2px);border-color:var(--b2)}
+.get-card .icon{font-size:1.4rem;margin-bottom:12px}
+.get-card h3{font-family:var(--mono);font-size:0.82rem;font-weight:700;margin-bottom:6px;color:var(--t)}
+.get-card p{font-size:0.75rem;color:var(--t3);line-height:1.6}
+.get-card:nth-child(1){border-left:3px solid var(--acc)}
+.get-card:nth-child(2){border-left:3px solid var(--g)}
+.get-card:nth-child(3){border-left:3px solid var(--c)}
+.get-card:nth-child(4){border-left:3px solid var(--o)}
+.get-card:nth-child(5){border-left:3px solid var(--v)}
+.tool-flow{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px}
+.tool-pane{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden}
+.tool-pane-header{background:var(--s2);padding:10px 16px;border-bottom:1px solid var(--b);font-family:var(--mono);font-size:0.68rem;font-weight:600}
+.tool-pane-header.req{color:var(--acc)}
+.tool-pane-header.res{color:var(--g)}
+.tool-pane-body{padding:16px 18px;font-family:var(--mono);font-size:0.72rem;line-height:1.8;color:var(--t2);overflow-x:auto}
+.cta-banner{background:linear-gradient(135deg,rgba(77,107,254,0.08),rgba(77,107,254,0.03));border:1px solid rgba(77,107,254,0.2);border-radius:16px;padding:48px;text-align:center;margin:40px 0}
+.cta-banner h2{font-family:var(--mono);font-size:1.5rem;font-weight:800;margin-bottom:12px;letter-spacing:-0.02em}
+.cta-banner h2 .accent{color:var(--acc)}
+.cta-banner p{color:var(--t3);margin-bottom:28px;font-size:0.9rem;max-width:480px;margin-left:auto;margin-right:auto}
+.divider{border:none;border-top:1px solid var(--b);margin:0}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .nav-links a{font-size:0.65rem;padding:4px 6px}
+  .nav-links a:nth-child(n+4){display:none}
+  .hero{padding:80px 16px 48px}
+  .hero h1{font-size:clamp(2rem,10vw,2.8rem)}
+  .sec{padding:48px 16px}
+  .steps{grid-template-columns:1fr;gap:10px}
+  .tool-flow{grid-template-columns:1fr;gap:10px}
+  .get-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .footer-grid{grid-template-columns:1fr;gap:24px}
+  .cta-banner{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><linearGradient id="navG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#navG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+    <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/templates">Templates</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      function_calling &nbsp;&middot;&nbsp; deepseek-chat &nbsp;&middot;&nbsp; deepseek-reasoner &nbsp;&middot;&nbsp; OpenAI-compatible
+    </div>
+    <h1>Slopshop for<br><span class="accent">DeepSeek</span> Agents</h1>
+    <p class="sub">
+      1,049 real tools via DeepSeek's <b>function_calling</b>. DeepSeek uses an OpenAI-compatible API — swap <b>base_url</b> and you're done.<br>
+      Free persistent memory. Every result verified with <b>_engine: real</b>.
+    </p>
+
+    <div class="stats">
+      <div class="stat"><div class="n">422</div><div class="l">Real Tools</div></div>
+      <div class="stat"><div class="n">0cr</div><div class="l">Memory Cost</div></div>
+      <div class="stat"><div class="n">OAI</div><div class="l">Compatible</div></div>
+      <div class="stat"><div class="n">100%</div><div class="l">Verified Results</div></div>
+    </div>
+
+    <div class="hero-ctas">
+      <a href="/docs" class="cta-primary">Get Started Free</a>
+      <a href="/v1/openapi.json" class="cta-secondary">View OpenAPI Schema</a>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec">
+  <div class="sec-label">Quickstart</div>
+  <h2>Three steps. DeepSeek has tools.</h2>
+  <p class="desc">DeepSeek's API is OpenAI-compatible — you're using the same openai Python SDK you already know, just with a different base_url and your DeepSeek API key.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">Step 01 &mdash; Install</div>
+      <h3>Install the openai SDK</h3>
+      <p>DeepSeek uses the OpenAI Python SDK directly. No separate package needed — just point it at DeepSeek's endpoint.</p>
+      <div class="cmd">pip install openai requests<span class="copy-hint">click to copy</span></div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 02 &mdash; Fetch Tools</div>
+      <h3>Pull Slopshop tool definitions</h3>
+      <p>Fetch tool schemas from Slopshop's OpenAPI endpoint. They arrive already in OpenAI function_calling format — no conversion needed.</p>
+      <div class="cmd" style="color:var(--t3);font-size:0.68rem">GET /v1/openapi.json &rarr; tools[]</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 03 &mdash; Run</div>
+      <h3>DeepSeek calls, Slopshop executes</h3>
+      <p>Pass tools into deepseek-chat's <code style="color:var(--acc)">tools</code> array. When DeepSeek emits a tool_call, POST the arguments to Slopshop and feed the result back.</p>
+      <div class="cmd" style="color:var(--g);font-size:0.7rem">1,049 tools &middot; auto-discovered from schema</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Code Example</div>
+  <h2>function_calling with deepseek-chat</h2>
+  <p class="desc">Full agentic loop using the openai SDK pointed at DeepSeek's API. Handles parallel tool calls and iterates until DeepSeek returns stop_reason "stop".</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="fname">deepseek_agent.py</span>
+      <span class="lang">python</span>
+    </div>
+    <div class="code-body"><pre><span class="kw">import</span> os, json, requests
+<span class="kw">from</span> openai <span class="kw">import</span> OpenAI
+
+<span class="cm"># DeepSeek is OpenAI-compatible — just swap base_url</span>
+client = <span class="fn">OpenAI</span>(
+    api_key=os.environ[<span class="str">"DEEPSEEK_API_KEY"</span>],
+    base_url=<span class="str">"https://api.deepseek.com"</span>
+)
+
+SLOP_KEY = os.environ[<span class="str">"SLOPSHOP_API_KEY"</span>]
+SLOP_URL = <span class="str">"https://slopshop.gg"</span>
+
+<span class="cm"># 1. Fetch Slopshop tools — already in OpenAI function format</span>
+<span class="kw">def</span> <span class="fn">get_tools</span>(slugs: list[str]) -> list[dict]:
+    schema = requests.<span class="fn">get</span>(
+        <span class="str">f"{SLOP_URL}/v1/openapi.json"</span>,
+        headers={<span class="str">"Authorization"</span>: <span class="str">f"Bearer {SLOP_KEY}"</span>}
+    ).<span class="fn">json</span>()
+    <span class="cm"># Convert OpenAPI paths to OpenAI tool definitions</span>
+    tools = []
+    <span class="kw">for</span> slug <span class="kw">in</span> slugs:
+        path = schema[<span class="str">"paths"</span>].<span class="fn">get</span>(<span class="str">f"/v1/{slug}"</span>, {}).<span class="fn">get</span>(<span class="str">"post"</span>, {})
+        <span class="kw">if</span> path:
+            tools.<span class="fn">append</span>({
+                <span class="str">"type"</span>: <span class="str">"function"</span>,
+                <span class="str">"function"</span>: {
+                    <span class="str">"name"</span>: slug,
+                    <span class="str">"description"</span>: path.<span class="fn">get</span>(<span class="str">"summary"</span>, <span class="str">""</span>),
+                    <span class="str">"parameters"</span>: path[<span class="str">"requestBody"</span>][<span class="str">"content"</span>]
+                                        [<span class="str">"application/json"</span>][<span class="str">"schema"</span>]
+                }
+            })
+    <span class="kw">return</span> tools
+
+<span class="cm"># 2. Execute a Slopshop tool call</span>
+<span class="kw">def</span> <span class="fn">call_tool</span>(name: str, args: dict) -> str:
+    res = requests.<span class="fn">post</span>(
+        <span class="str">f"{SLOP_URL}/v1/{name}"</span>,
+        json=args,
+        headers={
+            <span class="str">"Authorization"</span>: <span class="str">f"Bearer {SLOP_KEY}"</span>,
+            <span class="str">"Content-Type"</span>: <span class="str">"application/json"</span>
+        }
+    )
+    <span class="kw">return</span> json.<span class="fn">dumps</span>(res.<span class="fn">json</span>())
+
+<span class="cm"># 3. Agentic loop — DeepSeek decides, Slopshop executes</span>
+<span class="kw">def</span> <span class="fn">run_agent</span>(user_message: str) -> str:
+    tools = <span class="fn">get_tools</span>([<span class="str">"dns-lookup"</span>, <span class="str">"ssl-check"</span>, <span class="str">"http-request"</span>,
+                       <span class="str">"whois"</span>, <span class="str">"hash"</span>, <span class="str">"memory-set"</span>, <span class="str">"memory-get"</span>])
+    messages = [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: user_message}]
+
+    <span class="kw">while</span> <span class="kw">True</span>:
+        response = client.chat.completions.<span class="fn">create</span>(
+            model=<span class="str">"deepseek-chat"</span>,
+            messages=messages,
+            tools=tools,
+            tool_choice=<span class="str">"auto"</span>
+        )
+        msg = response.choices[<span class="num">0</span>].message
+
+        <span class="cm"># DeepSeek signals done with finish_reason "stop"</span>
+        <span class="kw">if</span> response.choices[<span class="num">0</span>].finish_reason == <span class="str">"stop"</span>:
+            <span class="kw">return</span> msg.content
+
+        <span class="cm"># Append assistant message with tool_calls</span>
+        messages.<span class="fn">append</span>(msg)
+
+        <span class="cm"># Execute each tool call and append results</span>
+        <span class="kw">for</span> tc <span class="kw">in</span> msg.tool_calls:
+            result = <span class="fn">call_tool</span>(
+                tc.function.name,
+                json.<span class="fn">loads</span>(tc.function.arguments)
+            )
+            messages.<span class="fn">append</span>({
+                <span class="str">"role"</span>: <span class="str">"tool"</span>,
+                <span class="str">"tool_call_id"</span>: tc.id,
+                <span class="str">"content"</span>: result
+            })
+
+<span class="cm"># Run it</span>
+answer = <span class="fn">run_agent</span>(<span class="str">"Check DNS records for slopshop.gg and save results to memory"</span>)
+<span class="fn">print</span>(answer)</pre></div>
+  </div>
+
+  <div class="sec-label" style="margin-top:48px;margin-bottom:12px">DeepSeek tool_call &rarr; Slopshop response</div>
+  <div class="tool-flow">
+    <div class="tool-pane">
+      <div class="tool-pane-header req">DeepSeek &rarr; tool_calls[]</div>
+      <div class="tool-pane-body"><pre>{
+  <span style="color:var(--acc)">"id"</span>: <span style="color:var(--g)">"call_abc123"</span>,
+  <span style="color:var(--acc)">"type"</span>: <span style="color:var(--g)">"function"</span>,
+  <span style="color:var(--acc)">"function"</span>: {
+    <span style="color:var(--t3)">"name"</span>: <span style="color:var(--g)">"dns-lookup"</span>,
+    <span style="color:var(--t3)">"arguments"</span>: <span style="color:var(--g)">"{\"host\":\"slopshop.gg\",\"type\":\"A\"}"</span>
+  }
+}</pre></div>
+    </div>
+    <div class="tool-pane">
+      <div class="tool-pane-header res">Slopshop &rarr; tool result</div>
+      <div class="tool-pane-body"><pre>{
+  <span style="color:var(--g)">"records"</span>: [<span style="color:var(--g)">"76.76.21.21"</span>],
+  <span style="color:var(--g)">"ttl"</span>: <span style="color:var(--o)">300</span>,
+  <span style="color:var(--g)">"type"</span>: <span style="color:var(--g)">"A"</span>,
+  <span style="color:var(--g)">"host"</span>: <span style="color:var(--g)">"slopshop.gg"</span>,
+  <span style="color:var(--r2)">"_engine"</span>: <span style="color:var(--g)">"real"</span>
+}</pre></div>
+    </div>
+  </div>
+  <p style="color:var(--t3);font-size:0.78rem">Every Slopshop response includes <code style="color:var(--g);font-size:0.75rem">"_engine": "real"</code> — confirmation that this result came from live compute, not a language model inference.</p>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">What You Get</div>
+  <h2>Everything DeepSeek needs to act, not just reason</h2>
+  <p class="desc">DeepSeek is exceptional at reasoning. Slopshop gives it the execution layer to act on those conclusions — 1,049 real tools, all verified.</p>
+
+  <div class="get-grid">
+    <div class="get-card">
+      <div class="icon">&#127381;</div>
+      <h3>1,049 Real Tools</h3>
+      <p>DNS, SSL, HTTP, crypto, hashing, code execution, data transforms, document generation, web research. All real. No hallucinated outputs.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#129504;</div>
+      <h3>Free Persistent Memory</h3>
+      <p>DeepSeek agents can write to and read from Slopshop's key-value store at zero credit cost. State persists across sessions automatically.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#128279;</div>
+      <h3>OpenAI-Compatible Format</h3>
+      <p>No schema conversion. Slopshop tools arrive in the exact format DeepSeek's function_calling expects. Plug in and run.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#128064;</div>
+      <h3>Full Observability</h3>
+      <p>Audit logs, per-request tracing, credit usage per tool call. Every invocation is logged with inputs, outputs, and latency.</p>
+    </div>
+    <div class="get-card">
+      <div class="icon">&#127968;</div>
+      <h3>Self-Hostable</h3>
+      <p>Run the entire Slopshop tool server on your own infrastructure. Zero external dependencies for compute APIs. Air-gapped setups supported.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="cta-banner">
+    <h2>Give DeepSeek <span class="accent">1,049 real tools</span></h2>
+    <p>Three lines of Python. 1,049 tools. Free memory. Every result verified.<br>DeepSeek reasons — Slopshop executes.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a href="/docs" class="cta-primary">Get Started Free</a>
+      <a href="/v1/openapi.json" class="cta-secondary">OpenAPI Schema</a>
+      <a href="/tools" class="cta-secondary">Browse All 1,049 Tools</a>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px">
+    <a href="/docs" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Full Docs</a>
+    <a href="/tools" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Browse Tools</a>
+    <a href="/templates" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Agent Templates</a>
+    <a href="/savings" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Savings Calculator</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 512 512"><defs><linearGradient id="fG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#fG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/templates">Templates</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/savings">Savings</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/docs">Docs</a>
+        <a href="/docs#getting-started">Getting Started</a>
+        <a href="/security">Security</a>
+        <a href="/changelog">Changelog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="/status">Status</a>
+        <a href="/legal">Legal</a>
+        <a href="https://x.com/slopshopgg">@slopshopgg</a>
+      </div>
+    </div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,049 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
+  </div>
+</footer>
+
+</body>
+</html>

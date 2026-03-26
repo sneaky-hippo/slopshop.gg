@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Parallel Agent Execution API — Run 10K AI Agents in One Call | Slopshop</title>
+<meta name="description" content="Run thousands of AI agents in parallel with a single API call. Slopshop Army handles fan-out, Merkle verification, and result aggregation. Monte Carlo simulations, bulk enrichment, and ensemble reasoning at scale.">
+<link rel="canonical" href="https://slopshop.gg/parallel-agent-execution-api">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://slopshop.gg/parallel-agent-execution-api">
+<meta property="og:title" content="Parallel Agent Execution API — Run 10K AI Agents in One Call | Slopshop">
+<meta property="og:description" content="Fan out 10,000 agents from one API call. Merkle-verified results, configurable strategies, Monte Carlo simulations. No orchestration infra required.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:creator" content="@slopshopgg">
+<meta name="twitter:title" content="Parallel Agent Execution API — 10K Agents, One Call | Slopshop">
+<meta name="twitter:description" content="Run multiple AI agents in parallel. 10K agents, one API call, Merkle-verified results. No infra overhead.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Parallel Agent Execution API — Run 10K AI Agents in One Call",
+  "description": "How to run thousands of AI agents in parallel using Slopshop Army, with Merkle tree verification, configurable aggregation strategies, and Monte Carlo simulation support.",
+  "url": "https://slopshop.gg/parallel-agent-execution-api",
+  "author": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"},
+  "publisher": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg", "logo": {"@type": "ImageObject", "url": "https://slopshop.gg/og.png"}},
+  "datePublished": "2026-03-26",
+  "dateModified": "2026-03-26",
+  "keywords": ["parallel agent execution", "run multiple AI agents", "AI agent API", "Monte Carlo simulation AI", "agent fan-out", "Merkle verification agent", "Army API"]
+}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff6644'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><line x1='256' y1='80' x2='256' y2='168' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='256' y1='344' x2='256' y2='432' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='80' y1='256' x2='168' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='344' y1='256' x2='432' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--v);color:#fff}
+a{color:var(--v);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+.page-wrap{max-width:860px;margin:0 auto;padding:100px 32px 80px}
+.page-tag{display:inline-flex;align-items:center;gap:6px;background:var(--vg);border:1px solid rgba(136,85,255,0.2);color:var(--v);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:700;margin-bottom:24px;font-family:var(--mono)}
+h1{font-family:var(--mono);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:20px}
+h1 .accent{color:var(--v)}
+.lead{color:var(--t2);font-size:1rem;line-height:1.8;margin-bottom:48px;max-width:680px}
+h2{font-family:var(--mono);font-size:1.2rem;font-weight:700;margin:48px 0 16px;letter-spacing:-0.02em}
+h3{font-family:var(--mono);font-size:0.95rem;font-weight:700;margin:28px 0 12px;color:var(--t2)}
+p{color:var(--t2);line-height:1.8;margin-bottom:16px}
+ul,ol{color:var(--t2);line-height:1.9;padding-left:20px;margin-bottom:16px}
+li{margin-bottom:4px}
+code{font-family:var(--mono);font-size:0.8em;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--v)}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin:20px 0}
+.code-header{background:var(--s2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-label{font-family:var(--mono);font-size:0.68rem;color:var(--t3);font-weight:500}
+.code-lang{font-family:var(--mono);font-size:0.62rem;color:var(--v);font-weight:700;background:var(--vg);padding:2px 8px;border-radius:4px}
+pre{padding:20px;font-family:var(--mono);font-size:0.78rem;line-height:1.8;overflow-x:auto;color:var(--t2)}
+pre .cm{color:var(--t4)}
+pre .kw{color:var(--r)}
+pre .str{color:var(--g)}
+pre .key{color:var(--c)}
+pre .val{color:var(--o)}
+pre .ok{color:var(--g)}
+.compare-table{width:100%;border-collapse:collapse;margin:24px 0;font-family:var(--mono);font-size:0.76rem}
+.compare-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--b2);color:var(--t3);font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--b);color:var(--t2)}
+.compare-table tr:hover td{background:var(--s1)}
+.compare-table .td-highlight{color:var(--g);font-weight:700}
+.compare-table .td-bad{color:var(--r)}
+.compare-table .td-meh{color:var(--o)}
+.use-cases{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin:24px 0}
+.uc-card{background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--v);border-radius:10px;padding:18px}
+.uc-card .uc-label{font-family:var(--mono);font-size:0.68rem;font-weight:700;color:var(--v);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em}
+.uc-card p{font-size:0.78rem;color:var(--t3);margin:0;line-height:1.6}
+.cta-block{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:40px;text-align:center;margin-top:64px}
+.cta-block h2{margin:0 0 10px;font-size:1.4rem}
+.cta-block p{color:var(--t3);margin-bottom:28px}
+.cta-terminal{background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.78rem;color:var(--v);text-align:left;margin-bottom:24px;max-width:520px;margin-left:auto;margin-right:auto}
+.cta-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--r);color:#fff;transition:box-shadow 0.2s,transform 0.15s}
+.btn-primary:hover{box-shadow:0 0 24px rgba(255,51,51,0.3);transform:translateY(-1px);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2)}
+.btn-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.internal-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:40px;padding-top:32px;border-top:1px solid var(--b)}
+.internal-links a{font-family:var(--mono);font-size:0.72rem;color:var(--t3);padding:6px 14px;border:1px solid var(--b);border-radius:6px;transition:0.15s}
+.internal-links a:hover{color:var(--t);border-color:var(--b2);opacity:1}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b);margin-top:80px}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono)}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .nav-links a:nth-child(n+4){display:none}
+  .page-wrap{padding:80px 16px 60px}
+  h1{font-size:1.9rem}
+  .use-cases{grid-template-columns:1fr}
+  .compare-table{font-size:0.68rem}
+  .compare-table th,.compare-table td{padding:8px 10px}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:24px}
+  .cta-buttons{flex-direction:column;align-items:center}
+  .btn-primary,.btn-secondary{width:100%;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="22" height="22" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="ng" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#ng)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+    <span>SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/playbooks">Playbooks</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+    <div class="live-badge"><div class="live-dot"></div>live</div>
+  </div>
+</div></nav>
+
+<div class="page-wrap">
+  <div class="page-tag">// army — parallel agent execution</div>
+  <h1>Run <span class="accent">Multiple AI Agents</span> in Parallel — 10K in One Call</h1>
+  <p class="lead">Sequential agent execution is the bottleneck you've accepted as normal. Why run 1,000 scoring jobs one by one when they're independent? Slopshop Army fans out any task to thousands of parallel agents, collects results, verifies them with a Merkle tree, and returns a single aggregated response. No orchestration infrastructure required.</p>
+
+  <h2>The parallelism gap</h2>
+  <p>Most agent frameworks are built for sequential reasoning: one agent, one task, one result. But many real problems are embarrassingly parallel:</p>
+  <ul>
+    <li>Scoring 5,000 product descriptions for quality</li>
+    <li>Running 10,000 Monte Carlo trials for risk modeling</li>
+    <li>Enriching a batch of 2,000 records with entity extraction</li>
+    <li>Generating N candidate solutions and taking the majority vote</li>
+    <li>Testing a hypothesis across many different starting conditions</li>
+  </ul>
+  <p>Doing any of this yourself means spinning up async workers, managing concurrency, handling partial failures, and aggregating results. That's days of infrastructure work before you've written a single line of actual agent logic.</p>
+
+  <h2>POST /v1/army/deploy</h2>
+  <p>Specify a task, a count, an optional input list, and a strategy. Army fans out the work, runs agents in parallel, and returns aggregated results with a Merkle root you can use to verify the full result set without downloading every individual output.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Run 100 parallel scoring agents</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/army/deploy \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{
+    "task": "score_quality",
+    "count": 100,
+    "inputs": [
+      {"id": "prod_001", "text": "Ultra-soft 100% cotton t-shirt with reinforced seams"},
+      {"id": "prod_002", "text": "T shirt"},
+      {"id": "prod_003", "text": "Premium moisture-wicking athletic tee, 4-way stretch fabric"}
+    ],
+    "strategy": "map",
+    "params": {
+      "criteria": ["clarity", "completeness", "tone"],
+      "output_format": "score_0_to_10"
+    }
+  }'</span></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Response</span><span class="code-lang">json</span></div>
+    <pre>{
+  <span class="key">"ok"</span>: <span class="ok">true</span>,
+  <span class="key">"army_id"</span>: <span class="str">"army_4d8f2a"</span>,
+  <span class="key">"agents_deployed"</span>: <span class="val">100</span>,
+  <span class="key">"strategy"</span>: <span class="str">"map"</span>,
+  <span class="key">"results"</span>: [
+    { <span class="key">"id"</span>: <span class="str">"prod_001"</span>, <span class="key">"score"</span>: <span class="val">8.4</span>, <span class="key">"breakdown"</span>: { <span class="key">"clarity"</span>: <span class="val">9</span>, <span class="key">"completeness"</span>: <span class="val">8</span>, <span class="key">"tone"</span>: <span class="val">8</span> } },
+    { <span class="key">"id"</span>: <span class="str">"prod_002"</span>, <span class="key">"score"</span>: <span class="val">1.2</span>, <span class="key">"breakdown"</span>: { <span class="key">"clarity"</span>: <span class="val">2</span>, <span class="key">"completeness"</span>: <span class="val">1</span>, <span class="key">"tone"</span>: <span class="val">1</span> } },
+    { <span class="key">"id"</span>: <span class="str">"prod_003"</span>, <span class="key">"score"</span>: <span class="val">9.1</span>, <span class="key">"breakdown"</span>: { <span class="key">"clarity"</span>: <span class="val">9</span>, <span class="key">"completeness"</span>: <span class="val">10</span>, <span class="key">"tone"</span>: <span class="val">9</span> } }
+  ],
+  <span class="key">"merkle_root"</span>: <span class="str">"a3f9c2d8e1b047..."</span>,
+  <span class="key">"total_time_ms"</span>: <span class="val">412</span>,
+  <span class="key">"_engine"</span>: <span class="str">"real"</span>
+}</pre>
+  </div>
+
+  <h2>Monte Carlo simulations</h2>
+  <p>Set <code>strategy: "monte_carlo"</code> and Army runs N independent trials with randomized parameters, then returns the distribution of outcomes. Use this for risk modeling, sensitivity analysis, or any problem where you want to understand variance rather than a single answer.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Monte Carlo: price sensitivity analysis</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/army/deploy \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span> \
+  -d <span class="str">'{
+    "task": "revenue_projection",
+    "count": 5000,
+    "strategy": "monte_carlo",
+    "params": {
+      "base_price": 49.99,
+      "price_variance": 0.15,
+      "demand_elasticity": -1.2,
+      "market_size": 50000,
+      "market_variance": 0.25
+    }
+  }'</span>
+
+<span class="cm"># Returns: distribution stats (p5, p25, p50, p75, p95),
+# histogram data, and full trial results with merkle_root</span></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Monte Carlo response (summary)</span><span class="code-lang">json</span></div>
+    <pre>{
+  <span class="key">"ok"</span>: <span class="ok">true</span>,
+  <span class="key">"strategy"</span>: <span class="str">"monte_carlo"</span>,
+  <span class="key">"trials"</span>: <span class="val">5000</span>,
+  <span class="key">"distribution"</span>: {
+    <span class="key">"p5"</span>: <span class="val">1820400</span>,
+    <span class="key">"p25"</span>: <span class="val">2104000</span>,
+    <span class="key">"p50"</span>: <span class="val">2389500</span>,
+    <span class="key">"p75"</span>: <span class="val">2741000</span>,
+    <span class="key">"p95"</span>: <span class="val">3218000</span>
+  },
+  <span class="key">"mean"</span>: <span class="val">2402100</span>,
+  <span class="key">"std_dev"</span>: <span class="val">421800</span>,
+  <span class="key">"merkle_root"</span>: <span class="str">"b7e3a1f0c9d2..."</span>,
+  <span class="key">"_engine"</span>: <span class="str">"real"</span>
+}</pre>
+  </div>
+
+  <h2>Strategies</h2>
+  <p>Army supports four execution strategies. Pick the one that matches your problem:</p>
+
+  <div class="use-cases">
+    <div class="uc-card">
+      <div class="uc-label">map</div>
+      <p>Apply the same task to each item in an input list independently. One agent per item, results returned in the same order as inputs.</p>
+    </div>
+    <div class="uc-card">
+      <div class="uc-label">monte_carlo</div>
+      <p>Run N trials of a stochastic task with randomized parameters. Returns the full result distribution — mean, percentiles, std dev, histogram.</p>
+    </div>
+    <div class="uc-card">
+      <div class="uc-label">ensemble</div>
+      <p>Run the same single task N times independently, then aggregate by majority vote or averaging. Reduces variance for high-stakes decisions.</p>
+    </div>
+    <div class="uc-card">
+      <div class="uc-label">tournament</div>
+      <p>Agents compete: each produces a candidate result, then a judging pass eliminates weaker candidates in bracket rounds. Returns the winning result with its elimination path.</p>
+    </div>
+  </div>
+
+  <h2>Merkle verification</h2>
+  <p>Every Army response includes a <code>merkle_root</code>. This is the root of a Merkle tree built from hashes of all individual agent results. You can use it to:</p>
+  <ul>
+    <li>Verify that a specific result was part of the run, without downloading the full result set</li>
+    <li>Prove to a third party that the aggregated output hasn't been tampered with</li>
+    <li>Cache only the Merkle root and fetch individual proofs on demand</li>
+    <li>Audit that 10,000 agents actually ran rather than one agent pretending to run many times</li>
+  </ul>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Verify a specific result inclusion</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/army/army_4d8f2a/verify \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span> \
+  -d <span class="str">'{
+    "result_id": "prod_001",
+    "merkle_root": "a3f9c2d8e1b047..."
+  }'</span>
+
+<span class="cm"># Returns: { "included": true, "proof": [...], "leaf_hash": "..." }</span></pre>
+  </div>
+
+  <h2>Scale limits</h2>
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Tier</th>
+        <th>Max agents per call</th>
+        <th>Max input list size</th>
+        <th>Strategies</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Free (2,000cr)</td>
+        <td class="td-highlight">100</td>
+        <td>100 items</td>
+        <td>map, ensemble</td>
+      </tr>
+      <tr>
+        <td>Standard</td>
+        <td class="td-highlight">1,000</td>
+        <td>1,000 items</td>
+        <td>All strategies</td>
+      </tr>
+      <tr>
+        <td>Pro</td>
+        <td class="td-highlight">10,000</td>
+        <td>10,000 items</td>
+        <td>All + custom strategies</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Pricing</h2>
+  <p>Army charges <strong style="color:var(--v)">per agent deployed</strong>, not per call. Standard task agents cost 2 credits each. Monte Carlo trials cost 1 credit each (lighter compute). You get <strong style="color:var(--g)">2,000 free credits</strong> on signup — enough for 1,000 free agent runs to validate your use case. See <a href="/pricing">full pricing</a>.</p>
+
+  <div class="internal-links">
+    <a href="/hive">Agent Workspace (Hive)</a>
+    <a href="/ai-agent-memory-api">Agent Memory API</a>
+    <a href="/docs">API Docs</a>
+    <a href="/tools">All 1,049 Tools</a>
+    <a href="/playbooks">Playbooks</a>
+    <a href="/getting-started">Getting Started</a>
+  </div>
+
+  <div class="cta-block">
+    <h2>Deploy your first army</h2>
+    <p>100 parallel agents free. 2,000 credits on signup. Merkle verification included.</p>
+    <div class="cta-terminal">
+      <span class="cm"># Fan out to 100 agents, one call:</span><br>
+      POST /v1/army/deploy<br>
+      &nbsp;&nbsp;strategy: "map", count: 100, inputs: [...]<br>
+      <span style="color:var(--g)">&#10003; 100 agents deployed. Results in ~400ms.</span>
+    </div>
+    <div class="cta-buttons">
+      <a href="/getting-started" class="btn-primary">Get Started Free</a>
+      <a href="/docs" class="btn-secondary">Army API Docs</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand"><span>SLOPSHOP</span><span class="gg">.GG</span></div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/playbooks">Playbooks</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/getting-started">Get Started</a>
+      </div>
+      <div class="footer-col">
+        <h4>Developers</h4>
+        <a href="/docs">Docs</a>
+        <a href="/docs/api">API Reference</a>
+        <a href="/docs/mcp">MCP Server</a>
+        <a href="/docs/self-host">Self-Hosting</a>
+      </div>
+      <div class="footer-col">
+        <h4>Agent Systems</h4>
+        <a href="/hive">Hive (Workspace)</a>
+        <a href="/army">Army (Parallel)</a>
+        <a href="/agent-workspace-api">Workspace API Guide</a>
+        <a href="/parallel-agent-execution-api">Parallel Execution Guide</a>
+        <a href="/ai-agent-memory-api">Memory API Guide</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="https://x.com/slopshopgg">Twitter</a>
+      </div>
+    </div>
+    <div class="footer-copy">&copy; 2026 Slopshop. Built for developers who ship.</div>
+  </div>
+</footer>
+
+</body>
+</html>

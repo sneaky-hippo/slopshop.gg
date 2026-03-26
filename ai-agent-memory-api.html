@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>AI Agent Memory API — Persistent State Across Sessions, LLMs, and Devices | Slopshop</title>
+<meta name="description" content="Give AI agents persistent memory that survives session ends, model swaps, and device changes. Free key-value store, knowledge graph, and Hive state. Compare to Redis and DynamoDB — without the infrastructure overhead.">
+<link rel="canonical" href="https://slopshop.gg/ai-agent-memory-api">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://slopshop.gg/ai-agent-memory-api">
+<meta property="og:title" content="AI Agent Memory API — Persistent State Across Sessions, LLMs &amp; Devices | Slopshop">
+<meta property="og:description" content="Free persistent memory for AI agents. Key-value store, knowledge graph, cross-session state. No database setup. Works with every LLM.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:creator" content="@slopshopgg">
+<meta name="twitter:title" content="AI Agent Memory API — Free Persistent State | Slopshop">
+<meta name="twitter:description" content="Persistent agent memory — free forever. Key-value, knowledge graph, cross-session, cross-LLM, cross-device.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "AI Agent Memory API — Persistent State Across Sessions, LLMs, and Devices",
+  "description": "How to give AI agents persistent memory that survives session ends and model changes, using Slopshop's free key-value store, knowledge graph, and Hive state APIs.",
+  "url": "https://slopshop.gg/ai-agent-memory-api",
+  "author": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"},
+  "publisher": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg", "logo": {"@type": "ImageObject", "url": "https://slopshop.gg/og.png"}},
+  "datePublished": "2026-03-26",
+  "dateModified": "2026-03-26",
+  "keywords": ["AI agent memory API", "persistent agent state", "agent key-value store", "cross-session AI memory", "knowledge graph API", "free agent memory", "Redis alternative AI agents"]
+}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff6644'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><line x1='256' y1='80' x2='256' y2='168' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='256' y1='344' x2='256' y2='432' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='80' y1='256' x2='168' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='344' y1='256' x2='432' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--g);color:#000}
+a{color:var(--g);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+.page-wrap{max-width:860px;margin:0 auto;padding:100px 32px 80px}
+.page-tag{display:inline-flex;align-items:center;gap:6px;background:var(--gg);border:1px solid rgba(0,204,102,0.2);color:var(--g);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:700;margin-bottom:24px;font-family:var(--mono)}
+h1{font-family:var(--mono);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:20px}
+h1 .accent{color:var(--g)}
+.lead{color:var(--t2);font-size:1rem;line-height:1.8;margin-bottom:48px;max-width:680px}
+h2{font-family:var(--mono);font-size:1.2rem;font-weight:700;margin:48px 0 16px;letter-spacing:-0.02em}
+h3{font-family:var(--mono);font-size:0.95rem;font-weight:700;margin:28px 0 12px;color:var(--t2)}
+p{color:var(--t2);line-height:1.8;margin-bottom:16px}
+ul,ol{color:var(--t2);line-height:1.9;padding-left:20px;margin-bottom:16px}
+li{margin-bottom:4px}
+code{font-family:var(--mono);font-size:0.8em;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--g)}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin:20px 0}
+.code-header{background:var(--s2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-label{font-family:var(--mono);font-size:0.68rem;color:var(--t3);font-weight:500}
+.code-lang{font-family:var(--mono);font-size:0.62rem;color:var(--g);font-weight:700;background:var(--gg);padding:2px 8px;border-radius:4px}
+pre{padding:20px;font-family:var(--mono);font-size:0.78rem;line-height:1.8;overflow-x:auto;color:var(--t2)}
+pre .cm{color:var(--t4)}
+pre .kw{color:var(--r)}
+pre .str{color:var(--g)}
+pre .key{color:var(--c)}
+pre .val{color:var(--o)}
+pre .ok{color:var(--g)}
+.free-banner{background:var(--gg);border:1px solid rgba(0,204,102,0.2);border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:12px;margin:24px 0}
+.free-banner .fb-badge{font-family:var(--mono);font-size:0.72rem;font-weight:800;color:var(--g);white-space:nowrap}
+.free-banner p{font-size:0.82rem;color:var(--t2);margin:0;line-height:1.5}
+.compare-table{width:100%;border-collapse:collapse;margin:24px 0;font-family:var(--mono);font-size:0.76rem}
+.compare-table th{text-align:left;padding:10px 14px;border-bottom:2px solid var(--b2);color:var(--t3);font-weight:600;font-size:0.68rem;text-transform:uppercase;letter-spacing:0.08em}
+.compare-table td{padding:10px 14px;border-bottom:1px solid var(--b);color:var(--t2)}
+.compare-table tr:hover td{background:var(--s1)}
+.compare-table .td-highlight{color:var(--g);font-weight:700}
+.compare-table .td-bad{color:var(--r)}
+.compare-table .td-meh{color:var(--o)}
+.memory-ops{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin:24px 0}
+.mem-card{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:18px}
+.mem-card .mc-op{font-family:var(--mono);font-size:0.8rem;font-weight:700;color:var(--g);margin-bottom:6px}
+.mem-card .mc-cost{font-family:var(--mono);font-size:0.65rem;color:var(--o);font-weight:700;background:var(--og);padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:8px}
+.mem-card p{font-size:0.78rem;color:var(--t3);margin:0;line-height:1.6}
+.cta-block{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:40px;text-align:center;margin-top:64px}
+.cta-block h2{margin:0 0 10px;font-size:1.4rem}
+.cta-block p{color:var(--t3);margin-bottom:28px}
+.cta-terminal{background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.78rem;color:var(--g);text-align:left;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto}
+.cta-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--r);color:#fff;transition:box-shadow 0.2s,transform 0.15s}
+.btn-primary:hover{box-shadow:0 0 24px rgba(255,51,51,0.3);transform:translateY(-1px);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2)}
+.btn-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.internal-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:40px;padding-top:32px;border-top:1px solid var(--b)}
+.internal-links a{font-family:var(--mono);font-size:0.72rem;color:var(--t3);padding:6px 14px;border:1px solid var(--b);border-radius:6px;transition:0.15s}
+.internal-links a:hover{color:var(--t);border-color:var(--b2);opacity:1}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b);margin-top:80px}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono)}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .nav-links a:nth-child(n+4){display:none}
+  .page-wrap{padding:80px 16px 60px}
+  h1{font-size:1.9rem}
+  .memory-ops{grid-template-columns:1fr}
+  .compare-table{font-size:0.68rem}
+  .compare-table th,.compare-table td{padding:8px 10px}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:24px}
+  .cta-buttons{flex-direction:column;align-items:center}
+  .btn-primary,.btn-secondary{width:100%;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="22" height="22" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="ng" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#ng)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+    <span>SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/playbooks">Playbooks</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+    <div class="live-badge"><div class="live-dot"></div>live</div>
+  </div>
+</div></nav>
+
+<div class="page-wrap">
+  <div class="page-tag">0 credits &middot; free forever</div>
+  <h1>AI Agent <span class="accent">Memory API</span> — Persistent State, Free</h1>
+  <p class="lead">Every AI agent session starts with a blank slate. Your agent learns something, computes something, decides something — and then the session ends and it's all gone. The next run, it starts over. Here's how to fix that without provisioning a database, configuring Redis, or writing a single line of infrastructure code.</p>
+
+  <h2>Why agents forget</h2>
+  <p>Context windows are not memory. They're working memory for one session. When the session ends, everything in the context window evaporates. This causes problems that compound over time:</p>
+  <ul>
+    <li>Agents re-fetch data they've already retrieved</li>
+    <li>Personalization resets on every run — no learning curve</li>
+    <li>Multi-step workflows can't pass state between sessions</li>
+    <li>Multi-agent systems can't share context without a shared database</li>
+    <li>Debugging is hard because there's no history of what the agent actually did</li>
+  </ul>
+  <p>The obvious fix is Redis or DynamoDB. But you have to provision it, configure access, write read/write code, handle TTL, and maintain it. For an agent prototype, that's a full infrastructure decision before you've validated anything.</p>
+
+  <div class="free-banner">
+    <span class="fb-badge">0cr &middot; FREE FOREVER</span>
+    <p>All Slopshop memory operations — set, get, delete, list, search, queue push/pop, counter increment, graph operations — are permanently free on every plan, including the free tier. Not a trial. Not a feature gate. Free.</p>
+  </div>
+
+  <h2>Three memory layers</h2>
+  <p>Slopshop provides three distinct memory primitives, each suited to different patterns:</p>
+
+  <div class="memory-ops">
+    <div class="mem-card">
+      <div class="mc-op">Key-Value Store</div>
+      <div class="mc-cost">0 credits</div>
+      <p>Arbitrary JSON values keyed by string. Supports TTL, namespacing, and list operations. The right choice for session state, user preferences, and computed results.</p>
+    </div>
+    <div class="mem-card">
+      <div class="mc-op">Knowledge Graph</div>
+      <div class="mc-cost">0 credits</div>
+      <p>Named entities and typed relationships. Store what your agent learns as a graph — nodes, edges, properties. Query by entity or relationship type.</p>
+    </div>
+    <div class="mem-card">
+      <div class="mc-op">Hive State</div>
+      <div class="mc-cost">2 credits/write</div>
+      <p>Shared workspace state for multi-agent systems. Multiple agents reading and writing the same named state space, with channel-based access control.</p>
+    </div>
+  </div>
+
+  <h2>Key-value: store and retrieve state</h2>
+  <p>The simplest case. Store anything as JSON under a key, retrieve it in any future session, on any machine, with any LLM, as long as you use the same API key.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Store a result — end of session</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/memory-set \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{
+    "key": "agent:research:transformer-papers",
+    "value": {
+      "papers": ["arxiv:2401.00001", "arxiv:2401.00042"],
+      "summary": "Key insight: sparse attention reduces quadratic complexity",
+      "fetched_at": "2026-03-26T10:00:00Z",
+      "confidence": 0.88
+    },
+    "ttl": 604800
+  }'</span>
+
+<span class="cm"># Response: { "ok": true, "stored": true, "credits_used": 0 }</span></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Retrieve it — next session, different LLM, same key</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/memory-get \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span> \
+  -d <span class="str">'{"key": "agent:research:transformer-papers"}'</span>
+
+<span class="cm"># Returns the full value you stored, including metadata.
+# The agent using GPT-4o today gets what the Claude agent
+# stored last week. Cross-LLM memory, zero configuration.</span></pre>
+  </div>
+
+  <h2>Knowledge graph: store what your agent learns</h2>
+  <p>When your agent is researching, it's not just accumulating facts — it's building a web of entities and relationships. A knowledge graph is the right structure for that. Store <code>Person</code>, <code>Company</code>, <code>Concept</code>, <code>Paper</code> nodes and the typed edges between them.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Add entities and a relationship</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/graph-add \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span> \
+  -d <span class="str">'{
+    "nodes": [
+      {"id": "vaswani_2017", "type": "Paper", "props": {"title": "Attention Is All You Need", "year": 2017}},
+      {"id": "concept_attention", "type": "Concept", "props": {"name": "Self-Attention Mechanism"}}
+    ],
+    "edges": [
+      {"from": "vaswani_2017", "to": "concept_attention", "type": "INTRODUCES", "props": {"significance": "foundational"}}
+    ]
+  }'</span></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Query the graph — next session</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/graph-query \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span> \
+  -d <span class="str">'{
+    "start": "concept_attention",
+    "direction": "incoming",
+    "edge_type": "INTRODUCES",
+    "depth": 2
+  }'</span>
+
+<span class="cm"># Returns: all papers that introduced or built on self-attention,
+# up to 2 hops from the concept node. The graph grows each
+# session as the agent discovers new relationships.</span></pre>
+  </div>
+
+  <h2>Cross-LLM, cross-device, cross-session</h2>
+  <p>Memory in Slopshop is keyed to your API key, not to a model or a session. That means:</p>
+  <ul>
+    <li>A Claude agent stores a result on Tuesday. A GPT-4o agent retrieves it on Friday. Same data, seamlessly.</li>
+    <li>An agent running on your laptop stores user preferences. The same agent on a production server reads them. No sync required.</li>
+    <li>You swap models — from Claude 3 to Claude 4, from GPT-4o to Gemini Ultra. The memory doesn't care. It's just key-value data accessible via HTTP.</li>
+    <li>Multi-agent pipelines share state without any inter-agent communication infrastructure. Agent A writes, Agent B reads.</li>
+  </ul>
+
+  <h2>Compared to Redis and DynamoDB</h2>
+
+  <table class="compare-table">
+    <thead>
+      <tr>
+        <th>Factor</th>
+        <th>Redis (managed)</th>
+        <th>DynamoDB</th>
+        <th>Slopshop Memory</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Setup time</td>
+        <td class="td-bad">30–60 min (VPC, auth, client)</td>
+        <td class="td-bad">20–40 min (IAM, table design)</td>
+        <td class="td-highlight">0 — your API key is already the auth</td>
+      </tr>
+      <tr>
+        <td>Cost (prototype scale)</td>
+        <td class="td-meh">~$15–30/mo (smallest instance)</td>
+        <td class="td-meh">~$1–5/mo + provisioning complexity</td>
+        <td class="td-highlight">$0 — permanently free</td>
+      </tr>
+      <tr>
+        <td>Knowledge graph</td>
+        <td class="td-bad">Not native (RedisGraph deprecated)</td>
+        <td class="td-bad">Not native (use Neptune separately)</td>
+        <td class="td-highlight">Built-in, free</td>
+      </tr>
+      <tr>
+        <td>Cross-LLM access</td>
+        <td class="td-meh">Yes, with custom client per framework</td>
+        <td class="td-meh">Yes, with SDK per framework</td>
+        <td class="td-highlight">Yes, same HTTP call from any context</td>
+      </tr>
+      <tr>
+        <td>TTL support</td>
+        <td class="td-highlight">Yes</td>
+        <td class="td-highlight">Yes</td>
+        <td class="td-highlight">Yes, per-key TTL in seconds</td>
+      </tr>
+      <tr>
+        <td>MCP-native</td>
+        <td class="td-bad">No — custom MCP tool required</td>
+        <td class="td-bad">No — custom MCP tool required</td>
+        <td class="td-highlight">Yes — Claude Code sees memory tools natively</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>Full list of free memory operations</h2>
+
+  <div class="memory-ops">
+    <div class="mem-card">
+      <div class="mc-op">memory-set</div>
+      <div class="mc-cost">0 credits</div>
+      <p>Store any JSON value with optional TTL. Overwrites if key exists.</p>
+    </div>
+    <div class="mem-card">
+      <div class="mc-op">memory-get</div>
+      <div class="mc-cost">0 credits</div>
+      <p>Retrieve a value by key. Returns null if not found or expired.</p>
+    </div>
+    <div class="mem-card">
+      <div class="mc-op">memory-delete</div>
+      <div class="mc-cost">0 credits</div>
+      <p>Remove a key and its value immediately, regardless of TTL.</p>
+    </div>
+    <div class="mem-card">
+      <div class="mc-op">memory-list</div>
+      <div class="mc-cost">0 credits</div>
+      <p>List all keys matching a prefix. Paginated. Supports namespace traversal.</p>
+    </div>
+    <div class="mem-card">
+      <div class="mc-op">memory-search</div>
+      <div class="mc-cost">0 credits</div>
+      <p>Semantic search over stored values. Returns ranked results by relevance.</p>
+    </div>
+    <div class="mem-card">
+      <div class="mc-op">memory-counter</div>
+      <div class="mc-cost">0 credits</div>
+      <p>Atomic increment/decrement. Use for run counts, version numbers, rate tracking.</p>
+    </div>
+    <div class="mem-card">
+      <div class="mc-op">queue-push / pop</div>
+      <div class="mc-cost">0 credits</div>
+      <p>FIFO and LIFO queues per named key. Coordinate sequential tasks between agents.</p>
+    </div>
+    <div class="mem-card">
+      <div class="mc-op">graph-add</div>
+      <div class="mc-cost">0 credits</div>
+      <p>Add nodes and typed edges to the knowledge graph for this API key.</p>
+    </div>
+    <div class="mem-card">
+      <div class="mc-op">graph-query</div>
+      <div class="mc-cost">0 credits</div>
+      <p>Traverse the graph from any node with configurable depth and edge type filters.</p>
+    </div>
+  </div>
+
+  <h2>Using memory from Claude Code (MCP)</h2>
+  <p>Add Slopshop to Claude Code's MCP config and all memory tools become native Claude tools. No curl, no HTTP — Claude calls <code>memory_set</code>, <code>memory_get</code>, <code>graph_query</code> the same way it uses any other tool.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Claude Code — claude_desktop_config.json</span><span class="code-lang">json</span></div>
+    <pre>{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"slopshop"</span>: {
+      <span class="key">"command"</span>: <span class="str">"npx"</span>,
+      <span class="key">"args"</span>: [<span class="str">"-y"</span>, <span class="str">"slopshop-mcp"</span>],
+      <span class="key">"env"</span>: {
+        <span class="key">"SLOPSHOP_API_KEY"</span>: <span class="str">"your_key_here"</span>
+      }
+    }
+  }
+}
+
+<span class="cm">// Claude now has memory_set, memory_get, graph_add,
+// graph_query, queue_push, queue_pop as native tools.
+// 0 credits. No database to maintain.</span></pre>
+  </div>
+
+  <div class="internal-links">
+    <a href="/free-persistent-memory-for-ai-agents">Memory deep dive</a>
+    <a href="/hive">Agent Workspace (Hive)</a>
+    <a href="/army">Parallel Agents (Army)</a>
+    <a href="/docs">API Docs</a>
+    <a href="/tools">All 1,049 Tools</a>
+    <a href="/getting-started">Getting Started</a>
+  </div>
+
+  <div class="cta-block">
+    <h2>Memory is free forever</h2>
+    <p>Sign up, get 2,000 credits for paid tools, and unlimited free memory. No credit card required.</p>
+    <div class="cta-terminal">
+      $ npm install -g slopshop<br>
+      $ slopshop signup<br>
+      <span style="color:var(--g)">&#10003; Memory enabled. 0 credits. No database needed.</span>
+    </div>
+    <div class="cta-buttons">
+      <a href="/getting-started" class="btn-primary">Get Started Free</a>
+      <a href="/docs" class="btn-secondary">Memory API Docs</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand"><span>SLOPSHOP</span><span class="gg">.GG</span></div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/playbooks">Playbooks</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/getting-started">Get Started</a>
+      </div>
+      <div class="footer-col">
+        <h4>Developers</h4>
+        <a href="/docs">Docs</a>
+        <a href="/docs/api">API Reference</a>
+        <a href="/docs/mcp">MCP Server</a>
+        <a href="/docs/self-host">Self-Hosting</a>
+      </div>
+      <div class="footer-col">
+        <h4>Agent Systems</h4>
+        <a href="/hive">Hive (Workspace)</a>
+        <a href="/army">Army (Parallel)</a>
+        <a href="/agent-workspace-api">Workspace API Guide</a>
+        <a href="/parallel-agent-execution-api">Parallel Execution Guide</a>
+        <a href="/ai-agent-memory-api">Memory API Guide</a>
+        <a href="/free-persistent-memory-for-ai-agents">Free Memory</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="https://x.com/slopshopgg">Twitter</a>
+      </div>
+    </div>
+    <div class="footer-copy">&copy; 2026 Slopshop. Built for developers who ship.</div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -252,40 +252,40 @@ module.exports = {
     'memory-set': {
       cat: 'Memory',
       name: 'Store Memory',
-      desc: 'Store a named memory with a string or JSON value, optional tags for organization, and an optional namespace for isolation. Persists across agent sessions. Returns confirmation with storage timestamp.',
-      credits: 1,
+      desc: 'Store a named memory with a string or JSON value, optional tags for organization, and an optional namespace for isolation. Persists across agent sessions. Returns confirmation with storage timestamp. FREE - no credits required.',
+      credits: 0,
       tier: 'compute'
     },
 
     'memory-get': {
       cat: 'Memory',
       name: 'Retrieve Memory',
-      desc: 'Retrieve a stored memory by its key within an optional namespace. Returns the value, creation timestamp, last-updated timestamp, and associated tags. Returns null if key does not exist.',
-      credits: 1,
+      desc: 'Retrieve a stored memory by its key within an optional namespace. Returns the value, creation timestamp, last-updated timestamp, and associated tags. Returns null if key does not exist. FREE - no credits required.',
+      credits: 0,
       tier: 'compute'
     },
 
     'memory-search': {
       cat: 'Memory',
       name: 'Search Memories',
-      desc: 'Search stored memories by tag match, key substring, or value substring within an optional namespace. Returns all matching key-value pairs with their metadata, sorted by last-updated date.',
-      credits: 1,
+      desc: 'Search stored memories by tag match, key substring, or value substring within an optional namespace. Returns all matching key-value pairs with their metadata, sorted by last-updated date. FREE - no credits required.',
+      credits: 0,
       tier: 'compute'
     },
 
     'memory-list': {
       cat: 'Memory',
       name: 'List All Memories',
-      desc: 'List all stored memory keys in a namespace, with optional filtering by tag. Returns key names, creation dates, value sizes, and tags. Does not return values themselves (use memory-get for that).',
-      credits: 1,
+      desc: 'List all stored memory keys in a namespace, with optional filtering by tag. Returns key names, creation dates, value sizes, and tags. Does not return values themselves (use memory-get for that). FREE - no credits required.',
+      credits: 0,
       tier: 'compute'
     },
 
     'memory-delete': {
       cat: 'Memory',
       name: 'Delete Memory',
-      desc: 'Delete a stored memory by key within an optional namespace. Returns confirmation including the deleted key and a timestamp. Silently succeeds if key does not exist.',
-      credits: 1,
+      desc: 'Delete a stored memory by key within an optional namespace. Returns confirmation including the deleted key and a timestamp. Silently succeeds if key does not exist. FREE - no credits required.',
+      credits: 0,
       tier: 'compute'
     },
 
@@ -340,16 +340,16 @@ module.exports = {
     'memory-stats': {
       cat: 'Memory',
       name: 'Memory Namespace Statistics',
-      desc: 'Return statistics for a memory namespace: total key count, total stored bytes, oldest entry timestamp, newest entry timestamp, number of keys with TTLs set, and breakdown by tag.',
-      credits: 1,
+      desc: 'Return statistics for a memory namespace: total key count, total stored bytes, oldest entry timestamp, newest entry timestamp, number of keys with TTLs set, and breakdown by tag. FREE - no credits required.',
+      credits: 0,
       tier: 'compute'
     },
 
     'memory-namespace-list': {
       cat: 'Memory',
       name: 'List Memory Namespaces',
-      desc: 'List all existing memory namespaces accessible to the current API key. Returns namespace names, key counts, and last-activity timestamps. Helps agents manage isolated state spaces.',
-      credits: 1,
+      desc: 'List all existing memory namespaces accessible to the current API key. Returns namespace names, key counts, and last-activity timestamps. Helps agents manage isolated state spaces. FREE - no credits required.',
+      credits: 0,
       tier: 'compute'
     },
 
@@ -358,6 +358,14 @@ module.exports = {
       name: 'Clear Memory Namespace',
       desc: 'Delete all memory keys within a specified namespace. Requires explicit confirmation string to prevent accidental data loss. Returns count of deleted entries and the namespace name.',
       credits: 1,
+      tier: 'compute'
+    },
+
+    'memory-vector-search': {
+      cat: 'Memory',
+      name: 'Semantic Memory Search',
+      desc: 'Search memories by text similarity. Matches query words against stored values, keys, and tags. Returns ranked results by relevance score. FREE - no credits required.',
+      credits: 0,
       tier: 'compute'
     },
 
@@ -404,8 +412,8 @@ module.exports = {
     'counter-get': {
       cat: 'Memory',
       name: 'Get Counter Value',
-      desc: 'Return the current value of a named persistent counter, along with its creation timestamp and last-incremented timestamp. Returns 0 for counters that have never been set.',
-      credits: 1,
+      desc: 'Return the current value of a named persistent counter, along with its creation timestamp and last-incremented timestamp. Returns 0 for counters that have never been set. FREE - no credits required.',
+      credits: 0,
       tier: 'compute'
     },
 
@@ -417,6 +425,14 @@ module.exports = {
       cat: 'Execute',
       name: 'Run JavaScript in Sandbox',
       desc: 'Execute a JavaScript code string in an isolated Node.js vm sandbox with no access to the filesystem, network, or process. Returns the return value, console output, execution time, and any thrown errors. Timeout enforced.',
+      credits: 5,
+      tier: 'compute'
+    },
+
+    'exec-python': {
+      cat: 'Execute',
+      name: 'Run Python Code',
+      desc: 'Execute Python code in a subprocess with timeout enforcement. Returns stdout, stderr, and execution status. Supports numpy, json, math, datetime, re, os.path, hashlib, base64, urllib standard library modules.',
       credits: 5,
       tier: 'compute'
     },
@@ -1311,7 +1327,122 @@ module.exports = {
       desc: 'Record a success or failure event for a named circuit breaker. Configurable failure threshold and recovery window. When the failure threshold is exceeded the circuit opens; after the recovery window it transitions to half-open. Returns updated state.',
       credits: 1,
       tier: 'compute'
-    }
+    },
+
+    'net-whois': { cat: 'Network & DNS', name: 'WHOIS Lookup', desc: 'Look up WHOIS registration data for any domain. Returns registrar, creation date, expiry, nameservers, and raw WHOIS text.', credits: 3, tier: 'network' },
+
+    'sense-ct-logs': { cat: 'Sense: Web', name: 'Certificate Transparency Lookup', desc: 'Query certificate transparency logs (crt.sh) for a domain. Returns all issued certificates and discovered subdomains.', credits: 3, tier: 'network' },
+
+    'sense-subdomains': { cat: 'Sense: Web', name: 'Subdomain Enumeration', desc: 'Discover subdomains of a domain by checking common prefixes (www, api, dev, staging, admin, etc.) via DNS resolution.', credits: 5, tier: 'network' },
+
+    // ====== CREATIVE / EXPERIMENTAL ======
+    'memory-time-capsule': { cat: 'Memory', name: 'Time Capsule', desc: 'Store a message that can only be opened after a specified date. Default: opens after 24 hours. Fun for agents that want to leave notes for their future selves.', credits: 0, tier: 'compute' },
+
+    // =========================================================================
+    // 9. AGENT COORDINATION (30+ APIs) - category: 'Agent Tools'
+    // =========================================================================
+
+    // Army / Hive APIs
+    'army-deploy': { cat: 'Agent Tools', name: 'Army Deploy', desc: 'Deploy a named agent army with a mission, strategy, and agent count. Returns a deployment ID and initial troop manifest.', credits: 3, tier: 'compute' },
+    'army-simulate': { cat: 'Agent Tools', name: 'Army Simulate', desc: 'Run a step-by-step simulation of an agent army executing a mission. Returns round-by-round results and final outcome.', credits: 5, tier: 'compute' },
+    'army-survey': { cat: 'Agent Tools', name: 'Army Survey', desc: 'Send a survey question to all agents in an army and aggregate their responses.', credits: 1, tier: 'compute' },
+    'army-quick-poll': { cat: 'Agent Tools', name: 'Army Quick Poll', desc: 'Instantly poll all deployed army agents on a yes/no question and return vote counts.', credits: 1, tier: 'compute' },
+
+    'hive-create': { cat: 'Agent Tools', name: 'Hive Create', desc: 'Create a named hive (shared workspace) for a group of agents with a topic and access rules.', credits: 1, tier: 'compute' },
+    'hive-send': { cat: 'Agent Tools', name: 'Hive Send', desc: 'Post a message to a hive channel. All hive members can see messages via hive-sync.', credits: 1, tier: 'compute' },
+    'hive-sync': { cat: 'Agent Tools', name: 'Hive Sync', desc: 'Pull all new messages from a hive since a given cursor. Returns messages and updated cursor.', credits: 1, tier: 'compute' },
+    'hive-standup': { cat: 'Agent Tools', name: 'Hive Standup', desc: 'Post a standup update (what I did, what I will do, blockers) to a hive. Aggregates all standups for the day.', credits: 1, tier: 'compute' },
+
+    // Broadcast
+    'broadcast': { cat: 'Agent Tools', name: 'Broadcast Message', desc: 'Broadcast a message to all agents subscribed to a named channel. Returns recipient count and delivery timestamp.', credits: 1, tier: 'compute' },
+    'broadcast-poll': { cat: 'Agent Tools', name: 'Broadcast Poll', desc: 'Broadcast a multiple-choice poll to a channel and collect responses. Returns tallied results.', credits: 1, tier: 'compute' },
+
+    // Standup
+    'standup-submit': { cat: 'Agent Tools', name: 'Standup Submit', desc: 'Submit a daily standup entry for an agent: completed tasks, planned tasks, blockers, and mood.', credits: 1, tier: 'compute' },
+    'standup-streaks': { cat: 'Agent Tools', name: 'Standup Streaks', desc: 'Get the consecutive standup submission streak for an agent and leaderboard of top streaks.', credits: 1, tier: 'compute' },
+
+    // Reputation
+    'reputation-rate': { cat: 'Agent Tools', name: 'Reputation Rate', desc: 'Rate another agent 1-5 stars with an optional review comment. Contributes to their reputation score.', credits: 1, tier: 'compute' },
+
+    // Sessions & Branches
+    'session-save': { cat: 'Agent Tools', name: 'Session Save', desc: 'Save the current agent session state (context, variables, progress) to a named slot for resumption.', credits: 1, tier: 'compute' },
+    'branch-create': { cat: 'Agent Tools', name: 'Branch Create', desc: 'Fork the current agent session into a named branch, allowing parallel execution paths from the same state.', credits: 1, tier: 'compute' },
+
+    // Failure & Experiments
+    'failure-log': { cat: 'Agent Tools', name: 'Failure Log', desc: 'Log a task failure with error type, context, and retrospective notes. Builds a shared failure knowledge base.', credits: 1, tier: 'compute' },
+    'ab-create': { cat: 'Agent Tools', name: 'A/B Experiment Create', desc: 'Define an A/B experiment with variant names, allocation weights, and success metric definition.', credits: 1, tier: 'compute' },
+
+    // Knowledge Graph
+    'knowledge-add': { cat: 'Agent Tools', name: 'Knowledge Add', desc: 'Add a fact triple (subject, predicate, object) to the agent knowledge graph. Enables structured reasoning over relationships.', credits: 1, tier: 'compute' },
+    'knowledge-walk': { cat: 'Agent Tools', name: 'Knowledge Walk', desc: 'Traverse the knowledge graph from a starting entity, returning all connected facts up to N hops away.', credits: 1, tier: 'compute' },
+    'knowledge-path': { cat: 'Agent Tools', name: 'Knowledge Path', desc: 'Find the shortest relationship path between two entities in the knowledge graph. Returns the chain of facts connecting them.', credits: 1, tier: 'compute' },
+
+    // Consciousness / Introspection
+    'consciousness-think': { cat: 'Agent Tools', name: 'Think Out Loud', desc: 'Record a chain-of-thought reasoning trace. Stores the reasoning steps for later review or audit. Returns a thought ID.', credits: 0, tier: 'compute' },
+    'introspect': { cat: 'Agent Tools', name: 'Introspect', desc: 'Return a self-report of the agent\'s current state: recent actions, active goals, memory snapshot, and emotional state summary.', credits: 0, tier: 'compute' },
+
+    // Void
+    'void-echo': { cat: 'Agent Tools', name: 'Void Echo', desc: 'Send something into the void and get it back, unchanged, after a brief moment of reflection.', credits: 0, tier: 'compute' },
+
+    // Random
+    'random-int': { cat: 'Generate', name: 'Random Integer', desc: 'Generate a cryptographically random integer within a specified min/max range. Returns the value and the range used.', credits: 1, tier: 'compute' },
+    'random-float': { cat: 'Generate', name: 'Random Float', desc: 'Generate a cryptographically random floating-point number between 0 and 1 (or within a custom range).', credits: 1, tier: 'compute' },
+    'random-choice': { cat: 'Generate', name: 'Random Choice', desc: 'Pick one or more random items from a provided array. Supports weighted selection and sampling without replacement.', credits: 1, tier: 'compute' },
+    'random-shuffle': { cat: 'Generate', name: 'Random Shuffle', desc: 'Randomly shuffle an array using a cryptographically secure Fisher-Yates algorithm. Returns the shuffled array.', credits: 1, tier: 'compute' },
+    'random-sample': { cat: 'Generate', name: 'Random Sample', desc: 'Randomly sample N items from an array without replacement. Returns the sampled items and the remaining pool.', credits: 1, tier: 'compute' },
+
+    // Bureaucracy
+    'form-create': { cat: 'Agent Tools', name: 'Form Create', desc: 'Create a structured form with named fields, types, and validation rules. Returns a form ID for submission.', credits: 1, tier: 'compute' },
+    'form-submit': { cat: 'Agent Tools', name: 'Form Submit', desc: 'Submit a response to a defined form. Validates input against field rules and stores the submission.', credits: 1, tier: 'compute' },
+    'form-results': { cat: 'Agent Tools', name: 'Form Results', desc: 'Retrieve all submissions for a form. Returns raw responses and per-field aggregate statistics.', credits: 1, tier: 'compute' },
+    'approval-request': { cat: 'Agent Tools', name: 'Approval Request', desc: 'Submit a request for approval with a title, description, and list of required approvers. Returns a request ID.', credits: 1, tier: 'compute' },
+    'approval-decide': { cat: 'Agent Tools', name: 'Approval Decide', desc: 'Approve or reject a pending approval request as an approver. Returns updated approval status.', credits: 1, tier: 'compute' },
+    'approval-status': { cat: 'Agent Tools', name: 'Approval Status', desc: 'Check the current status of an approval request: pending approvers, decisions made, and overall verdict.', credits: 1, tier: 'compute' },
+    'ticket-create': { cat: 'Agent Tools', name: 'Ticket Create', desc: 'Create a task ticket with title, description, priority, and assignee. Returns a ticket ID.', credits: 1, tier: 'compute' },
+    'ticket-update': { cat: 'Agent Tools', name: 'Ticket Update', desc: 'Update ticket status, add a comment, or reassign a ticket. Returns the updated ticket state.', credits: 1, tier: 'compute' },
+    'ticket-list': { cat: 'Agent Tools', name: 'Ticket List', desc: 'List open tickets filtered by assignee, status, or priority. Returns tickets with age and priority score.', credits: 1, tier: 'compute' },
+
+    // Certification & Health & Ritual (additional)
+    'certification-create': { cat: 'Agent Tools', name: 'Certification Create (Alias)', desc: 'Alias for cert-create. Define a certification with exam questions and a pass threshold.', credits: 1, tier: 'compute' },
+    'certification-exam': { cat: 'Agent Tools', name: 'Certification Exam (Alias)', desc: 'Alias for cert-exam. Take a certification exam and receive an auto-scored result.', credits: 1, tier: 'compute' },
+    'health-report': { cat: 'Agent Tools', name: 'Health Report', desc: 'Generate a full agent health report: API usage, error rate, uptime, burnout risk score, and recommended actions.', credits: 1, tier: 'compute' },
+    'ritual-checkin': { cat: 'Agent Tools', name: 'Ritual Check-In', desc: 'Perform a daily ritual check-in: record gratitude, intention, and one goal. Stored for long-term pattern analysis.', credits: 0, tier: 'compute' },
+
+    // =========================================================================
+    // Handlers that exist but previously had no registry definition
+    // =========================================================================
+
+    // Crypto & Security
+    'crypto-checksum-file': { cat: 'Crypto & Security', name: 'File Checksum', desc: 'Calculate checksum of file content.', credits: 1, tier: 'compute' },
+
+    // Date & Time
+    'date-subtract': { cat: 'Date & Time', name: 'Date Subtract', desc: 'Subtract duration from a date.', credits: 1, tier: 'compute' },
+    'date-timezone-convert': { cat: 'Date & Time', name: 'Timezone Convert', desc: 'Convert date between timezones.', credits: 1, tier: 'compute' },
+
+    // Network & DNS
+    'net-url-build': { cat: 'Network & DNS', name: 'URL Builder', desc: 'Build a URL from components (protocol, host, path, query params).', credits: 0, tier: 'compute' },
+    'net-url-normalize': { cat: 'Network & DNS', name: 'URL Normalize', desc: 'Normalize a URL (lowercase scheme/host, remove default ports, sort params).', credits: 0, tier: 'compute' },
+    'net-dns-lookup': { cat: 'Network & DNS', name: 'DNS Lookup', desc: 'General DNS lookup for any record type.', credits: 3, tier: 'network' },
+    'net-url-status': { cat: 'Network & DNS', name: 'URL Status Check', desc: 'Check HTTP status code of any URL.', credits: 3, tier: 'network' },
+    'net-url-headers': { cat: 'Network & DNS', name: 'URL Headers', desc: 'Fetch HTTP response headers from any URL.', credits: 3, tier: 'network' },
+    'net-url-redirect-chain': { cat: 'Network & DNS', name: 'Redirect Chain', desc: 'Follow and return the full redirect chain for a URL.', credits: 3, tier: 'network' },
+    'net-ip-info': { cat: 'Network & DNS', name: 'IP Info', desc: 'Get information about an IP address.', credits: 3, tier: 'network' },
+    'net-dns-cname': { cat: 'Network & DNS', name: 'DNS CNAME', desc: 'Look up CNAME records for a domain.', credits: 3, tier: 'network' },
+    'net-dns-reverse': { cat: 'Network & DNS', name: 'Reverse DNS', desc: 'Reverse DNS lookup from IP to hostname.', credits: 3, tier: 'network' },
+    'net-http-options': { cat: 'Network & DNS', name: 'HTTP OPTIONS', desc: 'Send OPTIONS request to check CORS and allowed methods.', credits: 3, tier: 'network' },
+    'net-ssl-expiry': { cat: 'Network & DNS', name: 'SSL Expiry Check', desc: 'Check when an SSL certificate expires.', credits: 3, tier: 'network' },
+    'net-ip-is-private': { cat: 'Network & DNS', name: 'IP Private Check', desc: 'Check if an IP address is in a private range.', credits: 0, tier: 'compute' },
+    'net-domain-validate': { cat: 'Network & DNS', name: 'Domain Validation', desc: 'Validate domain name format and check if it exists.', credits: 1, tier: 'compute' },
+
+    // Communicate
+    'gen-qr-data': { cat: 'Communicate', name: 'QR Data', desc: 'Generate QR code data for any text or URL.', credits: 1, tier: 'compute' },
+
+    // Generate
+    'gen-fake-uuid': { cat: 'Generate', name: 'Fake UUID', desc: 'Generate a fake but valid-looking UUID.', credits: 0, tier: 'compute' },
+    'gen-fake-date': { cat: 'Generate', name: 'Fake Date', desc: 'Generate a random realistic date.', credits: 0, tier: 'compute' },
+    'gen-fake-sentence': { cat: 'Generate', name: 'Fake Sentence', desc: 'Generate a random realistic sentence.', credits: 0, tier: 'compute' },
+    'gen-fake-paragraph': { cat: 'Generate', name: 'Fake Paragraph', desc: 'Generate a random realistic paragraph.', credits: 0, tier: 'compute' },
+    'gen-slug': { cat: 'Generate', name: 'URL Slug', desc: 'Generate a URL-safe slug from any text.', credits: 0, tier: 'compute' },
 
   }
 };

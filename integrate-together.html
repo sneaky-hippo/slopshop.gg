@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Slopshop for Together AI | 1,049 Real Tools for Hosted Open Models</title>
+<meta name="description" content="Connect Slopshop's 1,049 real tools to Together AI's hosted open models. OpenAI-compatible API. Run Llama, Mixtral, Qwen with function_calling and real Slopshop tools.">
+<meta name="keywords" content="Together AI function calling, Together AI tools, together API agent, Llama Together tools, Mixtral function calling, together.ai integration">
+<link rel="canonical" href="https://slopshop.gg/integrate-together">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/integrate-together">
+<meta property="og:title" content="Slopshop for Together AI — 1,049 Real Tools for Hosted Open Models">
+<meta property="og:description" content="Together AI hosts Llama, Mixtral, Qwen. Add 1,049 real Slopshop tools via function_calling. OpenAI-compatible. Free memory.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop for Together AI — 1,049 Real Tools">
+<meta name="twitter:description" content="Together AI + Slopshop: hosted open models + 1,049 real tools. Llama, Mixtral, Qwen with function_calling.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#FF6B35">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop for Together AI","description":"How to connect 1,049 real API tools to Together AI's hosted open models via function_calling using the OpenAI-compatible API.","url":"https://slopshop.gg/integrate-together","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"about":{"@type":"SoftwareApplication","name":"Slopshop","applicationCategory":"DeveloperApplication"}}</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--o:#ff8800;--g:#00cc66;--c:#00aaff;--v:#8855ff;
+  --acc:#FF6B35;--accg:rgba(255,107,53,0.1);--accb:rgba(255,107,53,0.2);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--acc);color:#fff}
+a{color:var(--acc);text-decoration:none;transition:opacity 0.15s}
+a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2)}
+.hero{padding:136px 32px 80px;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(255,107,53,0.06),transparent 60%)}
+.hero-inner{max-width:1100px;margin:0 auto}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;background:var(--accg);border:1px solid var(--accb);color:var(--acc);padding:5px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;margin-bottom:28px;font-family:var(--mono)}
+.hero h1{font-family:var(--mono);font-size:clamp(2.4rem,5.5vw,4rem);font-weight:800;letter-spacing:-0.03em;line-height:1.05;margin-bottom:24px}
+.hero h1 .accent{color:var(--acc)}.hero h1 .dim{color:var(--t3)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:560px;margin:0 auto;line-height:1.8}
+.hero .sub b{color:var(--t);font-weight:600}
+.stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;margin:48px 0;padding:32px 0;border-top:1px solid var(--b);border-bottom:1px solid var(--b)}
+.stat{text-align:center;padding:0 8px}
+.stat .n{font-family:var(--mono);font-size:1.7rem;font-weight:800;letter-spacing:-0.03em}
+.stat .l{font-size:0.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.14em;margin-top:6px;font-weight:600}
+.stat:nth-child(1) .n{color:var(--acc)}.stat:nth-child(2) .n{color:var(--o)}.stat:nth-child(3) .n{color:var(--g)}.stat:nth-child(4) .n{color:var(--c)}
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.cta-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--acc);color:#fff;text-decoration:none;transition:box-shadow 0.2s,transform 0.15s}
+.cta-primary:hover{box-shadow:0 0 28px rgba(255,107,53,0.35);transform:translateY(-1px);opacity:1}
+.cta-secondary{display:inline-flex;align-items:center;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2);text-decoration:none;transition:color 0.15s}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.sec{max-width:1100px;margin:0 auto;padding:80px 32px}
+.sec-label{font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--acc);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:12px}
+.sec h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
+.sec .desc{color:var(--t3);font-size:0.88rem;margin-bottom:40px;line-height:1.75;max-width:640px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px}
+.step{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;transition:border-color 0.2s}
+.step:hover{border-color:var(--b2)}
+.step-num{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px}
+.step h3{font-family:var(--mono);font-size:0.88rem;font-weight:700;margin-bottom:10px}
+.step p{font-size:0.8rem;color:var(--t3);line-height:1.75;margin-bottom:14px}
+.cmd{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.75rem;color:var(--o);cursor:pointer;position:relative}
+.cmd .copy-hint{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.58rem;color:var(--t4)}
+.model-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:40px}
+.model-card{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;transition:border-color 0.2s}
+.model-card:hover{border-color:var(--accb)}
+.model-card .name{font-family:var(--mono);font-size:0.78rem;font-weight:700;color:var(--t);margin-bottom:3px}
+.model-card .id{font-family:var(--mono);font-size:0.65rem;color:var(--acc)}
+.model-card .note{font-size:0.72rem;color:var(--t3);margin-top:4px}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:32px}
+.code-header{background:var(--s2);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .lang{font-family:var(--mono);font-size:0.68rem;color:var(--t3)}
+.code-header .fname{font-family:var(--mono);font-size:0.7rem;color:var(--acc);font-weight:600}
+.code-body{padding:20px 22px;font-family:var(--mono);font-size:0.78rem;line-height:1.85;overflow-x:auto;color:var(--t2)}
+.code-body .cm{color:var(--t4)}.code-body .kw{color:var(--acc)}.code-body .str{color:var(--g)}.code-body .fn{color:var(--c)}.code-body .num{color:var(--o)}
+.get-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:40px}
+.get-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px;transition:transform 0.15s}
+.get-card:hover{transform:translateY(-2px)}
+.get-card .icon{font-size:1.4rem;margin-bottom:12px}
+.get-card h3{font-family:var(--mono);font-size:0.82rem;font-weight:700;margin-bottom:6px}
+.get-card p{font-size:0.75rem;color:var(--t3);line-height:1.6}
+.get-card:nth-child(1){border-left:3px solid var(--acc)}.get-card:nth-child(2){border-left:3px solid var(--g)}
+.get-card:nth-child(3){border-left:3px solid var(--c)}.get-card:nth-child(4){border-left:3px solid var(--o)}.get-card:nth-child(5){border-left:3px solid var(--v)}
+.cta-banner{background:linear-gradient(135deg,rgba(255,107,53,0.08),rgba(255,107,53,0.03));border:1px solid rgba(255,107,53,0.2);border-radius:16px;padding:48px;text-align:center;margin:40px 0}
+.cta-banner h2{font-family:var(--mono);font-size:1.5rem;font-weight:800;margin-bottom:12px}
+.cta-banner h2 .accent{color:var(--acc)}
+.cta-banner p{color:var(--t3);margin-bottom:28px;font-size:0.9rem;max-width:480px;margin-left:auto;margin-right:auto}
+.divider{border:none;border-top:1px solid var(--b);margin:0}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t)}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}.nav-links a:nth-child(n+4){display:none}
+  .hero{padding:80px 16px 48px}.hero h1{font-size:clamp(2rem,10vw,2.8rem)}
+  .sec{padding:48px 16px}.steps{grid-template-columns:1fr}
+  .model-grid{grid-template-columns:1fr 1fr}.get-grid{grid-template-columns:1fr 1fr}
+  .footer-grid{grid-template-columns:1fr;gap:24px}.cta-banner{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><linearGradient id="navG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#navG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+    <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/templates">Templates</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      function_calling &nbsp;&middot;&nbsp; Llama &nbsp;&middot;&nbsp; Mixtral &nbsp;&middot;&nbsp; Qwen &nbsp;&middot;&nbsp; api.together.xyz
+    </div>
+    <h1>Slopshop for<br><span class="accent">Together AI</span></h1>
+    <p class="sub">
+      Together AI hosts the best open models at scale. Add <b>1,049 real Slopshop tools</b> via function_calling — same openai SDK, just point <b>base_url</b> at api.together.xyz.<br>
+      Free memory. Every result verified.
+    </p>
+
+    <div class="stats">
+      <div class="stat"><div class="n">422</div><div class="l">Real Tools</div></div>
+      <div class="stat"><div class="n">50+</div><div class="l">Hosted Models</div></div>
+      <div class="stat"><div class="n">OAI</div><div class="l">Compatible</div></div>
+      <div class="stat"><div class="n">100%</div><div class="l">Verified Results</div></div>
+    </div>
+
+    <div class="hero-ctas">
+      <a href="/docs" class="cta-primary">Get Started Free</a>
+      <a href="/v1/openapi.json" class="cta-secondary">View OpenAPI Schema</a>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec">
+  <div class="sec-label">Supported Models</div>
+  <h2>Open models with function calling support</h2>
+  <p class="desc">These Together AI models support function_calling with Slopshop tools. Use the full Together model ID as the <code style="color:var(--acc)">model</code> parameter.</p>
+
+  <div class="model-grid">
+    <div class="model-card">
+      <div class="name">Llama 3.3 70B</div>
+      <div class="id">meta-llama/Llama-3.3-70B-Instruct-Turbo</div>
+      <div class="note">Best open model for tool calling</div>
+    </div>
+    <div class="model-card">
+      <div class="name">Llama 3.1 405B</div>
+      <div class="id">meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo</div>
+      <div class="note">Largest open model</div>
+    </div>
+    <div class="model-card">
+      <div class="name">Mixtral 8x22B</div>
+      <div class="id">mistralai/Mixtral-8x22B-Instruct-v0.1</div>
+      <div class="note">Strong MoE reasoning</div>
+    </div>
+    <div class="model-card">
+      <div class="name">Qwen 2.5 72B</div>
+      <div class="id">Qwen/Qwen2.5-72B-Instruct-Turbo</div>
+      <div class="note">Excellent code + tool use</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Quickstart</div>
+  <h2>Three steps. Together has tools.</h2>
+  <p class="desc">Together AI's API is OpenAI-compatible. Set <code style="color:var(--acc)">base_url="https://api.together.xyz/v1"</code> and your Together API key — the rest is identical to the OpenAI integration.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">Step 01 &mdash; Install</div>
+      <h3>pip install openai</h3>
+      <p>Use the openai SDK directly. Together AI's OpenAI-compatible endpoint means zero new dependencies.</p>
+      <div class="cmd">pip install openai requests<span class="copy-hint">click to copy</span></div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 02 &mdash; Point at Together</div>
+      <h3>Set base_url and model ID</h3>
+      <p>Create an OpenAI client with Together's base_url. Use the full Together model ID — e.g. <code style="color:var(--acc)">meta-llama/Llama-3.3-70B-Instruct-Turbo</code>.</p>
+      <div class="cmd" style="color:var(--t3);font-size:0.68rem">base_url="https://api.together.xyz/v1"</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 03 &mdash; Add Tools</div>
+      <h3>Fetch and pass Slopshop tools</h3>
+      <p>Pull Slopshop tool definitions from <code style="color:var(--acc)">/v1/openapi.json</code> and pass them in the <code style="color:var(--acc)">tools</code> array. The model handles the rest.</p>
+      <div class="cmd" style="color:var(--g);font-size:0.7rem">1,049 tools &middot; any Together model &middot; verified</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Code Example</div>
+  <h2>function_calling with Llama 3.3 on Together AI</h2>
+  <p class="desc">Full agentic loop. The model ID is the only Together-specific part — everything else is standard OpenAI SDK.</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="fname">together_agent.py</span>
+      <span class="lang">python</span>
+    </div>
+    <div class="code-body"><pre><span class="kw">import</span> os, json, requests
+<span class="kw">from</span> openai <span class="kw">import</span> OpenAI
+
+<span class="cm"># Together AI is OpenAI-compatible</span>
+client = <span class="fn">OpenAI</span>(
+    api_key=os.environ[<span class="str">"TOGETHER_API_KEY"</span>],
+    base_url=<span class="str">"https://api.together.xyz/v1"</span>
+)
+
+SLOP_KEY = os.environ[<span class="str">"SLOPSHOP_API_KEY"</span>]
+SLOP_URL = <span class="str">"https://slopshop.gg"</span>
+
+<span class="cm"># Models with strong function_calling support on Together:</span>
+MODEL = <span class="str">"meta-llama/Llama-3.3-70B-Instruct-Turbo"</span>
+<span class="cm"># Alternatives:</span>
+<span class="cm"># "Qwen/Qwen2.5-72B-Instruct-Turbo"</span>
+<span class="cm"># "mistralai/Mixtral-8x22B-Instruct-v0.1"</span>
+<span class="cm"># "meta-llama/Meta-Llama-3.1-405B-Instruct-Turbo"</span>
+
+<span class="kw">def</span> <span class="fn">get_tools</span>(slugs: list[str]) -> list[dict]:
+    schema = requests.<span class="fn">get</span>(
+        <span class="str">f"{SLOP_URL}/v1/openapi.json"</span>,
+        headers={<span class="str">"Authorization"</span>: <span class="str">f"Bearer {SLOP_KEY}"</span>}
+    ).<span class="fn">json</span>()
+    tools = []
+    <span class="kw">for</span> slug <span class="kw">in</span> slugs:
+        path = schema[<span class="str">"paths"</span>].<span class="fn">get</span>(<span class="str">f"/v1/{slug}"</span>, {}).<span class="fn">get</span>(<span class="str">"post"</span>, {})
+        <span class="kw">if</span> path:
+            tools.<span class="fn">append</span>({
+                <span class="str">"type"</span>: <span class="str">"function"</span>,
+                <span class="str">"function"</span>: {
+                    <span class="str">"name"</span>: slug,
+                    <span class="str">"description"</span>: path.<span class="fn">get</span>(<span class="str">"summary"</span>, <span class="str">""</span>),
+                    <span class="str">"parameters"</span>: path[<span class="str">"requestBody"</span>][<span class="str">"content"</span>][<span class="str">"application/json"</span>][<span class="str">"schema"</span>]
+                }
+            })
+    <span class="kw">return</span> tools
+
+<span class="kw">def</span> <span class="fn">call_tool</span>(name: str, args: dict) -> str:
+    res = requests.<span class="fn">post</span>(
+        <span class="str">f"{SLOP_URL}/v1/{name}"</span>, json=args,
+        headers={<span class="str">"Authorization"</span>: <span class="str">f"Bearer {SLOP_KEY}"</span>}
+    )
+    <span class="kw">return</span> json.<span class="fn">dumps</span>(res.<span class="fn">json</span>())
+
+<span class="kw">def</span> <span class="fn">run_agent</span>(user_message: str) -> str:
+    tools = <span class="fn">get_tools</span>([<span class="str">"dns-lookup"</span>, <span class="str">"ssl-check"</span>, <span class="str">"http-request"</span>,
+                       <span class="str">"whois"</span>, <span class="str">"hash"</span>, <span class="str">"memory-set"</span>, <span class="str">"memory-get"</span>])
+    messages = [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: user_message}]
+
+    <span class="kw">while True</span>:
+        response = client.chat.completions.<span class="fn">create</span>(
+            model=MODEL,
+            messages=messages,
+            tools=tools,
+            tool_choice=<span class="str">"auto"</span>
+        )
+        msg = response.choices[<span class="num">0</span>].message
+
+        <span class="kw">if</span> response.choices[<span class="num">0</span>].finish_reason == <span class="str">"stop"</span>:
+            <span class="kw">return</span> msg.content
+
+        messages.<span class="fn">append</span>(msg)
+        <span class="kw">for</span> tc <span class="kw">in</span> (msg.tool_calls <span class="kw">or</span> []):
+            result = <span class="fn">call_tool</span>(tc.function.name, json.<span class="fn">loads</span>(tc.function.arguments))
+            messages.<span class="fn">append</span>({
+                <span class="str">"role"</span>: <span class="str">"tool"</span>,
+                <span class="str">"tool_call_id"</span>: tc.id,
+                <span class="str">"content"</span>: result
+            })
+
+answer = <span class="fn">run_agent</span>(<span class="str">"Audit slopshop.gg: DNS records, SSL cert, HTTP headers, save all to memory"</span>)
+<span class="fn">print</span>(answer)</pre></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">What You Get</div>
+  <h2>Open models + real execution</h2>
+  <p class="desc">Together AI gives you the best open models at scale. Slopshop gives them 1,049 real tools to act with — no simulated outputs, no hallucinated function results.</p>
+
+  <div class="get-grid">
+    <div class="get-card"><div class="icon">&#127381;</div><h3>1,049 Real Tools</h3><p>DNS, SSL, HTTP, crypto, hashing, code execution, data transforms. All real. Verified with _engine: real on every response.</p></div>
+    <div class="get-card"><div class="icon">&#129504;</div><h3>Free Persistent Memory</h3><p>Together agents can write to Slopshop's key-value store at zero credit cost. State persists across API calls automatically.</p></div>
+    <div class="get-card"><div class="icon">&#128279;</div><h3>Any Together Model</h3><p>Llama 3.3, Llama 3.1, Mixtral, Qwen 2.5 — any Together model with function calling support works with Slopshop tools.</p></div>
+    <div class="get-card"><div class="icon">&#128064;</div><h3>Full Observability</h3><p>Audit logs, per-request tracing, credit usage per tool call. Every invocation logged with inputs, outputs, and latency.</p></div>
+    <div class="get-card"><div class="icon">&#127968;</div><h3>Self-Hostable</h3><p>Run Slopshop on your own infrastructure. Only Together API calls go external — all compute tools run locally.</p></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="cta-banner">
+    <h2>Open models + <span class="accent">1,049 real tools</span></h2>
+    <p>Together AI + Slopshop. Change base_url. Pick any model. 1,049 tools.<br>Open models execute — for real.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a href="/docs" class="cta-primary">Get Started Free</a>
+      <a href="/v1/openapi.json" class="cta-secondary">OpenAPI Schema</a>
+      <a href="/tools" class="cta-secondary">Browse All 1,049 Tools</a>
+    </div>
+  </div>
+  <div style="display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px">
+    <a href="/docs" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Full Docs</a>
+    <a href="/tools" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Browse Tools</a>
+    <a href="/templates" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Agent Templates</a>
+    <a href="/savings" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Savings Calculator</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 512 512"><defs><linearGradient id="fG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#fG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col"><h4>Product</h4><a href="/tools">Tools</a><a href="/templates">Templates</a><a href="/#pricing">Pricing</a><a href="/savings">Savings</a></div>
+      <div class="footer-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/docs#getting-started">Getting Started</a><a href="/security">Security</a><a href="/changelog">Changelog</a></div>
+      <div class="footer-col"><h4>Company</h4><a href="/about">About</a><a href="/status">Status</a><a href="/legal">Legal</a><a href="https://x.com/slopshopgg">@slopshopgg</a></div>
+    </div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,049 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
+  </div>
+</footer>
+
+</body>
+</html>

@@ -1,11 +1,11 @@
 {
   "name": "slopshop",
-  "version": "2.0.0",
-  "description": "178 real APIs for AI agents. Crypto, text, math, dates, code gen, network tools, AI content. Credit-based. Zero mocks. Self-hostable.",
+  "version": "3.1.0",
+  "description": "1,149 real tools for AI agents. Compute, memory, networking, orchestration, copilot, exchange, validation, and security. Credit-based. Zero mocks. Self-hostable.",
   "main": "server-v2.js",
   "bin": {
-    "slop": "./cli.js",
-    "slopshop": "./cli.js"
+    "slop": "cli.js",
+    "slopshop": "cli.js"
   },
   "scripts": {
     "start": "node server-v2.js",
@@ -40,7 +40,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/slopshop/slopshop"
+    "url": "git+https://github.com/sneaky-hippo/slopshop.gg.git"
   },
   "homepage": "https://slopshop.gg",
   "engines": {
@@ -50,6 +50,7 @@
     "better-sqlite3": "^12.8.0",
     "cors": "^2.8.5",
     "express": "^4.21.0",
+    "helmet": "^8.1.0",
     "stripe": "^17.7.0"
   }
 }

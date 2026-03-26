@@ -1,0 +1,796 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Credit Savings Calculator - Slopshop.gg</title>
+<meta name="description" content="See how much you save using Slopshop vs building it yourself. Compare API costs, hosting, and dev time. Free, no signup required.">
+<meta name="keywords" content="AI agent cost calculator, API cost savings, slopshop calculator, agent tooling cost, developer savings">
+<link rel="canonical" href="https://slopshop.gg/savings">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/savings">
+<meta property="og:title" content="Slopshop Savings Calculator - See how much you save">
+<meta property="og:description" content="Estimate your costs with Slopshop vs building it yourself. No signup required. Compare API subscriptions, hosting, and dev time.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:creator" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop Savings Calculator - See how much you save">
+<meta name="twitter:description" content="Estimate costs with Slopshop vs building it yourself. No signup required.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='8' fill='%23ff3333'/><path d='M14 10c-3 0-4 2-4 4v4c0 2-1 3-3 3 2 0 3 1 3 3v4c0 2 1 4 4 4' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/><path d='M26 10c3 0 4 2 4 4v4c0 2 1 3 3 3-2 0-3 1-3 3v4c0 2-1 4-4 4' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/><circle cx='20' cy='21' r='2.5' fill='white'/></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased}
+body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;background:
+  linear-gradient(rgba(255,51,51,0.015) 1px,transparent 1px),
+  linear-gradient(90deg,rgba(255,51,51,0.015) 1px,transparent 1px);
+  background-size:64px 64px;pointer-events:none;z-index:-1}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none}a:hover{opacity:0.8}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:var(--r)}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:2px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s;font-family:var(--sans)}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--g);background:var(--gg)}
+
+/* HERO */
+.hero{padding:120px 32px 48px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:1200px;height:800px;background:radial-gradient(ellipse at center,rgba(0,204,102,0.05) 0%,rgba(0,204,102,0.02) 30%,transparent 60%);pointer-events:none;animation:heroGlow 8s ease-in-out infinite alternate}
+.hero::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:1px;height:80px;background:linear-gradient(to bottom,transparent,var(--g),transparent);opacity:0.3}
+@keyframes heroGlow{0%{opacity:0.6;transform:translateX(-50%) scale(1)}100%{opacity:1;transform:translateX(-50%) scale(1.05)}}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:rgba(0,204,102,0.06);border:1px solid rgba(0,204,102,0.15);color:var(--g);padding:6px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;font-family:var(--mono);margin-bottom:28px;backdrop-filter:blur(8px)}
+.hero h1{font-family:var(--mono);font-size:clamp(2.2rem,5.5vw,3.8rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin-bottom:20px}
+.hero h1 .green{color:var(--g);text-shadow:0 0 80px rgba(0,204,102,0.15)}.hero h1 .white{color:var(--t)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1.05rem);max-width:520px;margin:0 auto;line-height:1.8;font-weight:400}
+.hero .sub b{color:var(--t);font-weight:600}
+.free-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gg);border:1px solid rgba(0,204,102,0.2);color:var(--g);padding:4px 14px;border-radius:99px;font-size:0.7rem;font-weight:700;font-family:var(--mono);margin-top:16px}
+
+/* GRADIENT LINE */
+@keyframes gradientSlide{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.gradient-line{height:1px;background:linear-gradient(90deg,transparent,var(--g),var(--c),var(--g),transparent);background-size:200% 100%;animation:gradientSlide 6s ease infinite;margin:0 auto;max-width:400px;opacity:0.4}
+
+/* PRESETS */
+.presets-wrap{max-width:1100px;margin:0 auto 32px;padding:0 32px}
+.presets-label{font-size:0.68rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.14em;font-weight:600;font-family:var(--mono);margin-bottom:12px}
+.presets{display:flex;gap:8px;flex-wrap:wrap}
+.preset-btn{background:var(--s2);border:1px solid var(--b2);color:var(--t2);padding:7px 16px;border-radius:8px;font-size:0.75rem;font-weight:600;cursor:pointer;transition:0.2s;font-family:var(--sans)}
+.preset-btn:hover{border-color:var(--g);color:var(--g);background:var(--gg)}
+.preset-btn.active{border-color:var(--g);color:var(--g);background:var(--gg)}
+
+/* CALCULATOR LAYOUT */
+.calc-wrap{max-width:1100px;margin:0 auto;padding:0 32px 80px;display:grid;grid-template-columns:1fr 380px;gap:24px;align-items:start}
+@media(max-width:900px){.calc-wrap{grid-template-columns:1fr;padding:0 16px 60px}}
+
+/* LEFT - WORKFLOW */
+.workflow-panel{background:var(--s1);border:1px solid var(--b2);border-radius:14px;overflow:hidden}
+.panel-header{background:var(--s2);padding:14px 20px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-family:var(--mono);font-size:0.8rem;font-weight:700;color:var(--t);letter-spacing:0.05em}
+.panel-sub{font-size:0.68rem;color:var(--t3);font-weight:500}
+
+/* TASK ROWS */
+.task-list{padding:12px}
+.task-row{padding:14px 8px;border-bottom:1px solid rgba(255,255,255,0.03);transition:0.2s}
+.task-row:last-child{border-bottom:none}
+.task-row:hover{background:rgba(255,255,255,0.02);border-radius:8px}
+.task-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:10px}
+.task-check{width:18px;height:18px;border-radius:5px;border:1.5px solid var(--b2);background:var(--s2);cursor:pointer;appearance:none;-webkit-appearance:none;flex-shrink:0;margin-top:1px;transition:0.15s;position:relative}
+.task-check:checked{background:var(--g);border-color:var(--g)}
+.task-check:checked::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:#000;font-size:11px;font-weight:800;line-height:1}
+.task-check:hover:not(:checked){border-color:var(--g)}
+.task-info{flex:1}
+.task-name{font-size:0.85rem;font-weight:600;color:var(--t);margin-bottom:3px}
+.task-desc{font-size:0.72rem;color:var(--t3);line-height:1.5}
+.task-qty-wrap{display:flex;align-items:center;gap:10px;opacity:0.35;pointer-events:none;transition:0.2s}
+.task-qty-wrap.enabled{opacity:1;pointer-events:all}
+.task-qty-label{font-size:0.68rem;color:var(--t3);font-family:var(--mono);white-space:nowrap}
+.task-qty{width:80px;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:5px 10px;border-radius:6px;font-family:var(--mono);font-size:0.78rem;text-align:right;outline:none;transition:0.15s}
+.task-qty:focus{border-color:var(--g);box-shadow:0 0 0 2px rgba(0,204,102,0.1)}
+.task-costs{display:flex;gap:16px;padding-left:30px;flex-wrap:wrap}
+.cost-pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:99px;font-size:0.65rem;font-family:var(--mono);font-weight:600}
+.cost-pill.diy{background:rgba(255,136,0,0.08);color:var(--o);border:1px solid rgba(255,136,0,0.15)}
+.cost-pill.slop{background:var(--gg);color:var(--g);border:1px solid rgba(0,204,102,0.15)}
+.cost-pill .label{color:var(--t4);font-weight:500}
+
+/* RIGHT - RESULTS */
+.results-panel{position:sticky;top:72px;display:flex;flex-direction:column;gap:16px}
+@media(max-width:900px){.results-panel{position:static}}
+
+.result-card{background:var(--s1);border:1px solid var(--b2);border-radius:14px;padding:20px;transition:0.3s}
+.result-card.highlight{border-color:rgba(0,204,102,0.3);background:linear-gradient(135deg,rgba(0,204,102,0.05) 0%,var(--s1) 50%)}
+.rc-label{font-size:0.65rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.14em;font-weight:600;font-family:var(--mono);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.rc-label .dot{width:6px;height:6px;border-radius:50%;background:currentColor}
+.rc-label.diy{color:var(--o)}.rc-label.slop{color:var(--c)}.rc-label.save{color:var(--g)}
+.rc-amount{font-family:var(--mono);font-size:2rem;font-weight:800;letter-spacing:-0.03em;transition:all 0.3s ease}
+.rc-amount.green{color:var(--g)}
+.rc-amount.orange{color:var(--o)}
+.rc-amount.blue{color:var(--c)}
+.rc-breakdown{margin-top:10px;display:flex;flex-direction:column;gap:4px}
+.rc-line{display:flex;justify-content:space-between;align-items:center;font-size:0.7rem;color:var(--t3);font-family:var(--mono)}
+.rc-line .val{color:var(--t2)}
+.rc-line.highlight-line .val{color:var(--g)}
+.rc-pct{font-size:0.72rem;color:var(--g);font-weight:700;font-family:var(--mono);margin-top:4px}
+.rc-zero{font-size:0.7rem;color:var(--g);background:var(--gg);border:1px solid rgba(0,204,102,0.2);padding:5px 10px;border-radius:6px;font-family:var(--mono);margin-top:8px;display:flex;align-items:center;gap:6px}
+
+/* TIER PILLS */
+.tier-section{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.04)}
+.tier-label{font-size:0.63rem;color:var(--t3);font-family:var(--mono);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.1em}
+.tiers{display:flex;flex-direction:column;gap:4px}
+.tier-row{display:flex;justify-content:space-between;align-items:center;padding:5px 8px;border-radius:6px;transition:0.2s;border:1px solid transparent}
+.tier-row.active{background:var(--gg);border-color:rgba(0,204,102,0.2)}
+.tier-row .tier-name{font-size:0.68rem;font-family:var(--mono);color:var(--t3)}
+.tier-row.active .tier-name{color:var(--g);font-weight:700}
+.tier-row .tier-cost{font-size:0.68rem;font-family:var(--mono);color:var(--t4)}
+.tier-row.active .tier-cost{color:var(--g)}
+.tier-row .tier-rec{font-size:0.58rem;background:var(--g);color:#000;padding:1px 6px;border-radius:99px;font-weight:700}
+
+/* CTA */
+.cta-card{background:linear-gradient(135deg,rgba(0,204,102,0.08),rgba(0,170,255,0.05));border:1px solid rgba(0,204,102,0.2);border-radius:14px;padding:20px;text-align:center}
+.cta-title{font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:6px}
+.cta-sub{font-size:0.72rem;color:var(--t3);margin-bottom:14px;line-height:1.6}
+.cta-btn{display:inline-block;background:var(--g);color:#000;padding:10px 24px;border-radius:8px;font-weight:800;font-size:0.8rem;font-family:var(--mono);transition:0.2s;border:none;cursor:pointer;text-decoration:none}
+.cta-btn:hover{background:#00e070;color:#000;opacity:1;box-shadow:0 0 20px rgba(0,204,102,0.3)}
+
+/* BOTTOM SECTION */
+.bottom-wrap{max-width:1100px;margin:0 auto;padding:0 32px 80px}
+.bottom-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px}
+@media(max-width:700px){.bottom-grid{grid-template-columns:1fr}}
+.bottom-card{background:var(--s1);border:1px solid var(--b2);border-radius:12px;padding:20px}
+.bottom-card-title{font-family:var(--mono);font-size:0.75rem;font-weight:700;color:var(--t);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.bottom-card-title .ico{color:var(--g)}
+.compare-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid rgba(255,255,255,0.03);font-size:0.72rem}
+.compare-row:last-child{border-bottom:none}
+.compare-row .label{color:var(--t3)}
+.compare-row .diy-val{color:var(--o);font-family:var(--mono);font-weight:600}
+.compare-row .slop-val{color:var(--g);font-family:var(--mono);font-weight:600}
+.vs-badge{font-size:0.6rem;color:var(--t4);background:var(--s3);padding:2px 6px;border-radius:4px;font-family:var(--mono)}
+.time-save-card{background:var(--s1);border:1px solid rgba(0,170,255,0.2);border-radius:12px;padding:20px;margin-bottom:16px;display:flex;align-items:center;gap:16px}
+.time-ico{font-size:2rem;flex-shrink:0}
+.time-info .time-label{font-size:0.65rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;font-family:var(--mono);margin-bottom:4px}
+.time-info .time-val{font-family:var(--mono);font-size:1.4rem;font-weight:800;color:var(--c)}
+.time-info .time-sub{font-size:0.7rem;color:var(--t3);margin-top:3px}
+.disclaimer{text-align:center;font-size:0.68rem;color:var(--t4);font-family:var(--mono);padding:16px 0;border-top:1px solid rgba(255,255,255,0.03)}
+
+/* ANIMATED NUMBER */
+@keyframes numPop{0%{transform:scale(1.05);opacity:0.7}100%{transform:scale(1);opacity:1}}
+.num-update{animation:numPop 0.25s ease-out}
+
+/* MOBILE NAV */
+@media(max-width:640px){
+  nav{padding:0 16px}
+  .nav-links a:not(.nav-cta){display:none}
+  .hero{padding:100px 20px 40px}
+  .presets-wrap{padding:0 16px}
+  .presets{gap:6px}
+  .preset-btn{font-size:0.7rem;padding:6px 12px}
+  .task-costs{padding-left:0}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nv">
+    <a href="/" class="logo" style="color:var(--t)">
+      <svg width="22" height="22" viewBox="0 0 40 40"><rect width="40" height="40" rx="8" fill="#ff3333"/><path d="M14 10c-3 0-4 2-4 4v4c0 2-1 3-3 3 2 0 3 1 3 3v4c0 2 1 4 4 4" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M26 10c3 0 4 2 4 4v4c0 2 1 3 3 3-2 0-3 1-3 3v4c0 2-1 4-4 4" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/><circle cx="20" cy="21" r="2.5" fill="white"/></svg>
+      <span><span class="mark">SLOPSHOP</span><span class="gg">.GG</span></span>
+    </a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/pricing.html">Pricing</a>
+      <a href="/getting-started.html">Docs</a>
+      <a href="/savings.html" class="active">Calculator</a>
+      <a href="/getting-started.html" style="background:var(--r);color:#fff;padding:6px 14px;border-radius:6px;font-weight:700;font-size:0.75rem">Get Started</a>
+    </div>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="hero-tag">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+    Free Savings Estimator
+  </div>
+  <h1><span class="white">How much could</span><br><span class="green">you save?</span></h1>
+  <p class="sub">Estimate your costs with Slopshop vs building it yourself.<br><b>No signup required.</b> All calculations run in your browser.</p>
+  <div class="free-badge">
+    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+    100% free tool — no account needed
+  </div>
+</div>
+
+<div style="padding:0 32px 32px;display:flex;justify-content:center"><div class="gradient-line" style="max-width:200px"></div></div>
+
+<!-- PRESETS -->
+<div class="presets-wrap">
+  <div class="presets-label">Quick-fill scenarios</div>
+  <div class="presets">
+    <button class="preset-btn" onclick="applyPreset('solo')">Solo Developer</button>
+    <button class="preset-btn" onclick="applyPreset('agent')">AI Agent Builder</button>
+    <button class="preset-btn" onclick="applyPreset('pipeline')">Data Pipeline</button>
+    <button class="preset-btn" onclick="applyPreset('security')">Security Researcher</button>
+    <button class="preset-btn" onclick="applyPreset('clear')">Clear All</button>
+  </div>
+</div>
+
+<!-- CALCULATOR -->
+<div class="calc-wrap">
+
+  <!-- LEFT: WORKFLOW -->
+  <div class="workflow-panel">
+    <div class="panel-header">
+      <span class="panel-title">Your Workflow</span>
+      <span class="panel-sub">Check what your agent does each month</span>
+    </div>
+    <div class="task-list" id="taskList">
+
+      <!-- Text Processing -->
+      <div class="task-row">
+        <div class="task-top">
+          <input type="checkbox" class="task-check" id="chk-text" onchange="toggleTask('text',this)">
+          <div class="task-info">
+            <div class="task-name">Text Processing</div>
+            <div class="task-desc">Word count, tokenize, extract entities, regex, clean, parse HTML, NLP operations</div>
+          </div>
+          <div class="task-qty-wrap" id="qty-wrap-text">
+            <span class="task-qty-label">calls/mo</span>
+            <input type="number" class="task-qty" id="qty-text" value="1000" min="0" oninput="recalc()">
+          </div>
+        </div>
+        <div class="task-costs">
+          <span class="cost-pill diy"><span class="label">DIY</span> ~$0.03–0.05/call</span>
+          <span class="cost-pill slop"><span class="label">Slopshop</span> 1cr = $0.0049</span>
+        </div>
+      </div>
+
+      <!-- Hashing & Crypto -->
+      <div class="task-row">
+        <div class="task-top">
+          <input type="checkbox" class="task-check" id="chk-crypto" onchange="toggleTask('crypto',this)">
+          <div class="task-info">
+            <div class="task-name">Hashing &amp; Crypto</div>
+            <div class="task-desc">SHA256, JWT sign/verify, encryption, password hashing, HMAC, random tokens</div>
+          </div>
+          <div class="task-qty-wrap" id="qty-wrap-crypto">
+            <span class="task-qty-label">calls/mo</span>
+            <input type="number" class="task-qty" id="qty-crypto" value="500" min="0" oninput="recalc()">
+          </div>
+        </div>
+        <div class="task-costs">
+          <span class="cost-pill diy"><span class="label">DIY</span> ~$0.02–0.04/call</span>
+          <span class="cost-pill slop"><span class="label">Slopshop</span> 1cr = $0.0049</span>
+        </div>
+      </div>
+
+      <!-- Web Scraping & Sensing -->
+      <div class="task-row">
+        <div class="task-top">
+          <input type="checkbox" class="task-check" id="chk-web" onchange="toggleTask('web',this)">
+          <div class="task-info">
+            <div class="task-name">Web Scraping &amp; Sensing</div>
+            <div class="task-desc">Fetch URL content, tech stack detection, DNS lookup, SSL check, uptime monitoring</div>
+          </div>
+          <div class="task-qty-wrap" id="qty-wrap-web">
+            <span class="task-qty-label">calls/mo</span>
+            <input type="number" class="task-qty" id="qty-web" value="200" min="0" oninput="recalc()">
+          </div>
+        </div>
+        <div class="task-costs">
+          <span class="cost-pill diy"><span class="label">DIY</span> ~$0.05–0.30/call</span>
+          <span class="cost-pill slop"><span class="label">Slopshop</span> 3cr = $0.0147</span>
+        </div>
+      </div>
+
+      <!-- LLM Calls -->
+      <div class="task-row">
+        <div class="task-top">
+          <input type="checkbox" class="task-check" id="chk-llm" onchange="toggleTask('llm',this)">
+          <div class="task-info">
+            <div class="task-name">LLM Calls</div>
+            <div class="task-desc">Summarize, sentiment analysis, classify, generate, extract structured data</div>
+          </div>
+          <div class="task-qty-wrap" id="qty-wrap-llm">
+            <span class="task-qty-label">calls/mo</span>
+            <input type="number" class="task-qty" id="qty-llm" value="300" min="0" oninput="recalc()">
+          </div>
+        </div>
+        <div class="task-costs">
+          <span class="cost-pill diy"><span class="label">DIY</span> ~$0.01–0.08/call</span>
+          <span class="cost-pill slop"><span class="label">Slopshop</span> 10cr = $0.049</span>
+        </div>
+      </div>
+
+      <!-- Memory & State -->
+      <div class="task-row">
+        <div class="task-top">
+          <input type="checkbox" class="task-check" id="chk-memory" onchange="toggleTask('memory',this)">
+          <div class="task-info">
+            <div class="task-name">Memory &amp; State</div>
+            <div class="task-desc">Store, retrieve, and search context across sessions. Persistent agent memory.</div>
+          </div>
+          <div class="task-qty-wrap" id="qty-wrap-memory">
+            <span class="task-qty-label">calls/mo</span>
+            <input type="number" class="task-qty" id="qty-memory" value="2000" min="0" oninput="recalc()">
+          </div>
+        </div>
+        <div class="task-costs">
+          <span class="cost-pill diy"><span class="label">DIY</span> $20–50/mo base (Redis/DynamoDB)</span>
+          <span class="cost-pill slop"><span class="label">Slopshop</span> FREE — 0 credits</span>
+        </div>
+      </div>
+
+      <!-- Data Transforms -->
+      <div class="task-row">
+        <div class="task-top">
+          <input type="checkbox" class="task-check" id="chk-data" onchange="toggleTask('data',this)">
+          <div class="task-info">
+            <div class="task-name">Data Transforms</div>
+            <div class="task-desc">CSV to JSON, SQL on JSON, filter, join, aggregate, pivot, format conversions</div>
+          </div>
+          <div class="task-qty-wrap" id="qty-wrap-data">
+            <span class="task-qty-label">calls/mo</span>
+            <input type="number" class="task-qty" id="qty-data" value="800" min="0" oninput="recalc()">
+          </div>
+        </div>
+        <div class="task-costs">
+          <span class="cost-pill diy"><span class="label">DIY</span> ~$0.03–0.05/call</span>
+          <span class="cost-pill slop"><span class="label">Slopshop</span> 1–3cr = $0.005–0.015</span>
+        </div>
+      </div>
+
+      <!-- Code Execution -->
+      <div class="task-row">
+        <div class="task-top">
+          <input type="checkbox" class="task-check" id="chk-code" onchange="toggleTask('code',this)">
+          <div class="task-info">
+            <div class="task-name">Code Execution</div>
+            <div class="task-desc">Sandboxed JavaScript execution, custom logic, formula evaluation, scripting</div>
+          </div>
+          <div class="task-qty-wrap" id="qty-wrap-code">
+            <span class="task-qty-wrap" id="qty-wrap-code">
+            <span class="task-qty-label">calls/mo</span>
+            <input type="number" class="task-qty" id="qty-code" value="150" min="0" oninput="recalc()">
+          </div>
+        </div>
+        <div class="task-costs">
+          <span class="cost-pill diy"><span class="label">DIY</span> ~$0.01–0.10/call (Lambda/serverless)</span>
+          <span class="cost-pill slop"><span class="label">Slopshop</span> 5cr = $0.0245</span>
+        </div>
+      </div>
+
+      <!-- Agent Orchestration -->
+      <div class="task-row">
+        <div class="task-top">
+          <input type="checkbox" class="task-check" id="chk-orch" onchange="toggleTask('orch',this)">
+          <div class="task-info">
+            <div class="task-name">Agent Orchestration</div>
+            <div class="task-desc">Retry logic, rate limiting, circuit breakers, caching, queuing, workflow management</div>
+          </div>
+          <div class="task-qty-wrap" id="qty-wrap-orch">
+            <span class="task-qty-label">calls/mo</span>
+            <input type="number" class="task-qty" id="qty-orch" value="0" min="0" oninput="recalc()">
+          </div>
+        </div>
+        <div class="task-costs">
+          <span class="cost-pill diy"><span class="label">DIY</span> $50–150/mo (Temporal, custom infra)</span>
+          <span class="cost-pill slop"><span class="label">Slopshop</span> 1cr = $0.0049/call</span>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: RESULTS -->
+  <div class="results-panel">
+
+    <!-- DIY Cost -->
+    <div class="result-card">
+      <div class="rc-label diy"><span class="dot"></span> DIY Monthly Cost</div>
+      <div class="rc-amount orange" id="diy-total">$0.00</div>
+      <div class="rc-breakdown" id="diy-breakdown">
+        <div class="rc-line"><span>Select tasks to calculate</span><span class="val">—</span></div>
+      </div>
+    </div>
+
+    <!-- Slopshop Cost -->
+    <div class="result-card">
+      <div class="rc-label slop"><span class="dot"></span> Slopshop Monthly Cost</div>
+      <div class="rc-amount blue" id="slop-total">$0.00</div>
+      <div class="rc-breakdown" id="slop-breakdown">
+        <div class="rc-line"><span>Select tasks to calculate</span><span class="val">—</span></div>
+      </div>
+      <div class="rc-zero" id="memory-free" style="display:none">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+        Memory &amp; State: $0 always free
+      </div>
+      <div class="tier-section">
+        <div class="tier-label">Cost by tier (credits × rate)</div>
+        <div class="tiers">
+          <div class="tier-row" id="tier-baby">
+            <span class="tier-name">Baby Lobster</span>
+            <span class="tier-cost" id="tier-baby-cost">—</span>
+          </div>
+          <div class="tier-row" id="tier-shore">
+            <span class="tier-name">Shore Crawler</span>
+            <span class="tier-cost" id="tier-shore-cost">—</span>
+            <span class="tier-rec" style="display:none" id="shore-rec">recommended</span>
+          </div>
+          <div class="tier-row" id="tier-reef">
+            <span class="tier-name">Reef Boss</span>
+            <span class="tier-cost" id="tier-reef-cost">—</span>
+          </div>
+          <div class="tier-row" id="tier-lev">
+            <span class="tier-name">Leviathan</span>
+            <span class="tier-cost" id="tier-lev-cost">—</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- You Save -->
+    <div class="result-card highlight">
+      <div class="rc-label save"><span class="dot"></span> You Save</div>
+      <div class="rc-amount green" id="save-total">$0.00</div>
+      <div class="rc-pct" id="save-pct" style="display:none"></div>
+      <div class="rc-breakdown" id="save-breakdown">
+        <div class="rc-line"><span>Pick some tasks to see your savings</span><span class="val"></span></div>
+      </div>
+    </div>
+
+    <!-- CTA -->
+    <div class="cta-card">
+      <div class="cta-title">Ready to start saving?</div>
+      <div class="cta-sub">Start with 2,000 free credits. No credit card required. One API key for everything.</div>
+      <a href="/getting-started.html" class="cta-btn">Get 2,000 free credits →</a>
+    </div>
+
+  </div>
+</div>
+
+<!-- BOTTOM SECTION -->
+<div class="bottom-wrap">
+
+  <!-- Time savings -->
+  <div class="time-save-card">
+    <div class="time-ico">⏱</div>
+    <div class="time-info">
+      <div class="time-label">Integration time saved</div>
+      <div class="time-val" id="time-saved">40–80 hrs</div>
+      <div class="time-sub" id="time-sub">Estimated setup hours based on selected services · at $75/hr avg = <span id="dev-cost">$3,000–6,000</span> one-time</div>
+    </div>
+  </div>
+
+  <div class="bottom-grid">
+    <!-- API comparison -->
+    <div class="bottom-card">
+      <div class="bottom-card-title"><span class="ico">⚡</span> One API key vs 5–10 separate services</div>
+      <div class="compare-row">
+        <span class="label">Scraping service</span>
+        <span class="diy-val">$49–99/mo</span>
+        <span class="vs-badge">vs</span>
+        <span class="slop-val">included</span>
+      </div>
+      <div class="compare-row">
+        <span class="label">LLM API</span>
+        <span class="diy-val">$20–100/mo</span>
+        <span class="vs-badge">vs</span>
+        <span class="slop-val">included</span>
+      </div>
+      <div class="compare-row">
+        <span class="label">Redis / cache layer</span>
+        <span class="diy-val">$20–50/mo</span>
+        <span class="vs-badge">vs</span>
+        <span class="slop-val">free</span>
+      </div>
+      <div class="compare-row">
+        <span class="label">Serverless functions</span>
+        <span class="diy-val">$15–60/mo</span>
+        <span class="vs-badge">vs</span>
+        <span class="slop-val">included</span>
+      </div>
+      <div class="compare-row">
+        <span class="label">Orchestration (Temporal)</span>
+        <span class="diy-val">$50–200/mo</span>
+        <span class="vs-badge">vs</span>
+        <span class="slop-val">included</span>
+      </div>
+    </div>
+
+    <!-- Integration work -->
+    <div class="bottom-card">
+      <div class="bottom-card-title"><span class="ico">🔧</span> No integration work required</div>
+      <div class="compare-row">
+        <span class="label">API keys to manage</span>
+        <span class="diy-val">5–10 keys</span>
+        <span class="vs-badge">vs</span>
+        <span class="slop-val">1 key</span>
+      </div>
+      <div class="compare-row">
+        <span class="label">Error handling</span>
+        <span class="diy-val">write yourself</span>
+        <span class="vs-badge">vs</span>
+        <span class="slop-val">built-in</span>
+      </div>
+      <div class="compare-row">
+        <span class="label">Rate limit logic</span>
+        <span class="diy-val">write yourself</span>
+        <span class="vs-badge">vs</span>
+        <span class="slop-val">built-in</span>
+      </div>
+      <div class="compare-row">
+        <span class="label">Retry / fallback</span>
+        <span class="diy-val">write yourself</span>
+        <span class="vs-badge">vs</span>
+        <span class="slop-val">built-in</span>
+      </div>
+      <div class="compare-row">
+        <span class="label">Unified response format</span>
+        <span class="diy-val">normalize manually</span>
+        <span class="vs-badge">vs</span>
+        <span class="slop-val">standardized</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="text-align:center;padding:24px 0 8px">
+    <a href="/getting-started.html" class="cta-btn" style="display:inline-block">Start with 2,000 free credits →</a>
+  </div>
+
+  <div class="disclaimer">
+    * These are estimates based on typical usage patterns and public pricing.<br>
+    Actual savings depend on your usage, region, and chosen service tiers.<br>
+    DIY costs include amortized hosting. Dev time estimate: 40–80 hours initial setup at $75/hr average.
+  </div>
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────
+const TASKS = {
+  text:   { credits: 1,  diyLow: 0.02, diyHigh: 0.05, memFixed: 0,   orchFixed: 0,   devHrs: 4  },
+  crypto: { credits: 1,  diyLow: 0.02, diyHigh: 0.04, memFixed: 0,   orchFixed: 0,   devHrs: 3  },
+  web:    { credits: 3,  diyLow: 0.05, diyHigh: 0.30, memFixed: 0,   orchFixed: 0,   devHrs: 8  },
+  llm:    { credits: 10, diyLow: 0.01, diyHigh: 0.08, memFixed: 0,   orchFixed: 0,   devHrs: 6  },
+  memory: { credits: 0,  diyLow: 0,    diyHigh: 0,    memFixed: 35,  orchFixed: 0,   devHrs: 10 },
+  data:   { credits: 2,  diyLow: 0.03, diyHigh: 0.05, memFixed: 0,   orchFixed: 0,   devHrs: 6  },
+  code:   { credits: 5,  diyLow: 0.01, diyHigh: 0.10, memFixed: 0,   orchFixed: 0,   devHrs: 6  },
+  orch:   { credits: 1,  diyLow: 0,    diyHigh: 0,    memFixed: 0,   orchFixed: 100, devHrs: 20 },
+};
+
+const TIERS = {
+  baby:  { rate: 0.009,  name: 'Baby Lobster',  minCr: 0    },
+  shore: { rate: 0.0049, name: 'Shore Crawler', minCr: 1000 },
+  reef:  { rate: 0.003,  name: 'Reef Boss',     minCr: 5000 },
+  lev:   { rate: 0.002,  name: 'Leviathan',     minCr: 25000},
+};
+
+// Presets: [text, crypto, web, llm, memory, data, code, orch]
+const PRESETS = {
+  solo:     { text:500,  crypto:200, web:100,  llm:50,   memory:500,  data:300, code:50,  orch:0    },
+  agent:    { text:1000, crypto:200, web:800,  llm:500,  memory:3000, data:400, code:200, orch:1000 },
+  pipeline: { text:5000, crypto:100, web:200,  llm:200,  memory:1000, data:5000,code:500, orch:200  },
+  security: { text:500,  crypto:2000,web:2000, llm:100,  memory:500,  data:200, code:800, orch:0    },
+};
+
+function fmt(n) {
+  if (n >= 1000) return '$' + n.toLocaleString('en-US', {minimumFractionDigits:0, maximumFractionDigits:0});
+  return '$' + n.toFixed(2);
+}
+
+function animateNum(el, newText) {
+  el.textContent = newText;
+  el.classList.remove('num-update');
+  void el.offsetWidth;
+  el.classList.add('num-update');
+}
+
+function toggleTask(id, chk) {
+  const wrap = document.getElementById('qty-wrap-' + id);
+  if (chk.checked) {
+    wrap.classList.add('enabled');
+  } else {
+    wrap.classList.remove('enabled');
+  }
+  recalc();
+}
+
+function getVal(id) {
+  const chk = document.getElementById('chk-' + id);
+  if (!chk.checked) return 0;
+  return Math.max(0, parseInt(document.getElementById('qty-' + id).value) || 0);
+}
+
+function recalc() {
+  let diyTotal = 0;
+  let slopCredits = 0;
+  let totalDevHrs = 0;
+  let anyChecked = false;
+  let memChecked = false;
+  let orchChecked = false;
+
+  const diyLines = [];
+  const slopLines = [];
+
+  for (const [id, cfg] of Object.entries(TASKS)) {
+    const chk = document.getElementById('chk-' + id);
+    if (!chk.checked) continue;
+    anyChecked = true;
+
+    const qty = getVal(id);
+    totalDevHrs += cfg.devHrs;
+
+    if (id === 'memory') {
+      memChecked = true;
+      diyTotal += cfg.memFixed;
+      diyLines.push({ label: 'Memory (Redis/DynamoDB)', val: cfg.memFixed });
+      // Slopshop: free
+    } else if (id === 'orch') {
+      orchChecked = true;
+      diyTotal += cfg.orchFixed;
+      if (qty > 0) {
+        diyLines.push({ label: 'Orchestration infra', val: cfg.orchFixed });
+        const slopCost = qty * cfg.credits * TIERS.shore.rate;
+        slopCredits += qty * cfg.credits;
+        slopLines.push({ label: 'Orchestration (' + qty.toLocaleString() + ' calls)', val: slopCost });
+      } else {
+        diyLines.push({ label: 'Orchestration infra', val: cfg.orchFixed });
+      }
+    } else {
+      const diyMid = (cfg.diyLow + cfg.diyHigh) / 2;
+      const diyAmt = qty * diyMid;
+      diyTotal += diyAmt;
+      diyLines.push({ label: id.charAt(0).toUpperCase() + id.slice(1) + ' (' + qty.toLocaleString() + ' calls)', val: diyAmt });
+
+      const slopCost = qty * cfg.credits * TIERS.shore.rate;
+      slopCredits += qty * cfg.credits;
+      slopLines.push({ label: id.charAt(0).toUpperCase() + id.slice(1), val: slopCost });
+    }
+  }
+
+  const slopCostShore = slopCredits * TIERS.shore.rate;
+
+  // Update DIY
+  const diyEl = document.getElementById('diy-total');
+  const diyBreak = document.getElementById('diy-breakdown');
+  animateNum(diyEl, fmt(diyTotal));
+  if (anyChecked && diyLines.length > 0) {
+    diyBreak.innerHTML = diyLines.map(l =>
+      `<div class="rc-line"><span>${l.label}</span><span class="val">${fmt(l.val)}</span></div>`
+    ).join('');
+  } else {
+    diyBreak.innerHTML = '<div class="rc-line"><span>Select tasks above</span><span class="val">—</span></div>';
+  }
+
+  // Update Slop
+  const slopEl = document.getElementById('slop-total');
+  const slopBreak = document.getElementById('slop-breakdown');
+  animateNum(slopEl, fmt(slopCostShore));
+
+  if (anyChecked) {
+    let slopHtml = slopLines.map(l =>
+      `<div class="rc-line"><span>${l.label}</span><span class="val">${fmt(l.val)}</span></div>`
+    ).join('');
+    slopHtml += `<div class="rc-line" style="margin-top:6px;padding-top:6px;border-top:1px solid rgba(255,255,255,0.04)"><span>${slopCredits.toLocaleString()} total credits</span><span class="val highlight-line" style="color:var(--c)">${slopCredits.toLocaleString()} cr</span></div>`;
+    slopBreak.innerHTML = slopHtml;
+  } else {
+    slopBreak.innerHTML = '<div class="rc-line"><span>Select tasks above</span><span class="val">—</span></div>';
+  }
+
+  // Memory free badge
+  document.getElementById('memory-free').style.display = memChecked ? 'flex' : 'none';
+
+  // Tier costs
+  for (const [key, tier] of Object.entries(TIERS)) {
+    const cost = slopCredits * tier.rate;
+    document.getElementById('tier-' + key + '-cost').textContent = anyChecked ? fmt(cost) : '—';
+  }
+
+  // Recommend tier
+  document.querySelectorAll('.tier-row').forEach(r => r.classList.remove('active'));
+  document.getElementById('shore-rec').style.display = 'none';
+  if (anyChecked) {
+    let rec = 'baby';
+    if (slopCredits >= TIERS.lev.minCr) rec = 'lev';
+    else if (slopCredits >= TIERS.reef.minCr) rec = 'reef';
+    else if (slopCredits >= TIERS.shore.minCr) rec = 'shore';
+    document.getElementById('tier-' + rec).classList.add('active');
+    if (rec === 'shore') document.getElementById('shore-rec').style.display = 'inline';
+  }
+
+  // Savings
+  const saveEl = document.getElementById('save-total');
+  const savePct = document.getElementById('save-pct');
+  const saveBreak = document.getElementById('save-breakdown');
+  const savings = diyTotal - slopCostShore;
+
+  animateNum(saveEl, fmt(Math.max(0, savings)));
+
+  if (anyChecked && diyTotal > 0) {
+    const pct = Math.round((savings / diyTotal) * 100);
+    savePct.style.display = 'block';
+    savePct.textContent = pct > 0 ? `${pct}% less than DIY` : 'Similar cost to DIY';
+
+    const saveLines = [];
+    if (memChecked) saveLines.push({ label: 'Memory (always free)', val: 35, highlight: true });
+    if (orchChecked) saveLines.push({ label: 'Orchestration infra avoided', val: 100, highlight: true });
+    saveLines.push({ label: 'API subscription savings', val: Math.max(0, savings - (memChecked ? 35 : 0) - (orchChecked ? 100 : 0)), highlight: false });
+
+    saveBreak.innerHTML = saveLines
+      .filter(l => l.val > 0)
+      .map(l => `<div class="rc-line ${l.highlight ? 'highlight-line' : ''}"><span>${l.label}</span><span class="val">${fmt(l.val)}</span></div>`)
+      .join('');
+  } else {
+    savePct.style.display = 'none';
+    saveBreak.innerHTML = '<div class="rc-line"><span>Pick some tasks to see your savings</span><span class="val"></span></div>';
+  }
+
+  // Dev time
+  const timeEl = document.getElementById('time-saved');
+  const timeSub = document.getElementById('dev-cost');
+  if (anyChecked && totalDevHrs > 0) {
+    timeEl.textContent = `~${totalDevHrs}–${totalDevHrs + Math.round(totalDevHrs * 0.5)} hrs`;
+    const devLow = totalDevHrs * 75;
+    const devHigh = Math.round(totalDevHrs * 1.5) * 75;
+    timeSub.textContent = `$${devLow.toLocaleString()}–$${devHigh.toLocaleString()} one-time`;
+  } else {
+    timeEl.textContent = '0 hrs';
+    timeSub.textContent = '$0 one-time';
+  }
+}
+
+function applyPreset(name) {
+  // Reset active states
+  document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+
+  if (name === 'clear') {
+    Object.keys(TASKS).forEach(id => {
+      const chk = document.getElementById('chk-' + id);
+      chk.checked = false;
+      document.getElementById('qty-wrap-' + id).classList.remove('enabled');
+      document.getElementById('qty-' + id).value = 0;
+    });
+    recalc();
+    return;
+  }
+
+  const preset = PRESETS[name];
+  Object.entries(preset).forEach(([id, qty]) => {
+    const chk = document.getElementById('chk-' + id);
+    const qtyWrap = document.getElementById('qty-wrap-' + id);
+    const qtyInput = document.getElementById('qty-' + id);
+    if (qty > 0) {
+      chk.checked = true;
+      qtyWrap.classList.add('enabled');
+      qtyInput.value = qty;
+    } else {
+      chk.checked = false;
+      qtyWrap.classList.remove('enabled');
+      qtyInput.value = 0;
+    }
+  });
+  recalc();
+}
+
+// Init
+recalc();
+</script>
+</body>
+</html>

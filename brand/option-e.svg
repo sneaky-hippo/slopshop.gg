@@ -1,0 +1,11 @@
+<!-- OPTION E: "The Node" — A single circle with an inner ring.
+     Concept: the execution node. Where compute happens. The center of everything.
+     Inspired by: Anthropic's circle, but with a double-ring that suggests "processing."
+     Radically simple. One shape. Unmistakable at any size. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#ff3333"/>
+  <!-- Outer ring -->
+  <circle cx="256" cy="256" r="120" stroke="white" stroke-width="28" fill="none"/>
+  <!-- Inner dot -->
+  <circle cx="256" cy="256" r="40" fill="white"/>
+</svg>

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Give Your AI Agent 1,049 Real Tools — One API Key | Slopshop</title>
+<meta name="description" content="Stop wiring individual APIs into your agent. Slopshop gives your LLM 1,049 real tools — web search, code execution, memory, crypto, data transforms — via one API key. Works with Claude MCP, GPT function calling, and direct HTTP.">
+<link rel="canonical" href="https://slopshop.gg/how-to-give-ai-agent-tools">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://slopshop.gg/how-to-give-ai-agent-tools">
+<meta property="og:title" content="Give Your AI Agent 1,049 Real Tools — One API Key | Slopshop">
+<meta property="og:description" content="Stop wiring individual APIs. 1,049 real tools for your AI agent — web search, code execution, memory, crypto — one API key. Works with Claude MCP and GPT function calling.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:creator" content="@slopshopgg">
+<meta name="twitter:title" content="Give Your AI Agent 1,049 Real Tools — One API Key | Slopshop">
+<meta name="twitter:description" content="1,049 real tools for your AI agent. One API key. MCP + function calling support.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "Give Your AI Agent 1,049 Real Tools — One API Key",
+  "description": "How to give an AI agent real tools for web search, code execution, memory, and data transforms using the Slopshop LLM tool calling API.",
+  "url": "https://slopshop.gg/how-to-give-ai-agent-tools",
+  "author": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"},
+  "publisher": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg", "logo": {"@type": "ImageObject", "url": "https://slopshop.gg/og.png"}},
+  "datePublished": "2025-01-01",
+  "dateModified": "2026-03-26"
+}
+</script>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff61,049'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+.page-wrap{max-width:860px;margin:0 auto;padding:100px 32px 80px}
+.page-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(255,51,51,0.15);color:var(--r2);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:500;margin-bottom:24px;font-family:var(--mono)}
+h1{font-family:var(--mono);font-size:clamp(1.8rem,4vw,2.6rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:20px}
+h1 .accent{color:var(--r)}
+.lead{color:var(--t2);font-size:1rem;line-height:1.8;margin-bottom:48px;max-width:680px}
+h2{font-family:var(--mono);font-size:1.2rem;font-weight:700;margin:48px 0 16px;letter-spacing:-0.02em}
+h3{font-family:var(--mono);font-size:0.95rem;font-weight:700;margin:28px 0 12px;color:var(--t2)}
+p{color:var(--t2);line-height:1.8;margin-bottom:16px}
+ul,ol{color:var(--t2);line-height:1.9;padding-left:20px;margin-bottom:16px}
+li{margin-bottom:4px}
+code{font-family:var(--mono);font-size:0.8em;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--r2)}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin:20px 0}
+.code-header{background:var(--s2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-label{font-family:var(--mono);font-size:0.68rem;color:var(--t3);font-weight:500}
+.code-lang{font-family:var(--mono);font-size:0.62rem;color:var(--r);font-weight:700;background:var(--rg);padding:2px 8px;border-radius:4px}
+pre{padding:20px;font-family:var(--mono);font-size:0.78rem;line-height:1.8;overflow-x:auto;color:var(--t2)}
+pre .cm{color:var(--t4)}
+pre .kw{color:var(--r)}
+pre .str{color:var(--g)}
+pre .key{color:var(--c)}
+pre .val{color:var(--o)}
+pre .ok{color:var(--g)}
+pre .pu{color:var(--v)}
+.tab-row{display:flex;gap:0;border-bottom:1px solid var(--b);background:var(--s2)}
+.tab-btn{font-family:var(--mono);font-size:0.72rem;font-weight:600;padding:10px 18px;border:none;background:transparent;color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:0.15s}
+.tab-btn.active{color:var(--r);border-bottom-color:var(--r)}
+.tab-content{display:none}
+.tab-content.active{display:block}
+.tool-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:20px 0}
+.tool-chip{background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.7rem}
+.tool-chip .tc-cat{color:var(--t4);font-size:0.58rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px}
+.tool-chip .tc-name{color:var(--t);font-weight:600}
+.tool-chip .tc-count{color:var(--o);font-weight:700}
+.quickstart-box{background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--c);border-radius:10px;padding:20px;margin:20px 0}
+.quickstart-box .qb-label{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--c);margin-bottom:12px}
+.cta-block{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:40px;text-align:center;margin-top:64px}
+.cta-block h2{margin:0 0 10px;font-size:1.4rem}
+.cta-block p{color:var(--t3);margin-bottom:28px}
+.cta-terminal{background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.78rem;color:var(--o);text-align:left;margin-bottom:24px;max-width:480px;margin-left:auto;margin-right:auto}
+.cta-buttons{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--r);color:#fff;transition:box-shadow 0.2s,transform 0.15s}
+.btn-primary:hover{box-shadow:0 0 24px rgba(255,51,51,0.3);transform:translateY(-1px);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2)}
+.btn-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.internal-links{display:flex;gap:8px;flex-wrap:wrap;margin-top:40px;padding-top:32px;border-top:1px solid var(--b)}
+.internal-links a{font-family:var(--mono);font-size:0.72rem;color:var(--t3);padding:6px 14px;border:1px solid var(--b);border-radius:6px;transition:0.15s}
+.internal-links a:hover{color:var(--t);border-color:var(--b2);opacity:1}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b);margin-top:80px}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:24px;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono)}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .nav-links a:nth-child(n+4){display:none}
+  .page-wrap{padding:80px 16px 60px}
+  h1{font-size:1.9rem}
+  .tool-grid{grid-template-columns:1fr 1fr}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:24px}
+  .cta-buttons{flex-direction:column;align-items:center}
+  .btn-primary,.btn-secondary{width:100%;justify-content:center}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="22" height="22" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="ng" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff61,049"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#ng)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+    <span>SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/playbooks">Playbooks</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+    <div class="live-badge"><div class="live-dot"></div>live</div>
+  </div>
+</div></nav>
+
+<div class="page-wrap">
+  <div class="page-tag">// LLM tool calling API</div>
+  <h1>How to Give Your <span class="accent">AI Agent Real Tools</span></h1>
+  <p class="lead">Every agent tutorial ends with "wire up your tools." Nobody tells you that means managing auth for 10 different APIs, writing retry logic, handling rate limits, and keeping tool schemas in sync with your LLM's function calling format. Here's the shortcut.</p>
+
+  <h2>What "giving an agent tools" actually involves</h2>
+  <p>If you've tried building an agent with real capabilities, you've hit this list:</p>
+  <ul>
+    <li>Define function schemas for every tool, for each model's format (OpenAI vs. Anthropic differ)</li>
+    <li>Handle auth for each external API separately (API keys, OAuth, scopes)</li>
+    <li>Write retry logic when tools fail or rate-limit</li>
+    <li>Parse and validate tool outputs before feeding back to the model</li>
+    <li>Log what ran, in what order, with what inputs — for debugging</li>
+    <li>Keep everything running when one upstream API goes down</li>
+  </ul>
+  <p>That's the infrastructure tax before you've written any actual agent logic. Slopshop is the tool layer that handles all of it.</p>
+
+  <h2>Option 1: Natural language via /v1/agent/run</h2>
+  <p>Post a task in plain English. The agent picks the right tools, chains them, and returns a result. You don't define any tool schemas.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Agent run — natural language</span><span class="code-lang">curl</span></div>
+    <pre>curl -X POST https://slopshop.gg/v1/agent/run \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span> \
+  -H <span class="str">"Content-Type: application/json"</span> \
+  -d <span class="str">'{
+    "task": "Check the SSL certificate for stripe.com and tell me when it expires",
+    "max_steps": 3
+  }'</span></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Response</span><span class="code-lang">json</span></div>
+    <pre>{
+  <span class="key">"ok"</span>: <span class="ok">true</span>,
+  <span class="key">"result"</span>: <span class="str">"stripe.com SSL cert expires 2026-08-14. Issuer: DigiCert. 141 days remaining."</span>,
+  <span class="key">"steps"</span>: [
+    {<span class="key">"tool"</span>: <span class="str">"ssl_check"</span>, <span class="key">"input"</span>: <span class="str">"stripe.com"</span>, <span class="key">"credits"</span>: <span class="val">3</span>}
+  ],
+  <span class="key">"credits_used"</span>: <span class="val">3</span>,
+  <span class="key">"_engine"</span>: <span class="str">"real"</span>
+}</pre>
+  </div>
+
+  <h2>Option 2: /v1/quickstart — discover tools by category</h2>
+  <p>Not sure which tools exist? The quickstart endpoint returns everything organized by category with credit costs.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">List available tools</span><span class="code-lang">curl</span></div>
+    <pre>curl https://slopshop.gg/v1/quickstart \
+  -H <span class="str">"Authorization: Bearer demo_key_slopshop"</span></pre>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">Response (excerpt)</span><span class="code-lang">json</span></div>
+    <pre>{
+  <span class="key">"tools_available"</span>: <span class="val">422</span>,
+  <span class="key">"categories"</span>: {
+    <span class="key">"network"</span>: {
+      <span class="key">"count"</span>: <span class="val">28</span>,
+      <span class="key">"tools"</span>: [<span class="str">"dns_lookup"</span>, <span class="str">"ssl_check"</span>, <span class="str">"http_headers"</span>, <span class="str">"whois"</span>, ...]
+    },
+    <span class="key">"code_execution"</span>: {
+      <span class="key">"count"</span>: <span class="val">4</span>,
+      <span class="key">"tools"</span>: [<span class="str">"exec_python"</span>, <span class="str">"exec_js"</span>, <span class="str">"exec_bash"</span>, <span class="str">"exec_sql"</span>]
+    },
+    <span class="key">"memory"</span>: {
+      <span class="key">"count"</span>: <span class="val">6</span>,
+      <span class="key">"tools"</span>: [<span class="str">"memory_set"</span>, <span class="str">"memory_get"</span>, <span class="str">"memory_search"</span>, ...],
+      <span class="key">"note"</span>: <span class="str">"free tier — 0 credits"</span>
+    },
+    <span class="key">"text"</span>: {
+      <span class="key">"count"</span>: <span class="val">61</span>,
+      <span class="key">"tools"</span>: [<span class="str">"summarize"</span>, <span class="str">"sentiment"</span>, <span class="str">"extract_entities"</span>, <span class="str">"translate"</span>, ...]
+    }
+  },
+  <span class="key">"free_credits"</span>: <span class="val">2000</span>
+}</pre>
+  </div>
+
+  <div class="tool-grid">
+    <div class="tool-chip"><div class="tc-cat">Network</div><div class="tc-name">SSL, DNS, HTTP</div><div class="tc-count">28 tools</div></div>
+    <div class="tool-chip"><div class="tc-cat">Text</div><div class="tc-name">Extract, transform</div><div class="tc-count">61 tools</div></div>
+    <div class="tool-chip"><div class="tc-cat">Code Exec</div><div class="tc-name">Python, JS, SQL</div><div class="tc-count">4 tools</div></div>
+    <div class="tool-chip"><div class="tc-cat">Memory</div><div class="tc-name">KV, queues, search</div><div class="tc-count">Free forever</div></div>
+    <div class="tool-chip"><div class="tc-cat">Crypto</div><div class="tc-name">Prices, chains</div><div class="tc-count">18 tools</div></div>
+    <div class="tool-chip"><div class="tc-cat">Documents</div><div class="tc-name">PDF, CSV, markdown</div><div class="tc-count">14 tools</div></div>
+  </div>
+
+  <h2>Option 3: MCP for Claude</h2>
+  <p>If you're building with Claude (Code, Desktop, or API), the Slopshop MCP server wires all 1,049 tools directly into Claude's tool-use protocol. Add this to your Claude config:</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">claude_desktop_config.json</span><span class="code-lang">json</span></div>
+    <pre>{
+  <span class="key">"mcpServers"</span>: {
+    <span class="key">"slopshop"</span>: {
+      <span class="key">"command"</span>: <span class="str">"npx"</span>,
+      <span class="key">"args"</span>: [<span class="str">"slopshop-mcp"</span>],
+      <span class="key">"env"</span>: {
+        <span class="key">"SLOPSHOP_API_KEY"</span>: <span class="str">"your_key_here"</span>
+      }
+    }
+  }
+}</pre>
+  </div>
+
+  <p>Claude now has access to all 1,049 tools as native MCP tools. It can call <code>ssl_check</code>, <code>exec_python</code>, <code>memory_set</code>, or any other tool by name — with full observability on your end.</p>
+
+  <h2>Option 4: Function calling format for GPT</h2>
+  <p>Use Slopshop as a backend for OpenAI function calling. Define the tool once, route the call to Slopshop, get back a validated result.</p>
+
+  <div class="code-block">
+    <div class="code-header"><span class="code-label">GPT function calling — Python</span><span class="code-lang">python</span></div>
+    <pre><span class="cm"># Define the Slopshop tool for GPT</span>
+tools = [{
+    <span class="str">"type"</span>: <span class="str">"function"</span>,
+    <span class="str">"function"</span>: {
+        <span class="str">"name"</span>: <span class="str">"slopshop_run"</span>,
+        <span class="str">"description"</span>: <span class="str">"Run any of 1,049 real tools — network, code, data, memory"</span>,
+        <span class="str">"parameters"</span>: {
+            <span class="str">"type"</span>: <span class="str">"object"</span>,
+            <span class="str">"properties"</span>: {
+                <span class="str">"tool"</span>: {<span class="str">"type"</span>: <span class="str">"string"</span>, <span class="str">"description"</span>: <span class="str">"Tool slug, e.g. ssl_check"</span>},
+                <span class="str">"input"</span>: {<span class="str">"type"</span>: <span class="str">"object"</span>, <span class="str">"description"</span>: <span class="str">"Tool-specific parameters"</span>}
+            },
+            <span class="str">"required"</span>: [<span class="str">"tool"</span>, <span class="str">"input"</span>]
+        }
+    }
+}]
+
+<span class="cm"># When GPT calls the function, route to Slopshop</span>
+<span class="kw">def</span> handle_tool_call(tool_name, tool_input):
+    res = requests.post(
+        <span class="str">"https://slopshop.gg/v1/tools/run"</span>,
+        headers={<span class="str">"Authorization"</span>: <span class="str">f"Bearer {SLOPSHOP_KEY}"</span>},
+        json={<span class="str">"tool"</span>: tool_name, <span class="str">"input"</span>: tool_input}
+    )
+    <span class="kw">return</span> res.json()[<span class="str">"output"</span>]</pre>
+  </div>
+
+  <div class="quickstart-box">
+    <div class="qb-label">// Full docs at slopshop.gg/docs/function-calling</div>
+    <p style="color:var(--t3);font-size:0.82rem;margin:0">The <a href="/docs">docs</a> include complete schemas for every tool in both OpenAI and Anthropic formats, plus a schema-generation endpoint that builds the function definition automatically.</p>
+  </div>
+
+  <div class="internal-links">
+    <a href="/docs">API Docs</a>
+    <a href="/tools">All 1,049 Tools</a>
+    <a href="/getting-started">Getting Started</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/free-persistent-memory-for-ai-agents">Agent Memory</a>
+  </div>
+
+  <div class="cta-block">
+    <h2>Add 1,049 tools to your agent</h2>
+    <p>One API key. 2,000 free credits. No setup beyond npm install.</p>
+    <div class="cta-terminal">
+      $ npm install -g slopshop<br>
+      $ slopshop signup<br>
+      <span style="color:var(--g)">✓ 1,049 tools ready. 2,000 credits added.</span>
+    </div>
+    <div class="cta-buttons">
+      <a href="/getting-started" class="btn-primary">Get Started Free</a>
+      <a href="/docs" class="btn-secondary">View Docs</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand"><span>SLOPSHOP</span><span class="gg">.GG</span></div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/playbooks">Playbooks</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/getting-started">Get Started</a>
+      </div>
+      <div class="footer-col">
+        <h4>Developers</h4>
+        <a href="/docs">Docs</a>
+        <a href="/docs/api">API Reference</a>
+        <a href="/docs/mcp">MCP Server</a>
+        <a href="/docs/self-host">Self-Hosting</a>
+      </div>
+      <div class="footer-col">
+        <h4>Use Cases</h4>
+        <a href="/how-to-extract-structured-data">Extract Structured Data</a>
+        <a href="/how-to-give-ai-agent-tools">Agent Tools</a>
+        <a href="/free-persistent-memory-for-ai-agents">Agent Memory</a>
+        <a href="/run-python-code-api">Python Execution</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="https://x.com/slopshopgg">Twitter</a>
+      </div>
+    </div>
+    <div class="footer-copy">© 2026 Slopshop. Built for developers who ship.</div>
+  </div>
+</footer>
+
+</body>
+</html>

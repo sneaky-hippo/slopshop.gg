@@ -405,6 +405,54 @@ async function execJavascript(input) {
 }
 
 // ---------------------------------------------------------------------------
+// 11b. exec-python
+// ---------------------------------------------------------------------------
+async function execPython(input) {
+  const { execFile } = require('child_process');
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+
+  const { code, timeout } = input;
+  if (!code) return { _engine: 'real', error: 'No code provided' };
+
+  const timeoutMs = Math.min(timeout || 10000, 30000); // max 30s
+  const tmpFile = path.join(os.tmpdir(), 'slop-py-' + Date.now() + '.py');
+
+  fs.writeFileSync(tmpFile, code);
+
+  function tryExec(cmd) {
+    return new Promise((resolve) => {
+      execFile(cmd, [tmpFile], { timeout: timeoutMs, maxBuffer: 1024 * 512 }, (err, stdout, stderr) => {
+        if (err && err.code === 'ENOENT') {
+          resolve({ notFound: true });
+          return;
+        }
+        try { fs.unlinkSync(tmpFile); } catch (e) {}
+        if (err && err.killed) {
+          resolve({ _engine: 'real', error: 'Timeout exceeded', timeout_ms: timeoutMs });
+        } else if (err) {
+          resolve({ _engine: 'real', error: stderr || err.message, stdout: stdout || '' });
+        } else {
+          resolve({ _engine: 'real', stdout: stdout.trim(), stderr: stderr.trim() || null, execution_time_ms: Date.now() });
+        }
+      });
+    });
+  }
+
+  // Try python3 first, fall back to python for Windows compatibility
+  let result = await tryExec('python3');
+  if (result.notFound) {
+    result = await tryExec('python');
+    if (result.notFound) {
+      try { fs.unlinkSync(tmpFile); } catch (e) {}
+      return { _engine: 'real', error: 'Python interpreter not found (tried python3 and python)' };
+    }
+  }
+  return result;
+}
+
+// ---------------------------------------------------------------------------
 // SQL helpers for exec-sql-on-json
 // ---------------------------------------------------------------------------
 function parseSqlSelect(query) {
@@ -980,6 +1028,7 @@ module.exports = {
   'gen-doc-markdown-badges':  genDocMarkdownBadges,
   'gen-doc-editorconfig':     genDocEditorconfig,
   'exec-javascript':          execJavascript,
+  'exec-python':              execPython,
   'exec-sql-on-json':         execSqlOnJson,
   'exec-filter-json':         execFilterJson,
   'exec-sort-json':           execSortJson,

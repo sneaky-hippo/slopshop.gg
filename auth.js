@@ -32,8 +32,21 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     return crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
   }
 
-  // Signup: create account + API key + 1000 free credits
+  // Rate limit helper (shared with server)
+  const ipLimits = new Map();
+  function rateLimit(key, max, windowMs) {
+    const now = Date.now();
+    const e = ipLimits.get(key);
+    if (!e || now - e.s > windowMs) { ipLimits.set(key, { c: 1, s: now }); return true; }
+    e.c++; return e.c <= max;
+  }
+
+  // Signup: create account + API key + 500 free credits
   app.post('/v1/auth/signup', (req, res) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    if (!rateLimit('signup:' + ip, 5, 3600000)) {
+      return res.status(429).json({ error: { code: 'rate_limited', message: 'Max 5 signups per hour. Try again later.' } });
+    }
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: { code: 'missing_fields', message: 'Provide email and password' } });
     if (!email.includes('@')) return res.status(400).json({ error: { code: 'invalid_email' } });
@@ -49,22 +62,38 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
 
     dbInsertUser.run(id, email, hash, salt, key, Date.now());
 
-    // Create API key with 1000 free credits
-    const dbInsertKey = db.prepare('INSERT OR REPLACE INTO api_keys (key, id, balance, tier, created) VALUES (?, ?, ?, ?, ?)');
-    dbInsertKey.run(key, id, 1000, 'baby-lobster', Date.now());
-    apiKeys.set(key, { id, balance: 1000, tier: 'baby-lobster', auto_reload: false, created: Date.now() });
+    // Create API key with 2000 free credits (memory APIs are free / 0 credits)
+    const dbInsertKey = db.prepare('INSERT OR REPLACE INTO api_keys (key, id, balance, tier, scope, label, max_credits, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+    dbInsertKey.run(key, id, 2000, 'free', '*', null, null, Date.now());
+    apiKeys.set(key, { id, balance: 2000, tier: 'free', auto_reload: false, scope: '*', label: null, max_credits: null, created: Date.now() });
+
+    // Referral bonus
+    if (req.body.referral_code) {
+      const referrer = db.prepare('SELECT key FROM api_keys WHERE key LIKE ?').get(req.body.referral_code + '%');
+      if (referrer) {
+        const referrerAcct = apiKeys.get(referrer.key);
+        if (referrerAcct) { referrerAcct.balance += 500; persistKey(referrer.key); }
+        // Also give the new user bonus
+        apiKeys.get(key).balance += 500;
+        persistKey(key);
+      }
+    }
 
     res.status(201).json({
       user_id: id,
       email,
       api_key: key,
-      balance: 1000,
-      message: 'Account created. 1,000 free credits loaded. Set SLOPSHOP_KEY=' + key,
+      balance: 2000,
+      message: 'Account created. 2,000 free credits loaded. Memory APIs are always free. Set SLOPSHOP_KEY=' + key,
     });
   });
 
-  // Login: get API key
+  // Login: get API key (rate limited: 10 attempts per minute per IP)
   app.post('/v1/auth/login', (req, res) => {
+    const ip = req.ip || req.connection.remoteAddress;
+    if (!rateLimit('login:' + ip, 10, 60000)) {
+      return res.status(429).json({ error: { code: 'rate_limited', message: 'Too many login attempts. Wait 1 minute.' } });
+    }
     const { email, password } = req.body;
     if (!email || !password) return res.status(400).json({ error: { code: 'missing_fields' } });
 
@@ -124,5 +153,80 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     });
   });
 
-  console.log('  🔐 Auth: signup, login, rotate-key, me');
+  // Create a scoped API key (child key tied to the authenticated user's account)
+  const VALID_SCOPES = new Set(['compute', 'network', 'llm', 'memory', 'execute', 'read-only', '*']);
+  app.post('/v1/auth/create-scoped-key', (req, res) => {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: { code: 'auth_required' } });
+    const parentKey = auth.slice(7);
+
+    const user = dbGetUserByKey.get(parentKey);
+    if (!user) return res.status(401).json({ error: { code: 'invalid_key' } });
+
+    const parentAcct = apiKeys.get(parentKey);
+    if (!parentAcct) return res.status(401).json({ error: { code: 'invalid_key' } });
+
+    let { scope, label, max_credits } = req.body;
+    // scope can be a string or array; normalize to comma-separated string
+    if (Array.isArray(scope)) scope = scope.join(',');
+    if (!scope) scope = '*';
+    const scopeParts = scope.split(',').map(s => s.trim());
+    for (const s of scopeParts) {
+      if (!VALID_SCOPES.has(s)) {
+        return res.status(400).json({ error: { code: 'invalid_scope', message: 'Invalid scope: ' + s, valid_scopes: [...VALID_SCOPES] } });
+      }
+    }
+    scope = scopeParts.join(',');
+    if (label && typeof label !== 'string') return res.status(400).json({ error: { code: 'invalid_label' } });
+    if (max_credits !== undefined && max_credits !== null) {
+      max_credits = parseInt(max_credits, 10);
+      if (isNaN(max_credits) || max_credits < 0) return res.status(400).json({ error: { code: 'invalid_max_credits' } });
+    } else {
+      max_credits = null;
+    }
+
+    const newKey = 'sk-slop-' + crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+    const now = Date.now();
+    db.prepare('INSERT INTO api_keys (key, id, balance, tier, scope, label, max_credits, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(newKey, user.id, parentAcct.balance, parentAcct.tier, scope, label || null, max_credits, now);
+    apiKeys.set(newKey, { id: user.id, balance: parentAcct.balance, tier: parentAcct.tier, auto_reload: false, scope, label: label || null, max_credits, created: now });
+
+    res.status(201).json({ api_key: newKey, scope, label: label || null, max_credits, created: now, message: 'Scoped key created. Shares balance with parent account.' });
+  });
+
+  // List all API keys for the authenticated user
+  app.get('/v1/auth/keys', (req, res) => {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: { code: 'auth_required' } });
+    const key = auth.slice(7);
+
+    const user = dbGetUserByKey.get(key);
+    if (!user) return res.status(401).json({ error: { code: 'invalid_key' } });
+
+    const rows = db.prepare('SELECT key, id, balance, tier, scope, label, max_credits, created FROM api_keys WHERE id = ? ORDER BY created ASC').all(user.id);
+    res.json({ keys: rows.map(r => ({ key: r.key, scope: r.scope || '*', label: r.label || null, max_credits: r.max_credits || null, tier: r.tier, balance: r.balance, created: r.created, primary: r.key === user.api_key })) });
+  });
+
+  // Revoke a scoped key (cannot revoke your own primary key)
+  app.delete('/v1/auth/keys/:key', (req, res) => {
+    const auth = req.headers.authorization;
+    if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: { code: 'auth_required' } });
+    const callerKey = auth.slice(7);
+
+    const user = dbGetUserByKey.get(callerKey);
+    if (!user) return res.status(401).json({ error: { code: 'invalid_key' } });
+
+    const targetKey = req.params.key;
+    if (targetKey === user.api_key) return res.status(400).json({ error: { code: 'cannot_revoke_primary', message: 'Cannot revoke your primary key. Use /v1/auth/rotate-key instead.' } });
+
+    const targetRow = db.prepare('SELECT * FROM api_keys WHERE key = ? AND id = ?').get(targetKey, user.id);
+    if (!targetRow) return res.status(404).json({ error: { code: 'key_not_found', message: 'Key not found or does not belong to your account.' } });
+
+    db.prepare('DELETE FROM api_keys WHERE key = ?').run(targetKey);
+    apiKeys.delete(targetKey);
+
+    res.json({ revoked: targetKey, status: 'deleted' });
+  });
+
+  console.log('  🔐 Auth: signup, login, rotate-key, me, create-scoped-key, keys, revoke-key');
 };

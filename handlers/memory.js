@@ -1,420 +1,604 @@
 'use strict';
 
-const fs = require('fs');
-const path = require('path');
-
 // ---------------------------------------------------------------------------
-// File-based persistence helpers
+// SQLite-backed memory system
 // ---------------------------------------------------------------------------
-const DATA = path.join(__dirname, '..', '.data');
-
-function ensureDir() {
-  if (!fs.existsSync(DATA)) fs.mkdirSync(DATA, { recursive: true });
-}
-
-function load(file, fallback) {
-  ensureDir();
-  const p = path.join(DATA, file);
-  try { return JSON.parse(fs.readFileSync(p, 'utf8')); } catch (e) { return fallback; }
-}
-
-function save(file, data) {
-  ensureDir();
-  fs.writeFileSync(path.join(DATA, file), JSON.stringify(data));
-}
-
+// Usage: module.exports(db) returns handler map
+// The `db` instance is a better-sqlite3 Database already open and
+// configured with WAL mode by server-v2.js.
 // ---------------------------------------------------------------------------
-// Memory helpers
-// ---------------------------------------------------------------------------
-function memFile(namespace) { return `mem-${namespace}.json`; }
 
-function loadMem(namespace) {
-  return load(memFile(namespace), {});
-}
+module.exports = function (db) {
 
-function saveMem(namespace, data) {
-  save(memFile(namespace), data);
-}
+  // -------------------------------------------------------------------------
+  // Schema bootstrap – idempotent, runs once at require time
+  // -------------------------------------------------------------------------
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS memory (
+      namespace TEXT NOT NULL,
+      key       TEXT NOT NULL,
+      value     TEXT,
+      tags      TEXT NOT NULL DEFAULT '[]',
+      created   INTEGER NOT NULL,
+      updated   INTEGER NOT NULL,
+      ttl       INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY (namespace, key)
+    );
+    CREATE TABLE IF NOT EXISTS memory_history (
+      namespace TEXT    NOT NULL,
+      key       TEXT    NOT NULL,
+      value     TEXT,
+      timestamp INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_mem_history_ns_key
+      ON memory_history (namespace, key);
+    CREATE TABLE IF NOT EXISTS queues (
+      name    TEXT    NOT NULL,
+      id      TEXT    PRIMARY KEY,
+      value   TEXT,
+      created INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_queues_name_created
+      ON queues (name, created);
+    CREATE TABLE IF NOT EXISTS counters (
+      name    TEXT    PRIMARY KEY,
+      value   REAL    NOT NULL DEFAULT 0,
+      created INTEGER NOT NULL,
+      updated INTEGER NOT NULL
+    );
+  `);
 
-function isExpired(entry) {
-  if (!entry || entry.expires_at == null) return false;
-  return Date.now() > entry.expires_at;
-}
+  // -------------------------------------------------------------------------
+  // Prepared statements
+  // -------------------------------------------------------------------------
+  const stmts = {
+    // memory
+    memGet:    db.prepare(`SELECT * FROM memory WHERE namespace = ? AND key = ?`),
+    memUpsert: db.prepare(`
+      INSERT INTO memory (namespace, key, value, tags, created, updated, ttl)
+      VALUES (@namespace, @key, @value, @tags, @created, @updated, @ttl)
+      ON CONFLICT(namespace, key) DO UPDATE SET
+        value   = excluded.value,
+        tags    = excluded.tags,
+        updated = excluded.updated,
+        ttl     = CASE WHEN excluded.ttl = 0 THEN memory.ttl ELSE excluded.ttl END
+    `),
+    memUpdateTtl: db.prepare(`
+      UPDATE memory SET ttl = @ttl, updated = @updated
+      WHERE namespace = @namespace AND key = @key
+    `),
+    memUpdateValue: db.prepare(`
+      UPDATE memory SET value = @value, updated = @updated
+      WHERE namespace = @namespace AND key = @key
+    `),
+    memDelete: db.prepare(`DELETE FROM memory WHERE namespace = ? AND key = ?`),
+    memDeleteExpired: db.prepare(`
+      DELETE FROM memory WHERE namespace = ? AND key = ? AND ttl > 0 AND (created + ttl * 1000) < ?
+    `),
+    memSearch: db.prepare(`
+      SELECT key, value, tags, created, updated, ttl FROM memory
+      WHERE namespace = ?
+        AND (ttl = 0 OR (created + ttl * 1000) >= ?)
+        AND (key LIKE ? ESCAPE '\\' OR value LIKE ? ESCAPE '\\' OR tags LIKE ? ESCAPE '\\')
+    `),
+    memList: db.prepare(`
+      SELECT key, created, updated, length(value) AS size, tags FROM memory
+      WHERE namespace = ?
+        AND (ttl = 0 OR (created + ttl * 1000) >= ?)
+    `),
+    memListByTag: db.prepare(`
+      SELECT key, created, updated, length(value) AS size, tags FROM memory
+      WHERE namespace = ?
+        AND (ttl = 0 OR (created + ttl * 1000) >= ?)
+        AND tags LIKE ? ESCAPE '\\'
+    `),
+    memStats: db.prepare(`
+      SELECT
+        COUNT(*) AS count,
+        SUM(length(value)) AS total_size_bytes,
+        MIN(created) AS oldest,
+        MAX(updated) AS newest
+      FROM memory
+      WHERE namespace = ?
+        AND (ttl = 0 OR (created + ttl * 1000) >= ?)
+    `),
+    memAll: db.prepare(`
+      SELECT key, value, tags, ttl FROM memory
+      WHERE namespace = ?
+        AND (ttl = 0 OR (created + ttl * 1000) >= ?)
+    `),
+    memNsList: db.prepare(`
+      SELECT namespace, COUNT(*) AS count FROM memory GROUP BY namespace
+    `),
+    memNsClear: db.prepare(`DELETE FROM memory WHERE namespace = ?`),
+    memNsHistoryClear: db.prepare(`DELETE FROM memory_history WHERE namespace = ?`),
 
-// ---------------------------------------------------------------------------
-// 1. memory-set
-// ---------------------------------------------------------------------------
-function memorySet(input) {
-  const { key, value, tags = [], namespace = 'default' } = input;
-  if (!key) throw new Error('key is required');
-  const mem = loadMem(namespace);
-  const prev = mem[key];
-  const versions = (prev && Array.isArray(prev._versions)) ? prev._versions : [];
-  if (prev) {
-    versions.push({ value: prev.value, timestamp: prev.updated_at || prev.created_at });
-    if (versions.length > 50) versions.splice(0, versions.length - 50);
-  }
-  const now = Date.now();
-  mem[key] = {
-    value,
-    tags,
-    created_at: (prev && prev.created_at) ? prev.created_at : now,
-    updated_at: now,
-    expires_at: (prev && prev.expires_at != null) ? prev.expires_at : null,
-    _versions: versions,
+    // history
+    histInsert: db.prepare(`
+      INSERT INTO memory_history (namespace, key, value, timestamp) VALUES (?, ?, ?, ?)
+    `),
+    histSelect: db.prepare(`
+      SELECT value, timestamp FROM memory_history
+      WHERE namespace = ? AND key = ?
+      ORDER BY timestamp DESC LIMIT ?
+    `),
+    histPrune: db.prepare(`
+      DELETE FROM memory_history WHERE namespace = ? AND key = ?
+        AND timestamp NOT IN (
+          SELECT timestamp FROM memory_history
+          WHERE namespace = ? AND key = ?
+          ORDER BY timestamp DESC LIMIT 50
+        )
+    `),
+
+    // queues
+    queueInsert: db.prepare(`INSERT INTO queues (name, id, value, created) VALUES (?, ?, ?, ?)`),
+    queuePopRow: db.prepare(`SELECT id, value FROM queues WHERE name = ? ORDER BY created ASC LIMIT 1`),
+    queueDelete: db.prepare(`DELETE FROM queues WHERE id = ?`),
+    queuePeek:   db.prepare(`SELECT value FROM queues WHERE name = ? ORDER BY created ASC LIMIT 1`),
+    queueSize:   db.prepare(`SELECT COUNT(*) AS cnt FROM queues WHERE name = ?`),
+
+    // counters
+    counterGet:    db.prepare(`SELECT value FROM counters WHERE name = ?`),
+    counterUpsert: db.prepare(`
+      INSERT INTO counters (name, value, created, updated) VALUES (@name, @value, @now, @now)
+      ON CONFLICT(name) DO UPDATE SET value = value + @delta, updated = @now
+    `),
   };
-  saveMem(namespace, mem);
-  return { _engine: 'real', key, status: 'stored' };
-}
 
-// ---------------------------------------------------------------------------
-// 2. memory-get
-// ---------------------------------------------------------------------------
-function memoryGet(input) {
-  const { key, namespace = 'default' } = input;
-  if (!key) throw new Error('key is required');
-  const mem = loadMem(namespace);
-  const entry = mem[key];
-  if (!entry || isExpired(entry)) {
-    if (entry && isExpired(entry)) {
-      delete mem[key];
-      saveMem(namespace, mem);
+  // -------------------------------------------------------------------------
+  // Internal helpers
+  // -------------------------------------------------------------------------
+  function isExpiredRow(row, now) {
+    if (!row) return true;
+    if (!row.ttl || row.ttl === 0) return false;
+    return (row.created + row.ttl * 1000) < now;
+  }
+
+  function escapeLike(s) {
+    return String(s).replace(/\\/g, '\\\\').replace(/%/g, '\\%').replace(/_/g, '\\_');
+  }
+
+  function likePattern(q) {
+    return `%${escapeLike(q)}%`;
+  }
+
+  // -------------------------------------------------------------------------
+  // 1. memory-set
+  // -------------------------------------------------------------------------
+  function memorySet(input) {
+    const { key, value, tags = [], namespace = 'default' } = input;
+    if (!key) throw new Error('key is required');
+    const now = Date.now();
+    const existing = stmts.memGet.get(namespace, key);
+
+    // Record history of old value before overwriting
+    if (existing && !isExpiredRow(existing, now)) {
+      stmts.histInsert.run(namespace, key, existing.value, now);
+      stmts.histPrune.run(namespace, key, namespace, key);
     }
-    return { _engine: 'real', key, value: null, found: false, tags: [] };
-  }
-  return { _engine: 'real', key, value: entry.value, found: true, tags: entry.tags || [] };
-}
 
-// ---------------------------------------------------------------------------
-// 3. memory-search
-// ---------------------------------------------------------------------------
-function memorySearch(input) {
-  const { query = '', namespace = 'default' } = input;
-  const mem = loadMem(namespace);
-  const q = String(query).toLowerCase();
-  const results = [];
-  for (const [k, entry] of Object.entries(mem)) {
-    if (isExpired(entry)) continue;
-    const keyMatch = k.toLowerCase().includes(q);
-    const valMatch = JSON.stringify(entry.value).toLowerCase().includes(q);
-    const tagMatch = (entry.tags || []).some(t => String(t).toLowerCase().includes(q));
-    if (keyMatch || valMatch || tagMatch) {
-      results.push({ key: k, value: entry.value, tags: entry.tags || [] });
+    stmts.memUpsert.run({
+      namespace,
+      key,
+      value: JSON.stringify(value),
+      tags: JSON.stringify(tags),
+      created: existing ? existing.created : now,
+      updated: now,
+      ttl: 0, // preserve existing ttl via ON CONFLICT DO UPDATE logic
+    });
+
+    return { _engine: 'real', key, status: 'stored' };
+  }
+
+  // -------------------------------------------------------------------------
+  // 2. memory-get
+  // -------------------------------------------------------------------------
+  function memoryGet(input) {
+    const { key, namespace = 'default' } = input;
+    if (!key) throw new Error('key is required');
+    const now = Date.now();
+    const row = stmts.memGet.get(namespace, key);
+    if (!row || isExpiredRow(row, now)) {
+      if (row) stmts.memDelete.run(namespace, key);
+      return { _engine: 'real', key, value: null, found: false, tags: [] };
     }
-  }
-  return { _engine: 'real', results, count: results.length };
-}
-
-// ---------------------------------------------------------------------------
-// 4. memory-list
-// ---------------------------------------------------------------------------
-function memoryList(input) {
-  const { namespace = 'default', tag } = input;
-  const mem = loadMem(namespace);
-  let keys = [];
-  for (const [k, entry] of Object.entries(mem)) {
-    if (isExpired(entry)) continue;
-    if (tag != null) {
-      if ((entry.tags || []).includes(tag)) keys.push(k);
-    } else {
-      keys.push(k);
-    }
-  }
-  return { _engine: 'real', keys, count: keys.length };
-}
-
-// ---------------------------------------------------------------------------
-// 5. memory-delete
-// ---------------------------------------------------------------------------
-function memoryDelete(input) {
-  const { key, namespace = 'default' } = input;
-  if (!key) throw new Error('key is required');
-  const mem = loadMem(namespace);
-  const existed = key in mem;
-  delete mem[key];
-  saveMem(namespace, mem);
-  return { _engine: 'real', deleted: existed };
-}
-
-// ---------------------------------------------------------------------------
-// 6. memory-expire
-// ---------------------------------------------------------------------------
-function memoryExpire(input) {
-  const { key, ttl_seconds, namespace = 'default' } = input;
-  if (!key) throw new Error('key is required');
-  if (ttl_seconds == null) throw new Error('ttl_seconds is required');
-  const mem = loadMem(namespace);
-  if (!mem[key]) throw new Error(`Key "${key}" not found`);
-  const expires_at = Date.now() + Number(ttl_seconds) * 1000;
-  mem[key].expires_at = expires_at;
-  saveMem(namespace, mem);
-  return { _engine: 'real', key, expires_at };
-}
-
-// ---------------------------------------------------------------------------
-// 7. memory-increment
-// ---------------------------------------------------------------------------
-function memoryIncrement(input) {
-  const { key, by = 1, namespace = 'default' } = input;
-  if (!key) throw new Error('key is required');
-  const mem = loadMem(namespace);
-  const entry = mem[key];
-  const current = (entry && !isExpired(entry) && typeof entry.value === 'number') ? entry.value : 0;
-  const next = current + Number(by);
-  const now = Date.now();
-  const versions = (entry && Array.isArray(entry._versions)) ? entry._versions : [];
-  if (entry) {
-    versions.push({ value: entry.value, timestamp: entry.updated_at || entry.created_at });
-    if (versions.length > 50) versions.splice(0, versions.length - 50);
-  }
-  mem[key] = {
-    value: next,
-    tags: (entry && entry.tags) ? entry.tags : [],
-    created_at: (entry && entry.created_at) ? entry.created_at : now,
-    updated_at: now,
-    expires_at: (entry && entry.expires_at != null) ? entry.expires_at : null,
-    _versions: versions,
-  };
-  saveMem(namespace, mem);
-  return { _engine: 'real', key, value: next };
-}
-
-// ---------------------------------------------------------------------------
-// 8. memory-append
-// ---------------------------------------------------------------------------
-function memoryAppend(input) {
-  const { key, item, namespace = 'default' } = input;
-  if (!key) throw new Error('key is required');
-  const mem = loadMem(namespace);
-  const entry = mem[key];
-  const arr = (entry && !isExpired(entry) && Array.isArray(entry.value)) ? entry.value : [];
-  arr.push(item);
-  const now = Date.now();
-  const versions = (entry && Array.isArray(entry._versions)) ? entry._versions : [];
-  if (entry) {
-    versions.push({ value: entry.value, timestamp: entry.updated_at || entry.created_at });
-    if (versions.length > 50) versions.splice(0, versions.length - 50);
-  }
-  mem[key] = {
-    value: arr,
-    tags: (entry && entry.tags) ? entry.tags : [],
-    created_at: (entry && entry.created_at) ? entry.created_at : now,
-    updated_at: now,
-    expires_at: (entry && entry.expires_at != null) ? entry.expires_at : null,
-    _versions: versions,
-  };
-  saveMem(namespace, mem);
-  return { _engine: 'real', key, length: arr.length };
-}
-
-// ---------------------------------------------------------------------------
-// 9. memory-history
-// ---------------------------------------------------------------------------
-function memoryHistory(input) {
-  const { key, limit = 10, namespace = 'default' } = input;
-  if (!key) throw new Error('key is required');
-  const mem = loadMem(namespace);
-  const entry = mem[key];
-  if (!entry || isExpired(entry)) return { _engine: 'real', versions: [] };
-  const versions = (entry._versions || []).slice(-Number(limit));
-  return { _engine: 'real', versions };
-}
-
-// ---------------------------------------------------------------------------
-// 10. memory-export
-// ---------------------------------------------------------------------------
-function memoryExport(input) {
-  const { namespace = 'default' } = input;
-  const mem = loadMem(namespace);
-  const data = {};
-  for (const [k, entry] of Object.entries(mem)) {
-    if (!isExpired(entry)) data[k] = entry.value;
-  }
-  return { _engine: 'real', data, count: Object.keys(data).length };
-}
-
-// ---------------------------------------------------------------------------
-// 11. memory-import
-// ---------------------------------------------------------------------------
-function memoryImport(input) {
-  const { data = {}, namespace = 'default' } = input;
-  const mem = loadMem(namespace);
-  const now = Date.now();
-  let count = 0;
-  for (const [k, v] of Object.entries(data)) {
-    const existing = mem[k];
-    const versions = (existing && Array.isArray(existing._versions)) ? existing._versions : [];
-    if (existing) {
-      versions.push({ value: existing.value, timestamp: existing.updated_at || existing.created_at });
-      if (versions.length > 50) versions.splice(0, versions.length - 50);
-    }
-    mem[k] = {
-      value: v,
-      tags: (existing && existing.tags) ? existing.tags : [],
-      created_at: (existing && existing.created_at) ? existing.created_at : now,
-      updated_at: now,
-      expires_at: null,
-      _versions: versions,
+    return {
+      _engine: 'real',
+      key,
+      value: JSON.parse(row.value),
+      found: true,
+      tags: JSON.parse(row.tags),
     };
-    count++;
   }
-  saveMem(namespace, mem);
-  return { _engine: 'real', imported: count };
-}
 
-// ---------------------------------------------------------------------------
-// 12. memory-stats
-// ---------------------------------------------------------------------------
-function memoryStats(input) {
-  const { namespace = 'default' } = input;
-  const mem = loadMem(namespace);
-  let count = 0;
-  let oldest = null;
-  let newest = null;
-  for (const [, entry] of Object.entries(mem)) {
-    if (isExpired(entry)) continue;
-    count++;
-    if (oldest == null || entry.created_at < oldest) oldest = entry.created_at;
-    if (newest == null || entry.created_at > newest) newest = entry.created_at;
+  // -------------------------------------------------------------------------
+  // 3. memory-search
+  // -------------------------------------------------------------------------
+  function memorySearch(input) {
+    const { query = '', namespace = 'default' } = input;
+    const now = Date.now();
+    const pat = likePattern(query);
+    const rows = stmts.memSearch.all(namespace, now, pat, pat, pat);
+    const results = rows.map(r => ({
+      key: r.key,
+      value: JSON.parse(r.value),
+      tags: JSON.parse(r.tags),
+    }));
+    return { _engine: 'real', results, count: results.length };
   }
-  const raw = JSON.stringify(mem);
-  const total_size_bytes = Buffer.byteLength(raw, 'utf8');
+
+  // -------------------------------------------------------------------------
+  // 4. memory-list
+  // -------------------------------------------------------------------------
+  function memoryList(input) {
+    const { namespace = 'default', tag } = input;
+    const now = Date.now();
+    let rows;
+    if (tag != null) {
+      rows = stmts.memListByTag.all(namespace, now, likePattern(tag));
+      // Filter precisely – LIKE can give false positives on substrings of tag values
+      rows = rows.filter(r => {
+        try { return JSON.parse(r.tags).includes(tag); } catch { return false; }
+      });
+    } else {
+      rows = stmts.memList.all(namespace, now);
+    }
+    const keys = rows.map(r => r.key);
+    return { _engine: 'real', keys, count: keys.length };
+  }
+
+  // -------------------------------------------------------------------------
+  // 5. memory-delete
+  // -------------------------------------------------------------------------
+  function memoryDelete(input) {
+    const { key, namespace = 'default' } = input;
+    if (!key) throw new Error('key is required');
+    const existing = stmts.memGet.get(namespace, key);
+    const existed = !!existing;
+    if (existed) stmts.memDelete.run(namespace, key);
+    return { _engine: 'real', deleted: existed };
+  }
+
+  // -------------------------------------------------------------------------
+  // 6. memory-expire
+  // -------------------------------------------------------------------------
+  function memoryExpire(input) {
+    const { key, ttl_seconds, namespace = 'default' } = input;
+    if (!key) throw new Error('key is required');
+    if (ttl_seconds == null) throw new Error('ttl_seconds is required');
+    const now = Date.now();
+    const row = stmts.memGet.get(namespace, key);
+    if (!row || isExpiredRow(row, now)) throw new Error(`Key "${key}" not found`);
+    const ttl = Number(ttl_seconds);
+    stmts.memUpdateTtl.run({ ttl, updated: now, namespace, key });
+    const expires_at = row.created + ttl * 1000;
+    return { _engine: 'real', key, expires_at };
+  }
+
+  // -------------------------------------------------------------------------
+  // 7. memory-increment
+  // -------------------------------------------------------------------------
+  function memoryIncrement(input) {
+    const { key, by = 1, namespace = 'default' } = input;
+    if (!key) throw new Error('key is required');
+    const now = Date.now();
+
+    const doIncrement = db.transaction(() => {
+      const row = stmts.memGet.get(namespace, key);
+      const current = (row && !isExpiredRow(row, now) && typeof JSON.parse(row.value) === 'number')
+        ? JSON.parse(row.value)
+        : 0;
+      const next = current + Number(by);
+
+      if (row && !isExpiredRow(row, now)) {
+        stmts.histInsert.run(namespace, key, row.value, now);
+        stmts.histPrune.run(namespace, key, namespace, key);
+        stmts.memUpdateValue.run({ value: JSON.stringify(next), updated: now, namespace, key });
+      } else {
+        stmts.memUpsert.run({
+          namespace,
+          key,
+          value: JSON.stringify(next),
+          tags: JSON.stringify([]),
+          created: now,
+          updated: now,
+          ttl: 0,
+        });
+      }
+      return next;
+    });
+
+    const next = doIncrement();
+    return { _engine: 'real', key, value: next };
+  }
+
+  // -------------------------------------------------------------------------
+  // 8. memory-append
+  // -------------------------------------------------------------------------
+  function memoryAppend(input) {
+    const { key, item, namespace = 'default' } = input;
+    if (!key) throw new Error('key is required');
+    const now = Date.now();
+
+    const doAppend = db.transaction(() => {
+      const row = stmts.memGet.get(namespace, key);
+      const arr = (row && !isExpiredRow(row, now) && Array.isArray(JSON.parse(row.value)))
+        ? JSON.parse(row.value)
+        : [];
+      arr.push(item);
+
+      if (row && !isExpiredRow(row, now)) {
+        stmts.histInsert.run(namespace, key, row.value, now);
+        stmts.histPrune.run(namespace, key, namespace, key);
+        stmts.memUpdateValue.run({ value: JSON.stringify(arr), updated: now, namespace, key });
+      } else {
+        stmts.memUpsert.run({
+          namespace,
+          key,
+          value: JSON.stringify(arr),
+          tags: JSON.stringify([]),
+          created: now,
+          updated: now,
+          ttl: 0,
+        });
+      }
+      return arr.length;
+    });
+
+    const length = doAppend();
+    return { _engine: 'real', key, length };
+  }
+
+  // -------------------------------------------------------------------------
+  // 9. memory-history
+  // -------------------------------------------------------------------------
+  function memoryHistory(input) {
+    const { key, limit = 10, namespace = 'default' } = input;
+    if (!key) throw new Error('key is required');
+    const rows = stmts.histSelect.all(namespace, key, Number(limit));
+    const versions = rows.map(r => ({
+      value: JSON.parse(r.value),
+      timestamp: r.timestamp,
+    }));
+    return { _engine: 'real', versions };
+  }
+
+  // -------------------------------------------------------------------------
+  // 10. memory-export
+  // -------------------------------------------------------------------------
+  function memoryExport(input) {
+    const { namespace = 'default' } = input;
+    const now = Date.now();
+    const rows = stmts.memAll.all(namespace, now);
+    const data = {};
+    for (const r of rows) {
+      data[r.key] = JSON.parse(r.value);
+    }
+    return { _engine: 'real', data, count: Object.keys(data).length };
+  }
+
+  // -------------------------------------------------------------------------
+  // 11. memory-import
+  // -------------------------------------------------------------------------
+  function memoryImport(input) {
+    const { data = {}, namespace = 'default' } = input;
+    const now = Date.now();
+
+    const doImport = db.transaction(() => {
+      let count = 0;
+      for (const [k, v] of Object.entries(data)) {
+        const existing = stmts.memGet.get(namespace, k);
+        if (existing) {
+          stmts.histInsert.run(namespace, k, existing.value, now);
+          stmts.histPrune.run(namespace, k, namespace, k);
+        }
+        stmts.memUpsert.run({
+          namespace,
+          key: k,
+          value: JSON.stringify(v),
+          tags: existing ? existing.tags : JSON.stringify([]),
+          created: existing ? existing.created : now,
+          updated: now,
+          ttl: 0,
+        });
+        count++;
+      }
+      return count;
+    });
+
+    const imported = doImport();
+    return { _engine: 'real', imported };
+  }
+
+  // -------------------------------------------------------------------------
+  // 12. memory-stats
+  // -------------------------------------------------------------------------
+  function memoryStats(input) {
+    const { namespace = 'default' } = input;
+    const now = Date.now();
+    const row = stmts.memStats.get(namespace, now);
+    return {
+      _engine: 'real',
+      count: row.count || 0,
+      total_size_bytes: row.total_size_bytes || 0,
+      oldest: row.oldest ? new Date(row.oldest).toISOString() : null,
+      newest: row.newest ? new Date(row.newest).toISOString() : null,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // 13. memory-namespace-list
+  // -------------------------------------------------------------------------
+  function memoryNamespaceList() {
+    const rows = stmts.memNsList.all();
+    const namespaces = rows.map(r => r.namespace);
+    return { _engine: 'real', namespaces, count: namespaces.length };
+  }
+
+  // -------------------------------------------------------------------------
+  // 14. memory-namespace-clear
+  // -------------------------------------------------------------------------
+  function memoryNamespaceClear(input) {
+    const { namespace, confirm } = input;
+    if (!namespace) throw new Error('namespace is required');
+    if (confirm !== `clear:${namespace}`) {
+      throw new Error(`To clear namespace "${namespace}", pass confirm: "clear:${namespace}"`);
+    }
+    const doDelete = db.transaction(() => {
+      stmts.memNsClear.run(namespace);
+      stmts.memNsHistoryClear.run(namespace);
+    });
+    doDelete();
+    return { _engine: 'real', cleared: true };
+  }
+
+  // -------------------------------------------------------------------------
+  // 15. queue-push
+  // -------------------------------------------------------------------------
+  function queuePush(input) {
+    const { queue = 'default', item } = input;
+    const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
+    stmts.queueInsert.run(queue, id, JSON.stringify(item), Date.now());
+    const { cnt } = stmts.queueSize.get(queue);
+    return { _engine: 'real', queue, size: cnt };
+  }
+
+  // -------------------------------------------------------------------------
+  // 16. queue-pop
+  // -------------------------------------------------------------------------
+  function queuePop(input) {
+    const { queue = 'default' } = input;
+
+    const doPop = db.transaction(() => {
+      const row = stmts.queuePopRow.get(queue);
+      if (!row) return { item: null, remaining: 0 };
+      stmts.queueDelete.run(row.id);
+      const { cnt } = stmts.queueSize.get(queue);
+      return { item: JSON.parse(row.value), remaining: cnt };
+    });
+
+    const result = doPop();
+    return { _engine: 'real', ...result };
+  }
+
+  // -------------------------------------------------------------------------
+  // 17. queue-peek
+  // -------------------------------------------------------------------------
+  function queuePeek(input) {
+    const { queue = 'default' } = input;
+    const row = stmts.queuePeek.get(queue);
+    const { cnt } = stmts.queueSize.get(queue);
+    return {
+      _engine: 'real',
+      item: row ? JSON.parse(row.value) : null,
+      size: cnt,
+    };
+  }
+
+  // -------------------------------------------------------------------------
+  // 18. queue-size
+  // -------------------------------------------------------------------------
+  function queueSize(input) {
+    const { queue = 'default' } = input;
+    const { cnt } = stmts.queueSize.get(queue);
+    return { _engine: 'real', size: cnt };
+  }
+
+  // -------------------------------------------------------------------------
+  // 19. counter-increment
+  // -------------------------------------------------------------------------
+  function counterIncrement(input) {
+    const { name, by = 1 } = input;
+    if (!name) throw new Error('name is required');
+    const delta = Number(by);
+    const now = Date.now();
+    stmts.counterUpsert.run({ name, value: delta, delta, now });
+    const row = stmts.counterGet.get(name);
+    return { _engine: 'real', name, value: row.value };
+  }
+
+  // -------------------------------------------------------------------------
+  // 20. counter-get
+  // -------------------------------------------------------------------------
+  function counterGet(input) {
+    const { name } = input;
+    if (!name) throw new Error('name is required');
+    const row = stmts.counterGet.get(name);
+    return { _engine: 'real', name, value: row ? row.value : 0 };
+  }
+
+  // -------------------------------------------------------------------------
+  // 21. memory-vector-search
+  // -------------------------------------------------------------------------
+  function memoryVectorSearch(input) {
+    const { namespace, query, limit } = input;
+    if (!query) return { _engine: 'real', error: 'Provide a query string', results: [] };
+
+    const ns = namespace || 'default';
+    const now = Date.now();
+    const all = stmts.memAll.all(ns, now);
+
+    // Simple TF-IDF-like scoring: count query word matches in each value
+    const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    const scored = all.map(row => {
+      const text = (row.value + ' ' + row.key + ' ' + (row.tags || '')).toLowerCase();
+      const matches = queryWords.filter(w => text.includes(w)).length;
+      const score = queryWords.length > 0 ? matches / queryWords.length : 0;
+      return { key: row.key, value: row.value, tags: row.tags, score, matches };
+    }).filter(r => r.score > 0).sort((a, b) => b.score - a.score).slice(0, limit || 10);
+
+    return { _engine: 'real', results: scored, count: scored.length, query };
+  }
+
+  // -------------------------------------------------------------------------
+  // 22. memory-time-capsule
+  // -------------------------------------------------------------------------
+  function memoryTimeCapsule(input) {
+    const { namespace, key, value, open_after } = input;
+    if (!value) return { _engine: 'real', error: 'Provide a value to store' };
+    const ns = namespace || 'time-capsules';
+    const k = key || 'capsule-' + Date.now().toString(36);
+    const openAfterMs = open_after ? new Date(open_after).getTime() : Date.now() + 86400000; // default: 24h
+
+    stmts.memUpsert.run({
+      namespace: ns,
+      key: k,
+      value: JSON.stringify({ value, sealed_at: new Date().toISOString(), opens_at: new Date(openAfterMs).toISOString() }),
+      tags: JSON.stringify(['time-capsule']),
+      created: Date.now(),
+      updated: Date.now(),
+      ttl: 0,
+    });
+
+    return { _engine: 'real', key: k, namespace: ns, opens_at: new Date(openAfterMs).toISOString(), status: 'sealed' };
+  }
+
+  // -------------------------------------------------------------------------
+  // Handler map
+  // -------------------------------------------------------------------------
   return {
-    _engine: 'real',
-    count,
-    total_size_bytes,
-    oldest: oldest ? new Date(oldest).toISOString() : null,
-    newest: newest ? new Date(newest).toISOString() : null,
+    'memory-set':             memorySet,
+    'memory-get':             memoryGet,
+    'memory-search':          memorySearch,
+    'memory-list':            memoryList,
+    'memory-delete':          memoryDelete,
+    'memory-expire':          memoryExpire,
+    'memory-increment':       memoryIncrement,
+    'memory-append':          memoryAppend,
+    'memory-history':         memoryHistory,
+    'memory-export':          memoryExport,
+    'memory-import':          memoryImport,
+    'memory-stats':           memoryStats,
+    'memory-namespace-list':  memoryNamespaceList,
+    'memory-namespace-clear': memoryNamespaceClear,
+    'queue-push':             queuePush,
+    'queue-pop':              queuePop,
+    'queue-peek':             queuePeek,
+    'queue-size':             queueSize,
+    'counter-increment':      counterIncrement,
+    'counter-get':            counterGet,
+    'memory-vector-search':   memoryVectorSearch,
+    'memory-time-capsule':    memoryTimeCapsule,
   };
-}
-
-// ---------------------------------------------------------------------------
-// 13. memory-namespace-list
-// ---------------------------------------------------------------------------
-function memoryNamespaceList() {
-  ensureDir();
-  let files;
-  try { files = fs.readdirSync(DATA); } catch (e) { files = []; }
-  const namespaces = files
-    .filter(f => f.startsWith('mem-') && f.endsWith('.json'))
-    .map(f => f.slice(4, -5));
-  return { _engine: 'real', namespaces, count: namespaces.length };
-}
-
-// ---------------------------------------------------------------------------
-// 14. memory-namespace-clear
-// ---------------------------------------------------------------------------
-function memoryNamespaceClear(input) {
-  const { namespace } = input;
-  if (!namespace) throw new Error('namespace is required');
-  const p = path.join(DATA, memFile(namespace));
-  let cleared = false;
-  if (fs.existsSync(p)) {
-    fs.unlinkSync(p);
-    cleared = true;
-  }
-  return { _engine: 'real', cleared };
-}
-
-// ---------------------------------------------------------------------------
-// Queue helpers
-// ---------------------------------------------------------------------------
-function queueFile(name) { return `queue-${name}.json`; }
-function loadQueue(name) { return load(queueFile(name), []); }
-function saveQueue(name, arr) { save(queueFile(name), arr); }
-
-// ---------------------------------------------------------------------------
-// 15. queue-push
-// ---------------------------------------------------------------------------
-function queuePush(input) {
-  const { queue = 'default', item } = input;
-  const arr = loadQueue(queue);
-  arr.push(item);
-  saveQueue(queue, arr);
-  return { _engine: 'real', queue, size: arr.length };
-}
-
-// ---------------------------------------------------------------------------
-// 16. queue-pop
-// ---------------------------------------------------------------------------
-function queuePop(input) {
-  const { queue = 'default' } = input;
-  const arr = loadQueue(queue);
-  if (arr.length === 0) return { _engine: 'real', item: null, remaining: 0 };
-  const item = arr.shift();
-  saveQueue(queue, arr);
-  return { _engine: 'real', item, remaining: arr.length };
-}
-
-// ---------------------------------------------------------------------------
-// 17. queue-peek
-// ---------------------------------------------------------------------------
-function queuePeek(input) {
-  const { queue = 'default' } = input;
-  const arr = loadQueue(queue);
-  return { _engine: 'real', item: arr[0] !== undefined ? arr[0] : null, size: arr.length };
-}
-
-// ---------------------------------------------------------------------------
-// 18. queue-size
-// ---------------------------------------------------------------------------
-function queueSize(input) {
-  const { queue = 'default' } = input;
-  const arr = loadQueue(queue);
-  return { _engine: 'real', size: arr.length };
-}
-
-// ---------------------------------------------------------------------------
-// Counter helpers
-// ---------------------------------------------------------------------------
-const COUNTERS_FILE = 'counters.json';
-function loadCounters() { return load(COUNTERS_FILE, {}); }
-function saveCounters(data) { save(COUNTERS_FILE, data); }
-
-// ---------------------------------------------------------------------------
-// 19. counter-increment
-// ---------------------------------------------------------------------------
-function counterIncrement(input) {
-  const { name, by = 1 } = input;
-  if (!name) throw new Error('name is required');
-  const counters = loadCounters();
-  counters[name] = (counters[name] || 0) + Number(by);
-  saveCounters(counters);
-  return { _engine: 'real', name, value: counters[name] };
-}
-
-// ---------------------------------------------------------------------------
-// 20. counter-get
-// ---------------------------------------------------------------------------
-function counterGet(input) {
-  const { name } = input;
-  if (!name) throw new Error('name is required');
-  const counters = loadCounters();
-  return { _engine: 'real', name, value: counters[name] || 0 };
-}
-
-// ---------------------------------------------------------------------------
-// Exports
-// ---------------------------------------------------------------------------
-module.exports = {
-  'memory-set':              memorySet,
-  'memory-get':              memoryGet,
-  'memory-search':           memorySearch,
-  'memory-list':             memoryList,
-  'memory-delete':           memoryDelete,
-  'memory-expire':           memoryExpire,
-  'memory-increment':        memoryIncrement,
-  'memory-append':           memoryAppend,
-  'memory-history':          memoryHistory,
-  'memory-export':           memoryExport,
-  'memory-import':           memoryImport,
-  'memory-stats':            memoryStats,
-  'memory-namespace-list':   memoryNamespaceList,
-  'memory-namespace-clear':  memoryNamespaceClear,
-  'queue-push':              queuePush,
-  'queue-pop':               queuePop,
-  'queue-peek':              queuePeek,
-  'queue-size':              queueSize,
-  'counter-increment':       counterIncrement,
-  'counter-get':             counterGet,
 };

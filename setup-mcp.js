@@ -50,7 +50,7 @@ settings.mcpServers.slopshop = {
   args: [MCP_SERVER_PATH],
   env: {
     SLOPSHOP_KEY: process.env.SLOPSHOP_KEY || 'sk-slop-demo-key-12345678',
-    SLOPSHOP_BASE: process.env.SLOPSHOP_BASE || 'http://localhost:3000',
+    SLOPSHOP_BASE: process.env.SLOPSHOP_BASE || 'https://slopshop.gg',
   },
 };
 

@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Slopshop for Groq | Ultra-Fast Inference + 1,049 Real Tools</title>
+<meta name="description" content="Combine Groq's LPU inference speed with Slopshop's 1,049 real compute tools. OpenAI-compatible API. Sub-100ms LLM responses + real tool execution for the fastest AI agents possible.">
+<meta name="keywords" content="Groq function calling, Groq tools, Groq LPU agent, llama groq tools, Groq API integration, fast LLM tools, groq-sdk">
+<link rel="canonical" href="https://slopshop.gg/integrate-groq">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/integrate-groq">
+<meta property="og:title" content="Slopshop for Groq — Ultra-Fast Inference + 1,049 Real Tools">
+<meta property="og:description" content="Groq's LPU speed + Slopshop's 1,049 real tools. The fastest AI agent stack. OpenAI-compatible. Free memory.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop for Groq — Ultra-Fast Inference + 1,049 Real Tools">
+<meta name="twitter:description" content="Groq LPU inference + Slopshop compute. Sub-100ms LLM + real tool execution. The fastest agent stack.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#F55036">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop for Groq","description":"How to combine Groq's ultra-fast LPU inference with Slopshop's 1,049 real compute tools for the fastest AI agent loop possible.","url":"https://slopshop.gg/integrate-groq","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"about":{"@type":"SoftwareApplication","name":"Slopshop","applicationCategory":"DeveloperApplication"}}</script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--o:#ff8800;--g:#00cc66;--c:#00aaff;--v:#8855ff;
+  --acc:#F55036;--accg:rgba(245,80,54,0.1);--accb:rgba(245,80,54,0.2);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--acc);color:#fff}
+a{color:var(--acc);text-decoration:none;transition:opacity 0.15s}
+a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2)}
+.hero{padding:136px 32px 80px;text-align:center;background:radial-gradient(ellipse at 50% 0%,rgba(245,80,54,0.06),transparent 60%)}
+.hero-inner{max-width:1100px;margin:0 auto}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;background:var(--accg);border:1px solid var(--accb);color:var(--acc);padding:5px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;margin-bottom:28px;font-family:var(--mono)}
+.hero h1{font-family:var(--mono);font-size:clamp(2.4rem,5.5vw,4rem);font-weight:800;letter-spacing:-0.03em;line-height:1.05;margin-bottom:24px}
+.hero h1 .accent{color:var(--acc)}.hero h1 .dim{color:var(--t3)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:560px;margin:0 auto;line-height:1.8}
+.hero .sub b{color:var(--t);font-weight:600}
+.stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;margin:48px 0;padding:32px 0;border-top:1px solid var(--b);border-bottom:1px solid var(--b)}
+.stat{text-align:center;padding:0 8px}
+.stat .n{font-family:var(--mono);font-size:1.7rem;font-weight:800;letter-spacing:-0.03em}
+.stat .l{font-size:0.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.14em;margin-top:6px;font-weight:600}
+.stat:nth-child(1) .n{color:var(--acc)}.stat:nth-child(2) .n{color:var(--o)}.stat:nth-child(3) .n{color:var(--g)}.stat:nth-child(4) .n{color:var(--c)}
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.cta-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--acc);color:#fff;text-decoration:none;transition:box-shadow 0.2s,transform 0.15s}
+.cta-primary:hover{box-shadow:0 0 28px rgba(245,80,54,0.35);transform:translateY(-1px);opacity:1}
+.cta-secondary{display:inline-flex;align-items:center;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2);text-decoration:none;transition:color 0.15s}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.sec{max-width:1100px;margin:0 auto;padding:80px 32px}
+.sec-label{font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--acc);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:12px}
+.sec h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
+.sec .desc{color:var(--t3);font-size:0.88rem;margin-bottom:40px;line-height:1.75;max-width:640px}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:48px}
+.step{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;transition:border-color 0.2s}
+.step:hover{border-color:var(--b2)}
+.step-num{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--acc);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:12px}
+.step h3{font-family:var(--mono);font-size:0.88rem;font-weight:700;margin-bottom:10px}
+.step p{font-size:0.8rem;color:var(--t3);line-height:1.75;margin-bottom:14px}
+.cmd{background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.75rem;color:var(--o);cursor:pointer;position:relative}
+.cmd .copy-hint{position:absolute;right:10px;top:50%;transform:translateY(-50%);font-size:0.58rem;color:var(--t4)}
+.speed-bar{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px;margin-bottom:32px}
+.speed-bar h3{font-family:var(--mono);font-size:0.85rem;font-weight:700;margin-bottom:16px;color:var(--acc)}
+.speed-row{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.speed-label{font-family:var(--mono);font-size:0.72rem;color:var(--t3);width:160px;flex-shrink:0}
+.speed-track{flex:1;background:var(--b2);border-radius:4px;height:8px;overflow:hidden}
+.speed-fill{height:100%;border-radius:4px}
+.speed-val{font-family:var(--mono);font-size:0.72rem;color:var(--t2);width:60px;text-align:right;flex-shrink:0}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:32px}
+.code-header{background:var(--s2);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .lang{font-family:var(--mono);font-size:0.68rem;color:var(--t3)}
+.code-header .fname{font-family:var(--mono);font-size:0.7rem;color:var(--acc);font-weight:600}
+.code-body{padding:20px 22px;font-family:var(--mono);font-size:0.78rem;line-height:1.85;overflow-x:auto;color:var(--t2)}
+.code-body .cm{color:var(--t4)}.code-body .kw{color:var(--acc)}.code-body .str{color:var(--g)}.code-body .fn{color:var(--c)}.code-body .num{color:var(--o)}
+.get-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:40px}
+.get-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px;transition:transform 0.15s}
+.get-card:hover{transform:translateY(-2px)}
+.get-card .icon{font-size:1.4rem;margin-bottom:12px}
+.get-card h3{font-family:var(--mono);font-size:0.82rem;font-weight:700;margin-bottom:6px}
+.get-card p{font-size:0.75rem;color:var(--t3);line-height:1.6}
+.get-card:nth-child(1){border-left:3px solid var(--acc)}.get-card:nth-child(2){border-left:3px solid var(--g)}
+.get-card:nth-child(3){border-left:3px solid var(--c)}.get-card:nth-child(4){border-left:3px solid var(--o)}.get-card:nth-child(5){border-left:3px solid var(--v)}
+.cta-banner{background:linear-gradient(135deg,rgba(245,80,54,0.08),rgba(245,80,54,0.03));border:1px solid rgba(245,80,54,0.2);border-radius:16px;padding:48px;text-align:center;margin:40px 0}
+.cta-banner h2{font-family:var(--mono);font-size:1.5rem;font-weight:800;margin-bottom:12px}
+.cta-banner h2 .accent{color:var(--acc)}
+.cta-banner p{color:var(--t3);margin-bottom:28px;font-size:0.9rem;max-width:480px;margin-left:auto;margin-right:auto}
+.divider{border:none;border-top:1px solid var(--b);margin:0}
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t)}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}.nav-links a:nth-child(n+4){display:none}
+  .hero{padding:80px 16px 48px}.hero h1{font-size:clamp(2rem,10vw,2.8rem)}
+  .sec{padding:48px 16px}.steps{grid-template-columns:1fr}
+  .get-grid{grid-template-columns:1fr 1fr}.footer-grid{grid-template-columns:1fr;gap:24px}.cta-banner{padding:28px 20px}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><linearGradient id="navG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#navG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+    <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/templates">Templates</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      LPU inference &nbsp;&middot;&nbsp; llama-3.3-70b-versatile &nbsp;&middot;&nbsp; sub-100ms &nbsp;&middot;&nbsp; OpenAI-compatible
+    </div>
+    <h1>Slopshop for<br><span class="accent">Groq</span> (Fast Inference)</h1>
+    <p class="sub">
+      Groq's LPU delivers sub-100ms first tokens. Slopshop delivers <b>1,049 real tool executions</b>. Combined: the fastest AI agent loop available — <b>millisecond inference</b>, real compute execution, verified results.
+    </p>
+
+    <div class="stats">
+      <div class="stat"><div class="n">422</div><div class="l">Real Tools</div></div>
+      <div class="stat"><div class="n">&lt;100</div><div class="l">ms First Token</div></div>
+      <div class="stat"><div class="n">LPU</div><div class="l">Hardware</div></div>
+      <div class="stat"><div class="n">100%</div><div class="l">Verified Results</div></div>
+    </div>
+
+    <div class="hero-ctas">
+      <a href="/docs" class="cta-primary">Get Started Free</a>
+      <a href="/v1/openapi.json" class="cta-secondary">View OpenAPI Schema</a>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec">
+  <div class="sec-label">Speed Profile</div>
+  <h2>The fastest agent loop stack</h2>
+  <p class="desc">Groq's LPU handles the LLM reasoning step in milliseconds. Slopshop's tool execution adds minimal latency. Multi-step agent loops that take seconds elsewhere complete in under a second.</p>
+
+  <div class="speed-bar">
+    <h3>Approximate latency per agentic step</h3>
+    <div class="speed-row">
+      <div class="speed-label">Groq inference</div>
+      <div class="speed-track"><div class="speed-fill" style="width:8%;background:var(--acc)"></div></div>
+      <div class="speed-val">&lt;100ms</div>
+    </div>
+    <div class="speed-row">
+      <div class="speed-label">Slopshop tool exec</div>
+      <div class="speed-track"><div class="speed-fill" style="width:20%;background:var(--g)"></div></div>
+      <div class="speed-val">~200ms</div>
+    </div>
+    <div class="speed-row">
+      <div class="speed-label">Other LLM providers</div>
+      <div class="speed-track"><div class="speed-fill" style="width:70%;background:var(--t4)"></div></div>
+      <div class="speed-val">~1-3s</div>
+    </div>
+    <p style="font-size:0.72rem;color:var(--t4);margin-top:12px">Groq latency depends on model and prompt size. Tool latency depends on tool type (DNS ~50ms, HTTP ~200ms).</p>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Quickstart</div>
+  <h2>Three steps. Groq has tools.</h2>
+  <p class="desc">Groq's API is OpenAI-compatible. Set <code style="color:var(--acc)">base_url="https://api.groq.com/openai/v1"</code> — the rest of the integration is identical to standard OpenAI function_calling.</p>
+
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">Step 01 &mdash; Install</div>
+      <h3>pip install groq</h3>
+      <p>Use Groq's official Python SDK — it mirrors the openai SDK API exactly. Or use openai SDK with base_url set to Groq's endpoint.</p>
+      <div class="cmd">pip install groq requests<span class="copy-hint">click to copy</span></div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 02 &mdash; Fetch Tools</div>
+      <h3>Pull Slopshop schemas</h3>
+      <p>Fetch tool definitions from <code style="color:var(--acc)">/v1/openapi.json</code>. They arrive in OpenAI function_calling format — Groq accepts them directly.</p>
+      <div class="cmd" style="color:var(--t3);font-size:0.68rem">GET /v1/openapi.json &rarr; tools[] (OpenAI format)</div>
+    </div>
+    <div class="step">
+      <div class="step-num">Step 03 &mdash; Run Fast</div>
+      <h3>Sub-second agent loops</h3>
+      <p>Groq returns tool calls in &lt;100ms. Slopshop executes them in ~50-200ms. Multi-step agent tasks complete in under a second total.</p>
+      <div class="cmd" style="color:var(--g);font-size:0.7rem">1,049 tools &middot; &lt;300ms per step &middot; verified</div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Code Example</div>
+  <h2>function_calling with llama-3.3-70b-versatile on Groq</h2>
+  <p class="desc">Uses the official groq SDK. The Groq client class is a drop-in for the OpenAI client — identical method signatures, just faster.</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="fname">groq_agent.py</span>
+      <span class="lang">python</span>
+    </div>
+    <div class="code-body"><pre><span class="kw">import</span> os, json, time, requests
+<span class="kw">from</span> groq <span class="kw">import</span> Groq
+
+client = <span class="fn">Groq</span>(api_key=os.environ[<span class="str">"GROQ_API_KEY"</span>])
+
+SLOP_KEY = os.environ[<span class="str">"SLOPSHOP_API_KEY"</span>]
+SLOP_URL = <span class="str">"https://slopshop.gg"</span>
+
+<span class="cm"># Models with strong function_calling on Groq:</span>
+<span class="cm"># "llama-3.3-70b-versatile"    — best all-round</span>
+<span class="cm"># "llama-3.1-70b-versatile"    — fast tool calls</span>
+<span class="cm"># "mixtral-8x7b-32768"         — large context</span>
+MODEL = <span class="str">"llama-3.3-70b-versatile"</span>
+
+<span class="kw">def</span> <span class="fn">get_tools</span>(slugs: list[str]) -> list[dict]:
+    schema = requests.<span class="fn">get</span>(
+        <span class="str">f"{SLOP_URL}/v1/openapi.json"</span>,
+        headers={<span class="str">"Authorization"</span>: <span class="str">f"Bearer {SLOP_KEY}"</span>}
+    ).<span class="fn">json</span>()
+    tools = []
+    <span class="kw">for</span> slug <span class="kw">in</span> slugs:
+        path = schema[<span class="str">"paths"</span>].<span class="fn">get</span>(<span class="str">f"/v1/{slug}"</span>, {}).<span class="fn">get</span>(<span class="str">"post"</span>, {})
+        <span class="kw">if</span> path:
+            tools.<span class="fn">append</span>({
+                <span class="str">"type"</span>: <span class="str">"function"</span>,
+                <span class="str">"function"</span>: {
+                    <span class="str">"name"</span>: slug,
+                    <span class="str">"description"</span>: path.<span class="fn">get</span>(<span class="str">"summary"</span>, <span class="str">""</span>),
+                    <span class="str">"parameters"</span>: path[<span class="str">"requestBody"</span>][<span class="str">"content"</span>][<span class="str">"application/json"</span>][<span class="str">"schema"</span>]
+                }
+            })
+    <span class="kw">return</span> tools
+
+<span class="kw">def</span> <span class="fn">call_tool</span>(name: str, args: dict) -> str:
+    res = requests.<span class="fn">post</span>(
+        <span class="str">f"{SLOP_URL}/v1/{name}"</span>, json=args,
+        headers={<span class="str">"Authorization"</span>: <span class="str">f"Bearer {SLOP_KEY}"</span>}
+    )
+    <span class="kw">return</span> json.<span class="fn">dumps</span>(res.<span class="fn">json</span>())
+
+<span class="kw">def</span> <span class="fn">run_agent</span>(user_message: str) -> str:
+    tools = <span class="fn">get_tools</span>([<span class="str">"dns-lookup"</span>, <span class="str">"ssl-check"</span>, <span class="str">"http-request"</span>,
+                       <span class="str">"whois"</span>, <span class="str">"hash"</span>, <span class="str">"memory-set"</span>, <span class="str">"memory-get"</span>])
+    messages = [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: user_message}]
+    step = <span class="num">0</span>
+    start = time.<span class="fn">perf_counter</span>()
+
+    <span class="kw">while True</span>:
+        t0 = time.<span class="fn">perf_counter</span>()
+        response = client.chat.completions.<span class="fn">create</span>(
+            model=MODEL,
+            messages=messages,
+            tools=tools,
+            tool_choice=<span class="str">"auto"</span>
+        )
+        llm_ms = (time.<span class="fn">perf_counter</span>() - t0) * <span class="num">1000</span>
+        step += <span class="num">1</span>
+        msg = response.choices[<span class="num">0</span>].message
+
+        <span class="fn">print</span>(<span class="str">f"Step {step}: Groq LLM {llm_ms:.0f}ms"</span>)
+
+        <span class="kw">if</span> response.choices[<span class="num">0</span>].finish_reason == <span class="str">"stop"</span>:
+            total = (time.<span class="fn">perf_counter</span>() - start) * <span class="num">1000</span>
+            <span class="fn">print</span>(<span class="str">f"Done in {step} steps, {total:.0f}ms total"</span>)
+            <span class="kw">return</span> msg.content
+
+        messages.<span class="fn">append</span>(msg)
+        <span class="kw">for</span> tc <span class="kw">in</span> (msg.tool_calls <span class="kw">or</span> []):
+            t1 = time.<span class="fn">perf_counter</span>()
+            result = <span class="fn">call_tool</span>(tc.function.name, json.<span class="fn">loads</span>(tc.function.arguments))
+            tool_ms = (time.<span class="fn">perf_counter</span>() - t1) * <span class="num">1000</span>
+            <span class="fn">print</span>(<span class="str">f"  Tool {tc.function.name}: {tool_ms:.0f}ms"</span>)
+            messages.<span class="fn">append</span>({
+                <span class="str">"role"</span>: <span class="str">"tool"</span>,
+                <span class="str">"tool_call_id"</span>: tc.id,
+                <span class="str">"content"</span>: result
+            })
+
+answer = <span class="fn">run_agent</span>(<span class="str">"Audit slopshop.gg: DNS, SSL, HTTP headers, WHOIS, save results to memory"</span>)
+<span class="fn">print</span>(answer)</pre></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">What You Get</div>
+  <h2>The fastest agent stack available</h2>
+  <p class="desc">Groq's LPU makes LLM reasoning near-instant. Slopshop's tools add the execution layer. The bottleneck is now network I/O, not inference time.</p>
+
+  <div class="get-grid">
+    <div class="get-card"><div class="icon">&#9889;</div><h3>Sub-100ms LLM</h3><p>Groq's LPU delivers inference at speeds that make multi-step agent loops feel synchronous. Stop waiting for LLM responses.</p></div>
+    <div class="get-card"><div class="icon">&#127381;</div><h3>1,049 Real Tools</h3><p>DNS, SSL, HTTP, crypto, hashing, code execution, data transforms. All real. Every result verified with _engine: real.</p></div>
+    <div class="get-card"><div class="icon">&#129504;</div><h3>Free Persistent Memory</h3><p>Groq agents can write to and read from Slopshop's key-value store at zero credit cost. State persists across calls.</p></div>
+    <div class="get-card"><div class="icon">&#128064;</div><h3>Full Observability</h3><p>Audit logs per tool call. Latency breakdown per step. Know exactly where time is spent — LLM vs. tool execution.</p></div>
+    <div class="get-card"><div class="icon">&#127968;</div><h3>Self-Hostable</h3><p>Run Slopshop on your own infrastructure for zero-latency tool execution alongside Groq's fast inference.</p></div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<section class="sec" style="padding-top:64px">
+  <div class="cta-banner">
+    <h2>Groq speed + <span class="accent">1,049 real tools</span></h2>
+    <p>Sub-100ms LLM inference. Real tool execution. Free memory.<br>The fastest complete agent stack available.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+      <a href="/docs" class="cta-primary">Get Started Free</a>
+      <a href="/v1/openapi.json" class="cta-secondary">OpenAPI Schema</a>
+      <a href="/tools" class="cta-secondary">Browse All 1,049 Tools</a>
+    </div>
+  </div>
+  <div style="display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px">
+    <a href="/docs" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Full Docs</a>
+    <a href="/tools" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Browse Tools</a>
+    <a href="/templates" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Agent Templates</a>
+    <a href="/savings" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&#8594; Savings Calculator</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 512 512"><defs><linearGradient id="fG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#fG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col"><h4>Product</h4><a href="/tools">Tools</a><a href="/templates">Templates</a><a href="/#pricing">Pricing</a><a href="/savings">Savings</a></div>
+      <div class="footer-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/docs#getting-started">Getting Started</a><a href="/security">Security</a><a href="/changelog">Changelog</a></div>
+      <div class="footer-col"><h4>Company</h4><a href="/about">About</a><a href="/status">Status</a><a href="/legal">Legal</a><a href="https://x.com/slopshopgg">@slopshopgg</a></div>
+    </div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,049 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
+  </div>
+</footer>
+
+</body>
+</html>
