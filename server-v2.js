@@ -11,9 +11,23 @@ const path = require('path');
 
 const helmet = require('helmet');
 const app = express();
-app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "https:"],
+      connectSrc: ["'self'", "https://slopshop.gg", "https://slopshop-production.up.railway.app"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+    }
+  },
+  crossOriginEmbedderPolicy: false
+}));
 app.use(cors());
-app.use(express.json({ limit: '10mb' })); // 10MB max request body
+app.use(express.json({ limit: '1mb' })); // 1MB max request body
 app.set('trust proxy', 1); // trust Railway/Vercel proxy for IP
 app.use((req, res, next) => { res.set('X-Request-Id', crypto.randomUUID()); next(); });
 
@@ -257,16 +271,46 @@ function publicRateLimit(req, res, next) {
 }
 
 // ===== STATIC =====
-// Block access to sensitive files before serving static content
+// Allowlist-based static file protection
 app.use((req, res, next) => {
-  const blocked = ['/server-v2.js', '/registry.js', '/registry-expansion.js', '/registry-hackathon.js', '/schemas.js', '/auth.js', '/agent.js', '/pipes.js', '/zapier.js', '/stripe.js', '/polar.js', '/benchmark.js', '/audit.js', '/package.json', '/package-lock.json', '/.env', '/.git', '/.data', '/node_modules', '/handlers/', '/sdk/', '/CLAUDE.md', '/Procfile', '/vercel.json', '/cli.js', '/mcp-server.js', '/setup-mcp.js'];
-  const lower = req.path.toLowerCase();
-  if (blocked.some(b => lower.startsWith(b)) || lower.includes('..')) {
+  // Only serve files with these extensions from static
+  const ext = path.extname(req.path).toLowerCase();
+  const allowedExts = ['.html', '.css', '.js', '.svg', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.txt', '.xml', '.json', '.webmanifest', '.woff', '.woff2', '.ttf'];
+
+  // Block dotfiles except .well-known
+  if (req.path.startsWith('/.') && !req.path.startsWith('/.well-known')) {
     return res.status(404).send('Not found');
   }
+
+  // Block paths that look like source code or config
+  if (req.path.includes('/handlers/') || req.path.includes('/node_modules/') || req.path.includes('/sdk/') || req.path.includes('/.data/')) {
+    return res.status(404).send('Not found');
+  }
+
+  // For files with extensions, only allow safe types
+  if (ext && !allowedExts.includes(ext)) {
+    return res.status(404).send('Not found');
+  }
+
+  // Block specific known sensitive files by name (no extension)
+  const sensitiveNames = ['/server-v2', '/registry', '/schemas', '/auth', '/agent', '/pipes', '/stripe', '/polar', '/zapier', '/package', '/package-lock', '/Procfile', '/Dockerfile', '/CLAUDE'];
+  if (sensitiveNames.some(n => req.path.startsWith(n + '.') || req.path === n)) {
+    return res.status(404).send('Not found');
+  }
+
   next();
 });
 app.use(express.static(path.join(__dirname)));
+
+// Enforce HTTPS in production
+if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] === 'http') {
+      return res.redirect(301, 'https://' + req.headers.host + req.url);
+    }
+    next();
+  });
+}
 
 // Agent discovery: /.well-known/ai-tools.json (like robots.txt for agents)
 app.get('/.well-known/ai-tools.json', publicRateLimit, (req, res) => {
@@ -5005,7 +5049,7 @@ app.post('/v1/:slug', auth, async (req, res) => {
 
   // Scope memory namespaces to API key to prevent cross-key access
   if (req.params.slug.startsWith('memory-') && body.namespace) {
-    const keyPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 8);
+    const keyPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
     body.namespace = keyPrefix + ':' + body.namespace;
   }
 

@@ -30,7 +30,7 @@ Every response includes `{ ok, data, meta: { credits_used, latency_ms, engine, c
 - Semantic search: POST /v1/resolve {"query": "what you need"}
 - MCP server: available for Claude Code integration
 
-## Categories (74)
+## Categories (78)
 
 ### Text Processing (72 tools)
 Extract, transform, analyze, and manipulate text. Word count, regex, diff, slugify, case convert, encoding, entropy, haiku, and more.
