@@ -484,4 +484,14 @@
   <url><loc>https://slopshop.gg/structured-output</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/visualization</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/legal.html</loc><changefreq>monthly</changefreq><priority>0.5</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/ai-agent-api-comparison.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/free-ai-agent-memory.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/ai-agent-orchestration-guide.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/mcp-tools-for-claude.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/langchain-alternative-api.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/composio-alternative.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/ai-agent-hive-workspace.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/parallel-ai-agents.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/self-hosted-ai-tools.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/ai-compute-exchange.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
 </urlset>
