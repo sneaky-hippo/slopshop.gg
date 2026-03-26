@@ -3,18 +3,18 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Quickstart Guide | Slopshop — 1,152 APIs for AI Agents</title>
-<meta name="description" content="Get up and running with Slopshop in under 5 minutes. Sign up, get your API key, make your first call. Includes CLI, Python, MCP, and Zapier setup guides.">
-<meta name="keywords" content="slopshop tutorial, slopshop quickstart, how to use slopshop, slopshop getting started, slopshop api guide, slopshop mcp">
+<title>Getting Started | Slopshop — 1,244 APIs for AI Agents</title>
+<meta name="description" content="Get up and running with Slopshop in under 5 minutes. Interactive tutorial: sign up, make your first API call, use persistent memory, run agent tasks, and set up MCP for Claude Code.">
+<meta name="keywords" content="slopshop tutorial, slopshop quickstart, how to use slopshop, slopshop getting started, slopshop api guide, slopshop mcp, agent api tutorial">
 <link rel="canonical" href="https://slopshop.gg/getting-started">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/getting-started">
-<meta property="og:title" content="Get Started with Slopshop - Quickstart Guide">
-<meta property="og:description" content="From zero to your first API call in under 5 minutes. CLI, Python, MCP, Zapier.">
+<meta property="og:title" content="Get Started with Slopshop - Interactive Tutorial">
+<meta property="og:description" content="From zero to your first API call in under 5 minutes. Interactive tutorial with live examples.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
-<meta name="twitter:title" content="Slopshop Quickstart Guide">
+<meta name="twitter:title" content="Slopshop Interactive Tutorial">
 <meta name="twitter:description" content="From zero to your first API call in under 5 minutes.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
 <script type="application/ld+json">
@@ -22,16 +22,19 @@
   "@context": "https://schema.org",
   "@type": "HowTo",
   "name": "Get Started with Slopshop",
-  "description": "How to sign up, get an API key, and make your first Slopshop API call.",
+  "description": "Interactive tutorial: sign up, make API calls, use memory, run agents, and set up MCP.",
+  "totalTime": "PT5M",
   "step": [
-    {"@type":"HowToStep","name":"Sign up","text":"POST to /v1/auth/signup with your email and password to get your API key."},
-    {"@type":"HowToStep","name":"Set your key","text":"Export SLOPSHOP_KEY as an environment variable."},
-    {"@type":"HowToStep","name":"Call your first API","text":"POST to /v1/crypto-hash-sha256 with your input string."},
-    {"@type":"HowToStep","name":"Try the playground","text":"Visit slopshop.gg/#playground to explore all 1,152 APIs interactively."}
+    {"@type":"HowToStep","name":"Sign up","text":"Create an account and get your API key with 2,000 free credits."},
+    {"@type":"HowToStep","name":"Make your first API call","text":"Call an API with curl or try the live browser example."},
+    {"@type":"HowToStep","name":"Use persistent memory","text":"Store, retrieve, and search agent state for free."},
+    {"@type":"HowToStep","name":"Run an agent task","text":"Use the natural language endpoint to run multi-tool tasks."},
+    {"@type":"HowToStep","name":"Explore tools","text":"Browse all 1,244 APIs by category."},
+    {"@type":"HowToStep","name":"Set up MCP for Claude Code","text":"Add Slopshop as an MCP server for Claude Code."}
   ]
 }
 </script>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F99E;</text></svg>">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -62,38 +65,61 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
 .live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
 
-.page-hero{padding:120px 32px 64px;text-align:center;position:relative;overflow:hidden}
+.page-hero{padding:120px 32px 48px;text-align:center;position:relative;overflow:hidden}
 .page-hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:1000px;height:600px;background:radial-gradient(ellipse,rgba(255,51,51,0.04),transparent 60%);pointer-events:none}
 .hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(255,51,51,0.15);color:var(--r2);padding:6px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;font-family:var(--mono);margin-bottom:24px}
 .page-hero h1{font-family:var(--mono);font-size:clamp(2.2rem,5vw,3.5rem);font-weight:900;letter-spacing:0.03em;line-height:1.1;margin-bottom:16px}
 .page-hero h1 .red{color:var(--r)}
-.page-hero .sub{color:var(--t2);font-size:clamp(0.95rem,2vw,1.1rem);max-width:540px;margin:0 auto 32px;line-height:1.7}
+.page-hero .sub{color:var(--t2);font-size:clamp(0.95rem,2vw,1.1rem);max-width:560px;margin:0 auto 32px;line-height:1.7}
 .page-hero .sub b{color:var(--t);font-weight:600}
 
-.layout{max-width:1100px;margin:0 auto;padding:32px 32px 64px;display:grid;grid-template-columns:220px 1fr;gap:48px;align-items:start}
+/* PROGRESS BAR */
+.progress-bar{max-width:700px;margin:0 auto 16px;display:flex;gap:4px;padding:0 32px}
+.progress-bar .prog-step{flex:1;height:4px;background:var(--s2);border-radius:4px;transition:background 0.3s}
+.progress-bar .prog-step.done{background:var(--g)}
+.progress-bar .prog-step.active{background:var(--r)}
+.progress-label{text-align:center;font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-bottom:32px}
+
+/* LAYOUT */
+.layout{max-width:1100px;margin:0 auto;padding:0 32px 64px;display:grid;grid-template-columns:220px 1fr;gap:48px;align-items:start}
 .sidebar{position:sticky;top:72px}
-.sidebar nav a{display:block;font-family:var(--mono);font-size:0.72rem;color:var(--t3);padding:6px 12px;border-radius:6px;margin-bottom:2px;transition:0.2s;border-left:2px solid transparent}
+.sidebar nav a{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:0.72rem;color:var(--t3);padding:8px 12px;border-radius:6px;margin-bottom:2px;transition:0.2s;border-left:2px solid transparent}
 .sidebar nav a:hover{color:var(--t);background:var(--s1);opacity:1}
 .sidebar nav a.active{color:var(--r);border-left-color:var(--r);background:var(--rg)}
-.sidebar .section-title{font-family:var(--mono);font-size:0.6rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.12em;padding:12px 12px 4px;margin-top:8px}
+.sidebar nav a .step-badge{width:22px;height:22px;background:var(--s2);border:1px solid var(--b2);border-radius:6px;font-size:0.6rem;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--t4)}
+.sidebar nav a.active .step-badge{background:var(--r);border-color:var(--r);color:#fff}
+.sidebar nav a.done .step-badge{background:var(--g);border-color:var(--g);color:#fff}
+.sidebar .time-est{font-family:var(--mono);font-size:0.6rem;color:var(--t4);padding:12px 12px 0;display:flex;align-items:center;gap:6px}
+.sidebar .time-est svg{flex-shrink:0}
 
 .content h2{font-family:var(--mono);font-size:1.3rem;font-weight:800;margin-bottom:6px;letter-spacing:-0.01em;scroll-margin-top:80px}
 .content .desc{color:var(--t3);font-size:0.85rem;margin-bottom:24px;line-height:1.6}
 .sec-label{font-family:var(--mono);font-size:0.6rem;font-weight:700;color:var(--r);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px}
-.content section{margin-bottom:56px}
+.content section{margin-bottom:56px;padding-bottom:56px;border-bottom:1px solid var(--b)}
+.content section:last-child{border-bottom:none}
 
-/* STEPS */
-.step{display:flex;gap:20px;margin-bottom:28px}
-.step-num{width:36px;height:36px;background:var(--r);color:#fff;border-radius:8px;font-family:var(--mono);font-weight:800;font-size:1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
-.step-body h3{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:8px}
-.step-body p{font-size:0.83rem;color:var(--t3);line-height:1.7;margin-bottom:12px}
+/* STEP HEADER */
+.step-header{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.step-header .step-num{width:40px;height:40px;background:var(--r);color:#fff;border-radius:10px;font-family:var(--mono);font-weight:800;font-size:1.1rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-header .step-meta{flex:1}
+.step-header .step-meta h2{margin-bottom:0;scroll-margin-top:80px}
+.step-header .step-meta .est{font-family:var(--mono);font-size:0.62rem;color:var(--t4)}
+
+/* TABS */
+.tab-group{display:flex;gap:0;margin-bottom:0;border-bottom:1px solid var(--b)}
+.tab-btn{padding:8px 16px;font-family:var(--mono);font-size:0.7rem;color:var(--t3);cursor:pointer;border:none;background:none;border-bottom:2px solid transparent;transition:0.15s}
+.tab-btn:hover{color:var(--t)}
+.tab-btn.active{color:var(--r);border-bottom-color:var(--r)}
+.tab-panel{display:none}
+.tab-panel.active{display:block}
 
 /* CODE BLOCKS */
-.code-block{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-bottom:16px;position:relative}
 .code-header{background:var(--s2);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
 .code-header .lang{font-family:var(--mono);font-size:0.62rem;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.1em}
 .copy-btn{background:none;border:1px solid var(--b2);color:var(--t4);padding:3px 10px;border-radius:4px;font-family:var(--mono);font-size:0.6rem;cursor:pointer;transition:0.2s}
 .copy-btn:hover{border-color:var(--r);color:var(--t)}
+.copy-btn.copied{border-color:var(--g);color:var(--g)}
 .code-block pre{padding:16px 18px;font-family:var(--mono);font-size:0.78rem;line-height:1.8;overflow-x:auto;white-space:pre}
 .code-block pre code{color:var(--t2)}
 .hl-comment{color:var(--t4)}
@@ -106,6 +132,28 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(
 /* INLINE CODE */
 code{font-family:var(--mono);font-size:0.82em;color:var(--o);background:var(--og);padding:2px 6px;border-radius:4px}
 
+/* LIVE DEMO */
+.live-demo{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-bottom:16px}
+.live-demo-header{background:var(--s2);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.live-demo-header .tag{font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--g);text-transform:uppercase;letter-spacing:0.1em;display:flex;align-items:center;gap:6px}
+.live-demo-header .tag .dot{width:6px;height:6px;background:var(--g);border-radius:50%;animation:pulse 2s infinite}
+.live-demo-body{padding:20px}
+.live-demo-body label{display:block;font-family:var(--mono);font-size:0.7rem;color:var(--t3);margin-bottom:6px}
+.live-demo-body input[type="text"]{width:100%;background:var(--bg);border:1px solid var(--b2);border-radius:6px;padding:10px 14px;color:var(--t);font-family:var(--mono);font-size:0.82rem;outline:none;transition:border-color 0.2s}
+.live-demo-body input[type="text"]:focus{border-color:var(--r)}
+.live-demo-body .run-btn{display:inline-flex;align-items:center;gap:6px;background:var(--r);color:#fff;padding:10px 20px;border-radius:7px;font-family:var(--mono);font-size:0.78rem;font-weight:700;border:none;cursor:pointer;transition:0.2s;margin-top:12px}
+.live-demo-body .run-btn:hover{background:#e62e2e;box-shadow:0 0 20px rgba(255,51,51,0.3)}
+.live-demo-body .run-btn:disabled{opacity:0.5;cursor:not-allowed}
+.live-result{margin-top:16px;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:14px 16px;font-family:var(--mono);font-size:0.76rem;line-height:1.7;color:var(--t2);display:none;white-space:pre-wrap;word-break:break-all}
+.live-result.show{display:block}
+.live-result .label{color:var(--t4);font-size:0.62rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;display:block}
+
+/* FLOW DIAGRAM */
+.flow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:16px 0 20px;font-family:var(--mono);font-size:0.72rem}
+.flow .flow-step{background:var(--s2);border:1px solid var(--b2);padding:6px 12px;border-radius:6px;color:var(--c)}
+.flow .flow-arrow{color:var(--t4)}
+.flow .flow-step.free{border-color:rgba(0,204,102,0.3);color:var(--g);background:var(--gg)}
+
 /* CARDS */
 .card-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-bottom:24px}
 .card{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:18px 20px;transition:0.2s}
@@ -113,11 +161,12 @@ code{font-family:var(--mono);font-size:0.82em;color:var(--o);background:var(--og
 .card h3{font-family:var(--mono);font-size:0.82rem;font-weight:700;margin-bottom:8px}
 .card p{font-size:0.78rem;color:var(--t3);line-height:1.6}
 
-/* CATEGORY TABLE */
-.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:24px}
-.cat-item{background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center}
-.cat-item .cat-name{font-family:var(--mono);font-size:0.72rem;font-weight:600;color:var(--t2)}
-.cat-item .cat-count{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--o);background:var(--og);padding:2px 8px;border-radius:4px}
+/* CALLOUT */
+.callout{background:var(--gg);border:1px solid rgba(0,204,102,0.2);border-radius:8px;padding:14px 18px;margin:16px 0;display:flex;gap:12px;align-items:flex-start}
+.callout.info{background:var(--cg);border-color:rgba(0,170,255,0.2)}
+.callout .callout-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.callout p{font-size:0.8rem;color:var(--t2);line-height:1.6;margin:0}
+.callout strong{color:var(--t)}
 
 /* NEXT STEPS */
 .next-steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
@@ -127,19 +176,22 @@ code{font-family:var(--mono);font-size:0.82em;color:var(--o);background:var(--og
 .next-card h3{font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:6px}
 .next-card p{font-size:0.75rem;color:var(--t3);line-height:1.5}
 
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--r);color:#fff;padding:12px 28px;border-radius:8px;font-family:var(--mono);font-size:0.85rem;font-weight:700;transition:0.2s;text-decoration:none}
+.btn-primary:hover{background:#e62e2e;box-shadow:0 0 28px rgba(255,51,51,0.3);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:var(--s2);color:var(--t2);padding:12px 28px;border-radius:8px;font-family:var(--mono);font-size:0.85rem;font-weight:600;border:1px solid var(--b2);transition:0.2s;text-decoration:none}
+.btn-secondary:hover{border-color:var(--r);color:var(--t);opacity:1}
+
 footer{padding:40px 32px;text-align:center;border-top:1px solid var(--b)}
 .f-brand{font-family:var(--mono);font-size:1.2rem;font-weight:800;margin-bottom:12px}
 .f-brand .red{color:var(--r)}
 footer p{font-size:0.68rem;color:var(--t4);line-height:2.2;font-family:var(--mono)}
 footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 
-.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--r);color:#fff;padding:12px 28px;border-radius:8px;font-family:var(--mono);font-size:0.85rem;font-weight:700;transition:0.2s;text-decoration:none}
-.btn-primary:hover{background:#e62e2e;box-shadow:0 0 28px rgba(255,51,51,0.3);opacity:1}
-
 @media(max-width:900px){
   .layout{grid-template-columns:1fr;gap:0}
   .sidebar{display:none}
-  .cat-grid{grid-template-columns:repeat(2,1fr)}
+  .progress-bar{display:none}
+  .progress-label{display:none}
 }
 @media(max-width:768px){
   nav{padding:0 16px;height:50px}
@@ -147,12 +199,9 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
   .nav-links a{display:none}
   .live-badge{font-size:0.6rem;padding:3px 8px}
   .page-hero{padding:80px 16px 36px}
-  .layout{padding:24px 16px 48px}
-  .cat-grid{grid-template-columns:repeat(2,1fr)}
+  .layout{padding:0 16px 48px}
   .card-grid{grid-template-columns:1fr}
-}
-@media(max-width:480px){
-  .cat-grid{grid-template-columns:1fr}
+  .flow{font-size:0.65rem}
 }
 </style>
 </head>
@@ -167,220 +216,389 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
     <a href="/docs.html">Docs</a>
     <a href="/getting-started.html" class="active">Get Started</a>
     <a href="/dashboard.html">Dashboard</a>
-    <div class="live-badge"><div class="live-dot"></div><span>1,152 live</span></div>
+    <div class="live-badge"><div class="live-dot"></div><span>1,244 live</span></div>
   </div>
 </div></nav>
 
 <section class="page-hero">
-  <div style="margin-bottom:20px">
-    <svg width="64" height="64" viewBox="0 0 512 512" style="filter:drop-shadow(0 0 20px rgba(255,51,51,0.3))"><defs><radialGradient id="heroG" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#heroG)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="128" y1="128" x2="188" y2="188" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><line x1="384" y1="128" x2="324" y2="188" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><line x1="128" y1="384" x2="188" y2="324" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><line x1="384" y1="384" x2="324" y2="324" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
-  </div>
-  <h1>Welcome to <span class="red">Slopshop</span></h1>
-  <p class="sub">The execution layer for AI agents. <b>1,152 tools. One key. 2,000 free credits.</b><br>From install to first result in under 60 seconds.</p>
-  <div style="max-width:440px;margin:20px auto;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.8rem;text-align:left;line-height:2">
-    <div style="cursor:pointer" onclick="navigator.clipboard.writeText('npm install -g slopshop')"><span style="color:#00cc66">$</span> <span style="color:#f5f5f5">npm install -g slopshop</span></div>
-    <div style="cursor:pointer" onclick="navigator.clipboard.writeText('slop signup')"><span style="color:#00cc66">$</span> <span style="color:#f5f5f5">slop signup</span></div>
-    <div style="color:#666;font-size:0.68rem;margin-left:14px">→ 2,000 free credits instantly</div>
-    <div style="cursor:pointer" onclick="navigator.clipboard.writeText('slop call crypto-hash-sha256 --text hello')"><span style="color:#00cc66">$</span> <span style="color:#f5f5f5">slop call crypto-hash-sha256 --text hello</span></div>
-    <div style="color:#00cc66;font-size:0.7rem;margin-left:14px">→ {"hash":"2cf24dba5...","_engine":"real"}</div>
+  <div class="hero-tag">&#128640; Interactive tutorial &mdash; 5 minutes to your first API call</div>
+  <h1>Getting <span class="red">Started</span></h1>
+  <p class="sub"><b>1,244 APIs. One key. 2,000 free credits.</b><br>Follow along step by step &mdash; from signup to production in under 5 minutes.</p>
+  <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+    <a href="/quickstart.html" class="btn-secondary">2-minute quickstart</a>
+    <a href="/docs.html" class="btn-secondary">Full API docs</a>
   </div>
 </section>
 
+<div class="progress-bar" id="progressBar">
+  <div class="prog-step" data-step="1"></div>
+  <div class="prog-step" data-step="2"></div>
+  <div class="prog-step" data-step="3"></div>
+  <div class="prog-step" data-step="4"></div>
+  <div class="prog-step" data-step="5"></div>
+  <div class="prog-step" data-step="6"></div>
+</div>
+<div class="progress-label">Step <span id="currentStep">1</span> of 6</div>
+
 <div class="layout">
   <div class="sidebar">
-    <div class="section-title">Quickstart</div>
+    <div class="time-est">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+      ~5 min to complete
+    </div>
     <nav>
-      <a href="#step1">1. Sign up</a>
-      <a href="#step2">2. Set your key</a>
-      <a href="#step3">3. First API call</a>
-      <a href="#step4">4. Playground</a>
-    </nav>
-    <div class="section-title">Integrations</div>
-    <nav>
-      <a href="#cli">CLI</a>
-      <a href="#python">Python</a>
-      <a href="#mcp">Claude Code (MCP)</a>
-      <a href="#zapier">Zapier</a>
-    </nav>
-    <div class="section-title">Agent features</div>
-    <nav>
-      <a href="#free-memory">Free memory APIs</a>
-      <a href="#agent-run">Agent run + history</a>
-      <a href="#tasks-api">Task API</a>
-      <a href="#templates">Agent templates</a>
-    </nav>
-    <div class="section-title">Reference</div>
-    <nav>
-      <a href="#catalog">All 63 categories</a>
+      <a href="#step1" class="active"><span class="step-badge">1</span> Sign up</a>
+      <a href="#step2"><span class="step-badge">2</span> First API call</a>
+      <a href="#step3"><span class="step-badge">3</span> Persistent memory</a>
+      <a href="#step4"><span class="step-badge">4</span> Agent tasks</a>
+      <a href="#step5"><span class="step-badge">5</span> Explore tools</a>
+      <a href="#step6"><span class="step-badge">6</span> MCP for Claude</a>
     </nav>
   </div>
 
   <div class="content">
 
-    <section id="quickstart">
-      <div class="sec-label">Quickstart</div>
-      <h2>Four steps to your first call</h2>
-      <p class="desc">You'll have a working API call in under 5 minutes. Guaranteed.</p>
-
-      <div class="step" id="step1">
+    <!-- STEP 1: SIGN UP -->
+    <section id="step1">
+      <div class="step-header">
         <div class="step-num">1</div>
-        <div class="step-body">
-          <h3>Sign up &amp; get your API key</h3>
-          <p>POST your email and password to the signup endpoint. You'll get back an API key and 2,000 free credits immediately &mdash; no credit card required. You also get 8 memory APIs permanently free at 0 credits (memory-set, memory-get, memory-search, memory-list, memory-delete, memory-stats, memory-namespace-list, counter-get).</p>
-          <div class="code-block">
-            <div class="code-header"><span class="lang">bash &mdash; curl</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-            <pre><code><span class="hl-comment"># Sign up and get your API key</span>
+        <div class="step-meta">
+          <h2>Sign up &amp; get your API key</h2>
+          <div class="est">~30 seconds</div>
+        </div>
+      </div>
+      <p class="desc">Create an account and receive your API key with <b style="color:var(--t)">2,000 free credits</b> instantly. No credit card required. You also get 8 memory APIs permanently free.</p>
+
+      <div class="tab-group">
+        <button class="tab-btn active" onclick="switchTab(this,'signup')">CLI</button>
+        <button class="tab-btn" onclick="switchTab(this,'signup')">curl</button>
+      </div>
+      <div class="tab-panel active" data-group="signup">
+        <div class="code-block" style="border-radius:0 0 10px 10px;border-top:none">
+          <div class="code-header"><span class="lang">bash &mdash; CLI (recommended)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre><code><span class="hl-comment"># Install the CLI</span>
+npm install -g slopshop
+
+<span class="hl-comment"># Sign up (interactive)</span>
+slop signup
+
+<span class="hl-comment"># You'll get back:</span>
+<span class="hl-comment"># API Key: sk-slop-abc123...</span>
+<span class="hl-comment"># Balance: 2,000 credits</span>
+<span class="hl-comment"># Status: Ready to go!</span></code></pre>
+        </div>
+      </div>
+      <div class="tab-panel" data-group="signup">
+        <div class="code-block" style="border-radius:0 0 10px 10px;border-top:none">
+          <div class="code-header"><span class="lang">bash &mdash; curl</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre><code><span class="hl-comment"># Sign up via the REST API</span>
 curl -X POST https://slopshop.gg/v1/auth/signup \
   -H <span class="hl-str">"Content-Type: application/json"</span> \
-  -d <span class="hl-str">'{"email":"you@example.com","password":"yourpassword"}'</span>
-
-<span class="hl-comment"># Response</span>
-{
-  <span class="hl-key">"api_key"</span>: <span class="hl-str">"sk-slop-your-key-here"</span>,
+  -d <span class="hl-str">'{"email":"you@example.com","password":"yourpassword"}'</span></code></pre>
+        </div>
+        <div class="code-block">
+          <div class="code-header"><span class="lang">json &mdash; response</span></div>
+          <pre><code>{
+  <span class="hl-key">"api_key"</span>: <span class="hl-str">"sk-slop-abc123def456..."</span>,
   <span class="hl-key">"balance"</span>: <span class="hl-val">2000</span>,
   <span class="hl-key">"message"</span>: <span class="hl-str">"Welcome to slopshop.gg"</span>
 }</code></pre>
-          </div>
         </div>
       </div>
 
-      <div class="step" id="step2">
+      <p style="font-size:0.83rem;color:var(--t3);line-height:1.7;margin-top:16px">Save your API key &mdash; set it as an environment variable so every command picks it up automatically:</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><code><span class="hl-comment"># Add to ~/.zshrc or ~/.bashrc</span>
+<span class="hl-kw">export</span> SLOPSHOP_KEY=<span class="hl-str">sk-slop-your-key-here</span></code></pre>
+      </div>
+
+      <div class="callout">
+        <div class="callout-icon">&#127873;</div>
+        <p><strong>Free tier includes:</strong> 2,000 credits on signup + 8 memory APIs always free (memory-set, memory-get, memory-search, memory-list, memory-delete, memory-stats, memory-namespace-list, counter-get). Credits never expire.</p>
+      </div>
+    </section>
+
+    <!-- STEP 2: FIRST API CALL -->
+    <section id="step2">
+      <div class="step-header">
         <div class="step-num">2</div>
-        <div class="step-body">
-          <h3>Set your API key</h3>
-          <p>Export your key as an environment variable so you don't have to paste it into every command.</p>
-          <div class="code-block">
-            <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-            <pre><code><span class="hl-comment"># Add to your shell profile (~/.zshrc or ~/.bashrc)</span>
-<span class="hl-kw">export</span> SLOPSHOP_KEY=<span class="hl-str">sk-slop-your-key-here</span>
-
-<span class="hl-comment"># Or set it inline for a single command</span>
-SLOPSHOP_KEY=sk-slop-your-key-here curl https://slopshop.gg/v1/crypto-hash-sha256 ...</code></pre>
-          </div>
+        <div class="step-meta">
+          <h2>Make your first API call</h2>
+          <div class="est">~1 minute</div>
         </div>
       </div>
+      <p class="desc">Call any of the 1,244 APIs with a single POST request. Every response includes <code>_engine: "real"</code> to prove your data was genuinely computed.</p>
 
-      <div class="step" id="step3">
-        <div class="step-num">3</div>
-        <div class="step-body">
-          <h3>Call your first API</h3>
-          <p>Let's hash a string with SHA-256. This is a 1-credit compute call &mdash; real computation, no mocking.</p>
-          <div class="code-block">
-            <div class="code-header"><span class="lang">bash &mdash; curl</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-            <pre><code>curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+      <div class="tab-group">
+        <button class="tab-btn active" onclick="switchTab(this,'firstcall')">curl</button>
+        <button class="tab-btn" onclick="switchTab(this,'firstcall')">Python</button>
+        <button class="tab-btn" onclick="switchTab(this,'firstcall')">Node.js</button>
+      </div>
+      <div class="tab-panel active" data-group="firstcall">
+        <div class="code-block" style="border-radius:0 0 10px 10px;border-top:none">
+          <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre><code>curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
   -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span> \
   -H <span class="hl-str">"Content-Type: application/json"</span> \
-  -d <span class="hl-str">'{"text":"hello slopshop"}'</span>
+  -d <span class="hl-str">'{"text":"hello slopshop"}'</span></code></pre>
+        </div>
+      </div>
+      <div class="tab-panel" data-group="firstcall">
+        <div class="code-block" style="border-radius:0 0 10px 10px;border-top:none">
+          <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre><code><span class="hl-kw">import</span> requests, os
 
-<span class="hl-comment"># Response</span>
-{
+r = requests.<span class="hl-fn">post</span>(
+    <span class="hl-str">"https://slopshop.gg/v1/crypto-hash-sha256"</span>,
+    headers={<span class="hl-str">"Authorization"</span>: f<span class="hl-str">"Bearer {os.environ['SLOPSHOP_KEY']}"</span>},
+    json={<span class="hl-str">"text"</span>: <span class="hl-str">"hello slopshop"</span>}
+)
+<span class="hl-fn">print</span>(r.json())</code></pre>
+        </div>
+      </div>
+      <div class="tab-panel" data-group="firstcall">
+        <div class="code-block" style="border-radius:0 0 10px 10px;border-top:none">
+          <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+          <pre><code><span class="hl-kw">const</span> res = <span class="hl-kw">await</span> <span class="hl-fn">fetch</span>(<span class="hl-str">'https://slopshop.gg/v1/crypto-hash-sha256'</span>, {
+  method: <span class="hl-str">'POST'</span>,
+  headers: {
+    <span class="hl-str">'Authorization'</span>: <span class="hl-str">`Bearer ${process.env.SLOPSHOP_KEY}`</span>,
+    <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span>
+  },
+  body: JSON.<span class="hl-fn">stringify</span>({ text: <span class="hl-str">'hello slopshop'</span> })
+});
+console.<span class="hl-fn">log</span>(<span class="hl-kw">await</span> res.json());</code></pre>
+        </div>
+      </div>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">json &mdash; response</span></div>
+        <pre><code>{
   <span class="hl-key">"data"</span>: {
-    <span class="hl-key">"hash"</span>: <span class="hl-str">"a7f3c1d9e82b4f5e6c0d2a8b9e4f1c3d..."</span>,
+    <span class="hl-key">"hash"</span>: <span class="hl-str">"a7f3c1d9e82b4f5e6c0d2a8b..."</span>,
     <span class="hl-key">"algorithm"</span>: <span class="hl-str">"SHA-256"</span>,
     <span class="hl-key">"_engine"</span>: <span class="hl-str">"real"</span>
   },
-  <span class="hl-key">"meta"</span>: { <span class="hl-key">"credits_used"</span>: <span class="hl-val">1</span>, <span class="hl-key">"credits_remaining"</span>: <span class="hl-val">99</span> }
+  <span class="hl-key">"meta"</span>: {
+    <span class="hl-key">"credits_used"</span>: <span class="hl-val">1</span>,
+    <span class="hl-key">"credits_remaining"</span>: <span class="hl-val">1999</span>
+  }
 }</code></pre>
-          </div>
-          <p>Every response includes <code>_engine: "real"</code> to confirm your data was actually computed, not mocked. And <code>credits_used</code> so you always know the cost.</p>
-        </div>
       </div>
 
-      <div class="step" id="step4">
-        <div class="step-num">4</div>
-        <div class="step-body">
-          <h3>Try the interactive playground</h3>
-          <p>The playground lets you explore all 1,152 APIs in your browser with no setup &mdash; live computation, real results.</p>
-          <div class="card-grid">
-            <div class="card">
-              <h3>&#9654; Interactive playground</h3>
-              <p>Pick any API, enter an input, hit RUN. Results computed live from your input.</p>
-              <br><a href="https://slopshop.gg/#playground" style="font-family:var(--mono);font-size:0.72rem;color:var(--r)">Open playground &rarr;</a>
-            </div>
-            <div class="card">
-              <h3>&#128193; Browse all 1,152 APIs</h3>
-              <p>Click any API card to instantly load it in the playground with a sample input.</p>
-              <br><a href="https://slopshop.gg/#catalog" style="font-family:var(--mono);font-size:0.72rem;color:var(--r)">Browse catalog &rarr;</a>
-            </div>
+      <!-- LIVE DEMO -->
+      <div class="live-demo">
+        <div class="live-demo-header">
+          <div class="tag"><div class="dot"></div> Try it live</div>
+          <span style="font-family:var(--mono);font-size:0.6rem;color:var(--t4)">Runs in your browser &mdash; no API key needed</span>
+        </div>
+        <div class="live-demo-body">
+          <label for="demoInput">Enter any text to hash with SHA-256:</label>
+          <input type="text" id="demoInput" placeholder="hello slopshop" value="hello slopshop">
+          <button class="run-btn" id="demoRun" onclick="runLiveDemo()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+            Run API call
+          </button>
+          <div class="live-result" id="demoResult">
+            <span class="label">Response</span>
           </div>
         </div>
       </div>
-    </section>
 
-    <section id="cli">
-      <div class="sec-label">CLI</div>
-      <h2>Install the Slopshop CLI</h2>
-      <p class="desc">The CLI gives you a terminal interface to all 1,152 APIs. Run any tool without writing code.</p>
-      <div class="code-block">
-        <div class="code-header"><span class="lang">bash &mdash; npm</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre><code><span class="hl-comment"># Install globally</span>
-npm install -g slopshop
-
-<span class="hl-comment"># Authenticate</span>
-slopshop login
-
-<span class="hl-comment"># Run any API</span>
-slopshop run crypto-hash-sha256 --text <span class="hl-str">"hello world"</span>
-slopshop run math-statistics --data <span class="hl-str">'[1,2,3,4,5,6,7,8,9,10]'</span>
-slopshop run net-dns-lookup --domain <span class="hl-str">"slopshop.gg"</span>
-
-<span class="hl-comment"># Check your credit balance</span>
-slopshop credits
-
-<span class="hl-comment"># Search available tools</span>
-slopshop search <span class="hl-str">"hash"</span></code></pre>
+      <div class="callout info">
+        <div class="callout-icon">&#128161;</div>
+        <p>Every response includes <code style="background:rgba(0,170,255,0.15);color:var(--c)">_engine: "real"</code> confirming actual computation, and <code style="background:rgba(0,170,255,0.15);color:var(--c)">credits_used</code> so you always know the cost.</p>
       </div>
     </section>
 
-    <section id="python">
-      <div class="sec-label">Python</div>
-      <h2>Use with Python</h2>
-      <p class="desc">No official SDK needed &mdash; the REST API works with standard <code>requests</code>. Install the helper package for convenience methods.</p>
+    <!-- STEP 3: PERSISTENT MEMORY -->
+    <section id="step3">
+      <div class="step-header">
+        <div class="step-num">3</div>
+        <div class="step-meta">
+          <h2>Use persistent memory</h2>
+          <div class="est">~1 minute</div>
+        </div>
+      </div>
+      <p class="desc">Store, retrieve, and search agent state with the free memory tier. All 8 core memory APIs cost <b style="color:var(--g)">0 credits</b> &mdash; always.</p>
+
+      <div class="flow">
+        <div class="flow-step free">memory-set</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step free">memory-get</div>
+        <div class="flow-arrow">&rarr;</div>
+        <div class="flow-step free">memory-search</div>
+      </div>
+
+      <h3 style="font-family:var(--mono);font-size:0.9rem;font-weight:700;margin-bottom:12px">1. Store a memory</h3>
       <div class="code-block">
         <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre><code>pip install slopshop</code></pre>
+        <pre><code><span class="hl-comment"># Store agent memory (0 credits)</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{
+    "key": "user_preference",
+    "value": "dark mode, timezone UTC-5",
+    "namespace": "my-agent",
+    "tags": "preferences,settings"
+  }'</span></code></pre>
       </div>
+
+      <h3 style="font-family:var(--mono);font-size:0.9rem;font-weight:700;margin-bottom:12px">2. Retrieve it</h3>
       <div class="code-block">
-        <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre><code><span class="hl-kw">import</span> slopshop
-<span class="hl-kw">import</span> os
+        <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><code><span class="hl-comment"># Retrieve by key (0 credits)</span>
+curl -X POST https://slopshop.gg/v1/memory-get \
+  -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"key":"user_preference","namespace":"my-agent"}'</span></code></pre>
+      </div>
 
-<span class="hl-comment"># Initialize with your key</span>
-client = slopshop.<span class="hl-fn">Client</span>(api_key=os.environ[<span class="hl-str">"SLOPSHOP_KEY"</span>])
+      <h3 style="font-family:var(--mono);font-size:0.9rem;font-weight:700;margin-bottom:12px">3. Search across memories</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><code><span class="hl-comment"># Full-text search by tag (0 credits)</span>
+curl -X POST https://slopshop.gg/v1/memory-search \
+  -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"namespace":"my-agent","tag":"preferences"}'</span></code></pre>
+      </div>
 
-<span class="hl-comment"># Hash a string</span>
-result = client.<span class="hl-fn">run</span>(<span class="hl-str">"crypto-hash-sha256"</span>, input=<span class="hl-str">"hello world"</span>)
-<span class="hl-fn">print</span>(result.data[<span class="hl-str">"hash"</span>])
-
-<span class="hl-comment"># Get statistics on a dataset</span>
-stats = client.<span class="hl-fn">run</span>(<span class="hl-str">"math-statistics"</span>, data=[<span class="hl-val">4</span>, <span class="hl-val">7</span>, <span class="hl-val">13</span>, <span class="hl-val">2</span>, <span class="hl-val">1</span>])
-<span class="hl-fn">print</span>(f<span class="hl-str">"Mean: {stats.data['mean']}, Std: {stats.data['std_dev']}"</span>)
-
-<span class="hl-comment"># Use raw requests if you prefer</span>
-<span class="hl-kw">import</span> requests
-r = requests.<span class="hl-fn">post</span>(
-    <span class="hl-str">"https://slopshop.gg/v1/text-csv-to-json"</span>,
-    headers={<span class="hl-str">"Authorization"</span>: f<span class="hl-str">"Bearer {os.environ['SLOPSHOP_KEY']}"</span>},
-    json={<span class="hl-str">"text"</span>: <span class="hl-str">"name,age\nAlice,30\nBob,25"</span>}
-)
-<span class="hl-fn">print</span>(r.json()[<span class="hl-str">"data"</span>])</code></pre>
+      <div class="callout">
+        <div class="callout-icon">&#129504;</div>
+        <p><strong>8 free memory APIs:</strong> memory-set, memory-get, memory-search, memory-list, memory-delete, memory-stats, memory-namespace-list, counter-get. Plus free semantic search via <code style="background:var(--gg);color:var(--g)">memory-vector-search</code>. Your agent accumulates state at zero cost.</p>
       </div>
     </section>
 
-    <section id="mcp">
-      <div class="sec-label">MCP</div>
-      <h2>Use with Claude Code (MCP)</h2>
-      <p class="desc">Slopshop ships a native MCP server. Add it to Claude Code and all 1,152 tools become available to Claude as first-class tools &mdash; no prompt engineering needed.</p>
+    <!-- STEP 4: RUN AN AGENT TASK -->
+    <section id="step4">
+      <div class="step-header">
+        <div class="step-num">4</div>
+        <div class="step-meta">
+          <h2>Run an agent task</h2>
+          <div class="est">~1 minute</div>
+        </div>
+      </div>
+      <p class="desc">Describe what you want in plain English. The agent endpoint picks the right tools, chains them, executes, and returns a summarized answer.</p>
+
       <div class="code-block">
-        <div class="code-header"><span class="lang">bash &mdash; install MCP server</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre><code><span class="hl-comment"># Install the MCP server globally</span>
+        <div class="code-header"><span class="lang">bash &mdash; natural language agent</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><code><span class="hl-comment"># Ask the agent anything &mdash; it picks the tools automatically</span>
+curl -X POST https://slopshop.gg/v1/agent/run \
+  -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"task": "What tech stack does stripe.com use?"}'</span></code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">json &mdash; response</span></div>
+        <pre><code>{
+  <span class="hl-key">"answer"</span>: <span class="hl-str">"Stripe.com uses Cloudflare CDN, nginx, React..."</span>,
+  <span class="hl-key">"steps"</span>: [
+    { <span class="hl-key">"tool"</span>: <span class="hl-str">"net-http-headers"</span>, <span class="hl-key">"credits"</span>: <span class="hl-val">5</span> },
+    { <span class="hl-key">"tool"</span>: <span class="hl-str">"sense-url-content"</span>, <span class="hl-key">"credits"</span>: <span class="hl-val">5</span> }
+  ],
+  <span class="hl-key">"total_credits"</span>: <span class="hl-val">30</span>,
+  <span class="hl-key">"run_id"</span>: <span class="hl-str">"run_abc123"</span>
+}</code></pre>
+      </div>
+
+      <p style="font-size:0.83rem;color:var(--t3);line-height:1.7;margin:16px 0">Or use the simplified <code>/v1/ask</code> endpoint for quick questions:</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">bash &mdash; simple ask</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><code>curl -X POST https://slopshop.gg/v1/ask \
+  -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"question": "Hash the word slopshop with SHA256"}'</span></code></pre>
+      </div>
+
+      <div class="card-grid" style="margin-top:20px">
+        <div class="card">
+          <h3>&#128202; Pre-built templates</h3>
+          <p>5 agent templates for common tasks: security-audit, content-analyzer, data-processor, domain-recon, hash-verify.</p>
+        </div>
+        <div class="card">
+          <h3>&#128203; Auto-history</h3>
+          <p>Every agent run is logged. Retrieve past runs at <code>GET /v1/agent/history</code>.</p>
+        </div>
+        <div class="card">
+          <h3>&#9889; SSE streaming</h3>
+          <p>Add <code>"stream": true</code> to get real-time Server-Sent Events as the agent works.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- STEP 5: EXPLORE TOOLS -->
+    <section id="step5">
+      <div class="step-header">
+        <div class="step-num">5</div>
+        <div class="step-meta">
+          <h2>Explore 1,244 tools</h2>
+          <div class="est">~30 seconds</div>
+        </div>
+      </div>
+      <p class="desc">Browse the full catalog by category, search for what you need, or fetch the machine-readable tool list for your agent.</p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">bash &mdash; list all tools</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><code><span class="hl-comment"># Get the full tool list (JSON)</span>
+curl https://slopshop.gg/v1/tools
+
+<span class="hl-comment"># Filter by category</span>
+curl https://slopshop.gg/v1/tools?category=crypto
+
+<span class="hl-comment"># MCP-formatted for Claude Code</span>
+curl https://slopshop.gg/v1/tools?format=mcp
+
+<span class="hl-comment"># OpenAPI spec</span>
+curl https://slopshop.gg/v1/openapi.json</code></pre>
+      </div>
+
+      <div class="card-grid">
+        <a href="/#catalog" class="card" style="text-decoration:none">
+          <h3 style="color:var(--r)">&#128196; Browse catalog</h3>
+          <p>Interactive tool browser with search, categories, and live playground.</p>
+        </a>
+        <a href="/#playground" class="card" style="text-decoration:none">
+          <h3 style="color:var(--o)">&#9654; Playground</h3>
+          <p>Pick any API, enter input, hit RUN. Live computation in your browser.</p>
+        </a>
+        <a href="/docs.html" class="card" style="text-decoration:none">
+          <h3 style="color:var(--c)">&#128218; Full docs</h3>
+          <p>Complete API reference with schemas, examples, and SDK guides.</p>
+        </a>
+        <a href="/tools.html" class="card" style="text-decoration:none">
+          <h3 style="color:var(--g)">&#128736; Tool directory</h3>
+          <p>Filterable directory of all 1,244 tools by category and credit cost.</p>
+        </a>
+      </div>
+    </section>
+
+    <!-- STEP 6: MCP FOR CLAUDE CODE -->
+    <section id="step6">
+      <div class="step-header">
+        <div class="step-num">6</div>
+        <div class="step-meta">
+          <h2>Set up MCP for Claude Code</h2>
+          <div class="est">~1 minute</div>
+        </div>
+      </div>
+      <p class="desc">Add Slopshop as an MCP server and all 1,244 tools become native Claude Code tools &mdash; no prompt engineering needed.</p>
+
+      <h3 style="font-family:var(--mono);font-size:0.9rem;font-weight:700;margin-bottom:12px">Option A: One-liner setup</h3>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><code><span class="hl-comment"># Install the MCP server</span>
 npm install -g @slopshop/mcp
 
 <span class="hl-comment"># Register with Claude Code</span>
 claude mcp add slopshop -- slopshop-mcp --key $SLOPSHOP_KEY</code></pre>
       </div>
+
+      <h3 style="font-family:var(--mono);font-size:0.9rem;font-weight:700;margin-bottom:12px">Option B: Manual config</h3>
       <div class="code-block">
-        <div class="code-header"><span class="lang">json &mdash; .claude/settings.json (manual)</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <div class="code-header"><span class="lang">json &mdash; .claude/settings.json</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
         <pre><code>{
   <span class="hl-key">"mcpServers"</span>: {
     <span class="hl-key">"slopshop"</span>: {
@@ -390,176 +608,40 @@ claude mcp add slopshop -- slopshop-mcp --key $SLOPSHOP_KEY</code></pre>
   }
 }</code></pre>
       </div>
-      <p style="font-size:0.82rem;color:var(--t3);line-height:1.7;margin-top:12px">Once configured, Claude can call any Slopshop tool directly. Claude will discover available tools via <code>GET /v1/tools?format=mcp</code> and use them when solving problems that need real computation.</p>
-    </section>
 
-    <section id="zapier">
-      <div class="sec-label">Zapier</div>
-      <h2>Use with Zapier</h2>
-      <p class="desc">No-code access to all 1,152 tools. Add Slopshop as a Zapier action to call any API from any trigger.</p>
-      <div class="card-grid">
-        <div class="card">
-          <h3>&#9889; Find the Slopshop Zapier app</h3>
-          <p>Search for "Slopshop" in Zapier's app directory. Connect with your API key to unlock all tools as actions.</p>
-        </div>
-        <div class="card">
-          <h3>&#128295; Zapier action: Run API</h3>
-          <p>Choose any of the 1,152 tools, map your input fields from previous Zap steps, and wire the output to downstream actions.</p>
-        </div>
-        <div class="card">
-          <h3>&#128200; Example: Form &rarr; Hash &rarr; Sheet</h3>
-          <p>Trigger: form submission. Action: Slopshop SHA-256 hash. Action: append hash to Google Sheet. Done.</p>
-        </div>
-      </div>
-      <div class="code-block">
-        <div class="code-header"><span class="lang">bash &mdash; Zapier webhook format</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre><code><span class="hl-comment"># Zapier uses the same REST API. POST to:</span>
-POST https://slopshop.gg/v1/zapier/run
-Authorization: Bearer sk-slop-your-key-here
+      <p style="font-size:0.83rem;color:var(--t3);line-height:1.7;margin:16px 0">Once configured, Claude discovers all tools automatically via <code>GET /v1/tools?format=mcp</code>. Ask Claude to "hash a string" or "check SSL for a domain" and it will use Slopshop tools natively.</p>
 
-{
-  <span class="hl-key">"tool"</span>: <span class="hl-str">"crypto-hash-sha256"</span>,
-  <span class="hl-key">"input"</span>: { <span class="hl-key">"text"</span>: <span class="hl-str">"{{data from previous step}}"</span> }
-}</code></pre>
+      <div class="callout info">
+        <div class="callout-icon">&#129302;</div>
+        <p><strong>Works with any MCP client.</strong> While we show Claude Code here, the MCP server works with any compatible client &mdash; Cursor, Windsurf, Continue, or your own agent framework.</p>
       </div>
     </section>
 
-    <section id="free-memory">
-      <div class="sec-label">Free memory tier</div>
-      <h2>8 memory APIs, always free</h2>
-      <p class="desc">Memory operations never cost credits. Store, search, and retrieve agent state without worrying about your balance.</p>
-      <div class="code-block">
-        <div class="code-header"><span class="lang">bash &mdash; free memory</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre><code><span class="hl-comment"># Store agent memory (0 credits)</span>
-curl -X POST https://slopshop.gg/v1/memory-set \
-  -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span> \
-  -H <span class="hl-str">"Content-Type: application/json"</span> \
-  -d <span class="hl-str">'{"key":"task_status","value":"done","namespace":"my-agent"}'</span>
-
-<span class="hl-comment"># Retrieve it (0 credits)</span>
-curl -X POST https://slopshop.gg/v1/memory-get \
-  -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span> \
-  -d <span class="hl-str">'{"key":"task_status","namespace":"my-agent"}'</span></code></pre>
-      </div>
-      <div class="card-grid">
-        <div class="card"><h3>&#129504; memory-set / memory-get</h3><p>Store and retrieve persistent key-value pairs. 0 credits per call.</p></div>
-        <div class="card"><h3>&#128269; memory-search / memory-list</h3><p>Full-text search or list all keys in a namespace. 0 credits per call.</p></div>
-        <div class="card"><h3>&#128465; memory-delete / memory-stats</h3><p>Remove keys or inspect namespace storage. 0 credits per call.</p></div>
-        <div class="card"><h3>&#128260; memory-namespace-list / counter-get</h3><p>List namespaces and read counters. 0 credits per call.</p></div>
-      </div>
-    </section>
-
-    <section id="agent-run">
-      <div class="sec-label">Agent runner</div>
-      <h2>Run agents with auto-history</h2>
-      <p class="desc">Use <code>POST /v1/agent/run</code> to execute any tool through the agent runner. Every result is automatically stored to your agent history, retrievable at <code>GET /v1/agent/history</code>.</p>
-      <div class="code-block">
-        <div class="code-header"><span class="lang">bash &mdash; agent run</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre><code><span class="hl-comment"># Run a tool via the agent runner (auto-logged)</span>
-curl -X POST https://slopshop.gg/v1/agent/run \
-  -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span> \
-  -H <span class="hl-str">"Content-Type: application/json"</span> \
-  -d <span class="hl-str">'{"tool":"crypto-hash-sha256","input":{"text":"hello"}}'</span>
-
-<span class="hl-comment"># Retrieve your agent's full run history</span>
-curl https://slopshop.gg/v1/agent/history \
-  -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span></code></pre>
-      </div>
-    </section>
-
-    <section id="tasks-api">
-      <div class="sec-label">Task API</div>
-      <h2>Run tasks with the task API</h2>
-      <p class="desc">Use <code>POST /v1/tasks/run</code> to run a named task by type. The task API returns a <code>confidence</code> score and a <code>guarantees</code> array alongside the result, making it easy to build reliable agent pipelines.</p>
-      <div class="code-block">
-        <div class="code-header"><span class="lang">bash &mdash; task API</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre><code>curl -X POST https://slopshop.gg/v1/tasks/run \
-  -H <span class="hl-str">"Authorization: Bearer sk-slop-your-key-here"</span> \
-  -H <span class="hl-str">"Content-Type: application/json"</span> \
-  -d <span class="hl-str">'{"task": "summarize", "text": "Your long text here..."}'</span></code></pre>
-      </div>
-    </section>
-
-    <section id="templates">
-      <div class="sec-label">Agent templates</div>
-      <h2>Pre-built agent workflows</h2>
-      <p class="desc">Five pre-built templates run multi-step agent tasks in a single call at <code>POST /v1/agent/template/:id</code>. No wiring required.</p>
-      <div class="card-grid">
-        <div class="card"><h3>&#128272; security-audit</h3><p>Full security scan of a domain: DNS, SSL, headers, open ports. Returns a structured risk report.</p></div>
-        <div class="card"><h3>&#128196; content-analyzer</h3><p>Analyze text for sentiment, topics, readability, and language in one call.</p></div>
-        <div class="card"><h3>&#128202; data-processor</h3><p>Ingest CSV or JSON, normalize, analyze statistically, and return a cleaned report.</p></div>
-        <div class="card"><h3>&#127758; domain-recon</h3><p>DNS records, subdomains, SSL, WHOIS, and geo for a domain &mdash; all at once.</p></div>
-        <div class="card"><h3>&#128737; hash-verify</h3><p>Hash input with MD5, SHA-1, SHA-256, and SHA-512 simultaneously. Optionally verify against known hashes.</p></div>
-      </div>
-      <div class="code-block">
-        <div class="code-header"><span class="lang">bash &mdash; agent template</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
-        <pre><code><span class="hl-comment"># Run the security-audit template</span>
-curl -X POST https://slopshop.gg/v1/agent/template/security-audit \
-  -H <span class="hl-str">"Authorization: Bearer $SLOPSHOP_KEY"</span> \
-  -H <span class="hl-str">"Content-Type: application/json"</span> \
-  -d <span class="hl-str">'{"domain":"example.com"}'</span></code></pre>
-      </div>
-    </section>
-
-    <section id="catalog">
-      <div class="sec-label">What's in the box</div>
-      <h2>All 63 categories</h2>
-      <p class="desc">Every category is available with your single API key. 1,152 tools across compute, AI, network, memory, and execution.</p>
-      <div class="cat-grid">
-        <div class="cat-item"><span class="cat-name">&#128196; Text &amp; Parsing</span><span class="cat-count">42</span></div>
-        <div class="cat-item"><span class="cat-name">&#128274; Crypto &amp; Security</span><span class="cat-count">18</span></div>
-        <div class="cat-item"><span class="cat-name">&#128202; Math &amp; Statistics</span><span class="cat-count">16</span></div>
-        <div class="cat-item"><span class="cat-name">&#128197; Date &amp; Time</span><span class="cat-count">12</span></div>
-        <div class="cat-item"><span class="cat-name">&#129302; AI &amp; LLM</span><span class="cat-count">24</span></div>
-        <div class="cat-item"><span class="cat-name">&#127760; Network &amp; Web</span><span class="cat-count">22</span></div>
-        <div class="cat-item"><span class="cat-name">&#129504; Memory &amp; State</span><span class="cat-count">14</span></div>
-        <div class="cat-item"><span class="cat-name">&#128187; Code Execution</span><span class="cat-count">8</span></div>
-        <div class="cat-item"><span class="cat-name">&#128240; Data Formats</span><span class="cat-count">18</span></div>
-        <div class="cat-item"><span class="cat-name">&#128232; Communication</span><span class="cat-count">12</span></div>
-        <div class="cat-item"><span class="cat-name">&#128200; Analytics</span><span class="cat-count">16</span></div>
-        <div class="cat-item"><span class="cat-name">&#127963; Image &amp; Media</span><span class="cat-count">10</span></div>
-        <div class="cat-item"><span class="cat-name">&#128507; Validation</span><span class="cat-count">14</span></div>
-        <div class="cat-item"><span class="cat-name">&#128297; Encoding</span><span class="cat-count">10</span></div>
-        <div class="cat-item"><span class="cat-name">&#127981; Finance</span><span class="cat-count">10</span></div>
-        <div class="cat-item"><span class="cat-name">&#128205; Geo &amp; Location</span><span class="cat-count">8</span></div>
-        <div class="cat-item"><span class="cat-name">&#128101; Identity</span><span class="cat-count">8</span></div>
-        <div class="cat-item"><span class="cat-name">&#128376; Queue &amp; Events</span><span class="cat-count">8</span></div>
-        <div class="cat-item"><span class="cat-name">&#128203; Templates</span><span class="cat-count">8</span></div>
-        <div class="cat-item"><span class="cat-name">&#127894; Workflow</span><span class="cat-count">10</span></div>
-        <div class="cat-item"><span class="cat-name">&#127381; Webhooks</span><span class="cat-count">6</span></div>
-        <div class="cat-item"><span class="cat-name">&#128736; Utilities</span><span class="cat-count">14</span></div>
-        <div class="cat-item"><span class="cat-name">&#128064; Monitoring</span><span class="cat-count">8</span></div>
-        <div class="cat-item"><span class="cat-name">&#128218; Documentation</span><span class="cat-count">6</span></div>
-        <div class="cat-item"><span class="cat-name">&#129520; Random &amp; UUID</span><span class="cat-count">8</span></div>
-        <div class="cat-item"><span class="cat-name">&#128007; Testing</span><span class="cat-count">6</span></div>
-        <div class="cat-item"><span class="cat-name">&#128260; Transform</span><span class="cat-count">10</span></div>
-      </div>
-      <a href="https://slopshop.gg/#catalog" style="font-family:var(--mono);font-size:0.78rem;color:var(--r)">Browse all 1,152 APIs in the catalog &rarr;</a>
-    </section>
-
-    <section>
-      <div class="sec-label">Next steps</div>
-      <h2>Where to go from here</h2>
+    <!-- NEXT STEPS -->
+    <section style="border-bottom:none;padding-bottom:0">
+      <div class="sec-label">You're ready</div>
+      <h2>What's next?</h2>
+      <p class="desc">You've got your API key, made your first call, and know the core concepts. Here's where to go from here.</p>
       <div class="next-steps">
+        <a href="/docs.html" class="next-card">
+          <div class="nc-label">Reference</div>
+          <h3>Full API docs</h3>
+          <p>Every endpoint, schema, and response format for all 1,244 APIs.</p>
+        </a>
         <a href="/pricing.html" class="next-card">
           <div class="nc-label">Pricing</div>
           <h3>Credit packs</h3>
-          <p>Buy credits, understand tiers, read the FAQ.</p>
+          <p>Buy credits when you need more. Packs from $9 to enterprise.</p>
+        </a>
+        <a href="/for-agents.html" class="next-card">
+          <div class="nc-label">Integrations</div>
+          <h3>For AI agents</h3>
+          <p>LangChain, CrewAI, AutoGPT integration guides.</p>
         </a>
         <a href="/compare.html" class="next-card">
           <div class="nc-label">Compare</div>
-          <h3>vs RapidAPI &amp; ApyHub</h3>
-          <p>See how Slopshop stacks up against alternatives.</p>
-        </a>
-        <a href="/for-agents.html" class="next-card">
-          <div class="nc-label">For Agents</div>
-          <h3>AI agent integration</h3>
-          <p>MCP, LangChain, CrewAI integration guides.</p>
-        </a>
-        <a href="/docs.html" class="next-card">
-          <div class="nc-label">Docs</div>
-          <h3>Full API reference</h3>
-          <p>Every endpoint, schema, and response format.</p>
+          <h3>vs alternatives</h3>
+          <p>See how Slopshop compares to RapidAPI, ApyHub, and others.</p>
         </a>
       </div>
     </section>
@@ -571,28 +653,89 @@ curl -X POST https://slopshop.gg/v1/agent/template/security-audit \
   <div class="f-brand">&#129438; <span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>
   <p>
     <a href="/">Home</a> &middot; <a href="/docs.html">Docs</a> &middot; <a href="/pricing.html">Pricing</a> &middot; <a href="/compare.html">Compare</a> &middot; <a href="/for-agents.html">For Agents</a> &middot; <a href="/dashboard.html">Dashboard</a> &middot; <a href="https://x.com/slopshopgg">@slopshopgg</a><br>
-    1,152 APIs &middot; all real &middot; one key &middot; slopshop.gg
+    1,244 APIs &middot; all real &middot; one key &middot; slopshop.gg
   </p>
 </footer>
 
 <script>
+// Copy to clipboard
 function copyCode(btn){
   const pre=btn.closest('.code-block').querySelector('pre');
   navigator.clipboard.writeText(pre.innerText).then(()=>{
     btn.textContent='copied!';
-    setTimeout(()=>btn.textContent='copy',1500);
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='copy';btn.classList.remove('copied')},1500);
   });
 }
-// Highlight active sidebar link on scroll
-const sections=document.querySelectorAll('section[id]');
-const links=document.querySelectorAll('.sidebar nav a');
-window.addEventListener('scroll',()=>{
-  let cur='';
-  sections.forEach(s=>{if(window.scrollY>=s.offsetTop-100)cur=s.id;});
-  links.forEach(a=>{
-    a.classList.toggle('active',a.getAttribute('href')==='#'+cur);
+
+// Tab switching
+function switchTab(btn, group){
+  const parent=btn.closest('section')||btn.closest('.content');
+  const tabs=btn.parentElement.querySelectorAll('.tab-btn');
+  const panels=parent.querySelectorAll(`.tab-panel[data-group="${group}"]`);
+  const idx=[...tabs].indexOf(btn);
+  tabs.forEach(t=>t.classList.remove('active'));
+  panels.forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  if(panels[idx])panels[idx].classList.add('active');
+}
+
+// Live SHA-256 demo
+async function runLiveDemo(){
+  const input=document.getElementById('demoInput').value||'hello slopshop';
+  const btn=document.getElementById('demoRun');
+  const result=document.getElementById('demoResult');
+  btn.disabled=true;
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg> Computing...';
+
+  try{
+    // Use the Web Crypto API to compute SHA-256 locally for the demo
+    const encoder=new TextEncoder();
+    const data=encoder.encode(input);
+    const hashBuffer=await crypto.subtle.digest('SHA-256',data);
+    const hashArray=Array.from(new Uint8Array(hashBuffer));
+    const hashHex=hashArray.map(b=>b.toString(16).padStart(2,'0')).join('');
+
+    result.innerHTML=`<span class="label">Response</span><span style="color:var(--t4)">// Equivalent to POST /v1/crypto-hash-sha256</span>\n{\n  <span style="color:var(--c)">"data"</span>: {\n    <span style="color:var(--c)">"hash"</span>: <span style="color:var(--g)">"${hashHex}"</span>,\n    <span style="color:var(--c)">"algorithm"</span>: <span style="color:var(--g)">"SHA-256"</span>,\n    <span style="color:var(--c)">"input_length"</span>: <span style="color:var(--o)">${input.length}</span>,\n    <span style="color:var(--c)">"_engine"</span>: <span style="color:var(--g)">"real"</span>\n  },\n  <span style="color:var(--c)">"meta"</span>: { <span style="color:var(--c)">"credits_used"</span>: <span style="color:var(--o)">1</span> }\n}`;
+    result.classList.add('show');
+  }catch(e){
+    result.innerHTML=`<span class="label">Error</span>\n${e.message}`;
+    result.classList.add('show');
+  }
+
+  btn.disabled=false;
+  btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> Run API call';
+}
+
+// Progress bar and sidebar highlighting on scroll
+const sections=document.querySelectorAll('section[id^="step"]');
+const sideLinks=document.querySelectorAll('.sidebar nav a');
+const progSteps=document.querySelectorAll('.progress-bar .prog-step');
+const stepLabel=document.getElementById('currentStep');
+
+function updateProgress(){
+  let cur=0;
+  sections.forEach((s,i)=>{
+    if(window.scrollY>=s.offsetTop-200)cur=i;
   });
-},{passive:true});
+
+  sideLinks.forEach((a,i)=>{
+    a.classList.toggle('active',i===cur);
+    if(i<cur)a.classList.add('done');
+    else a.classList.remove('done');
+  });
+
+  progSteps.forEach((p,i)=>{
+    p.classList.remove('active','done');
+    if(i<cur)p.classList.add('done');
+    else if(i===cur)p.classList.add('active');
+  });
+
+  if(stepLabel)stepLabel.textContent=cur+1;
+}
+
+window.addEventListener('scroll',updateProgress,{passive:true});
+updateProgress();
 </script>
 </body>
 </html>

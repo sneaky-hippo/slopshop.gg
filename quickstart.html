@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Quickstart | Slopshop — 1,244 APIs in 2 Minutes</title>
+<meta name="description" content="Get started with Slopshop in under 2 minutes. Three commands: sign up, call an API, check your balance. That's it.">
+<meta name="keywords" content="slopshop quickstart, slopshop api, fast api setup, agent api quickstart">
+<link rel="canonical" href="https://slopshop.gg/quickstart">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/quickstart">
+<meta property="og:title" content="Slopshop Quickstart - 2 Minutes to Your First API Call">
+<meta property="og:description" content="Three commands. Two minutes. 1,244 APIs.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop Quickstart">
+<meta name="twitter:description" content="Three commands. Two minutes. 1,244 APIs.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F99E;</text></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none}a:hover{opacity:0.8}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.8);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:var(--r)}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:2px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s;font-family:var(--sans)}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--t);background:var(--s2)}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+
+.wrap{max-width:700px;margin:0 auto;padding:100px 32px 80px}
+
+.badge-line{display:flex;gap:8px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.badge-line .badge{font-family:var(--mono);font-size:0.62rem;font-weight:700;padding:4px 10px;border-radius:99px}
+.badge-line .badge.time{background:var(--og);color:var(--o)}
+.badge-line .badge.count{background:var(--rg);color:var(--r2)}
+
+h1{font-family:var(--mono);font-size:clamp(2rem,5vw,2.8rem);font-weight:900;letter-spacing:0.02em;line-height:1.1;margin-bottom:12px}
+h1 .red{color:var(--r)}
+.subtitle{color:var(--t2);font-size:0.95rem;line-height:1.7;margin-bottom:40px;max-width:500px}
+.subtitle b{color:var(--t);font-weight:600}
+
+/* COMMAND BLOCKS */
+.cmd{margin-bottom:32px}
+.cmd-label{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.cmd-label .num{width:28px;height:28px;background:var(--r);color:#fff;border-radius:7px;font-family:var(--mono);font-weight:800;font-size:0.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.cmd-label .text{font-family:var(--mono);font-size:0.85rem;font-weight:700}
+.cmd-desc{color:var(--t3);font-size:0.82rem;line-height:1.6;margin-bottom:10px;padding-left:38px}
+
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden;position:relative}
+.code-header{background:var(--s2);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .lang{font-family:var(--mono);font-size:0.62rem;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.1em}
+.copy-btn{background:none;border:1px solid var(--b2);color:var(--t4);padding:3px 10px;border-radius:4px;font-family:var(--mono);font-size:0.6rem;cursor:pointer;transition:0.2s}
+.copy-btn:hover{border-color:var(--r);color:var(--t)}
+.copy-btn.copied{border-color:var(--g);color:var(--g)}
+.code-block pre{padding:16px 18px;font-family:var(--mono);font-size:0.78rem;line-height:1.8;overflow-x:auto;white-space:pre}
+.code-block pre code{color:var(--t2)}
+.hl-comment{color:var(--t4)}
+.hl-key{color:var(--c)}
+.hl-val{color:var(--o)}
+.hl-str{color:var(--g)}
+
+/* SEPARATOR */
+.sep{border:none;border-top:1px solid var(--b);margin:40px 0}
+
+/* NEXT */
+.next{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:24px;margin-top:40px;display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap}
+.next .left h3{font-family:var(--mono);font-size:0.9rem;font-weight:700;margin-bottom:4px}
+.next .left p{font-size:0.78rem;color:var(--t3)}
+.next .right{display:flex;gap:8px;flex-wrap:wrap}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;background:var(--r);color:#fff;padding:10px 20px;border-radius:7px;font-family:var(--mono);font-size:0.78rem;font-weight:700;transition:0.2s;text-decoration:none}
+.btn-primary:hover{background:#e62e2e;box-shadow:0 0 20px rgba(255,51,51,0.3);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;background:var(--s2);color:var(--t2);padding:10px 20px;border-radius:7px;font-family:var(--mono);font-size:0.78rem;font-weight:600;border:1px solid var(--b2);transition:0.2s;text-decoration:none}
+.btn-secondary:hover{border-color:var(--r);color:var(--t);opacity:1}
+
+footer{padding:40px 32px;text-align:center;border-top:1px solid var(--b);margin-top:60px}
+.f-brand{font-family:var(--mono);font-size:1.2rem;font-weight:800;margin-bottom:12px}
+.f-brand .red{color:var(--r)}
+footer p{font-size:0.68rem;color:var(--t4);line-height:2.2;font-family:var(--mono)}
+footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
+
+@media(max-width:768px){
+  nav{padding:0 16px;height:50px}
+  .logo{font-size:0.85rem}
+  .nav-links a{display:none}
+  .live-badge{font-size:0.6rem;padding:3px 8px}
+  .wrap{padding:72px 16px 48px}
+  .next{flex-direction:column;text-align:center}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo"><span class="mark">&#129438; SLOP</span>SHOP<span class="gg">.GG</span></a>
+  <div class="nav-links">
+    <a href="/#playground">Playground</a>
+    <a href="/#catalog">Catalog</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/docs.html">Docs</a>
+    <a href="/getting-started.html">Get Started</a>
+    <a href="/dashboard.html">Dashboard</a>
+    <div class="live-badge"><div class="live-dot"></div><span>1,244 live</span></div>
+  </div>
+</div></nav>
+
+<div class="wrap">
+  <div class="badge-line">
+    <span class="badge time">~2 minutes</span>
+    <span class="badge count">3 commands</span>
+  </div>
+
+  <h1><span class="red">Quickstart</span></h1>
+  <p class="subtitle">Three curl commands. That's all you need to sign up, call an API, and check your balance. <b>No SDKs, no config files, no setup.</b></p>
+
+  <!-- COMMAND 1 -->
+  <div class="cmd">
+    <div class="cmd-label">
+      <div class="num">1</div>
+      <div class="text">Sign up</div>
+    </div>
+    <p class="cmd-desc">Create an account and get your API key with 2,000 free credits. No credit card.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><code>curl -X POST https://slopshop.gg/v1/auth/signup \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"email":"you@example.com","password":"yourpassword"}'</span>
+
+<span class="hl-comment"># Returns:</span>
+<span class="hl-comment"># { "api_key": "sk-slop-...", "balance": 2000 }</span></code></pre>
+    </div>
+  </div>
+
+  <!-- COMMAND 2 -->
+  <div class="cmd">
+    <div class="cmd-label">
+      <div class="num">2</div>
+      <div class="text">Call an API</div>
+    </div>
+    <p class="cmd-desc">Hash a string with SHA-256. Costs 1 credit. Replace <code style="font-size:0.75rem">YOUR_KEY</code> with the key from step 1.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><code>curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H <span class="hl-str">"Authorization: Bearer YOUR_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"text":"hello slopshop"}'</span>
+
+<span class="hl-comment"># Returns:</span>
+<span class="hl-comment"># { "data": { "hash": "a7f3c1d...", "_engine": "real" }, "meta": { "credits_used": 1 } }</span></code></pre>
+    </div>
+  </div>
+
+  <!-- COMMAND 3 -->
+  <div class="cmd">
+    <div class="cmd-label">
+      <div class="num">3</div>
+      <div class="text">Check your balance</div>
+    </div>
+    <p class="cmd-desc">See how many credits you have left.</p>
+    <div class="code-block">
+      <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><code>curl https://slopshop.gg/v1/credits/balance \
+  -H <span class="hl-str">"Authorization: Bearer YOUR_KEY"</span>
+
+<span class="hl-comment"># Returns:</span>
+<span class="hl-comment"># { "balance": 1999, "total_used": 1 }</span></code></pre>
+    </div>
+  </div>
+
+  <hr class="sep">
+
+  <p style="font-size:0.85rem;color:var(--t2);line-height:1.7;text-align:center">That's it. You now have access to <b style="color:var(--t)">1,244 APIs</b> across crypto, text, math, network, AI, memory, code execution, and more.</p>
+
+  <div class="next">
+    <div class="left">
+      <h3>Want to go deeper?</h3>
+      <p>The full tutorial covers memory, agents, MCP setup, and more.</p>
+    </div>
+    <div class="right">
+      <a href="/getting-started.html" class="btn-primary">Full tutorial</a>
+      <a href="/docs.html" class="btn-secondary">API docs</a>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="f-brand">&#129438; <span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>
+  <p>
+    <a href="/">Home</a> &middot; <a href="/docs.html">Docs</a> &middot; <a href="/getting-started.html">Get Started</a> &middot; <a href="/pricing.html">Pricing</a> &middot; <a href="/compare.html">Compare</a> &middot; <a href="/dashboard.html">Dashboard</a> &middot; <a href="https://x.com/slopshopgg">@slopshopgg</a><br>
+    1,244 APIs &middot; all real &middot; one key &middot; slopshop.gg
+  </p>
+</footer>
+
+<script>
+function copyCode(btn){
+  const pre=btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.innerText).then(()=>{
+    btn.textContent='copied!';
+    btn.classList.add('copied');
+    setTimeout(()=>{btn.textContent='copy';btn.classList.remove('copied')},1500);
+  });
+}
+</script>
+</body>
+</html>

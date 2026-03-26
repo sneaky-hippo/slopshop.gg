@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Pricing | Slopshop — 1,152 APIs for AI Agents</title>
-<meta name="description" content="Simple, credit-based API pricing. One key unlocks 1,152 tools. Start with 2,000 free credits. No subscriptions, no per-API keys. Pay only for what you use.">
+<title>Pricing | Slopshop — 1,244 APIs for AI Agents</title>
+<meta name="description" content="Simple, credit-based API pricing. One key unlocks 1,244 tools. Start with 2,000 free credits. No subscriptions, no per-API keys. Pay only for what you use.">
 <meta name="keywords" content="api pricing, credit-based api pricing, cheap api for agents, slopshop pricing, api credits, pay as you go api">
 <link rel="canonical" href="https://slopshop.gg/pricing">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/pricing">
 <meta property="og:title" content="Slopshop Pricing - Credit-Based API Pricing">
-<meta property="og:description" content="One API key. 1,152 tools. Pay only for what you use. Start free with 2,000 credits. 8 memory APIs always free.">
+<meta property="og:description" content="One API key. 1,244 tools. Pay only for what you use. Start free with 2,000 credits. 8 memory APIs always free.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="Slopshop Pricing">
-<meta name="twitter:description" content="Credit-based API pricing. 1,152 tools. Start with 2,000 free credits.">
+<meta name="twitter:description" content="Credit-based API pricing. 1,244 tools. Start with 2,000 free credits.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
 <script type="application/ld+json">
 {
@@ -110,7 +110,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(
 .sec-label{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--r);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px}
 
 /* PRICING TIERS */
-.tiers{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:40px}
+.tiers{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:40px}
 .tier{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px 20px;text-align:center;transition:0.2s;position:relative}
 .tier:hover{border-color:var(--b2);transform:translateY(-2px)}
 .tier.hot{border-color:var(--o);background:linear-gradient(to bottom,rgba(255,136,0,0.07),var(--s1))}
@@ -181,6 +181,9 @@ footer p{font-size:0.68rem;color:var(--t4);line-height:2.2;font-family:var(--mon
 footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 .divider{border:none;border-top:1px solid var(--b);margin:0}
 
+@media(max-width:1100px){
+  .tiers{grid-template-columns:repeat(3,1fr)}
+}
 @media(max-width:900px){
   .tiers{grid-template-columns:repeat(3,1fr)}
   .credits-explainer{grid-template-columns:1fr}
@@ -211,14 +214,14 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
     <a href="/docs.html">Docs</a>
     <a href="/getting-started.html">Get Started</a>
     <a href="/dashboard.html">Dashboard</a>
-    <div class="live-badge"><div class="live-dot"></div><span>1,152 live</span></div>
+    <div class="live-badge"><div class="live-dot"></div><span>1,244 live</span></div>
   </div>
 </div></nav>
 
 <section class="page-hero">
   <div class="hero-tag">&#129438; Credit-based &mdash; no subscriptions, no surprises</div>
   <h1>Slopshop <span class="red">Pricing</span></h1>
-  <p class="sub"><b>One API key. 1,152 tools.</b> Pay only for what you use. Credits never expire &mdash; buy once, use forever.</p>
+  <p class="sub"><b>One API key. 1,244 tools.</b> Pay only for what you use. Credits never expire &mdash; buy once, use forever.</p>
   <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
     <a href="/dashboard.html" class="btn-primary">Get 2,000 free credits &#129438;</a>
     <a href="/#playground" class="btn-secondary">Try the playground first</a>
@@ -228,9 +231,18 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 <div class="sec">
   <div class="sec-label">Choose a pack</div>
   <h2>Simple, usage-based pricing</h2>
-  <p class="desc">No subscriptions. No per-API keys. Buy a credit pack and spend it across all 1,152 tools at your own pace.</p>
+  <p class="desc">No subscriptions. No per-API keys. Buy a credit pack and spend it across all 1,244 tools at your own pace.</p>
 
   <div class="tiers">
+    <div class="tier tier-free" style="border-color:rgba(0,204,102,0.3);background:linear-gradient(to bottom,rgba(0,204,102,0.06),var(--s1))">
+      <div class="emoji">&#127873;</div>
+      <div class="name" style="color:var(--g)">Free Tier</div>
+      <div class="amt" style="color:var(--g)">2K</div>
+      <div class="unit">credits on signup</div>
+      <div class="price">$0</div>
+      <div class="per-credit" style="color:var(--g)">+ 8 free memory APIs</div>
+      <a href="/dashboard.html" class="cta-btn" style="background:rgba(0,204,102,0.15);color:var(--g);border-color:rgba(0,204,102,0.3)">Start free</a>
+    </div>
     <div class="tier">
       <div class="emoji">&#129438;</div>
       <div class="name">Baby Lobster</div>
@@ -267,14 +279,14 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
       <div class="per-credit">$0.005 / credit</div>
       <a href="/dashboard.html" class="cta-btn">Buy pack</a>
     </div>
-    <div class="tier tier-enterprise">
+    <div class="tier tier-enterprise" style="border-color:rgba(255,51,51,0.3);background:linear-gradient(to bottom,rgba(255,51,51,0.05),var(--s1))">
       <div class="emoji">&#127381;</div>
-      <div class="name">Kraken</div>
+      <div class="name">Enterprise</div>
       <div class="amt">Custom</div>
-      <div class="unit">volume</div>
+      <div class="unit">volume pricing</div>
       <div class="price">Custom</div>
-      <div class="per-credit">Volume discounts</div>
-      <a href="mailto:dev@slopshop.gg" class="cta-btn">Contact us</a>
+      <div class="per-credit">SLAs + priority support</div>
+      <a href="mailto:dev@slopshop.gg" class="cta-btn" style="background:var(--r);color:#fff;border-color:var(--r)">Contact Us</a>
     </div>
   </div>
 </div>
@@ -288,7 +300,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
   <div class="included-grid">
     <div class="included-item">
       <div class="icon">&#128736;</div>
-      <div class="text"><strong>All 1,152 APIs</strong><span>Access every tool, every category</span></div>
+      <div class="text"><strong>All 1,244 APIs</strong><span>Access every tool, every category</span></div>
     </div>
     <div class="included-item">
       <div class="icon">&#128193;</div>
@@ -330,7 +342,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 <div class="sec">
   <div class="sec-label">How it works</div>
   <h2>How credits work</h2>
-  <p class="desc">Credits are the universal currency across all 1,152 APIs. Simple operations are cheap; complex ones cost more.</p>
+  <p class="desc">Credits are the universal currency across all 1,244 APIs. Simple operations are cheap; complex ones cost more.</p>
   <div class="credits-explainer">
     <div class="credit-box">
       <h3>The simple rule</h3>
@@ -389,7 +401,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
         Is there a free tier?
         <span class="arrow">&#9660;</span>
       </div>
-      <div class="faq-a"><p>Yes. Every account starts with 2,000 free credits on signup &mdash; no credit card required. That's enough to run hundreds of simple API calls and explore the full catalog of 1,152 tools. In addition, 8 memory APIs (memory-set, memory-get, memory-search, memory-list, memory-delete, memory-stats, memory-namespace-list, counter-get) are always free at 0 credits &mdash; even after your signup credits run out.</p></div>
+      <div class="faq-a"><p>Yes. Every account starts with 2,000 free credits on signup &mdash; no credit card required. That's enough to run hundreds of simple API calls and explore the full catalog of 1,244 tools. In addition, 8 memory APIs (memory-set, memory-get, memory-search, memory-list, memory-delete, memory-stats, memory-namespace-list, counter-get) are always free at 0 credits &mdash; even after your signup credits run out.</p></div>
     </div>
     <div class="faq-item">
       <div class="faq-q" onclick="toggleFaq(this)">
@@ -424,7 +436,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 
 <div class="cta-banner">
   <h2>Get started with 2,000 free credits</h2>
-  <p>No credit card required. Instant access to all 1,152 tools.</p>
+  <p>No credit card required. Instant access to all 1,244 tools.</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
     <a href="/dashboard.html" class="btn-primary">Start for free &#129438;</a>
     <a href="/getting-started.html" class="btn-secondary">Read the quickstart</a>
@@ -435,7 +447,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
   <div class="f-brand">&#129438; <span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>
   <p>
     <a href="/">Home</a> &middot; <a href="/docs.html">Docs</a> &middot; <a href="/getting-started.html">Get Started</a> &middot; <a href="/compare.html">Compare</a> &middot; <a href="/for-agents.html">For Agents</a> &middot; <a href="/dashboard.html">Dashboard</a> &middot; <a href="https://x.com/slopshopgg">@slopshopgg</a><br>
-    1,152 APIs &middot; all real &middot; credit-based &middot; slopshop.gg
+    1,244 APIs &middot; all real &middot; credit-based &middot; slopshop.gg
   </p>
 </footer>
 

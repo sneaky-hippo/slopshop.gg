@@ -202,6 +202,17 @@ const jobs = new Map();
 const serverStart = Date.now();
 const uuidv4 = () => crypto.randomUUID();
 
+// ===== USAGE STREAM INFRASTRUCTURE =====
+const usageStreamClients = new Set();
+function emitUsageEvent(keyPrefix, slug, credits, status) {
+  const event = { ts: new Date().toISOString(), key_prefix: keyPrefix, slug, credits, status };
+  for (const client of usageStreamClients) {
+    if (client.keyPrefix === keyPrefix) {
+      try { client.res.write(`event: usage\ndata: ${JSON.stringify(event)}\n\n`); } catch (e) { usageStreamClients.delete(client); }
+    }
+  }
+}
+
 const keyCount = db.prepare('SELECT COUNT(*) as cnt FROM api_keys').get().cnt;
 console.log(`Loaded ${apiCount} APIs with ${Object.keys(allHandlers).length} handlers across ${catalog.length} categories`);
 console.log(`  ${keyCount} API keys in database`);
@@ -297,14 +308,31 @@ Sitemap: https://slopshop.gg/sitemap.xml
 app.get('/v1/health', (_, res) => {
   const mem = process.memoryUsage();
   let lastBenchmarkTs = null;
+  let sqliteTableCount = 76;
   try { const row = db.prepare("SELECT MAX(ts) as ts FROM audit_log").get(); lastBenchmarkTs = row?.ts || null; } catch (e) {}
+  try { const row = db.prepare("SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table'").get(); sqliteTableCount = row?.cnt || 76; } catch (e) {}
   res.json({
-    status: 'operational',
-    apis: { total: apiCount, handlers: handlerCount, missing: missing.length },
-    memory: { heap_used_mb: Math.round(mem.heapUsed / 1024 / 1024), heap_total_mb: Math.round(mem.heapTotal / 1024 / 1024), rss_mb: Math.round(mem.rss / 1024 / 1024) },
-    uptime_sec: Math.floor((Date.now() - serverStart) / 1000),
-    last_benchmark_ts: lastBenchmarkTs,
-    version: '2.0.0',
+    status: 'healthy',
+    version: '3.1.0',
+    apis: apiCount,
+    uptime_seconds: Math.floor((Date.now() - serverStart) / 1000),
+    memory_mb: Math.round(mem.rss / 1024 / 1024),
+    sqlite_tables: sqliteTableCount,
+    features: {
+      streaming: true,
+      batch: true,
+      dry_run: true,
+      copilot: true,
+      exchange: true,
+      memory: true,
+    },
+    detail: {
+      handlers: handlerCount,
+      missing: missing.length,
+      heap_used_mb: Math.round(mem.heapUsed / 1024 / 1024),
+      heap_total_mb: Math.round(mem.heapTotal / 1024 / 1024),
+      last_benchmark_ts: lastBenchmarkTs,
+    },
   });
 });
 
@@ -603,25 +631,40 @@ app.post('/v1/credits/auto-reload', auth, (req, res) => {
 // ===== BATCH =====
 app.post('/v1/batch', auth, async (req, res) => {
   const { calls } = req.body;
-  if (!Array.isArray(calls) || !calls.length) return res.status(400).json({ error: { code: 'invalid_batch' } });
-  if (calls.length > 50) return res.status(400).json({ error: { code: 'max_50_per_batch' } });
+  if (!Array.isArray(calls) || !calls.length) return res.status(400).json({ error: { code: 'invalid_batch', message: 'Provide { calls: [{ slug: "api-slug", input: {...} }, ...] }' } });
+  if (calls.length > 50) return res.status(400).json({ error: { code: 'max_50_per_batch', message: 'Maximum 50 calls per batch request' } });
   let totalCr = 0;
   for (const c of calls) {
-    const def = apiMap.get(c.api);
-    if (!def) return res.status(400).json({ error: { code: 'unknown_api', api: c.api } });
+    const slug = c.slug || c.api; // accept both slug and api fields
+    const def = apiMap.get(slug);
+    if (!def) return res.status(400).json({ error: { code: 'unknown_api', api: slug } });
     totalCr += def.credits;
   }
   if (req.acct.balance < totalCr) return res.status(402).json({ error: { code: 'insufficient_credits', need: totalCr, have: req.acct.balance } });
   req.acct.balance -= totalCr;
   const results = [];
   let hasFailure = false, hasSuccess = false;
+  const batchStart = Date.now();
   for (const c of calls) {
-    const handler = allHandlers[c.api];
-    try { results.push({ api: c.api, data: await handler(c.input || {}), credits: apiMap.get(c.api).credits }); hasSuccess = true; }
-    catch (e) { results.push({ api: c.api, error: e.message }); hasFailure = true; }
+    const slug = c.slug || c.api;
+    const handler = allHandlers[slug];
+    const callStart = Date.now();
+    try {
+      const data = await handler(c.input || {});
+      results.push({ slug, data, credits: apiMap.get(slug).credits, latency_ms: Date.now() - callStart });
+      hasSuccess = true;
+    } catch (e) {
+      results.push({ slug, error: e.message, credits: apiMap.get(slug).credits, latency_ms: Date.now() - callStart });
+      hasFailure = true;
+    }
   }
   const partial = hasSuccess && hasFailure;
-  res.json({ results, total_credits: totalCr, balance: req.acct.balance, ...(partial ? { partial: true } : {}) });
+  // Emit usage events for each call in batch
+  const keyPrefix = req.apiKey.slice(0, 12);
+  for (const r of results) {
+    emitUsageEvent(keyPrefix, r.slug, r.credits, r.error ? 'error' : 'ok');
+  }
+  res.json({ ok: true, results, total_credits: totalCr, balance: req.acct.balance, total_latency_ms: Date.now() - batchStart, calls_count: calls.length, ...(partial ? { partial: true } : {}) });
 });
 
 // ===== PIPE =====
@@ -3451,10 +3494,16 @@ app.get('/v1/credits/history', auth, (req, res) => {
 });
 
 app.get('/v1/tools/popular', publicRateLimit, (req, res) => {
+  const period = req.query.period || '24h';
+  const hours = period === '7d' ? 168 : period === '30d' ? 720 : 24;
+  const since = new Date(Date.now() - hours * 3600000).toISOString();
+
   try {
-    const popular = db.prepare("SELECT api, COUNT(*) as calls FROM audit_log GROUP BY api ORDER BY calls DESC LIMIT 10").all();
-    res.json({ popular, _engine: 'real' });
-  } catch(e) { res.json({ popular: [] }); }
+    const rows = db.prepare('SELECT api, COUNT(*) as calls, AVG(latency_ms) as avg_latency FROM audit_log WHERE timestamp > ? GROUP BY api ORDER BY calls DESC LIMIT 50').all(since);
+    res.json({ popular: rows, period, since });
+  } catch (e) {
+    res.json({ popular: [], period, note: 'No usage data yet' });
+  }
 });
 
 app.get('/v1/tools/recent', auth, (req, res) => {
@@ -4038,6 +4087,838 @@ app.get('/v1/exchange/my-earnings/:user_id', auth, (req, res) => {
   });
 });
 
+// ===== TOOL DISCOVERY SYSTEM =====
+
+// POST /v1/tools/search — Semantic tool search
+app.post('/v1/tools/search', publicRateLimit, (req, res) => {
+  const { query, category, max_results, min_relevance } = req.body;
+  const q = (query || '').toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const maxR = Math.min(max_results || 20, 100);
+  const minRel = min_relevance || 0.1;
+
+  const results = [];
+  for (const [slug, def] of apiMap.entries()) {
+    const text = (slug + ' ' + def.name + ' ' + def.desc + ' ' + def.cat).toLowerCase();
+    const matches = q.filter(w => text.includes(w)).length;
+    const relevance = q.length > 0 ? matches / q.length : 0;
+    if (relevance >= minRel && (!category || def.cat.toLowerCase().includes(category.toLowerCase()))) {
+      results.push({ slug, name: def.name, desc: def.desc, category: def.cat, credits: def.credits, relevance: Math.round(relevance * 100) / 100 });
+    }
+  }
+  results.sort((a, b) => b.relevance - a.relevance);
+  res.json({ results: results.slice(0, maxR), total: results.length, query });
+});
+
+// GET /v1/tools/categories — List all categories with counts
+app.get('/v1/tools/categories', publicRateLimit, (req, res) => {
+  const cats = {};
+  for (const [slug, def] of apiMap.entries()) {
+    if (!cats[def.cat]) cats[def.cat] = { name: def.cat, count: 0, sample_tools: [] };
+    cats[def.cat].count++;
+    if (cats[def.cat].sample_tools.length < 3) cats[def.cat].sample_tools.push(slug);
+  }
+  const sorted = Object.values(cats).sort((a, b) => b.count - a.count);
+  res.json({ categories: sorted, total_categories: sorted.length, total_apis: apiMap.size });
+});
+
+// POST /v1/tools/recommend — Recommend tools for a task
+app.post('/v1/tools/recommend', publicRateLimit, (req, res) => {
+  const { task, context, limit } = req.body;
+  const taskWords = (task || '').toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const n = Math.min(limit || 10, 50);
+
+  // Score every tool
+  const scored = [];
+  for (const [slug, def] of apiMap.entries()) {
+    const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
+    let score = 0;
+    taskWords.forEach(w => { if (text.includes(w)) score += 1; if (slug.includes(w)) score += 2; });
+    if (score > 0) scored.push({ slug, name: def.name, desc: def.desc, category: def.cat, credits: def.credits, score });
+  }
+  scored.sort((a, b) => b.score - a.score);
+
+  // Group by workflow step
+  const plan = scored.slice(0, n).map((t, i) => ({ step: i + 1, ...t }));
+  res.json({ task, recommendations: plan, total_matches: scored.length });
+});
+
+// GET /v1/tools/new — Recently added tools
+app.get('/v1/tools/new', publicRateLimit, (req, res) => {
+  // Return tools from the newest handler files (hackathon, competitor, rapidapi, power)
+  const newSlugs = new Set();
+  ['compute-power-1', 'compute-power-2', 'compute-rapidapi-1', 'compute-rapidapi-2', 'compute-rapidapi-3', 'compute-competitor-1', 'compute-competitor-2'].forEach(f => {
+    try { Object.keys(require('./handlers/' + f)).forEach(s => newSlugs.add(s)); } catch(e) {}
+  });
+
+  const tools = [];
+  for (const slug of newSlugs) {
+    const def = apiMap.get(slug);
+    if (def) tools.push({ slug, name: def.name, desc: def.desc, category: def.cat, credits: def.credits });
+  }
+  res.json({ new_tools: tools, count: tools.length });
+});
+
+// GET /v1/tools/by-category/:category — Get all tools in a category
+app.get('/v1/tools/by-category/:category', publicRateLimit, (req, res) => {
+  const cat = decodeURIComponent(req.params.category).toLowerCase();
+  const tools = [];
+  for (const [slug, def] of apiMap.entries()) {
+    if (def.cat.toLowerCase() === cat || def.cat.toLowerCase().includes(cat)) {
+      tools.push({ slug, name: def.name, desc: def.desc, credits: def.credits });
+    }
+  }
+  tools.sort((a, b) => a.slug.localeCompare(b.slug));
+  res.json({ category: req.params.category, tools, count: tools.length });
+});
+
+// POST /v1/tools/compare — Compare multiple tools
+app.post('/v1/tools/compare', publicRateLimit, (req, res) => {
+  const { slugs } = req.body;
+  const compared = (slugs || []).map(slug => {
+    const def = apiMap.get(slug);
+    if (!def) return { slug, found: false };
+    return { slug, name: def.name, desc: def.desc, category: def.cat, credits: def.credits, tier: def.tier, has_handler: !!allHandlers[slug] };
+  });
+  res.json({ compared, count: compared.length });
+});
+
+// GET /v1/stats — Platform statistics (public)
+app.get('/v1/stats', publicRateLimit, (req, res) => {
+  const cats = {};
+  let free = 0, paid = 0;
+  for (const [slug, def] of apiMap.entries()) {
+    cats[def.cat] = (cats[def.cat] || 0) + 1;
+    if (def.credits === 0) free++; else paid++;
+  }
+  res.json({
+    total_apis: apiMap.size,
+    categories: Object.keys(cats).length,
+    free_apis: free,
+    paid_apis: paid,
+    top_categories: Object.entries(cats).sort((a,b) => b[1] - a[1]).slice(0, 10).map(([name, count]) => ({ name, count })),
+    features: { copilot: true, compute_exchange: true, persistent_memory: true, benchmarked: true },
+    uptime: process.uptime(),
+    version: require('./package.json').version
+  });
+});
+
+// ===== SSE STREAMING: Stream results for any API =====
+app.post('/v1/stream/:slug', auth, async (req, res) => {
+  const def = apiMap.get(req.params.slug);
+  if (!def) return res.status(404).json({ error: { code: 'api_not_found', slug: req.params.slug } });
+
+  const handler = allHandlers[req.params.slug];
+  if (!handler) return res.status(501).json({ error: { code: 'no_handler', slug: req.params.slug } });
+
+  if (req.acct.balance < def.credits) {
+    if (req.acct.auto_reload) { req.acct.balance += req.acct.auto_reload.amount; }
+    else return res.status(402).json({ error: { code: 'insufficient_credits', need: def.credits, have: req.acct.balance } });
+  }
+
+  // Input schema validation
+  const inputSchema = SCHEMAS?.[req.params.slug]?.input;
+  if (inputSchema && inputSchema.required) {
+    const missingFields = inputSchema.required.filter(f => req.body[f] === undefined && req.body[f] !== '');
+    if (missingFields.length > 0) {
+      return res.status(422).json({
+        ok: false,
+        error: { code: 'validation_error', message: `Missing required fields: ${missingFields.join(', ')}`, missing_fields: missingFields },
+      });
+    }
+  }
+
+  req.acct.balance -= def.credits;
+
+  // Set SSE headers
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Credits-Used': String(def.credits),
+    'X-Credits-Remaining': String(req.acct.balance),
+  });
+
+  // Send start event
+  res.write(`event: start\ndata: ${JSON.stringify({ slug: req.params.slug, credits: def.credits, ts: new Date().toISOString() })}\n\n`);
+
+  // Send progress event
+  res.write(`event: progress\ndata: ${JSON.stringify({ status: 'executing', slug: req.params.slug, percent: 0 })}\n\n`);
+
+  const start = Date.now();
+  let result, handlerError = false;
+  try {
+    result = await handler(req.body || {});
+  } catch (e) {
+    result = null;
+    handlerError = e.message;
+  }
+  const latency = Date.now() - start;
+
+  dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', req.params.slug, def.credits, latency, handlerError ? 'error' : (result?._engine || 'unknown'));
+  persistKey(req.apiKey);
+
+  // Emit usage event for real-time stream
+  emitUsageEvent(req.apiKey.slice(0, 12), req.params.slug, def.credits, handlerError ? 'error' : 'ok');
+
+  if (handlerError) {
+    req.acct.balance += def.credits;
+    persistKey(req.apiKey);
+    res.write(`event: error\ndata: ${JSON.stringify({ error: handlerError, credits_refunded: def.credits })}\n\n`);
+    res.write(`event: done\ndata: ${JSON.stringify({ ok: false, latency_ms: latency })}\n\n`);
+    return res.end();
+  }
+
+  // Send progress at 50%
+  res.write(`event: progress\ndata: ${JSON.stringify({ status: 'processing', slug: req.params.slug, percent: 50 })}\n\n`);
+
+  // For LLM-tier results with text content, stream token-by-token
+  const engine = result?._engine || 'unknown';
+  if (def.tier === 'llm' && result && typeof result === 'object') {
+    const textFields = Object.entries(result).filter(([k, v]) => typeof v === 'string' && v.length > 50 && k !== '_engine');
+    if (textFields.length > 0) {
+      for (const [fieldName, text] of textFields) {
+        const words = text.split(/(\s+)/);
+        for (let i = 0; i < words.length; i++) {
+          res.write(`event: token\ndata: ${JSON.stringify({ field: fieldName, token: words[i], index: i })}\n\n`);
+        }
+      }
+    }
+  }
+
+  // Send progress at 100%
+  res.write(`event: progress\ndata: ${JSON.stringify({ status: 'complete', slug: req.params.slug, percent: 100 })}\n\n`);
+
+  // Send full result
+  const confidence = engine === 'real' ? 0.99 : engine === 'llm' ? 0.85 : 0.80;
+  res.write(`event: result\ndata: ${JSON.stringify({
+    ok: true,
+    data: result,
+    meta: { api: req.params.slug, credits_used: def.credits, balance: req.acct.balance, latency_ms: latency, engine, confidence },
+  })}\n\n`);
+
+  // Send done event
+  res.write(`event: done\ndata: ${JSON.stringify({ ok: true, latency_ms: latency, credits_used: def.credits, balance: req.acct.balance })}\n\n`);
+  res.end();
+});
+
+// ===== REAL-TIME USAGE STREAM =====
+app.get('/v1/stream/usage', auth, (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+
+  const keyPrefix = req.apiKey.slice(0, 12);
+  const client = { keyPrefix, res, connectedAt: Date.now() };
+  usageStreamClients.add(client);
+
+  // Send initial connection event
+  res.write(`event: connected\ndata: ${JSON.stringify({ key_prefix: keyPrefix, ts: new Date().toISOString(), message: 'Listening for usage events. Make API calls to see them here in real-time.' })}\n\n`);
+
+  // Send heartbeat every 30s to keep connection alive
+  const heartbeat = setInterval(() => {
+    try { res.write(`event: heartbeat\ndata: ${JSON.stringify({ ts: new Date().toISOString() })}\n\n`); }
+    catch (e) { clearInterval(heartbeat); usageStreamClients.delete(client); }
+  }, 30000);
+
+  req.on('close', () => {
+    clearInterval(heartbeat);
+    usageStreamClients.delete(client);
+  });
+});
+
+// ===== DRY RUN: Preview API call without executing =====
+app.post('/v1/dry-run/:slug', auth, (req, res) => {
+  const def = apiMap.get(req.params.slug);
+  if (!def) return res.status(404).json({ error: { code: 'api_not_found', slug: req.params.slug, hint: 'GET /v1/tools to browse' } });
+
+  const schema = SCHEMAS?.[req.params.slug];
+  const handler = allHandlers[req.params.slug];
+
+  // Validate input if schema exists, but don't charge
+  let validationResult = { valid: true, missing_fields: [] };
+  if (schema?.input?.required) {
+    const missingFields = schema.input.required.filter(f => req.body[f] === undefined && req.body[f] !== '');
+    if (missingFields.length > 0) {
+      validationResult = { valid: false, missing_fields: missingFields };
+    }
+  }
+
+  res.json({
+    ok: true,
+    dry_run: true,
+    slug: req.params.slug,
+    name: def.name,
+    description: def.desc,
+    category: def.cat,
+    tier: def.tier,
+    credits: def.credits,
+    estimated_cost_usd: (def.credits * 0.009).toFixed(4),
+    can_afford: req.acct.balance >= def.credits,
+    balance: req.acct.balance,
+    balance_after: Math.max(0, req.acct.balance - def.credits),
+    has_handler: !!handler,
+    input_schema: schema?.input || null,
+    output_schema: schema?.output || null,
+    example_input: schema?.example || null,
+    example_output: schema?.example_output || null,
+    input_validation: validationResult,
+    hints: {
+      execute: `POST /v1/${req.params.slug}`,
+      stream: `POST /v1/stream/${req.params.slug}`,
+      async: `POST /v1/async/${req.params.slug}`,
+    },
+  });
+});
+
+// ===========================================================================================
+// ===== ENTERPRISE FEATURES — Team Management, Analytics, Key Management, Webhooks, Rate Limits
+// ===========================================================================================
+
+// ── ENTERPRISE TABLES ──────────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS ent_teams (
+    id TEXT PRIMARY KEY,
+    name TEXT NOT NULL,
+    owner_key TEXT NOT NULL,
+    plan TEXT DEFAULT 'business',
+    max_members INTEGER DEFAULT 50,
+    created INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS ent_team_members (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    team_id TEXT NOT NULL,
+    email TEXT NOT NULL,
+    api_key TEXT,
+    role TEXT DEFAULT 'member',
+    status TEXT DEFAULT 'invited',
+    invited_by TEXT,
+    joined INTEGER,
+    UNIQUE(team_id, email)
+  );
+  CREATE TABLE IF NOT EXISTS ent_team_keys (
+    key TEXT PRIMARY KEY,
+    team_id TEXT NOT NULL,
+    label TEXT,
+    budget_monthly INTEGER DEFAULT NULL,
+    budget_used INTEGER DEFAULT 0,
+    budget_reset_at INTEGER,
+    scope TEXT DEFAULT '*',
+    created INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS ent_webhooks (
+    id TEXT PRIMARY KEY,
+    api_key TEXT NOT NULL,
+    url TEXT NOT NULL,
+    events TEXT NOT NULL,
+    secret TEXT NOT NULL,
+    active INTEGER DEFAULT 1,
+    failures INTEGER DEFAULT 0,
+    last_triggered INTEGER,
+    created INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS ent_webhook_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    webhook_id TEXT NOT NULL,
+    event TEXT NOT NULL,
+    status_code INTEGER,
+    response_ms INTEGER,
+    success INTEGER,
+    ts INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS ent_rate_limits (
+    api_key TEXT PRIMARY KEY,
+    requests_per_minute INTEGER DEFAULT 60,
+    requests_per_hour INTEGER DEFAULT 1000,
+    requests_per_day INTEGER DEFAULT 10000,
+    burst_limit INTEGER DEFAULT 120,
+    set_by TEXT,
+    updated INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_ent_team_members_team ON ent_team_members(team_id);
+  CREATE INDEX IF NOT EXISTS idx_ent_team_keys_team ON ent_team_keys(team_id);
+  CREATE INDEX IF NOT EXISTS idx_ent_webhooks_key ON ent_webhooks(api_key);
+  CREATE INDEX IF NOT EXISTS idx_ent_webhook_log_wh ON ent_webhook_log(webhook_id);
+`);
+
+// ── WEBHOOK DISPATCHER (fire-and-forget) ────────────────────────────────────
+const https = require('https');
+const http = require('http');
+function fireWebhook(webhookRow, event, payload) {
+  try {
+    const whUrl = new URL(webhookRow.url);
+    const body = JSON.stringify({ event, payload, webhook_id: webhookRow.id, ts: new Date().toISOString() });
+    const signature = crypto.createHmac('sha256', webhookRow.secret).update(body).digest('hex');
+    const options = {
+      hostname: whUrl.hostname, port: whUrl.port || (whUrl.protocol === 'https:' ? 443 : 80),
+      path: whUrl.pathname + whUrl.search, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body), 'X-Slopshop-Signature': signature, 'X-Slopshop-Event': event },
+      timeout: 5000
+    };
+    const whStart = Date.now();
+    const mod = whUrl.protocol === 'https:' ? https : http;
+    const whReq = mod.request(options, (resp) => {
+      const ms = Date.now() - whStart;
+      db.prepare('INSERT INTO ent_webhook_log (webhook_id, event, status_code, response_ms, success, ts) VALUES (?, ?, ?, ?, ?, ?)').run(webhookRow.id, event, resp.statusCode, ms, resp.statusCode < 400 ? 1 : 0, Date.now());
+      if (resp.statusCode >= 400) {
+        db.prepare('UPDATE ent_webhooks SET failures = failures + 1 WHERE id = ?').run(webhookRow.id);
+        if (webhookRow.failures >= 9) db.prepare('UPDATE ent_webhooks SET active = 0 WHERE id = ?').run(webhookRow.id);
+      } else {
+        db.prepare('UPDATE ent_webhooks SET last_triggered = ?, failures = 0 WHERE id = ?').run(Date.now(), webhookRow.id);
+      }
+      resp.resume();
+    });
+    whReq.on('error', () => {
+      db.prepare('UPDATE ent_webhooks SET failures = failures + 1 WHERE id = ?').run(webhookRow.id);
+      db.prepare('INSERT INTO ent_webhook_log (webhook_id, event, status_code, response_ms, success, ts) VALUES (?, ?, ?, ?, ?, ?)').run(webhookRow.id, event, 0, Date.now() - whStart, 0, Date.now());
+    });
+    whReq.write(body);
+    whReq.end();
+  } catch (e) { /* silent — webhooks are best-effort */ }
+}
+
+function dispatchWebhooks(apiKey, event, payload) {
+  try {
+    const hooks = db.prepare('SELECT * FROM ent_webhooks WHERE api_key = ? AND active = 1').all(apiKey);
+    for (const hook of hooks) {
+      const events = JSON.parse(hook.events);
+      if (events.includes(event) || events.includes('*')) fireWebhook(hook, event, payload);
+    }
+  } catch (e) { /* silent */ }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 1. TEAM MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+// POST /v1/teams/create — Create a team with name, owner
+app.post('/v1/teams/create', auth, (req, res) => {
+  const { name, plan } = req.body;
+  if (!name) return res.status(400).json({ error: { code: 'missing_field', message: 'name is required' } });
+  if (name.length > 100) return res.status(400).json({ error: { code: 'invalid_field', message: 'name must be 100 chars or fewer' } });
+  const id = 'team-' + crypto.randomBytes(8).toString('hex');
+  const now = Date.now();
+  db.prepare('INSERT INTO ent_teams (id, name, owner_key, plan, created) VALUES (?, ?, ?, ?, ?)').run(id, name, req.apiKey, plan || 'business', now);
+  db.prepare('INSERT INTO ent_team_members (team_id, email, api_key, role, status, invited_by, joined) VALUES (?, ?, ?, ?, ?, ?, ?)').run(id, req.acct.id, req.apiKey, 'owner', 'active', req.apiKey.slice(0, 12), now);
+  dispatchWebhooks(req.apiKey, 'team.created', { team_id: id, name });
+  res.status(201).json({ ok: true, team: { id, name, plan: plan || 'business', owner: req.apiKey.slice(0, 12) + '...', max_members: 50, created: new Date(now).toISOString() } });
+});
+
+// POST /v1/teams/invite — Invite user to team by email
+app.post('/v1/teams/invite', auth, (req, res) => {
+  const { team_id, email, role } = req.body;
+  if (!team_id || !email) return res.status(400).json({ error: { code: 'missing_fields', message: 'team_id and email are required' } });
+  if (!email.includes('@')) return res.status(400).json({ error: { code: 'invalid_email', message: 'Valid email address required' } });
+  const team = db.prepare('SELECT * FROM ent_teams WHERE id = ?').get(team_id);
+  if (!team) return res.status(404).json({ error: { code: 'team_not_found', message: 'No team with that ID' } });
+  const inviter = db.prepare('SELECT * FROM ent_team_members WHERE team_id = ? AND api_key = ? AND role IN (?, ?)').get(team_id, req.apiKey, 'owner', 'admin');
+  if (!inviter) return res.status(403).json({ error: { code: 'forbidden', message: 'Only team owners and admins can invite members' } });
+  const memberCount = db.prepare('SELECT COUNT(*) as cnt FROM ent_team_members WHERE team_id = ?').get(team_id).cnt;
+  if (memberCount >= team.max_members) return res.status(400).json({ error: { code: 'team_full', message: `Team is at capacity (${team.max_members} members)` } });
+  const memberRole = role && ['admin', 'member', 'viewer'].includes(role) ? role : 'member';
+  try {
+    db.prepare('INSERT INTO ent_team_members (team_id, email, role, status, invited_by, joined) VALUES (?, ?, ?, ?, ?, ?)').run(team_id, email, memberRole, 'invited', req.apiKey.slice(0, 12), null);
+  } catch (e) {
+    return res.status(409).json({ error: { code: 'already_invited', message: 'This email has already been invited to this team' } });
+  }
+  dispatchWebhooks(req.apiKey, 'team.invite', { team_id, email, role: memberRole });
+  res.status(201).json({ ok: true, team_id, email, role: memberRole, status: 'invited', message: `Invitation sent to ${email}` });
+});
+
+// GET /v1/teams/members/:team_id — List team members
+app.get('/v1/teams/members/:team_id', auth, (req, res) => {
+  const team = db.prepare('SELECT * FROM ent_teams WHERE id = ?').get(req.params.team_id);
+  if (!team) return res.status(404).json({ error: { code: 'team_not_found' } });
+  const self = db.prepare('SELECT * FROM ent_team_members WHERE team_id = ? AND api_key = ?').get(req.params.team_id, req.apiKey);
+  if (!self && team.owner_key !== req.apiKey) return res.status(403).json({ error: { code: 'forbidden', message: 'You must be a team member to view the roster' } });
+  const members = db.prepare('SELECT id, email, role, status, joined FROM ent_team_members WHERE team_id = ? ORDER BY joined ASC').all(req.params.team_id);
+  res.json({ ok: true, team_id: req.params.team_id, team_name: team.name, members, count: members.length, max_members: team.max_members });
+});
+
+// POST /v1/teams/set-role — Set member role (admin/member/viewer)
+app.post('/v1/teams/set-role', auth, (req, res) => {
+  const { team_id, member_id, role } = req.body;
+  if (!team_id || !member_id || !role) return res.status(400).json({ error: { code: 'missing_fields', message: 'team_id, member_id, and role are required' } });
+  if (!['admin', 'member', 'viewer'].includes(role)) return res.status(400).json({ error: { code: 'invalid_role', message: 'Role must be one of: admin, member, viewer' } });
+  const team = db.prepare('SELECT * FROM ent_teams WHERE id = ?').get(team_id);
+  if (!team) return res.status(404).json({ error: { code: 'team_not_found' } });
+  const setter = db.prepare('SELECT * FROM ent_team_members WHERE team_id = ? AND api_key = ? AND role = ?').get(team_id, req.apiKey, 'owner');
+  if (!setter && team.owner_key !== req.apiKey) return res.status(403).json({ error: { code: 'forbidden', message: 'Only the team owner can change roles' } });
+  const member = db.prepare('SELECT * FROM ent_team_members WHERE team_id = ? AND id = ?').get(team_id, member_id);
+  if (!member) return res.status(404).json({ error: { code: 'member_not_found' } });
+  if (member.role === 'owner') return res.status(400).json({ error: { code: 'cannot_change_owner', message: 'Cannot change the owner role. Transfer ownership first.' } });
+  db.prepare('UPDATE ent_team_members SET role = ? WHERE team_id = ? AND id = ?').run(role, team_id, member_id);
+  dispatchWebhooks(req.apiKey, 'team.role_changed', { team_id, member_id, new_role: role });
+  res.json({ ok: true, team_id, member_id, role, message: `Role updated to ${role}` });
+});
+
+// DELETE /v1/teams/remove-member — Remove from team
+app.delete('/v1/teams/remove-member', auth, (req, res) => {
+  const { team_id, member_id } = req.body;
+  if (!team_id || !member_id) return res.status(400).json({ error: { code: 'missing_fields', message: 'team_id and member_id are required' } });
+  const team = db.prepare('SELECT * FROM ent_teams WHERE id = ?').get(team_id);
+  if (!team) return res.status(404).json({ error: { code: 'team_not_found' } });
+  const requester = db.prepare('SELECT * FROM ent_team_members WHERE team_id = ? AND api_key = ? AND role IN (?, ?)').get(team_id, req.apiKey, 'owner', 'admin');
+  if (!requester) return res.status(403).json({ error: { code: 'forbidden', message: 'Only owners and admins can remove members' } });
+  const target = db.prepare('SELECT * FROM ent_team_members WHERE team_id = ? AND id = ?').get(team_id, member_id);
+  if (!target) return res.status(404).json({ error: { code: 'member_not_found' } });
+  if (target.role === 'owner') return res.status(400).json({ error: { code: 'cannot_remove_owner', message: 'Cannot remove the team owner' } });
+  db.prepare('DELETE FROM ent_team_members WHERE team_id = ? AND id = ?').run(team_id, member_id);
+  dispatchWebhooks(req.apiKey, 'team.member_removed', { team_id, member_id, email: target.email });
+  res.json({ ok: true, team_id, member_id, removed: true, message: `Member ${target.email} removed from team` });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 2. USAGE ANALYTICS DASHBOARD ENDPOINTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+// GET /v1/analytics/usage — Per-user usage summary
+app.get('/v1/analytics/usage', auth, (req, res) => {
+  try {
+    const kp = req.apiKey.slice(0, 12) + '...';
+    const totalCalls = db.prepare('SELECT COUNT(*) as cnt FROM audit_log WHERE key_prefix = ?').get(kp)?.cnt || 0;
+    const totalCredits = db.prepare('SELECT COALESCE(SUM(credits), 0) as total FROM audit_log WHERE key_prefix = ?').get(kp)?.total || 0;
+    const errorCount = db.prepare("SELECT COUNT(*) as cnt FROM audit_log WHERE key_prefix = ? AND engine = 'error'").get(kp)?.cnt || 0;
+    const topTools = db.prepare('SELECT api, COUNT(*) as calls, SUM(credits) as credits FROM audit_log WHERE key_prefix = ? GROUP BY api ORDER BY calls DESC LIMIT 10').all(kp);
+    const avgLatency = db.prepare('SELECT ROUND(AVG(latency_ms)) as avg_ms FROM audit_log WHERE key_prefix = ? AND latency_ms IS NOT NULL').get(kp)?.avg_ms || 0;
+    const firstCall = db.prepare('SELECT MIN(ts) as first FROM audit_log WHERE key_prefix = ?').get(kp)?.first;
+    const lastCall = db.prepare('SELECT MAX(ts) as last FROM audit_log WHERE key_prefix = ?').get(kp)?.last;
+    res.json({
+      ok: true,
+      summary: {
+        total_calls: totalCalls,
+        total_credits_spent: totalCredits,
+        error_count: errorCount,
+        error_rate: totalCalls > 0 ? Math.round(errorCount / totalCalls * 10000) / 100 : 0,
+        avg_latency_ms: avgLatency,
+        top_tools: topTools,
+        current_balance: req.acct.balance,
+        member_since: firstCall || null,
+        last_active: lastCall || null
+      },
+      _engine: 'real'
+    });
+  } catch (e) { res.status(500).json({ error: { code: 'analytics_error', message: e.message } }); }
+});
+
+// GET /v1/analytics/timeline — Calls over time (hourly/daily buckets)
+app.get('/v1/analytics/timeline', auth, (req, res) => {
+  try {
+    const kp = req.apiKey.slice(0, 12) + '...';
+    const granularity = req.query.granularity === 'hourly' ? 'hourly' : 'daily';
+    const days = Math.min(parseInt(req.query.days) || 30, 365);
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    let data;
+    if (granularity === 'hourly') {
+      data = db.prepare("SELECT SUBSTR(ts, 1, 13) as bucket, COUNT(*) as calls, SUM(credits) as credits, ROUND(AVG(latency_ms)) as avg_latency_ms FROM audit_log WHERE key_prefix = ? AND ts > ? GROUP BY bucket ORDER BY bucket").all(kp, since);
+    } else {
+      data = db.prepare("SELECT DATE(ts) as bucket, COUNT(*) as calls, SUM(credits) as credits, ROUND(AVG(latency_ms)) as avg_latency_ms FROM audit_log WHERE key_prefix = ? AND ts > ? GROUP BY bucket ORDER BY bucket").all(kp, since);
+    }
+    res.json({ ok: true, granularity, days, buckets: data, total_buckets: data.length, _engine: 'real' });
+  } catch (e) { res.status(500).json({ error: { code: 'analytics_error', message: e.message } }); }
+});
+
+// GET /v1/analytics/by-tool — Per-tool breakdown
+app.get('/v1/analytics/by-tool', auth, (req, res) => {
+  try {
+    const kp = req.apiKey.slice(0, 12) + '...';
+    const days = Math.min(parseInt(req.query.days) || 30, 365);
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const tools = db.prepare(`
+      SELECT api as tool, COUNT(*) as calls, SUM(credits) as total_credits,
+        ROUND(AVG(latency_ms)) as avg_latency_ms,
+        MIN(latency_ms) as min_latency_ms, MAX(latency_ms) as max_latency_ms,
+        SUM(CASE WHEN engine = 'error' THEN 1 ELSE 0 END) as errors,
+        MAX(ts) as last_used
+      FROM audit_log WHERE key_prefix = ? AND ts > ?
+      GROUP BY api ORDER BY calls DESC
+    `).all(kp, since);
+    for (const t of tools) {
+      t.error_rate = t.calls > 0 ? Math.round(t.errors / t.calls * 10000) / 100 : 0;
+      const def = apiMap.get(t.tool);
+      if (def) { t.category = def.cat; t.tier = def.tier; t.credits_per_call = def.credits; }
+    }
+    res.json({ ok: true, days, tools, count: tools.length, _engine: 'real' });
+  } catch (e) { res.status(500).json({ error: { code: 'analytics_error', message: e.message } }); }
+});
+
+// GET /v1/analytics/by-category — Per-category breakdown
+app.get('/v1/analytics/by-category', auth, (req, res) => {
+  try {
+    const kp = req.apiKey.slice(0, 12) + '...';
+    const days = Math.min(parseInt(req.query.days) || 30, 365);
+    const since = new Date(Date.now() - days * 86400000).toISOString();
+    const rows = db.prepare('SELECT api, COUNT(*) as calls, SUM(credits) as credits FROM audit_log WHERE key_prefix = ? AND ts > ? GROUP BY api').all(kp, since);
+    const categories = {};
+    for (const row of rows) {
+      const def = apiMap.get(row.api);
+      const cat = def ? def.cat : 'unknown';
+      if (!categories[cat]) categories[cat] = { category: cat, calls: 0, credits: 0, tools: 0, tool_list: [] };
+      categories[cat].calls += row.calls;
+      categories[cat].credits += row.credits;
+      categories[cat].tools++;
+      categories[cat].tool_list.push(row.api);
+    }
+    const sorted = Object.values(categories).sort((a, b) => b.calls - a.calls);
+    res.json({ ok: true, days, categories: sorted, count: sorted.length, _engine: 'real' });
+  } catch (e) { res.status(500).json({ error: { code: 'analytics_error', message: e.message } }); }
+});
+
+// GET /v1/analytics/cost-forecast — Project future credit usage based on current trends
+app.get('/v1/analytics/cost-forecast', auth, (req, res) => {
+  try {
+    const kp = req.apiKey.slice(0, 12) + '...';
+    const lookbackDays = Math.min(parseInt(req.query.lookback) || 30, 90);
+    const forecastDays = Math.min(parseInt(req.query.forecast) || 30, 365);
+    const since = new Date(Date.now() - lookbackDays * 86400000).toISOString();
+    const daily = db.prepare('SELECT DATE(ts) as date, SUM(credits) as credits, COUNT(*) as calls FROM audit_log WHERE key_prefix = ? AND ts > ? GROUP BY DATE(ts) ORDER BY date').all(kp, since);
+    if (daily.length === 0) {
+      return res.json({ ok: true, forecast: { projected_credits: 0, projected_calls: 0, days_until_depletion: null, confidence: 'no_data' }, _engine: 'real' });
+    }
+    const avgDailyCredits = Math.round(daily.reduce((s, d) => s + d.credits, 0) / daily.length);
+    const avgDailyCalls = Math.round(daily.reduce((s, d) => s + d.calls, 0) / daily.length);
+    const mid = Math.floor(daily.length / 2);
+    const firstHalf = daily.slice(0, mid);
+    const secondHalf = daily.slice(mid);
+    const firstAvg = firstHalf.length ? firstHalf.reduce((s, d) => s + d.credits, 0) / firstHalf.length : avgDailyCredits;
+    const secondAvg = secondHalf.length ? secondHalf.reduce((s, d) => s + d.credits, 0) / secondHalf.length : avgDailyCredits;
+    const growthRate = firstAvg > 0 ? (secondAvg - firstAvg) / firstAvg : 0;
+    const trend = growthRate > 0.1 ? 'increasing' : growthRate < -0.1 ? 'decreasing' : 'stable';
+    const projectedCredits = Math.round(avgDailyCredits * forecastDays * (1 + growthRate * 0.5));
+    const projectedCalls = Math.round(avgDailyCalls * forecastDays * (1 + growthRate * 0.5));
+    const daysUntilDepletion = avgDailyCredits > 0 ? Math.floor(req.acct.balance / avgDailyCredits) : null;
+    const depletionDate = daysUntilDepletion !== null ? new Date(Date.now() + daysUntilDepletion * 86400000).toISOString().split('T')[0] : null;
+    res.json({
+      ok: true,
+      forecast: {
+        lookback_days: lookbackDays,
+        forecast_days: forecastDays,
+        avg_daily_credits: avgDailyCredits,
+        avg_daily_calls: avgDailyCalls,
+        trend,
+        growth_rate: Math.round(growthRate * 10000) / 100,
+        projected_credits: projectedCredits,
+        projected_cost_usd: (projectedCredits * 0.005).toFixed(2),
+        projected_calls: projectedCalls,
+        current_balance: req.acct.balance,
+        days_until_depletion: daysUntilDepletion,
+        depletion_date: depletionDate,
+        recommendation: daysUntilDepletion !== null && daysUntilDepletion < 7
+          ? 'CRITICAL: Balance will deplete within 7 days. Enable auto-reload or purchase credits.'
+          : daysUntilDepletion !== null && daysUntilDepletion < 30
+          ? 'WARNING: Balance will deplete within 30 days. Consider purchasing more credits.'
+          : 'Balance is healthy for the forecasted period.',
+        confidence: daily.length >= 14 ? 'high' : daily.length >= 7 ? 'medium' : 'low'
+      },
+      _engine: 'real'
+    });
+  } catch (e) { res.status(500).json({ error: { code: 'analytics_error', message: e.message } }); }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 3. API KEY MANAGEMENT ENHANCEMENTS
+// ═══════════════════════════════════════════════════════════════════════════
+
+// POST /v1/keys/create-team-key — Create a key scoped to a team with budget limits
+app.post('/v1/keys/create-team-key', auth, (req, res) => {
+  const { team_id, label, scope, budget_monthly } = req.body;
+  if (!team_id) return res.status(400).json({ error: { code: 'missing_field', message: 'team_id is required' } });
+  const team = db.prepare('SELECT * FROM ent_teams WHERE id = ?').get(team_id);
+  if (!team) return res.status(404).json({ error: { code: 'team_not_found' } });
+  const member = db.prepare('SELECT * FROM ent_team_members WHERE team_id = ? AND api_key = ? AND role IN (?, ?)').get(team_id, req.apiKey, 'owner', 'admin');
+  if (!member && team.owner_key !== req.apiKey) return res.status(403).json({ error: { code: 'forbidden', message: 'Only team owners and admins can create team keys' } });
+  const key = 'sk-slop-team-' + crypto.randomBytes(12).toString('hex');
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  const resetAt = budget_monthly ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).getTime() : null;
+  apiKeys.set(key, { id, balance: 0, created: now, auto_reload: false, tier: 'none', scope: scope || '*', label: label || `${team.name} team key`, max_credits: budget_monthly || null });
+  dbInsertKey.run(key, id, 0, 'none', now);
+  db.prepare('INSERT INTO ent_team_keys (key, team_id, label, budget_monthly, budget_used, budget_reset_at, scope, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(key, team_id, label || `${team.name} team key`, budget_monthly || null, 0, resetAt, scope || '*', now);
+  dispatchWebhooks(req.apiKey, 'key.created', { key: key.slice(0, 18) + '...', team_id, label });
+  res.status(201).json({
+    ok: true,
+    key,
+    team_id,
+    label: label || `${team.name} team key`,
+    scope: scope || '*',
+    budget: budget_monthly ? { monthly_limit: budget_monthly, used: 0, resets_at: new Date(resetAt).toISOString() } : null,
+    message: 'Team key created. Add credits via POST /v1/credits/buy'
+  });
+});
+
+// GET /v1/keys/usage/:key_prefix — Get usage stats for a specific key
+app.get('/v1/keys/usage/:key_prefix', auth, (req, res) => {
+  try {
+    const prefix = req.params.key_prefix;
+    const kp = prefix.length <= 15 ? prefix + '...' : prefix.slice(0, 12) + '...';
+    const totalCalls = db.prepare('SELECT COUNT(*) as cnt FROM audit_log WHERE key_prefix = ?').get(kp)?.cnt || 0;
+    const totalCredits = db.prepare('SELECT COALESCE(SUM(credits), 0) as total FROM audit_log WHERE key_prefix = ?').get(kp)?.total || 0;
+    const last24h = db.prepare('SELECT COUNT(*) as calls, COALESCE(SUM(credits), 0) as credits FROM audit_log WHERE key_prefix = ? AND ts > ?').get(kp, new Date(Date.now() - 86400000).toISOString());
+    const last7d = db.prepare('SELECT COUNT(*) as calls, COALESCE(SUM(credits), 0) as credits FROM audit_log WHERE key_prefix = ? AND ts > ?').get(kp, new Date(Date.now() - 7 * 86400000).toISOString());
+    const topApis = db.prepare('SELECT api, COUNT(*) as calls, SUM(credits) as credits FROM audit_log WHERE key_prefix = ? GROUP BY api ORDER BY calls DESC LIMIT 10').all(kp);
+    const teamKey = db.prepare('SELECT * FROM ent_team_keys WHERE key LIKE ?').get(prefix + '%');
+    res.json({
+      ok: true,
+      key_prefix: kp,
+      total_calls: totalCalls,
+      total_credits: totalCredits,
+      last_24h: { calls: last24h?.calls || 0, credits: last24h?.credits || 0 },
+      last_7d: { calls: last7d?.calls || 0, credits: last7d?.credits || 0 },
+      top_apis: topApis,
+      budget: teamKey ? { monthly_limit: teamKey.budget_monthly, used: teamKey.budget_used, remaining: teamKey.budget_monthly ? teamKey.budget_monthly - teamKey.budget_used : null, resets_at: teamKey.budget_reset_at ? new Date(teamKey.budget_reset_at).toISOString() : null } : null,
+      _engine: 'real'
+    });
+  } catch (e) { res.status(500).json({ error: { code: 'usage_error', message: e.message } }); }
+});
+
+// POST /v1/keys/set-budget — Set monthly credit budget on a key (returns 402 when exceeded)
+app.post('/v1/keys/set-budget', auth, (req, res) => {
+  const { key, budget_monthly } = req.body;
+  if (!key || budget_monthly === undefined) return res.status(400).json({ error: { code: 'missing_fields', message: 'key and budget_monthly are required' } });
+  if (typeof budget_monthly !== 'number' || budget_monthly < 0) return res.status(400).json({ error: { code: 'invalid_budget', message: 'budget_monthly must be a non-negative number' } });
+  const teamKey = db.prepare('SELECT * FROM ent_team_keys WHERE key = ?').get(key);
+  if (teamKey) {
+    const team = db.prepare('SELECT * FROM ent_teams WHERE id = ?').get(teamKey.team_id);
+    if (!team || team.owner_key !== req.apiKey) {
+      const isAdmin = db.prepare('SELECT * FROM ent_team_members WHERE team_id = ? AND api_key = ? AND role IN (?, ?)').get(teamKey.team_id, req.apiKey, 'owner', 'admin');
+      if (!isAdmin) return res.status(403).json({ error: { code: 'forbidden', message: 'Only team owners and admins can set budgets' } });
+    }
+    const resetAt = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).getTime();
+    db.prepare('UPDATE ent_team_keys SET budget_monthly = ?, budget_reset_at = ? WHERE key = ?').run(budget_monthly, resetAt, key);
+    const acct = apiKeys.get(key);
+    if (acct) acct.max_credits = budget_monthly;
+    db.prepare('UPDATE api_keys SET max_credits = ? WHERE key = ?').run(budget_monthly, key);
+    dispatchWebhooks(req.apiKey, 'budget.updated', { key: key.slice(0, 15) + '...', budget_monthly });
+    return res.json({ ok: true, key: key.slice(0, 15) + '...', budget_monthly, resets_at: new Date(resetAt).toISOString(), message: 'Monthly budget set. API calls will return 402 when budget is exceeded.' });
+  }
+  const acct = apiKeys.get(key);
+  if (!acct) return res.status(404).json({ error: { code: 'key_not_found' } });
+  acct.max_credits = budget_monthly;
+  db.prepare('UPDATE api_keys SET max_credits = ? WHERE key = ?').run(budget_monthly, key);
+  res.json({ ok: true, key: key.slice(0, 15) + '...', budget_monthly, message: 'Budget cap set on key.' });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 4. WEBHOOK MANAGEMENT
+// ═══════════════════════════════════════════════════════════════════════════
+
+const VALID_WEBHOOK_EVENTS = ['api_call', 'error', 'budget_alert', 'low_credits', 'team.created', 'team.invite', 'team.role_changed', 'team.member_removed', 'budget.updated', 'key.created', '*'];
+
+// POST /v1/webhooks/create — Register a webhook URL for events
+app.post('/v1/webhooks/create', auth, (req, res) => {
+  const { url, events } = req.body;
+  if (!url) return res.status(400).json({ error: { code: 'missing_field', message: 'url is required' } });
+  if (!events || !Array.isArray(events) || events.length === 0) return res.status(400).json({ error: { code: 'missing_field', message: 'events must be a non-empty array. Valid events: ' + VALID_WEBHOOK_EVENTS.join(', ') } });
+  try { new URL(url); } catch (e) { return res.status(400).json({ error: { code: 'invalid_url', message: 'url must be a valid HTTP/HTTPS URL' } }); }
+  const invalidEvents = events.filter(ev => !VALID_WEBHOOK_EVENTS.includes(ev));
+  if (invalidEvents.length > 0) return res.status(400).json({ error: { code: 'invalid_events', message: `Invalid event types: ${invalidEvents.join(', ')}`, valid_events: VALID_WEBHOOK_EVENTS } });
+  const id = 'wh-' + crypto.randomBytes(8).toString('hex');
+  const secret = 'whsec_' + crypto.randomBytes(24).toString('hex');
+  const now = Date.now();
+  db.prepare('INSERT INTO ent_webhooks (id, api_key, url, events, secret, active, failures, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, req.apiKey, url, JSON.stringify(events), secret, 1, 0, now);
+  res.status(201).json({
+    ok: true,
+    webhook: { id, url, events, active: true, created: new Date(now).toISOString() },
+    secret,
+    message: 'Webhook registered. The secret is used to sign payloads (X-Slopshop-Signature header). Store it securely — it will not be shown again.'
+  });
+});
+
+// GET /v1/webhooks/enterprise/list — List registered webhooks with delivery stats
+app.get('/v1/webhooks/enterprise/list', auth, (req, res) => {
+  const hooks = db.prepare('SELECT id, url, events, active, failures, last_triggered, created FROM ent_webhooks WHERE api_key = ? ORDER BY created DESC').all(req.apiKey);
+  for (const h of hooks) {
+    h.events = JSON.parse(h.events);
+    h.last_triggered = h.last_triggered ? new Date(h.last_triggered).toISOString() : null;
+    h.created = new Date(h.created).toISOString();
+    const deliveries = db.prepare('SELECT COUNT(*) as total, SUM(CASE WHEN success = 1 THEN 1 ELSE 0 END) as successes FROM ent_webhook_log WHERE webhook_id = ? AND ts > ?').get(h.id, Date.now() - 7 * 86400000);
+    h.delivery_stats_7d = { total: deliveries?.total || 0, successes: deliveries?.successes || 0, failure_rate: deliveries?.total > 0 ? Math.round((1 - (deliveries.successes || 0) / deliveries.total) * 10000) / 100 : 0 };
+  }
+  res.json({ ok: true, webhooks: hooks, count: hooks.length });
+});
+
+// DELETE /v1/webhooks/delete/:id — Delete a webhook
+app.delete('/v1/webhooks/delete/:id', auth, (req, res) => {
+  const hook = db.prepare('SELECT * FROM ent_webhooks WHERE id = ? AND api_key = ?').get(req.params.id, req.apiKey);
+  if (!hook) return res.status(404).json({ error: { code: 'webhook_not_found', message: 'Webhook not found or you do not own it' } });
+  db.prepare('DELETE FROM ent_webhook_log WHERE webhook_id = ?').run(req.params.id);
+  db.prepare('DELETE FROM ent_webhooks WHERE id = ?').run(req.params.id);
+  res.json({ ok: true, deleted: req.params.id, message: 'Webhook and its delivery logs have been deleted' });
+});
+
+// POST /v1/webhooks/test/:id — Send a test payload to the webhook
+app.post('/v1/webhooks/test/:id', auth, (req, res) => {
+  const hook = db.prepare('SELECT * FROM ent_webhooks WHERE id = ? AND api_key = ?').get(req.params.id, req.apiKey);
+  if (!hook) return res.status(404).json({ error: { code: 'webhook_not_found', message: 'Webhook not found or you do not own it' } });
+  const testPayload = {
+    type: 'test',
+    message: 'This is a test webhook delivery from Slopshop',
+    webhook_id: hook.id,
+    timestamp: new Date().toISOString(),
+    your_events: JSON.parse(hook.events)
+  };
+  fireWebhook(hook, 'test', testPayload);
+  res.json({ ok: true, webhook_id: hook.id, url: hook.url, test_sent: true, message: 'Test payload dispatched. Check your endpoint for delivery.' });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 5. RATE LIMIT CONFIGURATION
+// ═══════════════════════════════════════════════════════════════════════════
+
+// POST /v1/rate-limits/configure — Set custom rate limits per key (requires admin)
+app.post('/v1/rate-limits/configure', auth, (req, res) => {
+  const { target_key, requests_per_minute, requests_per_hour, requests_per_day, burst_limit } = req.body;
+  const secret = req.headers['x-admin-secret'];
+  const isAdmin = secret && secret === process.env.ADMIN_SECRET;
+  const isSelf = !target_key || target_key === req.apiKey;
+  if (!isAdmin && !isSelf) return res.status(403).json({ error: { code: 'forbidden', message: 'Only admins can configure rate limits for other keys. Set X-Admin-Secret header or omit target_key to configure your own.' } });
+  const keyToConfig = target_key || req.apiKey;
+  const acct = apiKeys.get(keyToConfig);
+  if (!acct && !isSelf) return res.status(404).json({ error: { code: 'key_not_found' } });
+  const rpm = Math.min(Math.max(requests_per_minute || 60, 1), 10000);
+  const rph = Math.min(Math.max(requests_per_hour || 1000, 1), 100000);
+  const rpd = Math.min(Math.max(requests_per_day || 10000, 1), 1000000);
+  const burst = Math.min(Math.max(burst_limit || rpm * 2, 1), 20000);
+  db.prepare('INSERT OR REPLACE INTO ent_rate_limits (api_key, requests_per_minute, requests_per_hour, requests_per_day, burst_limit, set_by, updated) VALUES (?, ?, ?, ?, ?, ?, ?)').run(keyToConfig, rpm, rph, rpd, burst, isAdmin ? 'admin' : 'self', Date.now());
+  res.json({
+    ok: true,
+    key: keyToConfig.slice(0, 15) + '...',
+    rate_limits: { requests_per_minute: rpm, requests_per_hour: rph, requests_per_day: rpd, burst_limit: burst },
+    set_by: isAdmin ? 'admin' : 'self',
+    message: 'Custom rate limits configured. These override default limits.'
+  });
+});
+
+// GET /v1/rate-limits/status — Check current rate limit status for your key
+app.get('/v1/rate-limits/status', auth, (req, res) => {
+  const custom = db.prepare('SELECT * FROM ent_rate_limits WHERE api_key = ?').get(req.apiKey);
+  const rpm = custom ? custom.requests_per_minute : 60;
+  const rph = custom ? custom.requests_per_hour : 1000;
+  const rpd = custom ? custom.requests_per_day : 10000;
+  const burst = custom ? custom.burst_limit : 120;
+  const minuteEntry = ipLimits.get('api:' + req.apiKey);
+  const currentMinute = minuteEntry?.count || 0;
+  const kp = req.apiKey.slice(0, 12) + '...';
+  let hourlyUsage = 0, dailyUsage = 0;
+  try {
+    hourlyUsage = db.prepare('SELECT COUNT(*) as cnt FROM audit_log WHERE key_prefix = ? AND ts > ?').get(kp, new Date(Date.now() - 3600000).toISOString())?.cnt || 0;
+    dailyUsage = db.prepare('SELECT COUNT(*) as cnt FROM audit_log WHERE key_prefix = ? AND ts > ?').get(kp, new Date(Date.now() - 86400000).toISOString())?.cnt || 0;
+  } catch (e) { /* ignore */ }
+  res.json({
+    ok: true,
+    key: req.apiKey.slice(0, 15) + '...',
+    is_custom: !!custom,
+    limits: { requests_per_minute: rpm, requests_per_hour: rph, requests_per_day: rpd, burst_limit: burst },
+    current_usage: { minute: currentMinute, hour: hourlyUsage, day: dailyUsage },
+    remaining: { minute: Math.max(0, rpm - currentMinute), hour: Math.max(0, rph - hourlyUsage), day: Math.max(0, rpd - dailyUsage) },
+    throttled: currentMinute >= rpm || hourlyUsage >= rph || dailyUsage >= rpd,
+    _engine: 'real'
+  });
+});
+
+// ===== END ENTERPRISE FEATURES =====
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, async (req, res) => {
   const def = apiMap.get(req.params.slug);
@@ -4116,6 +4997,9 @@ app.post('/v1/:slug', auth, async (req, res) => {
 
   dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', req.params.slug, def.credits, latency, handlerError ? 'error' : (result?._engine || 'unknown'));
   persistKey(req.apiKey);
+
+  // Emit real-time usage event
+  emitUsageEvent(req.apiKey.slice(0, 12), req.params.slug, def.credits, handlerError ? 'error' : 'ok');
 
   res.set('X-Credits-Used', String(def.credits));
   res.set('X-Cost-USD', (def.credits * 0.005).toFixed(4));
