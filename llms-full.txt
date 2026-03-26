@@ -1,4 +1,4 @@
-# Slopshop.gg — Complete API Catalog (1,152 tools)
+# Slopshop.gg — Complete API Catalog (1,244 tools)
 > Base URL: https://slopshop.gg/v1/{slug}
 > Auth: Bearer token | Demo key: sk-slop-demo-key-12345678
 

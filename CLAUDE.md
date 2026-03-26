@@ -1,6 +1,6 @@
 # Slopshop Development Guide
 
-This project is Slopshop - an API platform with 1,152 real tools across 258 endpoints.
+This project is Slopshop - an API platform with 1,244 real tools across 287 endpoints.
 
 ## Running the server
 

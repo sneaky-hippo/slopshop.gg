@@ -6,22 +6,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <title>Slopshop + LangChain Integration — LangChain Tools for AI Agents</title>
-<meta name="description" content="Wrap all 1,152 Slopshop tools as LangChain Tool objects. Use in LangGraph agents, LCEL chains, and AgentExecutor. No custom code needed.">
+<meta name="description" content="Wrap all 1,244 Slopshop tools as LangChain Tool objects. Use in LangGraph agents, LCEL chains, and AgentExecutor. No custom code needed.">
 <meta name="keywords" content="langchain tools, langgraph tools, langchain agent, pre-built langchain tools, agent executor tools">
 <link rel="canonical" href="https://slopshop.gg/integrate-langchain">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/integrate-langchain">
 <meta property="og:title" content="Slopshop + LangChain Integration — LangChain Tools for AI Agents">
-<meta property="og:description" content="Wrap all 1,152 Slopshop tools as LangChain Tool objects. Use in LangGraph agents, LCEL chains, and AgentExecutor. No custom code needed.">
+<meta property="og:description" content="Wrap all 1,244 Slopshop tools as LangChain Tool objects. Use in LangGraph agents, LCEL chains, and AgentExecutor. No custom code needed.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="Slopshop + LangChain — LangChain Tools for AI Agents">
-<meta name="twitter:description" content="Wrap all 1,152 Slopshop tools as LangChain Tool objects. Use in LangGraph agents, LCEL chains, and AgentExecutor. No custom code needed.">
+<meta name="twitter:description" content="Wrap all 1,244 Slopshop tools as LangChain Tool objects. Use in LangGraph agents, LCEL chains, and AgentExecutor. No custom code needed.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
 <meta name="theme-color" content="#ff3333">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop + LangChain Integration","description":"How to wrap 1,152 real Slopshop APIs as LangChain StructuredTools. Build agents with production-grade compute, free memory, and pipes.","url":"https://slopshop.gg/integrate-langchain","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop + LangChain Integration","description":"How to wrap 1,244 real Slopshop APIs as LangChain StructuredTools. Build agents with production-grade compute, free memory, and pipes.","url":"https://slopshop.gg/integrate-langchain","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -171,12 +171,12 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
     </div>
     <h1>Slopshop for<br><span class="accent">LangChain</span> <span class="dim">&</span> LangGraph</h1>
     <p class="sub">
-      <b>1,152 pre-built tools. No custom implementations needed.</b><br>
+      <b>1,244 pre-built tools. No custom implementations needed.</b><br>
       Wrap them as LangChain <code style="color:var(--lc2);font-size:0.9em">Tool</code> objects, pipe them through LCEL chains, or drop them straight into your <code style="color:var(--lc2);font-size:0.9em">LangGraph</code> agent nodes.
     </p>
 
     <div class="stats">
-      <div class="stat"><div class="n">1,152</div><div class="l">Tool Objects</div></div>
+      <div class="stat"><div class="n">1,244</div><div class="l">Tool Objects</div></div>
       <div class="stat"><div class="n">LCEL</div><div class="l">Chain Ready</div></div>
       <div class="stat"><div class="n">0cr</div><div class="l">Memory Cost</div></div>
       <div class="stat"><div class="n">Auto</div><div class="l">From OpenAPI</div></div>
@@ -194,8 +194,8 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
 <!-- QUICKSTART -->
 <section class="sec">
   <div class="sec-label">Quickstart</div>
-  <h2>Three steps. 1,152 tools in your chain.</h2>
-  <p class="desc">Stop writing <code style="color:var(--lc2);font-size:0.85rem">@tool</code> decorators for DNS lookups and SSL checks. Load all 1,152 Slopshop tools as proper LangChain <code style="color:var(--lc2);font-size:0.85rem">StructuredTool</code> objects in one call.</p>
+  <h2>Three steps. 1,244 tools in your chain.</h2>
+  <p class="desc">Stop writing <code style="color:var(--lc2);font-size:0.85rem">@tool</code> decorators for DNS lookups and SSL checks. Load all 1,244 Slopshop tools as proper LangChain <code style="color:var(--lc2);font-size:0.85rem">StructuredTool</code> objects in one call.</p>
 
   <div class="steps">
     <div class="step">
@@ -207,7 +207,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
     <div class="step">
       <div class="step-num">Step 02 &mdash; Load Tools</div>
       <h3>load_slopshop_tools()</h3>
-      <p>One function call loads any combination of the 1,152 tools as LangChain-compatible <code style="color:var(--o);font-size:0.8em">StructuredTool</code> objects. Or auto-generate all 1,152 from the OpenAPI spec.</p>
+      <p>One function call loads any combination of the 1,244 tools as LangChain-compatible <code style="color:var(--o);font-size:0.8em">StructuredTool</code> objects. Or auto-generate all 1,244 from the OpenAPI spec.</p>
       <div class="cmd" style="color:var(--lc2);font-size:0.7rem">tools = load_slopshop_tools(SLOP_KEY, slugs=[...])</div>
     </div>
     <div class="step">
@@ -455,8 +455,8 @@ pipe_result = requests.<span style="color:var(--c)">post</span>(
   <div class="get-grid">
     <div class="get-card">
       <div class="icon">&#9889;</div>
-      <h3>1,152 StructuredTools</h3>
-      <p>1,152 pre-built tools ready as LangChain <code style="color:var(--lc2);font-size:0.78rem">StructuredTool</code> objects. Pydantic schemas auto-generated from the OpenAPI spec. Drop into any agent.</p>
+      <h3>1,244 StructuredTools</h3>
+      <p>1,244 pre-built tools ready as LangChain <code style="color:var(--lc2);font-size:0.78rem">StructuredTool</code> objects. Pydantic schemas auto-generated from the OpenAPI spec. Drop into any agent.</p>
     </div>
     <div class="get-card">
       <div class="icon">&#128279;</div>
@@ -471,7 +471,7 @@ pipe_result = requests.<span style="color:var(--c)">post</span>(
     <div class="get-card">
       <div class="icon">&#128200;</div>
       <h3>Auto-Generate from OpenAPI</h3>
-      <p><a href="/v1/openapi.json" style="color:var(--lc2)">/v1/openapi.json</a> gives you a complete spec. Auto-generate all 1,152 tool definitions without hand-writing a single schema.</p>
+      <p><a href="/v1/openapi.json" style="color:var(--lc2)">/v1/openapi.json</a> gives you a complete spec. Auto-generate all 1,244 tool definitions without hand-writing a single schema.</p>
     </div>
     <div class="get-card">
       <div class="icon">&#127968;</div>
@@ -486,11 +486,11 @@ pipe_result = requests.<span style="color:var(--c)">post</span>(
 <section class="sec" style="padding-top:64px">
   <div class="cta-banner">
     <h2>Replace custom tools with <span class="accent">production-grade APIs</span></h2>
-    <p>1,152 pre-built tools. No custom implementations. Auto-generated schemas from <code style="font-family:var(--mono);font-size:0.85em">/v1/openapi.json</code>.<br>Stop reinventing tool wrappers. Start building agents.</p>
+    <p>1,244 pre-built tools. No custom implementations. Auto-generated schemas from <code style="font-family:var(--mono);font-size:0.85em">/v1/openapi.json</code>.<br>Stop reinventing tool wrappers. Start building agents.</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <a href="/docs" class="cta-primary">Read the Docs</a>
       <a href="/v1/openapi.json" class="cta-secondary">Download openapi.json</a>
-      <a href="/tools" class="cta-secondary">Browse All 1,152 Tools</a>
+      <a href="/tools" class="cta-secondary">Browse All 1,244 Tools</a>
     </div>
   </div>
 
@@ -531,7 +531,7 @@ pipe_result = requests.<span style="color:var(--c)">post</span>(
         <a href="https://x.com/slopshopgg">@slopshopgg</a>
       </div>
     </div>
-    <div class="footer-copy">The tool layer for AI agents &middot; 1,152 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,244 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
   </div>
 </footer>
 

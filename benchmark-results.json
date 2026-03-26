@@ -1,7 +1,7 @@
 {
   "timestamp": "2026-03-26T18:53:36.672Z",
-  "totalHandlers": 727,
-  "passed": 727,
+  "totalHandlers": 927,
+  "passed": 927,
   "failed": 0,
   "asyncHandlers": 10,
   "totalTimeMs": 7687,

@@ -3768,7 +3768,7 @@ module.exports = {
       const sample = {};
       for (const [k, v] of Object.entries(model.variables)) { sample[k] = v.min + Math.random() * (v.max - v.min); }
       if (model.formula) {
-        try { sample._result = eval(model.formula.replace(/\b(\w+)\b/g, (m) => sample[m] !== undefined ? sample[m] : m)); } catch (e) {}
+        try { const expr = model.formula.replace(/\b(\w+)\b/g, (m) => sample[m] !== undefined ? sample[m] : m); sample._result = new Function('return (' + expr + ')')(); } catch (e) {}
       }
       results.push(sample);
     }

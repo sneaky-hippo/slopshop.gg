@@ -1,17 +1,17 @@
 # 🦞 SLOPSHOP.GG
 
-**1,149 real tools. Zero mocks. Credit-based. Self-hostable.**
+**1,244 real tools. Zero mocks. Credit-based. Self-hostable.**
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tools](https://img.shields.io/badge/Tools-1149-brightgreen)](https://slopshop.gg)
+[![Tools](https://img.shields.io/badge/Tools-1244-brightgreen)](https://slopshop.gg)
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-purple)](https://modelcontextprotocol.io)
 
 ---
 
 ## What is Slopshop?
 
-Slopshop is a self-hostable API platform with 1,149 production-grade tools — text processing, cryptography, date math, data transforms, network/DNS tools, and LLM-powered AI utilities — all behind a single credit-based key. Every endpoint runs real computation against your input: no mocks, no canned responses, no `Math.random()` masquerading as a hash. You can see proof in every response with `_engine: "real"`.
+Slopshop is a self-hostable API platform with 1,244 production-grade tools — text processing, cryptography, date math, data transforms, network/DNS tools, and LLM-powered AI utilities — all behind a single credit-based key. Every endpoint runs real computation against your input: no mocks, no canned responses, no `Math.random()` masquerading as a hash. You can see proof in every response with `_engine: "real"`.
 
 The key differentiator: **every API actually computes from your input.** Send the same string twice and get the same hash. Send a real domain and get its live DNS records. Send actual code and get a real review. `_engine: "real"` appears in every response as a guarantee.
 
@@ -38,7 +38,7 @@ Expected output:
 
 ## API Catalog
 
-1,149 APIs across 63 categories. Every one ships a real handler.
+1,244 APIs across 78 categories. Every one ships a real handler.
 
 ---
 
@@ -507,7 +507,7 @@ print(balance['balance'])  # 9998
 
 ## MCP Integration
 
-Slopshop ships an MCP (Model Context Protocol) server that exposes all 1,149 APIs as native tools inside Claude Code, Cursor, and any MCP-compatible client. Claude can call `slop-crypto-hash-sha256`, `slop-llm-summarize`, etc. as first-class tools.
+Slopshop ships an MCP (Model Context Protocol) server that exposes all 1,244 APIs as native tools inside Claude Code, Cursor, and any MCP-compatible client. Claude can call `slop-crypto-hash-sha256`, `slop-llm-summarize`, etc. as first-class tools.
 
 ### Add to Claude Code
 
@@ -556,7 +556,7 @@ SLOPSHOP_KEY=sk-slop-your-key node mcp-server.js
 
 ## Zapier
 
-Slopshop integrates natively with Zapier. All 1,149 APIs are available as Zapier actions.
+Slopshop integrates natively with Zapier. All 1,244 APIs are available as Zapier actions.
 
 ### Setup
 
@@ -623,7 +623,7 @@ Response:
 |----------|--------|-------------|
 | `/zapier/app.json` | GET | Full Zapier app definition |
 | `/zapier/auth/test` | GET | Test authentication |
-| `/zapier/actions` | GET | List all 1,149 actions |
+| `/zapier/actions` | GET | List all 1,244 actions |
 | `/zapier/call/:slug` | POST | Call any API (Zapier-friendly flat I/O) |
 | `/zapier/webhook` | POST | Receive and process webhook from Zapier |
 | `/zapier/subscribe` | POST | Register webhook subscription |
@@ -710,7 +710,7 @@ curl http://localhost:3000/v1/health
 ```json
 {
   "status": "operational",
-  "apis_loaded": 1149,
+  "apis_loaded": 1244,
   "uptime_seconds": 42,
   "version": "2.0.0"
 }
@@ -727,7 +727,7 @@ All endpoints are under `/v1/`. Authentication via `Authorization: Bearer <key>`
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/v1/health` | GET | No | Server health, API count, uptime, version |
-| `/v1/tools` | GET | No | List all 1,149 APIs with metadata. Supports `?category=` and `?format=native` |
+| `/v1/tools` | GET | No | List all 1,244 APIs with metadata. Supports `?category=` and `?format=native` |
 | `/v1/resolve` | POST | No | Semantic search: `{ "query": "hash a string" }` → best matching API slug |
 | `/v1/:slug` | POST | Yes | Call any API by slug |
 | `/v1/batch` | POST | Yes | Call multiple APIs in one request: `{ "calls": [{ "api": "slug", "input": {} }] }` |
@@ -803,7 +803,7 @@ Every response includes metadata fields:
 
 ```
 server-v2.js          Express server, auth middleware, routing
-  └── registry.js     Source of truth: all 1,149 API definitions
+  └── registry.js     Source of truth: all 1,244 API definitions
   └── handlers/
         compute.js    Pure compute: hashes, text, math, dates, codegen
         llm.js        LLM calls: Claude/GPT content, analysis, code, business

@@ -6,18 +6,18 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <title>Slopshop + AutoGen Integration — AutoGen Tools for AI Agents</title>
-<meta name="description" content="Connect 1,152 real tools to Microsoft AutoGen agents via function_map. Register as callable Python functions in AssistantAgent and UserProxyAgent.">
+<meta name="description" content="Connect 1,244 real tools to Microsoft AutoGen agents via function_map. Register as callable Python functions in AssistantAgent and UserProxyAgent.">
 <meta name="keywords" content="autogen tools, microsoft autogen, autogen function_map, autogen agent tools, autogen integration">
 <link rel="canonical" href="https://slopshop.gg/integrate-autogen">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/integrate-autogen">
 <meta property="og:title" content="Slopshop + AutoGen Integration — AutoGen Tools for AI Agents">
-<meta property="og:description" content="Connect 1,152 real tools to Microsoft AutoGen agents via function_map. Register as callable Python functions in AssistantAgent and UserProxyAgent.">
+<meta property="og:description" content="Connect 1,244 real tools to Microsoft AutoGen agents via function_map. Register as callable Python functions in AssistantAgent and UserProxyAgent.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="Slopshop + AutoGen — AutoGen Tools for AI Agents">
-<meta name="twitter:description" content="Connect 1,152 real tools to Microsoft AutoGen agents via function_map. Register as callable Python functions in AssistantAgent and UserProxy">
+<meta name="twitter:description" content="Connect 1,244 real tools to Microsoft AutoGen agents via function_map. Register as callable Python functions in AssistantAgent and UserProxy">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
 <meta name="theme-color" content="#0078D4">
@@ -132,7 +132,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
     </div>
     <h1>Slopshop for<br>Microsoft <span class="accent">AutoGen</span></h1>
     <p class="sub">
-      Register Slopshop endpoints in AutoGen's <b>function_map</b>. Your <b>AssistantAgent</b> declares the functions, your <b>UserProxyAgent</b> executes them via Slopshop. <b>1,152 real tools</b> available to every agent in the conversation.<br>
+      Register Slopshop endpoints in AutoGen's <b>function_map</b>. Your <b>AssistantAgent</b> declares the functions, your <b>UserProxyAgent</b> executes them via Slopshop. <b>1,244 real tools</b> available to every agent in the conversation.<br>
       Free persistent memory. Every result verified.
     </p>
 
@@ -174,7 +174,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
       <div class="step-num">Step 03 &mdash; Wire Agents</div>
       <h3>AssistantAgent + UserProxyAgent</h3>
       <p>The AssistantAgent gets tool schemas in <code style="color:var(--acc)">llm_config["functions"]</code>. The UserProxyAgent gets the function_map to execute them when called.</p>
-      <div class="cmd" style="color:var(--g);font-size:0.7rem">1,152 tools &middot; function_map &middot; real execution</div>
+      <div class="cmd" style="color:var(--g);font-size:0.7rem">1,244 tools &middot; function_map &middot; real execution</div>
     </div>
   </div>
 </section>
@@ -273,10 +273,10 @@ user_proxy.<span class="fn">initiate_chat</span>(
 <section class="sec" style="padding-top:64px">
   <div class="sec-label">What You Get</div>
   <h2>Real execution for every AutoGen function call</h2>
-  <p class="desc">AutoGen coordinates multi-agent conversations. Slopshop provides the execution substrate — 1,152 real tools that never hallucinate their results.</p>
+  <p class="desc">AutoGen coordinates multi-agent conversations. Slopshop provides the execution substrate — 1,244 real tools that never hallucinate their results.</p>
 
   <div class="get-grid">
-    <div class="get-card"><div class="icon">&#127381;</div><h3>1,152 Real Tools</h3><p>DNS, SSL, HTTP, crypto, hashing, code execution, data transforms. Register any subset in your function_map. All results verified.</p></div>
+    <div class="get-card"><div class="icon">&#127381;</div><h3>1,244 Real Tools</h3><p>DNS, SSL, HTTP, crypto, hashing, code execution, data transforms. Register any subset in your function_map. All results verified.</p></div>
     <div class="get-card"><div class="icon">&#129504;</div><h3>Free Persistent Memory</h3><p>AutoGen agents can write to and read from Slopshop's key-value store at zero credit cost. Share state across agent turns without a database.</p></div>
     <div class="get-card"><div class="icon">&#128279;</div><h3>function_map Pattern</h3><p>Each Slopshop endpoint maps to a single Python callable. Clean separation between the LLM deciding what to call and Slopshop executing it.</p></div>
     <div class="get-card"><div class="icon">&#128064;</div><h3>Full Observability</h3><p>Audit logs per tool call. See every function the AssistantAgent requested, with Slopshop's real response — not simulated output.</p></div>
@@ -288,12 +288,12 @@ user_proxy.<span class="fn">initiate_chat</span>(
 
 <section class="sec" style="padding-top:64px">
   <div class="cta-banner">
-    <h2>Give AutoGen <span class="accent">1,152 real tools</span></h2>
-    <p>function_map + Slopshop. AssistantAgent decides. UserProxyAgent executes.<br>1,152 real tools. Free memory. Every result verified.</p>
+    <h2>Give AutoGen <span class="accent">1,244 real tools</span></h2>
+    <p>function_map + Slopshop. AssistantAgent decides. UserProxyAgent executes.<br>1,244 real tools. Free memory. Every result verified.</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <a href="/docs" class="cta-primary">Get Started Free</a>
       <a href="/v1/openapi.json" class="cta-secondary">OpenAPI Schema</a>
-      <a href="/tools" class="cta-secondary">Browse All 1,152 Tools</a>
+      <a href="/tools" class="cta-secondary">Browse All 1,244 Tools</a>
     </div>
   </div>
   <div style="display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:32px">
@@ -315,7 +315,7 @@ user_proxy.<span class="fn">initiate_chat</span>(
       <div class="footer-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/docs#getting-started">Getting Started</a><a href="/security">Security</a><a href="/changelog">Changelog</a></div>
       <div class="footer-col"><h4>Company</h4><a href="/about">About</a><a href="/status">Status</a><a href="/legal">Legal</a><a href="https://x.com/slopshopgg">@slopshopgg</a></div>
     </div>
-    <div class="footer-copy">The tool layer for AI agents &middot; 1,152 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,244 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
   </div>
 </footer>
 

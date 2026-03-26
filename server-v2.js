@@ -162,7 +162,7 @@ if (missing.length > 0) {
 const demoExists = db.prepare('SELECT key FROM api_keys WHERE key = ?').get('sk-slop-demo-key-12345678');
 if (!demoExists) {
   db.prepare('INSERT INTO api_keys (key, id, balance, tier, created) VALUES (?, ?, ?, ?, ?)').run(
-    'sk-slop-demo-key-12345678', 'demo', 200, 'reef-boss', Date.now()
+    'sk-slop-demo-key-12345678', 'demo', 200, 'baby-lobster', Date.now()
   );
 }
 
@@ -257,6 +257,15 @@ function publicRateLimit(req, res, next) {
 }
 
 // ===== STATIC =====
+// Block access to sensitive files before serving static content
+app.use((req, res, next) => {
+  const blocked = ['/server-v2.js', '/registry.js', '/registry-expansion.js', '/registry-hackathon.js', '/schemas.js', '/auth.js', '/agent.js', '/pipes.js', '/zapier.js', '/stripe.js', '/polar.js', '/benchmark.js', '/audit.js', '/package.json', '/package-lock.json', '/.env', '/.git', '/.data', '/node_modules', '/handlers/', '/sdk/', '/CLAUDE.md', '/Procfile', '/vercel.json', '/cli.js', '/mcp-server.js', '/setup-mcp.js'];
+  const lower = req.path.toLowerCase();
+  if (blocked.some(b => lower.startsWith(b)) || lower.includes('..')) {
+    return res.status(404).send('Not found');
+  }
+  next();
+});
 app.use(express.static(path.join(__dirname)));
 
 // Agent discovery: /.well-known/ai-tools.json (like robots.txt for agents)
@@ -504,10 +513,16 @@ app.post('/v1/credits/transfer', auth, (req, res) => {
   });
 });
 
+// Timing-safe comparison for admin secrets
+const secretMatch = (a, b) => {
+  if (!a || !b) return false;
+  try { return crypto.timingSafeEqual(Buffer.from(String(a)), Buffer.from(String(b))); } catch(e) { return false; }
+};
+
 // Admin: manually add credits to any user (protected by ADMIN_SECRET)
 app.post('/v1/admin/add-credits', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env.ADMIN_SECRET) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
   const { api_key, amount } = req.body;
   const acct = apiKeys.get(api_key);
   if (!acct) return res.status(404).json({ error: { code: 'key_not_found' } });
@@ -522,7 +537,7 @@ app.post('/v1/admin/add-credits', (req, res) => {
 // Admin: generate redeemable credit codes
 app.post('/v1/admin/create-code', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (secret !== process.env.ADMIN_SECRET) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
   db.exec(`CREATE TABLE IF NOT EXISTS credit_codes (
     code TEXT PRIMARY KEY,
     credits INTEGER NOT NULL,
@@ -541,7 +556,7 @@ app.post('/v1/admin/create-code', (req, res) => {
 // Admin: batch create codes
 app.post('/v1/admin/create-codes', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (secret !== process.env.ADMIN_SECRET) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
   db.exec(`CREATE TABLE IF NOT EXISTS credit_codes (
     code TEXT PRIMARY KEY, credits INTEGER NOT NULL, tier TEXT,
     redeemed_by TEXT DEFAULT NULL, created INTEGER NOT NULL, redeemed_at INTEGER DEFAULT NULL
@@ -580,7 +595,7 @@ app.post('/v1/credits/redeem', auth, (req, res) => {
 // Admin: list all users
 app.get('/v1/admin/users', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (secret !== process.env.ADMIN_SECRET) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
   const users = db.prepare('SELECT email, api_key, created FROM users ORDER BY created DESC LIMIT 500').all();
   const keys = db.prepare('SELECT key, balance, tier FROM api_keys ORDER BY balance DESC LIMIT 500').all();
   res.json({ users: users.length, keys: keys.length, recent_users: users, top_keys: keys });
@@ -589,7 +604,7 @@ app.get('/v1/admin/users', (req, res) => {
 // Admin: export mailing list (all emails: users + waitlist)
 app.get('/v1/admin/mailing-list', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (secret !== process.env.ADMIN_SECRET) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
   const userEmails = db.prepare('SELECT email, created FROM users ORDER BY created DESC').all();
   const waitlistEmails = db.prepare('SELECT email, created FROM waitlist ORDER BY created DESC').all();
   const allEmails = new Set();
@@ -603,7 +618,7 @@ app.get('/v1/admin/mailing-list', (req, res) => {
 // Admin: dashboard stats
 app.get('/v1/admin/stats', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (secret !== process.env.ADMIN_SECRET) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
   const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
   const waitlistCount = db.prepare('SELECT COUNT(*) as c FROM waitlist').get().c;
   const keyCount = db.prepare('SELECT COUNT(*) as c FROM api_keys').get().c;
@@ -4988,6 +5003,12 @@ app.post('/v1/:slug', auth, async (req, res) => {
     }
   }
 
+  // Scope memory namespaces to API key to prevent cross-key access
+  if (req.params.slug.startsWith('memory-') && body.namespace) {
+    const keyPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 8);
+    body.namespace = keyPrefix + ':' + body.namespace;
+  }
+
   req.acct.balance -= def.credits;
   const start = Date.now();
   let result, handlerError = false;
@@ -5097,7 +5118,7 @@ app.post('/v1/:slug', auth, async (req, res) => {
 
 // ===== START =====
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   const llm = process.env.ANTHROPIC_API_KEY ? 'Anthropic' : process.env.OPENAI_API_KEY ? 'OpenAI' : 'NONE';
   console.log(`\n  🦞 SLOPSHOP v2 is live on http://localhost:${PORT}`);
   console.log(`  📡 ${apiCount} APIs, ${handlerCount} handlers, 0 mocks`);
@@ -5105,3 +5126,15 @@ app.listen(PORT, () => {
   console.log(`  🤖 LLM: ${llm}${llm === 'NONE' ? ' (set ANTHROPIC_API_KEY to unlock 48 AI APIs)' : ''}`);
   console.log(`  🌐 http://localhost:${PORT}/index.html\n`);
 });
+
+function gracefulShutdown(signal) {
+  console.log(`\n${signal} received. Shutting down gracefully...`);
+  server.close(() => {
+    console.log('HTTP server closed.');
+    try { db.close(); console.log('Database closed.'); } catch(e) {}
+    process.exit(0);
+  });
+  setTimeout(() => { console.error('Forced shutdown after timeout'); process.exit(1); }, 10000);
+}
+process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
+process.on('SIGINT', () => gracefulShutdown('SIGINT'));

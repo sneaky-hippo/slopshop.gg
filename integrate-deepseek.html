@@ -6,22 +6,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <title>Slopshop + DeepSeek Integration — DeepSeek Tools for AI Agents</title>
-<meta name="description" content="Connect 1,152 real tools to DeepSeek agents via function_calling. OpenAI-compatible API. Drop in Slopshop tools with the openai SDK.">
+<meta name="description" content="Connect 1,244 real tools to DeepSeek agents via function_calling. OpenAI-compatible API. Drop in Slopshop tools with the openai SDK.">
 <meta name="keywords" content="deepseek tools, deepseek function calling, deepseek agent tools, deepseek api integration">
 <link rel="canonical" href="https://slopshop.gg/integrate-deepseek">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/integrate-deepseek">
 <meta property="og:title" content="Slopshop + DeepSeek Integration — DeepSeek Tools for AI Agents">
-<meta property="og:description" content="Connect 1,152 real tools to DeepSeek agents via function_calling. OpenAI-compatible API. Drop in Slopshop tools with the openai SDK.">
+<meta property="og:description" content="Connect 1,244 real tools to DeepSeek agents via function_calling. OpenAI-compatible API. Drop in Slopshop tools with the openai SDK.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="Slopshop + DeepSeek — DeepSeek Tools for AI Agents">
-<meta name="twitter:description" content="Connect 1,152 real tools to DeepSeek agents via function_calling. OpenAI-compatible API. Drop in Slopshop tools with the openai SDK.">
+<meta name="twitter:description" content="Connect 1,244 real tools to DeepSeek agents via function_calling. OpenAI-compatible API. Drop in Slopshop tools with the openai SDK.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
 <meta name="theme-color" content="#4D6BFE">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop + DeepSeek Integration","description":"Connect 1,152 real tools to DeepSeek agents via function_calling. OpenAI-compatible API. Drop in Slopshop tools with the openai SDK.","url":"https://slopshop.gg/integrate-deepseek","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"about":{"@type":"SoftwareApplication","name":"Slopshop","applicationCategory":"DeveloperApplication"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop + DeepSeek Integration","description":"Connect 1,244 real tools to DeepSeek agents via function_calling. OpenAI-compatible API. Drop in Slopshop tools with the openai SDK.","url":"https://slopshop.gg/integrate-deepseek","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"about":{"@type":"SoftwareApplication","name":"Slopshop","applicationCategory":"DeveloperApplication"}}</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -159,7 +159,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
     </div>
     <h1>Slopshop for<br><span class="accent">DeepSeek</span> Agents</h1>
     <p class="sub">
-      1,152 real tools via DeepSeek's <b>function_calling</b>. DeepSeek uses an OpenAI-compatible API — swap <b>base_url</b> and you're done.<br>
+      1,244 real tools via DeepSeek's <b>function_calling</b>. DeepSeek uses an OpenAI-compatible API — swap <b>base_url</b> and you're done.<br>
       Free persistent memory. Every result verified with <b>_engine: real</b>.
     </p>
 
@@ -201,7 +201,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
       <div class="step-num">Step 03 &mdash; Run</div>
       <h3>DeepSeek calls, Slopshop executes</h3>
       <p>Pass tools into deepseek-chat's <code style="color:var(--acc)">tools</code> array. When DeepSeek emits a tool_call, POST the arguments to Slopshop and feed the result back.</p>
-      <div class="cmd" style="color:var(--g);font-size:0.7rem">1,152 tools &middot; auto-discovered from schema</div>
+      <div class="cmd" style="color:var(--g);font-size:0.7rem">1,244 tools &middot; auto-discovered from schema</div>
     </div>
   </div>
 </section>
@@ -335,12 +335,12 @@ answer = <span class="fn">run_agent</span>(<span class="str">"Check DNS records 
 <section class="sec" style="padding-top:64px">
   <div class="sec-label">What You Get</div>
   <h2>Everything DeepSeek needs to act, not just reason</h2>
-  <p class="desc">DeepSeek is exceptional at reasoning. Slopshop gives it the execution layer to act on those conclusions — 1,152 real tools, all verified.</p>
+  <p class="desc">DeepSeek is exceptional at reasoning. Slopshop gives it the execution layer to act on those conclusions — 1,244 real tools, all verified.</p>
 
   <div class="get-grid">
     <div class="get-card">
       <div class="icon">&#127381;</div>
-      <h3>1,152 Real Tools</h3>
+      <h3>1,244 Real Tools</h3>
       <p>DNS, SSL, HTTP, crypto, hashing, code execution, data transforms, document generation, web research. All real. No hallucinated outputs.</p>
     </div>
     <div class="get-card">
@@ -370,12 +370,12 @@ answer = <span class="fn">run_agent</span>(<span class="str">"Check DNS records 
 
 <section class="sec" style="padding-top:64px">
   <div class="cta-banner">
-    <h2>Give DeepSeek <span class="accent">1,152 real tools</span></h2>
-    <p>Three lines of Python. 1,152 tools. Free memory. Every result verified.<br>DeepSeek reasons — Slopshop executes.</p>
+    <h2>Give DeepSeek <span class="accent">1,244 real tools</span></h2>
+    <p>Three lines of Python. 1,244 tools. Free memory. Every result verified.<br>DeepSeek reasons — Slopshop executes.</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <a href="/docs" class="cta-primary">Get Started Free</a>
       <a href="/v1/openapi.json" class="cta-secondary">OpenAPI Schema</a>
-      <a href="/tools" class="cta-secondary">Browse All 1,152 Tools</a>
+      <a href="/tools" class="cta-secondary">Browse All 1,244 Tools</a>
     </div>
   </div>
 
@@ -416,7 +416,7 @@ answer = <span class="fn">run_agent</span>(<span class="str">"Check DNS records 
         <a href="https://x.com/slopshopgg">@slopshopgg</a>
       </div>
     </div>
-    <div class="footer-copy">The tool layer for AI agents &middot; 1,152 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,244 APIs &middot; free memory &middot; all real &middot; slopshop.gg</div>
   </div>
 </footer>
 
