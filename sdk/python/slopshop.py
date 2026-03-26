@@ -1,136 +1,90 @@
 """
-Slopshop Python SDK - The API bazaar for lobsters.
-
-    pip install slopshop
+Slopshop Python SDK
 
 Usage:
-    from slopshop import Slop
-    s = Slop()  # reads SLOPSHOP_KEY from env
-    result = s.call("lead-scoring-ai", {"company": "Acme"})
-    print(result.data)
+    from slopshop import Slopshop
+    slop = Slopshop('sk-slop-your-key')
+    result = slop.call('crypto-hash-sha256', {'text': 'hello'})
 """
 
-import os
 import json
 import urllib.request
 import urllib.error
 
-__version__ = "1.0.0"
 
-DEFAULT_BASE = "https://slopshop.gg"
-
-
-class SlopError(Exception):
-    def __init__(self, code, message, status=None):
-        self.code = code
-        self.message = message
-        self.status = status
-        super().__init__(f"[{code}] {message}")
+class SlopshopError(Exception):
+    def __init__(self, message, status_code=None, body=None):
+        super().__init__(message)
+        self.status_code = status_code
+        self.body = body
 
 
-class SlopResult:
-    def __init__(self, raw):
-        self._raw = raw
-        self.data = raw.get("data", {})
-        self.meta = raw.get("meta", {})
-        self.credits_used = self.meta.get("credits_used", 0)
-        self.credits_remaining = self.meta.get("credits_remaining")
-        self.request_id = self.meta.get("request_id")
+class Slopshop:
+    def __init__(self, api_key, base_url='https://slopshop.gg', timeout=30):
+        self.api_key = api_key
+        self.base_url = base_url.rstrip('/')
+        self.timeout = timeout
 
-    def __repr__(self):
-        return f"SlopResult(api={self.meta.get('api')}, credits={self.credits_used})"
-
-    def __getitem__(self, key):
-        return self.data[key]
-
-    def get(self, key, default=None):
-        return self.data.get(key, default)
-
-
-class Slop:
-    def __init__(self, key=None, base_url=None):
-        self.key = key or os.environ.get("SLOPSHOP_KEY")
-        if not self.key:
-            raise SlopError("no_key", "Set SLOPSHOP_KEY env var or pass key= to Slop()")
-        self.base = (base_url or os.environ.get("SLOPSHOP_BASE", DEFAULT_BASE)).rstrip("/")
-
-    def _request(self, method, path, body=None, auth=True):
-        url = f"{self.base}{path}"
+    def _request(self, method, path, body=None):
+        url = self.base_url + path
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.api_key}',
+            'User-Agent': 'slopshop-sdk-python/3.2.0',
+        }
         data = json.dumps(body).encode() if body else None
-        headers = {"Content-Type": "application/json"}
-        if auth:
-            headers["Authorization"] = f"Bearer {self.key}"
-
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
         try:
-            with urllib.request.urlopen(req) as resp:
-                return json.loads(resp.read())
+            with urllib.request.urlopen(req, timeout=self.timeout) as res:
+                return json.loads(res.read().decode())
         except urllib.error.HTTPError as e:
-            body = json.loads(e.read()) if e.headers.get("content-type", "").startswith("application/json") else {}
-            err = body.get("error", {})
-            raise SlopError(err.get("code", "http_error"), err.get("message", str(e)), e.code)
+            body = json.loads(e.read().decode()) if e.fp else {}
+            raise SlopshopError(body.get('error', {}).get('message', str(e)), e.code, body)
 
-    def call(self, api, input_data=None, idempotency_key=None):
-        """Call any Slopshop API by slug. Returns SlopResult."""
-        return SlopResult(self._request("POST", f"/v1/{api}", input_data or {}))
+    def call(self, slug, input_data=None):
+        return self._request('POST', f'/v1/{slug}', input_data or {})
 
     def batch(self, calls):
-        """Batch call multiple APIs. calls = [{"api": "slug", "input": {...}}, ...]"""
-        return self._request("POST", "/v1/batch", {"calls": calls})
+        return self._request('POST', '/v1/batch', {'calls': calls})
 
-    def async_call(self, api, input_data=None):
-        """Fire-and-forget for complex APIs. Returns job_id."""
-        return self._request("POST", f"/v1/async/{api}", input_data or {})
+    def agent(self, task, **kwargs):
+        return self._request('POST', '/v1/agent/run', {'task': task, **kwargs})
 
-    def job(self, job_id):
-        """Check async job status."""
-        return self._request("GET", f"/v1/jobs/{job_id}")
+    def memory_set(self, key, value, **kwargs):
+        return self.call('memory-set', {'key': key, 'value': value, **kwargs})
 
-    def resolve(self, query):
-        """Find the right API by describing what you need in plain English."""
-        return self._request("POST", "/v1/resolve", {"query": query}, auth=False)
+    def memory_get(self, key, **kwargs):
+        return self.call('memory-get', {'key': key, **kwargs})
 
-    def tools(self, format="native", category=None, limit=100, offset=0):
-        """Get tool manifest for agent integration."""
-        params = f"?format={format}&limit={limit}&offset={offset}"
-        if category:
-            params += f"&category={category}"
-        return self._request("GET", f"/v1/tools{params}", auth=False)
+    def memory_search(self, query, **kwargs):
+        return self.call('memory-search', {'query': query, **kwargs})
+
+    def me(self):
+        return self._request('GET', '/v1/auth/me')
 
     def balance(self):
-        """Check credit balance."""
-        return self._request("GET", "/v1/credits/balance")
+        return self._request('GET', '/v1/credits/balance')
 
-    def buy_credits(self, amount, payment_method=None):
-        """Buy credits. amount: 1000, 10000, 100000, or 1000000."""
-        body = {"amount": amount}
-        if payment_method:
-            body["payment_method"] = payment_method
-        return self._request("POST", "/v1/credits/buy", body)
+    def search(self, query, **kwargs):
+        return self._request('POST', '/v1/tools/search', {'query': query, **kwargs})
 
-    def transfer(self, to_key, amount):
-        """Transfer credits to another key."""
-        return self._request("POST", "/v1/credits/transfer", {"to_key": to_key, "amount": amount})
-
-    def pipe(self, steps, until=None, max_iterations=1):
-        """Turing-complete pipeline. steps = [{"api": "slug", "input": {...}}, ...]"""
-        body = {"steps": steps, "max_iterations": max_iterations}
-        if until:
-            body["until"] = until
-        return self._request("POST", "/v1/pipe", body)
-
-    def state_get(self, key):
-        """Get persistent state value."""
-        return self._request("GET", f"/v1/state/{key}")
-
-    def state_set(self, key, value):
-        """Set persistent state value."""
-        return self._request("PUT", f"/v1/state/{key}", {"value": value})
-
-    def state_delete(self, key):
-        """Delete persistent state value."""
-        return self._request("DELETE", f"/v1/state/{key}")
+    def recommend(self, task):
+        return self._request('POST', '/v1/tools/recommend', {'task': task})
 
     def health(self):
-        """Check API health (no auth required)."""
-        return self._request("GET", "/v1/health", auth=False)
+        return self._request('GET', '/v1/health')
+
+    def stats(self):
+        return self._request('GET', '/v1/stats')
+
+    def hive_create(self, name, **kwargs):
+        return self._request('POST', '/v1/hive/create', {'name': name, **kwargs})
+
+    def hive_send(self, hive_id, message, channel='general'):
+        return self._request('POST', f'/v1/hive/{hive_id}/send', {'message': message, 'channel': channel})
+
+    def stream(self, slug, input_data=None):
+        return self._request('POST', f'/v1/stream/{slug}', input_data or {})
+
+    def dry_run(self, slug, input_data=None):
+        return self._request('POST', f'/v1/dry-run/{slug}', input_data or {})

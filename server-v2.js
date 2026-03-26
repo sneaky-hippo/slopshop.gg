@@ -9,6 +9,13 @@ const cors = require('cors');
 const crypto = require('crypto');
 const path = require('path');
 
+// Structured logging
+const log = {
+  info: (msg, data = {}) => console.log(JSON.stringify({ level: 'info', msg, ...data, ts: new Date().toISOString() })),
+  warn: (msg, data = {}) => console.log(JSON.stringify({ level: 'warn', msg, ...data, ts: new Date().toISOString() })),
+  error: (msg, data = {}) => console.error(JSON.stringify({ level: 'error', msg, ...data, ts: new Date().toISOString() })),
+};
+
 const helmet = require('helmet');
 const app = express();
 app.use(helmet({
@@ -26,10 +33,21 @@ app.use(helmet({
   },
   crossOriginEmbedderPolicy: false
 }));
-app.use(cors());
+app.use(cors({
+  origin: process.env.CORS_ORIGIN || '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Admin-Secret'],
+  exposedHeaders: ['X-Request-Id', 'X-Credits-Used', 'X-Credits-Remaining', 'X-Latency-Ms', 'X-Engine', 'X-Cost-USD'],
+  maxAge: 86400,
+}));
 app.use(express.json({ limit: '1mb' })); // 1MB max request body
 app.set('trust proxy', 1); // trust Railway/Vercel proxy for IP
-app.use((req, res, next) => { res.set('X-Request-Id', crypto.randomUUID()); next(); });
+// Global request ID
+app.use((req, res, next) => {
+  req.requestId = req.headers['x-request-id'] || crypto.randomUUID();
+  res.set('X-Request-Id', req.requestId);
+  next();
+});
 
 // ===== RATE LIMITING (in-memory, per-IP) =====
 const ipLimits = new Map();
@@ -228,9 +246,8 @@ function emitUsageEvent(keyPrefix, slug, credits, status) {
 }
 
 const keyCount = db.prepare('SELECT COUNT(*) as cnt FROM api_keys').get().cnt;
-console.log(`Loaded ${apiCount} APIs with ${Object.keys(allHandlers).length} handlers across ${catalog.length} categories`);
-console.log(`  ${keyCount} API keys in database`);
-console.log(`  ${apiKeys.size} API keys loaded from disk`);
+log.info('Server loaded', { apis: apiCount, handlers: Object.keys(allHandlers).length, categories: catalog.length });
+log.info('API keys initialized', { dbKeys: keyCount, memoryKeys: apiKeys.size });
 
 // ===== AUTH =====
 function auth(req, res, next) {
@@ -955,83 +972,13 @@ app.get('/v1/tools/:slug/try', publicRateLimit, (req, res) => {
 });
 
 // ===== OPENAPI SPEC =====
-app.get('/v1/openapi.json', publicRateLimit, (req, res) => {
-  const paths = {};
-  for (const [slug, def] of Object.entries(API_DEFS)) {
-    const schema = SCHEMAS?.[slug];
-    paths[`/v1/${slug}`] = {
-      post: {
-        summary: def.name,
-        description: def.desc,
-        tags: [def.cat],
-        operationId: slug,
-        'x-credits': def.credits,
-        'x-tier': def.tier,
-        requestBody: {
-          required: true,
-          content: { 'application/json': { schema: schema?.input || { type: 'object' } } }
-        },
-        responses: {
-          '200': {
-            description: 'Success',
-            content: { 'application/json': { schema: {
-              type: 'object',
-              properties: {
-                data: schema?.output || { type: 'object' },
-                meta: { type: 'object', properties: {
-                  api: { type: 'string' },
-                  credits_used: { type: 'integer' },
-                  balance: { type: 'number' },
-                  latency_ms: { type: 'integer' },
-                  engine: { type: 'string', enum: ['real', 'llm', 'needs_key'] }
-                }}
-              }
-            }}}
-          },
-          '401': { description: 'Unauthorized' },
-          '402': { description: 'Insufficient credits' },
-          '404': { description: 'API not found' },
-          '429': { description: 'Rate limited' }
-        },
-        security: [{ bearerAuth: [] }]
-      }
-    };
+app.get('/v1/openapi.json', (req, res) => {
+  try {
+    const spec = require('./openapi.json');
+    res.json(spec);
+  } catch(e) {
+    res.status(404).json({ error: 'OpenAPI spec not generated yet. Run: node openapi-gen.js' });
   }
-
-  // Add discovery, agent, and pipe endpoints
-  paths['/v1/tools'] = { get: { summary: 'List all tools', description: 'Returns all available tools with slugs, descriptions, credit costs, and categories.', tags: ['Discovery'], responses: { '200': { description: 'Tool list' } } } };
-  paths['/v1/tools/{slug}'] = { get: { summary: 'Get tool details', description: 'Returns a single tool definition including credit cost, input/output schemas.', tags: ['Discovery'], parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Tool detail' }, '404': { description: 'Not found' } } } };
-  paths['/v1/resolve'] = { post: { summary: 'Semantic tool search', description: 'Find the right tool by natural language description.', tags: ['Discovery'], security: [{ bearerAuth: [] }], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { query: { type: 'string' } }, required: ['query'] } } } }, responses: { '200': { description: 'Matching tools' } } } };
-  paths['/v1/agent/run'] = { post: { summary: 'Run autonomous agent', description: 'Describe a task in natural language. The agent picks tools, chains them, executes, and returns results. Results auto-stored in memory.', tags: ['Agent'], security: [{ bearerAuth: [] }], 'x-credits': '20 + tool costs', requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { task: { type: 'string' } }, required: ['task'] } } } }, responses: { '200': { description: 'Agent result with answer, steps, and run_id' } } } };
-  paths['/v1/ask'] = { post: { summary: 'Ask a question', description: 'Simple question-answer using tools. Simplified version of /v1/agent/run.', tags: ['Agent'], security: [{ bearerAuth: [] }], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { question: { type: 'string' } }, required: ['question'] } } } }, responses: { '200': { description: 'Answer with sources' } } } };
-  paths['/v1/agent/templates'] = { get: { summary: 'List agent templates', description: 'Returns available pre-built agent templates.', tags: ['Agent'], responses: { '200': { description: 'Template list' } } } };
-  paths['/v1/agent/template/{id}'] = { post: { summary: 'Run agent template', description: 'Run a pre-built agent template. Results auto-stored in memory.', tags: ['Agent'], security: [{ bearerAuth: [] }], parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string', enum: ['security-audit', 'content-analyzer', 'data-processor', 'domain-recon', 'hash-verify'] } }], responses: { '200': { description: 'Template result' } } } };
-  paths['/v1/agent/history'] = { get: { summary: 'Agent run history', description: 'Retrieve all past agent runs from auto-stored memory.', tags: ['Agent'], security: [{ bearerAuth: [] }], responses: { '200': { description: 'Past runs' } } } };
-  paths['/v1/pipes'] = { get: { summary: 'List pre-built pipes', description: 'Returns all available pre-built workflow pipes with steps and credit costs.', tags: ['Pipes'], responses: { '200': { description: 'Pipe list' } } } };
-  paths['/v1/pipes/{slug}'] = { get: { summary: 'Get pipe details', description: 'Returns a pipe definition with steps, per-step costs, and example input.', tags: ['Pipes'], parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Pipe detail' } } }, post: { summary: 'Run pre-built pipe', description: 'Execute a pre-built multi-step workflow.', tags: ['Pipes'], security: [{ bearerAuth: [] }], parameters: [{ name: 'slug', in: 'path', required: true, schema: { type: 'string' } }], responses: { '200': { description: 'Pipe result' } } } };
-  paths['/v1/pipe'] = { post: { summary: 'Run custom pipe', description: 'Execute a custom workflow by providing an array of tool slugs to chain.', tags: ['Pipes'], security: [{ bearerAuth: [] }], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { steps: { type: 'array', items: { type: 'string' } } }, required: ['steps'] } } } }, responses: { '200': { description: 'Custom pipe result' } } } };
-  paths['/v1/batch'] = { post: { summary: 'Batch execute', description: 'Execute multiple tool calls in parallel.', tags: ['Batch'], security: [{ bearerAuth: [] }], responses: { '200': { description: 'Batch results' } } } };
-  paths['/v1/auth/signup'] = { post: { summary: 'Create account', description: 'Create account with email and password. Returns API key with 100 free credits.', tags: ['Auth'], requestBody: { content: { 'application/json': { schema: { type: 'object', properties: { email: { type: 'string' }, password: { type: 'string' } }, required: ['email', 'password'] } } } }, responses: { '201': { description: 'Account created' } } } };
-  paths['/v1/credits/balance'] = { get: { summary: 'Check balance', description: 'Returns current credit balance and tier.', tags: ['Credits'], security: [{ bearerAuth: [] }], responses: { '200': { description: 'Balance info' } } } };
-  paths['/v1/credits/buy'] = { post: { summary: 'Buy credits', description: 'Purchase additional credits.', tags: ['Credits'], security: [{ bearerAuth: [] }], responses: { '200': { description: 'Purchase result' } } } };
-
-  const allTags = [...new Set(Object.values(API_DEFS).map(d => d.cat))].sort().map(c => ({ name: c }));
-  allTags.push({ name: 'Discovery' }, { name: 'Agent' }, { name: 'Pipes' }, { name: 'Batch' }, { name: 'Auth' }, { name: 'Credits' });
-
-  res.json({
-    openapi: '3.0.3',
-    info: {
-      title: 'Slopshop API',
-      version: '2.1.0',
-      description: 'Production-grade execution layer for AI agents. ' + Object.keys(API_DEFS).length + ' real APIs with built-in reliability, free persistent memory, and full observability.',
-      contact: { url: 'https://slopshop.gg', email: 'dev@slopshop.gg' },
-      license: { name: 'Proprietary' }
-    },
-    servers: [{ url: 'https://slopshop.gg' }],
-    components: { securitySchemes: { bearerAuth: { type: 'http', scheme: 'bearer', description: 'API key from POST /v1/auth/signup. Demo key: sk-slop-demo-key-12345678' } } },
-    paths,
-    tags: allTags
-  });
 });
 
 // ===== SCHEDULED EXECUTION =====

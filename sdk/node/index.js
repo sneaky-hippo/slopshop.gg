@@ -1,121 +1,161 @@
+'use strict';
+
 /**
- * Slopshop Node.js SDK - The API bazaar for lobsters.
- *
- *   npm install slopshop
- *
- * Usage:
- *   import { Slop } from 'slopshop';
- *   const s = new Slop(); // reads SLOPSHOP_KEY from env
- *   const result = await s.call('lead-scoring-ai', { company: 'Acme' });
- *   console.log(result.data);
+ * Slopshop Node.js SDK
+ * @example
+ * const { Slopshop } = require('slopshop/sdk/node');
+ * const slop = new Slopshop('sk-slop-your-key');
+ * const result = await slop.call('crypto-hash-sha256', { text: 'hello' });
  */
 
-class SlopError extends Error {
-  constructor(code, message, status) {
-    super(`[${code}] ${message}`);
-    this.code = code;
-    this.status = status;
-  }
-}
+const http = require('http');
+const https = require('https');
 
-class SlopResult {
-  constructor(raw) {
-    this._raw = raw;
-    this.data = raw.data || {};
-    this.meta = raw.meta || {};
-    this.creditsUsed = this.meta.credits_used || 0;
-    this.creditsRemaining = this.meta.credits_remaining;
-    this.requestId = this.meta.request_id;
-  }
-}
-
-class Slop {
-  constructor(key, { baseUrl } = {}) {
-    this.key = key || process.env.SLOPSHOP_KEY;
-    if (!this.key) throw new SlopError('no_key', 'Set SLOPSHOP_KEY env var or pass key to new Slop(key)');
-    this.base = (baseUrl || process.env.SLOPSHOP_BASE || 'https://slopshop.gg').replace(/\/$/, '');
+class Slopshop {
+  constructor(apiKey, options = {}) {
+    this.apiKey = apiKey;
+    this.baseUrl = (options.baseUrl || 'https://slopshop.gg').replace(/\/$/, '');
+    this.timeout = options.timeout || 30000;
   }
 
-  async _req(method, path, body, auth = true) {
-    const url = `${this.base}${path}`;
-    const headers = { 'Content-Type': 'application/json' };
-    if (auth) headers['Authorization'] = `Bearer ${this.key}`;
+  async _request(method, path, body) {
+    return new Promise((resolve, reject) => {
+      const url = new URL(this.baseUrl + path);
+      const mod = url.protocol === 'https:' ? https : http;
+      const payload = body ? JSON.stringify(body) : null;
 
-    const resp = await fetch(url, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
+      const opts = {
+        hostname: url.hostname,
+        port: url.port || (url.protocol === 'https:' ? 443 : 80),
+        path: url.pathname + url.search,
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + this.apiKey,
+          'User-Agent': 'slopshop-sdk-node/3.2.0',
+        },
+        timeout: this.timeout,
+      };
+      if (payload) opts.headers['Content-Length'] = Buffer.byteLength(payload);
+
+      const req = mod.request(opts, (res) => {
+        let data = '';
+        res.on('data', c => data += c);
+        res.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (res.statusCode >= 400) reject(new SlopshopError(parsed.error?.message || 'API error', res.statusCode, parsed));
+            else resolve({ data: parsed, status: res.statusCode, headers: res.headers });
+          } catch(e) { reject(new SlopshopError('Invalid response', res.statusCode)); }
+        });
+      });
+      req.on('error', reject);
+      req.on('timeout', () => { req.destroy(); reject(new SlopshopError('Timeout', 408)); });
+      if (payload) req.write(payload);
+      req.end();
     });
-
-    const data = await resp.json().catch(() => ({}));
-    if (!resp.ok) {
-      const err = data.error || {};
-      throw new SlopError(err.code || 'http_error', err.message || resp.statusText, resp.status);
-    }
-    return data;
   }
 
-  /** Call any API by slug */
-  async call(api, input = {}) {
-    return new SlopResult(await this._req('POST', `/v1/${api}`, input));
+  // Core API call
+  async call(slug, input = {}) {
+    const res = await this._request('POST', '/v1/' + slug, input);
+    return res.data;
   }
 
-  /** Batch call multiple APIs: [{api, input}, ...] */
+  // Batch calls
   async batch(calls) {
-    return this._req('POST', '/v1/batch', { calls });
+    const res = await this._request('POST', '/v1/batch', { calls });
+    return res.data;
   }
 
-  /** Async fire-and-forget for complex APIs */
-  async asyncCall(api, input = {}) {
-    return this._req('POST', `/v1/async/${api}`, input);
+  // Agent run
+  async agent(task, options = {}) {
+    const res = await this._request('POST', '/v1/agent/run', { task, ...options });
+    return res.data;
   }
 
-  /** Check async job status */
-  async job(jobId) {
-    return this._req('GET', `/v1/jobs/${jobId}`);
+  // Memory
+  async memorySet(key, value, options = {}) {
+    return this.call('memory-set', { key, value, ...options });
+  }
+  async memoryGet(key, options = {}) {
+    return this.call('memory-get', { key, ...options });
+  }
+  async memorySearch(query, options = {}) {
+    return this.call('memory-search', { query, ...options });
+  }
+  async memoryList(options = {}) {
+    return this.call('memory-list', options);
   }
 
-  /** Semantic search: describe what you need */
-  async resolve(query) {
-    return this._req('POST', '/v1/resolve', { query }, false);
+  // Auth
+  async me() {
+    const res = await this._request('GET', '/v1/auth/me');
+    return res.data;
   }
-
-  /** Get tool manifest */
-  async tools({ format = 'native', category, limit = 100, offset = 0 } = {}) {
-    let q = `?format=${format}&limit=${limit}&offset=${offset}`;
-    if (category) q += `&category=${encodeURIComponent(category)}`;
-    return this._req('GET', `/v1/tools${q}`, null, false);
-  }
-
-  /** Check balance */
   async balance() {
-    return this._req('GET', '/v1/credits/balance');
+    const res = await this._request('GET', '/v1/credits/balance');
+    return res.data;
   }
 
-  /** Buy credits */
-  async buyCredits(amount, paymentMethod) {
-    return this._req('POST', '/v1/credits/buy', { amount, payment_method: paymentMethod });
+  // Discovery
+  async search(query, options = {}) {
+    const res = await this._request('POST', '/v1/tools/search', { query, ...options });
+    return res.data;
+  }
+  async categories() {
+    const res = await this._request('GET', '/v1/tools/categories');
+    return res.data;
+  }
+  async recommend(task) {
+    const res = await this._request('POST', '/v1/tools/recommend', { task });
+    return res.data;
   }
 
-  /** Transfer credits */
-  async transfer(toKey, amount) {
-    return this._req('POST', '/v1/credits/transfer', { to_key: toKey, amount });
+  // Hive
+  async hiveCreate(name, options = {}) {
+    const res = await this._request('POST', '/v1/hive/create', { name, ...options });
+    return res.data;
+  }
+  async hiveSend(hiveId, message, channel = 'general') {
+    const res = await this._request('POST', '/v1/hive/' + hiveId + '/send', { message, channel });
+    return res.data;
   }
 
-  /** Turing-complete pipeline */
-  async pipe(steps, { until, maxIterations = 1 } = {}) {
-    return this._req('POST', '/v1/pipe', { steps, until, max_iterations: maxIterations });
+  // Stream (returns raw response for SSE)
+  async stream(slug, input = {}) {
+    return this._request('POST', '/v1/stream/' + slug, input);
   }
 
-  /** Get persistent state */
-  async stateGet(key) { return this._req('GET', `/v1/state/${key}`); }
-  /** Set persistent state */
-  async stateSet(key, value) { return this._req('PUT', `/v1/state/${key}`, { value }); }
-  /** Delete persistent state */
-  async stateDel(key) { return this._req('DELETE', `/v1/state/${key}`); }
+  // Dry run
+  async dryRun(slug, input = {}) {
+    const res = await this._request('POST', '/v1/dry-run/' + slug, input);
+    return res.data;
+  }
 
-  /** Health check (no auth) */
-  async health() { return this._req('GET', '/v1/health', null, false); }
+  // Health
+  async health() {
+    const res = await this._request('GET', '/v1/health');
+    return res.data;
+  }
+
+  // Stats
+  async stats() {
+    const res = await this._request('GET', '/v1/stats');
+    return res.data;
+  }
 }
 
-module.exports = { Slop, SlopResult, SlopError };
+class SlopshopError extends Error {
+  constructor(message, statusCode, body) {
+    super(message);
+    this.name = 'SlopshopError';
+    this.statusCode = statusCode;
+    this.body = body;
+  }
+}
+
+// Static factory
+Slopshop.create = (apiKey, options) => new Slopshop(apiKey, options);
+
+module.exports = { Slopshop, SlopshopError };
