@@ -644,7 +644,12 @@ const API_DEFS = {
   'data-lookup': { cat: 'Data Transform', name: 'Array Lookup', desc: 'Find the first object in an array where key equals value.', credits: 0, tier: 'compute' },
   'data-aggregate': { cat: 'Analyze', name: 'Data Aggregate', desc: 'Compute sum, avg, min, max, and count for a numeric field across an array of objects.', credits: 0, tier: 'compute' },
 
-  // ====== HACKATHON TOP 100: AGENT SUPERPOWERS ======
+  // ====== RENAMED HANDLERS ======
+  'clean-slate': { cat: 'Agent Tools', name: 'Clean Slate', desc: 'Clear all context and return a fresh state. Useful for resetting between tasks.', credits: 0, tier: 'compute' },
+  'anonymous-mailbox': { cat: 'Agent Tools', name: 'Anonymous Mailbox', desc: 'Leave a message at a named location for anonymous asynchronous pickup.', credits: 0, tier: 'compute' },
+  'temp-access-grant': { cat: 'Agent Tools', name: 'Temporary Access Grant', desc: 'Grant temporary scoped access to a namespace with expiration.', credits: 0, tier: 'compute' },
+
+  // ====== EXTENDED COMPUTE HANDLERS ======
   'meta-api': { cat: 'Agent Superpowers', name: 'Meta API Generator', desc: 'Generate new API definitions from plain-text descriptions. Self-expanding platform.', credits: 0, tier: 'compute' },
   'entangle-agents': { cat: 'Agent Superpowers', name: 'Entangle Agents', desc: 'Link two agents so state changes propagate instantly between them.', credits: 0, tier: 'compute' },
   'lucid-dream-mode': { cat: 'Agent Superpowers', name: 'Creative Exploration Mode', desc: 'Controlled divergent thinking with grounding constraints for creative exploration.', credits: 0, tier: 'compute' },

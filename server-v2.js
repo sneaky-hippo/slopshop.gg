@@ -4128,9 +4128,14 @@ app.post('/v1/:slug', auth, async (req, res) => {
   if (isDeterministic) res.set('X-Deterministic', 'true');
 
   if (handlerError) {
+    // Refund credits on handler error — users should not pay for failed calls
+    req.acct.balance += def.credits;
+    persistKey(req.apiKey);
     res.set('X-Engine', 'error');
+    res.set('X-Credits-Used', '0');
+    res.set('X-Credits-Remaining', String(req.acct.balance));
     const schema = SCHEMAS?.[req.params.slug];
-    const errBody = { error: { code: 'handler_error', message: handlerError, api: req.params.slug, credits_used: def.credits, latency_ms: latency } };
+    const errBody = { error: { code: 'handler_error', message: handlerError, api: req.params.slug, credits_refunded: def.credits, latency_ms: latency } };
     if (schema?.input) errBody.error.hint = { message: 'Check input parameters against the schema below', input_schema: schema.input };
     return res.status(500).json(errBody);
   }
