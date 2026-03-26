@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Slopshop for Teams — Production-grade Agent Infrastructure</title>
+<meta name="description" content="Enterprise-grade agent infrastructure with RBAC, usage analytics, cost forecasting, audit logging, and self-hosting. SOC 2 in progress.">
+<meta name="keywords" content="enterprise AI, agent infrastructure, RBAC, self-hosted AI, air-gapped deployment, SOC 2, audit logging, slopshop enterprise">
+<link rel="canonical" href="https://slopshop.gg/enterprise">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/enterprise">
+<meta property="og:title" content="Slopshop for Teams — Production-grade Agent Infrastructure">
+<meta property="og:description" content="Enterprise-grade agent infrastructure with RBAC, usage analytics, cost forecasting, audit logging, and self-hosting.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop for Teams — Production-grade Agent Infrastructure">
+<meta name="twitter:description" content="Enterprise-grade agent infrastructure with RBAC, usage analytics, cost forecasting, audit logging, and self-hosting.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Slopshop Enterprise","url":"https://slopshop.gg/enterprise","description":"Enterprise-grade agent infrastructure with RBAC, usage analytics, cost forecasting, audit logging, and self-hosting. SOC 2 in progress.","publisher":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+  --accent:var(--r);--accent2:var(--rg);--orange:var(--o);--green:var(--g);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+
+.hero{padding:136px 32px 64px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse,rgba(255,51,51,0.04),transparent 60%)}
+.hero-inner{max-width:1200px;margin:0 auto;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(255,51,51,0.15);color:var(--r2);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:500;margin-bottom:28px}
+.hero h1{font-family:var(--mono);font-size:clamp(2.2rem,5.5vw,3.6rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:24px}
+.hero h1 .accent{color:var(--r)}.hero h1 .white{color:var(--t)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:600px;margin:0 auto;line-height:1.75;font-weight:400}
+.hero .sub b{color:var(--t);font-weight:600}
+
+.sec{max-width:1200px;margin:0 auto;padding:80px 32px;position:relative}
+.sec h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
+.sec .desc{color:var(--t3);font-size:0.85rem;margin-bottom:32px;line-height:1.75}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s}
+.card:hover{transform:translateY(-2px);border-color:var(--b2)}
+.card h3{font-family:var(--mono);font-size:0.85rem;font-weight:700;margin-bottom:10px;color:var(--r)}
+.card p{font-size:0.82rem;color:var(--t3);line-height:1.75}
+.card.green h3{color:var(--g)}.card.green{border-left:3px solid var(--g)}
+.card.blue h3{color:var(--c)}.card.blue{border-left:3px solid var(--c)}
+.card.orange h3{color:var(--o)}.card.orange{border-left:3px solid var(--o)}
+.card.purple h3{color:var(--v)}.card.purple{border-left:3px solid var(--v)}
+.card.red{border-left:3px solid var(--r)}
+
+.sec-divider{border:none;border-top:1px solid var(--b);margin:0}
+
+.cta-box{text-align:center;padding:80px 32px;border-top:1px solid var(--b);border-bottom:1px solid var(--b)}
+.cta-box h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:10px}
+.cta-box p{color:var(--t3);margin-bottom:8px;font-size:0.9rem}
+.cta-box .email{font-family:var(--mono);font-size:1rem;color:var(--r);font-weight:700}
+.cta-btn{display:inline-flex;align-items:center;gap:6px;padding:14px 32px;border-radius:10px;font-family:var(--mono);font-size:0.85rem;font-weight:700;background:var(--r);color:#fff;margin-top:24px;transition:box-shadow 0.2s,transform 0.15s}
+.cta-btn:hover{box-shadow:0 0 24px rgba(255,51,51,0.3);transform:translateY(-1px);opacity:1;color:#fff}
+
+.badge{display:inline-block;font-family:var(--mono);font-size:0.6rem;font-weight:700;padding:3px 10px;border-radius:6px;text-transform:uppercase;letter-spacing:0.06em}
+.badge-progress{background:var(--og);color:var(--o)}
+.badge-active{background:var(--gg);color:var(--g)}
+
+.sla-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px}
+.sla-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;text-align:center;transition:transform 0.15s,border-color 0.2s}
+.sla-card:hover{transform:translateY(-2px);border-color:var(--b2)}
+.sla-card .tier-name{font-family:var(--mono);font-size:0.85rem;font-weight:700;margin-bottom:8px;color:var(--t)}
+.sla-card .sla-val{font-family:var(--mono);font-size:1.5rem;font-weight:800;color:var(--o);margin-bottom:8px}
+.sla-card .sla-desc{font-size:0.75rem;color:var(--t3);line-height:1.7}
+
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .logo{font-size:0.8rem}
+  .nav-links a{font-size:0.65rem;padding:4px 6px}
+  .nav-links a:nth-child(n+4){display:none}
+  .live-badge{font-size:0.58rem;padding:2px 6px}
+  .hero{padding:72px 16px 28px}
+  .hero h1{font-size:clamp(1.8rem,10vw,2.6rem)}
+  .hero .sub{font-size:0.85rem;padding:0 8px}
+  .sec{padding:40px 16px}
+  .sec h2{font-size:1.05rem}
+  .grid{grid-template-columns:1fr}
+  .sla-grid{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr;gap:24px}
+}
+@media(max-width:480px){
+  .nav-links a{display:none}
+  .live-badge{font-size:0.55rem}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <div class="logo">
+    <a href="/" style="display:flex;align-items:center;gap:8px;color:inherit">
+      <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="navBg" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#navBg)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="128" y1="128" x2="188" y2="188" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><line x1="384" y1="128" x2="324" y2="188" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><line x1="128" y1="384" x2="188" y2="324" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><line x1="384" y1="384" x2="324" y2="324" stroke="white" stroke-width="18" stroke-linecap="round" opacity=".35"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+      <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+    </a>
+  </div>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/enterprise" style="color:var(--r)">Enterprise</a>
+    <a href="#pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+    <div class="live-badge"><div class="live-dot"></div><span>live</span></div>
+  </div>
+</div></nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">Enterprise-ready infrastructure</div>
+    <h1><span class="white">Slopshop for Teams</span><br><span class="accent">Production-grade agent infrastructure</span></h1>
+    <p class="sub">
+      <b>RBAC, audit logging, cost controls, and self-hosting.</b> Everything your security team needs to approve AI agent deployments at scale.
+    </p>
+  </div>
+</section>
+
+<!-- TEAM FEATURES -->
+<section class="sec">
+  <h2>Team features</h2>
+  <p class="desc">Everything you need to run agents in production across your organization.</p>
+  <div class="grid">
+    <div class="card red">
+      <h3>Teams with RBAC</h3>
+      <p>Role-based access control with granular permissions. Admin, developer, and viewer roles. Scope API keys to specific teams, projects, or tool categories.</p>
+    </div>
+    <div class="card green">
+      <h3>Usage Analytics</h3>
+      <p>Real-time dashboards for API usage, credit consumption, and tool adoption. Per-team and per-agent breakdowns. Export to your BI tools via webhooks.</p>
+    </div>
+    <div class="card blue">
+      <h3>Cost Forecasting</h3>
+      <p>Predict monthly spend based on current usage patterns. Set alerts for budget thresholds. Model cost impact of new agent deployments before launch.</p>
+    </div>
+    <div class="card orange">
+      <h3>Webhooks</h3>
+      <p>Real-time event delivery for agent actions, credit usage, rate limit hits, and errors. HMAC-signed payloads. Retry with exponential backoff.</p>
+    </div>
+    <div class="card purple">
+      <h3>Custom Rate Limits</h3>
+      <p>Per-team and per-key rate limits. Burst allowances for production workloads. Priority queuing for critical agents. Rate limit headers on every response.</p>
+    </div>
+    <div class="card red">
+      <h3>Budget Caps</h3>
+      <p>Hard and soft spending limits per team, project, or API key. Auto-pause agents when budgets are exceeded. Monthly and daily cap options.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- SECURITY -->
+<section class="sec">
+  <h2>Security</h2>
+  <p class="desc">Built with defense-in-depth from day one. Not bolted on after the fact.</p>
+  <div class="grid">
+    <div class="card green">
+      <h3>Content Security Policy</h3>
+      <p>Strict CSP headers on all responses. Script-src, style-src, and connect-src directives prevent XSS and data exfiltration vectors.</p>
+    </div>
+    <div class="card green">
+      <h3>HTTPS Enforcement</h3>
+      <p>TLS 1.2+ required on all connections. HSTS headers with long max-age. Certificate transparency monitoring. No plaintext fallback.</p>
+    </div>
+    <div class="card green">
+      <h3>Timing-safe Auth</h3>
+      <p>API key validation uses constant-time comparison to prevent timing side-channel attacks. No early returns on partial matches.</p>
+    </div>
+    <div class="card green">
+      <h3>Memory Isolation</h3>
+      <p>Agent memory is fully isolated per API key. No cross-tenant data access. Memory namespaces prevent accidental data leakage between projects.</p>
+    </div>
+    <div class="card green">
+      <h3>Audit Logging</h3>
+      <p>Every API call logged with timestamp, key hash, endpoint, response code, and latency. Tamper-evident log chains. Export to your SIEM.</p>
+    </div>
+    <div class="card green">
+      <h3>Input Validation</h3>
+      <p>Schema-validated inputs on every endpoint. Request size limits. SQL injection, XSS, and path traversal protections on all user-supplied data.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- SELF-HOSTING -->
+<section class="sec">
+  <h2>Self-hosting</h2>
+  <p class="desc">Run Slopshop on your own infrastructure. Your data never leaves your network.</p>
+  <div class="grid">
+    <div class="card blue">
+      <h3>Run on Your Infrastructure</h3>
+      <p>Single Node.js binary. Deploy to AWS, GCP, Azure, or bare metal. Docker image available. All 927 compute handlers work offline with zero external dependencies.</p>
+    </div>
+    <div class="card blue">
+      <h3>Air-gapped Deployments</h3>
+      <p>All compute APIs work without internet access. SQLite-backed persistence requires no external database. Perfect for regulated industries and classified environments.</p>
+    </div>
+    <div class="card blue">
+      <h3>Configuration</h3>
+      <p>Environment variable configuration. No config files to manage. Set PORT, API keys, memory limits, and feature flags. Works with your existing secrets management.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- SLA TIERS -->
+<section class="sec">
+  <h2>SLA tiers</h2>
+  <p class="desc">Guaranteed uptime and support response times for production workloads.</p>
+  <div class="sla-grid">
+    <div class="sla-card">
+      <div class="tier-name">Starter</div>
+      <div class="sla-val">99.5%</div>
+      <div class="sla-desc">Best-effort support<br>Community Discord</div>
+    </div>
+    <div class="sla-card" style="border-color:var(--o);background:linear-gradient(135deg,rgba(255,136,0,0.05),transparent)">
+      <div class="tier-name">Business</div>
+      <div class="sla-val">99.9%</div>
+      <div class="sla-desc">8-hour response time<br>Dedicated Slack channel</div>
+    </div>
+    <div class="sla-card">
+      <div class="tier-name">Enterprise</div>
+      <div class="sla-val">99.99%</div>
+      <div class="sla-desc">1-hour response time<br>Dedicated engineer</div>
+    </div>
+  </div>
+  <p style="text-align:center;margin-top:24px;color:var(--t3);font-size:0.82rem;font-family:var(--mono)">Contact us for SLA details</p>
+</section>
+
+<hr class="sec-divider">
+
+<!-- COMPLIANCE -->
+<section class="sec">
+  <h2>Compliance</h2>
+  <p class="desc">Building trust through transparency and third-party validation.</p>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+    <div class="card orange">
+      <h3>SOC 2 Type II <span class="badge badge-progress">In Progress</span></h3>
+      <p>SOC 2 Type II audit currently underway. Covering security, availability, and confidentiality trust service criteria. Expected completion Q3 2026.</p>
+    </div>
+    <div class="card orange">
+      <h3>Data Processing</h3>
+      <p>DPA available on request. Data residency options for EU deployments. Self-hosting option provides full data sovereignty for organizations that require it.</p>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-box">
+  <h2>Ready to deploy agents at scale?</h2>
+  <p>Get custom pricing, dedicated support, and SLA guarantees for your team.</p>
+  <p class="email">dev@slopshop.gg</p>
+  <a href="mailto:dev@slopshop.gg" class="cta-btn">Contact for Enterprise Pricing</a>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#ff3333"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/templates">Templates</a>
+        <a href="/playbooks">Playbooks</a>
+        <a href="/gallery">Gallery</a>
+        <a href="#pricing">Pricing</a>
+      </div>
+      <div class="footer-col">
+        <h4>Enterprise</h4>
+        <a href="/enterprise">Overview</a>
+        <a href="/security">Security</a>
+        <a href="/status">Status</a>
+        <a href="/roadmap">Roadmap</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/docs">Docs</a>
+        <a href="/getting-started">Getting Started</a>
+        <a href="/changelog-detail">Changelog</a>
+        <a href="/v1/openapi.json">OpenAPI</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="/legal">Legal</a>
+        <a href="mailto:dev@slopshop.gg">Contact</a>
+      </div>
+    </div>
+    <div class="footer-copy">The backend your agent is missing &middot; 1,244 APIs across 78 categories &middot; 927 benchmarked handlers &middot; free memory &middot; self-hostable &middot; slopshop.gg</div>
+  </div>
+</footer>
+
+</body>
+</html>
