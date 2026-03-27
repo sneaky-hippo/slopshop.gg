@@ -664,9 +664,9 @@ SCHEMAS['json-schema-validate'] = {
   example: { input: { data: { name: 'Alice', age: 'thirty' }, schema: { type: 'object', properties: { age: { type: 'number' } } } }, output: { valid: false, errors: [{ path: 'age', message: 'expected number, got string' }] } },
 };
 SCHEMAS['text-token-estimate-cost'] = {
-  input: { text: { type: 'string', description: 'Text to estimate tokens for', required: true }, model: { type: 'string', description: 'Model name (claude-sonnet-4-20250514, gpt-4o, gpt-4o-mini, gemini-2.0-flash)' } },
+  input: { text: { type: 'string', description: 'Text to estimate tokens for', required: true }, model: { type: 'string', description: 'Model name (claude-sonnet-4-6-20250514, claude-opus-4-6-20250514, claude-haiku-4-5-20251001, gpt-4o, gpt-4o-mini, gemini-2.0-flash)' } },
   output: { tokens: 'number', model: 'string', input_cost_usd: 'number', output_cost_usd: 'number' },
-  example: { input: { text: 'Hello world', model: 'claude-sonnet-4-20250514' }, output: { tokens: 3, input_cost_usd: 0.000009, output_cost_usd: 0.000045 } },
+  example: { input: { text: 'Hello world', model: 'claude-sonnet-4-6-20250514' }, output: { tokens: 3, input_cost_usd: 0.000009, output_cost_usd: 0.000045 } },
 };
 SCHEMAS['webhook-send'] = {
   input: { url: { type: 'string', description: 'URL to POST to', required: true }, body: { type: 'object', description: 'JSON payload' }, headers: { type: 'object', description: 'Custom headers' }, method: { type: 'string', description: 'HTTP method (default: POST)' } },

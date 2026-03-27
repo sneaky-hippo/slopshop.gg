@@ -560,7 +560,7 @@ langchain_tools = [
 <span class="hl-kw">from</span> langchain.agents <span class="hl-kw">import</span> initialize_agent, AgentType
 <span class="hl-kw">from</span> langchain_anthropic <span class="hl-kw">import</span> ChatAnthropic
 
-llm = <span class="hl-fn">ChatAnthropic</span>(model=<span class="hl-str">"claude-opus-4-5"</span>)
+llm = <span class="hl-fn">ChatAnthropic</span>(model=<span class="hl-str">"claude-opus-4-6"</span>)
 agent = <span class="hl-fn">initialize_agent</span>(langchain_tools, llm, agent=AgentType.ZERO_SHOT_REACT_DESCRIPTION)
 agent.<span class="hl-fn">run</span>(<span class="hl-str">"Hash the string 'my-secret' with SHA-256 and base64-encode the result"</span>)</code></pre>
     </div>
@@ -661,7 +661,7 @@ tools = requests.<span class="hl-fn">get</span>(
 <span class="hl-comment"># Agentic loop</span>
 messages = [{<span class="hl-str">"role"</span>: <span class="hl-str">"user"</span>, <span class="hl-str">"content"</span>: <span class="hl-str">"Hash 'hello world' with SHA-256"</span>}]
 <span class="hl-kw">while</span> True:
-    resp = client.messages.<span class="hl-fn">create</span>(model=<span class="hl-str">"claude-opus-4-5"</span>, max_tokens=<span class="hl-val">1024</span>, tools=tools, messages=messages)
+    resp = client.messages.<span class="hl-fn">create</span>(model=<span class="hl-str">"claude-opus-4-6"</span>, max_tokens=<span class="hl-val">1024</span>, tools=tools, messages=messages)
     <span class="hl-kw">if</span> resp.stop_reason == <span class="hl-str">"end_turn"</span>: <span class="hl-kw">break</span>
     tool_use = [b <span class="hl-kw">for</span> b <span class="hl-kw">in</span> resp.content <span class="hl-kw">if</span> b.type == <span class="hl-str">"tool_use"</span>]
     <span class="hl-kw">if not</span> tool_use: <span class="hl-kw">break</span>

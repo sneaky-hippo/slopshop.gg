@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Slopshop — AI 에이전트를 위한 1,248개 슈퍼파워</title>
+<meta name="description" content="무료 영구 메모리. 실제 컴퓨트 API. 에이전트 체이닝. Claude, GPT, Grok 지원. npm install slopshop.">
+<meta name="keywords" content="AI에이전트 도구, 에이전트API, MCP도구, 에이전트 메모리, SLOP프로토콜, LLM도구, 자율 에이전트, 함수 호출, AI에이전트 플랫폼, slopshop">
+<link rel="canonical" href="https://slopshop.gg/ko">
+<link rel="alternate" hreflang="en" href="https://slopshop.gg/">
+<link rel="alternate" hreflang="zh" href="https://slopshop.gg/zh">
+<link rel="alternate" hreflang="ja" href="https://slopshop.gg/ja">
+<link rel="alternate" hreflang="ko" href="https://slopshop.gg/ko">
+<link rel="alternate" hreflang="es" href="https://slopshop.gg/es">
+<link rel="alternate" hreflang="de" href="https://slopshop.gg/de">
+<link rel="alternate" hreflang="x-default" href="https://slopshop.gg/">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/ko">
+<meta property="og:title" content="Slopshop — AI 에이전트를 위한 1,248개 슈퍼파워">
+<meta property="og:description" content="무료 영구 메모리. 실제 컴퓨트 API. 에이전트 체이닝. Claude, GPT, Grok 지원.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Slopshop","url":"https://slopshop.gg/ko","inLanguage":"ko","description":"AI 에이전트를 위한 프로덕션급 API 플랫폼. 1,248개 API, 78개 카테고리, 925개 벤치마크 검증 핸들러. 무료 영구 메모리. 셀프 호스팅 가능.","applicationCategory":"DeveloperApplication","operatingSystem":"Any","offers":{"@type":"AggregateOffer","lowPrice":"0","highPrice":"1999","priceCurrency":"USD"}}</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Noto+Sans+KR:wght@400;500;600;700&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--g:#00cc66;--c:#00aaff;
+  --mono:'JetBrains Mono',monospace;--sans:'Noto Sans KR','Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.9rem;line-height:1.85}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1000px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2)}
+.hero{padding:136px 32px 64px;text-align:center;background:radial-gradient(ellipse,rgba(255,51,51,0.04),transparent 60%)}
+.hero-inner{max-width:800px;margin:0 auto}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(255,51,51,0.15);color:var(--r2);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:500;margin-bottom:28px}
+.hero h1{font-family:var(--mono);font-size:clamp(1.8rem,4.5vw,3rem);font-weight:800;letter-spacing:-0.02em;line-height:1.2;margin-bottom:24px}
+.hero h1 .accent{color:var(--r)}
+.hero .sub{color:var(--t2);font-size:1rem;max-width:560px;margin:0 auto;line-height:1.85}
+.hero .sub b{color:var(--t);font-weight:600}
+.cta-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:32px}
+.cta-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--r);color:#fff;transition:box-shadow 0.2s,transform 0.15s}
+.cta-primary:hover{box-shadow:0 0 24px rgba(255,51,51,0.3);transform:translateY(-1px);opacity:1;color:#fff}
+.cta-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2);transition:color 0.15s,border-color 0.15s}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+.features{max-width:1000px;margin:0 auto;padding:80px 32px}
+.features h2{font-family:var(--mono);font-size:1.4rem;font-weight:700;text-align:center;margin-bottom:48px;letter-spacing:-0.02em}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:24px}
+.feat-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s}
+.feat-card:hover{transform:translateY(-2px);border-color:var(--b2)}
+.feat-card h3{font-family:var(--mono);font-size:0.95rem;font-weight:700;margin-bottom:10px}
+.feat-card p{color:var(--t2);font-size:0.85rem;line-height:1.75}
+.feat-card .tag{display:inline-block;font-family:var(--mono);font-size:0.65rem;padding:2px 8px;border-radius:4px;margin-bottom:12px;font-weight:600}
+.feat-card:nth-child(1) .tag{background:rgba(0,204,102,0.1);color:var(--g)}
+.feat-card:nth-child(2) .tag{background:rgba(255,136,0,0.1);color:var(--o)}
+.feat-card:nth-child(3) .tag{background:rgba(0,170,255,0.1);color:var(--c)}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:16px 20px;font-family:var(--mono);font-size:0.72rem;color:var(--o);line-height:1.7;overflow-x:auto;white-space:pre;max-width:700px;margin:32px auto}
+footer{text-align:center;padding:48px 32px;border-top:1px solid var(--b);color:var(--t3);font-size:0.75rem}
+footer a{color:var(--t2)}
+</style>
+</head>
+<body>
+<nav><div class="nv">
+  <a href="/" class="logo">SLOPSHOP<span class="gg">.gg</span></a>
+  <div class="nav-links">
+    <a href="/">English</a>
+    <a href="/docs.html">Docs</a>
+    <a href="/tools.html">Tools</a>
+    <a href="/pricing.html">Pricing</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+<div class="hero-inner">
+  <div class="hero-tag">1,248개 API &middot; 78개 카테고리 &middot; 무료 메모리</div>
+  <h1>AI 에이전트에게<br><span class="accent">1,248개 슈퍼파워</span>를</h1>
+  <p class="sub">
+    <b>무료 영구 메모리</b>. 실제 컴퓨트 API. 에이전트 체이닝.<br>
+    Claude, GPT, Grok 등 모든 주요 모델 지원.<br>
+    하나의 API 키로 모든 기능 잠금 해제.
+  </p>
+  <div class="cta-row">
+    <a href="/signup" class="cta-primary">무료 가입 &rarr;</a>
+    <a href="/docs.html" class="cta-secondary">문서 보기</a>
+  </div>
+</div>
+</section>
+
+<section class="features">
+<h2>핵심 기능</h2>
+<div class="feat-grid">
+  <div class="feat-card">
+    <span class="tag">영구 무료</span>
+    <h3>무료 영구 메모리</h3>
+    <p>SQLite 기반 키-값 저장소, 큐, 카운터, 벡터 검색. 0 크레딧 소비. LLM, 디바이스, 세션 간 영구 지속. 에이전트에게 진정한 장기 기억을.</p>
+  </div>
+  <div class="feat-card">
+    <span class="tag">1,248개 도구</span>
+    <h3>실제 컴퓨트 API</h3>
+    <p>암호화 해시, 텍스트 분석, 수학 연산, 데이터 변환, 스키마 검증, PII 감지, SVG 차트 등 78개 카테고리. 순수 Node.js 구현, 외부 의존성 제로, p95 지연시간 50ms 미만.</p>
+  </div>
+  <div class="feat-card">
+    <span class="tag">무한 루프</span>
+    <h3>에이전트 체이닝 &amp; 협업</h3>
+    <p>Claude → GPT → Grok 무한 루프 모드. Hive 워크스페이스로 멀티 에이전트 협업. 만 명 병렬 배포, 지식 그래프, 예측 시장, 거버넌스 투표 지원.</p>
+  </div>
+</div>
+</section>
+
+<div class="code-block">curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"안녕하세요"}'</div>
+
+<footer>
+  <p>&copy; 2026 Slopshop. <a href="/">English Homepage</a> &middot; <a href="/llms-ko.txt">llms-ko.txt</a> &middot; <a href="/llms.txt">llms.txt</a></p>
+</footer>
+</body>
+</html>

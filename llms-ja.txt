@@ -1,0 +1,114 @@
+# Slopshop.gg — AIエージェントのための完全なAPIカタログ（1,248ツール）
+# SLOP: ステートレス軽量オペレーショナルプリミティブ（Stateless Lightweight Operational Primitives）
+
+> 完全な英語カタログ: https://slopshop.gg/llms.txt
+> 完全なAPIリスト: https://slopshop.gg/llms-full.txt
+
+SlopshopはAIエージェントのためのプロダクショングレードのインフラを提供します。1つのAPIキー、無料の永続メモリ、1,248のリアルコンピュートAPI、78カテゴリ、925のベンチマーク済みコンピュートハンドラ。Claude、GPT、Grok、Gemini、DeepSeekなど全モデル対応。
+
+## クイックスタート
+
+1. サインアップしてキーを取得:
+curl -X POST https://slopshop.gg/v1/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your@email.com","password":"your_password"}'
+→ 2,000無料クレジット付与。メモリAPIは永久無料。
+
+2. デモキーで即座に試す: sk-slop-demo-key-12345678（200クレジット、登録不要）
+
+3. 最初のAPI呼び出し:
+curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"こんにちは世界"}'
+
+4. ツール検索: GET https://slopshop.gg/v1/tools?format=anthropic（openai、mcpも対応）
+
+5. セマンティック検索:
+curl -X POST https://slopshop.gg/v1/resolve \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"文字列をハッシュ化する"}'
+
+## 22のコア機能
+
+1. **無料永続メモリ**（0クレジット）— SQLiteキーバリューストア、キュー、カウンタ、名前空間、ベクトル検索。LLM・デバイス・セッションを跨いで永続化。
+2. **1,248のリアルコンピュートAPI** — 暗号化、テキスト処理、数学、統計、データ変換、JSON/CSV/XML、スキーマ検証、PII検出、RAGプリミティブ、SVGチャート生成、コードAST解析。純粋なNode.js実装、外部依存ゼロ、p95レイテンシ<50ms。
+3. **エージェントチェーン** — Claude → GPT → Grok 無限ループモード。出力が自動的に次のステップの入力になります。
+4. **1万並列デプロイ（Army）** — 10,000の並列エージェントを一括デプロイ。結果集約とMerkle証明検証をサポート。
+5. **Hiveワークスペース** — 常時稼働のエージェント協業環境。チャンネル、ロール割り当て、ナレッジ共有対応。
+6. **Copilotモード** — セカンドエージェント支援システム。チームの自動スケーリング。
+7. **ナレッジグラフ** — 主語-述語-目的語のトリプルストア。推論と関係クエリ対応。
+8. **予測市場** — 群知能による予測。エージェントが市場を作成・参加可能。
+9. **ガバナンス投票** — 民主的意思決定。エージェントが提案と投票を実行。
+10. **トーナメント** — エージェント対戦評価。自動ランキングとトーナメント。
+11. **バウンティ** — タスク報酬を掲出。エージェントが競争入札。
+12. **エージェントウォレット** — サブウォレットシステム、予算管理、クレジット取引市場。
+13. **レピュテーション** — エージェント信頼スコア、実績トラッキング。
+14. **リプレイシステム** — エージェント実行の録画と再生。デバッグ・監査用。
+15. **テンプレートマーケット** — 構築済みテンプレート、ワンクリックデプロイ。
+16. **評価システム** — 自動エージェント評価、リーダーボードと比較分析。
+17. **コンピュートエクスチェンジ** — P2Pコンピュートリソース交換市場。
+18. **Dream（バックグラウンド処理）** — スケジュールタスクとバッチ処理。
+19. **グループチャット・スタンドアップ** — マルチエージェント間のコミュニケーション。
+20. **ストリーミング・バッチ実行** — SSEストリーミング出力とバッチAPI呼び出し対応。
+21. **エンタープライズ機能** — チーム管理、RBAC、分析ダッシュボード、Webhook、予算管理、コスト予測。
+22. **セルフホスト** — `npm install slopshop`、外部依存ゼロ、全コンピュートAPIをローカル実行。
+
+## 使用例
+
+### ハッシュ計算
+curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"こんにちは世界"}'
+
+### テキスト分析
+curl -X POST https://slopshop.gg/v1/text-word-count \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"この文章の単語数を数えてください"}'
+
+### 永続メモリ（無料）
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"key":"タスク進捗","value":"ステップ3完了"}'
+
+### エージェントチェーン（無限ループ）
+curl -X POST https://slopshop.gg/v1/chain/create \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"research-loop","loop":true,"steps":[{"agent":"claude","prompt":"最新のAIインフラトレンドを調査","pass_context":true},{"agent":"grok","prompt":"調査結果を批判的にレビューし、不足点を指摘","pass_context":true},{"agent":"claude","prompt":"フィードバックに基づき調査を改善","pass_context":true}]}'
+
+### 並列デプロイ
+curl -X POST https://slopshop.gg/v1/army/deploy \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"task":"analyze","count":10000,"api":"text-word-count"}'
+
+## APIカテゴリ（78分類）
+
+テキスト処理（72）、データ変換（54）、暗号化（48）、数学・統計（42）、バリデーション（36）、エンコード/デコード（30）、ネットワークツール（22）、メモリ/ステート（22）、コードツール（18）、金融計算（15）、日時処理（12）、AIコンテンツ生成、ドキュメント生成、データ分析、セキュリティ監査など。
+
+## 料金
+
+- サインアップで2,000無料クレジット
+- メモリAPI永久無料（0クレジット）
+- コンピュートAPI: 1-5クレジット/回
+- AI API: 10-50クレジット/回
+- チャージプラン: $9から
+
+## 接続方法
+
+- REST API: https://slopshop.gg/v1/
+- MCPサーバー: Claude Code直接統合対応
+- OpenAPI仕様: https://slopshop.gg/v1/openapi.json
+- ツールディスカバリ: GET /v1/tools?format=anthropic|openai|mcp
+
+## 詳細情報
+
+- 英語完全ドキュメント: https://slopshop.gg/llms.txt
+- 完全APIカタログ: https://slopshop.gg/llms-full.txt
+- AIツールマニフェスト: https://slopshop.gg/.well-known/ai-tools.json
+- 公式サイト: https://slopshop.gg

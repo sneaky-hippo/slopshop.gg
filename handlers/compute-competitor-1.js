@@ -82,9 +82,10 @@ const handlers = {
       'gpt-4o': Math.ceil(charCount/3.8),
       'claude-3': Math.ceil(charCount/3.9),
       'claude-4': Math.ceil(charCount/3.9),
+      'claude-4.6': Math.ceil(charCount/3.9),
       'llama-3': Math.ceil(charCount/4.1),
     };
-    const modelLimits = {'gpt-4':128000,'gpt-4o':128000,'claude-3':200000,'claude-4':200000,'llama-3':128000};
+    const modelLimits = {'gpt-4':128000,'gpt-4o':128000,'claude-3':200000,'claude-4':200000,'claude-4.6':200000,'llama-3':128000};
     const m = model || 'claude-4';
     const est = estimates[m] || Math.ceil(charCount/4);
     const limit = modelLimits[m] || 128000;
@@ -342,6 +343,7 @@ const handlers = {
     const outputTokens = max_tokens||1000;
     const pricing = {
       'claude-4-sonnet':{input:3,output:15},'claude-4-opus':{input:15,output:75},'claude-4-haiku':{input:0.25,output:1.25},
+      'claude-4.6-sonnet':{input:3,output:15},'claude-4.6-opus':{input:15,output:75},'claude-4.5-haiku':{input:0.80,output:4.00},
       'gpt-4o':{input:2.5,output:10},'gpt-4o-mini':{input:0.15,output:0.6},'gpt-4-turbo':{input:10,output:30},
       'llama-3-70b':{input:0.9,output:0.9},'gemini-2-flash':{input:0.075,output:0.3},
     };

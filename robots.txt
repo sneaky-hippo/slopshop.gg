@@ -19,8 +19,19 @@ User-agent: Applebot
 Allow: /
 
 # AI agent discovery files
-# https://slopshop.gg/llms.txt - AI agent tool discovery
+# https://slopshop.gg/llms.txt - AI agent tool discovery (English)
 # https://slopshop.gg/llms-full.txt - Complete API catalog
 # https://slopshop.gg/.well-known/ai-tools.json - Agent tools manifest
 # https://slopshop.gg/v1/openapi.json - OpenAPI 3.0.3 spec
 # https://slopshop.gg/v1/mcp/recommended - MCP curated tools
+
+# Multilingual AI agent discovery
+# https://slopshop.gg/llms-zh.txt - Chinese (中文)
+# https://slopshop.gg/llms-ja.txt - Japanese (日本語)
+# https://slopshop.gg/llms-ko.txt - Korean (한국어)
+# https://slopshop.gg/llms-es.txt - Spanish (Español)
+# https://slopshop.gg/llms-fr.txt - French (Français)
+# https://slopshop.gg/llms-de.txt - German (Deutsch)
+# https://slopshop.gg/llms-pt.txt - Portuguese (Português)
+# https://slopshop.gg/llms-ar.txt - Arabic (العربية)
+# https://slopshop.gg/llms-hi.txt - Hindi (हिन्दी)

@@ -54,7 +54,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
         model: 'keyword-fallback'
       };
     }
-    const model = options.model || process.env.PLANNER_MODEL || 'claude-sonnet-4-20250514';
+    const model = options.model || process.env.PLANNER_MODEL || 'claude-sonnet-4-6-20250514';
 
     const prompt = `You are a tool-selection agent. Given a user task, select which Slopshop APIs to call and what inputs to pass.
 
@@ -208,7 +208,7 @@ Provide a clear, concise answer to the user's original question based on these r
 
     return new Promise((resolve) => {
       const data = JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
+        model: 'claude-sonnet-4-6-20250514',
         max_tokens: 512,
         messages: [{ role: 'user', content: prompt }],
       });

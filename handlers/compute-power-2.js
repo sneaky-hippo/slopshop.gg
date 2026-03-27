@@ -154,7 +154,7 @@ const handlers = {
     // ~4 chars per token for English
     const chars=t.length;const words=t.split(/\s+/).filter(Boolean).length;
     const tokenEst=Math.ceil(chars/3.8);
-    const limits={'gpt-4':128000,'gpt-4o':128000,'gpt-4o-mini':128000,'claude-3-opus':200000,'claude-3-sonnet':200000,'claude-4-opus':200000,'claude-4-sonnet':200000,'llama-3-70b':128000,'gemini-pro':1000000};
+    const limits={'gpt-4':128000,'gpt-4o':128000,'gpt-4o-mini':128000,'claude-3-opus':200000,'claude-3-sonnet':200000,'claude-4-opus':200000,'claude-4-sonnet':200000,'claude-opus-4-6':200000,'claude-sonnet-4-6':200000,'claude-haiku-4-5':200000,'llama-3-70b':128000,'gemini-pro':1000000};
     return {_engine:'real',estimated_tokens:tokenEst,chars,words,model:m,context_limit:limits[m]||128000,utilization:Math.round(tokenEst/(limits[m]||128000)*10000)/100};
   },
 

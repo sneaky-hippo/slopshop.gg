@@ -492,4 +492,20 @@
   <url><loc>https://slopshop.gg/visualizer.html</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/exchange.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/examples.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <!-- Multilingual landing pages -->
+  <url><loc>https://slopshop.gg/zh.html</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/ja.html</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/ko.html</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/es.html</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/de.html</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <!-- Multilingual LLM discovery files -->
+  <url><loc>https://slopshop.gg/llms-zh.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-ja.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-ko.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-es.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-fr.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-de.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-pt.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-ar.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-hi.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
 </urlset>

@@ -227,7 +227,7 @@ handlers['ext-anthropic-message'] = async (input) => {
     const res = await post('api.anthropic.com', '/v1/messages', {
       'x-api-key': key, 'anthropic-version': '2023-06-01',
     }, {
-      model: input.model || 'claude-sonnet-4-20250514',
+      model: input.model || 'claude-sonnet-4-6-20250514',
       max_tokens: input.max_tokens || 1024,
       messages: [{ role: 'user', content: input.text || input.message || input.input }],
       ...(input.system ? { system: input.system } : {}),
