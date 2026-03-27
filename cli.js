@@ -3218,9 +3218,13 @@ async function cmdNatural(cmd, args) {
   }
 
   // File operations
-  if (/^(read|cat|open|show)\s+(file\s+)?(.+\.\w+)/i.test(fullInput)) {
-    const file = fullInput.match(/(?:read|cat|open|show)\s+(?:file\s+)?(.+)/i)[1].trim();
-    return cmdFile(['read', file]);
+  if (/^(read|cat|open|show)\s+(file\s+)?(.+)/i.test(fullInput)) {
+    const target = fullInput.match(/(?:read|cat|open|show)\s+(?:file\s+)?(.+)/i)[1].trim();
+    if (fs.existsSync(target)) return cmdFile(['read', target]);
+  }
+  if (/^(write|create|save)\s+(file\s+)?(.+\.\w+)/i.test(fullInput)) {
+    const m = fullInput.match(/(?:write|create|save)\s+(?:file\s+)?(\S+)\s+(.*)/i);
+    if (m) return cmdFile(['write', m[1], '--content', m[2]]);
   }
 
   // Git shortcuts
