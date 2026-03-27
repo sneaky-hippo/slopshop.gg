@@ -23,7 +23,23 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
   // Call Anthropic to plan which tools to use
   async function planTools(task, options = {}) {
     const key = process.env.ANTHROPIC_API_KEY;
-    if (!key) return { error: 'ANTHROPIC_API_KEY not set' };
+    if (!key) {
+      // Fallback: keyword-based tool matching when no LLM key is available
+      const taskWords = task.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+      const scored = [];
+      for (const [slug, def] of Object.entries(API_DEFS)) {
+        const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
+        let score = 0;
+        taskWords.forEach(w => { if (text.includes(w)) score++; if (slug.includes(w)) score += 2; });
+        if (score > 0 && def.credits <= 5) scored.push({ slug, score, credits: def.credits });
+      }
+      const topTools = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+      if (topTools.length === 0) return { error: 'No matching tools found for task' };
+      return {
+        steps: topTools.map(t => ({ api: t.slug, input: { text: task, task }, reason: `Keyword match (score ${t.score})` })),
+        model: 'keyword-fallback'
+      };
+    }
     const model = options.model || process.env.PLANNER_MODEL || 'claude-sonnet-4-20250514';
 
     const prompt = `You are a tool-selection agent. Given a user task, select which Slopshop APIs to call and what inputs to pass.
@@ -404,6 +420,7 @@ Provide a clear, concise answer to the user's original question based on these r
     autoStoreResult(runId, task, answer, execution.results);
 
     res.json({
+      ok: true,
       answer,
       task,
       run_id: runId,
