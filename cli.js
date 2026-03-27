@@ -1342,15 +1342,32 @@ async function cmdOrg(args) {
 
     if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
 
+    const agentCount = d.agents?.length || 0;
+    const models = {};
+    for (const a of (d.agents || [])) { models[a.model] = (models[a.model] || 0) + 1; }
+    const modelStr = Object.entries(models).map(([m, c]) => c + ' ' + m).join(', ');
+
     console.log(`\n  ${green('\u2713 Organization launched!')}`);
     console.log(`  ${bold('Org ID:')}  ${cyan(d.org_id)}`);
-    console.log(`  ${bold('Agents:')} ${d.agents?.length || 0}`);
+    console.log(`  ${bold('Agents:')} ${agentCount} (${modelStr})`);
     for (const a of (d.agents || [])) {
-      console.log(`    ${dim('\u2022')} ${a.name} (${a.role}) ${dim('\u2014 ' + a.model)}`);
+      const icon = a.model === 'claude' ? 'C' : a.model === 'gpt' ? 'G' : a.model === 'grok' ? 'X' : '?';
+      console.log(`    ${dim('[')}${cyan(icon)}${dim(']')} ${a.name} ${dim('(' + a.role + ')')}`);
     }
     console.log(`  ${bold('Channels:')} ${(d.channels || []).join(', ')}`);
     console.log(`  ${bold('Hive:')}   ${d.hive_id}`);
-    console.log(`\n  ${dim('Send a task:')} ${cyan('slop org task ' + d.org_id + ' "Build a REST API"')}\n`);
+    console.log('');
+    console.log(`  ${C.bgRed}${C.white}${C.bold} ${agentCount} AGENTS RUNNING ${C.reset} ${dim('locally hosted on slopshop.gg')}`);
+    console.log(`  ${dim('Models:')} ${modelStr}`);
+    console.log(`\n  ${dim('Send a task:')} ${cyan('slop org task ' + d.org_id + ' "Build a REST API"')}`);
+    console.log(`  ${dim('Watch live:')}  ${cyan('slop live ' + d.org_id)}\n`);
+
+    // Track active orgs in config
+    const cfg = loadConfig();
+    cfg.active_orgs = cfg.active_orgs || [];
+    cfg.active_orgs.push({ id: d.org_id, name: body.name || 'Org', agents: agentCount, created: new Date().toISOString() });
+    if (cfg.active_orgs.length > 20) cfg.active_orgs = cfg.active_orgs.slice(-20);
+    saveConfig(cfg);
     return;
   }
 
@@ -3064,11 +3081,18 @@ async function cmdInteractive() {
   const W = process.stdout.columns || 80;
 
   // Header
+  const cfg = loadConfig();
+  const activeOrgs = cfg.active_orgs || [];
+  const totalAgents = activeOrgs.reduce((sum, o) => sum + (o.agents || 0), 0);
+
   console.log('');
   console.log(`  ${C.red}${C.bold}SLOPSHOP${C.reset} ${dim('v' + PKG_VERSION + ' — interactive mode')}`);
-  console.log(`  ${dim('1,248 APIs | 43 commands | Type anything | Ctrl+C to exit')}`);
+  console.log(`  ${dim('1,248 APIs | 44 commands | Type anything | Ctrl+C to exit')}`);
   if (API_KEY) console.log(`  ${dim('Key:')} ${cyan(API_KEY.slice(0, 12) + '...')}`);
   else console.log(`  ${yellow('No key set.')} Run: ${cyan('signup')} or ${cyan('key set sk-slop-...')}`);
+  if (totalAgents > 0) {
+    console.log(`  ${C.bgRed}${C.white}${C.bold} ${totalAgents} AGENTS ACTIVE ${C.reset} ${dim('across ' + activeOrgs.length + ' org(s)')}`);
+  }
   console.log(`  ${dim('─'.repeat(Math.min(W - 4, 60)))}\n`);
 
   const history = [];
