@@ -33,6 +33,12 @@ node simulate.js             # penetration simulation
 - `mcp-server.js` - MCP server for Claude Code
 - `cli.js` - CLI tool
 
+## Agent Chaining & Prompt Queue (New)
+
+- **Agent-to-agent chaining**: Agents can invoke other agents via the chain API, enabling infinite consciousness flows where output from one agent becomes input for the next.
+- **Prompt queue**: Batch processing system for overnight or deferred workloads. Prompts are queued in SQLite and executed sequentially or in parallel depending on configuration.
+- See `STRATEGY-2026.md` for full roadmap and implementation priorities.
+
 ## Adding a new API
 
 1. Add handler to `handlers/compute.js` (or appropriate handler file)

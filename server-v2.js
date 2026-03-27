@@ -175,6 +175,30 @@ db.exec(`CREATE TABLE IF NOT EXISTS branches (id TEXT PRIMARY KEY, parent_id TEX
 db.exec(`CREATE TABLE IF NOT EXISTS failure_journal (id INTEGER PRIMARY KEY AUTOINCREMENT, api_key TEXT, api TEXT, error_type TEXT, error_message TEXT, input_summary TEXT, ts INTEGER)`);
 db.exec(`CREATE TABLE IF NOT EXISTS ab_tests (id TEXT PRIMARY KEY, api_key TEXT, name TEXT, variant_a TEXT, variant_b TEXT, results_a TEXT DEFAULT '[]', results_b TEXT DEFAULT '[]', ts INTEGER)`);
 
+// ===== AGENT CHAINING & PROMPT QUEUE TABLES =====
+db.exec(`CREATE TABLE IF NOT EXISTS agent_chains (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  name TEXT,
+  steps TEXT,
+  loop INTEGER DEFAULT 0,
+  context TEXT DEFAULT '{}',
+  status TEXT DEFAULT 'active',
+  current_step INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS prompt_queue (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  prompts TEXT,
+  schedule TEXT,
+  frequency TEXT DEFAULT 'once',
+  status TEXT DEFAULT 'queued',
+  last_run TEXT,
+  run_count INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
 // Load memory handlers now that db is initialized, and merge into allHandlers
 try {
   memoryHandlers = require('./handlers/memory')(db);
@@ -5087,6 +5111,186 @@ app.post('/v1/agent/run', auth, async (req, res) => {
     final_result: lastResult,
     tools_used: chain.map(c => c.tool),
     balance: req.acct.balance,
+    _engine: 'real'
+  });
+});
+
+// ===== AGENT-TO-AGENT CHAINING & PROMPT QUEUE =====
+
+// 1. Create an agent chain
+app.post('/v1/chain/create', auth, (req, res) => {
+  const { name, steps, loop, context } = req.body;
+  const id = uuidv4();
+  db.prepare('INSERT INTO agent_chains (id, user_id, name, steps, loop, context, status, current_step, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))').run(
+    id, req.acct?.email || req.apiKey, name || 'Chain', JSON.stringify(steps || []), loop ? 1 : 0, JSON.stringify(context || {}), 'active', 0
+  );
+  res.json({ ok: true, chain_id: id, steps: (steps || []).length, loop: !!loop, status: 'active' });
+});
+
+// 2. Advance chain to next step
+app.post('/v1/chain/advance', auth, (req, res) => {
+  const { chain_id, result, context_update } = req.body;
+  const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(chain_id);
+  if (!chain) return res.status(404).json({ error: { code: 'chain_not_found' } });
+
+  const steps = JSON.parse(chain.steps);
+  let ctx = JSON.parse(chain.context);
+  let currentStep = chain.current_step;
+
+  // Store result from completed step
+  if (result) ctx['step_' + currentStep + '_result'] = result;
+  if (context_update) Object.assign(ctx, context_update);
+
+  // Advance
+  currentStep++;
+  if (currentStep >= steps.length) {
+    if (chain.loop) {
+      currentStep = 0; // Loop back
+      ctx._loop_count = (ctx._loop_count || 0) + 1;
+    } else {
+      db.prepare('UPDATE agent_chains SET status = ?, context = ?, current_step = ? WHERE id = ?').run('completed', JSON.stringify(ctx), currentStep, chain_id);
+      return res.json({ ok: true, status: 'completed', loops: ctx._loop_count || 0, final_context: ctx });
+    }
+  }
+
+  const nextStep = steps[currentStep];
+  db.prepare('UPDATE agent_chains SET context = ?, current_step = ? WHERE id = ?').run(JSON.stringify(ctx), currentStep, chain_id);
+
+  res.json({
+    ok: true,
+    chain_id,
+    current_step: currentStep,
+    next: { agent: nextStep.agent, prompt: nextStep.prompt, context: nextStep.pass_context ? ctx : {} },
+    loop_count: ctx._loop_count || 0,
+    status: 'running'
+  });
+});
+
+// 3. Queue prompts for later execution (overnight batch)
+app.post('/v1/chain/queue', auth, (req, res) => {
+  const { prompts, schedule, frequency } = req.body;
+  const id = uuidv4();
+  db.prepare('INSERT INTO prompt_queue (id, user_id, prompts, schedule, frequency, status, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))').run(
+    id, req.acct?.email || req.apiKey, JSON.stringify(prompts || []), schedule || 'now', frequency || 'once', 'queued'
+  );
+  res.json({ ok: true, queue_id: id, prompt_count: (prompts || []).length, schedule: schedule || 'now', frequency: frequency || 'once' });
+});
+
+// 4. Check chain status
+app.get('/v1/chain/status/:id', auth, (req, res) => {
+  const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(req.params.id);
+  if (!chain) return res.status(404).json({ error: { code: 'chain_not_found' } });
+  const steps = JSON.parse(chain.steps);
+  const ctx = JSON.parse(chain.context);
+  res.json({
+    ok: true,
+    chain_id: chain.id,
+    name: chain.name,
+    status: chain.status,
+    current_step: chain.current_step,
+    total_steps: steps.length,
+    loop: !!chain.loop,
+    loop_count: ctx._loop_count || 0,
+    context: ctx,
+    created_at: chain.created_at
+  });
+});
+
+// 5. Pause a running chain
+app.post('/v1/chain/pause/:id', auth, (req, res) => {
+  const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(req.params.id);
+  if (!chain) return res.status(404).json({ error: { code: 'chain_not_found' } });
+  if (chain.status === 'paused') return res.json({ ok: true, chain_id: chain.id, status: 'paused', message: 'Already paused' });
+  db.prepare('UPDATE agent_chains SET status = ? WHERE id = ?').run('paused', req.params.id);
+  res.json({ ok: true, chain_id: chain.id, status: 'paused' });
+});
+
+// 6. Resume a paused chain
+app.post('/v1/chain/resume/:id', auth, (req, res) => {
+  const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(req.params.id);
+  if (!chain) return res.status(404).json({ error: { code: 'chain_not_found' } });
+  if (chain.status !== 'paused') return res.json({ ok: true, chain_id: chain.id, status: chain.status, message: 'Chain is not paused' });
+  db.prepare('UPDATE agent_chains SET status = ? WHERE id = ?').run('active', req.params.id);
+  const steps = JSON.parse(chain.steps);
+  const nextStep = steps[chain.current_step];
+  const ctx = JSON.parse(chain.context);
+  res.json({
+    ok: true,
+    chain_id: chain.id,
+    status: 'active',
+    current_step: chain.current_step,
+    next: nextStep ? { agent: nextStep.agent, prompt: nextStep.prompt, context: nextStep.pass_context ? ctx : {} } : null
+  });
+});
+
+// 7. List all chains for user
+app.get('/v1/chain/list', auth, (req, res) => {
+  const userId = req.acct?.email || req.apiKey;
+  const chains = db.prepare('SELECT * FROM agent_chains WHERE user_id = ? ORDER BY created_at DESC').all(userId);
+  res.json({
+    ok: true,
+    chains: chains.map(c => ({
+      chain_id: c.id,
+      name: c.name,
+      status: c.status,
+      current_step: c.current_step,
+      total_steps: JSON.parse(c.steps).length,
+      loop: !!c.loop,
+      created_at: c.created_at
+    })),
+    total: chains.length
+  });
+});
+
+// 8. List queued prompts
+app.get('/v1/queue/list', auth, (req, res) => {
+  const userId = req.acct?.email || req.apiKey;
+  const queued = db.prepare('SELECT * FROM prompt_queue WHERE user_id = ? ORDER BY created_at DESC').all(userId);
+  res.json({
+    ok: true,
+    queued: queued.map(q => ({
+      queue_id: q.id,
+      prompt_count: JSON.parse(q.prompts).length,
+      schedule: q.schedule,
+      frequency: q.frequency,
+      status: q.status,
+      last_run: q.last_run,
+      run_count: q.run_count,
+      created_at: q.created_at
+    })),
+    total: queued.length
+  });
+});
+
+// 9. Cancel a queued prompt
+app.delete('/v1/queue/:id', auth, (req, res) => {
+  const item = db.prepare('SELECT * FROM prompt_queue WHERE id = ?').get(req.params.id);
+  if (!item) return res.status(404).json({ error: { code: 'queue_item_not_found' } });
+  db.prepare('UPDATE prompt_queue SET status = ? WHERE id = ?').run('cancelled', req.params.id);
+  res.json({ ok: true, queue_id: req.params.id, status: 'cancelled' });
+});
+
+// 10. Local compute enhancement — harness local results + cloud tools
+app.post('/v1/local/enhance', auth, (req, res) => {
+  const { task, local_result, enhance_with } = req.body;
+  const id = uuidv4();
+  const enhancements = [];
+  (enhance_with || []).forEach(slug => {
+    const handler = allHandlers[slug];
+    if (handler) {
+      try {
+        const result = handler({ ...req.body, text: JSON.stringify(local_result), data: local_result });
+        enhancements.push({ tool: slug, result });
+      } catch(e) { enhancements.push({ tool: slug, error: e.message }); }
+    }
+  });
+
+  res.json({
+    ok: true,
+    enhancement_id: id,
+    original: local_result,
+    enhancements,
+    enhanced_count: enhancements.filter(e => !e.error).length,
     _engine: 'real'
   });
 });
