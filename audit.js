@@ -162,8 +162,8 @@ async function main() {
   console.log(`  Call:    ${zapCall.body.uuid ? 'OK' : 'FAIL'}`);
   console.log(`  Webhook: ${zapHook.body.status === 'processed' ? 'OK' : 'FAIL'}`);
 
-  // 8. ALL 1,244 APIs
-  console.log('\n--- ALL 1,244 APIs ---');
+  // 8. ALL 1,248 APIs
+  console.log('\n--- ALL 1,248 APIs ---');
   const slugs = Object.keys(API_DEFS);
   let apiPass = 0, apiFail = 0, apiNeedsKey = 0;
   const failures = [];

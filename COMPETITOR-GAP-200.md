@@ -5,7 +5,7 @@
 > Vercel AI SDK, Dify.ai, Flowise, Superagent, AgentGPT, BabyAGI, MetaGPT.
 >
 > Every tool below is a pure compute handler (JSON in, JSON out, no external deps)
-> unless explicitly noted. All are MISSING from Slopshop's current 1,244 APIs.
+> unless explicitly noted. All are MISSING from Slopshop's current 1,248 APIs.
 
 ---
 
@@ -329,4 +329,4 @@ This is what MetaGPT, BabyAGI, AgentGPT, and CrewAI are fundamentally built on. 
 ---
 
 *All 200 tools are pure compute handlers (JSON in, JSON out, no external dependencies).*
-*This would bring Slopshop from 1,244 to 1,352 APIs.*
+*This would bring Slopshop from 1,248 to 1,352 APIs.*

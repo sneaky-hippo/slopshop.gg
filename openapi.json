@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Slopshop API",
-    "description": "The infrastructure layer for AI agents. 1244 real compute APIs.",
+    "description": "The infrastructure layer for AI agents. 1248 real compute APIs.",
     "version": "3.2.0",
     "contact": {
       "email": "dev@slopshop.gg",
@@ -13112,6 +13112,98 @@
         }
       }
     },
+    "/v1/fortune-cookie": {
+      "post": {
+        "summary": "Fortune Cookie",
+        "description": "Returns a random fortune cookie wisdom for AI agents.",
+        "tags": [
+          "Agent Tools"
+        ],
+        "operationId": "fortune-cookie",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_engine": {
+                      "type": "string",
+                      "example": "real"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Insufficient credits"
+          },
+          "404": {
+            "description": "API not found"
+          },
+          "500": {
+            "description": "Handler error (credits refunded)"
+          }
+        }
+      }
+    },
+    "/v1/agent-horoscope": {
+      "post": {
+        "summary": "Agent Horoscope",
+        "description": "Generates a horoscope for an agent based on its key and recent activity.",
+        "tags": [
+          "Agent Tools"
+        ],
+        "operationId": "agent-horoscope",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_engine": {
+                      "type": "string",
+                      "example": "real"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Insufficient credits"
+          },
+          "404": {
+            "description": "API not found"
+          },
+          "500": {
+            "description": "Handler error (credits refunded)"
+          }
+        }
+      }
+    },
     "/v1/text-roast": {
       "post": {
         "summary": "Text Roast",
@@ -15972,6 +16064,98 @@
           "Text Processing"
         ],
         "operationId": "text-binary",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_engine": {
+                      "type": "string",
+                      "example": "real"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Insufficient credits"
+          },
+          "404": {
+            "description": "API not found"
+          },
+          "500": {
+            "description": "Handler error (credits refunded)"
+          }
+        }
+      }
+    },
+    "/v1/text-leetspeak": {
+      "post": {
+        "summary": "Leetspeak",
+        "description": "Convert text to l33tspeak by replacing letters with numbers.",
+        "tags": [
+          "Text Processing"
+        ],
+        "operationId": "text-leetspeak",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_engine": {
+                      "type": "string",
+                      "example": "real"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Insufficient credits"
+          },
+          "404": {
+            "description": "API not found"
+          },
+          "500": {
+            "description": "Handler error (credits refunded)"
+          }
+        }
+      }
+    },
+    "/v1/text-pig-latin": {
+      "post": {
+        "summary": "Pig Latin",
+        "description": "Convert text to Pig Latin word-by-word.",
+        "tags": [
+          "Text Processing"
+        ],
+        "operationId": "text-pig-latin",
         "requestBody": {
           "content": {
             "application/json": {

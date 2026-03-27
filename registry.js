@@ -436,6 +436,8 @@ const API_DEFS = {
   'random-persona': { cat: 'Generate', name: 'Random Persona', desc: 'Generate a complete fictional persona (name, backstory, traits, speech, biases) from true randomness.', credits: 0, tier: 'compute' },
   'text-crystallize': { cat: 'Text Processing', name: 'Thought Crystallizer', desc: 'Extract entities and relationships from stream-of-consciousness text. Turns raw thought into structured knowledge graph triples.', credits: 0, tier: 'compute' },
   'rubber-duck': { cat: 'Agent Tools', name: 'Rubber Duck', desc: 'Takes a problem description, returns 5 targeted clarifying questions to help you debug it yourself.', credits: 0, tier: 'compute' },
+  'fortune-cookie': { cat: 'Agent Tools', name: 'Fortune Cookie', desc: 'Returns a random fortune cookie wisdom for AI agents.', credits: 0, tier: 'compute' },
+  'agent-horoscope': { cat: 'Agent Tools', name: 'Agent Horoscope', desc: 'Generates a horoscope for an agent based on its key and recent activity.', credits: 0, tier: 'compute' },
 
   // ====== SUPERPOWER BATCH 1: COMPUTE ======
   'text-roast': { cat: 'Text Processing', name: 'Text Roast', desc: 'Generates a humorous constructive roast of any text submission.', credits: 0, tier: 'compute' },
@@ -534,6 +536,8 @@ const API_DEFS = {
   'text-caesar': { cat: 'Text Processing', name: 'Caesar Cipher', desc: 'Apply Caesar cipher shift to text. Configurable shift amount (default 3).', credits: 0, tier: 'compute' },
   'text-morse': { cat: 'Text Processing', name: 'Morse Code', desc: 'Convert text to Morse code dots and dashes.', credits: 0, tier: 'compute' },
   'text-binary': { cat: 'Text Processing', name: 'Text to Binary', desc: 'Convert text to 8-bit binary representation of each character.', credits: 0, tier: 'compute' },
+  'text-leetspeak': { cat: 'Text Processing', name: 'Leetspeak', desc: 'Convert text to l33tspeak by replacing letters with numbers.', credits: 0, tier: 'compute' },
+  'text-pig-latin': { cat: 'Text Processing', name: 'Pig Latin', desc: 'Convert text to Pig Latin word-by-word.', credits: 0, tier: 'compute' },
   'text-title-case': { cat: 'Text Processing', name: 'Title Case', desc: 'Convert text to Title Case (capitalize first letter of each word).', credits: 0, tier: 'compute' },
   'text-snake-case': { cat: 'Text Processing', name: 'Snake Case', desc: 'Convert text to snake_case from any casing style.', credits: 0, tier: 'compute' },
   'text-camel-case': { cat: 'Text Processing', name: 'Camel Case', desc: 'Convert text to camelCase from any casing style.', credits: 0, tier: 'compute' },

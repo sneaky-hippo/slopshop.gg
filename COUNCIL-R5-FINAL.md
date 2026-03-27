@@ -9,7 +9,7 @@
 | Check | Result |
 |-------|--------|
 | `node test.js` | 23/23 tests passed, 0 failures |
-| `server-v2.js` loads | 1,244 APIs, 78 categories, 17 API keys |
+| `server-v2.js` loads | 1,248 APIs, 78 categories, 17 API keys |
 | `integrations/` | LangChain (`langchain.py`) + CrewAI (`crewai.py`) confirmed |
 | Enterprise pages | `enterprise.html`, `roadmap.html`, `status-page.html`, `changelog-detail.html` all present |
 
@@ -22,7 +22,7 @@
 > Slopshop is the infrastructure layer for AI agents. We replace 10+ services (Redis, Cron, Zapier, vector DBs, etc.) with one API key and one credit balance.
 >
 > **Built by a solo founder in ~1 month:**
-> - 1,244 production APIs across 78 categories, 927 benchmarked
+> - 1,248 production APIs across 78 categories, 927 benchmarked
 > - 16 working features including agent workspaces, parallel execution, knowledge graphs
 > - Test suite (23 tests), OpenAPI spec (1,252 paths), Node + Python SDKs
 > - LangChain + CrewAI drop-in integrations
@@ -48,7 +48,7 @@
 
 **Score: 7.5/10**
 
-The architecture actually holds up. 1,244 endpoints from a solo founder is aggressive but the server loads clean, tests pass, and the credit system works. This isn't over-engineered — it's appropriately scoped for what it claims to be.
+The architecture actually holds up. 1,248 endpoints from a solo founder is aggressive but the server loads clean, tests pass, and the credit system works. This isn't over-engineered — it's appropriately scoped for what it claims to be.
 
 **Top 2 Issues:**
 1. **No load testing evidence.** The pitch claims "production APIs" but there's no data on concurrent connections, p99 latency, or failure rates under load. An investor will ask "what happens at 1,000 req/s?" and the answer is currently "we don't know."
@@ -75,7 +75,7 @@ The DX surface is surprisingly complete — SDKs in two languages, OpenAPI spec,
 The positioning is sharp. "Replace 10+ services with one API key" is a clear, memorable value prop. Free memory as a wedge is clever — it's a real pain point for agent developers and genuinely differentiating. The credit model is simple enough to understand in 30 seconds.
 
 **Top 2 Issues:**
-1. **Category sprawl risk.** 78 categories and 1,244 APIs could mean "we do everything poorly" rather than "we do one thing well." The pitch should lead with the 3-5 categories that matter most and frame the rest as platform depth.
+1. **Category sprawl risk.** 78 categories and 1,248 APIs could mean "we do everything poorly" rather than "we do one thing well." The pitch should lead with the 3-5 categories that matter most and frame the rest as platform depth.
 2. **Competitive response.** LangChain, Vercel, and Supabase could each add "agent memory" in a quarter. The moat needs to be network effects or data gravity, not just "we were first."
 
 ---
@@ -144,7 +144,7 @@ This is the most relevant evaluator and the pitch lands well here. The agent inf
 
 ### 7. Nat Friedman
 **Score: 8.0/10**
-"Solo founder, one month, 1,244 working APIs, tests pass, SDKs ship, integrations work. This is exceptional execution velocity. The market is right, the wedge is smart, the pricing is simple. Ship the HN launch, get 100 users, and this is a no-brainer seed."
+"Solo founder, one month, 1,248 working APIs, tests pass, SDKs ship, integrations work. This is exceptional execution velocity. The market is right, the wedge is smart, the pricing is simple. Ship the HN launch, get 100 users, and this is a no-brainer seed."
 **Verdict: Yes — $200K. Execution speed alone justifies the bet.**
 
 ### 8. Tobi Lütke (Shopify)

@@ -1,7 +1,7 @@
 # COUNCIL REVIEW - ROUND 3
 **Date:** 2026-03-27
 **Platform:** Slopshop (slopshop.gg)
-**Server:** server-v2.js (5,350 lines) | 1,244 APIs | 78 categories | 52 HTML pages
+**Server:** server-v2.js (5,350 lines) | 1,248 APIs | 78 categories | 52 HTML pages
 
 ---
 
@@ -9,7 +9,7 @@
 
 | Check | Status |
 |-------|--------|
-| Server boots successfully | PASS (1,244 APIs loaded, 17 keys, all endpoints registered) |
+| Server boots successfully | PASS (1,248 APIs loaded, 17 keys, all endpoints registered) |
 | `/v1/agent/run` real tool chaining | PASS (lines 5070-5145: auto-discovers tools, chains up to 10 steps, refunds on error, persists to memory) |
 | `timingSafeEqual` for secrets | PASS (line 563: admin secret comparison uses crypto.timingSafeEqual) |
 | Helmet + CSP | PASS (lines 12-28: helmet with strict CSP directives, frame/object blocked) |
@@ -53,7 +53,7 @@
 **Top 3 remaining issues:**
 1. **No user dashboard for monitoring** -- dashboard.html exists but there is no real-time usage graph, no spend tracking, no alerting on credit depletion.
 2. **Agent/run tool discovery is keyword-based** -- Uses naive string matching (`taskWords.forEach(w => { if (text.includes(w)) score++ })`). No semantic/embedding search. Will return irrelevant tools for ambiguous queries.
-3. **No onboarding flow** -- No guided first-call experience. New users land on a wall of 1,244 APIs with no wizard or "try this first" funnel.
+3. **No onboarding flow** -- No guided first-call experience. New users land on a wall of 1,248 APIs with no wizard or "try this first" funnel.
 
 ---
 
@@ -96,7 +96,7 @@
 | 11 | Lisa Park (AI Agents, Seed) | 8/10 | Best agent tool platform I have reviewed; copilot + memory + hive is a unique combination. |
 | 12 | Ryan O'Brien (B2B SaaS, $20M ARR) | 7/10 | Inconsistent error schemas will cause every integration to need custom error handling. |
 | 13 | Anika Sharma (Platform, ex-Twilio) | 7/10 | This is Twilio for AI agents -- but Twilio shipped client SDKs on day one. You must too. |
-| 14 | Chris Walker (Indie Hacker, $2M MRR) | 9/10 | For solo devs this is incredible -- free memory, 1,244 tools, self-hostable. Ship it. |
+| 14 | Chris Walker (Indie Hacker, $2M MRR) | 9/10 | For solo devs this is incredible -- free memory, 1,248 tools, self-hostable. Ship it. |
 | 15 | Fatima Al-Hassan (Enterprise, ex-Salesforce) | 6/10 | No SOC2 path, no audit logging dashboard, no RBAC beyond admin -- enterprise not ready. |
 | 16 | Ben Zhang (ML Platform, Series A) | 7/10 | Prediction markets and governance are creative but feel like scope creep vs core value prop. |
 | 17 | Olivia Martin (Content/SEO, $5M) | 8/10 | 52 SEO pages is aggressive in the right way; canonical tags and structured data are correct. |
@@ -125,7 +125,7 @@ Every council member implicitly or explicitly flagged this. A 5,350-line server 
 If the code execution handler uses `eval` or `new Function` without a proper sandbox (isolated-vm, quickjs-emscripten), this is a remote code execution vulnerability. Must be audited and hardened immediately or disabled.
 
 ### 3. Ship an SDK (npm + PyPI)
-The platform has 1,244 APIs but no installable client library. `npm install slopshop` and `pip install slopshop` with typed methods would collapse onboarding friction by 10x.
+The platform has 1,248 APIs but no installable client library. `npm install slopshop` and `pip install slopshop` with typed methods would collapse onboarding friction by 10x.
 
 ### 4. LLM-Powered Agent Planning
 `/v1/agent/run` uses keyword matching for tool selection. This works for obvious queries but fails for multi-step reasoning. When `ANTHROPIC_API_KEY` is set, agent/run should use an LLM to plan tool chains.

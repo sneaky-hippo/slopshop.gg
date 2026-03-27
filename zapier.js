@@ -4,7 +4,7 @@
  * Adds Zapier-native endpoints to server-v2:
  *   - /zapier/auth/test     - test auth (Zapier requirement)
  *   - /zapier/triggers      - list available triggers
- *   - /zapier/actions        - list available actions (all 1,244 APIs)
+ *   - /zapier/actions        - list available actions (all 1,248 APIs)
  *   - /zapier/call/:slug    - Zapier-friendly wrapper (flat key-value input, flat output)
  *   - /zapier/webhook       - receive webhooks FROM Zapier, process, return
  *   - /zapier/subscribe     - webhook subscription management
@@ -50,7 +50,7 @@ module.exports = function mountZapier(app, allHandlers, API_DEFS, apiKeys, auth)
       version: '1.0.0',
       key: 'slopshop',
       name: 'Slopshop',
-      description: 'The API bazaar for AI agents. 1,244 real APIs - text processing, crypto, AI content, network tools, and more.',
+      description: 'The API bazaar for AI agents. 1,248 real APIs - text processing, crypto, AI content, network tools, and more.',
       logo: 'https://slopshop.gg/logo.png',
       authentication: {
         type: 'custom',

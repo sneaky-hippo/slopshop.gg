@@ -1,6 +1,7 @@
 # Slopshop Development Guide
 
-This project is Slopshop - an API platform with 1,244 real tools across 287 endpoints.
+This project is Slopshop - an API platform with 1,248 real tools across 78 categories.
+API definitions live in three registries: `registry.js` (530 base), `registry-expansion.js`, and `registry-hackathon.js`.
 
 ## Running the server
 

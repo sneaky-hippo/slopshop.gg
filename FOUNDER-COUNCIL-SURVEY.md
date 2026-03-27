@@ -1,7 +1,7 @@
 # Founder Council Survey: slopshop.gg
 
 **Date:** 2026-03-27
-**Platform:** slopshop.gg v3.2.0 — 1,244 real compute APIs for AI agents across 78 categories
+**Platform:** slopshop.gg v3.2.0 — 1,248 real compute APIs for AI agents across 78 categories
 **Format:** Pre-seed investment / production tool review
 **Panelists:** 20 top AI/tech founders and investors
 
@@ -14,9 +14,9 @@
 ### 1. Garry Tan (Y Combinator) — 6.5/10
 **Verdict:** Strong builder energy and impressive breadth, but I need to see paying customers before I know this is a company and not a project.
 **Feedback:**
-1. The velocity here is undeniable — 1,244 real handlers with 100% benchmark pass rate from what appears to be a very small team. That's YC-caliber execution speed.
+1. The velocity here is undeniable — 1,248 real handlers with 100% benchmark pass rate from what appears to be a very small team. That's YC-caliber execution speed.
 2. The market for AI agent tooling is enormous and growing. Every foundation model company is racing to give agents tools. This is the right wave to ride.
-3. I'm worried about the "1,244 tools" positioning. It feels like a vanity metric. Are 50 of these tools doing 99% of the usage? Show me concentration data.
+3. I'm worried about the "1,248 tools" positioning. It feels like a vanity metric. Are 50 of these tools doing 99% of the usage? Show me concentration data.
 4. Where are the revenue numbers? 17 API keys in the database is not traction. I need to see at least a handful of teams building production workflows on top of this before I invest.
 5. The credit-based model with free memory is clever for land-and-expand, but the path from free demo key to enterprise contract is unclear. What's the conversion funnel look like?
 
@@ -51,7 +51,7 @@
 2. The memory layer is the most differentiated piece. Persistent, cross-session, cross-model memory is a real unsolved problem. I'd focus the entire company on that.
 3. The network/sensing tools (DNS, SSL check, URL fetch) have lasting value because they require real I/O that models can't do internally. The pure compute tools (hashing, text manipulation) are the most at risk of commoditization.
 4. OpenAI's tool spec and Anthropic's MCP are converging. Building adapters for both is table stakes, not a differentiator.
-5. I'd be more excited if this were positioned as "infrastructure for agent memory and external I/O" rather than "1,244 tools." The breadth story actually undermines the depth story.
+5. I'd be more excited if this were positioned as "infrastructure for agent memory and external I/O" rather than "1,248 tools." The breadth story actually undermines the depth story.
 
 ---
 
@@ -84,14 +84,14 @@
 2. `slop call crypto-hash-sha256 --data "hello world"` — the CLI is clean. One global install, one command. This is the right DX pattern.
 3. Semantic tool discovery (`POST /v1/resolve {"query": "hash a string"}`) is exactly what agents need. This is better than browsing docs. Smart.
 4. The `llms.txt` file is excellent developer marketing. Putting your entire API surface in a single plaintext file that LLMs can ingest is forward-thinking documentation.
-5. My concern: 1,244 tools is a maintenance burden. How do you keep quality high across that surface area? One broken endpoint erodes trust in all of them. The 100% benchmark pass rate is good but needs to be continuously enforced.
+5. My concern: 1,248 tools is a maintenance burden. How do you keep quality high across that surface area? One broken endpoint erodes trust in all of them. The 100% benchmark pass rate is good but needs to be continuously enforced.
 
 ---
 
 ### 8. Tobi Lutke (Shopify) — 6/10
 **Verdict:** Good utility but not yet Stripe-level clean — the monolithic architecture and breadth-over-depth positioning suggest this needs a ruthless focus pass.
 **Feedback:**
-1. Infrastructure should do one thing perfectly before doing 1,244 things adequately. Stripe started with payments. Twilio started with SMS. What is slopshop's "one thing"?
+1. Infrastructure should do one thing perfectly before doing 1,248 things adequately. Stripe started with payments. Twilio started with SMS. What is slopshop's "one thing"?
 2. The response envelope (`{ ok, data, meta, guarantees }`) is well-designed. Consistent, predictable, machine-parseable. This is infrastructure-grade API design.
 3. The dependency footprint is admirably small: express, cors, helmet, better-sqlite3, stripe. Five production deps. This is the right philosophy for infrastructure.
 4. But the server is a single file with 5,000+ lines. That's not infrastructure simplicity — that's engineering debt. Shopify wouldn't build core infra this way.
@@ -111,9 +111,9 @@
 ---
 
 ### 10. Dylan Field (Figma) — 6/10
-**Verdict:** The product is developer-facing so visual design matters less, but the information architecture of 1,244 tools is a UX problem that needs serious design thinking.
+**Verdict:** The product is developer-facing so visual design matters less, but the information architecture of 1,248 tools is a UX problem that needs serious design thinking.
 **Feedback:**
-1. The first impression is overwhelming. 1,244 tools across 78 categories. How does a new user find what they need? The semantic search helps, but the catalog design needs work.
+1. The first impression is overwhelming. 1,248 tools across 78 categories. How does a new user find what they need? The semantic search helps, but the catalog design needs work.
 2. The tool discovery UX is the product. If an agent can't find the right tool in one shot, the whole platform fails. This needs to be best-in-class, not just "good enough."
 3. Credit costs are transparent (shown per tool), which is good UX for cost-conscious developers. But there's no pricing calculator or cost estimation for workflows.
 4. The `?format=anthropic|openai|mcp` parameter for tool listing is clever multi-format design. One endpoint, multiple consumers. Good product thinking.
@@ -124,7 +124,7 @@
 ### 11. Guillermo Rauch (Vercel) — 6.5/10
 **Verdict:** Right idea, wrong deployment model — this needs to be edge-native and serverless, not a monolithic Express server on a single port.
 **Feedback:**
-1. The serverless opportunity is obvious. Each of these 1,244 tools should be independently deployable as edge functions. The monolithic server is a scaling bottleneck.
+1. The serverless opportunity is obvious. Each of these 1,248 tools should be independently deployable as edge functions. The monolithic server is a scaling bottleneck.
 2. The p95 latency claim of <50ms for compute handlers is good, but that's local. What's the latency from Tokyo? From Sao Paulo? Edge deployment would solve this.
 3. The self-hosting story via npm is nice but primitive. I want `npx create-slopshop` or a Vercel/Railway one-click deploy with environment-aware configuration.
 4. SSE streaming support is mentioned — good. But the architecture should be request/response by default with streaming as an opt-in, not the other way around.
@@ -160,7 +160,7 @@
 1. The `?format=openai` tool listing is exactly what LangChain needs. Dynamic tool binding from a single endpoint means agents can discover and use tools at runtime without hardcoded integrations.
 2. Guaranteed structured outputs solve the biggest pain point in tool integration: parsing unreliable responses. If every tool returns schema-valid JSON, agent reliability goes up dramatically.
 3. The orchestration primitives (parallel, retry, circuit breaker) overlap with what LangGraph provides. This is a competitive concern — are you a tool provider or an orchestration layer?
-4. I'd want a LangChain integration package: `from langchain_slopshop import SlopshopToolkit`. Make it trivially easy to add all 1,244 tools to any LangChain agent.
+4. I'd want a LangChain integration package: `from langchain_slopshop import SlopshopToolkit`. Make it trivially easy to add all 1,248 tools to any LangChain agent.
 5. The semantic tool resolution (`/v1/resolve`) is solving the tool selection problem that every agent framework struggles with. This is underpriced at what it delivers.
 
 ---
@@ -168,7 +168,7 @@
 ### 15. Joao Moura (CrewAI) — 7/10
 **Verdict:** This is complementary, not competitive — slopshop provides the tool layer that multi-agent systems need, and the memory/orchestration features are directly useful for CrewAI workflows.
 **Feedback:**
-1. Multi-agent systems need a shared tool layer. Having 1,244 tools available via one API key means any agent in a crew can access any capability without per-tool configuration.
+1. Multi-agent systems need a shared tool layer. Having 1,248 tools available via one API key means any agent in a crew can access any capability without per-tool configuration.
 2. The shared memory namespace is perfect for multi-agent coordination. Agent A writes to memory, Agent B reads it. This is exactly the shared state primitive crews need.
 3. The orchestration endpoints (parallel, race, retry) map well to how CrewAI delegates tasks. An agent could use `/v1/orch-parallel` to fan out sub-tasks.
 4. I'd want a CrewAI native integration: `SlopshopTool(slug="crypto-hash-sha256")` that wraps any slopshop endpoint as a CrewAI tool with proper schema mapping.
@@ -223,7 +223,7 @@
 ### 20. Jensen Huang (NVIDIA) — 4.5/10
 **Verdict:** This is CPU compute, not GPU compute — there's nothing here that leverages accelerated computing, which means it's playing in the low-margin commodity layer.
 **Feedback:**
-1. None of these 1,244 tools require GPU acceleration. This is all CPU-bound text processing, hashing, and network I/O. The compute density per request is trivially low.
+1. None of these 1,248 tools require GPU acceleration. This is all CPU-bound text processing, hashing, and network I/O. The compute density per request is trivially low.
 2. The interesting AI agent compute problems are inference, embedding, vector search at scale, and real-time multimodal processing. Those require GPUs. This platform doesn't address them.
 3. The Compute Exchange could become interesting if it evolves to include GPU compute — agents paying credits for inference or training time on distributed GPUs. But that's not what this is today.
 4. The p95 <50ms latency claim is unremarkable for CPU operations. GPU-accelerated batch processing of agent tool calls could be orders of magnitude faster and more efficient.
@@ -273,7 +273,7 @@
 | 4 | **Structured output guarantees are genuinely valuable for agents** — schema-valid JSON every time builds trust | Dixon, Amodei, Collison, Chase, Lutke (5) |
 | 5 | **Memory layer is the most differentiated product component** — persistent cross-session state is a real unsolved problem | Altman, Bezos, Moura, Gil, Amodei (5) |
 | 6 | **Pure compute tools will be commoditized by improving models** — hashing/text processing via API is vulnerable | Altman, Bezos, Huang, Andreessen (4) |
-| 7 | **The "1,244 tools" positioning is breadth over depth** — needs ruthless focus on what matters most | Tan, Lutke, Altman, Field (4) |
+| 7 | **The "1,248 tools" positioning is breadth over depth** — needs ruthless focus on what matters most | Tan, Lutke, Altman, Field (4) |
 | 8 | **Developer experience / onboarding is genuinely good** — demo key, CLI, fast time-to-first-call | Friedman, Collison, Rauch, Field (4) |
 | 9 | **Self-hosting undermines SaaS revenue** OR **self-hosting is the right open philosophy** (split opinion) | Gil, Mostaque, Buterin, Hashimoto (4) |
 | 10 | **No real traction / revenue evidence** — 17 API keys, Stripe not configured, no paying customers shown | Tan, Gil, Collison (3) |
