@@ -48,12 +48,23 @@ const yellow = (s) => `${C.yellow}${s}${C.reset}`;
 // ============================================================
 // CONFIG (env vars → config file → defaults)
 // ============================================================
-const _os = require('os');
-const _fs = require('fs');
-const _path = require('path');
-const _CONFIG_FILE = _path.join(_os.homedir(), '.slopshop', 'config.json');
-function _loadCfg() { try { return JSON.parse(_fs.readFileSync(_CONFIG_FILE, 'utf8')); } catch(e) { return {}; } }
-const _cfg = _loadCfg();
+const os = require('os');
+const fs = require('fs');
+const path = require('path');
+const CONFIG_DIR = path.join(os.homedir(), '.slopshop');
+const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+const PKG_VERSION = (() => { try { return require('./package.json').version; } catch { return 'unknown'; } })();
+
+function loadConfig() {
+  try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
+  catch (e) { return {}; }
+}
+function saveConfig(cfg) {
+  if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), { mode: 0o600 });
+}
+
+const _cfg = loadConfig();
 const API_KEY  = process.env.SLOPSHOP_KEY || _cfg.api_key || '';
 const BASE_URL = (process.env.SLOPSHOP_BASE || _cfg.base_url || 'https://slopshop.gg').replace(/\/$/, '');
 
@@ -87,7 +98,7 @@ function request(method, path, body, auth = true) {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'slopshop-cli/3.4.0',
+        'User-Agent': 'slopshop-cli/' + PKG_VERSION,
         'Connection': 'keep-alive',
         'Accept-Encoding': 'gzip, deflate', // PERF: Request compressed responses
       },
@@ -199,7 +210,11 @@ function extractMeta(data) {
   let result = {};
   let metaParts = [];
 
-  if (data && typeof data === 'object' && data.data !== undefined && data.meta !== undefined) {
+  if (!data || typeof data !== 'object') {
+    return { result: { value: data }, metaParts: [] };
+  }
+
+  if (data.data !== undefined && data.meta !== undefined) {
     result = data.data || {};
     const m = data.meta || {};
     if (m.credits_used !== undefined)      metaParts.push(`${m.credits_used}cr`);
@@ -684,7 +699,13 @@ async function cmdBuy(args) {
     return;
   }
 
-  if (!quiet && !jsonMode) console.log(dim(`  Purchasing ${amount.toLocaleString()} credits...`));
+  // Safety: confirm purchase
+  if (!quiet && !jsonMode && process.stdin.isTTY && !args.includes('--yes') && !args.includes('-y')) {
+    const answer = await prompt(`  Purchase ${amount.toLocaleString()} credits for ${prices[amount]}? (y/N) `);
+    if (answer.toLowerCase() !== 'y') { console.log(dim('\n  Cancelled.\n')); return; }
+  }
+
+  spinnerStart(`Purchasing ${amount.toLocaleString()} credits...`);
 
   try {
     // Try Stripe checkout first, fall back to internal credits
@@ -776,7 +797,7 @@ ${C.reset}`;
     console.log(JSON.stringify({
       commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'version', 'upgrade', 'completions', 'help'],
       flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N', '--model M', '--dry-run', '--limit N', '--offset N'],
-      version: '1.0.0'
+      version: PKG_VERSION
     }, null, 2));
     return;
   }
@@ -908,7 +929,7 @@ function cmdMcp() {
 // ============================================================
 function requireKey() {
   if (!API_KEY) {
-    die('No API key found.\n  Set via CLI:  slop config api_key sk-slop-YOUR-KEY\n  Or env var:   export SLOPSHOP_KEY=sk-slop-...\n  Sign up:      slop signup\n  Config file:  ' + _CONFIG_FILE);
+    die('No API key found.\n  Set via CLI:  slop config api_key sk-slop-YOUR-KEY\n  Or env var:   export SLOPSHOP_KEY=sk-slop-...\n  Sign up:      slop signup\n  Config file:  ' + CONFIG_FILE);
   }
 }
 
@@ -927,7 +948,7 @@ function handleError(err) {
   } else {
     console.error(red('\n  Error: ') + err.message);
   }
-  console.log('');
+  console.error('');
 }
 
 function padEnd(str, len) {
@@ -943,31 +964,7 @@ function formatUptime(seconds) {
   return `${h}h ${m}m`;
 }
 
-// ============================================================
-// CONFIG FILE HELPERS
-// ============================================================
-const os = require('os');
-const fs = require('fs');
-const path = require('path');
-
-const CONFIG_DIR = path.join(os.homedir(), '.slopshop');
-const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
-
-function loadConfig() {
-  try {
-    if (fs.existsSync(CONFIG_FILE)) {
-      return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8'));
-    }
-  } catch (e) { /* ignore */ }
-  return {};
-}
-
-function saveConfig(cfg) {
-  if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
-  }
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), { mode: 0o600 });
-}
+// (loadConfig, saveConfig, CONFIG_DIR, CONFIG_FILE, os, fs, path defined at top of file)
 
 function prompt(question) {
   const rl = readline.createInterface({ input: process.stdin, output: process.stderr, terminal: true });
@@ -1214,7 +1211,7 @@ function cmdConfig(args) {
 // KEY MANAGEMENT
 // ============================================================
 
-function cmdKey(args) {
+async function cmdKey(args) {
   const sub = args[0] || '';
   const cfg = loadConfig();
 
@@ -1224,7 +1221,7 @@ function cmdKey(args) {
     if (key) {
       console.log(`\n  ${bold('API Key:')}  ${cyan(key.slice(0, 16) + '...' + key.slice(-4))}`);
       console.log(`  ${bold('Source:')}   ${process.env.SLOPSHOP_KEY ? 'environment variable' : 'config file'}`);
-      console.log(dim(`  ${_CONFIG_FILE}\n`));
+      console.log(dim(`  ${CONFIG_FILE}\n`));
     } else {
       console.log(dim('\n  No API key configured.\n'));
       console.log(`  ${bold('Set a key:')}   ${cyan('slop key set sk-slop-YOUR-KEY')}`);
@@ -1241,7 +1238,7 @@ function cmdKey(args) {
     saveConfig(cfg);
     console.log(green(`\n  API key saved!`));
     console.log(`  ${bold('Key:')}  ${cyan(newKey.slice(0, 16) + '...' + newKey.slice(-4))}`);
-    console.log(dim(`  Saved to ${_CONFIG_FILE}\n`));
+    console.log(dim(`  Saved to ${CONFIG_FILE}\n`));
     return;
   }
 
@@ -1255,8 +1252,13 @@ function cmdKey(args) {
 
   if (sub === 'rotate') {
     requireKey();
-    console.log(dim('  Rotating key...'));
+    if (process.stdin.isTTY && !quiet) {
+      const answer = await prompt('  This will invalidate your current key. Continue? (y/N) ');
+      if (answer.toLowerCase() !== 'y') { console.log(dim('\n  Cancelled.\n')); return; }
+    }
+    spinnerStart('Rotating key...');
     request('POST', '/v1/auth/rotate-key').then(res => {
+      spinnerStop(true);
       const d = res.data;
       const newKey = d.api_key || d.new_key || d.key;
       if (newKey) {
@@ -2546,7 +2548,7 @@ async function cmdTypes(args) {
 // ============================================================
 // FILE — Local file read/write (5 competitors have this)
 // ============================================================
-function cmdFile(args) {
+async function cmdFile(args) {
   const sub = args[0];
 
   if (!sub || sub === 'help') {
@@ -2735,7 +2737,23 @@ async function cmdGit(args) {
     if (sub === 'commit') {
       const msg = args.slice(1).filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
       if (!msg) die('Usage: slop git commit "your commit message"');
-      git('add -A');
+      // Check if anything is staged; don't silently git add -A
+      const staged = git('diff --cached --name-only');
+      if (!staged.trim()) {
+        const unstaged = git('status --short');
+        if (!unstaged.trim()) die('Nothing to commit. Working tree clean.');
+        if (!quiet && !jsonMode) {
+          console.log(yellow('\n  Nothing staged. Unstaged changes:'));
+          for (const line of unstaged.split('\n').slice(0, 10)) {
+            if (line.trim()) console.log('  ' + line);
+          }
+        }
+        if (process.stdin.isTTY && !args.includes('--all') && !args.includes('-a')) {
+          const answer = await prompt('\n  Stage all and commit? (y/N) ');
+          if (answer.toLowerCase() !== 'y') { console.log(dim('  Cancelled.\n')); return; }
+        }
+        git('add -A');
+      }
       const result = git(`commit -m "${msg.replace(/"/g, '\\"')}"`);
       if (jsonMode) { console.log(JSON.stringify({ ok: true, message: msg, output: result })); return; }
       console.log(`\n  ${green('Committed:')} ${msg}`);
@@ -2935,14 +2953,31 @@ async function main() {
   let args = rawArgs.slice(1);
 
   // Check aliases before command dispatch
-  const aliasCfg = _loadCfg();
+  const aliasCfg = loadConfig();
   if (cmd && aliasCfg.aliases && aliasCfg.aliases[cmd]) {
     const aliasedArgs = aliasCfg.aliases[cmd].split(/\s+/);
     cmd = aliasedArgs[0];
     args = [...aliasedArgs.slice(1), ...args];
   }
 
-  if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
+  if (!cmd || cmd === '--help' || cmd === '-h') {
+    // First-run: show onboarding if no key configured
+    if (!cmd && !API_KEY && !jsonMode) {
+      console.log(`\n  ${C.red}${C.bold}SLOPSHOP${C.reset} v${PKG_VERSION} ${dim('— the missing CLI for AI agents')}\n`);
+      console.log(`  ${bold('Quick start:')}`);
+      console.log(`    1. ${cyan('slop signup')}                    Create free account (2,000 credits)`);
+      console.log(`    2. ${cyan('slop call crypto-uuid')}          Your first API call`);
+      console.log(`    3. ${cyan('slop search "what you need"')}    Find any of 1,248 APIs`);
+      console.log(`    4. ${cyan('slop pipe api1 api2')}            Chain APIs together\n`);
+      console.log(`  ${bold('Already have a key?')}`);
+      console.log(`    ${cyan('slop key set sk-slop-YOUR-KEY')}\n`);
+      console.log(`  ${dim('Run')} ${cyan('slop help')} ${dim('for all 42 commands.')}\n`);
+      return;
+    }
+    cmdHelp();
+    return;
+  }
+  if (cmd === 'help') {
     cmdHelp();
     return;
   }
@@ -2959,7 +2994,7 @@ async function main() {
     case 'login':   await cmdLogin();      break;
     case 'whoami':  await cmdWhoami();     break;
     case 'config':  cmdConfig(args);       break;
-    case 'key':     cmdKey(args);          break;
+    case 'key':     await cmdKey(args);     break;
     case 'mcp':     cmdMcp();              break;
     case 'org':     await cmdOrg(args);    break;
     case 'chain':   await cmdChain(args);  break;
@@ -2986,16 +3021,19 @@ async function main() {
     case 'env':     await cmdEnv(args);    break;
     case 'listen':  await cmdListen(args); break;
     case 'types':   await cmdTypes(args);  break;
-    case 'file':    cmdFile(args);         break;
+    case 'file':    await cmdFile(args);    break;
     case 'git':     await cmdGit(args);    break;
     case 'review':  await cmdReview(args); break;
     case 'session': await cmdSession(args); break;
     case 'version': case '-v': case '--version': {
-      try {
-        const pkg = require('./package.json');
-        if (jsonMode) console.log(JSON.stringify({ version: pkg.version, name: pkg.name }));
-        else console.log(`\n  ${bold('slopshop')} v${pkg.version}\n`);
-      } catch(e) { console.log(`\n  ${bold('slopshop')} v1.0.0\n`); }
+      if (jsonMode) {
+        console.log(JSON.stringify({ version: PKG_VERSION, name: 'slopshop', node: process.version, platform: `${process.platform}-${process.arch}`, config: CONFIG_FILE }));
+      } else {
+        console.log(`\n  ${bold('slopshop')} v${PKG_VERSION}`);
+        console.log(`  ${dim('Node:')}     ${process.version}`);
+        console.log(`  ${dim('Platform:')} ${process.platform}-${process.arch}`);
+        console.log(`  ${dim('Config:')}   ${CONFIG_FILE}\n`);
+      }
       break;
     }
     case 'upgrade':     await cmdUpgrade();         break;
@@ -3240,8 +3278,16 @@ async function cmdNatural(cmd, args) {
   }
 
   // If nothing matched locally, try the server-side agent/run as fallback
-  requireKey();
-  if (!quiet && !jsonMode) console.log(dim(`\n  Understanding: "${fullInput}"...\n`));
+  // This uses credits — warn the user
+  if (!API_KEY) {
+    if (!quiet && !jsonMode) {
+      console.log(dim(`\n  No built-in command for: "${fullInput}"`));
+      console.log(`  Try: ${cyan('slop search "' + fullInput.split(' ').slice(0, 3).join(' ') + '"')}`);
+      console.log(`  Or:  ${cyan('slop help')}\n`);
+    }
+    return;
+  }
+  if (!quiet && !jsonMode) console.log(dim(`\n  No built-in match. Running server-side (uses credits)...`));
 
   try {
     // First try discover to suggest features

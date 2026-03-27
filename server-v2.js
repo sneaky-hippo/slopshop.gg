@@ -125,9 +125,7 @@ app.use((req, res, next) => {
 app.use((req, res, next) => {
   req.requestId = req.headers['x-request-id'] || crypto.randomUUID();
   res.set('X-Request-Id', req.requestId);
-  res.set('X-API-Version', '2026.03.27');
-  res.set('Sunset', '');
-  res.set('Deprecation', '');
+  res.set('X-API-Version', '2026.03.28');
   next();
 });
 
@@ -635,15 +633,13 @@ if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
 
 // ===== REQUEST BODY SIZE VALIDATION PER ENDPOINT =====
 // Global limit is 1MB (express.json above), but tighter limits per route type
+// PERF: Body size check uses content-length only (express.json already enforces 1MB global limit)
+// Removed JSON.stringify check that was allocating on every request
 function bodySizeLimit(maxBytes) {
   return (req, res, next) => {
     const contentLength = parseInt(req.headers['content-length'] || '0', 10);
     if (contentLength > maxBytes) {
-      return res.status(413).json({ error: { code: 'payload_too_large', message: `Request body exceeds ${maxBytes} byte limit for this endpoint`, max_bytes: maxBytes, received_bytes: contentLength } });
-    }
-    // Also check actual body size (content-length can be spoofed)
-    if (req.body && JSON.stringify(req.body).length > maxBytes) {
-      return res.status(413).json({ error: { code: 'payload_too_large', message: `Request body exceeds ${maxBytes} byte limit for this endpoint`, max_bytes: maxBytes } });
+      return res.status(413).json({ error: { code: 'payload_too_large', message: `Body exceeds ${maxBytes} byte limit`, max_bytes: maxBytes, received_bytes: contentLength } });
     }
     next();
   };
@@ -1580,22 +1576,32 @@ const TOOL_CHAINS = {
   'memory-set': ['memory-get', 'memory-search'],
   'memory-get': ['memory-search', 'memory-list'],
 };
+// PERF: Suggestion cache — avoids expensive self-join on audit_log per request
+const _suggestionsCache = new Map();
+const _dbCoOccur = db.prepare(`
+  SELECT b.api, COUNT(*) as cnt FROM audit_log a
+  JOIN audit_log b ON a.key_prefix = b.key_prefix AND b.ts > a.ts AND b.api != a.api
+  WHERE a.api = ? GROUP BY b.api ORDER BY cnt DESC LIMIT 3
+`);
 function getSuggestions(slug) {
-  // Try static chains first, then fall back to dynamic co-occurrence from audit log
   if (TOOL_CHAINS[slug]) return TOOL_CHAINS[slug];
+  const cached = _suggestionsCache.get(slug);
+  if (cached && Date.now() - cached.ts < 300000) return cached.val; // 5min TTL
   try {
-    const coOccur = db.prepare(`
-      SELECT b.api, COUNT(*) as cnt FROM audit_log a
-      JOIN audit_log b ON a.key_prefix = b.key_prefix AND b.ts > a.ts AND b.api != a.api
-      WHERE a.api = ? GROUP BY b.api ORDER BY cnt DESC LIMIT 3
-    `).all(slug);
-    if (coOccur.length > 0) return coOccur.map(r => r.api);
-  } catch (e) { /* silent */ }
-  return ['memory-set', 'memory-search'];
+    const coOccur = _dbCoOccur.all(slug);
+    const val = coOccur.length > 0 ? coOccur.map(r => r.api) : ['memory-set', 'memory-search'];
+    _suggestionsCache.set(slug, { val, ts: Date.now() });
+    if (_suggestionsCache.size > 1000) {
+      // Evict oldest entries
+      const oldest = [..._suggestionsCache.entries()].sort((a, b) => a[1].ts - b[1].ts).slice(0, 200);
+      for (const [k] of oldest) _suggestionsCache.delete(k);
+    }
+    return val;
+  } catch (e) { return ['memory-set', 'memory-search']; }
 }
 function getCacheFingerprint(slug, body) {
-  const normalized = JSON.stringify({ slug, ...body });
-  return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
+  // PERF: Use FNV-1a instead of SHA-256 for fingerprinting
+  return slug + ':' + fnv1a(JSON.stringify(body));
 }
 
 // ===== QUICKSTART: Getting-started steps =====
@@ -6269,10 +6275,12 @@ app.post('/v1/:slug', auth, BODY_LIMIT_COMPUTE, async (req, res) => {
   // Store idempotency result
   if (idempKey) idempotencyCache.set(idempKey, { data: response, ts: Date.now() });
 
-  // Notarize output
-  const outputHash = crypto.createHash('sha256').update(JSON.stringify(response.data)).digest('hex');
-  response.meta.output_hash = outputHash;
-  res.set('X-Output-Hash', outputHash);
+  // PERF: Notarize output only when requested (saves JSON.stringify + SHA-256 per response)
+  if (req.body.trace || req.headers['x-notarize'] || agentMode) {
+    const outputHash = crypto.createHash('sha256').update(JSON.stringify(response.data)).digest('hex');
+    response.meta.output_hash = outputHash;
+    res.set('X-Output-Hash', outputHash);
+  }
 
   res.json(response);
 });
