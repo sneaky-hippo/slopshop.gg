@@ -817,7 +817,8 @@ ${C.reset}`;
   console.log(`    ${cyan('slop chain')} ${dim('<sub>')}                       Create/manage agent chains`);
   console.log(`    ${cyan('slop memory')} ${dim('<sub>')}                      Direct memory key-value operations`);
   console.log(`    ${cyan('slop live')} ${dim('<org-id>')}                     Real-time agent dashboard (The Sims for AI)`);
-  console.log(`    ${cyan('slop live --launch')}                    Launch 30-agent startup + watch\n`);
+  console.log(`    ${cyan('slop live --launch')}                    Launch 30-agent startup + watch`);
+  console.log(`    ${cyan('slop interactive')}                      Interactive REPL / shell mode\n`);
   console.log(`  ${bold('ACCOUNT & CONFIG')}`);
   console.log(`    ${cyan('slop signup')}                            Create a new account`);
   console.log(`    ${cyan('slop login')}                             Log in`);
@@ -2939,6 +2940,91 @@ async function cmdSession(args) {
 }
 
 // ============================================================
+// INTERACTIVE — Minimal TUI / REPL (zero dependencies)
+// ============================================================
+async function cmdInteractive() {
+  const rl = readline.createInterface({ input: process.stdin, output: process.stdout, terminal: true });
+  const W = process.stdout.columns || 80;
+
+  // Header
+  console.log('');
+  console.log(`  ${C.red}${C.bold}SLOPSHOP${C.reset} ${dim('v' + PKG_VERSION + ' — interactive mode')}`);
+  console.log(`  ${dim('1,248 APIs | 43 commands | Type anything | Ctrl+C to exit')}`);
+  if (API_KEY) console.log(`  ${dim('Key:')} ${cyan(API_KEY.slice(0, 12) + '...')}`);
+  else console.log(`  ${yellow('No key set.')} Run: ${cyan('signup')} or ${cyan('key set sk-slop-...')}`);
+  console.log(`  ${dim('─'.repeat(Math.min(W - 4, 60)))}\n`);
+
+  const history = [];
+
+  const loop = () => {
+    rl.question(`  ${C.red}slop${C.reset}${C.dim}>${C.reset} `, async (input) => {
+      const line = input.trim();
+      if (!line) { loop(); return; }
+      if (line === 'exit' || line === 'quit' || line === 'q') {
+        console.log(dim('\n  Goodbye.\n'));
+        rl.close();
+        process.exit(0);
+      }
+
+      history.push(line);
+
+      // Parse as if it were a CLI command
+      const parts = line.split(/\s+/);
+      const cmd = parts[0];
+      const args = parts.slice(1);
+
+      try {
+        switch (cmd) {
+          case 'help': case '?': cmdHelp(); break;
+          case 'call': await cmdCall(args); break;
+          case 'pipe': await cmdPipe(args); break;
+          case 'search': await cmdSearch(args); break;
+          case 'list': await cmdList(args); break;
+          case 'run': await cmdRun(args); break;
+          case 'plan': await cmdPlan(args); break;
+          case 'org': await cmdOrg(args); break;
+          case 'chain': await cmdChain(args); break;
+          case 'memory': case 'mem': await cmdMemory(args); break;
+          case 'discover': await cmdDiscover(args); break;
+          case 'balance': await cmdBalance(); break;
+          case 'health': await cmdHealth(); break;
+          case 'stats': await cmdStats(args); break;
+          case 'whoami': await cmdWhoami(); break;
+          case 'models': await cmdModels(args); break;
+          case 'cost': await cmdCost(args); break;
+          case 'debug': await cmdDebug(args); break;
+          case 'git': await cmdGit(args); break;
+          case 'file': await cmdFile(args); break;
+          case 'review': await cmdReview(args); break;
+          case 'history':
+            console.log(`\n  ${bold('Session history')}\n`);
+            history.forEach((h, i) => console.log(`  ${dim(String(i + 1).padStart(3))} ${h}`));
+            console.log('');
+            break;
+          case 'clear':
+            console.clear();
+            break;
+          case 'signup': await cmdSignup(); break;
+          case 'login': await cmdLogin(); break;
+          case 'key': await cmdKey(args); break;
+          case 'config': cmdConfig(args); break;
+          default:
+            // Natural language routing
+            await cmdNatural(cmd, args);
+            break;
+        }
+      } catch (e) {
+        console.error(red('  Error: ') + e.message + '\n');
+      }
+
+      loop();
+    });
+  };
+
+  loop();
+}
+
+// ============================================================
 // LIVE — Real-time agent organization dashboard (The Sims for AI agents)
 // ============================================================
 async function cmdLive(args) {
@@ -3187,6 +3273,7 @@ async function main() {
     case 'review':  await cmdReview(args); break;
     case 'session': await cmdSession(args); break;
     case 'live':    await cmdLive(args);    break;
+    case 'i': case 'interactive': case 'tui': case 'shell': case 'repl': await cmdInteractive(); break;
     case 'version': case '-v': case '--version': {
       if (jsonMode) {
         console.log(JSON.stringify({ version: PKG_VERSION, name: 'slopshop', node: process.version, platform: `${process.platform}-${process.arch}`, config: CONFIG_FILE }));
