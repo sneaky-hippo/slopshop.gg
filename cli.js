@@ -665,29 +665,36 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'help'],
+      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'help'],
       flags: ['--quiet', '-q', '--json', '--no-color'],
       version: '1.0.0'
     }, null, 2));
     return;
   }
 
-  console.log(`  ${C.red}${C.bold}SLOPSHOP${C.reset} ${dim('\u2014 the API bazaar for lobsters')}\n`);
+  console.log(`  ${C.red}${C.bold}SLOPSHOP${C.reset} ${dim('\u2014 the missing CLI for AI agents')}\n`);
   console.log(`  ${bold('USAGE')}`);
   console.log(`    ${cyan('slop')} <command> [options]\n`);
   console.log(`  ${bold('COMMANDS')}`);
   console.log(`    ${cyan('slop call')} <api-slug> ${dim('[--key value]...')}   Call any API with parameters`);
   console.log(`    ${cyan('slop pipe')} <api1> <api2> ${dim('...')}             Chain APIs together`);
+  console.log(`    ${cyan('slop run')} ${dim('"task description"')}             Natural language task execution`);
   console.log(`    ${cyan('slop search')} <query>                    Semantic search for APIs`);
   console.log(`    ${cyan('slop list')} ${dim('[category]')}                    List available APIs`);
-  console.log(`    ${cyan('slop signup')}                            Create a new account (interactive)`);
-  console.log(`    ${cyan('slop signup')} ${dim('--email E --password P')}  Create account (non-interactive)`);
-  console.log(`    ${cyan('slop login')}                             Log in (interactive or --email --password)`);
+  console.log(`    ${cyan('slop discover')} ${dim('"goal"')}                    Find the right feature for a goal\n`);
+  console.log(`  ${bold('AGENT ORCHESTRATION')}`);
+  console.log(`    ${cyan('slop org')} ${dim('<sub>')}                         Launch/manage agent organizations`);
+  console.log(`    ${cyan('slop chain')} ${dim('<sub>')}                       Create/manage agent chains`);
+  console.log(`    ${cyan('slop memory')} ${dim('<sub>')}                      Direct memory key-value operations\n`);
+  console.log(`  ${bold('ACCOUNT & CONFIG')}`);
+  console.log(`    ${cyan('slop signup')}                            Create a new account`);
+  console.log(`    ${cyan('slop login')}                             Log in`);
   console.log(`    ${cyan('slop whoami')}                            Show current user info`);
   console.log(`    ${cyan('slop key')} ${dim('[set|remove|rotate]')}          Manage your API key`);
   console.log(`    ${cyan('slop config')} ${dim('[key] [value]')}              View or set config`);
   console.log(`    ${cyan('slop balance')}                           Check credit balance`);
   console.log(`    ${cyan('slop buy')} <amount>                      Buy credits (1k/10k/100k/1M)`);
+  console.log(`    ${cyan('slop stats')}                             Platform statistics & usage`);
   console.log(`    ${cyan('slop health')}                            Server health check`);
   console.log(`    ${cyan('slop mcp')}                               Set up MCP for Claude Code`);
   console.log(`    ${cyan('slop help')}                              Show this help\n`);
@@ -1128,6 +1135,446 @@ function cmdKey(args) {
 }
 
 // ============================================================
+// ORG — Agent Organizations
+// ============================================================
+async function cmdOrg(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Agent Organizations')}\n`);
+    console.log(`  ${cyan('slop org launch')} ${dim('--name "My Team" --template startup-team')}`);
+    console.log(`  ${cyan('slop org templates')}              List pre-built org templates`);
+    console.log(`  ${cyan('slop org status')} ${dim('<org-id>')}         Check org status`);
+    console.log(`  ${cyan('slop org task')} ${dim('<org-id> "task"')}   Send task to org`);
+    console.log(`  ${cyan('slop org scale')} ${dim('<org-id>')}         Scale agents up/down`);
+    console.log(`  ${cyan('slop org standup')} ${dim('<org-id>')}       Get today's standups\n`);
+    return;
+  }
+
+  if (sub === 'templates') {
+    const res = await request('GET', '/v1/org/templates', null, false);
+    const templates = res.data?.templates || res.templates || [];
+    if (jsonMode) { console.log(JSON.stringify(templates, null, 2)); return; }
+    console.log(`\n  ${bold('Organization Templates')}\n`);
+    for (const t of templates) {
+      console.log(`  ${cyan(t.id.padEnd(20))} ${t.agents.length} agents  ${dim(t.description)}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'launch') {
+    const nameIdx = args.indexOf('--name');
+    const templateIdx = args.indexOf('--template');
+    const name = nameIdx >= 0 ? args[nameIdx + 1] : 'My Org';
+    const template = templateIdx >= 0 ? args[templateIdx + 1] : null;
+
+    let body = { name };
+    if (template) {
+      // Fetch template and use its agents/channels
+      const tmpl = await request('GET', '/v1/org/templates', null, false);
+      const found = (tmpl.data?.templates || tmpl.templates || []).find(t => t.id === template);
+      if (found) { body.agents = found.agents; body.channels = found.channels; }
+      else { die('Template not found: ' + template); }
+    }
+    body.auto_handoff = true;
+
+    if (!quiet && !jsonMode) console.log(dim(`\n  Launching ${name}...`));
+    const res = await request('POST', '/v1/org/launch', body);
+    const d = res.data || res;
+
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+
+    console.log(`\n  ${green('\u2713 Organization launched!')}`);
+    console.log(`  ${bold('Org ID:')}  ${cyan(d.org_id)}`);
+    console.log(`  ${bold('Agents:')} ${d.agents?.length || 0}`);
+    for (const a of (d.agents || [])) {
+      console.log(`    ${dim('\u2022')} ${a.name} (${a.role}) ${dim('\u2014 ' + a.model)}`);
+    }
+    console.log(`  ${bold('Channels:')} ${(d.channels || []).join(', ')}`);
+    console.log(`  ${bold('Hive:')}   ${d.hive_id}`);
+    console.log(`\n  ${dim('Send a task:')} ${cyan('slop org task ' + d.org_id + ' "Build a REST API"')}\n`);
+    return;
+  }
+
+  if (sub === 'task') {
+    const orgId = args[1];
+    const task = args.slice(2).filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
+    if (!orgId || !task) die('Usage: slop org task <org-id> "your task here"');
+    const res = await request('POST', '/v1/org/' + orgId + '/task', { task });
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    console.log(`\n  ${green('\u2713 Task sent!')} Assigned to ${bold(d.assigned_to || 'first agent')}\n`);
+    return;
+  }
+
+  if (sub === 'status') {
+    const orgId = args[1];
+    if (!orgId) die('Usage: slop org status <org-id>');
+    const res = await request('GET', '/v1/org/' + orgId + '/status');
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    console.log(`\n  ${bold(d.name || 'Organization')}`);
+    console.log(`  Agents: ${cyan(String(d.agent_count || 0))}  Messages: ${d.messages_total || 0}  Chain: ${d.chain_status || 'unknown'}\n`);
+    return;
+  }
+
+  if (sub === 'scale') {
+    const orgId = args[1];
+    if (!orgId) die('Usage: slop org scale <org-id> [--count N]');
+    const countIdx = args.indexOf('--count');
+    const count = countIdx >= 0 ? parseInt(args[countIdx + 1]) : undefined;
+    const body = {};
+    if (count !== undefined) body.count = count;
+    const res = await request('POST', '/v1/org/' + orgId + '/scale', body);
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    console.log(`\n  ${green('\u2713 Scaled!')} Agents: ${cyan(String(d.agent_count || d.count || 0))}\n`);
+    return;
+  }
+
+  if (sub === 'standup') {
+    const orgId = args[1];
+    if (!orgId) die('Usage: slop org standup <org-id>');
+    const res = await request('GET', '/v1/org/' + orgId + '/standup');
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    console.log(`\n  ${bold('Daily Standup')}\n`);
+    for (const a of (d.agents || [])) {
+      console.log(`  ${cyan(a.name)} (${a.role}/${a.model}): ${dim(a.standup?.status || 'no standup')}`);
+    }
+    console.log('');
+    return;
+  }
+
+  die('Unknown org command: ' + sub + '. Run slop org help');
+}
+
+// ============================================================
+// CHAIN — Agent Chain Management
+// ============================================================
+async function cmdChain(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Agent Chains')}\n`);
+    console.log(`  ${cyan('slop chain create')} ${dim('--name "research" --steps "claude:research,grok:critique"')}`);
+    console.log(`  ${cyan('slop chain list')}                     List your chains`);
+    console.log(`  ${cyan('slop chain status')} ${dim('<chain-id>')}       Check chain status`);
+    console.log(`  ${cyan('slop chain pause')} ${dim('<chain-id>')}        Pause a running chain`);
+    console.log(`  ${cyan('slop chain resume')} ${dim('<chain-id>')}       Resume a paused chain\n`);
+    return;
+  }
+
+  if (sub === 'create') {
+    const nameIdx = args.indexOf('--name');
+    const stepsIdx = args.indexOf('--steps');
+    const loopFlag = args.includes('--loop');
+    const name = nameIdx >= 0 ? args[nameIdx + 1] : 'Untitled Chain';
+    const stepsRaw = stepsIdx >= 0 ? args[stepsIdx + 1] : null;
+
+    if (!stepsRaw) die('Usage: slop chain create --name "name" --steps "model:role,model:role"');
+
+    const steps = stepsRaw.split(',').map(s => {
+      const parts = s.trim().split(':');
+      return { model: parts[0], role: parts[1] || 'default' };
+    });
+
+    const body = { name, steps, loop: loopFlag };
+    if (!quiet && !jsonMode) console.log(dim(`\n  Creating chain "${name}"...`));
+    const res = await request('POST', '/v1/chain/create', body);
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    console.log(`\n  ${green('\u2713 Chain created!')}`);
+    console.log(`  ${bold('Chain ID:')} ${cyan(d.chain_id || d.id)}`);
+    console.log(`  ${bold('Steps:')}    ${steps.length}`);
+    console.log(`  ${bold('Loop:')}     ${loopFlag ? green('yes') : dim('no')}`);
+    for (let i = 0; i < steps.length; i++) {
+      console.log(`    ${dim(String(i + 1) + '.')} ${cyan(steps[i].model)} ${dim('\u2192')} ${steps[i].role}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'list') {
+    const res = await request('GET', '/v1/chain/list');
+    const chains = res.data?.chains || res.chains || [];
+    if (jsonMode) { console.log(JSON.stringify(chains, null, 2)); return; }
+    console.log(`\n  ${bold('Your Chains')}\n`);
+    if (chains.length === 0) {
+      console.log(dim('  No chains found. Create one with: slop chain create\n'));
+      return;
+    }
+    for (const c of chains) {
+      const status = c.status === 'running' ? green(c.status) : c.status === 'paused' ? yellow(c.status) : dim(c.status || 'unknown');
+      console.log(`  ${cyan(c.id || c.chain_id)}  ${bold(c.name || 'Untitled')}  ${status}  ${dim(String(c.steps?.length || 0) + ' steps')}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'status') {
+    const chainId = args[1];
+    if (!chainId) die('Usage: slop chain status <chain-id>');
+    const res = await request('GET', '/v1/chain/' + chainId + '/status');
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    const status = d.status === 'running' ? green(d.status) : d.status === 'paused' ? yellow(d.status) : dim(d.status || 'unknown');
+    console.log(`\n  ${bold(d.name || 'Chain')} ${dim('(' + chainId + ')')}`);
+    console.log(`  Status: ${status}  Step: ${d.current_step || 0}/${d.total_steps || 0}  Iterations: ${d.iterations || 0}\n`);
+    return;
+  }
+
+  if (sub === 'pause') {
+    const chainId = args[1];
+    if (!chainId) die('Usage: slop chain pause <chain-id>');
+    const res = await request('POST', '/v1/chain/' + chainId + '/pause', {});
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    console.log(`\n  ${yellow('\u23f8 Chain paused:')} ${chainId}\n`);
+    return;
+  }
+
+  if (sub === 'resume') {
+    const chainId = args[1];
+    if (!chainId) die('Usage: slop chain resume <chain-id>');
+    const res = await request('POST', '/v1/chain/' + chainId + '/resume', {});
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    console.log(`\n  ${green('\u25b6 Chain resumed:')} ${chainId}\n`);
+    return;
+  }
+
+  die('Unknown chain command: ' + sub + '. Run slop chain help');
+}
+
+// ============================================================
+// MEMORY — Direct Memory Operations
+// ============================================================
+async function cmdMemory(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Memory Operations')}\n`);
+    console.log(`  ${cyan('slop memory set')} ${dim('<key> <value>')}     Store a value`);
+    console.log(`  ${cyan('slop memory get')} ${dim('<key>')}             Retrieve a value`);
+    console.log(`  ${cyan('slop memory search')} ${dim('<query>')}        Search memory`);
+    console.log(`  ${cyan('slop memory list')}                    List all keys`);
+    console.log(`  ${cyan('slop memory delete')} ${dim('<key>')}          Delete a key\n`);
+    return;
+  }
+
+  if (sub === 'set') {
+    const key = args[1];
+    const value = args.slice(2).filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
+    if (!key || !value) die('Usage: slop memory set <key> <value>');
+    const res = await request('POST', '/v1/memory-set', { key, value });
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    console.log(`\n  ${green('\u2713 Stored:')} ${cyan(key)}\n`);
+    return;
+  }
+
+  if (sub === 'get') {
+    const key = args[1];
+    if (!key) die('Usage: slop memory get <key>');
+    const res = await request('POST', '/v1/memory-get', { key });
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    if (quiet) { console.log(d.value !== undefined ? d.value : ''); return; }
+    console.log(`\n  ${bold(key + ':')} ${green(String(d.value !== undefined ? d.value : dim('(not found)')))}\n`);
+    return;
+  }
+
+  if (sub === 'search') {
+    const query = args.slice(1).filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
+    if (!query) die('Usage: slop memory search <query>');
+    const res = await request('POST', '/v1/memory-search', { query });
+    const results = res.data?.results || res.results || [];
+    if (jsonMode) { console.log(JSON.stringify(results, null, 2)); return; }
+    console.log(`\n  ${bold('Memory Search:')} "${query}"\n`);
+    if (results.length === 0) { console.log(dim('  No results found.\n')); return; }
+    for (const r of results) {
+      console.log(`  ${cyan(r.key || r.id)}  ${dim('\u2192')}  ${green(String(r.value || r.content || '').slice(0, 80))}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'list') {
+    const res = await request('POST', '/v1/memory-list', {});
+    const keys = res.data?.keys || res.keys || res.data?.entries || [];
+    if (jsonMode) { console.log(JSON.stringify(keys, null, 2)); return; }
+    console.log(`\n  ${bold('Memory Keys')}\n`);
+    if (keys.length === 0) { console.log(dim('  No keys stored.\n')); return; }
+    for (const k of keys) {
+      if (typeof k === 'string') {
+        console.log(`  ${cyan(k)}`);
+      } else {
+        console.log(`  ${cyan(k.key || k.id)}  ${dim(String(k.value || '').slice(0, 60))}`);
+      }
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'delete' || sub === 'rm' || sub === 'remove') {
+    const key = args[1];
+    if (!key) die('Usage: slop memory delete <key>');
+    const res = await request('POST', '/v1/memory-delete', { key });
+    const d = res.data || res;
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    console.log(`\n  ${green('\u2713 Deleted:')} ${cyan(key)}\n`);
+    return;
+  }
+
+  die('Unknown memory command: ' + sub + '. Run slop memory help');
+}
+
+// ============================================================
+// RUN — Natural Language Task Execution
+// ============================================================
+async function cmdRun(args) {
+  requireKey();
+  const task = args.filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
+  if (!task) die('Usage: slop run "describe your task in natural language"');
+
+  if (!quiet && !jsonMode) console.log(dim(`\n  Running: "${task}"...`));
+
+  try {
+    const res = await request('POST', '/v1/agent/run', { task });
+    const d = res.data || res;
+
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+
+    if (quiet) {
+      console.log(d.result || d.output || JSON.stringify(d));
+      return;
+    }
+
+    console.log(`\n  ${bold('Result')}`);
+    console.log(`  ${dim('\u2500'.repeat(42))}`);
+    if (d.steps && Array.isArray(d.steps)) {
+      for (let i = 0; i < d.steps.length; i++) {
+        const s = d.steps[i];
+        console.log(`  ${dim(String(i + 1) + '.')} ${cyan(s.action || s.tool || 'step')} ${dim('\u2192')} ${green(String(s.result || s.output || '').slice(0, 80))}`);
+      }
+    }
+    if (d.result !== undefined) {
+      console.log(`\n  ${bold('Output:')} ${green(String(d.result))}`);
+    } else if (d.output !== undefined) {
+      console.log(`\n  ${bold('Output:')} ${green(String(d.output))}`);
+    } else {
+      console.log(`\n  ${prettyJSON(d)}`);
+    }
+    if (d.credits_used) console.log(dim(`\n  [${d.credits_used}cr used]`));
+    console.log('');
+  } catch (err) {
+    handleError(err);
+  }
+}
+
+// ============================================================
+// DISCOVER — Find the Right Feature for a Goal
+// ============================================================
+async function cmdDiscover(args) {
+  const query = args.filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
+  if (!query) die('Usage: slop discover "what you want to accomplish"');
+
+  if (!quiet && !jsonMode) console.log(dim(`\n  Discovering: "${query}"...`));
+
+  try {
+    const res = await request('POST', '/v1/discover', { query }, false);
+    const d = res.data || res;
+
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+
+    if (quiet) {
+      const suggestions = d.suggestions || d.results || [];
+      for (const s of suggestions) console.log(s.command || s.slug || s.id || '');
+      return;
+    }
+
+    console.log(`\n  ${bold('Recommended for:')} "${query}"\n`);
+    const suggestions = d.suggestions || d.results || d.recommendations || [];
+    if (suggestions.length === 0) {
+      console.log(dim('  No suggestions found. Try different terms.\n'));
+      return;
+    }
+    for (const s of suggestions) {
+      console.log(`  ${cyan(s.command || s.slug || s.id || 'unknown')}`);
+      if (s.description || s.desc) console.log(`    ${dim(s.description || s.desc)}`);
+      if (s.example) console.log(`    ${dim('Example:')} ${cyan(s.example)}`);
+      console.log('');
+    }
+  } catch (err) {
+    handleError(err);
+  }
+}
+
+// ============================================================
+// STATS — Platform Statistics
+// ============================================================
+async function cmdStats(args) {
+  if (!quiet && !jsonMode) console.log(dim(`\n  Loading stats...`));
+
+  try {
+    // Fetch health for API count, and balance if authed
+    const healthRes = await request('GET', '/v1/health', null, false);
+    const h = healthRes.data || {};
+
+    let balance = null;
+    let usage = null;
+    if (API_KEY) {
+      try {
+        const balRes = await request('GET', '/v1/credits/balance');
+        balance = balRes.data || {};
+      } catch (e) { /* no balance */ }
+      try {
+        const usageRes = await request('GET', '/v1/usage/today');
+        usage = usageRes.data || {};
+      } catch (e) { /* no usage endpoint */ }
+    }
+
+    if (jsonMode) {
+      console.log(JSON.stringify({ health: h, balance, usage }, null, 2));
+      return;
+    }
+
+    if (quiet) {
+      console.log(`apis: ${h.apis_loaded || 0}`);
+      if (balance) console.log(`credits: ${balance.balance || 0}`);
+      if (usage) console.log(`calls_today: ${usage.calls || 0}`);
+      return;
+    }
+
+    console.log(`\n  ${bold('Platform Stats')}`);
+    console.log(`  ${dim('\u2500'.repeat(42))}`);
+    console.log(`  ${bold('Total APIs:')}        ${yellow(String(h.apis_loaded || 0))}`);
+    console.log(`  ${bold('Status:')}            ${h.status === 'operational' ? green(h.status) : red(h.status || 'unknown')}`);
+    console.log(`  ${bold('Version:')}           ${dim(h.version || 'unknown')}`);
+    console.log(`  ${bold('Uptime:')}            ${dim(formatUptime(h.uptime_seconds || 0))}`);
+    if (balance) {
+      console.log(`  ${bold('Credits remaining:')} ${green(String(balance.balance || 0))}`);
+      console.log(`  ${bold('Tier:')}              ${cyan(balance.tier || 'free')}`);
+    }
+    if (usage) {
+      console.log(`  ${bold('Calls today:')}       ${yellow(String(usage.calls || usage.requests || 0))}`);
+      console.log(`  ${bold('Credits used today:')} ${yellow(String(usage.credits_used || 0))}`);
+    }
+    if (!API_KEY) {
+      console.log(`\n  ${dim('Log in for usage stats: slop login')}`);
+    }
+    console.log('');
+  } catch (err) {
+    handleError(err);
+  }
+}
+
+// ============================================================
 // MAIN ENTRYPOINT
 // ============================================================
 async function main() {
@@ -1154,6 +1601,13 @@ async function main() {
     case 'config':  cmdConfig(args);       break;
     case 'key':     cmdKey(args);          break;
     case 'mcp':     cmdMcp();              break;
+    case 'org':     await cmdOrg(args);    break;
+    case 'chain':   await cmdChain(args);  break;
+    case 'memory':  await cmdMemory(args); break;
+    case 'mem':     await cmdMemory(args); break;
+    case 'run':     await cmdRun(args);    break;
+    case 'discover': await cmdDiscover(args); break;
+    case 'stats':   await cmdStats(args);  break;
     default:
       console.error(red(`\n  Unknown command: ${cmd}`));
       console.error(dim('  Run `slop help` for usage.\n'));
