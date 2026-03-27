@@ -578,7 +578,22 @@ async function cmdBuy(args) {
   if (!quiet && !jsonMode) console.log(dim(`  Purchasing ${amount.toLocaleString()} credits...`));
 
   try {
-    const res = await request('POST', '/v1/credits/buy', { amount });
+    // Try Stripe checkout first, fall back to internal credits
+    let res;
+    try {
+      res = await request('POST', '/v1/checkout', { amount });
+      if (res.data?.checkout_url) {
+        if (jsonMode) { console.log(JSON.stringify(res.data, null, 2)); return; }
+        if (quiet) { console.log(res.data.checkout_url); return; }
+        console.log(`\n  ${green('✓ Stripe checkout ready!')}`);
+        console.log(`  ${bold('Open this URL to pay:')}\n`);
+        console.log(`  ${cyan(res.data.checkout_url)}\n`);
+        console.log(dim('  Credits will be added automatically after payment.\n'));
+        return;
+      }
+    } catch(e) { /* Stripe not configured, fall back */ }
+
+    res = await request('POST', '/v1/credits/buy', { amount });
     const d = res.data;
 
     if (jsonMode) {
@@ -665,8 +680,9 @@ ${C.reset}`;
   console.log(`    ${cyan('slop pipe')} <api1> <api2> ${dim('...')}             Chain APIs together`);
   console.log(`    ${cyan('slop search')} <query>                    Semantic search for APIs`);
   console.log(`    ${cyan('slop list')} ${dim('[category]')}                    List available APIs`);
-  console.log(`    ${cyan('slop signup')}                            Create a new account`);
-  console.log(`    ${cyan('slop login')}                             Log in to your account`);
+  console.log(`    ${cyan('slop signup')}                            Create a new account (interactive)`);
+  console.log(`    ${cyan('slop signup')} ${dim('--email E --password P')}  Create account (non-interactive)`);
+  console.log(`    ${cyan('slop login')}                             Log in (interactive or --email --password)`);
   console.log(`    ${cyan('slop whoami')}                            Show current user info`);
   console.log(`    ${cyan('slop key')} ${dim('[set|remove|rotate]')}          Manage your API key`);
   console.log(`    ${cyan('slop config')} ${dim('[key] [value]')}              View or set config`);
@@ -856,10 +872,13 @@ function promptSecret(question) {
 async function cmdSignup() {
   if (!quiet && !jsonMode) console.log(`\n  ${bold('Sign up for Slopshop')}\n`);
 
-  const email = await prompt('  Email: ');
+  // Support non-interactive mode for AI agents: slop signup --email x --password y
+  const emailIdx = process.argv.indexOf('--email');
+  const passIdx = process.argv.indexOf('--password');
+  const email = emailIdx >= 0 ? process.argv[emailIdx + 1] : await prompt('  Email: ');
   if (!email) die('Email is required.');
 
-  const password = await promptSecret('  Password: ');
+  const password = passIdx >= 0 ? process.argv[passIdx + 1] : await promptSecret('  Password: ');
   if (!password) die('Password is required.');
 
   if (!quiet && !jsonMode) console.log(dim('  Creating account...'));
@@ -923,10 +942,13 @@ async function cmdSignup() {
 async function cmdLogin() {
   if (!quiet && !jsonMode) console.log(`\n  ${bold('Log in to Slopshop')}\n`);
 
-  const email = await prompt('  Email: ');
+  // Support non-interactive mode: slop login --email x --password y
+  const emailIdx = process.argv.indexOf('--email');
+  const passIdx = process.argv.indexOf('--password');
+  const email = emailIdx >= 0 ? process.argv[emailIdx + 1] : await prompt('  Email: ');
   if (!email) die('Email is required.');
 
-  const password = await promptSecret('  Password: ');
+  const password = passIdx >= 0 ? process.argv[passIdx + 1] : await promptSecret('  Password: ');
   if (!password) die('Password is required.');
 
   if (!quiet && !jsonMode) console.log(dim('  Logging in...'));
