@@ -11,9 +11,14 @@ const readline = require('readline');
 const quiet   = process.argv.includes('--quiet') || process.argv.includes('-q');
 const jsonMode = process.argv.includes('--json');
 const noColor  = process.argv.includes('--no-color');
+const verbose  = process.argv.includes('--verbose') || process.argv.includes('-V');
+const timeoutFlag = process.argv.find(a => a.startsWith('--timeout='));
+const globalTimeout = timeoutFlag ? parseInt(timeoutFlag.split('=')[1]) * 1000 : 30000;
+const retryIdx = process.argv.indexOf('--retry');
+const maxRetries = retryIdx >= 0 ? parseInt(process.argv[retryIdx + 1]) || 3 : 0;
 
 // Strip global flags from argv so commands don't see them
-const GLOBAL_FLAGS = ['--quiet', '-q', '--json', '--no-color'];
+const GLOBAL_FLAGS = ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V'];
 
 // ============================================================
 // ANSI COLOR HELPERS
@@ -89,10 +94,18 @@ function request(method, path, body, auth = true) {
       options.headers['Content-Length'] = Buffer.byteLength(payload);
     }
 
+    if (verbose) {
+      console.error(dim(`  [verbose] ${method} ${urlStr}`));
+      if (payload) console.error(dim(`  [verbose] Body: ${payload.slice(0, 200)}`));
+    }
+
     const req = lib.request(options, (res) => {
       let data = '';
       res.on('data', (chunk) => { data += chunk; });
       res.on('end', () => {
+        if (verbose) {
+          console.error(dim(`  [verbose] ${res.statusCode} ${JSON.stringify(res.headers).slice(0, 200)}`));
+        }
         let parsed;
         try {
           parsed = JSON.parse(data);
@@ -109,8 +122,8 @@ function request(method, path, body, auth = true) {
 
     req.on('error', (e) => reject(e));
 
-    req.setTimeout(30000, () => {
-      req.destroy(new Error('Request timed out after 30 seconds'));
+    req.setTimeout(globalTimeout, () => {
+      req.destroy(new Error(`Request timed out after ${globalTimeout / 1000} seconds`));
     });
 
     if (payload) req.write(payload);
@@ -302,12 +315,31 @@ async function cmdCall(args) {
 
   if (!quiet && !jsonMode) console.log(dim(`  Calling ${cyan(slug)}...`));
 
-  try {
-    const res = await request('POST', `/v1/${slug}`, input);
-    printResult(res.data, slug);
-  } catch (err) {
-    handleError(err);
+  let lastErr;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      if (attempt > 0 && !quiet && !jsonMode) console.log(dim(`  Retry ${attempt}/${maxRetries}...`));
+      const res = await request('POST', `/v1/${slug}`, input);
+      printResult(res.data, slug);
+
+      // Save to history
+      const cfg2 = loadConfig();
+      cfg2.history = cfg2.history || [];
+      const d = res.data;
+      const meta = (d && typeof d === 'object' && d.meta) ? d.meta : {};
+      cfg2.history.push({ time: new Date().toLocaleTimeString(), command: 'call ' + slug, credits: meta.credits_used });
+      if (cfg2.history.length > 100) cfg2.history = cfg2.history.slice(-100);
+      saveConfig(cfg2);
+
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (attempt >= maxRetries) break;
+      // Wait a bit before retry (exponential backoff)
+      await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
+    }
   }
+  handleError(lastErr);
 }
 
 async function cmdPipe(args) {
@@ -665,8 +697,8 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'help'],
-      flags: ['--quiet', '-q', '--json', '--no-color'],
+      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'version', 'upgrade', 'completions', 'help'],
+      flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N'],
       version: '1.0.0'
     }, null, 2));
     return;
@@ -698,10 +730,21 @@ ${C.reset}`;
   console.log(`    ${cyan('slop health')}                            Server health check`);
   console.log(`    ${cyan('slop mcp')}                               Set up MCP for Claude Code`);
   console.log(`    ${cyan('slop help')}                              Show this help\n`);
+  console.log(`  ${bold('PRODUCTIVITY')}`);
+  console.log(`    ${cyan('slop batch')} ${dim('<file> or "cmd1" "cmd2"')}    Execute multiple commands`);
+  console.log(`    ${cyan('slop watch')} ${dim('<slug> [--interval 5]')}     Repeat a command every N seconds`);
+  console.log(`    ${cyan('slop alias')} ${dim('<name> = <command>')}        Create shorthand aliases`);
+  console.log(`    ${cyan('slop history')} ${dim('[N | clear]')}             Show recent commands`);
+  console.log(`    ${cyan('slop version')}                           Show version info`);
+  console.log(`    ${cyan('slop upgrade')}                           Check for CLI updates`);
+  console.log(`    ${cyan('slop completions')} ${dim('[bash|zsh|fish]')}     Generate shell completions\n`);
   console.log(`  ${bold('FLAGS')}`);
   console.log(`    ${yellow('--quiet, -q')}    Suppress decorative output, data only`);
   console.log(`    ${yellow('--json')}         Output raw JSON (for piping)`);
-  console.log(`    ${yellow('--no-color')}     Disable ANSI colors\n`);
+  console.log(`    ${yellow('--no-color')}     Disable ANSI colors`);
+  console.log(`    ${yellow('--verbose, -V')}  Show request/response details`);
+  console.log(`    ${yellow('--timeout=N')}    Request timeout in seconds (default: 30)`);
+  console.log(`    ${yellow('--retry N')}      Retry failed requests N times\n`);
   console.log(`  ${bold('EXAMPLES')}`);
   console.log(`    ${dim('# Generate a UUID')}`);
   console.log(`    ${cyan('slop call generate-value-uuid')}\n`);
@@ -1579,12 +1622,211 @@ async function cmdStats(args) {
 }
 
 // ============================================================
+// BATCH — Execute multiple commands from a file or inline
+// ============================================================
+async function cmdBatch(args) {
+  requireKey();
+  const file = args[0];
+  let commands = [];
+
+  if (file && fs.existsSync(file)) {
+    commands = fs.readFileSync(file, 'utf8').split('\n').filter(l => l.trim() && !l.startsWith('#'));
+  } else if (args.length > 0) {
+    // Inline: slop batch "hash hello" "uuid" "reverse test"
+    commands = args.filter(a => !GLOBAL_FLAGS.includes(a));
+  }
+
+  if (commands.length === 0) {
+    die('Usage: slop batch <file.txt> or slop batch "cmd1" "cmd2" ...');
+  }
+
+  if (!quiet && !jsonMode) console.log(`\n  ${bold('Batch:')} ${commands.length} commands\n`);
+
+  const results = [];
+  for (const cmd of commands) {
+    const parts = cmd.trim().split(/\s+/);
+    const slug = parts[0];
+    const input = {};
+    for (let i = 1; i < parts.length; i += 2) {
+      const key = parts[i]?.replace(/^--/, '');
+      const val = parts[i + 1];
+      if (key && val) input[key] = val;
+    }
+
+    try {
+      const res = await request('POST', '/v1/' + slug, input);
+      results.push({ command: cmd, ok: true, data: res.data || res });
+      if (!quiet && !jsonMode) console.log(`  ${green('\u2713')} ${cmd}`);
+    } catch(e) {
+      results.push({ command: cmd, ok: false, error: e.message });
+      if (!quiet && !jsonMode) console.log(`  ${red('\u2717')} ${cmd}: ${e.message}`);
+    }
+  }
+
+  if (jsonMode) console.log(JSON.stringify(results, null, 2));
+  else if (!quiet) console.log(`\n  ${results.filter(r => r.ok).length}/${results.length} succeeded\n`);
+}
+
+// ============================================================
+// WATCH — Repeat a command every N seconds
+// ============================================================
+async function cmdWatch(args) {
+  requireKey();
+  const intervalIdx = args.indexOf('--interval');
+  const interval = intervalIdx >= 0 ? parseInt(args[intervalIdx + 1]) || 5 : 5;
+  const slug = args.filter((a, i) => a !== '--interval' && (intervalIdx < 0 || i !== intervalIdx + 1) && !GLOBAL_FLAGS.includes(a))[0];
+
+  if (!slug) die('Usage: slop watch <api-slug> [--interval 5]');
+
+  console.log(dim(`  Watching ${slug} every ${interval}s (Ctrl+C to stop)\n`));
+
+  const poll = async () => {
+    try {
+      const res = await request('POST', '/v1/' + slug, {});
+      const d = res.data || res;
+      console.log(`  ${dim(new Date().toLocaleTimeString())} ${cyan(slug)} \u2192 ${JSON.stringify(d).slice(0, 100)}`);
+    } catch(e) {
+      console.log(`  ${dim(new Date().toLocaleTimeString())} ${red(slug)} \u2192 ${e.message}`);
+    }
+  };
+
+  await poll();
+  setInterval(poll, interval * 1000);
+}
+
+// ============================================================
+// ALIAS — Create shorthand aliases
+// ============================================================
+function cmdAlias(args) {
+  const cfg = loadConfig();
+  cfg.aliases = cfg.aliases || {};
+
+  if (args.length === 0) {
+    console.log(`\n  ${bold('Aliases')}\n`);
+    if (Object.keys(cfg.aliases).length === 0) {
+      console.log(dim('  No aliases set. Use: slop alias <name> = <command>\n'));
+    } else {
+      for (const [name, cmd] of Object.entries(cfg.aliases)) {
+        console.log(`  ${cyan(name)} \u2192 ${dim(cmd)}`);
+      }
+      console.log('');
+    }
+    return;
+  }
+
+  const eqIdx = args.indexOf('=');
+  if (eqIdx > 0) {
+    const name = args.slice(0, eqIdx).join(' ');
+    const command = args.slice(eqIdx + 1).join(' ');
+    cfg.aliases[name] = command;
+    saveConfig(cfg);
+    console.log(green(`\n  Alias set: ${cyan(name)} \u2192 ${command}\n`));
+  } else if (args[0] === 'remove' || args[0] === 'delete') {
+    const name = args[1];
+    delete cfg.aliases[name];
+    saveConfig(cfg);
+    console.log(green(`\n  Alias removed: ${name}\n`));
+  } else {
+    // Show specific alias
+    const alias = cfg.aliases[args[0]];
+    if (alias) console.log(`\n  ${cyan(args[0])} \u2192 ${alias}\n`);
+    else console.log(dim(`\n  No alias: ${args[0]}\n`));
+  }
+}
+
+// ============================================================
+// HISTORY — Show recent commands/calls
+// ============================================================
+function cmdHistory(args) {
+  const cfg = loadConfig();
+  const history = cfg.history || [];
+
+  if (args[0] === 'clear') {
+    cfg.history = [];
+    saveConfig(cfg);
+    console.log(green('\n  History cleared.\n'));
+    return;
+  }
+
+  if (history.length === 0) {
+    console.log(dim('\n  No history yet.\n'));
+    return;
+  }
+
+  const n = parseInt(args[0]) || 20;
+  console.log(`\n  ${bold('Recent commands')} (last ${Math.min(n, history.length)})\n`);
+  for (const h of history.slice(-n)) {
+    console.log(`  ${dim(h.time)} ${cyan(h.command)} ${dim(h.credits ? h.credits + 'cr' : '')}`);
+  }
+  console.log('');
+}
+
+// ============================================================
+// UPGRADE — Check for CLI updates
+// ============================================================
+async function cmdUpgrade() {
+  try {
+    const pkg = require('./package.json');
+    console.log(dim(`\n  Current: v${pkg.version}`));
+    console.log(`  Run: ${cyan('npm install -g slopshop@latest')} to upgrade.\n`);
+  } catch(e) { console.log(dim('\n  Could not check version.\n')); }
+}
+
+// ============================================================
+// COMPLETIONS — Generate shell completions
+// ============================================================
+function cmdCompletions(args) {
+  const shell = args[0] || 'bash';
+
+  const commands = ['call','pipe','run','search','list','discover','org','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','health','mcp','help','batch','watch','alias','history','version','upgrade','completions','do'];
+
+  if (shell === 'bash') {
+    console.log(`# Add to ~/.bashrc:`);
+    console.log(`_slop_completions() {`);
+    console.log(`  local cur="\${COMP_WORDS[COMP_CWORD]}"`);
+    console.log(`  COMPREPLY=( $(compgen -W "${commands.join(' ')}" -- "$cur") )`);
+    console.log(`}`);
+    console.log(`complete -F _slop_completions slop`);
+  } else if (shell === 'zsh') {
+    console.log(`# Add to ~/.zshrc:`);
+    console.log(`_slop() { _arguments '1:command:(${commands.join(' ')})' }`);
+    console.log(`compdef _slop slop`);
+  } else if (shell === 'fish') {
+    console.log(`# Add to ~/.config/fish/completions/slop.fish:`);
+    for (const cmd of commands) {
+      console.log(`complete -c slop -n "__fish_use_subcommand" -a "${cmd}"`);
+    }
+  } else {
+    console.log(`\n  ${bold('Shell Completions')}\n`);
+    console.log(`  ${cyan('slop completions bash')}   Generate bash completions`);
+    console.log(`  ${cyan('slop completions zsh')}    Generate zsh completions`);
+    console.log(`  ${cyan('slop completions fish')}   Generate fish completions\n`);
+  }
+}
+
+// ============================================================
 // MAIN ENTRYPOINT
 // ============================================================
 async function main() {
-  const rawArgs = process.argv.slice(2).filter(a => !GLOBAL_FLAGS.includes(a));
-  const cmd = rawArgs[0];
-  const args = rawArgs.slice(1);
+  // Filter out global flags and --timeout=N and --retry N from args
+  const rawArgs = process.argv.slice(2).filter((a, i, arr) => {
+    if (GLOBAL_FLAGS.includes(a)) return false;
+    if (a.startsWith('--timeout=')) return false;
+    if (a === '--retry') return false;
+    // Skip the value after --retry
+    if (i > 0 && arr[i - 1] === '--retry') return false;
+    return true;
+  });
+  let cmd = rawArgs[0];
+  let args = rawArgs.slice(1);
+
+  // Check aliases before command dispatch
+  const aliasCfg = _loadCfg();
+  if (cmd && aliasCfg.aliases && aliasCfg.aliases[cmd]) {
+    const aliasedArgs = aliasCfg.aliases[cmd].split(/\s+/);
+    cmd = aliasedArgs[0];
+    args = [...aliasedArgs.slice(1), ...args];
+  }
 
   if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
     cmdHelp();
@@ -1612,6 +1854,20 @@ async function main() {
     case 'run':     await cmdRun(args);    break;
     case 'discover': await cmdDiscover(args); break;
     case 'stats':   await cmdStats(args);  break;
+    case 'batch':   await cmdBatch(args);  break;
+    case 'watch':   await cmdWatch(args);  break;
+    case 'alias':   cmdAlias(args);        break;
+    case 'history': cmdHistory(args);      break;
+    case 'version': case '-v': case '--version': {
+      try {
+        const pkg = require('./package.json');
+        if (jsonMode) console.log(JSON.stringify({ version: pkg.version, name: pkg.name }));
+        else console.log(`\n  ${bold('slopshop')} v${pkg.version}\n`);
+      } catch(e) { console.log(`\n  ${bold('slopshop')} v1.0.0\n`); }
+      break;
+    }
+    case 'upgrade':     await cmdUpgrade();         break;
+    case 'completions': cmdCompletions(args);       break;
     case 'do':      await cmdNatural(args[0] || '', args.slice(1)); break;
     default:
       // Natural language routing — understand what the user wants
