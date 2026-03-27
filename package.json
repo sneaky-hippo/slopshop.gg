@@ -15,6 +15,28 @@
     "openapi": "node openapi-gen.js",
     "mcp": "node mcp-server.js"
   },
+  "files": [
+    "cli.js",
+    "mcp-server.js",
+    "setup-mcp.js",
+    "sdk/",
+    "handlers/",
+    "registry.js",
+    "registry-expansion.js",
+    "registry-hackathon.js",
+    "schemas.js",
+    "server-v2.js",
+    "agent.js",
+    "auth.js",
+    "pipes.js",
+    "stripe.js",
+    "polar.js",
+    "zapier.js",
+    "openapi-gen.js",
+    "README.md",
+    "LICENSE",
+    "llms.txt"
+  ],
   "keywords": [
     "api",
     "agents",

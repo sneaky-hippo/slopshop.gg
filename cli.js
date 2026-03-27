@@ -234,10 +234,46 @@ function readStdin() {
 // ============================================================
 
 async function cmdCall(args) {
-  requireKey();
-
   const slug = args[0];
   if (!slug) die('Usage: slop call <api-slug> [--key value]...');
+
+  // --help: show API schema info (dry-run)
+  if (args.includes('--help')) {
+    try {
+      if (!quiet && !jsonMode) console.log(dim(`  Fetching API info for ${cyan(slug)}...`));
+      const res = await request('POST', '/v1/dry-run/' + slug, {}, false);
+      if (jsonMode) {
+        console.log(JSON.stringify(res.data, null, 2));
+      } else {
+        const d = res.data;
+        console.log(`\n  ${cyan(bold(d.slug || slug))}`);
+        if (d.name) console.log(`  ${bold(d.name)}`);
+        if (d.description || d.desc) console.log(`  ${d.description || d.desc}`);
+        if (d.credits !== undefined) console.log(`  ${dim('Credits:')} ${yellow(String(d.credits))}`);
+        if (d.input_schema || d.schema || d.parameters) {
+          const schema = d.input_schema || d.schema || d.parameters;
+          console.log(`\n  ${bold('Parameters:')}`);
+          const props = schema.properties || schema;
+          for (const [k, v] of Object.entries(props)) {
+            const req = (schema.required || []).includes(k) ? red('*') : ' ';
+            const type = v.type || '';
+            const desc = v.description || '';
+            console.log(`    ${req} ${cyan('--' + k)}  ${dim(type)}  ${desc}`);
+          }
+        }
+        if (d.example) {
+          console.log(`\n  ${bold('Example:')}`);
+          console.log(`    ${cyan('slop call ' + slug)} ${Object.entries(d.example).map(([k,v]) => `--${k} ${JSON.stringify(v)}`).join(' ')}`);
+        }
+        console.log('');
+      }
+    } catch (err) {
+      handleError(err);
+    }
+    return;
+  }
+
+  requireKey();
 
   // Parse --key value pairs (skip global flags)
   const input = {};
@@ -313,12 +349,22 @@ async function cmdPipe(args) {
 
     if (i > 0 && previous !== null) {
       input._previous = previous;
-      // Also try to surface the most useful previous field as input
+      // Auto-map common output fields to input fields
       if (typeof previous === 'object' && previous !== null) {
-        const keys = ['result', 'output', 'text', 'data', 'value', 'content', 'encoded', 'decoded', 'html', 'csv', 'hash', 'uuid', 'nanoid', 'password', 'hmac'];
+        const keys = ['result', 'output', 'text', 'data', 'value', 'content', 'encoded', 'decoded', 'html', 'csv', 'hash', 'uuid', 'nanoid', 'password', 'hmac', 'words'];
         for (const k of keys) {
           if (previous[k] !== undefined) {
+            // Map to both text and input for maximum compatibility
+            input.text = String(previous[k]);
             input.input = previous[k];
+            // Also map specific field names to common input names
+            if (k === 'hash' || k === 'uuid' || k === 'words') {
+              input.text = String(previous[k]);
+            }
+            if (k === 'result') {
+              input.text = String(previous[k]);
+              input.data = previous[k];
+            }
             break;
           }
         }
@@ -398,12 +444,11 @@ async function cmdSearch(args) {
 async function cmdList(args) {
   const filteredArgs = args.filter(a => !GLOBAL_FLAGS.includes(a));
   const category = filteredArgs[0] || '';
-  const qs = category ? `?category=${encodeURIComponent(category)}` : '';
 
   if (!quiet && !jsonMode) console.log(dim(`  Loading APIs${category ? ` in category: ${category}` : ''}...`));
 
   try {
-    const res = await request('GET', `/v1/tools${qs}`, null, false);
+    const res = await request('GET', '/v1/tools', null, false);
     const tools = res.data?.tools || res.data?.apis || res.tools || res.apis || [];
     const total = res.data?.total || res.total || tools.length;
 
@@ -417,12 +462,24 @@ async function cmdList(args) {
       return;
     }
 
+    // Client-side category filtering (case-insensitive partial match)
+    let filtered = tools;
+    if (category) {
+      const catLower = category.toLowerCase();
+      filtered = tools.filter(t => {
+        const slug = (t.slug || t.id || '').toLowerCase();
+        const cat = (t.category || '').toLowerCase();
+        const name = (t.name || '').toLowerCase();
+        return slug.includes(catLower) || cat.includes(catLower) || name.includes(catLower);
+      });
+    }
+
     if (quiet) {
-      for (const t of tools) console.log(t.id || '');
+      for (const t of filtered) console.log(t.slug || t.id || '');
       return;
     }
 
-    console.log(`\n${bold(`${total} APIs available`)}\n`);
+    console.log(`\n${bold(`${filtered.length} APIs${category ? ` matching "${category}"` : ' available'}`)}\n`);
 
     // Column widths
     const COL_SLUG = 42;
@@ -439,9 +496,9 @@ async function cmdList(args) {
     console.log(hdr);
     console.log(dim('\u2500'.repeat(100)));
 
-    for (const t of tools) {
+    for (const t of filtered) {
       const row = [
-        cyan(padEnd(t.id || '', COL_SLUG)),
+        cyan(padEnd(t.slug || t.id || '', COL_SLUG)),
         padEnd((t.name || '').slice(0, COL_NAME - 1), COL_NAME),
         yellow(padEnd(String(t.credits || 0), COL_CRED)),
         dim(t.status || ''),
@@ -449,7 +506,7 @@ async function cmdList(args) {
       console.log(row);
     }
 
-    console.log(dim(`\n  Showing ${tools.length} of ${total}. Use --category to filter.`));
+    console.log(dim(`\n  Showing ${filtered.length} of ${total}. Use a category name to filter.`));
   } catch (err) {
     handleError(err);
   }
@@ -593,7 +650,7 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'help'],
+      commands: ['call', 'pipe', 'search', 'list', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'help'],
       flags: ['--quiet', '-q', '--json', '--no-color'],
       version: '1.0.0'
     }, null, 2));
@@ -616,6 +673,7 @@ ${C.reset}`;
   console.log(`    ${cyan('slop balance')}                           Check credit balance`);
   console.log(`    ${cyan('slop buy')} <amount>                      Buy credits (1k/10k/100k/1M)`);
   console.log(`    ${cyan('slop health')}                            Server health check`);
+  console.log(`    ${cyan('slop mcp')}                               Set up MCP for Claude Code`);
   console.log(`    ${cyan('slop help')}                              Show this help\n`);
   console.log(`  ${bold('FLAGS')}`);
   console.log(`    ${yellow('--quiet, -q')}    Suppress decorative output, data only`);
@@ -640,6 +698,43 @@ ${C.reset}`;
   console.log(`    ${yellow('SLOPSHOP_KEY')}   ${dim('Required. Your API key.')}`);
   console.log(`    ${yellow('SLOPSHOP_BASE')}  ${dim(`Optional. Server URL. Default: https://slopshop.gg`)}\n`);
   console.log(`  ${dim('Get a key: POST /v1/keys   |   slopshop.gg')}\n`);
+}
+
+// ============================================================
+// MCP SETUP
+// ============================================================
+function cmdMcp() {
+  console.log(`\n  ${bold('Setting up Slopshop MCP for Claude Code...')}\n`);
+  try {
+    require('./setup-mcp.js');
+  } catch(e) {
+    // If setup-mcp.js isn't available (npm install), use inline setup
+    const os = require('os');
+    const fs = require('fs');
+    const path = require('path');
+    const settingsPath = path.join(os.homedir(), '.claude', 'settings.json');
+
+    let settings = {};
+    try { settings = JSON.parse(fs.readFileSync(settingsPath, 'utf8')); } catch(e) {}
+
+    settings.mcpServers = settings.mcpServers || {};
+    settings.mcpServers.slopshop = {
+      command: 'node',
+      args: [path.join(__dirname, 'mcp-server.js')],
+      env: {
+        SLOPSHOP_BASE: BASE_URL,
+        SLOPSHOP_KEY: API_KEY || ''
+      }
+    };
+
+    const dir = path.dirname(settingsPath);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    fs.writeFileSync(settingsPath, JSON.stringify(settings, null, 2));
+
+    console.log(green('  MCP server configured!'));
+    console.log(dim(`  Settings: ${settingsPath}`));
+    console.log(`\n  ${bold('Restart Claude Code to activate.')}\n`);
+  }
 }
 
 // ============================================================
@@ -1036,6 +1131,7 @@ async function main() {
     case 'whoami':  await cmdWhoami();     break;
     case 'config':  cmdConfig(args);       break;
     case 'key':     cmdKey(args);          break;
+    case 'mcp':     cmdMcp();              break;
     default:
       console.error(red(`\n  Unknown command: ${cmd}`));
       console.error(dim('  Run `slop help` for usage.\n'));
