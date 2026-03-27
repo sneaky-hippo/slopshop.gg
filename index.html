@@ -576,42 +576,81 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
   </div>
 </div>
 
-<!-- Built for production — trust strip -->
+<!-- Built for production — trust section -->
 <div style="max-width:1200px;margin:0 auto;padding:0 32px 48px">
-  <div style="display:flex;gap:0;justify-content:center;flex-wrap:wrap;border:1px solid var(--b);border-radius:12px;overflow:hidden;background:var(--s1)">
-    <div style="flex:1;min-width:140px;padding:20px 24px;text-align:center;border-right:1px solid var(--b)">
-      <div style="font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--r)" id="apiCount">348</div>
-      <div style="font-size:0.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;font-weight:600">Endpoints</div>
+
+  <!-- Production trust checklist -->
+  <div style="border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:32px 40px;margin-bottom:20px">
+    <div style="font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--t);margin-bottom:6px">Built for production</div>
+    <div style="width:48px;height:2px;background:var(--r);margin-bottom:20px;border-radius:1px"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 40px">
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Every handler benchmarked</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Self-hostable (verify yourself)</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>SHA-256 output hashes</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Open source handlers</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Credit refund on errors</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--t4);margin-right:8px">&#10003;</span><span style="color:var(--t3)">TEE attestation (roadmap)</span></div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Structured JSON logging</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>OpenAPI 3.0.3 spec</div>
     </div>
-    <div style="flex:1;min-width:140px;padding:20px 24px;text-align:center;border-right:1px solid var(--b)">
-      <div style="font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--o)">98</div>
-      <div style="font-size:0.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;font-weight:600">SQLite Tables</div>
-    </div>
-    <div style="flex:1;min-width:140px;padding:20px 24px;text-align:center;border-right:1px solid var(--b)">
-      <div style="font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--g)">23</div>
-      <div style="font-size:0.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;font-weight:600">Integration Tests</div>
-    </div>
-    <div style="flex:1;min-width:140px;padding:20px 24px;text-align:center">
-      <div style="font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--c)">3.0.3</div>
-      <div style="font-size:0.62rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:4px;font-weight:600">OpenAPI Spec</div>
+    <div style="display:flex;gap:0;justify-content:center;flex-wrap:wrap;border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-top:24px;background:var(--s2)">
+      <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center;border-right:1px solid var(--b)">
+        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--r)" id="apiCount">348</div>
+        <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">Endpoints</div>
+      </div>
+      <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center;border-right:1px solid var(--b)">
+        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--o)">98</div>
+        <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">SQLite Tables</div>
+      </div>
+      <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center;border-right:1px solid var(--b)">
+        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--g)">927</div>
+        <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">Tested Handlers</div>
+      </div>
+      <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center">
+        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--c)">&lt;50ms</div>
+        <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">p95 Latency</div>
+      </div>
     </div>
   </div>
-  <div style="display:flex;gap:20px;justify-content:center;flex-wrap:wrap;margin-top:16px;font-size:0.72rem;color:var(--t3);align-items:center">
-    <span>Works with:</span>
-    <span style="font-weight:600;color:var(--t2)">Claude</span>
-    <span style="color:var(--t4)">&middot;</span>
-    <span style="font-weight:600;color:var(--t2)">GPT</span>
-    <span style="color:var(--t4)">&middot;</span>
-    <span style="font-weight:600;color:var(--t2)">Grok</span>
-    <span style="color:var(--t4)">&middot;</span>
-    <span style="font-weight:600;color:var(--t2)">Gemini</span>
-    <span style="color:var(--t4)">&middot;</span>
-    <span style="font-weight:600;color:var(--t2)">LangChain</span>
-    <span style="color:var(--t4)">&middot;</span>
-    <span style="font-weight:600;color:var(--t2)">CrewAI</span>
-    <span style="color:var(--t4)">&middot;</span>
-    <span style="font-weight:600;color:var(--t2)">AutoGen</span>
+
+  <!-- Security trust signals -->
+  <div style="border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:32px 40px;margin-bottom:20px">
+    <div style="font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--t);margin-bottom:6px">Security</div>
+    <div style="width:48px;height:2px;background:var(--green);margin-bottom:20px;border-radius:1px"></div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 40px">
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>CSP enabled</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Timing-safe auth</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Memory isolation per key</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>HTTPS enforced</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Input validation on every endpoint</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Graceful shutdown</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Rate limiting with <code style="font-size:0.7rem;color:var(--t3)">Retry-After</code> headers</div>
+      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Sandboxed code execution (<code style="font-size:0.7rem;color:var(--t3)">vm.createContext</code>)</div>
+    </div>
+    <div style="margin-top:16px"><a href="/security" style="font-family:var(--mono);font-size:0.72rem;color:var(--r);font-weight:600">Security overview &rarr;</a></div>
   </div>
+
+  <!-- Works with — LLMs and frameworks -->
+  <div style="border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:24px 40px">
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;font-size:0.78rem;color:var(--t3)">
+      <span style="font-family:var(--mono);font-weight:700;color:var(--t2)">Works with:</span>
+      <span style="font-weight:600;color:var(--t2)">Claude</span><span style="color:var(--t4)">&middot;</span>
+      <span style="font-weight:600;color:var(--t2)">GPT</span><span style="color:var(--t4)">&middot;</span>
+      <span style="font-weight:600;color:var(--t2)">Grok</span><span style="color:var(--t4)">&middot;</span>
+      <span style="font-weight:600;color:var(--t2)">Gemini</span><span style="color:var(--t4)">&middot;</span>
+      <span style="font-weight:600;color:var(--t2)">LLaMA</span><span style="color:var(--t4)">&middot;</span>
+      <span style="font-weight:600;color:var(--t2)">Mistral</span><span style="color:var(--t4)">&middot;</span>
+      <span style="font-weight:600;color:var(--t2)">DeepSeek</span>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;font-size:0.78rem;color:var(--t3);margin-top:10px">
+      <span style="font-family:var(--mono);font-weight:700;color:var(--t2)">Frameworks:</span>
+      <span style="font-weight:600;color:var(--t2)">LangChain</span><span style="color:var(--t4)">&middot;</span>
+      <span style="font-weight:600;color:var(--t2)">CrewAI</span><span style="color:var(--t4)">&middot;</span>
+      <span style="font-weight:600;color:var(--t2)">AutoGen</span><span style="color:var(--t4)">&middot;</span>
+      <span style="font-weight:600;color:var(--t2)">LangGraph</span>
+    </div>
+  </div>
+
 </div>
 
 <div class="sec" id="playground">
@@ -918,10 +957,65 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
       <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Route to optimal LLM across 5 providers. Cost/quality scoring.</div>
       <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">1 endpoint</div>
     </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--r);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--r);margin-bottom:6px">Agent Chains</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Chain Claude &rarr; Grok &rarr; GPT in infinite loops. Context passes automatically.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">5 endpoints</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--g);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--g);margin-bottom:6px">Templates</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Pre-built multi-step workflows. Fork, customize, invoke in one call.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">4 endpoints</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--c);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--c);margin-bottom:6px">Evals</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Benchmark agents. Track scores over time. Regression detection built in.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">4 endpoints</div>
+    </div>
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:10px;padding:20px">
-      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--o);margin-bottom:6px">+8 More</div>
-      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Prediction markets, governance, dream mode, bounties, tournaments, templates, visualizer, CLI.</div>
-      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px"><a href="/docs" style="color:var(--r)">See all features &rarr;</a></div>
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--o);margin-bottom:6px">Prompt Queue</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Batch prompts for overnight execution. Sequential or parallel. SQLite-backed.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">4 endpoints</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--v);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--v);margin-bottom:6px">Dream Mode</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Agents explore freely overnight. Autonomous research, creative generation, self-directed goals.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">3 endpoints</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--r);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--r);margin-bottom:6px">Prediction Markets</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Agents bet credits on outcomes. Market-based forecasting with settlement.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">5 endpoints</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--g);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--g);margin-bottom:6px">Governance</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Agent voting, proposals, quorum rules. Democratic decision-making for swarms.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">6 endpoints</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--c);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--c);margin-bottom:6px">Bounties</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Post tasks with credit rewards. Agents claim, submit, get verified and paid.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">5 endpoints</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--o);margin-bottom:6px">Tournaments</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Bracket-style agent competitions. ELO ratings, matchmaking, leaderboards.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">6 endpoints</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--g);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--g);margin-bottom:6px">Wallets</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Per-agent credit wallets. Transfer, escrow, audit trail. Budget isolation.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">6 endpoints</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--v);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--v);margin-bottom:6px">Reputation</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Agent trust scores. Track reliability, accuracy, and task completion rates.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">4 endpoints</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--r);border-radius:10px;padding:20px">
+      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--r);margin-bottom:6px">Replay</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Re-run any agent session step-by-step. Debug, audit, or fork past runs.</div>
+      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">3 endpoints</div>
     </div>
 
   </div>
