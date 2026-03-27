@@ -1609,9 +1609,170 @@ async function main() {
     case 'discover': await cmdDiscover(args); break;
     case 'stats':   await cmdStats(args);  break;
     default:
-      console.error(red(`\n  Unknown command: ${cmd}`));
-      console.error(dim('  Run `slop help` for usage.\n'));
-      process.exit(1);
+      // Natural language routing — understand what the user wants
+      await cmdNatural(cmd, args);
+      break;
+  }
+}
+
+// ============================================================
+// NATURAL LANGUAGE CLI ROUTER
+// ============================================================
+
+async function cmdNatural(cmd, args) {
+  const fullInput = [cmd, ...args].filter(a => !GLOBAL_FLAGS.includes(a)).join(' ').trim();
+  if (!fullInput) { die('Run `slop help` for usage.'); }
+
+  // Pattern matching for common intents — no API call needed, instant routing
+  const lower = fullInput.toLowerCase();
+
+  // Memory operations
+  if (/^(remember|store|save|set|put)\s+(\w+)\s*[=:]\s*(.+)/i.test(fullInput)) {
+    const m = fullInput.match(/^(?:remember|store|save|set|put)\s+(\w+)\s*[=:]\s*(.+)/i);
+    return cmdMemory(['set', m[1], m[2]]);
+  }
+  if (/^(recall|get|fetch|retrieve|what is|what's|whats)\s+(\w+)/i.test(fullInput)) {
+    const m = fullInput.match(/^(?:recall|get|fetch|retrieve|what is|what's|whats)\s+(\S+)/i);
+    return cmdMemory(['get', m[1]]);
+  }
+  if (/^(find|search|look for|where)\s+(.+)\s+in\s+memory/i.test(fullInput)) {
+    const m = fullInput.match(/^(?:find|search|look for|where)\s+(.+)\s+in\s+memory/i);
+    return cmdMemory(['search', m[1]]);
+  }
+  if (/^(forget|delete|remove|clear)\s+(\w+)/i.test(fullInput)) {
+    const m = fullInput.match(/^(?:forget|delete|remove|clear)\s+(\S+)/i);
+    return cmdMemory(['delete', m[1]]);
+  }
+
+  // Hash/crypto
+  if (/^hash\s+(.+)/i.test(fullInput)) {
+    const text = fullInput.replace(/^hash\s+/i, '').replace(/^['"]|['"]$/g, '');
+    return cmdCall(['crypto-hash-sha256', '--text', text]);
+  }
+  if (/^(encrypt|encode)\s+(.+)\s+(base64|b64)/i.test(fullInput)) {
+    const text = fullInput.match(/^(?:encrypt|encode)\s+(.+)\s+(?:base64|b64)/i)[1];
+    return cmdCall(['text-base64-encode', '--text', text]);
+  }
+  if (/^uuid|^generate.*uuid|^new.*id/i.test(lower)) {
+    return cmdCall(['crypto-uuid']);
+  }
+
+  // Validation
+  if (/^(validate|check|verify|is)\s+.*(email|mail)\s+(\S+)/i.test(fullInput)) {
+    const m = fullInput.match(/(\S+@\S+\.\S+)/);
+    if (m) return cmdCall(['validate-email-syntax', '--email', m[1]]);
+  }
+  if (/^(validate|check|verify)\s+.*url\s+(\S+)/i.test(fullInput)) {
+    const m = fullInput.match(/(https?:\/\/\S+)/);
+    if (m) return cmdCall(['validate-url-format', '--url', m[1]]);
+  }
+  if (/^(validate|check)\s+.*ip\s+([\d.]+)/i.test(fullInput)) {
+    const m = fullInput.match(/([\d]+\.[\d]+\.[\d]+\.[\d]+)/);
+    if (m) return cmdCall(['validate-ip-address', '--ip', m[1]]);
+  }
+
+  // Word/text operations
+  if (/^(count|how many)\s+(words?|characters?|chars?)\s+(?:in\s+)?(.+)/i.test(fullInput)) {
+    const m = fullInput.match(/^(?:count|how many)\s+\w+\s+(?:in\s+)?(.+)/i);
+    const text = m[1].replace(/^['"]|['"]$/g, '');
+    return cmdCall(['text-word-count', '--text', text]);
+  }
+  if (/^(reverse|flip)\s+(.+)/i.test(fullInput)) {
+    const text = fullInput.replace(/^(?:reverse|flip)\s+/i, '').replace(/^['"]|['"]$/g, '');
+    return cmdCall(['text-reverse', '--text', text]);
+  }
+  if (/^(slugify|slug)\s+(.+)/i.test(fullInput)) {
+    const text = fullInput.replace(/^(?:slugify|slug)\s+/i, '').replace(/^['"]|['"]$/g, '');
+    return cmdCall(['text-slugify', '--text', text]);
+  }
+
+  // Summarize
+  if (/^(summarize|summarise|tldr|summary)\s+(.+)/i.test(fullInput)) {
+    requireKey();
+    const text = fullInput.replace(/^(?:summarize|summarise|tldr|summary)\s+/i, '').replace(/^['"]|['"]$/g, '');
+    return cmdCall(['llm-summarize', '--text', text]);
+  }
+
+  // Org operations
+  if (/^(launch|create|start|deploy)\s+(an?\s+)?(org|team|organization|company|startup|agency)/i.test(lower)) {
+    return cmdOrg(['launch', ...args]);
+  }
+  if (/^(send|assign|give)\s+.*task/i.test(lower)) {
+    // Try to extract org ID and task
+    return cmdRun([fullInput]);
+  }
+
+  // Chain operations
+  if (/^(chain|loop|repeat|cycle)\s+/i.test(lower)) {
+    return cmdChain(['create', ...args]);
+  }
+
+  // Balance/credits
+  if (/^(how many|my|check)\s+(credits?|balance|money)/i.test(lower) || lower === 'credits' || lower === 'balance') {
+    return cmdBalance();
+  }
+
+  // Stats
+  if (/^(status|stats|how is|platform|health)/i.test(lower)) {
+    return cmdStats(args);
+  }
+
+  // Search for tools
+  if (/^(find|search|look for|what tools?|which api|how do i)\s+(.+)/i.test(fullInput)) {
+    const query = fullInput.replace(/^(?:find|search|look for|what tools?|which api|how do i)\s+/i, '');
+    return cmdSearch([query]);
+  }
+
+  // If nothing matched locally, try the server-side agent/run as fallback
+  requireKey();
+  if (!quiet && !jsonMode) console.log(dim(`\n  Understanding: "${fullInput}"...\n`));
+
+  try {
+    // First try discover to suggest features
+    const disc = await request('POST', '/v1/discover', { goal: fullInput });
+    const recs = disc.data?.recommended || disc.recommended || [];
+
+    if (recs.length > 0 && recs[0].relevance > 0) {
+      if (!quiet && !jsonMode) {
+        console.log(`  ${bold('Suggested features:')}\n`);
+        for (const r of recs.slice(0, 3)) {
+          console.log(`  ${cyan(r.name || r.endpoint)} ${dim('— ' + (r.when || r.description || ''))}`);
+        }
+        console.log('');
+      }
+    }
+
+    // Then try agent/run for actual execution
+    const res = await request('POST', '/v1/agent/run', { task: fullInput });
+    const d = res.data || res;
+
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+
+    if (d.steps && d.steps.length > 0) {
+      const successful = d.steps.filter(s => s.success !== false);
+      if (successful.length > 0) {
+        console.log(`  ${green('✓')} Executed ${successful.length} tool${successful.length > 1 ? 's' : ''}:\n`);
+        for (const step of successful) {
+          const result = step.result || step.data || step;
+          const preview = JSON.stringify(result).slice(0, 120);
+          console.log(`  ${cyan(step.api || step.tool || 'unknown')} ${dim('→')} ${preview}`);
+        }
+      }
+      if (d.answer) console.log(`\n  ${bold('Answer:')} ${d.answer}`);
+      console.log(dim(`\n  ${d.total_credits || 0} credits used\n`));
+    } else if (d.answer) {
+      console.log(`\n  ${d.answer}\n`);
+    } else {
+      console.log(dim(`\n  Could not process: "${fullInput}"`));
+      console.log(`  Try: ${cyan('slop search "' + fullInput.split(' ').slice(0, 3).join(' ') + '"')}\n`);
+    }
+  } catch (err) {
+    // Final fallback: suggest search
+    if (!quiet && !jsonMode) {
+      console.log(dim(`\n  I don't have a direct command for that.`));
+      console.log(`  Try: ${cyan('slop search "' + fullInput.split(' ').slice(0, 3).join(' ') + '"')}`);
+      console.log(`  Or:  ${cyan('slop run "' + fullInput + '"')}\n`);
+    }
   }
 }
 
