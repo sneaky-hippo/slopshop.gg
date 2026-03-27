@@ -124,8 +124,17 @@ const apiCount = Object.keys(API_DEFS).length;
 // On local: defaults to .data/slopshop.db
 const fs = require('fs');
 const Database = require('better-sqlite3');
-const DB_PATH = process.env.DB_PATH || path.join(__dirname, '.data', 'slopshop.db');
-if (!fs.existsSync(path.dirname(DB_PATH))) fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+let DB_PATH = process.env.DB_PATH || path.join(__dirname, '.data', 'slopshop.db');
+try {
+  if (!fs.existsSync(path.dirname(DB_PATH))) fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+  // Test write access
+  fs.accessSync(path.dirname(DB_PATH), fs.constants.W_OK);
+} catch(e) {
+  // Volume not writable, fall back to local .data/
+  log.warn('DB_PATH not writable, falling back to .data/', { path: DB_PATH, error: e.message });
+  DB_PATH = path.join(__dirname, '.data', 'slopshop.db');
+  if (!fs.existsSync(path.dirname(DB_PATH))) fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+}
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL'); // fast concurrent reads
 db.pragma('busy_timeout = 5000'); // wait up to 5s for locks instead of failing
