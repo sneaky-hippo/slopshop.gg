@@ -243,7 +243,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
   <tr><td>Manage 10+ API keys</td><td>One API key</td></tr>
   <tr><td>Build retry logic yourself</td><td>Built-in retry + circuit breakers</td></tr>
   <tr><td>Parse different response formats</td><td>Consistent {data, meta, guarantees} envelope</td></tr>
-  <tr><td>No execution proof</td><td>_engine: "real" on every response</td></tr>
+  <tr><td>No execution proof</td><td>_engine: "real" + X-Output-Hash on every response (<a href="#trust-verification">see trust model</a>)</td></tr>
   <tr><td>Pay per provider subscription</td><td>Pay per credit, memory is free</td></tr>
   <tr><td>Build observability yourself</td><td>X-Credits-Used, X-Latency-Ms, X-RateLimit-* headers</td></tr>
   <tr><td>No task abstraction</td><td>POST /v1/tasks/run with confidence + guarantees</td></tr>
@@ -253,6 +253,45 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
     <p>
       Every Slopshop response includes <code>"_engine": "real"</code> to signal that the result was genuinely computed, not cached from a template or mocked. This is Slopshop's core guarantee: when you call an API, your data is actually processed. Hash APIs run real cryptographic functions. Network APIs make real DNS/HTTP calls. LLM APIs send real prompts to Claude or GPT. There are no fake responses.
     </p>
+
+    <!-- TRUST & VERIFICATION -->
+    <h2 id="trust-verification">Trust &amp; Verification Model</h2>
+
+    <h3>What <code>_engine: "real"</code> means</h3>
+    <p>Every Slopshop API response includes <code>_engine: "real"</code>. This means:</p>
+    <ul>
+      <li><strong>The computation actually ran</strong> — your input was processed by real Node.js code, not proxied to an LLM or returned from a template</li>
+      <li><strong>Deterministic outputs</strong> — the same input always produces the same output for compute-tier APIs</li>
+      <li><strong>Sub-millisecond execution</strong> — 925 handlers benchmarked at &lt;1ms average</li>
+    </ul>
+
+    <h3>What "execution proof" means today</h3>
+    <p>Every response includes an <code>X-Output-Hash</code> header — a SHA-256 hash of the output. This provides:</p>
+    <ul>
+      <li><strong>Tamper detection</strong> — you can verify the response wasn't modified in transit</li>
+      <li><strong>Audit trail</strong> — hashes are logged and can be replayed</li>
+      <li><strong>Merkle proofs</strong> — Army deployments aggregate result hashes into a Merkle tree for batch verification</li>
+    </ul>
+
+    <h3>Honest limitations</h3>
+    <p><strong>The trust source is Slopshop's server.</strong> Today's verification model is:</p>
+    <ul>
+      <li>You trust that our server ran the code it claims to</li>
+      <li>Output hashes prove consistency but not that specific code executed</li>
+      <li>Self-hosting lets you verify by running the same code locally</li>
+    </ul>
+    <p>We want to be upfront about this: <code>_engine: "real"</code> and <code>X-Output-Hash</code> are claims made by our server. They prove consistency and detect tampering in transit, but they do not cryptographically prove that a specific piece of code executed on our infrastructure. The source of trust is still Slopshop. This is a real limitation.</p>
+
+    <h3>Roadmap: Stronger verification</h3>
+    <p>We're exploring paths toward genuinely trustless verification:</p>
+    <ul>
+      <li><strong>Trusted Execution Environments (TEE)</strong> — Run compute handlers inside Intel SGX or AWS Nitro Enclaves so the hardware attests that specific code ran. This is the most practical path to trustless execution without the latency cost of ZK proofs.</li>
+      <li><strong>Reproducible builds</strong> — Publish handler source code so self-hosters can verify exact match with cloud deployment</li>
+      <li><strong>ZK proofs</strong> — For specific high-value operations (e.g., prediction market resolution), ZK-SNARKs could prove computation without revealing inputs. Currently too slow (~100x overhead) for general compute.</li>
+    </ul>
+
+    <h3>Self-hosting as verification</h3>
+    <p>The strongest trust model available today: <code>npm install slopshop &amp;&amp; node server-v2.js</code>. Run the exact same code locally. Compare outputs. If our cloud returns the same result as your local instance for the same input, you have reproducible verification without trusting our server.</p>
 
     <!-- WHAT YOU CAN BUILD -->
     <h2 id="what-you-can-build">What You Can Build (Combo Features)</h2>

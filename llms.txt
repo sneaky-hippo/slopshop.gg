@@ -587,6 +587,17 @@ Memory that works across ANY LLM (Claude, GPT, Grok, Llama, Gemini, DeepSeek, Mi
 ## Not a wrapper - real compute
 927 compute handlers use Node.js built-ins (crypto, math, Buffer) with zero external dependencies — all benchmarked for correctness, null safety, and <50ms latency with 100% pass rate. 22 network APIs use built-in dns/http/tls modules. 20 memory APIs use SQLite persistence (atomic writes, concurrent-safe, 76 tables). 15 execution APIs use vm.createContext sandbox. 288 REST endpoints total across 78 categories. Every response includes _engine: "real" to prove data was actually processed. LLM APIs are clearly marked _engine: "llm".
 
+## Trust & Verification
+
+Every response includes _engine: "real" and X-Output-Hash (SHA-256).
+
+Current model: Server-side execution with hash-based audit trails. Output hashes prove consistency and detect transit tampering.
+Honest limitation: The trust source is Slopshop's server. _engine: "real" and X-Output-Hash are claims made by our server — they do not cryptographically prove that specific code executed. You are trusting Slopshop.
+Mitigation: Self-host to verify (npm install slopshop && node server-v2.js). Run the same code locally, compare outputs.
+Roadmap: TEE attestation (Intel SGX / AWS Nitro Enclaves) for hardware-attested execution, reproducible builds for source verification, ZK proofs for high-value ops (currently ~100x overhead, not practical for general compute).
+
+Merkle proofs available for Army deployments (POST /v1/proof/merkle).
+
 ## Production-grade reliability
 Circuit breakers, auto-retry with backoff, rate limiting per key, distributed locks. Credits checked before execution (never runs without budget). Every call logged to audit trail. Agent runs stored with full step trace, replayable via GET /v1/agent/history.
 
@@ -957,7 +968,7 @@ curl -X POST https://slopshop.gg/v1/knowledge/auto-discover \
   -d '{"namespace":"default"}'
 
 ## Auto-Merkle Proof Generation
-Generate Merkle trees and proofs for any set of data items. Cryptographic verification of task outputs.
+Generate Merkle trees and proofs for any set of data items. Batch verification of task outputs. Note: individual hashes are server-generated — Merkle proofs verify batch membership, but the same trust model applies (see Trust & Verification section).
 - POST /v1/proof/merkle — Generate Merkle tree with root hash and proof
 curl -X POST https://slopshop.gg/v1/proof/merkle \
   -H "Authorization: Bearer YOUR_KEY" \

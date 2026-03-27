@@ -6,9 +6,22 @@ const http = require('http');
 const readline = require('readline');
 
 // ============================================================
+// GLOBAL FLAGS (parsed early, before command dispatch)
+// ============================================================
+const quiet   = process.argv.includes('--quiet') || process.argv.includes('-q');
+const jsonMode = process.argv.includes('--json');
+const noColor  = process.argv.includes('--no-color');
+
+// Strip global flags from argv so commands don't see them
+const GLOBAL_FLAGS = ['--quiet', '-q', '--json', '--no-color'];
+
+// ============================================================
 // ANSI COLOR HELPERS
 // ============================================================
-const C = {
+const C = noColor ? {
+  reset: '', bold: '', dim: '', red: '', green: '', cyan: '',
+  yellow: '', white: '', bgRed: '',
+} : {
   reset:   '\x1b[0m',
   bold:    '\x1b[1m',
   dim:     '\x1b[2m',
@@ -128,30 +141,26 @@ function prettyJSON(obj, indent = 0) {
   return String(obj);
 }
 
-function printResult(data) {
-  // Support both flat (_credits_used) and wrapped ({ data: {...}, meta: {...} }) response shapes
+function extractMeta(data) {
   let result = {};
   let metaParts = [];
 
   if (data && typeof data === 'object' && data.data !== undefined && data.meta !== undefined) {
-    // Wrapped format: { data: {...}, meta: { credits_used, credits_remaining, latency_ms, ... } }
     result = data.data || {};
     const m = data.meta || {};
-    if (m.credits_used !== undefined)      metaParts.push(`credits used: ${m.credits_used}`);
-    if (m.credits_remaining !== undefined) metaParts.push(`remaining: ${m.credits_remaining}`);
+    if (m.credits_used !== undefined)      metaParts.push(`${m.credits_used}cr`);
     if (m.latency_ms !== undefined)        metaParts.push(`${m.latency_ms}ms`);
+    if (m.credits_remaining !== undefined) metaParts.push(`remaining: ${m.credits_remaining}`);
     if (m.status !== undefined)            metaParts.push(`status: ${m.status}`);
-    // Strip _engine from result display, show inline
     if (result._engine) {
       metaParts.push(`engine: ${result._engine}`);
       const { _engine, ...rest } = result;
       result = rest;
     }
   } else {
-    // Flat format: top-level _credits_used etc.
     for (const [k, v] of Object.entries(data)) {
       if (['_credits_used', '_credits_remaining', '_latency_ms', '_engine', '_request_id'].includes(k)) {
-        if (k === '_credits_used')      metaParts.push(`credits used: ${v}`);
+        if (k === '_credits_used')      metaParts.push(`${v}cr`);
         if (k === '_credits_remaining') metaParts.push(`remaining: ${v}`);
         if (k === '_latency_ms')        metaParts.push(`${v}ms`);
         if (k === '_engine')            metaParts.push(`engine: ${v}`);
@@ -161,10 +170,47 @@ function printResult(data) {
     }
   }
 
-  console.log(prettyJSON(result));
+  return { result, metaParts };
+}
 
-  if (metaParts.length > 0) {
-    console.log(dim(`\n  [${metaParts.join('  ·  ')}]`));
+function printResult(data, slug) {
+  if (jsonMode) {
+    console.log(JSON.stringify(data, null, 2));
+    return;
+  }
+
+  const { result, metaParts } = extractMeta(data);
+
+  if (quiet) {
+    // Quiet mode: just key: value lines, no decoration
+    for (const [k, v] of Object.entries(result)) {
+      console.log(`${k}: ${typeof v === 'object' ? JSON.stringify(v) : v}`);
+    }
+    return;
+  }
+
+  // Beautiful call result screen
+  if (slug) {
+    const metaStr = metaParts.length > 0 ? dim(metaParts.join(' \u00b7 ')) : '';
+    const slugDisplay = cyan(bold(slug));
+    console.log(`\n  ${slugDisplay}${metaStr ? '  ' + metaStr : ''}`);
+    console.log(`  ${dim('\u2500'.repeat(42))}`);
+    for (const [k, v] of Object.entries(result)) {
+      if (typeof v === 'object' && v !== null) {
+        console.log(`  ${bold(k + ':')} ${prettyJSON(v, 1)}`);
+      } else {
+        const valStr = typeof v === 'string' && v.length > 60
+          ? v.slice(0, 57) + '...'
+          : String(v);
+        console.log(`  ${bold(k + ':')} ${green(valStr)}`);
+      }
+    }
+    console.log('');
+  } else {
+    console.log(prettyJSON(result));
+    if (metaParts.length > 0) {
+      console.log(dim(`\n  [${metaParts.join('  \u00b7  ')}]`));
+    }
   }
 }
 
@@ -193,9 +239,10 @@ async function cmdCall(args) {
   const slug = args[0];
   if (!slug) die('Usage: slop call <api-slug> [--key value]...');
 
-  // Parse --key value pairs
+  // Parse --key value pairs (skip global flags)
   const input = {};
-  for (let i = 1; i < args.length; i += 2) {
+  for (let i = 1; i < args.length; i++) {
+    if (GLOBAL_FLAGS.includes(args[i])) continue;
     const key = args[i];
     const val = args[i + 1];
     if (!key.startsWith('--')) die(`Expected --key, got: ${key}`);
@@ -206,6 +253,7 @@ async function cmdCall(args) {
     } catch {
       input[k] = val;
     }
+    i++; // skip value
   }
 
   // Accept piped stdin as text/input field
@@ -216,11 +264,11 @@ async function cmdCall(args) {
     }
   }
 
-  console.log(dim(`  Calling ${cyan(slug)}...`));
+  if (!quiet && !jsonMode) console.log(dim(`  Calling ${cyan(slug)}...`));
 
   try {
     const res = await request('POST', `/v1/${slug}`, input);
-    printResult(res.data);
+    printResult(res.data, slug);
   } catch (err) {
     handleError(err);
   }
@@ -277,12 +325,14 @@ async function cmdPipe(args) {
       }
     }
 
-    console.log(`\n${bold(`Step ${i + 1}:`)} ${cyan(slug)}`);
-    console.log(dim('  Input: ') + dim(JSON.stringify(input).slice(0, 120)));
+    if (!quiet && !jsonMode) {
+      console.log(`\n${bold(`Step ${i + 1}:`)} ${cyan(slug)}`);
+      console.log(dim('  Input: ') + dim(JSON.stringify(input).slice(0, 120)));
+    }
 
     try {
       const res = await request('POST', `/v1/${slug}`, input);
-      printResult(res.data);
+      printResult(res.data, slug);
 
       // Strip meta for next step - handle both wrapped and flat shapes
       let raw = res.data;
@@ -302,17 +352,29 @@ async function cmdPipe(args) {
 }
 
 async function cmdSearch(args) {
-  const query = args.join(' ');
+  const query = args.filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
   if (!query) die('Usage: slop search <query>');
 
-  console.log(dim(`  Searching for: "${query}"...`));
+  if (!quiet && !jsonMode) console.log(dim(`  Searching for: "${query}"...`));
 
   try {
     const res = await request('POST', '/v1/resolve', { query }, false);
+
+    if (jsonMode) {
+      console.log(JSON.stringify(res.data, null, 2));
+      return;
+    }
+
     const { match, alternatives } = res.data;
 
     if (!match) {
-      console.log(yellow('  No matching APIs found. Try different terms.'));
+      console.log(quiet ? 'no results' : yellow('  No matching APIs found. Try different terms.'));
+      return;
+    }
+
+    if (quiet) {
+      console.log(match.slug || match.id);
+      if (alternatives) alternatives.forEach(a => console.log(a.slug || a.id));
       return;
     }
 
@@ -320,7 +382,7 @@ async function cmdSearch(args) {
     console.log(`  ${cyan(match.slug || match.id)}`);
     console.log(`  ${bold(match.name)}`);
     console.log(`  ${match.desc || match.description}`);
-    console.log(`  ${dim(`${match.credits} credits  ·  confidence: ${(match.confidence * 100).toFixed(0)}%`)}`);
+    console.log(`  ${dim(`${match.credits} credits  \u00b7  confidence: ${(match.confidence * 100).toFixed(0)}%`)}`);
 
     if (alternatives && alternatives.length > 0) {
       console.log(`\n${bold('Also try:')}`);
@@ -334,18 +396,29 @@ async function cmdSearch(args) {
 }
 
 async function cmdList(args) {
-  const category = args[0] || '';
+  const filteredArgs = args.filter(a => !GLOBAL_FLAGS.includes(a));
+  const category = filteredArgs[0] || '';
   const qs = category ? `?category=${encodeURIComponent(category)}` : '';
 
-  console.log(dim(`  Loading APIs${category ? ` in category: ${category}` : ''}...`));
+  if (!quiet && !jsonMode) console.log(dim(`  Loading APIs${category ? ` in category: ${category}` : ''}...`));
 
   try {
     const res = await request('GET', `/v1/tools${qs}`, null, false);
     const tools = res.data?.tools || res.data?.apis || res.tools || res.apis || [];
     const total = res.data?.total || res.total || tools.length;
 
+    if (jsonMode) {
+      console.log(JSON.stringify(res.data, null, 2));
+      return;
+    }
+
     if (!tools || tools.length === 0) {
-      console.log(yellow('  No APIs found.'));
+      console.log(quiet ? '' : yellow('  No APIs found.'));
+      return;
+    }
+
+    if (quiet) {
+      for (const t of tools) console.log(t.id || '');
       return;
     }
 
@@ -355,7 +428,6 @@ async function cmdList(args) {
     const COL_SLUG = 42;
     const COL_NAME = 30;
     const COL_CRED = 8;
-    const COL_TIER = 12;
 
     const hdr = [
       bold(padEnd('SLUG', COL_SLUG)),
@@ -365,7 +437,7 @@ async function cmdList(args) {
     ].join('  ');
 
     console.log(hdr);
-    console.log(dim('─'.repeat(100)));
+    console.log(dim('\u2500'.repeat(100)));
 
     for (const t of tools) {
       const row = [
@@ -388,11 +460,37 @@ async function cmdBalance() {
 
   try {
     const res = await request('GET', '/v1/credits/balance');
-    const { balance, tier, auto_reload } = res.data;
+    const d = res.data;
+    const balance = d.balance || 0;
+    const tier = d.tier || 'free';
+    const auto_reload = d.auto_reload;
 
-    console.log(`\n  ${bold('Balance:')}  ${green(balance.toLocaleString())} credits`);
-    console.log(`  ${bold('Tier:')}     ${cyan(tier)}`);
-    console.log(`  ${bold('Auto-reload:')} ${auto_reload ? green('on') : dim('off')}`);
+    if (jsonMode) {
+      console.log(JSON.stringify(d, null, 2));
+      return;
+    }
+
+    if (quiet) {
+      console.log(`balance: ${balance}`);
+      console.log(`tier: ${tier}`);
+      return;
+    }
+
+    // Credit bar: scale to 16 chars, assume 2000 max for free tier
+    const maxCredits = tier === 'free' ? 2000 : (tier === 'pro' ? 100000 : 1000000);
+    const filled = Math.round((balance / maxCredits) * 16);
+    const bar = '\u2588'.repeat(Math.min(filled, 16)) + '\u2591'.repeat(Math.max(16 - filled, 0));
+
+    const W = 42;
+    console.log(`\n  \u250c\u2500 Credits ${ '\u2500'.repeat(W - 12)}\u2510`);
+    console.log(`  \u2502  ${bold('Balance:')}  ${green(bar)}  ${bold(balance.toLocaleString().padStart(7))}${' '.repeat(W - 33 - balance.toLocaleString().length)}\u2502`);
+    console.log(`  \u2502  ${bold('Tier:')}     ${cyan(tier)}${' '.repeat(W - 11 - tier.length)}\u2502`);
+    if (auto_reload !== undefined) {
+      const arStr = auto_reload ? green('on') : dim('off');
+      const arLen = auto_reload ? 2 : 3;
+      console.log(`  \u2502  ${bold('Reload:')}   ${arStr}${' '.repeat(W - 13 - arLen)}\u2502`);
+    }
+    console.log(`  \u2514${ '\u2500'.repeat(W)}\u2518\n`);
   } catch (err) {
     handleError(err);
   }
@@ -401,26 +499,42 @@ async function cmdBalance() {
 async function cmdBuy(args) {
   requireKey();
 
-  const amount = parseInt(args[0]);
+  const filteredArgs = args.filter(a => !GLOBAL_FLAGS.includes(a));
+  const amount = parseInt(filteredArgs[0]);
   const validAmounts = [1000, 10000, 100000, 1000000];
   const prices = { 1000: '$9', 10000: '$49', 100000: '$299', 1000000: '$1999' };
 
   if (!amount || !validAmounts.includes(amount)) {
+    if (jsonMode) {
+      console.log(JSON.stringify({ packs: validAmounts.map(a => ({ credits: a, price: prices[a] })) }, null, 2));
+      return;
+    }
     console.log(`\n  ${bold('Credit packs:')}\n`);
     for (const a of validAmounts) {
-      console.log(`    ${yellow(a.toLocaleString().padStart(10))} credits  →  ${green(prices[a])}`);
+      console.log(`    ${yellow(a.toLocaleString().padStart(10))} credits  \u2192  ${green(prices[a])}`);
     }
     console.log(`\n  Usage: ${cyan('slop buy <amount>')}`);
     console.log(dim('  Example: slop buy 10000\n'));
     return;
   }
 
-  console.log(dim(`  Purchasing ${amount.toLocaleString()} credits...`));
+  if (!quiet && !jsonMode) console.log(dim(`  Purchasing ${amount.toLocaleString()} credits...`));
 
   try {
     const res = await request('POST', '/v1/credits/buy', { amount });
     const d = res.data;
-    console.log(`\n  ${green('Credits added!')}  +${d.amount_added?.toLocaleString()}`);
+
+    if (jsonMode) {
+      console.log(JSON.stringify(d, null, 2));
+      return;
+    }
+
+    if (quiet) {
+      console.log(`balance: ${d.new_balance}`);
+      return;
+    }
+
+    console.log(`\n  ${green('\u2713 Credits added!')}  +${d.amount_added?.toLocaleString()}`);
     console.log(`  New balance: ${bold(d.new_balance?.toLocaleString())} credits`);
     console.log(`  Tier: ${cyan(d.tier)}`);
     console.log(`  Charged: ${yellow(d.charged)}`);
@@ -430,12 +544,23 @@ async function cmdBuy(args) {
 }
 
 async function cmdHealth() {
-  console.log(dim(`  Checking ${BASE_URL}...`));
+  if (!quiet && !jsonMode) console.log(dim(`  Checking ${BASE_URL}...`));
 
   try {
     const res = await request('GET', '/v1/health', null, false);
     const d = res.data;
+
+    if (jsonMode) {
+      console.log(JSON.stringify(d, null, 2));
+      return;
+    }
+
     const ok = d.status === 'operational';
+
+    if (quiet) {
+      console.log(d.status || 'unknown');
+      return;
+    }
 
     console.log(`\n  Status:  ${ok ? green('operational') : red(d.status)}`);
     console.log(`  APIs:    ${yellow(String(d.apis_loaded || 0))} loaded`);
@@ -448,7 +573,8 @@ async function cmdHealth() {
 }
 
 function cmdHelp() {
-  const lobster = `
+  if (!quiet && !jsonMode) {
+    const lobster = `
   ${C.red}${C.bold}       (\\/)
       .-'  '-.
      /  o  o  \\
@@ -462,8 +588,19 @@ function cmdHelp() {
  ====|==||==|====
 ${C.reset}`;
 
-  console.log(lobster);
-  console.log(`  ${C.red}${C.bold}SLOPSHOP${C.reset} ${dim('— the API bazaar for lobsters')}\n`);
+    console.log(lobster);
+  }
+
+  if (jsonMode) {
+    console.log(JSON.stringify({
+      commands: ['call', 'pipe', 'search', 'list', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'help'],
+      flags: ['--quiet', '-q', '--json', '--no-color'],
+      version: '1.0.0'
+    }, null, 2));
+    return;
+  }
+
+  console.log(`  ${C.red}${C.bold}SLOPSHOP${C.reset} ${dim('\u2014 the API bazaar for lobsters')}\n`);
   console.log(`  ${bold('USAGE')}`);
   console.log(`    ${cyan('slop')} <command> [options]\n`);
   console.log(`  ${bold('COMMANDS')}`);
@@ -480,6 +617,10 @@ ${C.reset}`;
   console.log(`    ${cyan('slop buy')} <amount>                      Buy credits (1k/10k/100k/1M)`);
   console.log(`    ${cyan('slop health')}                            Server health check`);
   console.log(`    ${cyan('slop help')}                              Show this help\n`);
+  console.log(`  ${bold('FLAGS')}`);
+  console.log(`    ${yellow('--quiet, -q')}    Suppress decorative output, data only`);
+  console.log(`    ${yellow('--json')}         Output raw JSON (for piping)`);
+  console.log(`    ${yellow('--no-color')}     Disable ANSI colors\n`);
   console.log(`  ${bold('EXAMPLES')}`);
   console.log(`    ${dim('# Generate a UUID')}`);
   console.log(`    ${cyan('slop call generate-value-uuid')}\n`);
@@ -493,6 +634,8 @@ ${C.reset}`;
   console.log(`    ${cyan('slop search currency convert')}\n`);
   console.log(`    ${dim('# List all text APIs')}`);
   console.log(`    ${cyan('slop list text')}\n`);
+  console.log(`    ${dim('# Get JSON output for scripting')}`);
+  console.log(`    ${cyan('slop balance --json | jq .balance')}\n`);
   console.log(`  ${bold('ENVIRONMENT')}`);
   console.log(`    ${yellow('SLOPSHOP_KEY')}   ${dim('Required. Your API key.')}`);
   console.log(`    ${yellow('SLOPSHOP_BASE')}  ${dim(`Optional. Server URL. Default: https://slopshop.gg`)}\n`);
@@ -560,9 +703,9 @@ function loadConfig() {
 
 function saveConfig(cfg) {
   if (!fs.existsSync(CONFIG_DIR)) {
-    fs.mkdirSync(CONFIG_DIR, { recursive: true });
+    fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
   }
-  fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2));
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), { mode: 0o600 });
 }
 
 function prompt(question) {
@@ -616,7 +759,7 @@ function promptSecret(question) {
 // ============================================================
 
 async function cmdSignup() {
-  console.log(`\n  ${bold('Sign up for Slopshop')}\n`);
+  if (!quiet && !jsonMode) console.log(`\n  ${bold('Sign up for Slopshop')}\n`);
 
   const email = await prompt('  Email: ');
   if (!email) die('Email is required.');
@@ -624,23 +767,58 @@ async function cmdSignup() {
   const password = await promptSecret('  Password: ');
   if (!password) die('Password is required.');
 
-  console.log(dim('  Creating account...'));
+  if (!quiet && !jsonMode) console.log(dim('  Creating account...'));
 
   try {
     const res = await request('POST', '/v1/auth/signup', { email, password }, false);
     const d = res.data;
     const apiKey = d.api_key || d.key || d.token;
+    const credits = d.credits || d.balance || 2000;
 
-    console.log(`\n  ${green('Account created!')}  Welcome to Slopshop.`);
+    if (jsonMode) {
+      console.log(JSON.stringify(d, null, 2));
+      if (apiKey) {
+        const cfg = loadConfig();
+        cfg.api_key = apiKey;
+        cfg.email = email;
+        cfg.base_url = BASE_URL;
+        saveConfig(cfg);
+      }
+      return;
+    }
+
     if (apiKey) {
-      console.log(`  ${bold('API Key:')}  ${cyan(apiKey)}`);
+      const maskedKey = apiKey.slice(0, 8) + '...' + apiKey.slice(-4);
       const cfg = loadConfig();
       cfg.api_key = apiKey;
       cfg.email = email;
       cfg.base_url = BASE_URL;
       saveConfig(cfg);
-      console.log(dim(`  Saved to ${CONFIG_FILE}`));
-      console.log(`\n  Set your key:  ${yellow('export SLOPSHOP_KEY=' + apiKey)}\n`);
+
+      if (quiet) {
+        console.log(`email: ${email}`);
+        console.log(`api_key: ${apiKey}`);
+        console.log(`credits: ${credits}`);
+        return;
+      }
+
+      const W = 43;
+      console.log('');
+      console.log(`  \u250c${ '\u2500'.repeat(W)}\u2510`);
+      console.log(`  \u2502  ${green('\u2713')} Account created${' '.repeat(W - 20)}\u2502`);
+      console.log(`  \u2502${' '.repeat(W)}\u2502`);
+      console.log(`  \u2502  Email:    ${email}${' '.repeat(Math.max(W - 13 - email.length, 0))}\u2502`);
+      console.log(`  \u2502  API Key:  ${maskedKey}${' '.repeat(Math.max(W - 13 - maskedKey.length, 0))}\u2502`);
+      console.log(`  \u2502  Credits:  ${credits.toLocaleString()} (free)${' '.repeat(Math.max(W - 21 - credits.toLocaleString().length, 0))}\u2502`);
+      console.log(`  \u2502${' '.repeat(W)}\u2502`);
+      console.log(`  \u2502  Key saved to ~/.slopshop/config.json${' '.repeat(W - 40)}\u2502`);
+      console.log(`  \u2502${' '.repeat(W)}\u2502`);
+      console.log(`  \u2502  Next: ${cyan('slop call crypto-hash-sha256 \\\\')}${' '.repeat(Math.max(W - 42, 0))}\u2502`);
+      console.log(`  \u2502        ${dim('--text "hello world"')}${' '.repeat(Math.max(W - 28, 0))}\u2502`);
+      console.log(`  \u2514${ '\u2500'.repeat(W)}\u2518`);
+      console.log('');
+    } else {
+      console.log(`\n  ${green('Account created!')}  Welcome to Slopshop.\n`);
     }
   } catch (err) {
     handleError(err);
@@ -648,7 +826,7 @@ async function cmdSignup() {
 }
 
 async function cmdLogin() {
-  console.log(`\n  ${bold('Log in to Slopshop')}\n`);
+  if (!quiet && !jsonMode) console.log(`\n  ${bold('Log in to Slopshop')}\n`);
 
   const email = await prompt('  Email: ');
   if (!email) die('Email is required.');
@@ -656,23 +834,43 @@ async function cmdLogin() {
   const password = await promptSecret('  Password: ');
   if (!password) die('Password is required.');
 
-  console.log(dim('  Logging in...'));
+  if (!quiet && !jsonMode) console.log(dim('  Logging in...'));
 
   try {
     const res = await request('POST', '/v1/auth/login', { email, password }, false);
     const d = res.data;
     const apiKey = d.api_key || d.key || d.token;
 
-    console.log(`\n  ${green('Logged in!')}  Welcome back.`);
+    if (jsonMode) {
+      console.log(JSON.stringify(d, null, 2));
+      if (apiKey) {
+        const cfg = loadConfig();
+        cfg.api_key = apiKey;
+        cfg.email = email;
+        cfg.base_url = BASE_URL;
+        saveConfig(cfg);
+      }
+      return;
+    }
+
     if (apiKey) {
-      console.log(`  ${bold('API Key:')}  ${cyan(apiKey)}`);
       const cfg = loadConfig();
       cfg.api_key = apiKey;
       cfg.email = email;
       cfg.base_url = BASE_URL;
       saveConfig(cfg);
-      console.log(dim(`  Saved to ${CONFIG_FILE}`));
-      console.log(`\n  Set your key:  ${yellow('export SLOPSHOP_KEY=' + apiKey)}\n`);
+
+      if (quiet) {
+        console.log(`email: ${email}`);
+        console.log(`api_key: ${apiKey}`);
+        return;
+      }
+
+      console.log(`\n  ${green('\u2713')} ${bold('Logged in!')}  Welcome back, ${email}`);
+      console.log(dim(`  Key saved to ${CONFIG_FILE}`));
+      console.log(`\n  Next: ${cyan('slop balance')}  or  ${cyan('slop call <api-slug>')}\n`);
+    } else {
+      console.log(`\n  ${green('Logged in!')}  Welcome back.\n`);
     }
   } catch (err) {
     handleError(err);
@@ -685,6 +883,17 @@ async function cmdWhoami() {
   try {
     const res = await request('GET', '/v1/auth/me');
     const d = res.data;
+
+    if (jsonMode) {
+      console.log(JSON.stringify(d, null, 2));
+      return;
+    }
+
+    if (quiet) {
+      console.log(d.email || 'unknown');
+      return;
+    }
+
     console.log(`\n  ${bold('Email:')}    ${d.email || dim('unknown')}`);
     console.log(`  ${bold('Tier:')}     ${cyan(d.tier || 'free')}`);
     console.log(`  ${bold('Balance:')}  ${green(String(d.balance ?? d.credits ?? 'unknown'))} credits`);
@@ -805,7 +1014,9 @@ function cmdKey(args) {
 // MAIN ENTRYPOINT
 // ============================================================
 async function main() {
-  const [,, cmd, ...args] = process.argv;
+  const rawArgs = process.argv.slice(2).filter(a => !GLOBAL_FLAGS.includes(a));
+  const cmd = rawArgs[0];
+  const args = rawArgs.slice(1);
 
   if (!cmd || cmd === 'help' || cmd === '--help' || cmd === '-h') {
     cmdHelp();
