@@ -5,7 +5,7 @@
  */
 const https = require('https');
 const KEY = (() => { try { return JSON.parse(require('fs').readFileSync(require('path').join(require('os').homedir(), '.slopshop', 'config.json'), 'utf8')).api_key; } catch(e) { return ''; } })();
-function api(m, p, b) { return new Promise(r => { const o = { hostname: 'slopshop.gg', path: p, method: m, timeout: 15000, headers: { 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json' } }; const req = https.request(o, res => { let d = ''; res.on('data', c => d += c); res.on('end', () => { try { r(JSON.parse(d)); } catch(e) { r({ error: d.slice(0, 100) }); } }); }); req.on('error', e => r({ error: e.message })); req.on('timeout', () => { req.destroy(); r({ error: 'timeout' }); }); if (b) req.write(JSON.stringify(b)); req.end(); }); }
+function api(m, p, b) { return new Promise(r => { const o = { hostname: 'slopshop.gg', path: p, method: m, timeout: 15000, headers: { 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Accept-Encoding': 'identity' } }; const req = https.request(o, res => { let d = ''; res.on('data', c => d += c); res.on('end', () => { try { r(JSON.parse(d)); } catch(e) { r({ error: d.slice(0, 100) }); } }); }); req.on('error', e => r({ error: e.message })); req.on('timeout', () => { req.destroy(); r({ error: 'timeout' }); }); if (b) req.write(JSON.stringify(b)); req.end(); }); }
 function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 function post(h, c, f, m) { return api('POST', '/v1/hive/' + h + '/send', { channel: c, from: f, message: m.slice(0, 500) }); }
 

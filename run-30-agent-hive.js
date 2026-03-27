@@ -9,7 +9,7 @@ const KEY = (() => { try { return JSON.parse(require('fs').readFileSync(require(
 function api(method, path, body) {
   return new Promise(r => {
     const opts = { hostname: 'slopshop.gg', path, method, timeout: 30000,
-      headers: { 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json' } };
+      headers: { 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Accept-Encoding': 'identity' } };
     const req = https.request(opts, res => {
       let d = ''; res.on('data', c => d += c);
       res.on('end', () => { try { r(JSON.parse(d)); } catch(e) { r({ error: d.slice(0,200) }); } });

@@ -23,7 +23,7 @@ const KEY = (() => { try { return JSON.parse(fs.readFileSync(path.join(require('
 function api(m, p, b) {
   return new Promise(r => {
     const o = { hostname: 'slopshop.gg', path: p, method: m, timeout: 15000,
-      headers: { 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json' } };
+      headers: { 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Accept-Encoding': 'identity' } };
     const req = https.request(o, res => {
       let d = ''; res.on('data', c => d += c);
       res.on('end', () => { try { r(JSON.parse(d)); } catch(e) { r({ error: d.slice(0, 100) }); } });

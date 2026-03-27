@@ -6,7 +6,7 @@ const API_KEY = process.env.SLOPSHOP_KEY || readKey();
 
 function api(method, path, body) {
   return new Promise(r => {
-    const opts = { hostname: 'slopshop.gg', path, method, headers: { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json' } };
+    const opts = { hostname: 'slopshop.gg', path, method, headers: { 'Authorization': 'Bearer ' + API_KEY, 'Content-Type': 'application/json', 'Accept-Encoding': 'identity' } };
     const req = https.request(opts, res => { let d = ''; res.on('data', c => d += c); res.on('end', () => { try { r(JSON.parse(d)); } catch(e) { r({ error: d }); } }); });
     req.on('error', e => r({ error: e.message }));
     if (body) req.write(JSON.stringify(body));

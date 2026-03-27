@@ -11,7 +11,7 @@ const KEY = (() => { try { return JSON.parse(require('fs').readFileSync(require(
 function api(method, path, body) {
   return new Promise((resolve) => {
     const opts = { hostname: 'slopshop.gg', path, method, timeout: 60000,
-      headers: { 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json' } };
+      headers: { 'Authorization': 'Bearer ' + KEY, 'Content-Type': 'application/json', 'Accept-Encoding': 'identity' } };
     const req = https.request(opts, res => {
       let d = ''; res.on('data', c => d += c);
       res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { resolve({ error: d }); } });
