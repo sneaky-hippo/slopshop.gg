@@ -1,19 +1,19 @@
 # Slopshop — The Infrastructure Layer for AI Agents
 
-**Free persistent memory. 1,248 real compute APIs. One key. One credit balance.**
+**Free persistent memory. 1,250 real compute APIs. One key. One credit balance.**
 
 Replace Redis + Cron + Zapier + 10 other services with a single `npm install`.
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![Tools](https://img.shields.io/badge/Tools-1248-brightgreen)](https://slopshop.gg)
+[![Tools](https://img.shields.io/badge/Tools-1250-brightgreen)](https://slopshop.gg)
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-purple)](https://modelcontextprotocol.io)
 
 ---
 
 ## What is Slopshop?
 
-Slopshop is the infrastructure layer your AI agents are missing. One API key gives you persistent memory (free forever), 1,248 real compute APIs, scheduling, webhooks, observability, and a compute exchange where you earn credits by sharing idle resources.
+Slopshop is the infrastructure layer your AI agents are missing. One API key gives you persistent memory (free forever), 1,250 real compute APIs, scheduling, webhooks, observability, and a compute exchange where you earn credits by sharing idle resources.
 
 Every endpoint runs real computation against your input — no mocks, no canned responses. Proof ships in every response: `_engine: "real"`. Self-hostable with zero external dependencies for compute APIs. Works with Claude, GPT, Grok, Gemini, LangChain, CrewAI, and any agent framework that supports function calling or MCP.
 
@@ -42,7 +42,7 @@ Expected output:
 
 ## API Catalog
 
-1,248 APIs across 78 categories. Every one ships a real handler.
+1,250 APIs across 78 categories. Every one ships a real handler.
 
 ---
 
@@ -511,7 +511,7 @@ print(balance['balance'])  # 9998
 
 ## MCP Integration
 
-Slopshop ships an MCP (Model Context Protocol) server that exposes all 1,248 APIs as native tools inside Claude Code, Cursor, and any MCP-compatible client. Claude can call `slop-crypto-hash-sha256`, `slop-llm-summarize`, etc. as first-class tools.
+Slopshop ships an MCP (Model Context Protocol) server that exposes all 1,250 APIs as native tools inside Claude Code, Cursor, and any MCP-compatible client. Claude can call `slop-crypto-hash-sha256`, `slop-llm-summarize`, etc. as first-class tools.
 
 ### Add to Claude Code
 
@@ -560,7 +560,7 @@ SLOPSHOP_KEY=sk-slop-your-key node mcp-server.js
 
 ## Zapier
 
-Slopshop integrates natively with Zapier. All 1,248 APIs are available as Zapier actions.
+Slopshop integrates natively with Zapier. All 1,250 APIs are available as Zapier actions.
 
 ### Setup
 
@@ -627,7 +627,7 @@ Response:
 |----------|--------|-------------|
 | `/zapier/app.json` | GET | Full Zapier app definition |
 | `/zapier/auth/test` | GET | Test authentication |
-| `/zapier/actions` | GET | List all 1,248 actions |
+| `/zapier/actions` | GET | List all 1,250 actions |
 | `/zapier/call/:slug` | POST | Call any API (Zapier-friendly flat I/O) |
 | `/zapier/webhook` | POST | Receive and process webhook from Zapier |
 | `/zapier/subscribe` | POST | Register webhook subscription |
@@ -714,7 +714,7 @@ curl http://localhost:3000/v1/health
 ```json
 {
   "status": "operational",
-  "apis_loaded": 1248,
+  "apis_loaded": 1250,
   "uptime_seconds": 42,
   "version": "2.0.0"
 }
@@ -731,7 +731,7 @@ All endpoints are under `/v1/`. Authentication via `Authorization: Bearer <key>`
 | Endpoint | Method | Auth | Description |
 |----------|--------|------|-------------|
 | `/v1/health` | GET | No | Server health, API count, uptime, version |
-| `/v1/tools` | GET | No | List all 1,248 APIs with metadata. Supports `?category=` and `?format=native` |
+| `/v1/tools` | GET | No | List all 1,250 APIs with metadata. Supports `?category=` and `?format=native` |
 | `/v1/resolve` | POST | No | Semantic search: `{ "query": "hash a string" }` → best matching API slug |
 | `/v1/:slug` | POST | Yes | Call any API by slug |
 | `/v1/batch` | POST | Yes | Call multiple APIs in one request: `{ "calls": [{ "api": "slug", "input": {} }] }` |
@@ -807,7 +807,7 @@ Every response includes metadata fields:
 
 ```
 server-v2.js          Express server, auth middleware, routing
-  └── registry.js     Source of truth: all 1,248 API definitions
+  └── registry.js     Source of truth: all 1,250 API definitions
   └── handlers/
         compute.js    Pure compute: hashes, text, math, dates, codegen
         llm.js        LLM calls: Claude/GPT content, analysis, code, business

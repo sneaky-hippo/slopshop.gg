@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * generate-seo.js
- * Generates SEO-optimized HTML pages for all 1,248 Slopshop APIs.
+ * Generates SEO-optimized HTML pages for all 1,250 Slopshop APIs.
  * Run: node generate-seo.js
  */
 
@@ -1373,7 +1373,7 @@ ${examples.map((ex, i) => `    <div class="example-card">
   <div class="f-brand">&#129438; <span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>
   <p>
     <a href="/docs">Docs</a> &middot; <a href="/dashboard">Dashboard</a> &middot; <a href="https://github.com/slopshop/slopshop">GitHub</a> &middot; <a href="/v1/tools">API</a> &middot; <a href="/v1/health">Status</a><br>
-    1,248 APIs &middot; all real &middot; MIT License &middot; slopshop.gg
+    1,250 APIs &middot; all real &middot; MIT License &middot; slopshop.gg
   </p>
 </footer>
 

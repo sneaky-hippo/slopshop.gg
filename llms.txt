@@ -1,6 +1,6 @@
-# slopshop.gg — 1,248 production APIs for AI agents. One key. Structured outputs. Real compute. Free persistent memory. Copilot agents. Compute exchange. Streaming. Batch. Enterprise.
+# slopshop.gg — 1,250 production APIs for AI agents. One key. Structured outputs. Real compute. Free persistent memory. Copilot agents. Compute exchange. Streaming. Batch. Enterprise.
 
-One API key. 1,248 APIs across 78 categories. 927 compute handlers (all benchmarked, 100% pass rate), 76 SQLite tables. 0 credits for compute (free persistent memory). Guaranteed structured outputs. Plus: always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, and full enterprise features.
+One API key. 1,250 APIs across 78 categories. 927 compute handlers (all benchmarked, 100% pass rate), 76 SQLite tables. 0 credits for compute (free persistent memory). Guaranteed structured outputs. Plus: always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, and full enterprise features.
 
 ## Quick Start
 1. Get a key: POST https://slopshop.gg/v1/auth/signup with {"email":"you@example.com"} — returns API key with 2,000 free credits.
@@ -511,7 +511,7 @@ curl -X POST https://slopshop.gg/v1/agent/run \
 - POST /v1/{tool-slug} - Call any tool
 - POST /v1/batch - Call multiple tools at once
 - POST /v1/pipe - Chain tools into workflows
-- GET /v1/tools - Browse all 1,248 tools
+- GET /v1/tools - Browse all 1,250 tools
 - POST /v1/resolve - Find the right tool by description
 - POST /v1/agent/run - Natural language task execution (describe what you want, agent picks tools)
 - POST /v1/ask - Simple question-answer using tools

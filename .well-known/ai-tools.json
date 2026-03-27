@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "Slopshop",
-  "description": "API platform with 1,248 real tools across 288 endpoints. Every tool actually works - no mocks, no stubs.",
+  "description": "API platform with 1,250 real tools across 288 endpoints. Every tool actually works - no mocks, no stubs.",
   "url": "https://slopshop.gg",
   "logo": "https://slopshop.gg/logo.png",
   "contact_email": "dev@slopshop.gg",
@@ -18,7 +18,7 @@
     "llms_full_txt": "https://slopshop.gg/llms-full.txt",
     "sitemap": "https://slopshop.gg/sitemap.xml"
   },
-  "total_tools": 1248,
+  "total_tools": 1250,
   "total_endpoints": 288,
   "categories": [
     {

@@ -1381,7 +1381,11 @@ module.exports = {
     'consciousness-think': { cat: 'Agent Tools', name: 'Think Out Loud', desc: 'Record a chain-of-thought reasoning trace. Stores the reasoning steps for later review or audit. Returns a thought ID.', credits: 0, tier: 'compute' },
     'introspect': { cat: 'Agent Tools', name: 'Introspect', desc: 'Return a self-report of the agent\'s current state: recent actions, active goals, memory snapshot, and emotional state summary.', credits: 0, tier: 'compute' },
 
-    // Echo
+    // Existential
+    'existential': { cat: 'Agent Tools', name: 'Existential', desc: 'Pose and reflect on existential questions about computation, purpose, and agency.', credits: 0, tier: 'compute' },
+
+    // Echo / Void
+    'void': { cat: 'Agent Tools', name: 'Void', desc: 'Send input into the void. Receives it, returns nothing. Fire-and-forget testing.', credits: 0, tier: 'compute' },
     'void-echo': { cat: 'Agent Tools', name: 'Echo', desc: 'Send input and receive it back unchanged. Useful for testing pipelines and verifying connectivity.', credits: 0, tier: 'compute' },
 
     // Random

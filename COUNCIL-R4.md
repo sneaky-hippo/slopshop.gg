@@ -11,12 +11,12 @@
 | Check | Result |
 |-------|--------|
 | `node test.js` | 23 passed, 0 failed |
-| Structured JSON logging | Confirmed -- `{"level":"info","msg":"Server loaded","apis":1248,...,"ts":"..."}` |
+| Structured JSON logging | Confirmed -- `{"level":"info","msg":"Server loaded","apis":1250,...,"ts":"..."}` |
 | Node SDK methods | 20 typed methods on `Slopshop.prototype` |
 | Python SDK | Zero-dependency, mirrors Node, 91 lines |
 | `openapi.json` | 1,527,039 bytes, 1,252 paths, OpenAPI 3.0.3 |
 | Homepage hero | Infrastructure-first messaging, no crypto vibes, clean design system |
-| Server | 5,297 lines, 1,248 APIs, 78 categories, 1,250 handlers |
+| Server | 5,297 lines, 1,250 APIs, 78 categories, 1,250 handlers |
 
 ---
 
@@ -24,11 +24,11 @@
 
 ### 1. Backend Architect -- Score: 7.0/10
 
-A 5,297-line monolith with 1,248 registered APIs, structured logging, request IDs, and SQLite persistence is genuinely impressive solo work. The test suite (23 tests) covers integration paths and the OpenAPI spec is auto-generated and accurate.
+A 5,297-line monolith with 1,250 registered APIs, structured logging, request IDs, and SQLite persistence is genuinely impressive solo work. The test suite (23 tests) covers integration paths and the OpenAPI spec is auto-generated and accurate.
 
 **Top 3 Issues:**
 1. **Monolith risk.** 5,297 lines in a single `server-v2.js` is maintainable now but will become a serious liability. Need handler isolation, domain modules, or at minimum a clean barrel-export pattern.
-2. **Test coverage is thin for the surface area.** 23 tests for 1,248 APIs is ~1.8% coverage. Need at minimum smoke tests for every registered handler, not just integration paths.
+2. **Test coverage is thin for the surface area.** 23 tests for 1,250 APIs is ~1.8% coverage. Need at minimum smoke tests for every registered handler, not just integration paths.
 3. **No database migrations or schema versioning.** SQLite tables appear created inline. Any schema change in production risks data loss without a migration framework.
 
 ---
@@ -51,7 +51,7 @@ The product has crossed from "weekend project" to "real platform" territory. Ope
 **Top 3 Issues:**
 1. **Zero customers, zero revenue.** All the engineering polish in the world means nothing without validation. Need 3-5 design partners using this in production before fundraising.
 2. **Unclear ICP.** Is this for solo AI hackers, startups building agent products, or enterprises? The pricing page ($9 to $1,999) suggests all of the above, which means none of the above.
-3. **Feature breadth vs. depth.** 1,248 APIs across 78 categories feels like surface area without depth. What are the 5 APIs that are 10x better than alternatives? Lead with those.
+3. **Feature breadth vs. depth.** 1,250 APIs across 78 categories feels like surface area without depth. What are the 5 APIs that are 10x better than alternatives? Lead with those.
 
 ---
 
@@ -60,7 +60,7 @@ The product has crossed from "weekend project" to "real platform" territory. Ope
 Request IDs, CORS configuration, and scoped API keys show security awareness. But this is still a pre-production security posture.
 
 **Top 3 Issues:**
-1. **No rate limiting evidence.** With 1,248 endpoints and credit-based billing, rate limiting is critical. A single rogue agent could exhaust resources or rack up credits.
+1. **No rate limiting evidence.** With 1,250 endpoints and credit-based billing, rate limiting is critical. A single rogue agent could exhaust resources or rack up credits.
 2. **SQLite in production is a risk.** No connection pooling, no WAL mode evidence, no backup strategy. One corrupted file = total data loss.
 3. **No input validation framework.** Schemas exist in `schemas.js` but there is no evidence of runtime validation middleware (Joi, Zod, ajv). Every endpoint is a potential injection vector.
 
@@ -82,7 +82,7 @@ The `/v1/agent/run` endpoint with real tool chaining and auto-discovery is the k
 ### 1. Garry Tan (Y Combinator) -- 6.5/10
 "Impressive build velocity for one founder. But you're building a platform with no customers -- go find 5 teams who need this and build for them."
 1. Need paying design partners before raising
-2. 1,248 APIs is a vanity metric -- what are the 5 that matter?
+2. 1,250 APIs is a vanity metric -- what are the 5 that matter?
 3. Homepage should show real use cases, not feature counts
 4. Consider applying to YC with this -- it's fundable with traction
 5. The agent tooling market is real but crowded -- differentiate harder
@@ -168,7 +168,7 @@ The `/v1/agent/run` endpoint with real tool chaining and auto-discovery is the k
 5. Would co-market if you build a Vercel integration
 
 ### 12. Mitchell Hashimoto (HashiCorp) -- 7.0/10
-"Infrastructure companies win by being boring and reliable. The test suite and structured logging are the right instincts. But 1,248 APIs is the opposite of boring and reliable."
+"Infrastructure companies win by being boring and reliable. The test suite and structured logging are the right instincts. But 1,250 APIs is the opposite of boring and reliable."
 1. Reduce surface area to 50 APIs that are bulletproof
 2. Need chaos testing, not just happy-path integration tests
 3. The monolith needs to become modular before it becomes unmaintainable
@@ -226,7 +226,7 @@ The `/v1/agent/run` endpoint with real tool chaining and auto-discovery is the k
 ### 19. Jeff Bezos -- 7.0/10
 "Start with the customer and work backwards. Who is the customer? What is their press release? I don't see a customer obsession here -- I see a builder obsession."
 1. Write the press release for the launch -- who cares and why?
-2. The 1,248 API number is a vanity metric -- customers don't care
+2. The 1,250 API number is a vanity metric -- customers don't care
 3. What's the flywheel? Build tools -> attract agents -> generate data -> improve tools?
 4. Need a forcing function for customer feedback (weekly calls)
 5. Would fund if you demonstrated customer obsession over building obsession
@@ -236,7 +236,7 @@ The `/v1/agent/run` endpoint with real tool chaining and auto-discovery is the k
 1. Where's the GPU story? Agent workloads will need accelerated compute
 2. The batch/parallel execution is good but needs hardware awareness
 3. Consider integrating with NVIDIA NIMs for inference
-4. The 1,248 APIs are mostly CPU utilities -- where's the AI-native compute?
+4. The 1,250 APIs are mostly CPU utilities -- where's the AI-native compute?
 5. Would watch for a GPU compute marketplace pivot
 
 ---

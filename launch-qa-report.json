@@ -18,7 +18,7 @@
       "test": "Embedded catalog present"
     },
     {
-      "test": "API count in embed: 1248"
+      "test": "API count in embed: 1250"
     },
     {
       "test": "SEO: og:title"
@@ -67,7 +67,7 @@
     },
     {
       "test": "API server healthy",
-      "detail": "1,248 APIs"
+      "detail": "1,250 APIs"
     },
     {
       "test": "Signup works",

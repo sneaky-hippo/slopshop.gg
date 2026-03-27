@@ -72,10 +72,10 @@ async function main() {
   if (home.raw && home.raw.includes('EMBEDDED=[{')) log('PASS', 'Embedded catalog present');
   else log('BREAK', 'Embedded catalog MISSING - APIs won\'t show');
 
-  // 1.4 Has 1,248 APIs embedded
+  // 1.4 Has 1,250 APIs embedded
   const apiCount = (home.raw.match(/"slug"/g) || []).length;
   if (apiCount >= 400) log('PASS', 'API count in embed: ' + apiCount);
-  else log('BREAK', 'Only ' + apiCount + ' APIs embedded, expected 1248');
+  else log('BREAK', 'Only ' + apiCount + ' APIs embedded, expected 1250');
 
   // 1.5 SEO tags
   const seoChecks = [

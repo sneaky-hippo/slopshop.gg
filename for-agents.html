@@ -3,19 +3,19 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Built for AI Agents | Slopshop — 1,248 APIs for AI Agents</title>
-<meta name="description" content="1,248 tools purpose-built for AI agents. One API, MCP-native, typed schemas. Give your agent the ability to compute, remember, see the web, execute code, and communicate. LangChain, CrewAI, Claude Code ready.">
+<title>Built for AI Agents | Slopshop — 1,250 APIs for AI Agents</title>
+<meta name="description" content="1,250 tools purpose-built for AI agents. One API, MCP-native, typed schemas. Give your agent the ability to compute, remember, see the web, execute code, and communicate. LangChain, CrewAI, Claude Code ready.">
 <meta name="keywords" content="api for ai agents, tools for ai agents, mcp tool server, langchain tools, crewai tools, claude code mcp, agent memory api, agent compute api">
 <link rel="canonical" href="https://slopshop.gg/for-agents">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/for-agents">
 <meta property="og:title" content="Slopshop - Built for AI Agents | MCP Tool Server">
-<meta property="og:description" content="1,248 tools purpose-built for AI agents. Compute, memory, web, execution, communication. MCP-native.">
+<meta property="og:description" content="1,250 tools purpose-built for AI agents. Compute, memory, web, execution, communication. MCP-native.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="Slopshop - Built for AI Agents">
-<meta name="twitter:description" content="1,248 tools your AI agent can actually use. MCP-native. One API key.">
+<meta name="twitter:description" content="1,250 tools your AI agent can actually use. MCP-native. One API key.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
 <script type="application/ld+json">
 {
@@ -23,13 +23,13 @@
   "@type": "SoftwareApplication",
   "name": "Slopshop",
   "url": "https://slopshop.gg",
-  "description": "1,248 real APIs purpose-built for AI agents. MCP-native, credit-based, self-hostable. Give your agent compute, memory, web access, code execution, and communication tools via one API key.",
+  "description": "1,250 real APIs purpose-built for AI agents. MCP-native, credit-based, self-hostable. Give your agent compute, memory, web access, code execution, and communication tools via one API key.",
   "applicationCategory": "DeveloperApplication",
   "operatingSystem": "Any",
   "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
   "featureList": [
     "MCP server for Claude Code",
-    "1,248 compute and utility APIs",
+    "1,250 compute and utility APIs",
     "Memory and persistent state APIs",
     "Code execution sandbox",
     "Network and web tools",
@@ -188,12 +188,12 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
     <a href="/docs.html">Docs</a>
     <a href="/getting-started.html">Get Started</a>
     <a href="/for-agents.html" class="active">For Agents</a>
-    <div class="live-badge"><div class="live-dot"></div><span>1,248 live</span></div>
+    <div class="live-badge"><div class="live-dot"></div><span>1,250 live</span></div>
   </div>
 </div></nav>
 
 <section class="page-hero">
-  <div class="hero-tag">&#129302; The tool layer for AI agents &mdash; 1,248 tools &mdash; free memory tier</div>
+  <div class="hero-tag">&#129302; The tool layer for AI agents &mdash; 1,250 tools &mdash; free memory tier</div>
   <h1>Built for <span class="red">AI Agents</span></h1>
   <p class="sub"><b>Agents can't do much on their own.</b> They can't hash data, fetch a URL, remember a fact, or execute code. Slopshop gives them all of that &mdash; via one API, with typed schemas, free memory, pre-built templates, and auto-history built in.</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
@@ -218,7 +218,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
       </ul>
     </div>
     <div class="prob-box solution">
-      <h3>The solution: 1,248 real tools</h3>
+      <h3>The solution: 1,250 real tools</h3>
       <ul>
         <li><strong>Real compute.</strong> Every hash, encode, parse, and math call produces actual computed output from your input &mdash; engine: "real" in every response.</li>
         <li><strong>Real memory.</strong> Persistent key-value store, namespaced queues, and shared state that survives across agent runs and sessions.</li>
@@ -240,7 +240,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
     <div class="disc-card">
       <h3>MCP format</h3>
       <div class="endpoint">GET /v1/tools?format=mcp</div>
-      <p>Returns all 1,248 tools as MCP tool definitions. Add the Slopshop MCP server to Claude Code and they're instantly available as native Claude tools.</p>
+      <p>Returns all 1,250 tools as MCP tool definitions. Add the Slopshop MCP server to Claude Code and they're instantly available as native Claude tools.</p>
     </div>
     <div class="disc-card">
       <h3>Anthropic format</h3>
@@ -581,7 +581,7 @@ SLOPSHOP_KEY = os.environ[<span class="hl-str">"SLOPSHOP_KEY"</span>]
 
 <span class="hl-kw">class</span> <span class="hl-fn">SlopshopTool</span>(BaseTool):
     name: str = <span class="hl-str">"slopshop"</span>
-    description: str = (<span class="hl-str">"Call any of 1,248 Slopshop utility APIs. Use the semantic resolver "</span>
+    description: str = (<span class="hl-str">"Call any of 1,250 Slopshop utility APIs. Use the semantic resolver "</span>
                         <span class="hl-str">"to find the right tool: POST /v1/resolve {\"query\": \"what you need\"}"</span>)
     args_schema = SlopshopInput
 
@@ -630,7 +630,7 @@ claude mcp add slopshop -- slopshop-mcp --key $SLOPSHOP_KEY
   }
 }
 
-<span class="hl-comment"># Claude will now auto-discover all 1,248 tools via:</span>
+<span class="hl-comment"># Claude will now auto-discover all 1,250 tools via:</span>
 <span class="hl-comment"># GET /v1/tools?format=mcp</span>
 <span class="hl-comment"># And call them natively during any conversation.</span></code></pre>
     </div>
@@ -674,7 +674,7 @@ messages = [{<span class="hl-str">"role"</span>: <span class="hl-str">"user"</sp
 
 <div class="cta-banner">
   <h2>Give your agent <span class="red">superpowers</span></h2>
-  <p>2,000 free credits. 8 memory APIs always free. All 1,248 tools. MCP server included. No credit card required.</p>
+  <p>2,000 free credits. 8 memory APIs always free. All 1,250 tools. MCP server included. No credit card required.</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
     <a href="/dashboard.html" class="btn-primary">Get your free API key &#129438;</a>
     <a href="/compare.html" class="btn-secondary">Compare to alternatives</a>
@@ -685,7 +685,7 @@ messages = [{<span class="hl-str">"role"</span>: <span class="hl-str">"user"</sp
   <div class="f-brand">&#129438; <span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>
   <p>
     <a href="/">Home</a> &middot; <a href="/docs.html">Docs</a> &middot; <a href="/pricing.html">Pricing</a> &middot; <a href="/getting-started.html">Get Started</a> &middot; <a href="/compare.html">Compare</a> &middot; <a href="/dashboard.html">Dashboard</a> &middot; <a href="https://x.com/slopshopgg">@slopshopgg</a><br>
-    1,248 APIs &middot; all real &middot; MCP-native &middot; slopshop.gg
+    1,250 APIs &middot; all real &middot; MCP-native &middot; slopshop.gg
   </p>
 </footer>
 

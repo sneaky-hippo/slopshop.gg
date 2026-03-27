@@ -1,7 +1,7 @@
 {
   "name": "slopshop",
   "version": "3.2.0",
-  "description": "1,248 real tools for AI agents. Compute, memory, networking, orchestration, copilot, exchange, enterprise teams, streaming, analytics. Credit-based. Zero mocks. Self-hostable.",
+  "description": "1,250 real tools for AI agents. Compute, memory, networking, orchestration, copilot, exchange, enterprise teams, streaming, analytics. Credit-based. Zero mocks. Self-hostable.",
   "main": "server-v2.js",
   "bin": {
     "slop": "cli.js",

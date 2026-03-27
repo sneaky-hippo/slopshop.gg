@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Slopshop API",
-    "description": "The infrastructure layer for AI agents. 1248 real compute APIs.",
+    "description": "The infrastructure layer for AI agents. 1250 real compute APIs.",
     "version": "3.2.0",
     "contact": {
       "email": "dev@slopshop.gg",
@@ -33268,6 +33268,98 @@
           "Agent Tools"
         ],
         "operationId": "introspect",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_engine": {
+                      "type": "string",
+                      "example": "real"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Insufficient credits"
+          },
+          "404": {
+            "description": "API not found"
+          },
+          "500": {
+            "description": "Handler error (credits refunded)"
+          }
+        }
+      }
+    },
+    "/v1/existential": {
+      "post": {
+        "summary": "Existential",
+        "description": "Pose and reflect on existential questions about computation, purpose, and agency.",
+        "tags": [
+          "Agent Tools"
+        ],
+        "operationId": "existential",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Success",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "_engine": {
+                      "type": "string",
+                      "example": "real"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "402": {
+            "description": "Insufficient credits"
+          },
+          "404": {
+            "description": "API not found"
+          },
+          "500": {
+            "description": "Handler error (credits refunded)"
+          }
+        }
+      }
+    },
+    "/v1/void": {
+      "post": {
+        "summary": "Void",
+        "description": "Send input into the void. Receives it, returns nothing. Fire-and-forget testing.",
+        "tags": [
+          "Agent Tools"
+        ],
+        "operationId": "void",
         "requestBody": {
           "content": {
             "application/json": {
