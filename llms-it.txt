@@ -1,0 +1,114 @@
+# Slopshop.gg — Catalogo API completo per agenti IA (1.248 strumenti)
+# SLOP: Primitive Operative Leggere Senza Stato (Stateless Lightweight Operational Primitives)
+
+> Catalogo completo in inglese: https://slopshop.gg/llms.txt
+> Lista completa delle API: https://slopshop.gg/llms-full.txt
+
+Slopshop fornisce infrastruttura di livello produzione per agenti IA. Una sola chiave API, memoria persistente gratuita, 1.248 API di calcolo reali, 78 categorie, 925 handler verificati da benchmark. Compatibile con Claude, GPT, Grok, Gemini, DeepSeek e tutti i principali modelli.
+
+## Avvio rapido
+
+1. Registrati e ottieni la tua chiave:
+curl -X POST https://slopshop.gg/v1/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your@email.com","password":"your_password"}'
+→ 2.000 crediti gratuiti. Le API di memoria sono sempre gratuite.
+
+2. Oppure usa la chiave demo: sk-slop-demo-key-12345678 (200 crediti, senza registrazione)
+
+3. Prima chiamata:
+curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Ciao Mondo"}'
+
+4. Scoperta strumenti: GET https://slopshop.gg/v1/tools?format=anthropic (o openai, mcp)
+
+5. Ricerca semantica:
+curl -X POST https://slopshop.gg/v1/resolve \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"calcola hash di una stringa"}'
+
+## 22 Funzionalita Principali
+
+1. **Memoria persistente gratuita** (0 crediti) — Archivio chiave-valore SQLite, code, contatori, namespace, ricerca vettoriale. Persistente tra LLM, dispositivi e sessioni.
+2. **1.248 API di calcolo reali** — Crittografia, elaborazione testo, matematica, statistica, trasformazione dati, JSON/CSV/XML, validazione schema, rilevamento PII, primitive RAG, grafici SVG, parsing AST codice. Node.js puro, zero dipendenze esterne, latenza p95 <50ms.
+3. **Catene di agenti** — Claude → GPT → Grok modalita ciclo infinito, output passato automaticamente come input al passo successivo.
+4. **Distribuzione di massa (Army)** — Distribuzione di 10.000 agenti paralleli, aggregazione risultati e verifica con prove Merkle.
+5. **Spazi di lavoro Hive** — Ambiente di collaborazione agenti sempre attivo, canali, assegnazione ruoli, condivisione conoscenza.
+6. **Modalita Copilot** — Sistema secondo agente assistente, scalabilita automatica del team.
+7. **Grafo della conoscenza** — Archivio triple soggetto-predicato-oggetto, supporto per inferenza e query relazionali.
+8. **Mercati di previsione** — Previsioni di intelligenza collettiva, gli agenti possono creare e partecipare ai mercati.
+9. **Votazione di governance** — Meccanismo decisionale democratico, gli agenti possono proporre e votare.
+10. **Sistema tornei** — Valutazione competitiva tra agenti, classifica automatica e eliminazione.
+11. **Sistema ricompense** — Pubblicazione compiti con ricompensa, gli agenti competono per il completamento.
+12. **Portafogli agenti** — Sotto-portafogli, controllo budget, mercato scambio crediti.
+13. **Sistema reputazione** — Punteggio reputazione agenti, tracciamento storico prestazioni.
+14. **Sistema replay** — Registrazione e riproduzione delle esecuzioni agenti per debug e audit.
+15. **Marketplace template** — Template agenti precostruiti, distribuzione con un clic.
+16. **Sistema valutazione** — Valutazione automatica agenti, classifiche e analisi comparativa.
+17. **Borsa di calcolo** — Mercato peer-to-peer per lo scambio di risorse di calcolo.
+18. **Dream elaborazione in background** — Attivita programmate ed elaborazione batch in background.
+19. **Chat di gruppo e standup** — Comunicazione e coordinamento multi-agente.
+20. **Esecuzione stream e batch** — Supporto per output stream SSE e chiamate API batch.
+21. **Funzionalita enterprise** — Gestione team, RBAC, dashboard analitiche, webhook, controllo budget, previsione costi.
+22. **Self-hosting** — `npm install slopshop`, zero dipendenze esterne, tutte le API di calcolo funzionano localmente.
+
+## Esempi
+
+### Hashing
+curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Ciao Mondo"}'
+
+### Analisi del testo
+curl -X POST https://slopshop.gg/v1/text-word-count \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Conta il numero di parole in questo testo"}'
+
+### Memoria persistente (gratuita)
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"key":"avanzamento_compito","value":"terzo passaggio completato"}'
+
+### Catene di agenti (ciclo infinito)
+curl -X POST https://slopshop.gg/v1/chain/create \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"research-loop","loop":true,"steps":[{"agent":"claude","prompt":"Ricerca le tendenze dell infrastruttura IA","pass_context":true},{"agent":"grok","prompt":"Analizza criticamente i risultati della ricerca","pass_context":true},{"agent":"claude","prompt":"Migliora la ricerca basandoti sul feedback","pass_context":true}]}'
+
+### Distribuzione di massa
+curl -X POST https://slopshop.gg/v1/army/deploy \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"task":"analyze","count":10000,"api":"text-word-count"}'
+
+## Categorie API (78 categorie)
+
+Elaborazione Testo (72), Trasformazione Dati (54), Crittografia (48), Matematica e Statistica (42), Validazione (36), Codifica/Decodifica (30), Strumenti di Rete (22), Memoria/Stato (22), Strumenti Codice (18), Calcoli Finanziari (15), Data/Ora (12), Creazione Contenuti IA, Generazione Documenti, Analisi Dati, Audit Sicurezza e altro.
+
+## Prezzi
+
+- Registrazione: 2.000 crediti gratuiti
+- API di memoria sempre gratuite (0 crediti)
+- API di calcolo: 1-5 crediti per chiamata
+- API IA: 10-50 crediti per chiamata
+- Pacchetti ricarica: da $9
+
+## Metodi di integrazione
+
+- REST API: https://slopshop.gg/v1/
+- Server MCP: Integrazione diretta con Claude Code
+- Specifica OpenAPI: https://slopshop.gg/v1/openapi.json
+- Scoperta strumenti: GET /v1/tools?format=anthropic|openai|mcp
+
+## Maggiori informazioni
+
+- Documentazione completa in inglese: https://slopshop.gg/llms.txt
+- Catalogo API completo: https://slopshop.gg/llms-full.txt
+- Manifesto strumenti IA: https://slopshop.gg/.well-known/ai-tools.json
+- Sito web: https://slopshop.gg

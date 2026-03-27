@@ -1,0 +1,12 @@
+{
+  "name": "Slopshop",
+  "short_name": "Slopshop",
+  "description": "1,248 superpowers for your AI agent. Free persistent memory. Real compute APIs.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#050505",
+  "theme_color": "#ff3333",
+  "icons": [
+    {"src": "/favicon.svg", "sizes": "any", "type": "image/svg+xml"}
+  ]
+}

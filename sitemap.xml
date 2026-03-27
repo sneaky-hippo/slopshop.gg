@@ -498,6 +498,8 @@
   <url><loc>https://slopshop.gg/ko.html</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/es.html</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/de.html</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/ru.html</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/pt-br.html</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
   <!-- Multilingual LLM discovery files -->
   <url><loc>https://slopshop.gg/llms-zh.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/llms-ja.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
@@ -508,4 +510,17 @@
   <url><loc>https://slopshop.gg/llms-pt.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/llms-ar.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/llms-hi.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-ru.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-tr.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-vi.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-th.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-id.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-pl.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-nl.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-uk.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-sv.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/llms-it.txt</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/feed.xml</loc><changefreq>weekly</changefreq><priority>0.5</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/humans.txt</loc><changefreq>monthly</changefreq><priority>0.3</priority><lastmod>2026-03-27</lastmod></url>
+  <url><loc>https://slopshop.gg/manifest.json</loc><changefreq>monthly</changefreq><priority>0.3</priority><lastmod>2026-03-27</lastmod></url>
 </urlset>

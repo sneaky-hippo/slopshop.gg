@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Slopshop Changelog</title>
+    <link>https://slopshop.gg</link>
+    <description>Updates to slopshop.gg — the backend your AI agents are missing</description>
+    <atom:link href="https://slopshop.gg/feed.xml" rel="self" type="application/rss+xml"/>
+    <item>
+      <title>v3.3.0: Multilingual SEO, Claude 4.6, Security Hardening</title>
+      <link>https://slopshop.gg/changelog-detail</link>
+      <pubDate>Thu, 27 Mar 2026 00:00:00 GMT</pubDate>
+      <description>9 language llms.txt files, 5 landing pages, Claude model updates, SOC2 security page, agent debate mode, memory TTL, credit forecast.</description>
+    </item>
+    <item>
+      <title>v3.2.0: 22 Features, Agent Chaining, Persistent Storage</title>
+      <link>https://slopshop.gg/changelog-detail</link>
+      <pubDate>Wed, 26 Mar 2026 00:00:00 GMT</pubDate>
+      <description>Agent chains with infinite loops, prompt queue, template marketplace, swarm visualizer, 40/40 live tests passing.</description>
+    </item>
+  </channel>
+</rss>

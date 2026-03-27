@@ -18,6 +18,12 @@ Allow: /
 User-agent: Applebot
 Allow: /
 
+# SEO discovery assets
+# https://slopshop.gg/humans.txt - Team and site info
+# https://slopshop.gg/manifest.json - PWA web app manifest
+# https://slopshop.gg/feed.xml - RSS changelog feed
+# https://slopshop.gg/browserconfig.xml - Windows tile config
+
 # AI agent discovery files
 # https://slopshop.gg/llms.txt - AI agent tool discovery (English)
 # https://slopshop.gg/llms-full.txt - Complete API catalog
@@ -35,3 +41,13 @@ Allow: /
 # https://slopshop.gg/llms-pt.txt - Portuguese (Português)
 # https://slopshop.gg/llms-ar.txt - Arabic (العربية)
 # https://slopshop.gg/llms-hi.txt - Hindi (हिन्दी)
+# https://slopshop.gg/llms-ru.txt - Russian (Русский)
+# https://slopshop.gg/llms-tr.txt - Turkish (Turkce)
+# https://slopshop.gg/llms-vi.txt - Vietnamese (Tieng Viet)
+# https://slopshop.gg/llms-th.txt - Thai (ไทย)
+# https://slopshop.gg/llms-id.txt - Indonesian (Bahasa Indonesia)
+# https://slopshop.gg/llms-pl.txt - Polish (Polski)
+# https://slopshop.gg/llms-nl.txt - Dutch (Nederlands)
+# https://slopshop.gg/llms-uk.txt - Ukrainian (Українська)
+# https://slopshop.gg/llms-sv.txt - Swedish (Svenska)
+# https://slopshop.gg/llms-it.txt - Italian (Italiano)
