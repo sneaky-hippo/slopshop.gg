@@ -36,3 +36,5 @@ js_block.txt
 # Build artifacts
 catalog-embed.json
 server.json
+V4-ARCHITECTURE.md
+SECURITY-AUDIT.md
