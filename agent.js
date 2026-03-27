@@ -288,7 +288,7 @@ Provide a clear, concise answer to the user's original question based on these r
     const answer = await summarize(task, execution.results);
     const totalTime = Date.now() - startTime;
     const acct = apiKeys.get(req.apiKey);
-    if (acct) { acct.balance -= 20; }
+    if (acct) { if (acct.balance < 20) return res.status(402).json({ error: { code: 'insufficient_credits', need: 20, have: acct.balance, message: 'Buy credits: POST /v1/credits/buy' } }); acct.balance -= 20; }
 
     // Auto-store in memory (free - 0 credits)
     const runId = `run-${Date.now().toString(36)}`;
@@ -396,7 +396,7 @@ Provide a clear, concise answer to the user's original question based on these r
 
       // Charge overhead
       const acct = apiKeys.get(req.apiKey);
-      if (acct) { acct.balance -= 20; }
+      if (acct) { if (acct.balance < 20) return res.status(402).json({ error: { code: 'insufficient_credits', need: 20, have: acct.balance, message: 'Buy credits: POST /v1/credits/buy' } }); acct.balance -= 20; }
 
       // Auto-store
       const runId = `run-${Date.now().toString(36)}`;
@@ -436,7 +436,7 @@ Provide a clear, concise answer to the user's original question based on these r
 
     // Charge for the agent overhead (planning + summarizing = ~20 credits)
     const acct = apiKeys.get(req.apiKey);
-    if (acct) { acct.balance -= 20; }
+    if (acct) { if (acct.balance < 20) return res.status(402).json({ error: { code: 'insufficient_credits', need: 20, have: acct.balance, message: 'Buy credits: POST /v1/credits/buy' } }); acct.balance -= 20; }
 
     // Step 4: Auto-store in memory (free - 0 credits for memory-set)
     const runId = `run-${Date.now().toString(36)}`;
@@ -487,7 +487,7 @@ JSON array only:`;
     const answer = await summarize('Creative exploration of: ' + prompt, execution.results);
 
     const acct = apiKeys.get(req.apiKey);
-    if (acct) acct.balance -= 20;
+    if (acct) { if (acct.balance < 20) return res.status(402).json({ error: { code: 'insufficient_credits', need: 20, have: acct.balance } }); acct.balance -= 20; }
 
     const runId = 'dream-' + Date.now().toString(36);
     autoStoreResult(runId, prompt, answer, execution.results, 'dream');
@@ -542,7 +542,7 @@ JSON array only:`;
     const answer = await summarize(question, execution.results);
 
     const acct = apiKeys.get(req.apiKey);
-    if (acct) acct.balance -= 20;
+    if (acct) { if (acct.balance < 20) return res.status(402).json({ error: { code: 'insufficient_credits', need: 20, have: acct.balance } }); acct.balance -= 20; }
 
     res.json({
       answer: answer || 'Could not determine answer from available tools.',
