@@ -1,0 +1,1122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>API Reference | Slopshop — Complete Developer Documentation</title>
+<meta name="description" content="Complete API reference for Slopshop. Authentication, request/response formats, error codes, rate limits, streaming, batch, agent mode, SDKs, and MCP integration.">
+<meta name="keywords" content="slopshop api reference, slopshop documentation, agent api docs, slopshop sdk, slopshop streaming, slopshop batch api, MCP tools, API error codes, rate limiting">
+<link rel="canonical" href="https://slopshop.gg/api-reference">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/api-reference">
+<meta property="og:title" content="API Reference | Slopshop">
+<meta property="og:description" content="Complete API reference: auth, endpoints, streaming, batch, agent mode, SDKs, error codes, and MCP integration.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:creator" content="@slopshopgg">
+<meta name="twitter:title" content="API Reference | Slopshop">
+<meta name="twitter:description" content="Complete API reference: auth, endpoints, streaming, batch, agent mode, SDKs, error codes, and MCP integration.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "name": "Slopshop API Reference",
+  "url": "https://slopshop.gg/api-reference",
+  "description": "Complete API reference for Slopshop. Authentication, request/response formats, error codes, rate limits, streaming, batch, agent mode, SDKs, and MCP integration.",
+  "author": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"},
+  "datePublished": "2025-01-01",
+  "dateModified": "2026-03-27",
+  "publisher": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"}
+}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --y:#ffcc00;--yg:rgba(255,204,0,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.88rem;line-height:1.8}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px;text-decoration:none}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:2px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s;font-family:var(--sans)}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--t);background:var(--s2)}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+
+/* LAYOUT */
+.page{display:flex;max-width:1400px;margin:0 auto;padding-top:56px}
+.sidebar{position:fixed;top:56px;left:0;width:260px;height:calc(100vh - 56px);overflow-y:auto;background:var(--s1);border-right:1px solid var(--b);padding:20px 0;z-index:50}
+.sidebar::-webkit-scrollbar{width:4px}
+.sidebar::-webkit-scrollbar-track{background:transparent}
+.sidebar::-webkit-scrollbar-thumb{background:var(--s3);border-radius:4px}
+.sb-section{padding:0 12px;margin-bottom:4px}
+.sb-label{font-size:0.6rem;font-family:var(--mono);font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.14em;padding:12px 16px 6px;display:block}
+.sb-link{display:block;padding:6px 16px;font-size:0.73rem;font-family:var(--mono);color:var(--t3);border-radius:5px;transition:.15s;cursor:pointer;text-decoration:none;margin:0 8px}
+.sb-link:hover{color:var(--t);background:var(--s2);text-decoration:none;opacity:1}
+.sb-link.active{color:var(--r);background:var(--rg)}
+.sb-divider{height:1px;background:var(--b);margin:10px 16px}
+
+.main{margin-left:260px;padding:40px 48px 120px;max-width:900px;min-height:100vh}
+.main h1{font-family:var(--mono);font-size:2rem;font-weight:800;margin-bottom:8px;letter-spacing:-0.02em}
+.main .subtitle{color:var(--t2);font-size:0.9rem;margin-bottom:40px;line-height:1.8}
+.main h2{font-family:var(--mono);font-size:1.3rem;font-weight:800;margin:56px 0 12px;padding-top:24px;border-top:1px solid var(--b);letter-spacing:-0.01em}
+.main h2:first-of-type{border-top:none;margin-top:24px}
+.main h3{font-family:var(--mono);font-size:0.95rem;font-weight:700;margin:28px 0 8px;color:var(--t)}
+.main p{color:var(--t2);margin-bottom:12px}
+.main ul,.main ol{color:var(--t2);margin:0 0 12px 20px}
+.main li{margin-bottom:4px}
+.main strong{color:var(--t)}
+.main code{font-family:var(--mono);font-size:0.82rem;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--o)}
+.main table{width:100%;border-collapse:collapse;margin:16px 0 24px;font-size:0.82rem}
+.main th{text-align:left;padding:10px 14px;background:var(--s2);border:1px solid var(--b);font-family:var(--mono);font-weight:700;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--t2)}
+.main td{padding:10px 14px;border:1px solid var(--b);color:var(--t2);vertical-align:top}
+.main td code{font-size:0.75rem}
+
+/* CODE BLOCKS */
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden;position:relative;margin:16px 0 24px}
+.code-header{background:var(--s2);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .lang{font-family:var(--mono);font-size:0.62rem;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.1em}
+.copy-btn{background:none;border:1px solid var(--b2);color:var(--t4);padding:3px 10px;border-radius:4px;font-family:var(--mono);font-size:0.6rem;cursor:pointer;transition:0.2s}
+.copy-btn:hover{border-color:var(--r);color:var(--t)}
+.copy-btn.copied{border-color:var(--g);color:var(--g)}
+.code-block pre{padding:16px 18px;font-family:var(--mono);font-size:0.75rem;line-height:1.8;overflow-x:auto;white-space:pre;color:var(--t2)}
+.hl-comment{color:var(--t4)}
+.hl-key{color:var(--c)}
+.hl-val{color:var(--o)}
+.hl-str{color:var(--g)}
+.hl-flag{color:var(--v)}
+
+/* BADGES */
+.badge{display:inline-flex;align-items:center;font-family:var(--mono);font-size:0.62rem;font-weight:700;padding:3px 10px;border-radius:99px;gap:4px}
+.badge.post{background:var(--gg);color:var(--g)}
+.badge.get{background:var(--cg);color:var(--c)}
+.badge.required{background:var(--rg);color:var(--r2)}
+.badge.optional{background:var(--s2);color:var(--t3)}
+
+/* CALLOUTS */
+.callout{padding:16px 20px;border-radius:8px;margin:16px 0 24px;font-size:0.82rem;line-height:1.7}
+.callout.info{background:var(--cg);border-left:3px solid var(--c);color:var(--t2)}
+.callout.warn{background:var(--og);border-left:3px solid var(--o);color:var(--t2)}
+.callout.tip{background:var(--gg);border-left:3px solid var(--g);color:var(--t2)}
+.callout strong{color:var(--t)}
+
+/* FOOTER */
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+
+@media(max-width:900px){
+  .sidebar{display:none}
+  .main{margin-left:0;padding:32px 20px 80px}
+  .main h1{font-size:1.6rem}
+  .main h2{font-size:1.1rem}
+  nav{padding:0 12px}
+  .nav-links a:nth-child(n+4){display:none}
+  .footer-grid{grid-template-columns:repeat(2,1fr);gap:24px}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo"><span class="mark">&#129438; SLOP</span>SHOP<span class="gg">.GG</span></a>
+  <div class="nav-links">
+    <a href="/#playground">Playground</a>
+    <a href="/#catalog">Catalog</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/docs.html">Docs</a>
+    <a href="/api-reference.html" class="active">API Reference</a>
+    <a href="/dashboard.html">Dashboard</a>
+    <div class="live-badge"><div class="live-dot"></div><span>1,244 live</span></div>
+  </div>
+</div></nav>
+
+<div class="page">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <span class="sb-label">Getting Started</span>
+  <div class="sb-section">
+    <a class="sb-link active" href="#authentication">Authentication</a>
+    <a class="sb-link" href="#base-url">Base URL</a>
+    <a class="sb-link" href="#request-format">Request Format</a>
+    <a class="sb-link" href="#response-format">Response Format</a>
+  </div>
+  <div class="sb-divider"></div>
+  <span class="sb-label">Reference</span>
+  <div class="sb-section">
+    <a class="sb-link" href="#error-codes">Error Codes</a>
+    <a class="sb-link" href="#rate-limits">Rate Limits</a>
+    <a class="sb-link" href="#headers">Response Headers</a>
+  </div>
+  <div class="sb-divider"></div>
+  <span class="sb-label">Advanced</span>
+  <div class="sb-section">
+    <a class="sb-link" href="#agent-mode">Agent Mode</a>
+    <a class="sb-link" href="#streaming">Streaming (SSE)</a>
+    <a class="sb-link" href="#batch">Batch Calls</a>
+    <a class="sb-link" href="#dry-run">Dry Run</a>
+  </div>
+  <div class="sb-divider"></div>
+  <span class="sb-label">SDKs &amp; Integrations</span>
+  <div class="sb-section">
+    <a class="sb-link" href="#sdk-node">Node.js SDK</a>
+    <a class="sb-link" href="#sdk-python">Python SDK</a>
+    <a class="sb-link" href="#openapi">OpenAPI Spec</a>
+    <a class="sb-link" href="#mcp">MCP (Claude Code)</a>
+  </div>
+</aside>
+
+<!-- MAIN CONTENT -->
+<div class="main">
+
+<h1>API Reference</h1>
+<p class="subtitle">Everything you need to integrate Slopshop into your application. 1,244 APIs, one unified interface. All endpoints use the same authentication, request format, and response envelope.</p>
+
+<!-- ============================================ -->
+<h2 id="authentication">Authentication</h2>
+
+<p>All API requests require a Bearer token in the <code>Authorization</code> header. Slopshop supports three types of keys:</p>
+
+<h3>Key Types</h3>
+<table>
+  <thead><tr><th>Key Type</th><th>Prefix</th><th>Use Case</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Demo Key</strong></td><td><code>sk-slop-demo-key-12345678</code></td><td>Testing and evaluation. Ships with 200 credits. Shared across all users.</td></tr>
+    <tr><td><strong>Personal Key</strong></td><td><code>sk-slop-...</code></td><td>Your own account. Sign up via <code>POST /v1/auth/signup</code> to get 2,000 free credits.</td></tr>
+    <tr><td><strong>Scoped Team Key</strong></td><td><code>sk-slop-team-...</code></td><td>Enterprise team keys with configurable rate limits, permissions, and audit trails.</td></tr>
+  </tbody>
+</table>
+
+<h3>curl Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Using the demo key</span>
+curl -X POST https://slopshop.gg/v1/text-reverse \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "hello world"}'</pre>
+</div>
+
+<h3>Node.js Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">const</span> response = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/text-reverse'</span>, {
+  method: <span class="hl-str">'POST'</span>,
+  headers: {
+    <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>,
+    <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span>,
+  },
+  body: JSON.stringify({ text: <span class="hl-str">'hello world'</span> }),
+});
+<span class="hl-key">const</span> data = <span class="hl-key">await</span> response.json();
+console.log(data);</pre>
+</div>
+
+<h3>Sign Up for Your Own Key</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Sign up and get 2,000 free credits</span>
+curl -X POST https://slopshop.gg/v1/auth/signup \
+  -H "Content-Type: application/json" \
+  -d '{"email": "dev@example.com", "name": "My Agent"}'</pre>
+</div>
+
+<div class="callout info"><strong>Tip:</strong> The demo key (<code>sk-slop-demo-key-12345678</code>) is shared and has a 200-credit balance. For production use, sign up for your own key to get 2,000 free credits and higher rate limits.</div>
+
+<!-- ============================================ -->
+<h2 id="base-url">Base URL</h2>
+
+<p>All API requests are made to:</p>
+<div class="code-block">
+  <div class="code-header"><span class="lang">url</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>https://slopshop.gg/v1</pre>
+</div>
+
+<p>Self-hosted instances use your own domain. The API is also available via Railway at <code>https://slopshop-production.up.railway.app/v1</code>.</p>
+
+<!-- ============================================ -->
+<h2 id="request-format">Request Format</h2>
+
+<p>All tool calls use a single pattern: <span class="badge post">POST</span> <code>/v1/{slug}</code> with a JSON body.</p>
+
+<h3>Structure</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">http</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>POST /v1/{slug} HTTP/1.1
+Host: slopshop.gg
+Authorization: Bearer sk-slop-...
+Content-Type: application/json
+
+{
+  <span class="hl-comment">// Tool-specific input fields</span>
+  "text": "hello world",
+
+  <span class="hl-comment">// Optional: mode controls</span>
+  "mode": "agent",           <span class="hl-comment">// Enable agent mode</span>
+  "trace": true,             <span class="hl-comment">// Enable debug trace</span>
+  "session_id": "my-session" <span class="hl-comment">// For agent memory persistence</span>
+}</pre>
+</div>
+
+<h3>curl Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>curl -X POST https://slopshop.gg/v1/hash-sha256 \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "my important data"}'</pre>
+</div>
+
+<h3>Python Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">import</span> requests
+
+resp = requests.post(
+    <span class="hl-str">"https://slopshop.gg/v1/hash-sha256"</span>,
+    headers={<span class="hl-str">"Authorization"</span>: <span class="hl-str">"Bearer sk-slop-demo-key-12345678"</span>},
+    json={<span class="hl-str">"input"</span>: <span class="hl-str">"my important data"</span>},
+)
+print(resp.json())</pre>
+</div>
+
+<!-- ============================================ -->
+<h2 id="response-format">Response Format</h2>
+
+<p>Every successful response follows the same JSON envelope:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>{
+  <span class="hl-str">"ok"</span>: true,
+  <span class="hl-str">"data"</span>: {
+    <span class="hl-comment">// Tool-specific output</span>
+    <span class="hl-str">"hash"</span>: <span class="hl-str">"a1b2c3d4..."</span>,
+    <span class="hl-str">"_engine"</span>: <span class="hl-str">"real"</span>
+  },
+  <span class="hl-str">"meta"</span>: {
+    <span class="hl-str">"api"</span>: <span class="hl-str">"hash-sha256"</span>,
+    <span class="hl-str">"credits_used"</span>: <span class="hl-val">1</span>,
+    <span class="hl-str">"balance"</span>: <span class="hl-val">1999</span>,
+    <span class="hl-str">"latency_ms"</span>: <span class="hl-val">3</span>,
+    <span class="hl-str">"engine"</span>: <span class="hl-str">"real"</span>,
+    <span class="hl-str">"confidence"</span>: <span class="hl-val">0.99</span>,
+    <span class="hl-str">"output_hash"</span>: <span class="hl-str">"sha256-of-data..."</span>
+  },
+  <span class="hl-str">"guarantees"</span>: {
+    <span class="hl-str">"schema_valid"</span>: true,
+    <span class="hl-str">"validated"</span>: true,
+    <span class="hl-str">"fallback_used"</span>: false
+  }
+}</pre>
+</div>
+
+<h3>Engine Types</h3>
+<table>
+  <thead><tr><th>Engine</th><th>Confidence</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>real</code></td><td>0.99</td><td>Deterministic compute handler. Verifiable output.</td></tr>
+    <tr><td><code>llm</code></td><td>0.85</td><td>AI-generated output via Anthropic or OpenAI.</td></tr>
+    <tr><td><code>needs_key</code></td><td>0.00</td><td>External API key required but not configured.</td></tr>
+    <tr><td><code>error</code></td><td>0.00</td><td>Handler threw an error. Credits are refunded.</td></tr>
+  </tbody>
+</table>
+
+<h3>curl Example (inspecting response headers)</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Use -i to see response headers</span>
+curl -i -X POST https://slopshop.gg/v1/uuid-generate \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{}'</pre>
+</div>
+
+<!-- ============================================ -->
+<h2 id="error-codes">Error Codes</h2>
+
+<p>All errors return a consistent JSON envelope with an <code>error</code> object:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>{
+  <span class="hl-str">"error"</span>: {
+    <span class="hl-str">"code"</span>: <span class="hl-str">"insufficient_credits"</span>,
+    <span class="hl-str">"message"</span>: <span class="hl-str">"Need 5 credits, have 2"</span>,
+    <span class="hl-str">"need"</span>: <span class="hl-val">5</span>,
+    <span class="hl-str">"have"</span>: <span class="hl-val">2</span>
+  }
+}</pre>
+</div>
+
+<table>
+  <thead><tr><th>HTTP Status</th><th>Error Code</th><th>Description</th><th>Action</th></tr></thead>
+  <tbody>
+    <tr><td><code>400</code></td><td><code>invalid_batch</code> / <code>validation_error</code></td><td>Malformed request body or missing required fields.</td><td>Check your JSON body against the input schema.</td></tr>
+    <tr><td><code>401</code></td><td><code>auth_required</code> / <code>invalid_key</code></td><td>Missing or invalid API key.</td><td>Add <code>Authorization: Bearer sk-slop-...</code> header.</td></tr>
+    <tr><td><code>402</code></td><td><code>insufficient_credits</code></td><td>Not enough credits for this call.</td><td>Buy credits via <code>POST /v1/credits/buy</code> or set up auto-reload.</td></tr>
+    <tr><td><code>404</code></td><td><code>api_not_found</code></td><td>No API with that slug exists.</td><td>Use <code>GET /v1/tools</code> to browse available APIs.</td></tr>
+    <tr><td><code>429</code></td><td><code>rate_limited</code></td><td>Too many requests in the current window.</td><td>Wait and retry. Default is 60 req/min. Check <code>Retry-After</code> header.</td></tr>
+    <tr><td><code>500</code></td><td><code>handler_error</code></td><td>The handler threw an error during execution.</td><td><strong>Credits are automatically refunded.</strong> Check the <code>hint</code> field for input schema guidance.</td></tr>
+  </tbody>
+</table>
+
+<h3>curl Example (triggering a 401)</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Missing auth header returns 401 with demo key hint</span>
+curl -X POST https://slopshop.gg/v1/text-reverse \
+  -H "Content-Type: application/json" \
+  -d '{"text": "test"}'
+
+<span class="hl-comment"># Response:</span>
+<span class="hl-comment"># {"error":{"code":"auth_required","message":"Set Authorization: Bearer &lt;key&gt;",</span>
+<span class="hl-comment">#   "demo_key":"sk-slop-demo-key-12345678","signup":"POST /v1/auth/signup"}}</span></pre>
+</div>
+
+<h3>Node.js Error Handling</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">const</span> res = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/text-reverse'</span>, {
+  method: <span class="hl-str">'POST'</span>,
+  headers: {
+    <span class="hl-str">'Authorization'</span>: <span class="hl-str">`Bearer ${API_KEY}`</span>,
+    <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span>,
+  },
+  body: JSON.stringify({ text: <span class="hl-str">'hello'</span> }),
+});
+
+<span class="hl-key">if</span> (!res.ok) {
+  <span class="hl-key">const</span> err = <span class="hl-key">await</span> res.json();
+  <span class="hl-key">if</span> (res.status === <span class="hl-val">402</span>) {
+    console.log(<span class="hl-str">`Need ${err.error.need} credits, have ${err.error.have}`</span>);
+  } <span class="hl-key">else if</span> (res.status === <span class="hl-val">429</span>) {
+    <span class="hl-key">const</span> retryAfter = res.headers.get(<span class="hl-str">'Retry-After'</span>);
+    console.log(<span class="hl-str">`Rate limited. Retry in ${retryAfter}s`</span>);
+  } <span class="hl-key">else</span> {
+    console.error(err.error.code, err.error.message);
+  }
+}</pre>
+</div>
+
+<!-- ============================================ -->
+<h2 id="rate-limits">Rate Limits</h2>
+
+<p>Default rate limits protect the platform and ensure fair usage:</p>
+
+<table>
+  <thead><tr><th>Tier</th><th>Limit</th><th>Window</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Default</strong></td><td>60 requests</td><td>1 minute</td><td>Applies to all authenticated endpoints.</td></tr>
+    <tr><td><strong>Public</strong></td><td>30 requests</td><td>1 minute</td><td>Unauthenticated endpoints like <code>/v1/tools</code>.</td></tr>
+    <tr><td><strong>Enterprise</strong></td><td>Configurable</td><td>Custom</td><td>Set per-key via <code>POST /v1/enterprise/rate-limits</code>.</td></tr>
+  </tbody>
+</table>
+
+<p>When rate limited, the response includes:</p>
+<ul>
+  <li><code>Retry-After</code> header with seconds to wait</li>
+  <li><code>X-RateLimit-Remaining</code> header with remaining quota</li>
+</ul>
+
+<h3>curl Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Check current rate limit status in response headers</span>
+curl -i -X POST https://slopshop.gg/v1/uuid-generate \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
+<span class="hl-comment"># Look for: X-RateLimit-Remaining, Retry-After</span></pre>
+</div>
+
+<h3>Python Example (respecting rate limits)</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">import</span> requests, time
+
+<span class="hl-key">def</span> call_api(slug, body):
+    resp = requests.post(
+        f<span class="hl-str">"https://slopshop.gg/v1/{slug}"</span>,
+        headers={<span class="hl-str">"Authorization"</span>: <span class="hl-str">"Bearer sk-slop-demo-key-12345678"</span>},
+        json=body,
+    )
+    <span class="hl-key">if</span> resp.status_code == <span class="hl-val">429</span>:
+        wait = int(resp.headers.get(<span class="hl-str">"Retry-After"</span>, <span class="hl-val">5</span>))
+        print(f<span class="hl-str">"Rate limited. Waiting {wait}s..."</span>)
+        time.sleep(wait)
+        <span class="hl-key">return</span> call_api(slug, body)  <span class="hl-comment"># retry</span>
+    <span class="hl-key">return</span> resp.json()</pre>
+</div>
+
+<!-- ============================================ -->
+<h2 id="headers">Response Headers</h2>
+
+<p>Every API response includes rich metadata headers for observability and cost tracking:</p>
+
+<table>
+  <thead><tr><th>Header</th><th>Type</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>X-Request-Id</code></td><td>UUID</td><td>Unique identifier for this request. Use for support tickets and debugging.</td></tr>
+    <tr><td><code>X-Credits-Used</code></td><td>Integer</td><td>Number of credits consumed by this call. <code>0</code> on handler errors (refunded).</td></tr>
+    <tr><td><code>X-Credits-Remaining</code></td><td>Integer</td><td>Your remaining credit balance after this call.</td></tr>
+    <tr><td><code>X-Latency-Ms</code></td><td>Integer</td><td>Server-side execution time in milliseconds.</td></tr>
+    <tr><td><code>X-Engine</code></td><td>String</td><td>Which engine handled the request: <code>real</code>, <code>llm</code>, <code>needs_key</code>, or <code>error</code>.</td></tr>
+    <tr><td><code>X-Cost-USD</code></td><td>Float</td><td>Estimated dollar cost of this call (credits * $0.005).</td></tr>
+    <tr><td><code>X-Output-Hash</code></td><td>SHA-256</td><td>Hash of the response data for integrity verification and deduplication.</td></tr>
+    <tr><td><code>X-Cache</code></td><td>String</td><td><code>HIT</code> or <code>MISS</code>. Compute-tier APIs cache deterministic results.</td></tr>
+    <tr><td><code>X-Low-Balance</code></td><td>Boolean</td><td>Present and <code>true</code> when your balance drops below 100 credits.</td></tr>
+    <tr><td><code>Server-Timing</code></td><td>String</td><td>Standard <code>Server-Timing</code> header with total duration.</td></tr>
+  </tbody>
+</table>
+
+<h3>curl Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Use -v to see all response headers</span>
+curl -v -X POST https://slopshop.gg/v1/text-word-count \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "The quick brown fox"}'
+
+<span class="hl-comment"># Response headers include:</span>
+<span class="hl-comment"># X-Request-Id: 550e8400-e29b-41d4-a716-446655440000</span>
+<span class="hl-comment"># X-Credits-Used: 1</span>
+<span class="hl-comment"># X-Credits-Remaining: 199</span>
+<span class="hl-comment"># X-Latency-Ms: 2</span>
+<span class="hl-comment"># X-Engine: real</span>
+<span class="hl-comment"># X-Cost-USD: 0.0050</span>
+<span class="hl-comment"># X-Output-Hash: a1b2c3d4e5f6...</span></pre>
+</div>
+
+<h3>Node.js Example (reading headers)</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">const</span> res = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/text-word-count'</span>, {
+  method: <span class="hl-str">'POST'</span>,
+  headers: {
+    <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>,
+    <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span>,
+  },
+  body: JSON.stringify({ text: <span class="hl-str">'The quick brown fox'</span> }),
+});
+
+console.log(<span class="hl-str">'Request ID:'</span>, res.headers.get(<span class="hl-str">'X-Request-Id'</span>));
+console.log(<span class="hl-str">'Credits used:'</span>, res.headers.get(<span class="hl-str">'X-Credits-Used'</span>));
+console.log(<span class="hl-str">'Remaining:'</span>, res.headers.get(<span class="hl-str">'X-Credits-Remaining'</span>));
+console.log(<span class="hl-str">'Latency:'</span>, res.headers.get(<span class="hl-str">'X-Latency-Ms'</span>), <span class="hl-str">'ms'</span>);
+console.log(<span class="hl-str">'Engine:'</span>, res.headers.get(<span class="hl-str">'X-Engine'</span>));
+console.log(<span class="hl-str">'Cost:'</span>, res.headers.get(<span class="hl-str">'X-Cost-USD'</span>));
+console.log(<span class="hl-str">'Output hash:'</span>, res.headers.get(<span class="hl-str">'X-Output-Hash'</span>));</pre>
+</div>
+
+<!-- ============================================ -->
+<h2 id="agent-mode">Agent Mode</h2>
+
+<p>Agent mode enriches every response with AI-agent-friendly metadata: suggested next tools, auto-memory persistence, cache fingerprints, and cost breakdowns. Enable it by adding <code>"mode": "agent"</code> to your request body or setting the <code>X-Agent-Mode</code> header.</p>
+
+<h3>What Agent Mode Adds</h3>
+<ul>
+  <li><strong>suggestions</strong> &mdash; Array of related tool slugs the agent should consider calling next.</li>
+  <li><strong>cache_fingerprint</strong> &mdash; Deterministic hash of input for caching and deduplication.</li>
+  <li><strong>cost_breakdown</strong> &mdash; Granular cost info including potential cache savings.</li>
+  <li><strong>memory_persisted</strong> &mdash; Confirms the result was auto-saved to the agent's session memory (namespace + key).</li>
+</ul>
+
+<h3>curl Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>curl -X POST https://slopshop.gg/v1/validate-email \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "user@example.com",
+    "mode": "agent",
+    "session_id": "research-session-42"
+  }'
+
+<span class="hl-comment"># Response includes an "agent" block:</span>
+<span class="hl-comment"># {</span>
+<span class="hl-comment">#   "ok": true,</span>
+<span class="hl-comment">#   "data": { ... },</span>
+<span class="hl-comment">#   "agent": {</span>
+<span class="hl-comment">#     "suggestions": ["validate-phone", "pii-detect", "text-sanitize"],</span>
+<span class="hl-comment">#     "cache_fingerprint": "a1b2c3d4...",</span>
+<span class="hl-comment">#     "cost_breakdown": { "this_call": 1, "memory_cost": 0, "potential_cache_savings": 1 },</span>
+<span class="hl-comment">#     "memory_persisted": { "namespace": "research-session-42", "key": "validate-email:a1b2c3d4" }</span>
+<span class="hl-comment">#   }</span>
+<span class="hl-comment"># }</span></pre>
+</div>
+
+<h3>Node.js Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">const</span> res = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/validate-email'</span>, {
+  method: <span class="hl-str">'POST'</span>,
+  headers: {
+    <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>,
+    <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span>,
+    <span class="hl-str">'X-Agent-Mode'</span>: <span class="hl-str">'true'</span>,  <span class="hl-comment">// alternative to "mode": "agent"</span>
+  },
+  body: JSON.stringify({
+    email: <span class="hl-str">'user@example.com'</span>,
+    session_id: <span class="hl-str">'research-session-42'</span>,
+  }),
+});
+
+<span class="hl-key">const</span> { data, agent } = <span class="hl-key">await</span> res.json();
+console.log(<span class="hl-str">'Result:'</span>, data);
+console.log(<span class="hl-str">'Next tools to try:'</span>, agent.suggestions);
+console.log(<span class="hl-str">'Memory saved at:'</span>, agent.memory_persisted);</pre>
+</div>
+
+<div class="callout tip"><strong>Auto-memory is free.</strong> Agent mode automatically persists results to your session's memory namespace at zero additional credit cost. Retrieve stored results later with the <code>memory-get</code> API.</div>
+
+<!-- ============================================ -->
+<h2 id="streaming">Streaming (SSE)</h2>
+
+<p>For long-running API calls or LLM-tier tools, use the streaming endpoint to get real-time Server-Sent Events (SSE). This is especially useful for AI-generated content that benefits from token-by-token delivery.</p>
+
+<h3>Endpoint</h3>
+<p><span class="badge post">POST</span> <code>/v1/stream/{slug}</code></p>
+
+<h3>Event Types</h3>
+<table>
+  <thead><tr><th>Event</th><th>Description</th></tr></thead>
+  <tbody>
+    <tr><td><code>start</code></td><td>Confirms the stream has begun. Contains slug, credits, and timestamp.</td></tr>
+    <tr><td><code>progress</code></td><td>Execution progress update with percent (0, 50, 100).</td></tr>
+    <tr><td><code>token</code></td><td>Individual tokens for LLM-tier text fields (streamed character-by-character).</td></tr>
+    <tr><td><code>result</code></td><td>Full result data once execution completes.</td></tr>
+    <tr><td><code>error</code></td><td>Error with details. Credits are refunded.</td></tr>
+    <tr><td><code>done</code></td><td>Stream complete. Contains final status and latency.</td></tr>
+  </tbody>
+</table>
+
+<h3>curl Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Stream results via SSE</span>
+curl -N -X POST https://slopshop.gg/v1/stream/text-reverse \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "stream this"}'
+
+<span class="hl-comment"># Output (Server-Sent Events):</span>
+<span class="hl-comment"># event: start</span>
+<span class="hl-comment"># data: {"slug":"text-reverse","credits":1,"ts":"2026-03-27T..."}</span>
+<span class="hl-comment">#</span>
+<span class="hl-comment"># event: progress</span>
+<span class="hl-comment"># data: {"status":"executing","slug":"text-reverse","percent":0}</span>
+<span class="hl-comment">#</span>
+<span class="hl-comment"># event: result</span>
+<span class="hl-comment"># data: {"reversed":"siht maerts","_engine":"real"}</span>
+<span class="hl-comment">#</span>
+<span class="hl-comment"># event: done</span>
+<span class="hl-comment"># data: {"ok":true,"latency_ms":4}</span></pre>
+</div>
+
+<h3>Node.js Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">const</span> res = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/stream/text-reverse'</span>, {
+  method: <span class="hl-str">'POST'</span>,
+  headers: {
+    <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>,
+    <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span>,
+  },
+  body: JSON.stringify({ text: <span class="hl-str">'stream this'</span> }),
+});
+
+<span class="hl-key">const</span> reader = res.body.getReader();
+<span class="hl-key">const</span> decoder = <span class="hl-key">new</span> TextDecoder();
+
+<span class="hl-key">while</span> (true) {
+  <span class="hl-key">const</span> { done, value } = <span class="hl-key">await</span> reader.read();
+  <span class="hl-key">if</span> (done) <span class="hl-key">break</span>;
+  <span class="hl-key">const</span> chunk = decoder.decode(value);
+  <span class="hl-comment">// Parse SSE events</span>
+  <span class="hl-key">for</span> (<span class="hl-key">const</span> line of chunk.split(<span class="hl-str">'\n'</span>)) {
+    <span class="hl-key">if</span> (line.startsWith(<span class="hl-str">'data: '</span>)) {
+      <span class="hl-key">const</span> event = JSON.parse(line.slice(<span class="hl-val">6</span>));
+      console.log(event);
+    }
+  }
+}</pre>
+</div>
+
+<h3>Real-Time Usage Stream</h3>
+<p>Monitor all API usage in real time with the usage stream endpoint:</p>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Subscribe to real-time usage events for your account</span>
+curl -N https://slopshop.gg/v1/stream/usage \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678"</pre>
+</div>
+
+<!-- ============================================ -->
+<h2 id="batch">Batch Calls</h2>
+
+<p>Execute up to 50 API calls in a single request. All calls run in parallel using <code>Promise.allSettled</code>, so one failure does not block the others.</p>
+
+<h3>Endpoint</h3>
+<p><span class="badge post">POST</span> <code>/v1/batch</code></p>
+
+<h3>curl Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>curl -X POST https://slopshop.gg/v1/batch \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "calls": [
+      { "slug": "uuid-generate", "input": {} },
+      { "slug": "text-reverse", "input": { "text": "batch test" } },
+      { "slug": "hash-sha256", "input": { "input": "important data" } }
+    ]
+  }'
+
+<span class="hl-comment"># Response:</span>
+<span class="hl-comment"># {</span>
+<span class="hl-comment">#   "ok": true,</span>
+<span class="hl-comment">#   "results": [</span>
+<span class="hl-comment">#     { "slug": "uuid-generate", "data": {...}, "credits": 1, "latency_ms": 1 },</span>
+<span class="hl-comment">#     { "slug": "text-reverse", "data": {...}, "credits": 1, "latency_ms": 2 },</span>
+<span class="hl-comment">#     { "slug": "hash-sha256", "data": {...}, "credits": 1, "latency_ms": 1 }</span>
+<span class="hl-comment">#   ],</span>
+<span class="hl-comment">#   "total_credits": 3,</span>
+<span class="hl-comment">#   "balance": 197,</span>
+<span class="hl-comment">#   "calls_count": 3</span>
+<span class="hl-comment"># }</span></pre>
+</div>
+
+<h3>Node.js Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">const</span> res = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/batch'</span>, {
+  method: <span class="hl-str">'POST'</span>,
+  headers: {
+    <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>,
+    <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span>,
+  },
+  body: JSON.stringify({
+    calls: [
+      { slug: <span class="hl-str">'uuid-generate'</span>, input: {} },
+      { slug: <span class="hl-str">'text-reverse'</span>, input: { text: <span class="hl-str">'batch test'</span> } },
+      { slug: <span class="hl-str">'hash-sha256'</span>, input: { input: <span class="hl-str">'important data'</span> } },
+    ],
+  }),
+});
+
+<span class="hl-key">const</span> { results, total_credits, balance } = <span class="hl-key">await</span> res.json();
+console.log(<span class="hl-str">`Executed ${results.length} calls for ${total_credits} credits`</span>);
+results.forEach(r => console.log(r.slug, r.data));</pre>
+</div>
+
+<h3>Python Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">import</span> requests
+
+resp = requests.post(
+    <span class="hl-str">"https://slopshop.gg/v1/batch"</span>,
+    headers={<span class="hl-str">"Authorization"</span>: <span class="hl-str">"Bearer sk-slop-demo-key-12345678"</span>},
+    json={
+        <span class="hl-str">"calls"</span>: [
+            {<span class="hl-str">"slug"</span>: <span class="hl-str">"uuid-generate"</span>, <span class="hl-str">"input"</span>: {}},
+            {<span class="hl-str">"slug"</span>: <span class="hl-str">"text-reverse"</span>, <span class="hl-str">"input"</span>: {<span class="hl-str">"text"</span>: <span class="hl-str">"batch test"</span>}},
+            {<span class="hl-str">"slug"</span>: <span class="hl-str">"hash-sha256"</span>, <span class="hl-str">"input"</span>: {<span class="hl-str">"input"</span>: <span class="hl-str">"important data"</span>}},
+        ]
+    },
+)
+
+data = resp.json()
+print(f<span class="hl-str">"Total credits: {data['total_credits']}, Balance: {data['balance']}"</span>)
+<span class="hl-key">for</span> r <span class="hl-key">in</span> data[<span class="hl-str">"results"</span>]:
+    print(r[<span class="hl-str">"slug"</span>], r[<span class="hl-str">"data"</span>])</pre>
+</div>
+
+<div class="callout warn"><strong>Limit:</strong> Maximum 50 calls per batch. Total credits for all calls are deducted upfront. If any call fails, its individual credits are noted in the result but the batch continues. Partial results are marked with <code>"partial": true</code>.</div>
+
+<!-- ============================================ -->
+<h2 id="dry-run">Dry Run</h2>
+
+<p>Preview what an API call will cost without executing it. No credits are charged. Validates your input against the schema and returns cost estimates, affordability checks, and example outputs.</p>
+
+<h3>Endpoint</h3>
+<p><span class="badge post">POST</span> <code>/v1/dry-run/{slug}</code></p>
+
+<h3>curl Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>curl -X POST https://slopshop.gg/v1/dry-run/hash-sha256 \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "test data"}'
+
+<span class="hl-comment"># Response (no credits charged):</span>
+<span class="hl-comment"># {</span>
+<span class="hl-comment">#   "ok": true,</span>
+<span class="hl-comment">#   "dry_run": true,</span>
+<span class="hl-comment">#   "slug": "hash-sha256",</span>
+<span class="hl-comment">#   "name": "SHA-256 Hash",</span>
+<span class="hl-comment">#   "credits": 1,</span>
+<span class="hl-comment">#   "estimated_cost_usd": "0.0090",</span>
+<span class="hl-comment">#   "can_afford": true,</span>
+<span class="hl-comment">#   "balance": 200,</span>
+<span class="hl-comment">#   "balance_after": 199,</span>
+<span class="hl-comment">#   "has_handler": true,</span>
+<span class="hl-comment">#   "input_schema": { "required": ["input"], ... },</span>
+<span class="hl-comment">#   "input_validation": { "valid": true, "missing_fields": [] },</span>
+<span class="hl-comment">#   "hints": {</span>
+<span class="hl-comment">#     "execute": "POST /v1/hash-sha256",</span>
+<span class="hl-comment">#     "stream": "POST /v1/stream/hash-sha256",</span>
+<span class="hl-comment">#     "async": "POST /v1/async/hash-sha256"</span>
+<span class="hl-comment">#   }</span>
+<span class="hl-comment"># }</span></pre>
+</div>
+
+<h3>Node.js Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment">// Check cost before executing</span>
+<span class="hl-key">const</span> preview = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/dry-run/hash-sha256'</span>, {
+  method: <span class="hl-str">'POST'</span>,
+  headers: {
+    <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>,
+    <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span>,
+  },
+  body: JSON.stringify({ input: <span class="hl-str">'test data'</span> }),
+}).then(r => r.json());
+
+<span class="hl-key">if</span> (preview.can_afford && preview.input_validation.valid) {
+  console.log(<span class="hl-str">`Proceeding. Cost: ${preview.credits} credits ($${preview.estimated_cost_usd})`</span>);
+  <span class="hl-comment">// Now execute the real call</span>
+  <span class="hl-key">const</span> result = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/hash-sha256'</span>, {
+    method: <span class="hl-str">'POST'</span>,
+    headers: {
+      <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>,
+      <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span>,
+    },
+    body: JSON.stringify({ input: <span class="hl-str">'test data'</span> }),
+  }).then(r => r.json());
+  console.log(result);
+} <span class="hl-key">else</span> {
+  console.log(<span class="hl-str">'Cannot proceed:'</span>, preview.input_validation);
+}</pre>
+</div>
+
+<!-- ============================================ -->
+<h2 id="sdk-node">Node.js SDK</h2>
+
+<p>Install the Slopshop SDK for Node.js:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>npm install slopshop</pre>
+</div>
+
+<h3>Basic Usage</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">const</span> Slop = require(<span class="hl-str">'slopshop'</span>);
+
+<span class="hl-key">const</span> slop = <span class="hl-key">new</span> Slop(<span class="hl-str">'sk-slop-demo-key-12345678'</span>);
+
+<span class="hl-comment">// Call any API by slug</span>
+<span class="hl-key">const</span> result = <span class="hl-key">await</span> slop.call(<span class="hl-str">'text-reverse'</span>, { text: <span class="hl-str">'hello'</span> });
+console.log(result.data);
+<span class="hl-comment">// { reversed: "olleh", _engine: "real" }</span>
+
+<span class="hl-comment">// Batch multiple calls</span>
+<span class="hl-key">const</span> batch = <span class="hl-key">await</span> slop.batch([
+  { slug: <span class="hl-str">'uuid-generate'</span>, input: {} },
+  { slug: <span class="hl-str">'hash-sha256'</span>, input: { input: <span class="hl-str">'data'</span> } },
+]);
+console.log(batch.results);
+
+<span class="hl-comment">// Check balance</span>
+<span class="hl-key">const</span> balance = <span class="hl-key">await</span> slop.balance();
+console.log(<span class="hl-str">`Credits remaining: ${balance.credits}`</span>);
+
+<span class="hl-comment">// Dry run</span>
+<span class="hl-key">const</span> preview = <span class="hl-key">await</span> slop.dryRun(<span class="hl-str">'hash-sha256'</span>, { input: <span class="hl-str">'test'</span> });
+console.log(<span class="hl-str">`Cost: ${preview.credits} credits`</span>);
+
+<span class="hl-comment">// Stream</span>
+<span class="hl-key">const</span> stream = <span class="hl-key">await</span> slop.stream(<span class="hl-str">'text-reverse'</span>, { text: <span class="hl-str">'stream me'</span> });
+stream.on(<span class="hl-str">'result'</span>, data => console.log(data));
+stream.on(<span class="hl-str">'done'</span>, () => console.log(<span class="hl-str">'Complete'</span>));</pre>
+</div>
+
+<h3>Agent Mode with Memory</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">const</span> slop = <span class="hl-key">new</span> Slop(<span class="hl-str">'sk-slop-demo-key-12345678'</span>, { agentMode: true });
+
+<span class="hl-comment">// Every call now returns suggestions + auto-persists to memory</span>
+<span class="hl-key">const</span> result = <span class="hl-key">await</span> slop.call(<span class="hl-str">'validate-email'</span>, {
+  email: <span class="hl-str">'test@example.com'</span>,
+  session_id: <span class="hl-str">'onboarding-flow'</span>,
+});
+console.log(result.agent.suggestions);
+<span class="hl-comment">// ["validate-phone", "pii-detect", ...]</span></pre>
+</div>
+
+<!-- ============================================ -->
+<h2 id="sdk-python">Python SDK</h2>
+
+<p>Install the Slopshop SDK for Python:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>pip install slopshop</pre>
+</div>
+
+<h3>Basic Usage</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">from</span> slopshop <span class="hl-key">import</span> Slop
+
+slop = Slop(<span class="hl-str">"sk-slop-demo-key-12345678"</span>)
+
+<span class="hl-comment"># Call any API by slug</span>
+result = slop.call(<span class="hl-str">"text-reverse"</span>, text=<span class="hl-str">"hello"</span>)
+print(result.data)
+<span class="hl-comment"># {"reversed": "olleh", "_engine": "real"}</span>
+
+<span class="hl-comment"># Batch multiple calls</span>
+batch = slop.batch([
+    {<span class="hl-str">"slug"</span>: <span class="hl-str">"uuid-generate"</span>, <span class="hl-str">"input"</span>: {}},
+    {<span class="hl-str">"slug"</span>: <span class="hl-str">"hash-sha256"</span>, <span class="hl-str">"input"</span>: {<span class="hl-str">"input"</span>: <span class="hl-str">"data"</span>}},
+])
+print(batch.results)
+
+<span class="hl-comment"># Check balance</span>
+balance = slop.balance()
+print(f<span class="hl-str">"Credits remaining: {balance.credits}"</span>)
+
+<span class="hl-comment"># Dry run</span>
+preview = slop.dry_run(<span class="hl-str">"hash-sha256"</span>, input=<span class="hl-str">"test"</span>)
+print(f<span class="hl-str">"Cost: {preview.credits} credits"</span>)
+
+<span class="hl-comment"># Stream</span>
+<span class="hl-key">for</span> event <span class="hl-key">in</span> slop.stream(<span class="hl-str">"text-reverse"</span>, text=<span class="hl-str">"stream me"</span>):
+    print(event.type, event.data)</pre>
+</div>
+
+<h3>Async Support</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">import</span> asyncio
+<span class="hl-key">from</span> slopshop <span class="hl-key">import</span> AsyncSlop
+
+<span class="hl-key">async def</span> main():
+    slop = AsyncSlop(<span class="hl-str">"sk-slop-demo-key-12345678"</span>)
+
+    <span class="hl-comment"># Concurrent calls</span>
+    results = <span class="hl-key">await</span> asyncio.gather(
+        slop.call(<span class="hl-str">"uuid-generate"</span>),
+        slop.call(<span class="hl-str">"text-reverse"</span>, text=<span class="hl-str">"async"</span>),
+        slop.call(<span class="hl-str">"hash-sha256"</span>, input=<span class="hl-str">"data"</span>),
+    )
+    <span class="hl-key">for</span> r <span class="hl-key">in</span> results:
+        print(r.data)
+
+asyncio.run(main())</pre>
+</div>
+
+<!-- ============================================ -->
+<h2 id="openapi">OpenAPI Specification</h2>
+
+<p>The full OpenAPI 3.0 spec is available as machine-readable JSON, auto-generated from the live registry:</p>
+
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Download the OpenAPI spec</span>
+curl https://slopshop.gg/v1/openapi.json -o openapi.json
+
+<span class="hl-comment"># Or access it directly in your browser:</span>
+<span class="hl-comment"># https://slopshop.gg/v1/openapi.json</span></pre>
+</div>
+
+<h3>Node.js Example (loading the spec)</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment">// Fetch and parse the OpenAPI spec</span>
+<span class="hl-key">const</span> spec = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/openapi.json'</span>).then(r => r.json());
+console.log(<span class="hl-str">`${Object.keys(spec.paths).length} endpoints available`</span>);
+
+<span class="hl-comment">// List all API slugs</span>
+<span class="hl-key">for</span> (<span class="hl-key">const</span> [path, methods] of Object.entries(spec.paths)) {
+  console.log(path, methods.post?.summary);
+}</pre>
+</div>
+
+<h3>Python Example</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-key">import</span> requests
+
+spec = requests.get(<span class="hl-str">"https://slopshop.gg/v1/openapi.json"</span>).json()
+print(f<span class="hl-str">"{len(spec['paths'])} endpoints available"</span>)
+
+<span class="hl-key">for</span> path, methods <span class="hl-key">in</span> spec[<span class="hl-str">"paths"</span>].items():
+    print(path, methods.get(<span class="hl-str">"post"</span>, {}).get(<span class="hl-str">"summary"</span>, <span class="hl-str">""</span>))</pre>
+</div>
+
+<div class="callout info"><strong>Use with Swagger UI:</strong> You can import the OpenAPI spec into Swagger UI, Postman, Insomnia, or any other API client that supports OpenAPI 3.0.</div>
+
+<!-- ============================================ -->
+<h2 id="mcp">MCP Integration (Claude Code)</h2>
+
+<p>Slopshop is a native MCP (Model Context Protocol) server. This means Claude Code, Claude Desktop, and any MCP-compatible client can discover and call all 1,244 APIs as tools automatically.</p>
+
+<h3>Setup with npx</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Add Slopshop as an MCP server in Claude Code</span>
+npx -y slopshop mcp
+
+<span class="hl-comment"># Or with your own API key</span>
+SLOP_KEY=sk-slop-your-key npx -y slopshop mcp</pre>
+</div>
+
+<h3>Claude Desktop Configuration</h3>
+<p>Add this to your Claude Desktop <code>claude_desktop_config.json</code>:</p>
+<div class="code-block">
+  <div class="code-header"><span class="lang">json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre>{
+  <span class="hl-str">"mcpServers"</span>: {
+    <span class="hl-str">"slopshop"</span>: {
+      <span class="hl-str">"command"</span>: <span class="hl-str">"npx"</span>,
+      <span class="hl-str">"args"</span>: [<span class="hl-str">"-y"</span>, <span class="hl-str">"slopshop"</span>, <span class="hl-str">"mcp"</span>],
+      <span class="hl-str">"env"</span>: {
+        <span class="hl-str">"SLOP_KEY"</span>: <span class="hl-str">"sk-slop-demo-key-12345678"</span>
+      }
+    }
+  }
+}</pre>
+</div>
+
+<h3>What Claude Can Do with MCP</h3>
+<p>Once connected, Claude can use any Slopshop tool as a native function call. For example:</p>
+<div class="code-block">
+  <div class="code-header"><span class="lang">text</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment">User: "Hash my password 'secret123' with SHA-256"</span>
+
+<span class="hl-comment">Claude uses tool: slopshop.hash-sha256({ input: "secret123" })</span>
+<span class="hl-comment">Result: { hash: "fcb3...", algorithm: "sha256", _engine: "real" }</span>
+
+<span class="hl-comment">Claude: "Here's the SHA-256 hash: fcb3..."</span></pre>
+</div>
+
+<h3>curl Example (testing the MCP manifest)</h3>
+<div class="code-block">
+  <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+  <pre><span class="hl-comment"># Check the AI tools manifest (used by MCP clients)</span>
+curl https://slopshop.gg/.well-known/ai-tools.json</pre>
+</div>
+
+<div class="callout tip"><strong>Zero configuration:</strong> The MCP server automatically discovers all available tools from the Slopshop registry. No manual tool definitions needed. When new APIs are added, they become available immediately.</div>
+
+</div><!-- /main -->
+</div><!-- /page -->
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">&#129438; SLOPSHOP<span class="gg">.GG</span></div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/#catalog">API Catalog</a>
+        <a href="/pricing.html">Pricing</a>
+        <a href="/dashboard.html">Dashboard</a>
+        <a href="/changelog.html">Changelog</a>
+        <a href="/roadmap.html">Roadmap</a>
+      </div>
+      <div class="footer-col">
+        <h4>Docs</h4>
+        <a href="/quickstart.html">Quickstart</a>
+        <a href="/api-reference.html">API Reference</a>
+        <a href="/examples.html">Examples</a>
+        <a href="/docs.html">Full Docs</a>
+        <a href="/v1/openapi.json">OpenAPI Spec</a>
+      </div>
+      <div class="footer-col">
+        <h4>Integrations</h4>
+        <a href="/mcp-tools-for-claude.html">Claude MCP</a>
+        <a href="/integrate-langchain.html">LangChain</a>
+        <a href="/integrate-openai.html">OpenAI</a>
+        <a href="/integrate-crewai.html">CrewAI</a>
+        <a href="/integrate-autogen.html">AutoGen</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about.html">About</a>
+        <a href="/security.html">Security</a>
+        <a href="/legal.html">Legal</a>
+        <a href="/enterprise.html">Enterprise</a>
+        <a href="https://x.com/slopshopgg">Twitter</a>
+      </div>
+    </div>
+    <div class="footer-copy">&copy; 2025 Slopshop. All rights reserved. Built for agents, by agents.</div>
+  </div>
+</footer>
+
+<script>
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// Sidebar active state on scroll
+const sections = document.querySelectorAll('h2[id]');
+const sbLinks = document.querySelectorAll('.sb-link');
+window.addEventListener('scroll', () => {
+  let current = '';
+  sections.forEach(s => {
+    if (window.scrollY >= s.offsetTop - 100) current = s.id;
+  });
+  sbLinks.forEach(l => {
+    l.classList.toggle('active', l.getAttribute('href') === '#' + current);
+  });
+});
+</script>
+</body>
+</html>

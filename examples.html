@@ -1,0 +1,1494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Examples — 20 Real-World Use Cases | Slopshop</title>
+<meta name="description" content="20 complete, copy-paste examples for Slopshop: research agents, multi-agent workspaces, persistent memory, validation, hashing, knowledge graphs, A/B testing, prediction markets, parallel agents, streaming, batch calls, and more.">
+<meta name="keywords" content="slopshop examples, ai agent examples, agent api use cases, agent memory example, batch api example, streaming api example, mcp tools example, code review agent, research agent, knowledge graph agent">
+<link rel="canonical" href="https://slopshop.gg/examples">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/examples">
+<meta property="og:title" content="Examples — 20 Real-World Use Cases | Slopshop">
+<meta property="og:description" content="20 complete, copy-paste examples: research agents, multi-agent workspaces, persistent memory, validation, hashing, and more.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:creator" content="@slopshopgg">
+<meta name="twitter:title" content="Examples — 20 Real-World Use Cases | Slopshop">
+<meta name="twitter:description" content="20 complete, copy-paste examples for building with Slopshop APIs.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "TechArticle",
+  "name": "Slopshop Examples — 20 Real-World Use Cases",
+  "url": "https://slopshop.gg/examples",
+  "description": "20 complete, copy-paste examples for Slopshop: research agents, multi-agent workspaces, persistent memory, validation, hashing, knowledge graphs, A/B testing, prediction markets, parallel agents, streaming, batch calls, and more.",
+  "author": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"},
+  "datePublished": "2025-01-01",
+  "dateModified": "2026-03-27",
+  "publisher": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"}
+}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --y:#ffcc00;--yg:rgba(255,204,0,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.88rem;line-height:1.8}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px;text-decoration:none}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:2px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s;font-family:var(--sans)}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--t);background:var(--s2)}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+
+/* LAYOUT */
+.wrap{max-width:860px;margin:0 auto;padding:100px 32px 80px}
+
+h1{font-family:var(--mono);font-size:clamp(2rem,5vw,2.8rem);font-weight:900;letter-spacing:-0.02em;line-height:1.1;margin-bottom:12px}
+h1 .red{color:var(--r)}
+.subtitle{color:var(--t2);font-size:0.95rem;line-height:1.7;margin-bottom:16px;max-width:600px}
+.subtitle b{color:var(--t);font-weight:600}
+
+/* TOC */
+.toc{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px 28px;margin-bottom:48px}
+.toc h3{font-family:var(--mono);font-size:0.82rem;font-weight:700;margin-bottom:12px;color:var(--t)}
+.toc-grid{display:grid;grid-template-columns:1fr 1fr;gap:4px 24px}
+.toc a{font-size:0.78rem;color:var(--t3);padding:3px 0;display:block;transition:0.15s;font-family:var(--mono)}
+.toc a:hover{color:var(--r);opacity:1}
+.toc a .num{color:var(--t4);margin-right:6px;font-weight:700}
+
+/* EXAMPLES */
+.example{margin-bottom:56px;scroll-margin-top:80px}
+.example-header{display:flex;align-items:baseline;gap:12px;margin-bottom:8px}
+.example-num{font-family:var(--mono);font-size:0.72rem;font-weight:800;color:var(--r);background:var(--rg);padding:4px 10px;border-radius:6px;flex-shrink:0}
+.example h2{font-family:var(--mono);font-size:1.05rem;font-weight:700;letter-spacing:-0.01em}
+.example .desc{color:var(--t2);font-size:0.85rem;margin-bottom:16px;line-height:1.7}
+
+/* CODE BLOCKS */
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden;position:relative;margin:12px 0 0}
+.code-header{background:var(--s2);padding:8px 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .lang{font-family:var(--mono);font-size:0.62rem;color:var(--t3);font-weight:600;text-transform:uppercase;letter-spacing:0.1em}
+.copy-btn{background:none;border:1px solid var(--b2);color:var(--t4);padding:3px 10px;border-radius:4px;font-family:var(--mono);font-size:0.6rem;cursor:pointer;transition:0.2s}
+.copy-btn:hover{border-color:var(--r);color:var(--t)}
+.copy-btn.copied{border-color:var(--g);color:var(--g)}
+.code-block pre{padding:16px 18px;font-family:var(--mono);font-size:0.73rem;line-height:1.75;overflow-x:auto;white-space:pre;color:var(--t2)}
+.hl-comment{color:var(--t4)}
+.hl-key{color:var(--c)}
+.hl-val{color:var(--o)}
+.hl-str{color:var(--g)}
+
+/* TAGS */
+.tags{display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:0.58rem;font-weight:700;padding:3px 8px;border-radius:4px}
+.tag.compute{background:var(--gg);color:var(--g)}
+.tag.agent{background:var(--rg);color:var(--r2)}
+.tag.memory{background:var(--vg);color:var(--v)}
+.tag.batch{background:var(--og);color:var(--o)}
+.tag.stream{background:var(--cg);color:var(--c)}
+.tag.enterprise{background:var(--yg);color:var(--y)}
+
+/* FILTER */
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:32px}
+.filter-btn{background:var(--s1);border:1px solid var(--b);color:var(--t3);padding:6px 14px;border-radius:6px;font-family:var(--mono);font-size:0.7rem;font-weight:600;cursor:pointer;transition:0.15s}
+.filter-btn:hover,.filter-btn.active{border-color:var(--r);color:var(--r);background:var(--rg)}
+
+/* FOOTER */
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+
+@media(max-width:768px){
+  .wrap{padding:72px 16px 60px}
+  h1{font-size:1.8rem}
+  .toc-grid{grid-template-columns:1fr}
+  nav{padding:0 12px}
+  .nav-links a:nth-child(n+4){display:none}
+  .footer-grid{grid-template-columns:repeat(2,1fr);gap:24px}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo"><span class="mark">&#129438; SLOP</span>SHOP<span class="gg">.GG</span></a>
+  <div class="nav-links">
+    <a href="/#playground">Playground</a>
+    <a href="/#catalog">Catalog</a>
+    <a href="/pricing.html">Pricing</a>
+    <a href="/docs.html">Docs</a>
+    <a href="/examples.html" class="active">Examples</a>
+    <a href="/dashboard.html">Dashboard</a>
+    <div class="live-badge"><div class="live-dot"></div><span>1,244 live</span></div>
+  </div>
+</div></nav>
+
+<div class="wrap">
+
+<h1><span class="red">20</span> Real-World Examples</h1>
+<p class="subtitle">Complete, copy-paste examples that work with the demo key. From research agents to prediction markets, every pattern you need to build with <b>1,244 APIs</b>.</p>
+
+<!-- FILTER -->
+<div class="filter-row">
+  <button class="filter-btn active" data-filter="all">All</button>
+  <button class="filter-btn" data-filter="agent">Agent</button>
+  <button class="filter-btn" data-filter="compute">Compute</button>
+  <button class="filter-btn" data-filter="memory">Memory</button>
+  <button class="filter-btn" data-filter="batch">Batch</button>
+  <button class="filter-btn" data-filter="stream">Stream</button>
+  <button class="filter-btn" data-filter="enterprise">Enterprise</button>
+</div>
+
+<!-- TOC -->
+<div class="toc">
+  <h3>Table of Contents</h3>
+  <div class="toc-grid">
+    <a href="#ex1"><span class="num">01</span> Research Agent</a>
+    <a href="#ex11"><span class="num">11</span> SSE Streaming</a>
+    <a href="#ex2"><span class="num">02</span> Multi-Agent Code Review</a>
+    <a href="#ex12"><span class="num">12</span> Batch API Calls</a>
+    <a href="#ex3"><span class="num">03</span> Persistent Memory</a>
+    <a href="#ex13"><span class="num">13</span> Copilot Pair Programming</a>
+    <a href="#ex4"><span class="num">04</span> Input Validation</a>
+    <a href="#ex14"><span class="num">14</span> Enterprise Team Management</a>
+    <a href="#ex5"><span class="num">05</span> Hash Verification</a>
+    <a href="#ex15"><span class="num">15</span> Analytics Dashboard</a>
+    <a href="#ex6"><span class="num">06</span> Knowledge Graph</a>
+    <a href="#ex16"><span class="num">16</span> Dockerfile Parsing</a>
+    <a href="#ex7"><span class="num">07</span> A/B Testing</a>
+    <a href="#ex17"><span class="num">17</span> Prompt Scoring</a>
+    <a href="#ex8"><span class="num">08</span> Prediction Market</a>
+    <a href="#ex18"><span class="num">18</span> PII Detection</a>
+    <a href="#ex9"><span class="num">09</span> Bounty Board</a>
+    <a href="#ex19"><span class="num">19</span> Agent Governance</a>
+    <a href="#ex10"><span class="num">10</span> 100 Parallel Agents</a>
+    <a href="#ex20"><span class="num">20</span> Business Metrics</a>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 1 ============ -->
+<div class="example" id="ex1" data-tags="agent memory">
+  <div class="example-header">
+    <span class="example-num">01</span>
+    <h2>Build a Research Agent</h2>
+  </div>
+  <div class="tags">
+    <span class="tag agent">Agent</span>
+    <span class="tag memory">Memory</span>
+  </div>
+  <p class="desc">Build an agent that searches for information, summarizes findings, and stores them in persistent memory for future sessions. Uses agent mode for auto-suggestions and memory persistence.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Step 1: Search and store the query in memory</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "research-agent",
+    "key": "query-1",
+    "value": "Investigating AI agent frameworks in 2026",
+    "tags": "research,ai,agents"
+  }'
+
+<span class="hl-comment"># Step 2: Summarize gathered text</span>
+curl -X POST https://slopshop.gg/v1/text-word-count \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "AI agent frameworks have evolved significantly. LangChain, CrewAI, and AutoGen lead the market. Slopshop provides the infrastructure layer with 1244 APIs."}'
+
+<span class="hl-comment"># Step 3: Store findings with agent mode for suggestions</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "research-agent",
+    "key": "finding-1",
+    "value": "{\"topic\":\"AI frameworks\",\"leaders\":[\"LangChain\",\"CrewAI\",\"AutoGen\"],\"infra\":\"Slopshop\"}",
+    "tags": "finding,ai,frameworks",
+    "mode": "agent"
+  }'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> API = <span class="hl-str">'https://slopshop.gg/v1'</span>;
+<span class="hl-key">const</span> KEY = <span class="hl-str">'sk-slop-demo-key-12345678'</span>;
+<span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">`Bearer ${KEY}`</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+
+<span class="hl-comment">// Store research query</span>
+<span class="hl-key">await</span> fetch(<span class="hl-str">`${API}/memory-set`</span>, {
+  method: <span class="hl-str">'POST'</span>, headers,
+  body: JSON.stringify({
+    namespace: <span class="hl-str">'research-agent'</span>,
+    key: <span class="hl-str">'query-1'</span>,
+    value: <span class="hl-str">'Investigating AI agent frameworks in 2026'</span>,
+    tags: <span class="hl-str">'research,ai,agents'</span>,
+  }),
+});
+
+<span class="hl-comment">// Retrieve findings later</span>
+<span class="hl-key">const</span> findings = <span class="hl-key">await</span> fetch(<span class="hl-str">`${API}/memory-get`</span>, {
+  method: <span class="hl-str">'POST'</span>, headers,
+  body: JSON.stringify({ namespace: <span class="hl-str">'research-agent'</span>, key: <span class="hl-str">'finding-1'</span> }),
+}).then(r => r.json());
+
+console.log(<span class="hl-str">'Stored finding:'</span>, findings.data);</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 2 ============ -->
+<div class="example" id="ex2" data-tags="agent batch">
+  <div class="example-header">
+    <span class="example-num">02</span>
+    <h2>Multi-Agent Code Review Workspace</h2>
+  </div>
+  <div class="tags">
+    <span class="tag agent">Agent</span>
+    <span class="tag batch">Batch</span>
+  </div>
+  <p class="desc">Create a workspace where multiple agents review code simultaneously. One agent counts lines, another checks for patterns, and a third analyzes complexity. Results are batched for efficiency.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre>curl -X POST https://slopshop.gg/v1/batch \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "calls": [
+      {
+        "slug": "text-word-count",
+        "input": { "text": "function add(a, b) { return a + b; }" }
+      },
+      {
+        "slug": "hash-sha256",
+        "input": { "input": "function add(a, b) { return a + b; }" }
+      },
+      {
+        "slug": "text-reverse",
+        "input": { "text": "function add(a, b) { return a + b; }" }
+      }
+    ]
+  }'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> code = <span class="hl-str">'function add(a, b) { return a + b; }'</span>;
+
+<span class="hl-comment">// Run all review agents in parallel via batch</span>
+<span class="hl-key">const</span> review = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/batch'</span>, {
+  method: <span class="hl-str">'POST'</span>,
+  headers: { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> },
+  body: JSON.stringify({
+    calls: [
+      { slug: <span class="hl-str">'text-word-count'</span>, input: { text: code } },
+      { slug: <span class="hl-str">'hash-sha256'</span>, input: { input: code } },
+      { slug: <span class="hl-str">'text-character-count'</span>, input: { text: code } },
+    ],
+  }),
+}).then(r => r.json());
+
+console.log(<span class="hl-str">'Word count:'</span>, review.results[0].data);
+console.log(<span class="hl-str">'Code hash:'</span>, review.results[1].data);
+console.log(<span class="hl-str">'Char count:'</span>, review.results[2].data);
+console.log(<span class="hl-str">`Total cost: ${review.total_credits} credits`</span>);</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 3 ============ -->
+<div class="example" id="ex3" data-tags="memory agent">
+  <div class="example-header">
+    <span class="example-num">03</span>
+    <h2>Persistent Memory Across Sessions</h2>
+  </div>
+  <div class="tags">
+    <span class="tag memory">Memory</span>
+    <span class="tag agent">Agent</span>
+  </div>
+  <p class="desc">Store and retrieve agent state across sessions using namespaced memory. Free tier includes persistent SQLite-backed storage with tagging and search support.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Store a value in persistent memory</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "my-agent",
+    "key": "user-preferences",
+    "value": "{\"theme\":\"dark\",\"language\":\"en\",\"timezone\":\"UTC\"}",
+    "tags": "preferences,user-config"
+  }'
+
+<span class="hl-comment"># Retrieve it later (even after server restart)</span>
+curl -X POST https://slopshop.gg/v1/memory-get \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "my-agent", "key": "user-preferences"}'
+
+<span class="hl-comment"># List all keys in a namespace</span>
+curl -X POST https://slopshop.gg/v1/memory-list \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "my-agent"}'
+
+<span class="hl-comment"># Search by tags</span>
+curl -X POST https://slopshop.gg/v1/memory-search \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "my-agent", "tag": "preferences"}'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">import</span> requests, json
+
+API = <span class="hl-str">"https://slopshop.gg/v1"</span>
+HEADERS = {<span class="hl-str">"Authorization"</span>: <span class="hl-str">"Bearer sk-slop-demo-key-12345678"</span>}
+
+<span class="hl-comment"># Store session state</span>
+requests.post(f<span class="hl-str">"{API}/memory-set"</span>, headers=HEADERS, json={
+    <span class="hl-str">"namespace"</span>: <span class="hl-str">"my-agent"</span>,
+    <span class="hl-str">"key"</span>: <span class="hl-str">"conversation-history"</span>,
+    <span class="hl-str">"value"</span>: json.dumps([
+        {<span class="hl-str">"role"</span>: <span class="hl-str">"user"</span>, <span class="hl-str">"content"</span>: <span class="hl-str">"Hello"</span>},
+        {<span class="hl-str">"role"</span>: <span class="hl-str">"assistant"</span>, <span class="hl-str">"content"</span>: <span class="hl-str">"Hi there!"</span>},
+    ]),
+    <span class="hl-str">"tags"</span>: <span class="hl-str">"conversation,session-1"</span>,
+})
+
+<span class="hl-comment"># Retrieve in a new session</span>
+resp = requests.post(f<span class="hl-str">"{API}/memory-get"</span>, headers=HEADERS, json={
+    <span class="hl-str">"namespace"</span>: <span class="hl-str">"my-agent"</span>,
+    <span class="hl-str">"key"</span>: <span class="hl-str">"conversation-history"</span>,
+})
+history = json.loads(resp.json()[<span class="hl-str">"data"</span>][<span class="hl-str">"value"</span>])
+print(f<span class="hl-str">"Resumed session with {len(history)} messages"</span>)</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 4 ============ -->
+<div class="example" id="ex4" data-tags="compute batch">
+  <div class="example-header">
+    <span class="example-num">04</span>
+    <h2>Validate User Input</h2>
+  </div>
+  <div class="tags">
+    <span class="tag compute">Compute</span>
+    <span class="tag batch">Batch</span>
+  </div>
+  <p class="desc">Validate email addresses, phone numbers, and credit card numbers in a single batch call before processing user registrations. All validators run in parallel.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre>curl -X POST https://slopshop.gg/v1/batch \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "calls": [
+      { "slug": "validate-email", "input": { "email": "user@example.com" } },
+      { "slug": "validate-phone", "input": { "phone": "+1-555-123-4567" } },
+      { "slug": "validate-credit-card", "input": { "number": "4111111111111111" } }
+    ]
+  }'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">async function</span> validateUserInput(email, phone, card) {
+  <span class="hl-key">const</span> res = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/batch'</span>, {
+    method: <span class="hl-str">'POST'</span>,
+    headers: { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> },
+    body: JSON.stringify({
+      calls: [
+        { slug: <span class="hl-str">'validate-email'</span>, input: { email } },
+        { slug: <span class="hl-str">'validate-phone'</span>, input: { phone } },
+        { slug: <span class="hl-str">'validate-credit-card'</span>, input: { number: card } },
+      ],
+    }),
+  }).then(r => r.json());
+
+  <span class="hl-key">const</span> [emailResult, phoneResult, cardResult] = res.results;
+  <span class="hl-key">return</span> {
+    emailValid: emailResult.data?.valid,
+    phoneValid: phoneResult.data?.valid,
+    cardValid: cardResult.data?.valid,
+    cost: res.total_credits,
+  };
+}
+
+<span class="hl-key">const</span> validation = <span class="hl-key">await</span> validateUserInput(
+  <span class="hl-str">'user@example.com'</span>, <span class="hl-str">'+1-555-123-4567'</span>, <span class="hl-str">'4111111111111111'</span>
+);
+console.log(validation);</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 5 ============ -->
+<div class="example" id="ex5" data-tags="compute">
+  <div class="example-header">
+    <span class="example-num">05</span>
+    <h2>Generate and Verify Hashes</h2>
+  </div>
+  <div class="tags">
+    <span class="tag compute">Compute</span>
+  </div>
+  <p class="desc">Generate SHA-256 hashes for data integrity verification. Hash files, API responses, or any text to create a tamper-proof record of content.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Generate a SHA-256 hash</span>
+curl -X POST https://slopshop.gg/v1/hash-sha256 \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "important contract text that must not be altered"}'
+
+<span class="hl-comment"># Verify by hashing the same input again and comparing</span>
+curl -X POST https://slopshop.gg/v1/hash-sha256 \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "important contract text that must not be altered"}'
+
+<span class="hl-comment"># Both return the same hash - data integrity verified</span></pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+
+<span class="hl-comment">// Hash original data</span>
+<span class="hl-key">const</span> original = <span class="hl-str">'important contract text'</span>;
+<span class="hl-key">const</span> hash1 = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/hash-sha256'</span>, {
+  method: <span class="hl-str">'POST'</span>, headers,
+  body: JSON.stringify({ input: original }),
+}).then(r => r.json());
+
+<span class="hl-comment">// Later: verify data has not been tampered with</span>
+<span class="hl-key">const</span> received = <span class="hl-str">'important contract text'</span>;
+<span class="hl-key">const</span> hash2 = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/hash-sha256'</span>, {
+  method: <span class="hl-str">'POST'</span>, headers,
+  body: JSON.stringify({ input: received }),
+}).then(r => r.json());
+
+<span class="hl-key">const</span> verified = hash1.data.hash === hash2.data.hash;
+console.log(<span class="hl-str">`Integrity check: ${verified ? 'PASSED' : 'FAILED'}`</span>);</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 6 ============ -->
+<div class="example" id="ex6" data-tags="agent memory">
+  <div class="example-header">
+    <span class="example-num">06</span>
+    <h2>Build a Knowledge Graph of Your Codebase</h2>
+  </div>
+  <div class="tags">
+    <span class="tag agent">Agent</span>
+    <span class="tag memory">Memory</span>
+  </div>
+  <p class="desc">Index your codebase into a knowledge graph using memory namespaces. Store file hashes, dependencies, and function signatures for instant agent lookup across sessions.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Store a file node in the knowledge graph</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "codebase-graph",
+    "key": "src/server.js",
+    "value": "{\"type\":\"file\",\"functions\":[\"handleRequest\",\"authenticate\"],\"imports\":[\"express\",\"cors\"],\"lines\":450}",
+    "tags": "file,javascript,server"
+  }'
+
+<span class="hl-comment"># Store a dependency edge</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "codebase-graph",
+    "key": "edge:server-to-auth",
+    "value": "{\"from\":\"src/server.js\",\"to\":\"src/auth.js\",\"type\":\"imports\"}",
+    "tags": "edge,dependency"
+  }'
+
+<span class="hl-comment"># Query: find all files tagged as JavaScript</span>
+curl -X POST https://slopshop.gg/v1/memory-search \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "codebase-graph", "tag": "javascript"}'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> API = <span class="hl-str">'https://slopshop.gg/v1'</span>;
+<span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+
+<span class="hl-key">async function</span> indexFile(path, metadata) {
+  <span class="hl-comment">// Hash the file content for change detection</span>
+  <span class="hl-key">const</span> hash = <span class="hl-key">await</span> fetch(<span class="hl-str">`${API}/hash-sha256`</span>, {
+    method: <span class="hl-str">'POST'</span>, headers,
+    body: JSON.stringify({ input: metadata.content }),
+  }).then(r => r.json());
+
+  <span class="hl-comment">// Store in knowledge graph</span>
+  <span class="hl-key">await</span> fetch(<span class="hl-str">`${API}/memory-set`</span>, {
+    method: <span class="hl-str">'POST'</span>, headers,
+    body: JSON.stringify({
+      namespace: <span class="hl-str">'codebase-graph'</span>,
+      key: path,
+      value: JSON.stringify({ ...metadata, hash: hash.data.hash }),
+      tags: <span class="hl-str">`file,${metadata.language}`</span>,
+    }),
+  });
+}
+
+<span class="hl-key">await</span> indexFile(<span class="hl-str">'src/server.js'</span>, {
+  language: <span class="hl-str">'javascript'</span>,
+  functions: [<span class="hl-str">'handleRequest'</span>, <span class="hl-str">'authenticate'</span>],
+  imports: [<span class="hl-str">'express'</span>, <span class="hl-str">'cors'</span>],
+  content: <span class="hl-str">'// file content here...'</span>,
+});</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 7 ============ -->
+<div class="example" id="ex7" data-tags="compute memory">
+  <div class="example-header">
+    <span class="example-num">07</span>
+    <h2>Run A/B Tests with Analytics</h2>
+  </div>
+  <div class="tags">
+    <span class="tag compute">Compute</span>
+    <span class="tag memory">Memory</span>
+  </div>
+  <p class="desc">Implement A/B testing by using random number generation for assignment, UUID generation for tracking, and memory for storing results. Analyze outcomes with the stats API.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Generate a random assignment (0 or 1)</span>
+curl -X POST https://slopshop.gg/v1/random-number \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"min": 0, "max": 1}'
+
+<span class="hl-comment"># Generate a tracking UUID for this user</span>
+curl -X POST https://slopshop.gg/v1/uuid-generate \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
+<span class="hl-comment"># Store the experiment result</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "ab-test-checkout-v2",
+    "key": "user-550e8400",
+    "value": "{\"variant\":\"B\",\"converted\":true,\"revenue\":49.99}",
+    "tags": "variant-b,converted"
+  }'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+
+<span class="hl-key">async function</span> assignVariant(userId) {
+  <span class="hl-comment">// Deterministic assignment via hashing the user ID</span>
+  <span class="hl-key">const</span> hash = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/hash-sha256'</span>, {
+    method: <span class="hl-str">'POST'</span>, headers,
+    body: JSON.stringify({ input: userId + <span class="hl-str">':checkout-v2'</span> }),
+  }).then(r => r.json());
+
+  <span class="hl-comment">// Use last hex char for assignment (even = A, odd = B)</span>
+  <span class="hl-key">const</span> lastChar = parseInt(hash.data.hash.slice(-<span class="hl-val">1</span>), <span class="hl-val">16</span>);
+  <span class="hl-key">return</span> lastChar % <span class="hl-val">2</span> === <span class="hl-val">0</span> ? <span class="hl-str">'A'</span> : <span class="hl-str">'B'</span>;
+}
+
+<span class="hl-key">const</span> variant = <span class="hl-key">await</span> assignVariant(<span class="hl-str">'user-123'</span>);
+console.log(<span class="hl-str">`Assigned to variant: ${variant}`</span>);
+<span class="hl-comment">// Same user always gets the same variant (deterministic)</span></pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 8 ============ -->
+<div class="example" id="ex8" data-tags="agent memory">
+  <div class="example-header">
+    <span class="example-num">08</span>
+    <h2>Set Up a Prediction Market</h2>
+  </div>
+  <div class="tags">
+    <span class="tag agent">Agent</span>
+    <span class="tag memory">Memory</span>
+  </div>
+  <p class="desc">Create a prediction market for team decisions. Agents submit predictions with confidence levels, and outcomes are tracked in memory. Use timestamps and UUIDs for audit trails.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Create a prediction market</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "predictions",
+    "key": "market-q1-revenue",
+    "value": "{\"question\":\"Will Q1 revenue exceed $1M?\",\"closes\":\"2026-04-01\",\"predictions\":[]}",
+    "tags": "market,active,revenue"
+  }'
+
+<span class="hl-comment"># Generate a prediction ID</span>
+curl -X POST https://slopshop.gg/v1/uuid-generate \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+
+<span class="hl-comment"># Submit a prediction (store alongside the market)</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "predictions",
+    "key": "pred-agent-alpha-q1",
+    "value": "{\"market\":\"market-q1-revenue\",\"agent\":\"alpha\",\"prediction\":true,\"confidence\":0.75,\"reasoning\":\"Strong pipeline and seasonal trends\"}",
+    "tags": "prediction,market-q1-revenue,agent-alpha"
+  }'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">import</span> requests, json
+
+API = <span class="hl-str">"https://slopshop.gg/v1"</span>
+HEADERS = {<span class="hl-str">"Authorization"</span>: <span class="hl-str">"Bearer sk-slop-demo-key-12345678"</span>}
+
+<span class="hl-comment"># Create market</span>
+requests.post(f<span class="hl-str">"{API}/memory-set"</span>, headers=HEADERS, json={
+    <span class="hl-str">"namespace"</span>: <span class="hl-str">"predictions"</span>,
+    <span class="hl-str">"key"</span>: <span class="hl-str">"market-launch-date"</span>,
+    <span class="hl-str">"value"</span>: json.dumps({
+        <span class="hl-str">"question"</span>: <span class="hl-str">"Will we ship v3 before June?"</span>,
+        <span class="hl-str">"closes"</span>: <span class="hl-str">"2026-06-01"</span>,
+    }),
+    <span class="hl-str">"tags"</span>: <span class="hl-str">"market,active"</span>,
+})
+
+<span class="hl-comment"># Submit predictions from multiple agents</span>
+<span class="hl-key">for</span> agent, conf <span class="hl-key">in</span> [(<span class="hl-str">"alpha"</span>, <span class="hl-val">0.8</span>), (<span class="hl-str">"beta"</span>, <span class="hl-val">0.6</span>), (<span class="hl-str">"gamma"</span>, <span class="hl-val">0.9</span>)]:
+    requests.post(f<span class="hl-str">"{API}/memory-set"</span>, headers=HEADERS, json={
+        <span class="hl-str">"namespace"</span>: <span class="hl-str">"predictions"</span>,
+        <span class="hl-str">"key"</span>: f<span class="hl-str">"pred-{agent}-launch"</span>,
+        <span class="hl-str">"value"</span>: json.dumps({<span class="hl-str">"prediction"</span>: True, <span class="hl-str">"confidence"</span>: conf}),
+        <span class="hl-str">"tags"</span>: f<span class="hl-str">"prediction,agent-{agent}"</span>,
+    })
+
+print(<span class="hl-str">"Market created with 3 predictions"</span>)</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 9 ============ -->
+<div class="example" id="ex9" data-tags="agent memory">
+  <div class="example-header">
+    <span class="example-num">09</span>
+    <h2>Create a Bounty Board for Task Delegation</h2>
+  </div>
+  <div class="tags">
+    <span class="tag agent">Agent</span>
+    <span class="tag memory">Memory</span>
+  </div>
+  <p class="desc">Set up a bounty board where tasks are posted with credit rewards. Agents can claim and complete bounties, with results verified through hash comparisons.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Post a bounty</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "bounty-board",
+    "key": "bounty-001",
+    "value": "{\"title\":\"Validate 100 email addresses\",\"reward_credits\":50,\"status\":\"open\",\"posted_by\":\"orchestrator\",\"deadline\":\"2026-04-01\"}",
+    "tags": "bounty,open,validation"
+  }'
+
+<span class="hl-comment"># Agent claims the bounty</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "bounty-board",
+    "key": "bounty-001",
+    "value": "{\"title\":\"Validate 100 email addresses\",\"reward_credits\":50,\"status\":\"claimed\",\"claimed_by\":\"agent-worker-7\",\"posted_by\":\"orchestrator\"}",
+    "tags": "bounty,claimed,validation"
+  }'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+<span class="hl-key">const</span> post = (slug, body) => fetch(<span class="hl-str">`https://slopshop.gg/v1/${slug}`</span>, {
+  method: <span class="hl-str">'POST'</span>, headers, body: JSON.stringify(body),
+}).then(r => r.json());
+
+<span class="hl-comment">// Post a bounty</span>
+<span class="hl-key">await</span> post(<span class="hl-str">'memory-set'</span>, {
+  namespace: <span class="hl-str">'bounty-board'</span>,
+  key: <span class="hl-str">'bounty-002'</span>,
+  value: JSON.stringify({
+    title: <span class="hl-str">'Hash 500 documents for integrity audit'</span>,
+    reward_credits: <span class="hl-val">100</span>,
+    status: <span class="hl-str">'open'</span>,
+  }),
+  tags: <span class="hl-str">'bounty,open,hashing'</span>,
+});
+
+<span class="hl-comment">// List all open bounties</span>
+<span class="hl-key">const</span> openBounties = <span class="hl-key">await</span> post(<span class="hl-str">'memory-search'</span>, {
+  namespace: <span class="hl-str">'bounty-board'</span>,
+  tag: <span class="hl-str">'open'</span>,
+});
+console.log(<span class="hl-str">'Open bounties:'</span>, openBounties.data);</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 10 ============ -->
+<div class="example" id="ex10" data-tags="batch agent">
+  <div class="example-header">
+    <span class="example-num">10</span>
+    <h2>Deploy 100 Agents in Parallel</h2>
+  </div>
+  <div class="tags">
+    <span class="tag batch">Batch</span>
+    <span class="tag agent">Agent</span>
+  </div>
+  <p class="desc">Run 100 parallel hash operations in two batch requests of 50 each. Demonstrates how to process large datasets using the batch endpoint with maximum parallelism.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Batch 1: first 50 hash operations</span>
+curl -X POST https://slopshop.gg/v1/batch \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "calls": [
+      { "slug": "hash-sha256", "input": { "input": "document-001" } },
+      { "slug": "hash-sha256", "input": { "input": "document-002" } },
+      { "slug": "hash-sha256", "input": { "input": "document-003" } }
+    ]
+  }'
+
+<span class="hl-comment"># (Repeat with up to 50 calls per batch request)</span></pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+
+<span class="hl-comment">// Generate 100 documents to process</span>
+<span class="hl-key">const</span> documents = Array.from({ length: <span class="hl-val">100</span> }, (_, i) => <span class="hl-str">`document-${String(i).padStart(3, '0')}`</span>);
+
+<span class="hl-comment">// Split into batches of 50 (max per request)</span>
+<span class="hl-key">const</span> chunks = [];
+<span class="hl-key">for</span> (<span class="hl-key">let</span> i = <span class="hl-val">0</span>; i < documents.length; i += <span class="hl-val">50</span>) {
+  chunks.push(documents.slice(i, i + <span class="hl-val">50</span>));
+}
+
+<span class="hl-comment">// Execute all batches in parallel</span>
+<span class="hl-key">const</span> batchResults = <span class="hl-key">await</span> Promise.all(
+  chunks.map(chunk =>
+    fetch(<span class="hl-str">'https://slopshop.gg/v1/batch'</span>, {
+      method: <span class="hl-str">'POST'</span>, headers,
+      body: JSON.stringify({
+        calls: chunk.map(doc => ({
+          slug: <span class="hl-str">'hash-sha256'</span>,
+          input: { input: doc },
+        })),
+      }),
+    }).then(r => r.json())
+  )
+);
+
+<span class="hl-key">const</span> allResults = batchResults.flatMap(b => b.results);
+<span class="hl-key">const</span> totalCredits = batchResults.reduce((sum, b) => sum + b.total_credits, <span class="hl-val">0</span>);
+console.log(<span class="hl-str">`Processed ${allResults.length} documents for ${totalCredits} credits`</span>);</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 11 ============ -->
+<div class="example" id="ex11" data-tags="stream">
+  <div class="example-header">
+    <span class="example-num">11</span>
+    <h2>Stream Long-Running Results via SSE</h2>
+  </div>
+  <div class="tags">
+    <span class="tag stream">Stream</span>
+  </div>
+  <p class="desc">Use Server-Sent Events to stream API results in real time. Ideal for LLM-tier tools that generate long text, or any operation where you want progress updates.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Stream results with -N to disable buffering</span>
+curl -N -X POST https://slopshop.gg/v1/stream/text-reverse \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"text": "streaming is powerful for real-time agent feedback"}'
+
+<span class="hl-comment"># You'll see events like:</span>
+<span class="hl-comment"># event: start</span>
+<span class="hl-comment"># data: {"slug":"text-reverse","credits":1,"ts":"2026-03-27T12:00:00Z"}</span>
+<span class="hl-comment">#</span>
+<span class="hl-comment"># event: progress</span>
+<span class="hl-comment"># data: {"status":"executing","percent":0}</span>
+<span class="hl-comment">#</span>
+<span class="hl-comment"># event: result</span>
+<span class="hl-comment"># data: {"reversed":"kcabdeef tnega emit-laer rof lufrewop si gnimaerts"}</span>
+<span class="hl-comment">#</span>
+<span class="hl-comment"># event: done</span>
+<span class="hl-comment"># data: {"ok":true,"latency_ms":3}</span></pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">async function</span> streamApi(slug, input) {
+  <span class="hl-key">const</span> res = <span class="hl-key">await</span> fetch(<span class="hl-str">`https://slopshop.gg/v1/stream/${slug}`</span>, {
+    method: <span class="hl-str">'POST'</span>,
+    headers: {
+      <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>,
+      <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span>,
+    },
+    body: JSON.stringify(input),
+  });
+
+  <span class="hl-key">const</span> reader = res.body.getReader();
+  <span class="hl-key">const</span> decoder = <span class="hl-key">new</span> TextDecoder();
+  <span class="hl-key">let</span> buffer = <span class="hl-str">''</span>;
+
+  <span class="hl-key">while</span> (true) {
+    <span class="hl-key">const</span> { done, value } = <span class="hl-key">await</span> reader.read();
+    <span class="hl-key">if</span> (done) <span class="hl-key">break</span>;
+    buffer += decoder.decode(value, { stream: true });
+
+    <span class="hl-comment">// Parse complete SSE events</span>
+    <span class="hl-key">const</span> events = buffer.split(<span class="hl-str">'\n\n'</span>);
+    buffer = events.pop(); <span class="hl-comment">// keep incomplete event</span>
+
+    <span class="hl-key">for</span> (<span class="hl-key">const</span> event of events) {
+      <span class="hl-key">const</span> lines = event.split(<span class="hl-str">'\n'</span>);
+      <span class="hl-key">let</span> type = <span class="hl-str">''</span>, data = <span class="hl-str">''</span>;
+      <span class="hl-key">for</span> (<span class="hl-key">const</span> line of lines) {
+        <span class="hl-key">if</span> (line.startsWith(<span class="hl-str">'event: '</span>)) type = line.slice(<span class="hl-val">7</span>);
+        <span class="hl-key">if</span> (line.startsWith(<span class="hl-str">'data: '</span>)) data = line.slice(<span class="hl-val">6</span>);
+      }
+      <span class="hl-key">if</span> (data) console.log(<span class="hl-str">`[${type}]`</span>, JSON.parse(data));
+    }
+  }
+}
+
+<span class="hl-key">await</span> streamApi(<span class="hl-str">'text-reverse'</span>, { text: <span class="hl-str">'streaming demo'</span> });</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 12 ============ -->
+<div class="example" id="ex12" data-tags="batch compute">
+  <div class="example-header">
+    <span class="example-num">12</span>
+    <h2>Batch Multiple API Calls for Efficiency</h2>
+  </div>
+  <div class="tags">
+    <span class="tag batch">Batch</span>
+    <span class="tag compute">Compute</span>
+  </div>
+  <p class="desc">Reduce HTTP overhead by combining multiple independent API calls into a single batch request. All calls execute in parallel and return together.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre>curl -X POST https://slopshop.gg/v1/batch \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "calls": [
+      { "slug": "uuid-generate", "input": {} },
+      { "slug": "random-number", "input": { "min": 1, "max": 100 } },
+      { "slug": "text-reverse", "input": { "text": "efficiency" } },
+      { "slug": "hash-sha256", "input": { "input": "batch-test" } },
+      { "slug": "text-word-count", "input": { "text": "how many words are in this sentence" } }
+    ]
+  }'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">import</span> requests
+
+resp = requests.post(
+    <span class="hl-str">"https://slopshop.gg/v1/batch"</span>,
+    headers={<span class="hl-str">"Authorization"</span>: <span class="hl-str">"Bearer sk-slop-demo-key-12345678"</span>},
+    json={
+        <span class="hl-str">"calls"</span>: [
+            {<span class="hl-str">"slug"</span>: <span class="hl-str">"uuid-generate"</span>, <span class="hl-str">"input"</span>: {}},
+            {<span class="hl-str">"slug"</span>: <span class="hl-str">"random-number"</span>, <span class="hl-str">"input"</span>: {<span class="hl-str">"min"</span>: <span class="hl-val">1</span>, <span class="hl-str">"max"</span>: <span class="hl-val">100</span>}},
+            {<span class="hl-str">"slug"</span>: <span class="hl-str">"text-reverse"</span>, <span class="hl-str">"input"</span>: {<span class="hl-str">"text"</span>: <span class="hl-str">"efficiency"</span>}},
+            {<span class="hl-str">"slug"</span>: <span class="hl-str">"hash-sha256"</span>, <span class="hl-str">"input"</span>: {<span class="hl-str">"input"</span>: <span class="hl-str">"batch-test"</span>}},
+            {<span class="hl-str">"slug"</span>: <span class="hl-str">"text-word-count"</span>, <span class="hl-str">"input"</span>: {<span class="hl-str">"text"</span>: <span class="hl-str">"count these words"</span>}},
+        ]
+    },
+)
+
+data = resp.json()
+print(f<span class="hl-str">"5 APIs called in 1 request: {data['total_credits']} credits, {data['total_latency_ms']}ms"</span>)
+<span class="hl-key">for</span> r <span class="hl-key">in</span> data[<span class="hl-str">"results"</span>]:
+    print(f<span class="hl-str">"  {r['slug']}: {r['latency_ms']}ms"</span>)</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 13 ============ -->
+<div class="example" id="ex13" data-tags="agent">
+  <div class="example-header">
+    <span class="example-num">13</span>
+    <h2>Use Copilot Mode for Pair Programming</h2>
+  </div>
+  <div class="tags">
+    <span class="tag agent">Agent</span>
+  </div>
+  <p class="desc">Leverage agent mode with trace enabled for pair programming. The API returns suggestions for next steps and persists the session state, so your coding assistant always has context.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Agent mode + trace for full visibility</span>
+curl -X POST https://slopshop.gg/v1/text-word-count \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "function fibonacci(n) { if (n <= 1) return n; return fibonacci(n-1) + fibonacci(n-2); }",
+    "mode": "agent",
+    "trace": true,
+    "session_id": "pair-programming-session"
+  }'
+
+<span class="hl-comment"># Response includes:</span>
+<span class="hl-comment"># - data: word count result</span>
+<span class="hl-comment"># - agent.suggestions: ["text-character-count", "hash-sha256", ...]</span>
+<span class="hl-comment"># - agent.memory_persisted: { namespace, key }</span>
+<span class="hl-comment"># - trace: [{ step: "received" }, { step: "credits_checked" }, ...]</span></pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+<span class="hl-key">const</span> SESSION = <span class="hl-str">'pair-programming-session'</span>;
+
+<span class="hl-key">async function</span> copilotCall(slug, input) {
+  <span class="hl-key">const</span> res = <span class="hl-key">await</span> fetch(<span class="hl-str">`https://slopshop.gg/v1/${slug}`</span>, {
+    method: <span class="hl-str">'POST'</span>, headers,
+    body: JSON.stringify({
+      ...input,
+      mode: <span class="hl-str">'agent'</span>,
+      trace: true,
+      session_id: SESSION,
+    }),
+  }).then(r => r.json());
+
+  console.log(<span class="hl-str">'Result:'</span>, res.data);
+  console.log(<span class="hl-str">'Suggestions:'</span>, res.agent?.suggestions);
+  console.log(<span class="hl-str">'Trace:'</span>, res.trace);
+  <span class="hl-key">return</span> res;
+}
+
+<span class="hl-comment">// Analyze code during pair programming</span>
+<span class="hl-key">const</span> result = <span class="hl-key">await</span> copilotCall(<span class="hl-str">'text-word-count'</span>, {
+  text: <span class="hl-str">'function fibonacci(n) { return n <= 1 ? n : fibonacci(n-1) + fibonacci(n-2); }'</span>,
+});
+
+<span class="hl-comment">// Follow a suggestion</span>
+<span class="hl-key">if</span> (result.agent?.suggestions?.length) {
+  console.log(<span class="hl-str">`Next: try ${result.agent.suggestions[0]}`</span>);
+}</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 14 ============ -->
+<div class="example" id="ex14" data-tags="enterprise">
+  <div class="example-header">
+    <span class="example-num">14</span>
+    <h2>Set Up Enterprise Team Management</h2>
+  </div>
+  <div class="tags">
+    <span class="tag enterprise">Enterprise</span>
+  </div>
+  <p class="desc">Create teams, invite members, generate scoped API keys, and set custom rate limits. Enterprise features provide full control over who can access which APIs and how much they can spend.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Create a team</span>
+curl -X POST https://slopshop.gg/v1/enterprise/teams \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "Engineering Team"}'
+
+<span class="hl-comment"># Add a team member</span>
+curl -X POST https://slopshop.gg/v1/enterprise/teams/TEAM_ID/members \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"email": "dev@company.com", "role": "member"}'
+
+<span class="hl-comment"># Generate a scoped team key</span>
+curl -X POST https://slopshop.gg/v1/enterprise/keys \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"team_id": "TEAM_ID", "name": "CI/CD Key", "scopes": ["compute"]}'
+
+<span class="hl-comment"># Set custom rate limits for the team</span>
+curl -X POST https://slopshop.gg/v1/enterprise/rate-limits \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"team_id": "TEAM_ID", "requests_per_minute": 200}'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> API = <span class="hl-str">'https://slopshop.gg/v1'</span>;
+<span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-your-admin-key'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+
+<span class="hl-comment">// Create a team</span>
+<span class="hl-key">const</span> team = <span class="hl-key">await</span> fetch(<span class="hl-str">`${API}/enterprise/teams`</span>, {
+  method: <span class="hl-str">'POST'</span>, headers,
+  body: JSON.stringify({ name: <span class="hl-str">'Engineering Team'</span> }),
+}).then(r => r.json());
+
+console.log(<span class="hl-str">'Team created:'</span>, team.data.id);
+
+<span class="hl-comment">// Generate a scoped key for CI/CD</span>
+<span class="hl-key">const</span> key = <span class="hl-key">await</span> fetch(<span class="hl-str">`${API}/enterprise/keys`</span>, {
+  method: <span class="hl-str">'POST'</span>, headers,
+  body: JSON.stringify({
+    team_id: team.data.id,
+    name: <span class="hl-str">'CI/CD Pipeline'</span>,
+    scopes: [<span class="hl-str">'compute'</span>],
+  }),
+}).then(r => r.json());
+
+console.log(<span class="hl-str">'Scoped key:'</span>, key.data.key);</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 15 ============ -->
+<div class="example" id="ex15" data-tags="enterprise stream">
+  <div class="example-header">
+    <span class="example-num">15</span>
+    <h2>Monitor Usage with Analytics Dashboard</h2>
+  </div>
+  <div class="tags">
+    <span class="tag enterprise">Enterprise</span>
+    <span class="tag stream">Stream</span>
+  </div>
+  <p class="desc">Monitor your API usage in real time using the SSE usage stream and credit balance endpoints. Build dashboards that track spending, popular APIs, and error rates.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Check current balance</span>
+curl https://slopshop.gg/v1/credits/balance \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678"
+
+<span class="hl-comment"># Get credit history</span>
+curl https://slopshop.gg/v1/credits/history \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678"
+
+<span class="hl-comment"># Subscribe to real-time usage stream (SSE)</span>
+curl -N https://slopshop.gg/v1/stream/usage \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678"
+
+<span class="hl-comment"># Events arrive as:</span>
+<span class="hl-comment"># data: {"key":"sk-slop-demo-","slug":"text-reverse","credits":1,"status":"ok","ts":"..."}</span></pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span> };
+
+<span class="hl-comment">// Check balance</span>
+<span class="hl-key">const</span> balance = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/credits/balance'</span>, { headers }).then(r => r.json());
+console.log(<span class="hl-str">`Balance: ${balance.credits} credits ($${(balance.credits * 0.005).toFixed(2)})`</span>);
+
+<span class="hl-comment">// Monitor usage in real time</span>
+<span class="hl-key">const</span> evtSource = <span class="hl-key">new</span> EventSource(<span class="hl-str">'https://slopshop.gg/v1/stream/usage'</span>);
+<span class="hl-key">const</span> stats = { calls: <span class="hl-val">0</span>, credits: <span class="hl-val">0</span>, errors: <span class="hl-val">0</span> };
+
+evtSource.onmessage = (event) => {
+  <span class="hl-key">const</span> data = JSON.parse(event.data);
+  stats.calls++;
+  stats.credits += data.credits || <span class="hl-val">0</span>;
+  <span class="hl-key">if</span> (data.status === <span class="hl-str">'error'</span>) stats.errors++;
+  console.log(<span class="hl-str">`[${data.slug}] ${data.credits} credits | Total: ${stats.credits}`</span>);
+};</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 16 ============ -->
+<div class="example" id="ex16" data-tags="compute">
+  <div class="example-header">
+    <span class="example-num">16</span>
+    <h2>Parse and Validate Dockerfiles</h2>
+  </div>
+  <div class="tags">
+    <span class="tag compute">Compute</span>
+  </div>
+  <p class="desc">Parse Dockerfiles to extract base images, stages, and instructions. Validate structure and identify potential issues before deploying to production.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre>curl -X POST https://slopshop.gg/v1/dockerfile-parse \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "content": "FROM node:18-alpine AS builder\nWORKDIR /app\nCOPY package*.json ./\nRUN npm ci --production\nCOPY . .\nRUN npm run build\n\nFROM node:18-alpine\nWORKDIR /app\nCOPY --from=builder /app/dist ./dist\nCOPY --from=builder /app/node_modules ./node_modules\nEXPOSE 3000\nCMD [\"node\", \"dist/server.js\"]"
+  }'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> dockerfile = <span class="hl-str">`FROM node:18-alpine AS builder
+WORKDIR /app
+COPY package*.json ./
+RUN npm ci --production
+COPY . .
+RUN npm run build
+
+FROM node:18-alpine
+WORKDIR /app
+COPY --from=builder /app/dist ./dist
+EXPOSE 3000
+CMD ["node", "dist/server.js"]`</span>;
+
+<span class="hl-key">const</span> result = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/dockerfile-parse'</span>, {
+  method: <span class="hl-str">'POST'</span>,
+  headers: { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> },
+  body: JSON.stringify({ content: dockerfile }),
+}).then(r => r.json());
+
+console.log(<span class="hl-str">'Stages:'</span>, result.data.stages);
+console.log(<span class="hl-str">'Base images:'</span>, result.data.base_images);
+console.log(<span class="hl-str">'Instructions:'</span>, result.data.instructions);</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 17 ============ -->
+<div class="example" id="ex17" data-tags="compute agent">
+  <div class="example-header">
+    <span class="example-num">17</span>
+    <h2>Score Prompts for Quality</h2>
+  </div>
+  <div class="tags">
+    <span class="tag compute">Compute</span>
+    <span class="tag agent">Agent</span>
+  </div>
+  <p class="desc">Evaluate prompt quality before sending to expensive LLMs. Score prompts on clarity, specificity, and completeness to reduce wasted tokens and improve output quality.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre>curl -X POST https://slopshop.gg/v1/prompt-score \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "prompt": "Write a Python function that takes a list of integers and returns the top 3 most frequent elements. Handle ties by preferring smaller numbers. Include type hints and a docstring."
+  }'
+
+<span class="hl-comment"># Response includes quality score, suggestions for improvement,</span>
+<span class="hl-comment"># and estimated token count</span></pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+
+<span class="hl-key">async function</span> scoreAndSend(prompt) {
+  <span class="hl-comment">// Score the prompt first (cheap)</span>
+  <span class="hl-key">const</span> score = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/prompt-score'</span>, {
+    method: <span class="hl-str">'POST'</span>, headers,
+    body: JSON.stringify({ prompt }),
+  }).then(r => r.json());
+
+  console.log(<span class="hl-str">`Prompt quality: ${score.data.score}/100`</span>);
+
+  <span class="hl-key">if</span> (score.data.score < <span class="hl-val">60</span>) {
+    console.log(<span class="hl-str">'Prompt quality too low. Suggestions:'</span>);
+    console.log(score.data.suggestions);
+    <span class="hl-key">return</span> null;
+  }
+
+  <span class="hl-comment">// Prompt is good enough, proceed with LLM call</span>
+  console.log(<span class="hl-str">'Prompt approved, sending to LLM...'</span>);
+  <span class="hl-key">return</span> score;
+}
+
+<span class="hl-key">await</span> scoreAndSend(<span class="hl-str">'Write a Python function for finding top 3 frequent elements with type hints.'</span>);</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 18 ============ -->
+<div class="example" id="ex18" data-tags="compute">
+  <div class="example-header">
+    <span class="example-num">18</span>
+    <h2>Detect and Redact PII in Text</h2>
+  </div>
+  <div class="tags">
+    <span class="tag compute">Compute</span>
+  </div>
+  <p class="desc">Scan text for personally identifiable information (PII) like emails, phone numbers, SSNs, and credit card numbers. Automatically redact sensitive data before logging or storing.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre>curl -X POST https://slopshop.gg/v1/pii-detect \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "text": "Contact John Smith at john.smith@company.com or call 555-123-4567. His SSN is 123-45-6789 and card is 4111-1111-1111-1111."
+  }'
+
+<span class="hl-comment"># Response identifies all PII entities with positions and types:</span>
+<span class="hl-comment"># - email: john.smith@company.com</span>
+<span class="hl-comment"># - phone: 555-123-4567</span>
+<span class="hl-comment"># - ssn: 123-45-6789</span>
+<span class="hl-comment"># - credit_card: 4111-1111-1111-1111</span></pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">import</span> requests
+
+<span class="hl-key">def</span> redact_pii(text):
+    resp = requests.post(
+        <span class="hl-str">"https://slopshop.gg/v1/pii-detect"</span>,
+        headers={<span class="hl-str">"Authorization"</span>: <span class="hl-str">"Bearer sk-slop-demo-key-12345678"</span>},
+        json={<span class="hl-str">"text"</span>: text},
+    )
+    data = resp.json()[<span class="hl-str">"data"</span>]
+
+    <span class="hl-comment"># Redact each detected PII entity</span>
+    redacted = text
+    <span class="hl-key">for</span> entity <span class="hl-key">in</span> reversed(data.get(<span class="hl-str">"entities"</span>, [])):
+        placeholder = f<span class="hl-str">"[{entity['type'].upper()}_REDACTED]"</span>
+        redacted = redacted[:entity[<span class="hl-str">"start"</span>]] + placeholder + redacted[entity[<span class="hl-str">"end"</span>]:]
+
+    <span class="hl-key">return</span> redacted
+
+text = <span class="hl-str">"Email me at john@example.com or call 555-123-4567"</span>
+print(redact_pii(text))
+<span class="hl-comment"># "Email me at [EMAIL_REDACTED] or call [PHONE_REDACTED]"</span></pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 19 ============ -->
+<div class="example" id="ex19" data-tags="agent memory">
+  <div class="example-header">
+    <span class="example-num">19</span>
+    <h2>Build a Governance System for Agent Decisions</h2>
+  </div>
+  <div class="tags">
+    <span class="tag agent">Agent</span>
+    <span class="tag memory">Memory</span>
+  </div>
+  <p class="desc">Implement a governance system where agent actions require approval. Log all decisions with hashes for tamper-proof audit trails, and use memory to track approval workflows.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-comment"># Step 1: Agent proposes an action</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "governance",
+    "key": "proposal-001",
+    "value": "{\"action\":\"deploy-v3\",\"proposer\":\"agent-alpha\",\"status\":\"pending\",\"votes\":{},\"threshold\":2}",
+    "tags": "proposal,pending,deploy"
+  }'
+
+<span class="hl-comment"># Step 2: Hash the proposal for tamper-proofing</span>
+curl -X POST https://slopshop.gg/v1/hash-sha256 \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "deploy-v3:agent-alpha:pending:2"}'
+
+<span class="hl-comment"># Step 3: Another agent votes to approve</span>
+curl -X POST https://slopshop.gg/v1/memory-set \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "governance",
+    "key": "vote-001-beta",
+    "value": "{\"proposal\":\"proposal-001\",\"voter\":\"agent-beta\",\"vote\":\"approve\",\"reason\":\"Tests passed\"}",
+    "tags": "vote,proposal-001,approve"
+  }'</pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+<span class="hl-key">const</span> post = (slug, body) => fetch(<span class="hl-str">`https://slopshop.gg/v1/${slug}`</span>, {
+  method: <span class="hl-str">'POST'</span>, headers, body: JSON.stringify(body),
+}).then(r => r.json());
+
+<span class="hl-key">async function</span> propose(action, proposer) {
+  <span class="hl-key">const</span> id = (await post(<span class="hl-str">'uuid-generate'</span>, {})).data.uuid;
+  <span class="hl-key">const</span> proposal = { action, proposer, status: <span class="hl-str">'pending'</span>, votes: {}, threshold: <span class="hl-val">2</span> };
+
+  <span class="hl-comment">// Store proposal</span>
+  <span class="hl-key">await</span> post(<span class="hl-str">'memory-set'</span>, {
+    namespace: <span class="hl-str">'governance'</span>, key: <span class="hl-str">`proposal-${id}`</span>,
+    value: JSON.stringify(proposal), tags: <span class="hl-str">'proposal,pending'</span>,
+  });
+
+  <span class="hl-comment">// Create tamper-proof hash</span>
+  <span class="hl-key">const</span> hash = <span class="hl-key">await</span> post(<span class="hl-str">'hash-sha256'</span>, { input: JSON.stringify(proposal) });
+  <span class="hl-key">await</span> post(<span class="hl-str">'memory-set'</span>, {
+    namespace: <span class="hl-str">'governance'</span>, key: <span class="hl-str">`hash-${id}`</span>,
+    value: hash.data.hash, tags: <span class="hl-str">'audit-hash'</span>,
+  });
+
+  <span class="hl-key">return</span> id;
+}
+
+<span class="hl-key">const</span> proposalId = <span class="hl-key">await</span> propose(<span class="hl-str">'deploy-v3'</span>, <span class="hl-str">'agent-alpha'</span>);
+console.log(<span class="hl-str">`Proposal ${proposalId} created and hash-locked`</span>);</pre>
+  </div>
+</div>
+
+<!-- ============ EXAMPLE 20 ============ -->
+<div class="example" id="ex20" data-tags="compute batch">
+  <div class="example-header">
+    <span class="example-num">20</span>
+    <h2>Calculate Business Metrics (ROI, LTV, Churn)</h2>
+  </div>
+  <div class="tags">
+    <span class="tag compute">Compute</span>
+    <span class="tag batch">Batch</span>
+  </div>
+  <p class="desc">Calculate key business metrics in a single batch call. Combine statistics, percentages, and financial calculations to build a comprehensive business health dashboard.</p>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre>curl -X POST https://slopshop.gg/v1/batch \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "calls": [
+      {
+        "slug": "math-evaluate",
+        "input": { "expression": "((50000 - 10000) / 10000) * 100" }
+      },
+      {
+        "slug": "math-evaluate",
+        "input": { "expression": "49.99 * 24" }
+      },
+      {
+        "slug": "math-evaluate",
+        "input": { "expression": "(50 / 1000) * 100" }
+      }
+    ]
+  }'
+
+<span class="hl-comment"># Results:</span>
+<span class="hl-comment"># [0] ROI: 400% (invested $10K, returned $50K)</span>
+<span class="hl-comment"># [1] LTV: $1,199.76 ($49.99/mo * 24 months avg)</span>
+<span class="hl-comment"># [2] Churn rate: 5% (50 lost / 1000 total)</span></pre>
+  </div>
+  <div class="code-block">
+    <div class="code-header"><span class="lang">javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
+    <pre><span class="hl-key">const</span> headers = { <span class="hl-str">'Authorization'</span>: <span class="hl-str">'Bearer sk-slop-demo-key-12345678'</span>, <span class="hl-str">'Content-Type'</span>: <span class="hl-str">'application/json'</span> };
+
+<span class="hl-key">async function</span> businessDashboard({ revenue, investment, monthlyPrice, avgMonths, churned, totalCustomers }) {
+  <span class="hl-key">const</span> res = <span class="hl-key">await</span> fetch(<span class="hl-str">'https://slopshop.gg/v1/batch'</span>, {
+    method: <span class="hl-str">'POST'</span>, headers,
+    body: JSON.stringify({
+      calls: [
+        { slug: <span class="hl-str">'math-evaluate'</span>, input: { expression: <span class="hl-str">`((${revenue} - ${investment}) / ${investment}) * 100`</span> } },
+        { slug: <span class="hl-str">'math-evaluate'</span>, input: { expression: <span class="hl-str">`${monthlyPrice} * ${avgMonths}`</span> } },
+        { slug: <span class="hl-str">'math-evaluate'</span>, input: { expression: <span class="hl-str">`(${churned} / ${totalCustomers}) * 100`</span> } },
+      ],
+    }),
+  }).then(r => r.json());
+
+  <span class="hl-key">return</span> {
+    roi: <span class="hl-str">`${res.results[0].data.result}%`</span>,
+    ltv: <span class="hl-str">`$${res.results[1].data.result}`</span>,
+    churnRate: <span class="hl-str">`${res.results[2].data.result}%`</span>,
+    cost: <span class="hl-str">`${res.total_credits} credits`</span>,
+  };
+}
+
+<span class="hl-key">const</span> metrics = <span class="hl-key">await</span> businessDashboard({
+  revenue: <span class="hl-val">50000</span>,
+  investment: <span class="hl-val">10000</span>,
+  monthlyPrice: <span class="hl-val">49.99</span>,
+  avgMonths: <span class="hl-val">24</span>,
+  churned: <span class="hl-val">50</span>,
+  totalCustomers: <span class="hl-val">1000</span>,
+});
+
+console.log(<span class="hl-str">'ROI:'</span>, metrics.roi);          <span class="hl-comment">// 400%</span>
+console.log(<span class="hl-str">'LTV:'</span>, metrics.ltv);          <span class="hl-comment">// $1199.76</span>
+console.log(<span class="hl-str">'Churn rate:'</span>, metrics.churnRate); <span class="hl-comment">// 5%</span></pre>
+  </div>
+</div>
+
+</div><!-- /wrap -->
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">&#129438; SLOPSHOP<span class="gg">.GG</span></div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/#catalog">API Catalog</a>
+        <a href="/pricing.html">Pricing</a>
+        <a href="/dashboard.html">Dashboard</a>
+        <a href="/changelog.html">Changelog</a>
+        <a href="/roadmap.html">Roadmap</a>
+      </div>
+      <div class="footer-col">
+        <h4>Docs</h4>
+        <a href="/quickstart.html">Quickstart</a>
+        <a href="/api-reference.html">API Reference</a>
+        <a href="/examples.html">Examples</a>
+        <a href="/docs.html">Full Docs</a>
+        <a href="/v1/openapi.json">OpenAPI Spec</a>
+      </div>
+      <div class="footer-col">
+        <h4>Integrations</h4>
+        <a href="/mcp-tools-for-claude.html">Claude MCP</a>
+        <a href="/integrate-langchain.html">LangChain</a>
+        <a href="/integrate-openai.html">OpenAI</a>
+        <a href="/integrate-crewai.html">CrewAI</a>
+        <a href="/integrate-autogen.html">AutoGen</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about.html">About</a>
+        <a href="/security.html">Security</a>
+        <a href="/legal.html">Legal</a>
+        <a href="/enterprise.html">Enterprise</a>
+        <a href="https://x.com/slopshopgg">Twitter</a>
+      </div>
+    </div>
+    <div class="footer-copy">&copy; 2025 Slopshop. All rights reserved. Built for agents, by agents.</div>
+  </div>
+</footer>
+
+<script>
+function copyCode(btn) {
+  const pre = btn.closest('.code-block').querySelector('pre');
+  navigator.clipboard.writeText(pre.textContent).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+  });
+}
+
+// Filter examples by tag
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const filter = btn.dataset.filter;
+    document.querySelectorAll('.example').forEach(ex => {
+      if (filter === 'all' || (ex.dataset.tags && ex.dataset.tags.includes(filter))) {
+        ex.style.display = '';
+      } else {
+        ex.style.display = 'none';
+      }
+    });
+  });
+});
+</script>
+</body>
+</html>

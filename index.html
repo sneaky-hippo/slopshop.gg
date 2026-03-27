@@ -163,6 +163,65 @@ nav{
 .pg-share button{background:none;border:1px solid var(--b2);color:var(--t3);padding:5px 14px;border-radius:6px;font-size:0.65rem;font-family:var(--mono);cursor:pointer;transition:0.15s;font-weight:500}
 .pg-share button:hover{border-color:var(--r);color:var(--t)}
 
+/* PLAYGROUND ENHANCED */
+.pg-examples{padding:12px 16px;border-bottom:1px solid var(--b);overflow-x:auto;display:flex;gap:8px;scrollbar-width:none}
+.pg-examples::-webkit-scrollbar{display:none}
+.pg-ex-card{flex-shrink:0;background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:10px 14px;cursor:pointer;transition:border-color 0.2s,transform 0.15s,background 0.15s;max-width:220px;min-width:180px}
+.pg-ex-card:hover{border-color:var(--r);transform:translateY(-1px);background:rgba(255,51,51,0.03)}
+.pg-ex-card .pg-ex-title{font-family:var(--mono);font-size:0.72rem;font-weight:600;color:var(--t);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg-ex-card .pg-ex-slug{font-family:var(--mono);font-size:0.62rem;color:var(--r);opacity:0.7}
+.pg-ex-card .pg-ex-cost{font-family:var(--mono);font-size:0.58rem;color:var(--g);margin-top:4px}
+
+.pg-cat-tabs{padding:8px 16px;border-bottom:1px solid var(--b);display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;flex-wrap:nowrap}
+.pg-cat-tabs::-webkit-scrollbar{display:none}
+.pg-cat-tab{flex-shrink:0;background:var(--s2);border:1px solid var(--b);border-radius:6px;padding:5px 12px;font-family:var(--mono);font-size:0.65rem;color:var(--t3);cursor:pointer;transition:0.15s;white-space:nowrap;font-weight:500}
+.pg-cat-tab:hover{border-color:var(--b2);color:var(--t)}
+.pg-cat-tab.active{background:var(--rg);border-color:rgba(255,51,51,0.25);color:var(--r)}
+
+.pg-body-wrap{display:flex;min-height:0}
+.pg-sidebar{width:220px;flex-shrink:0;border-right:1px solid var(--b);overflow-y:auto;max-height:520px;scrollbar-width:thin}
+.pg-sidebar-title{font-family:var(--mono);font-size:0.62rem;color:var(--t4);font-weight:600;padding:10px 12px 6px;text-transform:uppercase;letter-spacing:0.08em}
+.pg-sidebar-item{padding:7px 12px;cursor:pointer;transition:background 0.15s;display:flex;align-items:center;justify-content:space-between;gap:6px}
+.pg-sidebar-item:hover{background:var(--s2)}
+.pg-sidebar-item .pg-sb-name{font-family:var(--mono);font-size:0.7rem;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pg-sidebar-item .pg-sb-cost{font-family:var(--mono);font-size:0.58rem;color:var(--g);flex-shrink:0}
+.pg-main{flex:1;min-width:0;display:flex;flex-direction:column}
+
+.pg-result-wrap{display:flex;flex:1;min-height:0}
+.pg-result-pane{flex:1;min-width:0;overflow-y:auto;max-height:400px}
+.pg-result-pane-header{font-family:var(--mono);font-size:0.62rem;color:var(--t4);font-weight:600;padding:8px 14px;border-bottom:1px solid var(--b);text-transform:uppercase;letter-spacing:0.08em;background:var(--s2);display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:1}
+.pg-result-pane-body{padding:12px 14px;font-family:var(--mono);font-size:0.75rem;white-space:pre-wrap;word-break:break-word;line-height:1.6;color:var(--t2)}
+.pg-result-divider{width:1px;background:var(--b);flex-shrink:0}
+
+.pg-copy-btns{display:flex;gap:4px;flex-wrap:wrap;padding:8px 16px;border-top:1px solid var(--b);align-items:center}
+.pg-copy-btn{background:none;border:1px solid var(--b2);color:var(--t3);padding:4px 10px;border-radius:5px;font-size:0.62rem;font-family:var(--mono);cursor:pointer;transition:0.15s;font-weight:500}
+.pg-copy-btn:hover{border-color:var(--r);color:var(--t)}
+.pg-copy-btn.copied{border-color:var(--g);color:var(--g)}
+
+.pg-credit-badge{display:inline-flex;align-items:center;gap:3px;font-family:var(--mono);font-size:0.62rem;padding:2px 8px;border-radius:4px;font-weight:600}
+.pg-credit-badge.free{background:var(--gg);color:var(--g)}
+.pg-credit-badge.paid{background:var(--og);color:var(--o)}
+
+.pg-history{padding:8px 16px;border-top:1px solid var(--b);display:none}
+.pg-history-title{font-family:var(--mono);font-size:0.62rem;color:var(--t4);font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.08em;display:flex;align-items:center;justify-content:space-between}
+.pg-history-list{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:4px}
+.pg-history-list::-webkit-scrollbar{display:none}
+.pg-history-item{flex-shrink:0;background:var(--s2);border:1px solid var(--b);border-radius:6px;padding:6px 10px;cursor:pointer;transition:0.15s;max-width:200px}
+.pg-history-item:hover{border-color:var(--b2)}
+.pg-history-item .pg-hi-slug{font-family:var(--mono);font-size:0.65rem;color:var(--r);font-weight:600}
+.pg-history-item .pg-hi-time{font-family:var(--mono);font-size:0.55rem;color:var(--t4);margin-top:2px}
+
+@media(max-width:768px){
+  .pg-body-wrap{flex-direction:column}
+  .pg-sidebar{width:100%;max-height:160px;border-right:none;border-bottom:1px solid var(--b);flex-direction:row;display:flex;overflow-x:auto;overflow-y:hidden}
+  .pg-sidebar-title{display:none}
+  .pg-sidebar-item{white-space:nowrap}
+  .pg-result-wrap{flex-direction:column}
+  .pg-result-divider{width:100%;height:1px}
+  .pg-in{flex-wrap:wrap}
+  .pg-in select{min-width:100%;border-right:none;border-bottom:1px solid var(--b)}
+}
+
 /* INSTALL CARDS */
 .inst{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-bottom:40px}
 .ic{
@@ -494,25 +553,69 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
   </div>
 
   <h2 style="margin-top:48px">Or pick a tool directly</h2>
-  <p class="desc">Select any tool from the dropdown and run it. <a href="/tools" style="color:var(--r)">Full catalog &rarr;</a></p>
+  <p class="desc">Select any tool from the dropdown and run it. Click an example card to try instantly. <a href="/tools" style="color:var(--r)">Full catalog &rarr;</a></p>
+
   <div class="pg">
     <div class="pg-top">
       <div class="lbl">slopshop.gg / playground</div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:8px">
+        <span id="pgCreditBadge" class="pg-credit-badge paid">1 credit</span>
+        <span class="live-badge" style="font-size:0.6rem;padding:2px 8px"><span class="live-dot" style="width:5px;height:5px"></span>live</span>
+      </div>
     </div>
-    <div class="pg-in">
-      <select id="pgApi"></select>
-      <input type="text" id="pgInput" placeholder='{"data":"hello world"}' value='{"data":"hello world"}'>
-      <button id="pgRun" onclick="run()">Run</button>
-    </div>
-    <div class="pg-out" id="pgOut"><span style="color:var(--t4)">// Select a tool and press Run
-// Output appears here with full response data
-//
-// Popular tools:
-//   crypto-hash-sha256    text-token-count    math-statistics
-//   sense-url-content     exec-javascript     memory-set (free)</span></div>
-    <div class="pg-share" id="pgShare">
-      <button onclick="shareResult()">Share on X</button>
-      <button onclick="copyResult()" style="margin-left:4px">Copy</button>
+
+    <!-- Example cards -->
+    <div class="pg-examples" id="pgExamples"></div>
+
+    <!-- Category filter tabs -->
+    <div class="pg-cat-tabs" id="pgCatTabs"></div>
+
+    <div class="pg-body-wrap">
+      <!-- Popular tools sidebar -->
+      <div class="pg-sidebar" id="pgSidebar">
+        <div class="pg-sidebar-title">Popular Tools</div>
+      </div>
+
+      <div class="pg-main">
+        <div class="pg-in">
+          <select id="pgApi"></select>
+          <input type="text" id="pgInput" placeholder='{"data":"hello world"}' value='{"data":"hello world"}'>
+          <button id="pgRun" onclick="run()">Run</button>
+        </div>
+
+        <!-- Request / Response side-by-side -->
+        <div class="pg-result-wrap">
+          <div class="pg-result-pane" id="pgReqPane" style="display:none">
+            <div class="pg-result-pane-header">Request</div>
+            <div class="pg-result-pane-body" id="pgReqBody"></div>
+          </div>
+          <div class="pg-result-divider" id="pgResDivider" style="display:none"></div>
+          <div class="pg-result-pane" style="flex:1">
+            <div class="pg-result-pane-header" id="pgResHeader" style="display:none">Response</div>
+            <div class="pg-result-pane-body pg-out" id="pgOut"><span style="color:var(--t4)">// Select a tool and press Run
+// Or click an example card above
+// Output appears here with full response data</span></div>
+          </div>
+        </div>
+
+        <!-- Copy buttons row -->
+        <div class="pg-copy-btns" id="pgCopyBtns" style="display:none">
+          <button class="pg-copy-btn" onclick="copyAs('curl')">Copy as cURL</button>
+          <button class="pg-copy-btn" onclick="copyAs('python')">Copy as Python</button>
+          <button class="pg-copy-btn" onclick="copyAs('node')">Copy as Node.js</button>
+          <button class="pg-copy-btn" onclick="copyResult()">Copy Result</button>
+          <button class="pg-copy-btn" onclick="shareResult()" style="margin-left:auto">Share on X</button>
+        </div>
+
+        <!-- History -->
+        <div class="pg-history" id="pgHistory">
+          <div class="pg-history-title">
+            <span>Recent Calls</span>
+            <button class="pg-copy-btn" onclick="clearHistory()" style="font-size:0.58rem;padding:2px 6px">Clear</button>
+          </div>
+          <div class="pg-history-list" id="pgHistoryList"></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -1118,6 +1221,11 @@ function loadCatalog(apis){
   const bc={};A.forEach(a=>{if(!popS.has(a.slug))(bc[a.category]=bc[a.category]||[]).push(a);});
   for(const[c,apis]of Object.entries(bc).sort()){const g=document.createElement('optgroup');g.label=c;apis.forEach(a=>{const o=document.createElement('option');o.value=a.slug;o.textContent=`${a.slug} (${a.credits}cr)`;g.appendChild(o);});sel.appendChild(g);}
   renderCat();
+  renderExamples();
+  renderCatTabs();
+  renderSidebar();
+  renderHistory();
+  updateCreditBadge(document.getElementById('pgApi').value);
 }
 // Agent chat
 async function askAgent(){
@@ -1177,18 +1285,174 @@ async function init(){
   }catch(e){/* server not available, embedded catalog already loaded */}
 }
 
+// --- Playground Examples ---
+const PG_EXAMPLES=[
+  {title:"Hash 'hello' with SHA-256",slug:"crypto-hash-sha256",input:'{"data":"hello"}',cost:1},
+  {title:"Validate email test@example.com",slug:"validate-email-syntax",input:'{"email":"test@example.com"}',cost:0},
+  {title:"Count words in 'The quick brown fox'",slug:"text-word-count",input:'{"text":"The quick brown fox"}',cost:1},
+  {title:"Check credit card 4111111111111111",slug:"validate-credit-card",input:'{"number":"4111111111111111"}',cost:0},
+  {title:"Generate a nanoid",slug:"id-nanoid",input:'{}',cost:0},
+  {title:"Distance: NYC to London",slug:"geo-coordinates-distance",input:'{"from":{"lat":40.7128,"lon":-74.0060},"to":{"lat":51.5074,"lon":-0.1278}}',cost:1},
+  {title:"Score this prompt for quality",slug:"ai-prompt-score",input:'{"prompt":"Write a detailed analysis of climate change impacts on coastal cities, including data-driven projections and actionable recommendations."}',cost:1},
+  {title:"Parse this Dockerfile",slug:"devops-dockerfile-parse",input:'{"dockerfile":"FROM node:18-alpine\\nWORKDIR /app\\nCOPY package*.json ./\\nRUN npm ci\\nCOPY . .\\nEXPOSE 3000\\nCMD [\\"node\\", \\"server.js\\"]"}',cost:1}
+];
+
+// --- Last request/response storage for copy-as ---
+let _lastSlug='',_lastInput={},_lastResponse=null;
+
+function renderExamples(){
+  const c=document.getElementById('pgExamples');if(!c)return;
+  c.innerHTML='';
+  PG_EXAMPLES.forEach(ex=>{
+    const card=document.createElement('div');card.className='pg-ex-card';
+    card.innerHTML=`<div class="pg-ex-title">${ex.title}</div><div class="pg-ex-slug">${ex.slug}</div><div class="pg-ex-cost">${ex.cost===0?'0 credits (free)':ex.cost+' credit'}</div>`;
+    card.onclick=()=>{
+      document.getElementById('pgApi').value=ex.slug;
+      document.getElementById('pgInput').value=ex.input;
+      updateCreditBadge(ex.slug);
+      run();
+    };
+    c.appendChild(card);
+  });
+}
+
+function renderCatTabs(){
+  const c=document.getElementById('pgCatTabs');if(!c||!A.length)return;
+  const cats={};A.forEach(a=>{cats[a.category]=(cats[a.category]||0)+1;});
+  const sorted=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  c.innerHTML='';
+  const allTab=document.createElement('div');allTab.className='pg-cat-tab active';allTab.textContent='All';allTab.dataset.cat='';
+  allTab.onclick=()=>{filterByCategory('');document.querySelectorAll('.pg-cat-tab').forEach(t=>t.classList.remove('active'));allTab.classList.add('active');};
+  c.appendChild(allTab);
+  sorted.forEach(([cat,count])=>{
+    const tab=document.createElement('div');tab.className='pg-cat-tab';
+    tab.textContent=`${cat} (${count})`;tab.dataset.cat=cat;
+    tab.onclick=()=>{filterByCategory(cat);document.querySelectorAll('.pg-cat-tab').forEach(t=>t.classList.remove('active'));tab.classList.add('active');};
+    c.appendChild(tab);
+  });
+}
+
+function filterByCategory(cat){
+  const sel=document.getElementById('pgApi');
+  const prev=sel.value;
+  sel.innerHTML='';
+  const filtered=cat?A.filter(a=>a.category===cat):A;
+  const popS=new Set(POP);
+  if(!cat){
+    const g1=document.createElement('optgroup');g1.label='\u2B50 Popular';
+    POP.forEach(s=>{const a=A.find(x=>x.slug===s);if(a){const o=document.createElement('option');o.value=s;o.textContent=`${s} (${a.credits}cr)`;g1.appendChild(o);}});
+    sel.appendChild(g1);
+  }
+  const bc={};filtered.forEach(a=>{if(!cat&&popS.has(a.slug))return;(bc[a.category]=bc[a.category]||[]).push(a);});
+  for(const[cn,apis]of Object.entries(bc).sort()){const g=document.createElement('optgroup');g.label=cn;apis.forEach(a=>{const o=document.createElement('option');o.value=a.slug;o.textContent=`${a.slug} (${a.credits}cr)`;g.appendChild(o);});sel.appendChild(g);}
+  if(filtered.find(a=>a.slug===prev))sel.value=prev;
+  updateCreditBadge(sel.value);
+}
+
+function renderSidebar(){
+  const c=document.getElementById('pgSidebar');if(!c||!A.length)return;
+  c.innerHTML='<div class="pg-sidebar-title">Popular Tools</div>';
+  const topTools=['crypto-hash-sha256','text-word-count','exec-javascript','math-statistics','gen-fake-user','memory-set','crypto-uuid','text-extract-emails','validate-email-syntax','id-nanoid'];
+  topTools.forEach(slug=>{
+    const a=A.find(x=>x.slug===slug);if(!a)return;
+    const item=document.createElement('div');item.className='pg-sidebar-item';
+    item.innerHTML=`<span class="pg-sb-name">${a.name||a.slug}</span><span class="pg-sb-cost">${a.credits===0?'free':a.credits+'cr'}</span>`;
+    item.onclick=()=>{
+      document.getElementById('pgApi').value=slug;
+      document.getElementById('pgInput').value=DEFAULTS[slug]||(a.tier==='llm'?'{"text":"explain quantum computing"}':'{"input":"test"}');
+      updateCreditBadge(slug);
+    };
+    c.appendChild(item);
+  });
+}
+
+function updateCreditBadge(slug){
+  const badge=document.getElementById('pgCreditBadge');if(!badge)return;
+  const a=A.find(x=>x.slug===slug);
+  if(a&&a.credits===0){badge.className='pg-credit-badge free';badge.textContent='0 credits (free)';}
+  else{const cr=a?a.credits:1;badge.className='pg-credit-badge paid';badge.textContent=cr+' credit'+(cr>1?'s':'');}
+}
+
+// --- Copy as cURL / Python / Node ---
+function copyAs(fmt){
+  if(!_lastSlug)return;
+  const url=`https://slopshop.gg/v1/${_lastSlug}`;
+  const body=JSON.stringify(_lastInput,null,2);
+  let text='';
+  if(fmt==='curl'){
+    text=`curl -X POST '${url}' \\\n  -H 'Authorization: Bearer YOUR_API_KEY' \\\n  -H 'Content-Type: application/json' \\\n  -d '${JSON.stringify(_lastInput)}'`;
+  }else if(fmt==='python'){
+    text=`import requests\n\nresponse = requests.post(\n    '${url}',\n    headers={\n        'Authorization': 'Bearer YOUR_API_KEY',\n        'Content-Type': 'application/json'\n    },\n    json=${body.replace(/null/g,'None').replace(/true/g,'True').replace(/false/g,'False')}\n)\nprint(response.json())`;
+  }else if(fmt==='node'){
+    text=`const response = await fetch('${url}', {\n  method: 'POST',\n  headers: {\n    'Authorization': 'Bearer YOUR_API_KEY',\n    'Content-Type': 'application/json'\n  },\n  body: JSON.stringify(${body})\n});\nconst data = await response.json();\nconsole.log(data);`;
+  }
+  navigator.clipboard.writeText(text);
+  const btns=document.querySelectorAll('.pg-copy-btn');
+  btns.forEach(b=>{
+    if(b.textContent.toLowerCase().includes(fmt)){b.classList.add('copied');b.textContent='Copied!';setTimeout(()=>{b.classList.remove('copied');b.textContent=fmt==='curl'?'Copy as cURL':fmt==='python'?'Copy as Python':'Copy as Node.js';},1500);}
+  });
+}
+
+// --- History (localStorage) ---
+function getHistory(){try{return JSON.parse(localStorage.getItem('pg_history')||'[]');}catch(e){return[];}}
+function saveHistory(entry){
+  let h=getHistory();
+  h.unshift(entry);
+  if(h.length>5)h=h.slice(0,5);
+  localStorage.setItem('pg_history',JSON.stringify(h));
+  renderHistory();
+}
+function clearHistory(){localStorage.removeItem('pg_history');renderHistory();}
+function renderHistory(){
+  const wrap=document.getElementById('pgHistory');const list=document.getElementById('pgHistoryList');
+  if(!wrap||!list)return;
+  const h=getHistory();
+  if(!h.length){wrap.style.display='none';return;}
+  wrap.style.display='block';list.innerHTML='';
+  h.forEach(entry=>{
+    const item=document.createElement('div');item.className='pg-history-item';
+    const ago=timeAgo(entry.ts);
+    item.innerHTML=`<div class="pg-hi-slug">${entry.slug}</div><div class="pg-hi-time">${ago}</div>`;
+    item.onclick=()=>{
+      document.getElementById('pgApi').value=entry.slug;
+      document.getElementById('pgInput').value=entry.input;
+      updateCreditBadge(entry.slug);
+    };
+    list.appendChild(item);
+  });
+}
+function timeAgo(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return s+'s ago';if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';
+}
+
+// --- Enhanced run() ---
 async function run(){
   const slug=document.getElementById('pgApi').value,inp=document.getElementById('pgInput').value,btn=document.getElementById('pgRun'),out=document.getElementById('pgOut');
   let input;try{input=JSON.parse(inp)}catch(e){input={input:inp,text:inp,data:inp}}
+  _lastSlug=slug;_lastInput=input;_lastResponse=null;
   btn.disabled=true;btn.textContent='\u23F3';out.innerHTML=`<span style="color:var(--t4)">POST /v1/${slug} ...</span>`;
+
+  // Show request pane
+  const reqPane=document.getElementById('pgReqPane');
+  const reqBody=document.getElementById('pgReqBody');
+  const resDivider=document.getElementById('pgResDivider');
+  const resHeader=document.getElementById('pgResHeader');
+  reqPane.style.display='block';resDivider.style.display='block';resHeader.style.display='flex';
+  reqBody.innerHTML=hl(JSON.stringify({method:'POST',url:`/v1/${slug}`,headers:{'Authorization':'Bearer sk-slop-demo-***','Content-Type':'application/json'},body:input},null,2));
+
+  updateCreditBadge(slug);
   const t0=Date.now();
   try{
     const r=await fetch(`${B}/v1/${slug}`,{method:'POST',headers:{'Authorization':`Bearer ${K}`,'Content-Type':'application/json'},body:JSON.stringify(input)});
     const d=await r.json(),ms=Date.now()-t0;
+    _lastResponse=d;
     if(r.ok){
       const e=d.data?._engine||'?',ec=e==='real'?'var(--g)':e==='needs_key'?'var(--o)':'var(--t3)';
       out.innerHTML=hl(JSON.stringify(d.data,null,2))+`\n<div class="meta">${d.meta?.credits_used||'?'} credits &middot; ${ms}ms &middot; engine: <span style="color:${ec};font-weight:700">${e}</span></div>`;
-      document.getElementById('pgShare').style.display='block';
+      document.getElementById('pgCopyBtns').style.display='flex';
+      saveHistory({slug,input:inp,ts:Date.now()});
     }else out.innerHTML=`<span style="color:var(--r)">${r.status} ${JSON.stringify(d.error,null,2)}</span>`;
   }catch(e){out.innerHTML=`<span style="color:var(--r)">Error: ${e.message}</span>`;}
   btn.disabled=false;btn.textContent='Run';
@@ -1237,7 +1501,7 @@ async function joinWaitlist(){const e=document.getElementById('waitEmail').value
 function cc(el,cmd){navigator.clipboard.writeText(cmd);const h=el.querySelector('.h');if(h){h.textContent='copied!';setTimeout(()=>h.textContent='copy',1500);}}
 let db;const searchEl=document.getElementById('search');if(searchEl)searchEl.addEventListener('input',()=>{clearTimeout(db);db=setTimeout(renderCat,100);});
 document.addEventListener('keydown',e=>{if(e.key==='/'&&!['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName)){e.preventDefault();document.getElementById('search').focus();}if(e.key==='Enter'&&document.activeElement===document.getElementById('pgInput'))run();});
-document.getElementById('pgApi').addEventListener('change',()=>{const s=document.getElementById('pgApi').value;document.getElementById('pgInput').value=DEFAULTS[s]||(A.find(a=>a.slug===s)?.tier==='llm'?'{"text":"explain quantum computing"}':'{"input":"test"}');});
+document.getElementById('pgApi').addEventListener('change',()=>{const s=document.getElementById('pgApi').value;document.getElementById('pgInput').value=DEFAULTS[s]||(A.find(a=>a.slug===s)?.tier==='llm'?'{"text":"explain quantum computing"}':'{"input":"test"}');updateCreditBadge(s);});
 init();
 </script>
 </body>
