@@ -124,18 +124,31 @@ const apiCount = Object.keys(API_DEFS).length;
 // On local: defaults to .data/slopshop.db
 const fs = require('fs');
 const Database = require('better-sqlite3');
-let DB_PATH = process.env.DB_PATH || path.join(__dirname, '.data', 'slopshop.db');
-try {
-  if (!fs.existsSync(path.dirname(DB_PATH))) fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
-  // Test write access
-  fs.accessSync(path.dirname(DB_PATH), fs.constants.W_OK);
-} catch(e) {
-  // Volume not writable, fall back to local .data/
-  log.warn('DB_PATH not writable, falling back to .data/', { path: DB_PATH, error: e.message });
-  DB_PATH = path.join(__dirname, '.data', 'slopshop.db');
-  if (!fs.existsSync(path.dirname(DB_PATH))) fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+// Try paths in order: DB_PATH env → .data/ → /tmp/
+const DB_CANDIDATES = [
+  process.env.DB_PATH,
+  path.join(__dirname, '.data', 'slopshop.db'),
+  '/tmp/slopshop.db',
+].filter(Boolean);
+
+let DB_PATH;
+let db;
+for (const candidate of DB_CANDIDATES) {
+  try {
+    const dir = path.dirname(candidate);
+    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    // Test by actually opening the database
+    db = new Database(candidate);
+    DB_PATH = candidate;
+    break;
+  } catch(e) {
+    log.warn('DB path failed, trying next', { path: candidate, error: e.message });
+  }
 }
-const db = new Database(DB_PATH);
+if (!db) {
+  console.error('FATAL: Could not open database at any path');
+  process.exit(1);
+}
 db.pragma('journal_mode = WAL'); // fast concurrent reads
 db.pragma('busy_timeout = 5000'); // wait up to 5s for locks instead of failing
 db.pragma('synchronous = NORMAL'); // faster writes, still crash-safe with WAL
