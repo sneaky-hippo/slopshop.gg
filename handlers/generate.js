@@ -416,6 +416,15 @@ async function execPython(input) {
   const { code, timeout } = input;
   if (!code) return { _engine: 'real', error: 'No code provided' };
 
+  // Block dangerous operations
+  const blocked = ['os.environ', 'subprocess', 'socket', '__import__', 'eval(', 'exec(', 'open(', 'os.system', 'os.popen', 'shutil', 'pathlib'];
+  const lowerCode = code.toLowerCase();
+  for (const b of blocked) {
+    if (lowerCode.includes(b.toLowerCase())) {
+      return { _engine: 'real', error: `Blocked: '${b}' is not allowed in sandboxed execution`, blocked: true };
+    }
+  }
+
   const timeoutMs = Math.min(timeout || 10000, 30000); // max 30s
   const tmpFile = path.join(os.tmpdir(), 'slop-py-' + Date.now() + '.py');
 
@@ -423,7 +432,7 @@ async function execPython(input) {
 
   function tryExec(cmd) {
     return new Promise((resolve) => {
-      execFile(cmd, [tmpFile], { timeout: timeoutMs, maxBuffer: 1024 * 512 }, (err, stdout, stderr) => {
+      execFile(cmd, [tmpFile], { timeout: timeoutMs, maxBuffer: 1024 * 512, env: { PATH: process.env.PATH, HOME: '/tmp', LANG: 'en_US.UTF-8' } }, (err, stdout, stderr) => {
         if (err && err.code === 'ENOENT') {
           resolve({ notFound: true });
           return;
