@@ -523,4 +523,5 @@
   <url><loc>https://slopshop.gg/feed.xml</loc><changefreq>weekly</changefreq><priority>0.5</priority><lastmod>2026-03-28</lastmod></url>
   <url><loc>https://slopshop.gg/humans.txt</loc><changefreq>monthly</changefreq><priority>0.3</priority><lastmod>2026-03-28</lastmod></url>
   <url><loc>https://slopshop.gg/manifest.json</loc><changefreq>monthly</changefreq><priority>0.3</priority><lastmod>2026-03-28</lastmod></url>
+<url><loc>https://slopshop.gg/benchmarks</loc><lastmod>2026-03-28</lastmod></url>
 </urlset>
