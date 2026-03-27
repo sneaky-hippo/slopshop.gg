@@ -428,6 +428,8 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
   <div class="nav-links">
     <a href="/tools">Tools</a>
     <a href="/playbooks">Playbooks</a>
+    <a href="/marketplace">Marketplace</a>
+    <a href="/visualizer">Visualizer</a>
     <a href="#pricing">Pricing</a>
     <a href="/docs">Docs</a>
     <a href="/about">About</a>
@@ -459,14 +461,14 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
       <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px 18px;text-align:center;border-top:3px solid var(--c)">
         <div style="font-family:var(--mono);font-size:1.4rem;font-weight:800;color:var(--c);margin-bottom:8px">Orchestrate</div>
         <div style="font-size:0.75rem;color:var(--t2);line-height:1.7">Hive workspaces, parallel agents, copilots, knowledge graphs.</div>
-        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-top:8px">16 product features live</div>
+        <div style="font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-top:8px">18 product features live</div>
       </div>
     </div>
 
     <div class="stats">
       <div class="stat"><div class="n" id="apiCount">1,250</div><div class="l">Real APIs</div></div>
       <div class="stat"><div class="n">78</div><div class="l">Categories</div></div>
-      <div class="stat"><div class="n">16</div><div class="l">Product Features</div></div>
+      <div class="stat"><div class="n">18</div><div class="l">Product Features</div></div>
       <div class="stat"><div class="n">&infin;</div><div class="l">Free Memory Forever</div></div>
     </div>
 
@@ -766,7 +768,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
 <!-- PLATFORM FEATURES SHOWCASE — 14 innovations  -->
 <!-- ============================================== -->
 <div class="sec" id="features">
-  <h2 style="font-size:1.6rem;text-align:center">16 Product Features <span style="color:var(--r)">shipping today</span></h2>
+  <h2 style="font-size:1.6rem;text-align:center">18 Product Features <span style="color:var(--r)">shipping today</span></h2>
   <p class="desc" style="text-align:center;max-width:640px;margin:0 auto 8px">Not roadmap items. Not coming soon. Every feature below is live, documented, and callable right now.</p>
   <div style="text-align:center;margin-bottom:8px"><span class="live-badge" style="display:inline-flex"><span class="pf-live"></span> ALL ENDPOINTS LIVE</span></div>
 
@@ -972,6 +974,28 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
   -H "Authorization: Bearer $KEY" \
   -d '{"namespace":"my-data","schedule":"0 2 * * *"}'</div>
       <div class="pf-epcount">4 endpoints &middot; subscribe, unsubscribe, results, status</div>
+    </div>
+
+    <!-- 17. TEMPLATE MARKETPLACE -->
+    <div class="pf-card" style="border-top:3px solid var(--o)">
+      <div class="pf-badge" style="background:var(--og);color:var(--o)"><span class="pf-live"></span> LIVE &middot; NEW</div>
+      <h3 style="color:var(--o)">TEMPLATE MARKETPLACE</h3>
+      <p class="pf-desc">Browse, fork, and deploy community-built agent templates in one click. 20+ ready-made swarms for research, code review, security auditing, and more. Share your own templates and earn credits.</p>
+      <div class="pf-endpoint"><a href="/marketplace" style="color:var(--o)">Browse Marketplace &rarr;</a></div>
+      <div class="pf-curl">Research Agent Army &middot; Code Review Swarm &middot; SEO Generator
+Security Auditor &middot; Bug Bounty Hunter &middot; 15 more...</div>
+      <div class="pf-epcount">20+ templates &middot; one-click deploy &middot; fork &amp; customize &middot; community ratings</div>
+    </div>
+
+    <!-- 18. LIVE SWARM VISUALIZER -->
+    <div class="pf-card" style="border-top:3px solid var(--c)">
+      <div class="pf-badge" style="background:var(--cg);color:var(--c)"><span class="pf-live"></span> LIVE &middot; NEW</div>
+      <h3 style="color:var(--c)">LIVE SWARM VISUALIZER</h3>
+      <p class="pf-desc">Watch your agent swarm in real time. Interactive node graph with color-coded status, animated communication pulses, and live stats. Demo mode lets you explore with a simulated 50-agent swarm.</p>
+      <div class="pf-endpoint"><a href="/visualizer" style="color:var(--c)">Launch Visualizer &rarr;</a></div>
+      <div class="pf-curl">50-agent demo mode &middot; Canvas rendering &middot; Real-time stats
+Connect to /v1/stream/usage for live data</div>
+      <div class="pf-epcount">Live node graph &middot; status colors &middot; communication pulses &middot; credit tracking</div>
     </div>
 
   </div>

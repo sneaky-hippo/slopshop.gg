@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Agent Template Marketplace — Slopshop.gg</title>
+<meta name="description" content="Browse, fork, and deploy community-built agent templates. One-click agent armies for research, code review, security, marketing, and more.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/marketplace">
+<meta property="og:title" content="Agent Template Marketplace — Slopshop.gg">
+<meta property="og:description" content="One-click agent armies, shared by the community. 20+ ready-made templates.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Agent Template Marketplace — Slopshop.gg">
+<meta name="twitter:description" content="One-click agent armies, shared by the community.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link rel="canonical" href="https://slopshop.gg/marketplace">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--r);background:var(--rg)}
+
+/* HERO */
+.hero{padding:120px 32px 48px;text-align:center;position:relative;background:radial-gradient(ellipse,rgba(255,136,0,0.04),transparent 60%)}
+.hero-inner{max-width:900px;margin:0 auto}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--og);border:1px solid rgba(255,136,0,0.15);color:var(--o);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:500;margin-bottom:28px}
+.hero h1{font-family:var(--mono);font-size:clamp(2rem,5vw,3.2rem);font-weight:800;letter-spacing:-0.03em;line-height:1.1;margin-bottom:20px}
+.hero h1 .accent{color:var(--o)}
+.hero .sub{color:var(--t2);font-size:clamp(0.88rem,1.4vw,1rem);max-width:600px;margin:0 auto;line-height:1.75}
+
+/* CTAs */
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:28px}
+.cta-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--o);color:#fff;transition:box-shadow 0.2s,transform 0.15s;text-decoration:none;border:none;cursor:pointer}
+.cta-primary:hover{box-shadow:0 0 24px rgba(255,136,0,0.3);transform:translateY(-1px);opacity:1}
+.cta-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2);transition:color 0.15s,border-color 0.15s;text-decoration:none;cursor:pointer}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+
+/* FILTER TABS */
+.filter-bar{max-width:1200px;margin:0 auto;padding:0 32px 24px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.filter-tab{background:var(--s2);border:1px solid var(--b);border-radius:8px;padding:8px 18px;font-family:var(--mono);font-size:0.72rem;font-weight:600;color:var(--t3);cursor:pointer;transition:0.2s;white-space:nowrap}
+.filter-tab:hover{border-color:var(--b2);color:var(--t)}
+.filter-tab.active{background:var(--og);border-color:rgba(255,136,0,0.3);color:var(--o)}
+
+/* SEARCH */
+.search-bar{max-width:1200px;margin:0 auto 32px;padding:0 32px}
+.search-input{width:100%;max-width:480px;margin:0 auto;display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:12px 18px;font-family:var(--mono);font-size:0.82rem;color:var(--t);outline:none;transition:border-color 0.2s}
+.search-input:focus{border-color:var(--o)}
+.search-input::placeholder{color:var(--t4)}
+
+/* TEMPLATE GRID */
+.tpl-grid{max-width:1200px;margin:0 auto;padding:0 32px 80px;display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:20px}
+
+/* TEMPLATE CARD */
+.tpl-card{
+  background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px;
+  transition:transform 0.2s,border-color 0.2s,box-shadow 0.2s;position:relative;overflow:hidden;
+}
+.tpl-card:hover{transform:translateY(-3px);border-color:var(--b2);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
+.tpl-card-header{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:14px}
+.tpl-name{font-family:var(--mono);font-size:0.95rem;font-weight:700;color:var(--t);line-height:1.3}
+.tpl-category{font-family:var(--mono);font-size:0.58rem;font-weight:600;color:var(--o);background:var(--og);padding:3px 8px;border-radius:99px;white-space:nowrap;flex-shrink:0;text-transform:uppercase;letter-spacing:0.06em}
+.tpl-desc{font-size:0.82rem;color:var(--t2);line-height:1.7;margin-bottom:16px}
+.tpl-meta{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px}
+.tpl-meta-item{font-family:var(--mono);font-size:0.65rem;color:var(--t3);display:flex;align-items:center;gap:4px}
+.tpl-meta-item .val{color:var(--t2);font-weight:600}
+.tpl-tools{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.tpl-tool{background:var(--s2);border:1px solid var(--b);border-radius:6px;padding:3px 8px;font-family:var(--mono);font-size:0.6rem;color:var(--t3)}
+.tpl-actions{display:flex;gap:8px;padding-top:14px;border-top:1px solid var(--b)}
+.tpl-deploy{flex:1;background:var(--o);color:#fff;border:none;border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:0.75rem;font-weight:700;cursor:pointer;transition:box-shadow 0.2s,transform 0.15s}
+.tpl-deploy:hover{box-shadow:0 0 20px rgba(255,136,0,0.25);transform:translateY(-1px)}
+.tpl-fork{background:transparent;color:var(--t3);border:1px solid var(--b2);border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:0.75rem;font-weight:500;cursor:pointer;transition:0.15s}
+.tpl-fork:hover{color:var(--t);border-color:rgba(255,255,255,0.18)}
+.tpl-rating{display:flex;align-items:center;gap:3px}
+.tpl-star{color:var(--o);font-size:0.7rem}
+.tpl-star.empty{color:var(--t4)}
+.tpl-rating-num{font-family:var(--mono);font-size:0.62rem;color:var(--t3);margin-left:4px}
+
+/* FOOTER */
+footer{border-top:1px solid var(--b);padding:40px 32px;text-align:center}
+footer p{font-size:0.7rem;color:var(--t4);font-family:var(--mono)}
+
+@media(max-width:700px){
+  .tpl-grid{grid-template-columns:1fr;gap:12px;padding:0 16px 60px}
+  .filter-bar{padding:0 16px 20px}
+  .hero{padding:100px 16px 36px}
+  .nav-links a:nth-child(n+4){display:none}
+}
+</style>
+</head>
+<body>
+<nav><div class="nv">
+  <a href="/" class="logo" style="text-decoration:none">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="navBg" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#navBg)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+    <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/tools">Tools</a>
+    <a href="/marketplace" class="active">Marketplace</a>
+    <a href="/visualizer">Visualizer</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">COMMUNITY TEMPLATES</div>
+    <h1>Agent Template <span class="accent">Marketplace</span></h1>
+    <p class="sub">One-click agent armies, shared by the community. Browse ready-made swarms, fork and customize, or share your own templates and earn credits.</p>
+    <div class="hero-ctas">
+      <button class="cta-primary" onclick="document.getElementById('grid').scrollIntoView({behavior:'smooth'})">Browse Templates</button>
+      <a href="#share" class="cta-secondary">Share Your Template</a>
+    </div>
+  </div>
+</section>
+
+<div class="search-bar">
+  <input type="text" class="search-input" id="searchInput" placeholder="Search templates... (e.g. security, research, code)">
+</div>
+
+<div class="filter-bar" id="filterBar">
+  <div class="filter-tab active" data-cat="all">All Templates</div>
+  <div class="filter-tab" data-cat="research">Research</div>
+  <div class="filter-tab" data-cat="code">Code</div>
+  <div class="filter-tab" data-cat="marketing">Marketing</div>
+  <div class="filter-tab" data-cat="finance">Finance</div>
+  <div class="filter-tab" data-cat="security">Security</div>
+  <div class="filter-tab" data-cat="custom">Custom</div>
+</div>
+
+<div class="tpl-grid" id="grid"></div>
+
+<div id="share" style="max-width:700px;margin:0 auto 80px;padding:0 32px;text-align:center">
+  <h2 style="font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:12px">Share Your Template</h2>
+  <p style="color:var(--t3);font-size:0.85rem;margin-bottom:24px;line-height:1.75">Built a great agent workflow? Package it as a template and share with the community. Top templates earn credits and recognition.</p>
+  <a href="/docs#templates" class="cta-primary" style="display:inline-flex">Submit a Template</a>
+</div>
+
+<footer><p>slopshop.gg &mdash; infrastructure for AI agents</p></footer>
+
+<script>
+const TEMPLATES = [
+  {
+    name: "Research Agent Army",
+    desc: "Deploy 100 parallel researchers that crawl, summarize, and cross-reference sources. Perfect for literature reviews, competitive analysis, and deep-dive investigations.",
+    category: "research",
+    agents: 100,
+    credits: 500,
+    tools: ["web-scrape", "text-summarize", "memory-set", "semantic-search"],
+    forks: 1247,
+    rating: 4.9
+  },
+  {
+    name: "Code Review Swarm",
+    desc: "Automated multi-agent code review. Agents check style, security, performance, and logic in parallel, then synthesize a unified review report.",
+    category: "code",
+    agents: 8,
+    credits: 120,
+    tools: ["code-ast-parse", "code-lint", "security-scan", "text-summarize"],
+    forks: 892,
+    rating: 4.8
+  },
+  {
+    name: "SEO Content Generator",
+    desc: "Research keywords, analyze competitors, generate optimized content, and validate SEO scores. Full pipeline from keyword to published draft.",
+    category: "marketing",
+    agents: 12,
+    credits: 200,
+    tools: ["web-scrape", "text-generate", "seo-analyze", "readability-score"],
+    forks: 734,
+    rating: 4.7
+  },
+  {
+    name: "Data Pipeline Builder",
+    desc: "Agents that design, validate, and test ETL pipelines. Auto-generates schemas, transformation logic, and monitoring dashboards.",
+    category: "code",
+    agents: 6,
+    credits: 150,
+    tools: ["json-validate", "schema-generate", "code-execute", "data-transform"],
+    forks: 561,
+    rating: 4.6
+  },
+  {
+    name: "Security Auditor",
+    desc: "Comprehensive security audit swarm. Scans headers, SSL, dependencies, code patterns, and generates a prioritized vulnerability report.",
+    category: "security",
+    agents: 15,
+    credits: 300,
+    tools: ["ssl-check", "dns-lookup", "security-scan", "http-probe"],
+    forks: 1089,
+    rating: 4.9
+  },
+  {
+    name: "Customer Support Agent",
+    desc: "Multi-tier support agent with memory. Handles FAQs, escalates complex issues, tracks conversation history, and learns from resolutions.",
+    category: "custom",
+    agents: 4,
+    credits: 80,
+    tools: ["memory-get", "memory-set", "text-generate", "semantic-search"],
+    forks: 623,
+    rating: 4.5
+  },
+  {
+    name: "Market Research Analyst",
+    desc: "Scrapes financial data, analyzes trends, generates market reports, and builds competitive landscape maps with sourced citations.",
+    category: "research",
+    agents: 20,
+    credits: 350,
+    tools: ["web-scrape", "data-analyze", "chart-generate", "text-summarize"],
+    forks: 445,
+    rating: 4.7
+  },
+  {
+    name: "Documentation Writer",
+    desc: "Reads your codebase, generates API docs, tutorials, and README files. Keeps docs in sync with code changes automatically.",
+    category: "code",
+    agents: 5,
+    credits: 100,
+    tools: ["code-ast-parse", "text-generate", "markdown-render", "memory-set"],
+    forks: 387,
+    rating: 4.4
+  },
+  {
+    name: "Bug Bounty Hunter",
+    desc: "Automated reconnaissance and vulnerability discovery. Scans endpoints, tests for common CVEs, and generates structured reports with proof-of-concept.",
+    category: "security",
+    agents: 25,
+    credits: 450,
+    tools: ["http-probe", "dns-lookup", "ssl-check", "web-scrape", "security-scan"],
+    forks: 967,
+    rating: 4.8
+  },
+  {
+    name: "API Tester",
+    desc: "Generates test cases from OpenAPI specs, runs parallel endpoint tests, validates responses, and produces coverage reports.",
+    category: "code",
+    agents: 10,
+    credits: 180,
+    tools: ["http-request", "json-validate", "schema-validate", "code-execute"],
+    forks: 412,
+    rating: 4.6
+  },
+  {
+    name: "Compliance Checker",
+    desc: "Scans documents and systems for GDPR, SOC2, HIPAA, and PCI compliance. Generates gap analysis and remediation roadmaps.",
+    category: "security",
+    agents: 8,
+    credits: 200,
+    tools: ["text-analyze", "pii-detect", "semantic-search", "text-summarize"],
+    forks: 334,
+    rating: 4.5
+  },
+  {
+    name: "Social Media Monitor",
+    desc: "Tracks brand mentions, sentiment trends, and competitor activity across platforms. Real-time alerts and weekly digest reports.",
+    category: "marketing",
+    agents: 15,
+    credits: 250,
+    tools: ["web-scrape", "sentiment-analyze", "memory-set", "text-summarize"],
+    forks: 521,
+    rating: 4.6
+  },
+  {
+    name: "Competitive Intelligence",
+    desc: "Deep-dive competitor analysis. Monitors pricing changes, feature launches, hiring patterns, and tech stack shifts. Weekly intelligence briefings.",
+    category: "research",
+    agents: 18,
+    credits: 320,
+    tools: ["web-scrape", "data-analyze", "memory-set", "text-generate"],
+    forks: 398,
+    rating: 4.7
+  },
+  {
+    name: "Financial Analyzer",
+    desc: "Processes financial statements, calculates ratios, identifies trends, and generates investment-grade analysis reports with visualizations.",
+    category: "finance",
+    agents: 10,
+    credits: 280,
+    tools: ["math-evaluate", "data-analyze", "chart-generate", "text-summarize"],
+    forks: 567,
+    rating: 4.8
+  },
+  {
+    name: "Email Campaign Builder",
+    desc: "Generates personalized email sequences, A/B test variants, subject lines, and send-time optimization. Full campaign from brief to deployment.",
+    category: "marketing",
+    agents: 6,
+    credits: 140,
+    tools: ["text-generate", "text-analyze", "data-transform", "memory-set"],
+    forks: 289,
+    rating: 4.4
+  },
+  {
+    name: "Product Feedback Analyzer",
+    desc: "Ingests reviews, support tickets, and survey data. Clusters themes, extracts feature requests, and generates prioritized product roadmap suggestions.",
+    category: "research",
+    agents: 12,
+    credits: 220,
+    tools: ["sentiment-analyze", "text-summarize", "semantic-search", "data-analyze"],
+    forks: 356,
+    rating: 4.6
+  },
+  {
+    name: "Codebase Migrator",
+    desc: "Analyzes source code, plans migration strategy, converts code between languages/frameworks, and validates output with automated tests.",
+    category: "code",
+    agents: 20,
+    credits: 400,
+    tools: ["code-ast-parse", "code-execute", "text-generate", "json-validate"],
+    forks: 278,
+    rating: 4.5
+  },
+  {
+    name: "Database Optimizer",
+    desc: "Analyzes query patterns, suggests index optimizations, identifies N+1 queries, and generates migration scripts for schema improvements.",
+    category: "code",
+    agents: 5,
+    credits: 130,
+    tools: ["code-analyze", "data-transform", "text-generate", "memory-set"],
+    forks: 312,
+    rating: 4.5
+  },
+  {
+    name: "Infrastructure Monitor",
+    desc: "Continuous monitoring swarm for uptime, SSL expiry, DNS health, and performance. Instant alerts and automated incident reports.",
+    category: "security",
+    agents: 30,
+    credits: 350,
+    tools: ["http-probe", "ssl-check", "dns-lookup", "memory-set", "text-summarize"],
+    forks: 645,
+    rating: 4.7
+  },
+  {
+    name: "Creative Brainstormer",
+    desc: "Multi-perspective ideation swarm. Agents roleplay different personas (user, engineer, designer, critic) to generate and refine creative concepts.",
+    category: "custom",
+    agents: 8,
+    credits: 160,
+    tools: ["text-generate", "semantic-search", "memory-set", "text-summarize"],
+    forks: 423,
+    rating: 4.6
+  }
+];
+
+function renderStars(rating) {
+  let s = '';
+  for (let i = 1; i <= 5; i++) {
+    s += `<span class="tpl-star${i <= Math.round(rating) ? '' : ' empty'}">\u2605</span>`;
+  }
+  return s;
+}
+
+function renderCard(t) {
+  return `
+    <div class="tpl-card" data-category="${t.category}">
+      <div class="tpl-card-header">
+        <div class="tpl-name">${t.name}</div>
+        <span class="tpl-category">${t.category}</span>
+      </div>
+      <div class="tpl-desc">${t.desc}</div>
+      <div class="tpl-meta">
+        <div class="tpl-meta-item">Agents: <span class="val">${t.agents}</span></div>
+        <div class="tpl-meta-item">Credits: <span class="val" style="color:var(--g)">${t.credits}</span></div>
+        <div class="tpl-meta-item">Forks: <span class="val">${t.forks.toLocaleString()}</span></div>
+        <div class="tpl-meta-item">
+          <div class="tpl-rating">${renderStars(t.rating)}<span class="tpl-rating-num">${t.rating}</span></div>
+        </div>
+      </div>
+      <div class="tpl-tools">${t.tools.map(tool => `<span class="tpl-tool">${tool}</span>`).join('')}</div>
+      <div class="tpl-actions">
+        <button class="tpl-deploy" onclick="deployTemplate('${t.name}')">Deploy</button>
+        <button class="tpl-fork" onclick="forkTemplate('${t.name}')">Fork</button>
+      </div>
+    </div>
+  `;
+}
+
+function renderGrid(templates) {
+  document.getElementById('grid').innerHTML = templates.map(renderCard).join('');
+}
+
+// Filter logic
+let activeCategory = 'all';
+document.getElementById('filterBar').addEventListener('click', e => {
+  const tab = e.target.closest('.filter-tab');
+  if (!tab) return;
+  document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  activeCategory = tab.dataset.cat;
+  applyFilters();
+});
+
+// Search logic
+document.getElementById('searchInput').addEventListener('input', () => applyFilters());
+
+function applyFilters() {
+  const q = document.getElementById('searchInput').value.toLowerCase().trim();
+  let filtered = TEMPLATES;
+  if (activeCategory !== 'all') {
+    filtered = filtered.filter(t => t.category === activeCategory);
+  }
+  if (q) {
+    filtered = filtered.filter(t =>
+      t.name.toLowerCase().includes(q) ||
+      t.desc.toLowerCase().includes(q) ||
+      t.tools.some(tool => tool.includes(q)) ||
+      t.category.includes(q)
+    );
+  }
+  renderGrid(filtered);
+}
+
+function deployTemplate(name) {
+  const btn = event.target;
+  btn.textContent = 'Deploying...';
+  btn.style.background = 'var(--g)';
+  setTimeout(() => {
+    btn.textContent = 'Deployed!';
+    setTimeout(() => {
+      btn.textContent = 'Deploy';
+      btn.style.background = '';
+    }, 2000);
+  }, 1500);
+}
+
+function forkTemplate(name) {
+  const btn = event.target;
+  btn.textContent = 'Forked!';
+  btn.style.color = 'var(--g)';
+  btn.style.borderColor = 'var(--g)';
+  setTimeout(() => {
+    btn.textContent = 'Fork';
+    btn.style.color = '';
+    btn.style.borderColor = '';
+  }, 2000);
+}
+
+// Initial render
+renderGrid(TEMPLATES);
+</script>
+</body>
+</html>

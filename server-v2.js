@@ -199,6 +199,72 @@ db.exec(`CREATE TABLE IF NOT EXISTS prompt_queue (
   created_at TEXT DEFAULT (datetime('now'))
 )`);
 
+// ===== PHASE 4-5 TABLES: ECONOMY (Credit Market, Reputation, Wallets) =====
+db.exec(`CREATE TABLE IF NOT EXISTS credit_market (
+  id TEXT PRIMARY KEY,
+  seller_id TEXT,
+  amount INTEGER,
+  price_per_credit REAL DEFAULT 0.005,
+  remaining INTEGER,
+  status TEXT DEFAULT 'active',
+  expires_at TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS agent_reputation (
+  agent_id TEXT PRIMARY KEY,
+  score REAL DEFAULT 0,
+  tasks_completed INTEGER DEFAULT 0,
+  upvotes INTEGER DEFAULT 0,
+  downvotes INTEGER DEFAULT 0,
+  updated_at TEXT DEFAULT (datetime('now'))
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS agent_wallets (
+  id TEXT PRIMARY KEY,
+  owner_id TEXT,
+  agent_name TEXT,
+  balance INTEGER DEFAULT 0,
+  budget_limit INTEGER DEFAULT 1000,
+  total_earned INTEGER DEFAULT 0,
+  total_spent INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// ===== PHASE 2-3 TABLES: EVALUATIONS, TEMPLATES, REPLAYS =====
+db.exec(`CREATE TABLE IF NOT EXISTS evaluations (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  agent_slug TEXT,
+  accuracy INTEGER,
+  avg_latency INTEGER,
+  results TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS marketplace_templates (
+  id TEXT PRIMARY KEY,
+  author_id TEXT,
+  name TEXT,
+  description TEXT,
+  category TEXT DEFAULT 'general',
+  steps TEXT,
+  tools TEXT,
+  estimated_credits INTEGER DEFAULT 0,
+  forks INTEGER DEFAULT 0,
+  rating REAL DEFAULT 0,
+  rating_count INTEGER DEFAULT 0,
+  status TEXT DEFAULT 'published',
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS replays (
+  id TEXT PRIMARY KEY,
+  user_id TEXT,
+  name TEXT,
+  events TEXT,
+  tools_used TEXT,
+  total_credits INTEGER DEFAULT 0,
+  duration_ms INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
 // Load memory handlers now that db is initialized, and merge into allHandlers
 try {
   memoryHandlers = require('./handlers/memory')(db);
@@ -1610,7 +1676,26 @@ app.post('/v1/reputation/rate', auth, (req, res) => {
   res.json({ ok: true, rated: agent_key.slice(0,12), score: clampedScore });
 });
 
+// Phase 4-5: Reputation leaderboard & my (must be before parameterized :key_prefix route)
+app.get('/v1/reputation/leaderboard', publicRateLimit, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  const agents = db.prepare('SELECT * FROM agent_reputation ORDER BY score DESC LIMIT ?').all(limit);
+  res.json({ ok: true, leaderboard: agents, count: agents.length });
+});
+app.get('/v1/reputation/my', auth, (req, res) => {
+  const agentId = req.acct?.email || req.apiKey;
+  const rep = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(agentId);
+  if (!rep) return res.json({ agent_id: agentId, score: 0, tasks_completed: 0, upvotes: 0, downvotes: 0 });
+  res.json(rep);
+});
+
 app.get('/v1/reputation/:key_prefix', publicRateLimit, (req, res) => {
+  // Phase 4-5: Check agent_reputation table first
+  try {
+    const rep = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(req.params.key_prefix);
+    if (rep) return res.json(rep);
+  } catch(e) { /* fall through to legacy */ }
+  // Legacy reputation lookup
   const stats = db.prepare('SELECT AVG(score) as avg_score, COUNT(*) as total_ratings FROM reputation WHERE rated = ?').get(req.params.key_prefix);
   res.json({ agent: req.params.key_prefix, avg_score: Math.round((stats.avg_score||0)*100)/100, total_ratings: stats.total_ratings||0 });
 });
@@ -5295,6 +5380,177 @@ app.post('/v1/local/enhance', auth, (req, res) => {
   });
 });
 
+// ===== PHASE 4-5: ECONOMY ENDPOINTS =====
+
+// --- Credit Trading System ---
+
+// POST /v1/credits/offer — Offer credits for sale
+app.post('/v1/credits/offer', auth, (req, res) => {
+  const { amount, price_per_credit, expires_hours } = req.body;
+  if (!amount || amount < 100) return res.status(400).json({ error: { code: 'min_100_credits', message: 'Minimum offer is 100 credits' } });
+  if (req.acct.balance < amount) return res.status(402).json({ error: { code: 'insufficient_credits', balance: req.acct.balance, needed: amount } });
+
+  const id = uuidv4();
+  // Escrow credits from seller
+  req.acct.balance -= amount;
+  persistKey(req.apiKey);
+
+  db.prepare('INSERT INTO credit_market (id, seller_id, amount, price_per_credit, remaining, status, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now", "+" || ? || " hours"), datetime("now"))').run(
+    id, req.acct?.email || req.apiKey, amount, price_per_credit || 0.005, amount, 'active', expires_hours || 24
+  );
+
+  res.json({ ok: true, offer_id: id, amount, price_per_credit: price_per_credit || 0.005, escrowed: true });
+});
+
+// POST /v1/credits/buy-offer/:id — Buy from an offer
+app.post('/v1/credits/buy-offer/:id', auth, (req, res) => {
+  const { amount } = req.body;
+  const offer = db.prepare('SELECT * FROM credit_market WHERE id = ? AND status = "active"').get(req.params.id);
+  if (!offer) return res.status(404).json({ error: { code: 'offer_not_found' } });
+  if (offer.seller_id === (req.acct?.email || req.apiKey)) return res.status(400).json({ error: { code: 'cannot_buy_own_offer' } });
+
+  const buyAmount = Math.min(amount || offer.remaining, offer.remaining);
+  if (buyAmount <= 0) return res.status(400).json({ error: { code: 'offer_exhausted' } });
+
+  // Buyer receives the escrowed credits directly
+  req.acct.balance += buyAmount;
+  persistKey(req.apiKey);
+
+  const newRemaining = offer.remaining - buyAmount;
+  if (newRemaining <= 0) {
+    db.prepare('UPDATE credit_market SET remaining = 0, status = "sold" WHERE id = ?').run(req.params.id);
+  } else {
+    db.prepare('UPDATE credit_market SET remaining = ? WHERE id = ?').run(newRemaining, req.params.id);
+  }
+
+  res.json({ ok: true, bought: buyAmount, remaining_in_offer: Math.max(0, newRemaining), new_balance: req.acct.balance });
+});
+
+// GET /v1/credits/market — Browse credit market
+app.get('/v1/credits/market', publicRateLimit, (req, res) => {
+  const offers = db.prepare('SELECT id, seller_id, amount, price_per_credit, remaining, status, expires_at, created_at FROM credit_market WHERE status = "active" AND expires_at > datetime("now") ORDER BY price_per_credit ASC LIMIT 50').all();
+  res.json({ ok: true, offers, count: offers.length });
+});
+
+// DELETE /v1/credits/offer/:id — Cancel offer (return escrowed credits)
+app.delete('/v1/credits/offer/:id', auth, (req, res) => {
+  const offer = db.prepare('SELECT * FROM credit_market WHERE id = ? AND status = "active"').get(req.params.id);
+  if (!offer) return res.status(404).json({ error: { code: 'offer_not_found' } });
+  if (offer.seller_id !== (req.acct?.email || req.apiKey)) return res.status(403).json({ error: { code: 'not_your_offer' } });
+
+  // Return remaining escrowed credits
+  req.acct.balance += offer.remaining;
+  persistKey(req.apiKey);
+
+  db.prepare('UPDATE credit_market SET status = "cancelled" WHERE id = ?').run(req.params.id);
+  res.json({ ok: true, returned_credits: offer.remaining, new_balance: req.acct.balance });
+});
+
+// GET /v1/credits/my-offers — My active offers
+app.get('/v1/credits/my-offers', auth, (req, res) => {
+  const sellerId = req.acct?.email || req.apiKey;
+  const offers = db.prepare('SELECT * FROM credit_market WHERE seller_id = ? ORDER BY created_at DESC LIMIT 50').all(sellerId);
+  res.json({ ok: true, offers, count: offers.length });
+});
+
+// --- Agent Reputation System ---
+
+// POST /v1/reputation/vote — Upvote/downvote an agent
+app.post('/v1/reputation/vote', auth, (req, res) => {
+  const { agent_id, vote } = req.body;
+  if (!agent_id) return res.status(400).json({ error: { code: 'agent_id_required' } });
+  if (!['up', 'down'].includes(vote)) return res.status(400).json({ error: { code: 'vote_must_be_up_or_down' } });
+
+  const existing = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(agent_id);
+  if (!existing) {
+    db.prepare('INSERT INTO agent_reputation (agent_id, score, tasks_completed, upvotes, downvotes, updated_at) VALUES (?, ?, 0, ?, ?, datetime("now"))').run(
+      agent_id, vote === 'up' ? 1 : -1, vote === 'up' ? 1 : 0, vote === 'down' ? 1 : 0
+    );
+  } else {
+    if (vote === 'up') {
+      db.prepare('UPDATE agent_reputation SET upvotes = upvotes + 1, score = score + 1, updated_at = datetime("now") WHERE agent_id = ?').run(agent_id);
+    } else {
+      db.prepare('UPDATE agent_reputation SET downvotes = downvotes + 1, score = score - 1, updated_at = datetime("now") WHERE agent_id = ?').run(agent_id);
+    }
+  }
+
+  const updated = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(agent_id);
+  res.json({ ok: true, agent_id, vote, reputation: updated });
+});
+
+// NOTE: GET /v1/reputation/leaderboard, /v1/reputation/my, and /v1/reputation/:agent_id
+// are registered earlier (before the legacy :key_prefix route) to avoid route conflicts.
+
+// --- Agent Wallet System ---
+
+// POST /v1/wallet/create — Create an agent wallet (sub-account)
+app.post('/v1/wallet/create', auth, (req, res) => {
+  const { agent_name, initial_credits, budget_limit } = req.body;
+  const id = uuidv4();
+  const initial = Math.min(initial_credits || 100, req.acct.balance);
+  req.acct.balance -= initial;
+  persistKey(req.apiKey);
+
+  db.prepare('INSERT INTO agent_wallets (id, owner_id, agent_name, balance, budget_limit, total_earned, total_spent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime("now"))').run(
+    id, req.acct?.email || req.apiKey, agent_name || 'Agent', initial, budget_limit || 1000, 0, 0
+  );
+
+  res.json({ ok: true, wallet_id: id, agent_name: agent_name || 'Agent', balance: initial, budget_limit: budget_limit || 1000 });
+});
+
+// GET /v1/wallet/list — List my agent wallets
+app.get('/v1/wallet/list', auth, (req, res) => {
+  const ownerId = req.acct?.email || req.apiKey;
+  const wallets = db.prepare('SELECT * FROM agent_wallets WHERE owner_id = ? ORDER BY created_at DESC').all(ownerId);
+  res.json({ ok: true, wallets, count: wallets.length });
+});
+
+// POST /v1/wallet/transfer — Transfer between wallets
+app.post('/v1/wallet/transfer', auth, (req, res) => {
+  const { from_wallet_id, to_wallet_id, amount } = req.body;
+  if (!amount || amount <= 0) return res.status(400).json({ error: { code: 'invalid_amount' } });
+
+  const ownerId = req.acct?.email || req.apiKey;
+
+  // Allow transfer from main account (from_wallet_id = "main") or from a wallet
+  let fromBalance;
+  if (from_wallet_id === 'main') {
+    fromBalance = req.acct.balance;
+  } else {
+    const fromWallet = db.prepare('SELECT * FROM agent_wallets WHERE id = ? AND owner_id = ?').get(from_wallet_id, ownerId);
+    if (!fromWallet) return res.status(404).json({ error: { code: 'from_wallet_not_found' } });
+    fromBalance = fromWallet.balance;
+  }
+
+  if (fromBalance < amount) return res.status(402).json({ error: { code: 'insufficient_credits' } });
+
+  // Allow transfer to main account (to_wallet_id = "main") or to a wallet
+  if (to_wallet_id === 'main') {
+    // to main — no validation needed
+  } else {
+    const toWallet = db.prepare('SELECT * FROM agent_wallets WHERE id = ? AND owner_id = ?').get(to_wallet_id, ownerId);
+    if (!toWallet) return res.status(404).json({ error: { code: 'to_wallet_not_found' } });
+  }
+
+  // Debit source
+  if (from_wallet_id === 'main') {
+    req.acct.balance -= amount;
+    persistKey(req.apiKey);
+  } else {
+    db.prepare('UPDATE agent_wallets SET balance = balance - ?, total_spent = total_spent + ? WHERE id = ?').run(amount, amount, from_wallet_id);
+  }
+
+  // Credit destination
+  if (to_wallet_id === 'main') {
+    req.acct.balance += amount;
+    persistKey(req.apiKey);
+  } else {
+    db.prepare('UPDATE agent_wallets SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?').run(amount, amount, to_wallet_id);
+  }
+
+  res.json({ ok: true, from: from_wallet_id, to: to_wallet_id, amount, transferred: true });
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, async (req, res) => {
   const def = apiMap.get(req.params.slug);
@@ -5475,6 +5731,187 @@ app.post('/v1/:slug', auth, async (req, res) => {
   res.set('X-Output-Hash', outputHash);
 
   res.json(response);
+});
+
+// ===== PHASE 2-3: AGENT EVALUATION SYSTEM =====
+
+// POST /v1/eval/run — Run an agent evaluation
+app.post('/v1/eval/run', auth, async (req, res) => {
+  const { agent_slug, test_cases, criteria } = req.body;
+  const id = uuidv4();
+  const results = [];
+  const handler = allHandlers[agent_slug];
+  if (!handler) return res.status(404).json({ error: { code: 'agent_not_found' } });
+
+  for (const tc of (test_cases || [])) {
+    const start = Date.now();
+    try {
+      const result = await handler(tc.input || {});
+      const latency = Date.now() - start;
+      const correct = tc.expected ? JSON.stringify(result).includes(JSON.stringify(tc.expected)) : true;
+      results.push({ input: tc.input, output: result, expected: tc.expected, correct, latency_ms: latency });
+    } catch(e) {
+      results.push({ input: tc.input, error: e.message, correct: false, latency_ms: Date.now() - start });
+    }
+  }
+
+  const accuracy = Math.round(results.filter(r => r.correct).length / Math.max(results.length, 1) * 100);
+  const avgLatency = Math.round(results.reduce((s, r) => s + r.latency_ms, 0) / Math.max(results.length, 1));
+
+  db.prepare('INSERT INTO evaluations (id, user_id, agent_slug, accuracy, avg_latency, results, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))').run(
+    id, req.acct?.email || req.apiKey, agent_slug, accuracy, avgLatency, JSON.stringify(results)
+  );
+
+  res.json({ ok: true, eval_id: id, accuracy, avg_latency_ms: avgLatency, results, total: results.length, passed: results.filter(r => r.correct).length });
+});
+
+// GET /v1/eval/leaderboard — Public leaderboard of best-performing tools
+app.get('/v1/eval/leaderboard', publicRateLimit, (req, res) => {
+  try {
+    const rows = db.prepare('SELECT agent_slug, AVG(accuracy) as avg_accuracy, AVG(avg_latency) as avg_latency, COUNT(*) as eval_count FROM evaluations GROUP BY agent_slug ORDER BY avg_accuracy DESC LIMIT 50').all();
+    res.json({ leaderboard: rows });
+  } catch(e) { res.json({ leaderboard: [] }); }
+});
+
+// GET /v1/eval/history — User's eval history
+app.get('/v1/eval/history', auth, (req, res) => {
+  try {
+    const userId = req.acct?.email || req.apiKey;
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const offset = parseInt(req.query.offset) || 0;
+    const rows = db.prepare('SELECT id, agent_slug, accuracy, avg_latency, created_at FROM evaluations WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?').all(userId, limit, offset);
+    res.json({ ok: true, history: rows, limit, offset });
+  } catch(e) { res.json({ ok: false, history: [], error: e.message }); }
+});
+
+// POST /v1/eval/compare — Compare two agents head-to-head
+app.post('/v1/eval/compare', auth, async (req, res) => {
+  const { agent_a, agent_b, test_cases } = req.body;
+  if (!agent_a || !agent_b) return res.status(400).json({ error: { code: 'missing_agents', message: 'Provide agent_a and agent_b slugs' } });
+  const handlerA = allHandlers[agent_a];
+  const handlerB = allHandlers[agent_b];
+  if (!handlerA) return res.status(404).json({ error: { code: 'agent_not_found', agent: agent_a } });
+  if (!handlerB) return res.status(404).json({ error: { code: 'agent_not_found', agent: agent_b } });
+
+  const resultsA = [], resultsB = [];
+  for (const tc of (test_cases || [])) {
+    const startA = Date.now();
+    try {
+      const rA = await handlerA(tc.input || {});
+      const latA = Date.now() - startA;
+      const correctA = tc.expected ? JSON.stringify(rA).includes(JSON.stringify(tc.expected)) : true;
+      resultsA.push({ input: tc.input, output: rA, correct: correctA, latency_ms: latA });
+    } catch(e) { resultsA.push({ input: tc.input, error: e.message, correct: false, latency_ms: Date.now() - startA }); }
+
+    const startB = Date.now();
+    try {
+      const rB = await handlerB(tc.input || {});
+      const latB = Date.now() - startB;
+      const correctB = tc.expected ? JSON.stringify(rB).includes(JSON.stringify(tc.expected)) : true;
+      resultsB.push({ input: tc.input, output: rB, correct: correctB, latency_ms: latB });
+    } catch(e) { resultsB.push({ input: tc.input, error: e.message, correct: false, latency_ms: Date.now() - startB }); }
+  }
+
+  const accA = Math.round(resultsA.filter(r => r.correct).length / Math.max(resultsA.length, 1) * 100);
+  const accB = Math.round(resultsB.filter(r => r.correct).length / Math.max(resultsB.length, 1) * 100);
+  const avgLatA = Math.round(resultsA.reduce((s, r) => s + r.latency_ms, 0) / Math.max(resultsA.length, 1));
+  const avgLatB = Math.round(resultsB.reduce((s, r) => s + r.latency_ms, 0) / Math.max(resultsB.length, 1));
+
+  const winner = accA > accB ? agent_a : accB > accA ? agent_b : (avgLatA <= avgLatB ? agent_a : agent_b);
+  res.json({ ok: true, agent_a: { slug: agent_a, accuracy: accA, avg_latency_ms: avgLatA, results: resultsA }, agent_b: { slug: agent_b, accuracy: accB, avg_latency_ms: avgLatB, results: resultsB }, winner, total_tests: (test_cases || []).length });
+});
+
+// GET /v1/eval/report/:id — Get detailed eval report
+app.get('/v1/eval/report/:id', auth, (req, res) => {
+  const row = db.prepare('SELECT * FROM evaluations WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: { code: 'eval_not_found' } });
+  try { row.results = JSON.parse(row.results); } catch(e) {}
+  res.json({ ok: true, report: row });
+});
+
+// ===== PHASE 2-3: AGENT TEMPLATES SYSTEM =====
+
+// POST /v1/templates/publish — Publish a template to marketplace
+app.post('/v1/templates/publish', auth, (req, res) => {
+  const { name, description, category, steps, tools, estimated_credits } = req.body;
+  const id = uuidv4();
+  db.prepare('INSERT INTO marketplace_templates (id, author_id, name, description, category, steps, tools, estimated_credits, forks, rating, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))').run(
+    id, req.acct?.email || req.apiKey, name, description, category || 'general', JSON.stringify(steps || []), JSON.stringify(tools || []), estimated_credits || 0, 0, 0, 'published'
+  );
+  res.json({ ok: true, template_id: id, status: 'published' });
+});
+
+// GET /v1/templates/browse — Browse marketplace templates
+app.get('/v1/templates/browse', publicRateLimit, (req, res) => {
+  try {
+    const category = req.query.category;
+    const sort = req.query.sort === 'forks' ? 'forks DESC' : req.query.sort === 'recent' ? 'created_at DESC' : 'rating DESC';
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const offset = parseInt(req.query.offset) || 0;
+    let rows;
+    if (category) {
+      rows = db.prepare(`SELECT id, author_id, name, description, category, estimated_credits, forks, rating, rating_count, status, created_at FROM marketplace_templates WHERE status = 'published' AND category = ? ORDER BY ${sort} LIMIT ? OFFSET ?`).all(category, limit, offset);
+    } else {
+      rows = db.prepare(`SELECT id, author_id, name, description, category, estimated_credits, forks, rating, rating_count, status, created_at FROM marketplace_templates WHERE status = 'published' ORDER BY ${sort} LIMIT ? OFFSET ?`).all(limit, offset);
+    }
+    res.json({ ok: true, templates: rows, limit, offset });
+  } catch(e) { res.json({ ok: false, templates: [], error: e.message }); }
+});
+
+// POST /v1/templates/fork/:id — Fork a template
+app.post('/v1/templates/fork/:id', auth, (req, res) => {
+  const tmpl = db.prepare('SELECT * FROM marketplace_templates WHERE id = ?').get(req.params.id);
+  if (!tmpl) return res.status(404).json({ error: { code: 'template_not_found' } });
+  const newId = uuidv4();
+  db.prepare('INSERT INTO marketplace_templates (id, author_id, name, description, category, steps, tools, estimated_credits, forks, rating, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))').run(
+    newId, req.acct?.email || req.apiKey, (req.body.name || tmpl.name) + ' (fork)', tmpl.description, tmpl.category, tmpl.steps, tmpl.tools, tmpl.estimated_credits, 0, 0, 'published'
+  );
+  db.prepare('UPDATE marketplace_templates SET forks = forks + 1 WHERE id = ?').run(req.params.id);
+  res.json({ ok: true, forked_template_id: newId, original_id: req.params.id });
+});
+
+// POST /v1/templates/rate/:id — Rate a template
+app.post('/v1/templates/rate/:id', auth, (req, res) => {
+  const { rating } = req.body;
+  if (typeof rating !== 'number' || rating < 1 || rating > 5) return res.status(400).json({ error: { code: 'invalid_rating', message: 'Rating must be 1-5' } });
+  const tmpl = db.prepare('SELECT * FROM marketplace_templates WHERE id = ?').get(req.params.id);
+  if (!tmpl) return res.status(404).json({ error: { code: 'template_not_found' } });
+  const newCount = (tmpl.rating_count || 0) + 1;
+  const newRating = ((tmpl.rating || 0) * (tmpl.rating_count || 0) + rating) / newCount;
+  db.prepare('UPDATE marketplace_templates SET rating = ?, rating_count = ? WHERE id = ?').run(Math.round(newRating * 100) / 100, newCount, req.params.id);
+  res.json({ ok: true, template_id: req.params.id, new_rating: Math.round(newRating * 100) / 100, rating_count: newCount });
+});
+
+// ===== PHASE 2-3: AGENT REPLAY SYSTEM =====
+
+// POST /v1/replay/save — Save a swarm run for replay
+app.post('/v1/replay/save', auth, (req, res) => {
+  const { name, events, tools_used, total_credits, duration_ms } = req.body;
+  const id = uuidv4();
+  db.prepare('INSERT INTO replays (id, user_id, name, events, tools_used, total_credits, duration_ms, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime("now"))').run(
+    id, req.acct?.email || req.apiKey, name || 'Replay', JSON.stringify(events || []), JSON.stringify(tools_used || []), total_credits || 0, duration_ms || 0
+  );
+  res.json({ ok: true, replay_id: id });
+});
+
+// GET /v1/replay/list — List user's replays (must be before :id route)
+app.get('/v1/replay/list', auth, (req, res) => {
+  try {
+    const userId = req.acct?.email || req.apiKey;
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const offset = parseInt(req.query.offset) || 0;
+    const rows = db.prepare('SELECT id, name, total_credits, duration_ms, created_at FROM replays WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?').all(userId, limit, offset);
+    res.json({ ok: true, replays: rows, limit, offset });
+  } catch(e) { res.json({ ok: false, replays: [], error: e.message }); }
+});
+
+// GET /v1/replay/:id — Get replay data
+app.get('/v1/replay/:id', auth, (req, res) => {
+  const row = db.prepare('SELECT * FROM replays WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: { code: 'replay_not_found' } });
+  try { row.events = JSON.parse(row.events); } catch(e) {}
+  try { row.tools_used = JSON.parse(row.tools_used); } catch(e) {}
+  res.json({ ok: true, replay: row });
 });
 
 // ===== START =====

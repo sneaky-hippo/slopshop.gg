@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Live Swarm Visualizer — Slopshop.gg</title>
+<meta name="description" content="Watch your AI agent swarm in real time. Interactive node graph with color-coded status, animated communication pulses, and live stats.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/visualizer">
+<meta property="og:title" content="Live Swarm Visualizer — Slopshop.gg">
+<meta property="og:description" content="Real-time visualization of your AI agent swarm. Interactive node graph with live stats.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Live Swarm Visualizer — Slopshop.gg">
+<meta name="twitter:description" content="Real-time visualization of your AI agent swarm.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link rel="canonical" href="https://slopshop.gg/visualizer">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75;overflow:hidden;height:100vh}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--c);background:var(--cg)}
+
+/* LAYOUT */
+.viz-wrap{display:flex;height:calc(100vh - 56px);margin-top:56px}
+.viz-canvas-wrap{flex:1;position:relative;overflow:hidden}
+canvas{display:block;width:100%;height:100%}
+
+/* SIDEBAR */
+.viz-sidebar{
+  width:300px;flex-shrink:0;background:var(--s1);border-left:1px solid var(--b);
+  display:flex;flex-direction:column;overflow-y:auto;
+}
+.viz-sidebar-section{padding:20px;border-bottom:1px solid var(--b)}
+.viz-sidebar-title{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:14px}
+
+/* STATS */
+.stat-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0}
+.stat-label{font-size:0.78rem;color:var(--t3)}
+.stat-value{font-family:var(--mono);font-size:0.85rem;font-weight:700}
+.stat-value.green{color:var(--g)}
+.stat-value.yellow{color:var(--o)}
+.stat-value.blue{color:var(--c)}
+.stat-value.red{color:var(--r)}
+.stat-value.white{color:var(--t)}
+
+/* LEGEND */
+.legend-item{display:flex;align-items:center;gap:8px;padding:4px 0;font-size:0.75rem;color:var(--t2)}
+.legend-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* CONTROLS */
+.viz-btn{
+  width:100%;background:var(--c);color:#fff;border:none;border-radius:8px;
+  padding:12px;font-family:var(--mono);font-size:0.78rem;font-weight:700;
+  cursor:pointer;transition:box-shadow 0.2s,transform 0.15s;margin-bottom:8px;
+}
+.viz-btn:hover{box-shadow:0 0 20px rgba(0,170,255,0.3);transform:translateY(-1px)}
+.viz-btn.active{background:var(--r)}
+.viz-btn-secondary{
+  width:100%;background:transparent;color:var(--t3);border:1px solid var(--b2);
+  border-radius:8px;padding:10px;font-family:var(--mono);font-size:0.72rem;
+  font-weight:500;cursor:pointer;transition:0.15s;
+}
+.viz-btn-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18)}
+
+/* LOG */
+.viz-log{flex:1;overflow-y:auto;padding:12px;font-family:var(--mono);font-size:0.65rem;line-height:1.8;scrollbar-width:thin}
+.viz-log-entry{color:var(--t3);padding:2px 0;border-bottom:1px solid rgba(26,26,26,0.5)}
+.viz-log-entry .ts{color:var(--t4);margin-right:6px}
+.viz-log-entry.green{color:var(--g)}
+.viz-log-entry.yellow{color:var(--o)}
+.viz-log-entry.blue{color:var(--c)}
+.viz-log-entry.red{color:var(--r)}
+
+/* TOOLTIP */
+.viz-tooltip{
+  position:absolute;background:var(--s1);border:1px solid var(--b2);border-radius:8px;
+  padding:12px 16px;font-family:var(--mono);font-size:0.7rem;pointer-events:none;
+  z-index:50;display:none;max-width:240px;box-shadow:0 8px 32px rgba(0,0,0,0.4);
+}
+.viz-tooltip .tt-name{font-weight:700;color:var(--t);margin-bottom:4px;font-size:0.78rem}
+.viz-tooltip .tt-status{font-size:0.65rem;margin-bottom:6px}
+.viz-tooltip .tt-meta{color:var(--t3);font-size:0.62rem;line-height:1.6}
+
+@media(max-width:800px){
+  .viz-sidebar{width:220px}
+  .nav-links a:nth-child(n+4){display:none}
+}
+@media(max-width:600px){
+  .viz-sidebar{display:none}
+}
+</style>
+</head>
+<body>
+<nav><div class="nv">
+  <a href="/" class="logo" style="text-decoration:none">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="navBg" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#navBg)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+    <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/tools">Tools</a>
+    <a href="/marketplace">Marketplace</a>
+    <a href="/visualizer" class="active">Visualizer</a>
+    <a href="/docs">Docs</a>
+    <a href="/about">About</a>
+  </div>
+</div></nav>
+
+<div class="viz-wrap">
+  <div class="viz-canvas-wrap">
+    <canvas id="swarmCanvas"></canvas>
+    <div class="viz-tooltip" id="tooltip">
+      <div class="tt-name"></div>
+      <div class="tt-status"></div>
+      <div class="tt-meta"></div>
+    </div>
+  </div>
+
+  <div class="viz-sidebar">
+    <div class="viz-sidebar-section">
+      <div class="viz-sidebar-title">Swarm Controls</div>
+      <button class="viz-btn" id="btnDemo" onclick="toggleDemo()">Start Demo Mode</button>
+      <button class="viz-btn-secondary" id="btnLive" onclick="connectLive()">Connect to Live Swarm</button>
+    </div>
+
+    <div class="viz-sidebar-section">
+      <div class="viz-sidebar-title">Real-Time Stats</div>
+      <div class="stat-row"><span class="stat-label">Total Agents</span><span class="stat-value white" id="statTotal">0</span></div>
+      <div class="stat-row"><span class="stat-label">Active</span><span class="stat-value green" id="statActive">0</span></div>
+      <div class="stat-row"><span class="stat-label">Waiting</span><span class="stat-value yellow" id="statWaiting">0</span></div>
+      <div class="stat-row"><span class="stat-label">Complete</span><span class="stat-value blue" id="statComplete">0</span></div>
+      <div class="stat-row"><span class="stat-label">Error</span><span class="stat-value red" id="statError">0</span></div>
+      <div class="stat-row" style="margin-top:8px;padding-top:8px;border-top:1px solid var(--b)"><span class="stat-label">Credits Used</span><span class="stat-value green" id="statCredits">0</span></div>
+      <div class="stat-row"><span class="stat-label">Messages Sent</span><span class="stat-value blue" id="statMessages">0</span></div>
+      <div class="stat-row"><span class="stat-label">Uptime</span><span class="stat-value white" id="statUptime">00:00</span></div>
+    </div>
+
+    <div class="viz-sidebar-section">
+      <div class="viz-sidebar-title">Legend</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#00cc66"></div>Active</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff8800"></div>Waiting</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#00aaff"></div>Complete</div>
+      <div class="legend-item"><div class="legend-dot" style="background:#ff3333"></div>Error</div>
+      <div class="legend-item"><div class="legend-dot" style="background:rgba(255,255,255,0.15);border:1px solid #444"></div>Communication pulse</div>
+    </div>
+
+    <div class="viz-sidebar-section" style="border-bottom:none;flex:1;display:flex;flex-direction:column;min-height:200px">
+      <div class="viz-sidebar-title">Activity Log</div>
+      <div class="viz-log" id="logPanel"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ===================== CANVAS SETUP =====================
+const canvas = document.getElementById('swarmCanvas');
+const ctx = canvas.getContext('2d');
+const tooltip = document.getElementById('tooltip');
+let W, H;
+let demoRunning = false;
+let liveConnected = false;
+let animFrame;
+let startTime = 0;
+let totalCredits = 0;
+let totalMessages = 0;
+
+function resize() {
+  const wrap = canvas.parentElement;
+  W = wrap.clientWidth;
+  H = wrap.clientHeight;
+  canvas.width = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  canvas.style.width = W + 'px';
+  canvas.style.height = H + 'px';
+  ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+}
+window.addEventListener('resize', resize);
+resize();
+
+// ===================== AGENT DATA =====================
+const STATUS_COLORS = {
+  active: '#00cc66',
+  waiting: '#ff8800',
+  complete: '#00aaff',
+  error: '#ff3333'
+};
+
+const AGENT_NAMES = [
+  'Researcher-Alpha','Researcher-Beta','Researcher-Gamma','Scanner-01','Scanner-02',
+  'Analyzer-A','Analyzer-B','Analyzer-C','Writer-01','Writer-02',
+  'Reviewer-X','Reviewer-Y','Monitor-01','Monitor-02','Monitor-03',
+  'Crawler-A','Crawler-B','Crawler-C','Crawler-D','Extractor-01',
+  'Extractor-02','Validator-01','Validator-02','Synthesizer','Planner',
+  'Scheduler-01','Scheduler-02','Cache-Agent','Memory-Agent','Router',
+  'Sentinel-01','Sentinel-02','Sentinel-03','Auditor-A','Auditor-B',
+  'Indexer-01','Indexer-02','Summarizer','Translator','Formatter',
+  'Optimizer-A','Optimizer-B','Reporter-01','Reporter-02','Debugger',
+  'Tester-01','Tester-02','Deployer','Notifier','Coordinator'
+];
+
+let agents = [];
+let connections = [];
+let pulses = [];
+
+function createAgents(count) {
+  agents = [];
+  const cx = W / 2, cy = H / 2;
+  for (let i = 0; i < count; i++) {
+    const angle = (i / count) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+    const radius = 100 + Math.random() * Math.min(W, H) * 0.32;
+    agents.push({
+      id: i,
+      name: AGENT_NAMES[i] || `Agent-${i}`,
+      x: cx + Math.cos(angle) * radius,
+      y: cy + Math.sin(angle) * radius,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: (Math.random() - 0.5) * 0.3,
+      status: 'waiting',
+      r: 5 + Math.random() * 4,
+      tool: ['memory-set','web-scrape','text-summarize','code-execute','http-probe','semantic-search'][Math.floor(Math.random()*6)],
+      credits: 0,
+      messages: 0,
+      pulsePhase: Math.random() * Math.PI * 2
+    });
+  }
+
+  // Build connections (proximity-based + random)
+  connections = [];
+  for (let i = 0; i < count; i++) {
+    // Connect to 2-4 nearby agents
+    const sorted = agents.map((a, j) => ({j, d: Math.hypot(a.x - agents[i].x, a.y - agents[i].y)}))
+      .filter(o => o.j !== i)
+      .sort((a, b) => a.d - b.d);
+    const numConn = 2 + Math.floor(Math.random() * 3);
+    for (let k = 0; k < Math.min(numConn, sorted.length); k++) {
+      const key = [Math.min(i, sorted[k].j), Math.max(i, sorted[k].j)].join('-');
+      if (!connections.find(c => c.key === key)) {
+        connections.push({from: i, to: sorted[k].j, key});
+      }
+    }
+  }
+}
+
+// ===================== SIMULATION =====================
+function simulateStep() {
+  // Randomly change agent statuses
+  if (Math.random() < 0.08) {
+    const a = agents[Math.floor(Math.random() * agents.length)];
+    const oldStatus = a.status;
+    const r = Math.random();
+    if (r < 0.45) a.status = 'active';
+    else if (r < 0.7) a.status = 'waiting';
+    else if (r < 0.92) a.status = 'complete';
+    else a.status = 'error';
+
+    if (a.status !== oldStatus) {
+      addLog(`${a.name} -> ${a.status}`, a.status === 'error' ? 'red' : a.status === 'active' ? 'green' : a.status === 'complete' ? 'blue' : 'yellow');
+    }
+  }
+
+  // Fire communication pulses
+  if (Math.random() < 0.15) {
+    const conn = connections[Math.floor(Math.random() * connections.length)];
+    if (conn) {
+      pulses.push({
+        from: conn.from,
+        to: conn.to,
+        t: 0,
+        speed: 0.015 + Math.random() * 0.02
+      });
+      totalMessages++;
+      const a = agents[conn.from];
+      const b = agents[conn.to];
+      a.messages++;
+      if (Math.random() < 0.3) {
+        const cost = Math.floor(Math.random() * 5) + 1;
+        a.credits += cost;
+        totalCredits += cost;
+      }
+    }
+  }
+
+  // Gentle drift
+  agents.forEach(a => {
+    a.x += a.vx;
+    a.y += a.vy;
+    // Bounce off edges
+    if (a.x < 30 || a.x > W - 30) a.vx *= -1;
+    if (a.y < 30 || a.y > H - 30) a.vy *= -1;
+    // Subtle random walk
+    a.vx += (Math.random() - 0.5) * 0.02;
+    a.vy += (Math.random() - 0.5) * 0.02;
+    a.vx *= 0.99;
+    a.vy *= 0.99;
+    a.pulsePhase += 0.03;
+  });
+
+  // Update pulses
+  pulses.forEach(p => p.t += p.speed);
+  pulses = pulses.filter(p => p.t <= 1);
+}
+
+// ===================== RENDERING =====================
+function draw() {
+  ctx.clearRect(0, 0, W, H);
+
+  // Background grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.015)';
+  ctx.lineWidth = 1;
+  const gridSize = 40;
+  for (let x = 0; x < W; x += gridSize) {
+    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  }
+  for (let y = 0; y < H; y += gridSize) {
+    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  }
+
+  // Draw connections
+  connections.forEach(c => {
+    const a = agents[c.from], b = agents[c.to];
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    ctx.lineWidth = 0.5;
+    ctx.stroke();
+  });
+
+  // Draw pulses (animated dots traveling along connections)
+  pulses.forEach(p => {
+    const a = agents[p.from], b = agents[p.to];
+    const px = a.x + (b.x - a.x) * p.t;
+    const py = a.y + (b.y - a.y) * p.t;
+    const alpha = 1 - Math.abs(p.t - 0.5) * 2;
+
+    ctx.beginPath();
+    ctx.arc(px, py, 3, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${0.6 * alpha})`;
+    ctx.fill();
+
+    // Glow trail
+    const grad = ctx.createRadialGradient(px, py, 0, px, py, 12);
+    grad.addColorStop(0, `rgba(0,170,255,${0.3 * alpha})`);
+    grad.addColorStop(1, 'rgba(0,170,255,0)');
+    ctx.beginPath();
+    ctx.arc(px, py, 12, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+  });
+
+  // Draw agents
+  agents.forEach(a => {
+    const color = STATUS_COLORS[a.status];
+    const pulseScale = 1 + Math.sin(a.pulsePhase) * 0.15;
+
+    // Outer glow
+    const grad = ctx.createRadialGradient(a.x, a.y, 0, a.x, a.y, a.r * 3 * pulseScale);
+    grad.addColorStop(0, color + '33');
+    grad.addColorStop(1, color + '00');
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, a.r * 3 * pulseScale, 0, Math.PI * 2);
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Agent circle
+    ctx.beginPath();
+    ctx.arc(a.x, a.y, a.r * pulseScale, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+
+    // Inner highlight
+    ctx.beginPath();
+    ctx.arc(a.x - a.r * 0.25, a.y - a.r * 0.25, a.r * 0.35, 0, Math.PI * 2);
+    ctx.fillStyle = 'rgba(255,255,255,0.3)';
+    ctx.fill();
+  });
+}
+
+function updateStats() {
+  const counts = {active: 0, waiting: 0, complete: 0, error: 0};
+  agents.forEach(a => counts[a.status]++);
+  document.getElementById('statTotal').textContent = agents.length;
+  document.getElementById('statActive').textContent = counts.active;
+  document.getElementById('statWaiting').textContent = counts.waiting;
+  document.getElementById('statComplete').textContent = counts.complete;
+  document.getElementById('statError').textContent = counts.error;
+  document.getElementById('statCredits').textContent = totalCredits.toLocaleString();
+  document.getElementById('statMessages').textContent = totalMessages.toLocaleString();
+
+  if (startTime > 0) {
+    const elapsed = Math.floor((Date.now() - startTime) / 1000);
+    const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+    const s = String(elapsed % 60).padStart(2, '0');
+    document.getElementById('statUptime').textContent = `${m}:${s}`;
+  }
+}
+
+function loop() {
+  if (demoRunning) {
+    simulateStep();
+    updateStats();
+  }
+  draw();
+  animFrame = requestAnimationFrame(loop);
+}
+
+// ===================== LOG =====================
+function addLog(msg, cls) {
+  const panel = document.getElementById('logPanel');
+  const now = new Date();
+  const ts = `${String(now.getHours()).padStart(2,'0')}:${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}`;
+  const entry = document.createElement('div');
+  entry.className = 'viz-log-entry' + (cls ? ' ' + cls : '');
+  entry.innerHTML = `<span class="ts">${ts}</span>${msg}`;
+  panel.appendChild(entry);
+  // Keep log manageable
+  while (panel.children.length > 200) panel.removeChild(panel.firstChild);
+  panel.scrollTop = panel.scrollHeight;
+}
+
+// ===================== CONTROLS =====================
+function toggleDemo() {
+  const btn = document.getElementById('btnDemo');
+  if (demoRunning) {
+    demoRunning = false;
+    btn.textContent = 'Start Demo Mode';
+    btn.classList.remove('active');
+    addLog('Demo mode stopped', 'yellow');
+  } else {
+    demoRunning = true;
+    startTime = Date.now();
+    totalCredits = 0;
+    totalMessages = 0;
+    createAgents(50);
+    btn.textContent = 'Stop Demo';
+    btn.classList.add('active');
+    addLog('Demo mode started with 50 agents', 'green');
+    // Activate some agents immediately
+    agents.slice(0, 20).forEach(a => a.status = 'active');
+    agents.slice(20, 35).forEach(a => a.status = 'waiting');
+  }
+}
+
+function connectLive() {
+  const btn = document.getElementById('btnLive');
+  if (liveConnected) {
+    liveConnected = false;
+    btn.textContent = 'Connect to Live Swarm';
+    addLog('Disconnected from live swarm', 'yellow');
+    return;
+  }
+
+  addLog('Connecting to /v1/stream/usage...', 'blue');
+  btn.textContent = 'Connecting...';
+
+  // Simulate connection attempt
+  setTimeout(() => {
+    addLog('Connection requires API key. Use demo mode to explore.', 'yellow');
+    btn.textContent = 'Connect to Live Swarm';
+
+    // Try actual EventSource if available
+    if (typeof EventSource !== 'undefined') {
+      try {
+        const es = new EventSource('/v1/stream/usage');
+        es.onopen = () => {
+          liveConnected = true;
+          btn.textContent = 'Disconnect';
+          addLog('Connected to live swarm!', 'green');
+        };
+        es.onerror = () => {
+          es.close();
+          addLog('Live stream unavailable. Use demo mode.', 'red');
+          btn.textContent = 'Connect to Live Swarm';
+        };
+        es.onmessage = (e) => {
+          try {
+            const data = JSON.parse(e.data);
+            addLog(`Live: ${JSON.stringify(data).slice(0, 60)}`, 'blue');
+          } catch(err) {}
+        };
+      } catch(e) {
+        addLog('Live stream unavailable. Use demo mode.', 'red');
+      }
+    }
+  }, 1500);
+}
+
+// ===================== TOOLTIP =====================
+canvas.addEventListener('mousemove', e => {
+  const rect = canvas.getBoundingClientRect();
+  const mx = e.clientX - rect.left;
+  const my = e.clientY - rect.top;
+
+  let found = null;
+  for (const a of agents) {
+    if (Math.hypot(mx - a.x, my - a.y) < a.r + 8) {
+      found = a;
+      break;
+    }
+  }
+
+  if (found) {
+    tooltip.style.display = 'block';
+    tooltip.style.left = (e.clientX - canvas.parentElement.getBoundingClientRect().left + 16) + 'px';
+    tooltip.style.top = (e.clientY - canvas.parentElement.getBoundingClientRect().top - 10) + 'px';
+    tooltip.querySelector('.tt-name').textContent = found.name;
+    tooltip.querySelector('.tt-status').innerHTML = `Status: <span style="color:${STATUS_COLORS[found.status]}">${found.status}</span>`;
+    tooltip.querySelector('.tt-meta').innerHTML =
+      `Tool: ${found.tool}<br>Credits: ${found.credits}<br>Messages: ${found.messages}`;
+    canvas.style.cursor = 'pointer';
+  } else {
+    tooltip.style.display = 'none';
+    canvas.style.cursor = 'default';
+  }
+});
+
+canvas.addEventListener('mouseleave', () => {
+  tooltip.style.display = 'none';
+});
+
+// ===================== INIT =====================
+// Draw empty state
+draw();
+addLog('Swarm visualizer ready. Start demo or connect live.', 'blue');
+
+// Start render loop
+loop();
+</script>
+</body>
+</html>
