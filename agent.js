@@ -21,6 +21,20 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
   ).join('\n');
 
   // Call Anthropic to plan which tools to use
+  function keywordFallback(task) {
+    const taskWords = task.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+    const scored = [];
+    for (const [slug, def] of Object.entries(API_DEFS)) {
+      const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
+      let score = 0;
+      taskWords.forEach(w => { if (text.includes(w)) score++; if (slug.includes(w)) score += 2; });
+      if (score > 0 && def.credits <= 5) scored.push({ slug, score, credits: def.credits });
+    }
+    const topTools = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+    if (topTools.length === 0) return { error: 'No matching tools found for task' };
+    return { steps: topTools.map(t => ({ api: t.slug, input: { text: task, task }, reason: `Keyword match (score ${t.score})` })), model: 'keyword-fallback' };
+  }
+
   async function planTools(task, options = {}) {
     const key = process.env.ANTHROPIC_API_KEY;
     if (!key) {
@@ -74,13 +88,17 @@ JSON array only, no explanation:`;
             const text = j.content?.[0]?.text || '';
             // Extract JSON array from response
             const match = text.match(/\[[\s\S]*\]/);
-            if (match) resolve({ steps: JSON.parse(match[0]), model: j.model });
-            else resolve({ error: 'Could not parse plan', raw: text });
+            if (match) {
+              try { resolve({ steps: JSON.parse(match[0]), model: j.model }); }
+              catch(pe) { resolve(keywordFallback(task)); }
+            }
+            else if (j.error) { resolve(keywordFallback(task)); }
+            else resolve(keywordFallback(task));
           } catch (e) { resolve({ error: e.message }); }
         });
       });
-      req.on('error', e => resolve({ error: e.message }));
-      req.on('timeout', () => { req.destroy(); resolve({ error: 'Planning timed out' }); });
+      req.on('error', e => resolve(keywordFallback(task)));
+      req.on('timeout', () => { req.destroy(); resolve(keywordFallback(task)); });
       req.write(data);
       req.end();
     });
