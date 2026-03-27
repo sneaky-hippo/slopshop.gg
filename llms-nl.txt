@@ -4,7 +4,7 @@
 > Volledige Engelse catalogus: https://slopshop.gg/llms.txt
 > Volledige API-lijst: https://slopshop.gg/llms-full.txt
 
-Slopshop biedt productie-infrastructuur voor AI-agents. Een API-sleutel, gratis persistent geheugen, 1.248 echte compute-API's, 78 categorieen, 925 benchmark-geverifieerde handlers. Compatibel met Claude, GPT, Grok, Gemini, DeepSeek en alle grote modellen.
+Slopshop biedt productie-infrastructuur voor AI-agents. Een API-sleutel, gratis persistent geheugen, 1.248 echte compute-API's, 78 categorieen, 927 benchmark-geverifieerde handlers. Compatibel met Claude, GPT, Grok, Gemini, DeepSeek en alle grote modellen.
 
 ## Snel starten
 

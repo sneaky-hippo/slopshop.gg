@@ -4,7 +4,7 @@
 > แคตตาล็อกฉบับเต็มภาษาอังกฤษ: https://slopshop.gg/llms.txt
 > รายการ API ทั้งหมด: https://slopshop.gg/llms-full.txt
 
-Slopshop ให้บริการโครงสร้างพื้นฐานระดับ Production สำหรับ AI Agent หนึ่ง API Key หน่วยความจำถาวรฟรี 78 API คำนวณจริง 78 หมวดหมู่ 925 ตัวจัดการผ่านการทดสอบมาตรฐาน รองรับ Claude, GPT, Grok, Gemini, DeepSeek และโมเดลหลักทั้งหมด
+Slopshop ให้บริการโครงสร้างพื้นฐานระดับ Production สำหรับ AI Agent หนึ่ง API Key หน่วยความจำถาวรฟรี 78 API คำนวณจริง 78 หมวดหมู่ 927 ตัวจัดการผ่านการทดสอบมาตรฐาน รองรับ Claude, GPT, Grok, Gemini, DeepSeek และโมเดลหลักทั้งหมด
 
 ## เริ่มต้นอย่างรวดเร็ว
 

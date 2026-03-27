@@ -7,7 +7,7 @@ Site: https://slopshop.gg
 /* SITE */
 Standards: HTML5, CSS3, ES2022
 Software: Node.js, Express, SQLite, Vercel, Railway
-Components: 78 categories of tools, 22 features, 352 endpoints
+Components: 78 categories of tools, 1,248 endpoints across 78 categories
 
 /* THANKS */
 Built with Claude Code by Anthropic

@@ -4,7 +4,7 @@
 > Danh mục đầy đủ tiếng Anh: https://slopshop.gg/llms.txt
 > Danh sách API đầy đủ: https://slopshop.gg/llms-full.txt
 
-Slopshop cung cấp hạ tầng cấp sản xuất cho tác tử AI. Một khóa API, bộ nhớ bền vững miễn phí, 1.248 API tính toán thực, 78 danh mục, 925 trình xử lý đã kiểm chuẩn. Tương thích với Claude, GPT, Grok, Gemini, DeepSeek và tất cả các mô hình chính.
+Slopshop cung cấp hạ tầng cấp sản xuất cho tác tử AI. Một khóa API, bộ nhớ bền vững miễn phí, 1.248 API tính toán thực, 78 danh mục, 927 trình xử lý đã kiểm chuẩn. Tương thích với Claude, GPT, Grok, Gemini, DeepSeek và tất cả các mô hình chính.
 
 ## Bắt đầu nhanh
 

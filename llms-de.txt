@@ -4,7 +4,7 @@
 > Vollständiger englischer Katalog: https://slopshop.gg/llms.txt
 > Vollständige API-Liste: https://slopshop.gg/llms-full.txt
 
-Slopshop bietet produktionsreife Infrastruktur für KI-Agenten. Ein API-Schlüssel, kostenloser persistenter Speicher, 1.248 echte Compute-APIs, 78 Kategorien, 925 benchmarkgeprüfte Compute-Handler. Kompatibel mit Claude, GPT, Grok, Gemini, DeepSeek und allen gängigen Modellen.
+Slopshop bietet produktionsreife Infrastruktur für KI-Agenten. Ein API-Schlüssel, kostenloser persistenter Speicher, 1.248 echte Compute-APIs, 78 Kategorien, 927 benchmarkgeprüfte Compute-Handler. Kompatibel mit Claude, GPT, Grok, Gemini, DeepSeek und allen gängigen Modellen.
 
 ## Schnellstart
 

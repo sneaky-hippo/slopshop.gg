@@ -11,7 +11,7 @@ npm install -g slopshop
 ```
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
-[![Tests](https://img.shields.io/badge/tests-925%20passing-brightgreen)](https://slopshop.gg)
+[![Tests](https://img.shields.io/badge/tests-927%20passing-brightgreen)](https://slopshop.gg)
 [![Categories](https://img.shields.io/badge/Categories-78-blue)](https://slopshop.gg/tools.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-purple)](https://modelcontextprotocol.io)
@@ -116,7 +116,7 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
                          +----------+----------+
                          |   server-v2.js      |
                          |   Express + Auth     |
-                         |   352 endpoints     |
+                         |   1,248 endpoints   |
                          +----------+----------+
                                     |
               +---------------------+---------------------+
@@ -124,7 +124,7 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
     +---------+--------+  +--------+---------+  +--------+---------+
     |  handlers/       |  |  handlers/       |  |  handlers/       |
     |  compute.js      |  |  llm.js          |  |  network.js      |
-    |  925 pure fns    |  |  Claude/GPT      |  |  DNS/HTTP/SSL    |
+    |  927 pure fns    |  |  Claude/GPT      |  |  DNS/HTTP/SSL    |
     |  0 external deps |  |  content+code    |  |  real net calls  |
     +---------+--------+  +--------+---------+  +--------+---------+
               |                     |                     |

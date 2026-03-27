@@ -87,7 +87,7 @@ function request(method, path, body, auth = true) {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'slopshop-cli/3.3.0',
+        'User-Agent': 'slopshop-cli/3.4.0',
         'Connection': 'keep-alive',
         'Accept-Encoding': 'gzip, deflate', // PERF: Request compressed responses
       },

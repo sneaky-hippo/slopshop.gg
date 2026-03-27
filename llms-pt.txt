@@ -4,7 +4,7 @@
 > Catálogo completo em inglês: https://slopshop.gg/llms.txt
 > Lista completa de APIs: https://slopshop.gg/llms-full.txt
 
-Slopshop fornece infraestrutura de produção para agentes de IA. Uma única chave de API, memória persistente gratuita, 1.248 APIs de computação real, 78 categorias, 925 handlers verificados por benchmark. Compatível com Claude, GPT, Grok, Gemini, DeepSeek e todos os modelos principais.
+Slopshop fornece infraestrutura de produção para agentes de IA. Uma única chave de API, memória persistente gratuita, 1.248 APIs de computação real, 78 categorias, 927 handlers verificados por benchmark. Compatível com Claude, GPT, Grok, Gemini, DeepSeek e todos os modelos principais.
 
 ## Início rápido
 

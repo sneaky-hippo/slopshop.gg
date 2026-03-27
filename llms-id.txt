@@ -4,7 +4,7 @@
 > Katalog lengkap bahasa Inggris: https://slopshop.gg/llms.txt
 > Daftar API lengkap: https://slopshop.gg/llms-full.txt
 
-Slopshop menyediakan infrastruktur tingkat produksi untuk agen AI. Satu kunci API, memori persisten gratis, 1.248 API komputasi nyata, 78 kategori, 925 handler yang telah diuji benchmark. Kompatibel dengan Claude, GPT, Grok, Gemini, DeepSeek, dan semua model utama.
+Slopshop menyediakan infrastruktur tingkat produksi untuk agen AI. Satu kunci API, memori persisten gratis, 1.248 API komputasi nyata, 78 kategori, 927 handler yang telah diuji benchmark. Kompatibel dengan Claude, GPT, Grok, Gemini, DeepSeek, dan semua model utama.
 
 ## Mulai Cepat
 

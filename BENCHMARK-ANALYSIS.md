@@ -136,7 +136,7 @@ npx slopshop call crypto-uuid
 ## Architecture for Benchmark Wins
 
 ### Current (sufficient for breadth/pipe/NL wins)
-- 925 compute handlers at <1ms average
+- 927 compute handlers at <1ms average
 - Node.js pure compute — no external deps for most operations
 - In-memory pattern matching for NL routing
 

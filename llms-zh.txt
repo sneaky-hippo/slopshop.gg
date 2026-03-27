@@ -4,7 +4,7 @@
 > 完整英文目录：https://slopshop.gg/llms.txt
 > 完整 API 列表：https://slopshop.gg/llms-full.txt
 
-Slopshop 为 AI 代理提供生产级基础设施。一个 API 密钥，免费持久化内存，78 个真实计算 API，78 个分类，925 个基准测试通过的计算处理器。支持 Claude、GPT、Grok、Gemini、DeepSeek 等所有主流模型。
+Slopshop 为 AI 代理提供生产级基础设施。一个 API 密钥，免费持久化内存，78 个真实计算 API，78 个分类，927 个基准测试通过的计算处理器。支持 Claude、GPT、Grok、Gemini、DeepSeek 等所有主流模型。
 
 ## 快速开始
 

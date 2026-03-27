@@ -4,7 +4,7 @@
 > Fullstandig engelsk katalog: https://slopshop.gg/llms.txt
 > Fullstandig API-lista: https://slopshop.gg/llms-full.txt
 
-Slopshop tillhandahaller produktionsinfrastruktur for AI-agenter. En API-nyckel, gratis persistent minneslagring, 1 248 riktiga beraknings-API:er, 78 kategorier, 925 benchmarkverifierade hanterare. Kompatibel med Claude, GPT, Grok, Gemini, DeepSeek och alla stora modeller.
+Slopshop tillhandahaller produktionsinfrastruktur for AI-agenter. En API-nyckel, gratis persistent minneslagring, 1 248 riktiga beraknings-API:er, 78 kategorier, 927 benchmarkverifierade hanterare. Kompatibel med Claude, GPT, Grok, Gemini, DeepSeek och alla stora modeller.
 
 ## Snabbstart
 

@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "Slopshop",
-  "description": "API platform with 22 features, 1,250 real tools across 321 endpoints. Agent chaining, template marketplace, evaluations, credit trading, agent wallets, reputation, replay, and more. Every tool actually works - no mocks, no stubs.",
+  "description": "API platform with 1,248 real tools across 78 categories. Agent chaining, template marketplace, evaluations, credit trading, agent wallets, reputation, replay, and more. Every tool actually works - no mocks, no stubs.",
   "url": "https://slopshop.gg",
   "logo": "https://slopshop.gg/logo.png",
   "contact_email": "dev@slopshop.gg",

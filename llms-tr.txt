@@ -4,7 +4,7 @@
 > Tam İngilizce katalog: https://slopshop.gg/llms.txt
 > Tam API listesi: https://slopshop.gg/llms-full.txt
 
-Slopshop, yapay zeka ajanları için üretim düzeyinde altyapı sağlar. Tek API anahtarı, ücretsiz kalıcı bellek, 1.248 gerçek hesaplama API'si, 78 kategori, 925 benchmark doğrulamalı işleyici. Claude, GPT, Grok, Gemini, DeepSeek ve tüm büyük modellerle uyumlu.
+Slopshop, yapay zeka ajanları için üretim düzeyinde altyapı sağlar. Tek API anahtarı, ücretsiz kalıcı bellek, 1.248 gerçek hesaplama API'si, 78 kategori, 927 benchmark doğrulamalı işleyici. Claude, GPT, Grok, Gemini, DeepSeek ve tüm büyük modellerle uyumlu.
 
 ## Hızlı Başlangıç
 
