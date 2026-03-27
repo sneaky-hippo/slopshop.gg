@@ -1101,6 +1101,30 @@ app.get('/v1/tools/:slug', publicRateLimit, (req, res) => {
   const def = apiMap.get(req.params.slug);
   if (!def) return res.status(404).json({ error: { code: 'api_not_found' } });
   const schema = SCHEMAS?.[req.params.slug];
+
+  // Item 7: Find which templates use this tool
+  let used_in_templates = [];
+  try {
+    const rows = db.prepare("SELECT id, name FROM marketplace_templates WHERE status = 'published' AND tools LIKE ?").all('%' + req.params.slug + '%');
+    // Filter precisely — LIKE can match partial slugs
+    used_in_templates = rows.filter(r => {
+      try { return JSON.parse(r.tools || '[]').includes(req.params.slug); } catch { return false; }
+    }).map(r => ({ template_id: r.id, name: r.name }));
+  } catch(e) {}
+  // Also check shared_templates
+  try {
+    const rows2 = db.prepare("SELECT id, name, config FROM shared_templates WHERE config LIKE ?").all('%' + req.params.slug + '%');
+    rows2.forEach(r => {
+      try {
+        const cfg = JSON.parse(r.config || '{}');
+        const cfgStr = JSON.stringify(cfg);
+        if (cfgStr.includes(req.params.slug)) {
+          used_in_templates.push({ template_id: r.id, name: r.name });
+        }
+      } catch {}
+    });
+  } catch(e) {}
+
   res.json({
     slug: req.params.slug,
     name: def.name,
@@ -1110,6 +1134,8 @@ app.get('/v1/tools/:slug', publicRateLimit, (req, res) => {
     tier: def.tier,
     input_schema: schema?.input || null,
     output_schema: schema?.output || null,
+    used_in_templates,
+    template_count: used_in_templates.length,
   });
 });
 
@@ -2849,16 +2875,57 @@ app.post('/v1/hive/create', auth, (req, res) => {
 
 // POST /v1/hive/:id/send — post a message to a channel
 app.post('/v1/hive/:id/send', auth, (req, res) => {
-  const { channel, message, type } = req.body;
+  const { channel, message, type, mode } = req.body;
   if (!message) return res.status(400).json({ error: { code: 'empty_message' } });
   const ch = channel || 'general';
+  const now = Date.now();
+  const sender = req.apiKey.slice(0, 12);
+  const msgText = typeof message === 'string' ? message : JSON.stringify(message);
+
   db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(
-    req.params.id, ch, req.apiKey.slice(0, 12), typeof message === 'string' ? message : JSON.stringify(message), type || 'message', Date.now()
+    req.params.id, ch, sender, msgText, type || 'message', now
   );
   // Also publish to pub/sub for real-time listeners
   db.prepare('INSERT INTO pubsub (channel, message, sender, ts) VALUES (?, ?, ?, ?)').run(
-    'hive:' + req.params.id + ':' + ch, JSON.stringify({ hive: req.params.id, channel: ch, message }), req.apiKey.slice(0, 12), Date.now()
+    'hive:' + req.params.id + ':' + ch, JSON.stringify({ hive: req.params.id, channel: ch, message }), sender, now
   );
+
+  // Item 9: Debate/consensus mode — collect recent responses from multiple channels and synthesize
+  if (mode === 'debate') {
+    try {
+      const hive = db.prepare('SELECT * FROM hives WHERE id = ?').get(req.params.id);
+      const channels = hive ? JSON.parse(hive.channels || '[]') : [ch];
+      const channelResponses = {};
+      const oneHourAgo = now - 3600000;
+      for (const c of channels) {
+        const msgs = db.prepare('SELECT sender, message, ts FROM hive_messages WHERE hive_id = ? AND channel = ? AND ts > ? ORDER BY ts DESC LIMIT 10').all(req.params.id, c, oneHourAgo);
+        if (msgs.length > 0) channelResponses[c] = msgs;
+      }
+      // Synthesize consensus from all channel messages
+      const allMessages = Object.values(channelResponses).flat();
+      const senderVotes = {};
+      allMessages.forEach(m => { senderVotes[m.sender] = (senderVotes[m.sender] || 0) + 1; });
+      const topContributors = Object.entries(senderVotes).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([s, c]) => ({ sender: s, messages: c }));
+
+      // Store debate summary in hive state
+      const debateSummary = { topic: msgText, channels_polled: Object.keys(channelResponses).length, total_messages: allMessages.length, top_contributors: topContributors, timestamp: now };
+      db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(req.params.id, '_last_debate', JSON.stringify(debateSummary), now);
+
+      return res.json({
+        ok: true,
+        hive_id: req.params.id,
+        channel: ch,
+        mode: 'debate',
+        debate: debateSummary,
+        channel_responses: channelResponses,
+        consensus: allMessages.length > 0 ? 'Debate recorded with ' + allMessages.length + ' messages across ' + Object.keys(channelResponses).length + ' channels.' : 'No recent messages to form consensus.',
+        _engine: 'real'
+      });
+    } catch(e) {
+      return res.json({ ok: true, hive_id: req.params.id, channel: ch, mode: 'debate', error: e.message });
+    }
+  }
+
   res.json({ ok: true, hive_id: req.params.id, channel: ch });
 });
 
@@ -3552,8 +3619,20 @@ app.post('/v1/templates/fork/:id', auth, (req, res) => {
   if (!tmpl) return res.status(404).json({ error: { code: 'template_not_found' } });
   db.prepare('UPDATE shared_templates SET forks = forks + 1 WHERE id = ?').run(req.params.id);
   const newId = 'tmpl-' + crypto.randomUUID().slice(0, 12);
-  db.prepare('INSERT INTO shared_templates (id, api_key, name, config, ts) VALUES (?, ?, ?, ?, ?)').run(newId, req.apiKey, tmpl.name + ' (fork)', tmpl.config, Date.now());
-  res.json({ ok: true, forked_from: req.params.id, new_template_id: newId, config: JSON.parse(tmpl.config) });
+
+  // Item 4/10: Merge user params into template config
+  let config = JSON.parse(tmpl.config);
+  if (req.body.params && typeof req.body.params === 'object') {
+    // Merge params into each step if config has steps array
+    if (Array.isArray(config.steps)) {
+      config.steps = config.steps.map(step => ({ ...step, ...req.body.params }));
+    }
+    // Also merge at top level for non-step configs
+    config = { ...config, ...req.body.params };
+  }
+
+  db.prepare('INSERT INTO shared_templates (id, api_key, name, config, ts) VALUES (?, ?, ?, ?, ?)').run(newId, req.apiKey, (req.body.name || tmpl.name) + ' (fork)', JSON.stringify(config), Date.now());
+  res.json({ ok: true, forked_from: req.params.id, new_template_id: newId, config });
 });
 
 app.post('/v1/templates/star/:id', auth, (req, res) => {
@@ -5238,6 +5317,42 @@ app.get('/v1/rate-limits/status', auth, (req, res) => {
 // ===== END ENTERPRISE FEATURES =====
 
 // ===== AGENT RUN (real tool-chaining agent loop) =====
+// ===== AGENT ESTIMATE: Credit preview / dry-run for agent chains =====
+app.post('/v1/agent/estimate', auth, (req, res) => {
+  const { task, tools, max_steps } = req.body;
+  const steps = max_steps || 5;
+  const taskWords = (task || '').toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+  let toolSlugs = tools || [];
+  if (!toolSlugs.length) {
+    const scored = [];
+    for (const [slug, def] of apiMap.entries()) {
+      const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
+      let score = 0;
+      taskWords.forEach(w => { if (text.includes(w)) score++; });
+      if (score > 0 && def.credits <= 5) scored.push({ slug, score, credits: def.credits });
+    }
+    toolSlugs = scored.sort((a, b) => b.score - a.score).slice(0, steps).map(t => t.slug);
+  }
+
+  const estimated = toolSlugs.map(slug => {
+    const def = apiMap.get(slug);
+    return def ? { slug, credits: def.credits, tier: def.tier } : null;
+  }).filter(Boolean);
+
+  const totalCredits = estimated.reduce((s, t) => s + t.credits, 0);
+
+  res.json({
+    ok: true,
+    task,
+    estimated_steps: estimated,
+    total_credits: totalCredits,
+    can_afford: req.acct.balance >= totalCredits,
+    balance: req.acct.balance,
+    _engine: 'real'
+  });
+});
+
 app.post('/v1/agent/run', auth, async (req, res) => {
   const { task, tools, max_steps } = req.body;
   if (!task) return res.status(400).json({ error: { code: 'task_required' } });
@@ -5290,18 +5405,76 @@ app.post('/v1/agent/run', auth, async (req, res) => {
 
   persistKey(req.apiKey);
 
-  // Auto-persist to memory if agent mode
+  // Item 3: Debate mode — run a second pass with alternate tool selection and compare
+  let debateResult = null;
+  if (req.body.mode === 'debate' && chain.length > 0) {
+    try {
+      // Build alternate tool list by picking next-best tools not already used
+      const usedSlugs = new Set(chain.map(c => c.tool));
+      const altScored = [];
+      for (const [slug, def] of apiMap.entries()) {
+        if (usedSlugs.has(slug)) continue;
+        const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
+        let score = 0;
+        taskWords.forEach(w => { if (text.includes(w)) score++; if (slug.includes(w)) score += 2; });
+        if (score > 0 && def.credits <= 5) altScored.push({ slug, score, credits: def.credits });
+      }
+      const altSlugs = altScored.sort((a, b) => b.score - a.score).slice(0, steps).map(t => t.slug);
+      const altChain = [];
+      let altLastResult = null;
+      let altCredits = 0;
+      for (const slug of altSlugs.slice(0, steps)) {
+        const def = apiMap.get(slug);
+        if (!def) continue;
+        const handler = allHandlers[slug];
+        if (!handler) continue;
+        if (req.acct.balance < def.credits) break;
+        req.acct.balance -= def.credits;
+        altCredits += def.credits;
+        totalCredits += def.credits;
+        const input = altLastResult ? { ...req.body, _previous: altLastResult, task } : { ...req.body, task };
+        try {
+          const start = Date.now();
+          const result = await handler(input);
+          altChain.push({ step: altChain.length + 1, tool: slug, credits: def.credits, latency_ms: Date.now() - start, result });
+          altLastResult = result;
+        } catch (e) {
+          altChain.push({ step: altChain.length + 1, tool: slug, error: e.message });
+          req.acct.balance += def.credits;
+          altCredits -= def.credits;
+          totalCredits -= def.credits;
+        }
+      }
+      // Consensus: prefer the path with more successful steps; tie goes to primary
+      const primarySuccess = chain.filter(s => !s.error).length;
+      const altSuccess = altChain.filter(s => !s.error).length;
+      const winner = altSuccess > primarySuccess ? 'alternate' : 'primary';
+      debateResult = {
+        alternate_steps: altChain,
+        alternate_credits: altCredits,
+        primary_successes: primarySuccess,
+        alternate_successes: altSuccess,
+        consensus: winner,
+        consensus_result: winner === 'alternate' ? altLastResult : lastResult
+      };
+      if (winner === 'alternate') lastResult = altLastResult;
+    } catch(e) { debateResult = { error: e.message }; }
+  }
+
+  persistKey(req.apiKey);
+
+  // Item 6: Auto-persist ALL intermediate steps to memory (not just final result)
   if (chain.length > 0 && lastResult) {
     try {
       const memHandler = allHandlers['memory-set'];
       if (memHandler) {
         const ns = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
-        memHandler({ namespace: ns, key: 'agent_last_run_' + Date.now(), value: JSON.stringify({ task, result: lastResult, steps: chain.length }) });
+        memHandler({ namespace: ns, key: 'agent_run_' + Date.now(), value: JSON.stringify({ task, steps: chain, final_result: lastResult }) });
       }
     } catch(e) {}
   }
 
-  res.json({
+  const response = {
     ok: true,
     task,
     steps: chain,
@@ -5311,7 +5484,9 @@ app.post('/v1/agent/run', auth, async (req, res) => {
     tools_used: chain.map(c => c.tool),
     balance: req.acct.balance,
     _engine: 'real'
-  });
+  };
+  if (debateResult) response.debate = debateResult;
+  res.json(response);
 });
 
 // ===== AGENT-TO-AGENT CHAINING & PROMPT QUEUE =====
@@ -5948,12 +6123,19 @@ app.get('/v1/eval/report/:id', auth, (req, res) => {
 
 // POST /v1/templates/publish — Publish a template to marketplace
 app.post('/v1/templates/publish', auth, (req, res) => {
-  const { name, description, category, steps, tools, estimated_credits } = req.body;
+  const { name, description, category, steps, tools, estimated_credits, params } = req.body;
   const id = uuidv4();
+
+  // Item 4/10: If params provided, merge into each step
+  let finalSteps = steps || [];
+  if (params && typeof params === 'object' && Array.isArray(finalSteps)) {
+    finalSteps = finalSteps.map(step => ({ ...step, ...params }));
+  }
+
   db.prepare('INSERT INTO marketplace_templates (id, author_id, name, description, category, steps, tools, estimated_credits, forks, rating, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').run(
-    id, req.acct?.email || req.apiKey, name, description, category || 'general', JSON.stringify(steps || []), JSON.stringify(tools || []), estimated_credits || 0, 0, 0, 'published'
+    id, req.acct?.email || req.apiKey, name, description, category || 'general', JSON.stringify(finalSteps), JSON.stringify(tools || []), estimated_credits || 0, 0, 0, 'published'
   );
-  res.json({ ok: true, template_id: id, status: 'published' });
+  res.json({ ok: true, template_id: id, status: 'published', params_applied: !!params });
 });
 
 // GET /v1/templates/browse — Browse marketplace templates
@@ -5978,11 +6160,23 @@ app.post('/v1/templates/fork/:id', auth, (req, res) => {
   const tmpl = db.prepare('SELECT * FROM marketplace_templates WHERE id = ?').get(req.params.id);
   if (!tmpl) return res.status(404).json({ error: { code: 'template_not_found' } });
   const newId = uuidv4();
+
+  // Item 4/10: Merge user params into forked template steps
+  let forkedSteps = tmpl.steps;
+  if (req.body.params && typeof req.body.params === 'object') {
+    try {
+      const parsed = JSON.parse(tmpl.steps || '[]');
+      if (Array.isArray(parsed)) {
+        forkedSteps = JSON.stringify(parsed.map(step => ({ ...step, ...req.body.params })));
+      }
+    } catch(e) {}
+  }
+
   db.prepare('INSERT INTO marketplace_templates (id, author_id, name, description, category, steps, tools, estimated_credits, forks, rating, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').run(
-    newId, req.acct?.email || req.apiKey, (req.body.name || tmpl.name) + ' (fork)', tmpl.description, tmpl.category, tmpl.steps, tmpl.tools, tmpl.estimated_credits, 0, 0, 'published'
+    newId, req.acct?.email || req.apiKey, (req.body.name || tmpl.name) + ' (fork)', tmpl.description, tmpl.category, forkedSteps, tmpl.tools, tmpl.estimated_credits, 0, 0, 'published'
   );
   db.prepare('UPDATE marketplace_templates SET forks = forks + 1 WHERE id = ?').run(req.params.id);
-  res.json({ ok: true, forked_template_id: newId, original_id: req.params.id });
+  res.json({ ok: true, forked_template_id: newId, original_id: req.params.id, params_applied: !!req.body.params });
 });
 
 // POST /v1/templates/rate/:id — Rate a template
@@ -6596,6 +6790,17 @@ app.get('/v1/case-studies', publicRateLimit, (req, res) => {
     submit_your_story: 'POST /v1/case-studies/submit',
     page: 'https://slopshop.gg/case-studies.html',
   });
+});
+
+// ===== CREDITS FORECAST =====
+app.get('/v1/credits/forecast', auth, (req, res) => {
+  try {
+    const prefix = req.apiKey.slice(0, 12) + '...';
+    const recent = db.prepare("SELECT COUNT(*) as calls, SUM(credits) as total FROM audit_log WHERE key_prefix = ? AND ts > datetime('now', '-7 days')").get(prefix);
+    const dailyBurn = Math.round((recent.total || 0) / 7);
+    const daysRemaining = dailyBurn > 0 ? Math.round(req.acct.balance / dailyBurn) : Infinity;
+    res.json({ ok: true, balance: req.acct.balance, daily_burn: dailyBurn, days_remaining: daysRemaining === Infinity ? null : daysRemaining, days_remaining_display: dailyBurn > 0 ? daysRemaining + ' days' : 'unlimited', weekly_calls: recent.calls || 0, weekly_credits: recent.total || 0, _engine: 'real' });
+  } catch(e) { res.json({ ok: true, balance: req.acct.balance, daily_burn: 0, days_remaining: null, days_remaining_display: 'unlimited', weekly_calls: 0, weekly_credits: 0, _engine: 'real' }); }
 });
 
 // ===== START =====

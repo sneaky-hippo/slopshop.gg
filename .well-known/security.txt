@@ -1,0 +1,5 @@
+Contact: mailto:dev@slopshop.gg
+Preferred-Languages: en
+Canonical: https://slopshop.gg/.well-known/security.txt
+Policy: https://slopshop.gg/security
+Expires: 2027-03-27T00:00:00.000Z

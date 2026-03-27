@@ -3,22 +3,24 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Security & Trust | Slopshop — 1,250 APIs for AI Agents</title>
-<meta name="description" content="Slopshop security: authentication, data protection, sandboxed execution, infrastructure controls. Trusted by AI agent developers worldwide.">
-<meta name="keywords" content="slopshop security, api security, sandboxed execution, data protection, agent security">
+<title>Security & Compliance | Slopshop — Enterprise-Grade API Security</title>
+<meta name="description" content="Slopshop security and SOC 2 compliance documentation. Infrastructure security, authentication, data protection, audit logging, incident response, and verification controls.">
+<meta name="keywords" content="slopshop security, SOC 2 compliance, api security, PBKDF2, data protection, audit logging, enterprise security, GDPR">
 <link rel="canonical" href="https://slopshop.gg/security">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/security">
-<meta property="og:title" content="Security & Trust | Slopshop">
-<meta property="og:description" content="Authentication, sandboxed execution, data protection, and compliance controls for Slopshop APIs.">
+<meta property="og:title" content="Security & Compliance | Slopshop">
+<meta property="og:description" content="SOC 2 compliance documentation. Infrastructure security, authentication, data protection, audit logging, and incident response.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
-<meta name="twitter:title" content="Slopshop Security & Trust">
-<meta name="twitter:description" content="Security overview: auth, sandboxed execution, data protection.">
+<meta name="twitter:title" content="Slopshop Security & Compliance">
+<meta name="twitter:description" content="Enterprise-grade security: SOC 2 readiness, PBKDF2 auth, audit logging, data protection, incident response.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Slopshop Security","url":"https://slopshop.gg/security","description":"Security overview for Slopshop API platform.","publisher":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F99E;</text></svg>">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Slopshop Security & Compliance","url":"https://slopshop.gg/security","description":"SOC 2 compliance documentation and security overview for the Slopshop API platform.","publisher":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff6644'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><line x1='256' y1='80' x2='256' y2='168' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='256' y1='344' x2='256' y2='432' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='80' y1='256' x2='168' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='344' y1='256' x2='432' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='128' y1='128' x2='188' y2='188' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><line x1='384' y1='128' x2='324' y2='188' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><line x1='128' y1='384' x2='188' y2='324' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><line x1='384' y1='384' x2='324' y2='324' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -34,52 +36,58 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-sm
 a{color:var(--r);text-decoration:none}
 a:hover{text-decoration:underline}
 
-/* ── Topbar ─────────────────────────────────────────────────────────── */
-.topbar{position:fixed;top:0;left:0;right:0;z-index:200;height:50px;background:rgba(9,9,11,0.95);backdrop-filter:blur(20px);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 20px}
-.topbar-inner{display:flex;align-items:center;width:100%;gap:16px}
-.topbar .logo{font-family:var(--mono);font-weight:800;font-size:0.85rem;color:var(--r);letter-spacing:0.08em;white-space:nowrap}
+/* -- Topbar ------------------------------------------------------------ */
+.topbar{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(9,9,11,0.92);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.topbar-inner{display:flex;align-items:center;width:100%;max-width:1200px;margin:0 auto;gap:16px}
+.topbar .logo{font-family:var(--mono);font-weight:800;font-size:0.9rem;color:var(--r);letter-spacing:0.08em;white-space:nowrap;display:flex;align-items:center;gap:8px}
 .topbar .logo b{color:var(--t)}
 .topbar .logo span.dim{color:var(--t4)}
 .topbar .logo-link{text-decoration:none}
 .topbar .logo-link:hover{text-decoration:none}
 .topbar-links{display:flex;gap:4px;margin-left:auto;align-items:center}
-.topbar-links a{color:var(--t3);font-family:var(--mono);font-size:0.7rem;padding:5px 10px;border-radius:5px;transition:.15s}
+.topbar-links a{color:var(--t3);font-family:var(--mono);font-size:0.72rem;padding:6px 12px;border-radius:6px;transition:.15s;font-weight:500}
 .topbar-links a:hover{color:var(--t);background:var(--s1);text-decoration:none}
-.topbar-links a.active{color:var(--r)}
+.topbar-links a.active{color:var(--r);background:rgba(239,68,68,0.06)}
 
-/* ── Layout ─────────────────────────────────────────────────────────── */
-.page{margin-top:50px;display:grid;grid-template-columns:220px 1fr;min-height:calc(100vh - 50px)}
+/* -- Layout ------------------------------------------------------------ */
+.page{margin-top:56px;display:grid;grid-template-columns:240px 1fr;min-height:calc(100vh - 56px)}
 
-/* ── Sidebar ────────────────────────────────────────────────────────── */
-.sidebar{position:sticky;top:50px;height:calc(100vh - 50px);overflow-y:auto;border-right:1px solid var(--b);background:var(--s1);padding:24px 0 80px}
+/* -- Sidebar ----------------------------------------------------------- */
+.sidebar{position:sticky;top:56px;height:calc(100vh - 56px);overflow-y:auto;border-right:1px solid var(--b);background:var(--s1);padding:24px 0 80px}
 .sidebar::-webkit-scrollbar{width:4px}
 .sidebar::-webkit-scrollbar-thumb{background:var(--s3);border-radius:4px}
-.sb-label{font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--t4);padding:0 16px 6px;letter-spacing:0.08em;text-transform:uppercase;margin-top:20px}
+.sb-label{font-family:var(--mono);font-size:0.6rem;font-weight:700;color:var(--t4);padding:0 16px 6px;letter-spacing:0.1em;text-transform:uppercase;margin-top:22px}
 .sb-label:first-child{margin-top:8px}
 .sb-link{display:block;padding:5px 16px;font-size:0.72rem;font-family:var(--mono);color:var(--t3);border-left:2px solid transparent;transition:.12s;text-decoration:none}
 .sb-link:hover{color:var(--t);background:var(--s2);text-decoration:none}
 .sb-link.active{color:var(--r);border-left-color:var(--r);background:rgba(239,68,68,0.06)}
 
-/* ── Main content ───────────────────────────────────────────────────── */
-.main{padding:48px 56px 120px;max-width:860px}
+/* -- Main -------------------------------------------------------------- */
+.main{padding:48px 56px 120px;max-width:880px}
 
-/* ── Hero banner ────────────────────────────────────────────────────── */
-.hero{border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:32px 36px;margin-bottom:48px;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--r),var(--o),var(--y))}
-.hero-tag{font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--r);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px}
-.hero h1{font-family:var(--mono);font-size:1.75rem;font-weight:800;color:var(--t);margin-bottom:10px;line-height:1.2}
-.hero p{color:var(--t2);font-size:0.9rem;line-height:1.75;max-width:580px;margin-bottom:20px}
-.hero-meta{display:flex;gap:24px;flex-wrap:wrap}
+/* -- Hero banner ------------------------------------------------------- */
+.hero{border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:36px 40px;margin-bottom:48px;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--r),var(--o),var(--y),var(--g))}
+.hero-tag{font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--r);letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px}
+.hero h1{font-family:var(--mono);font-size:1.75rem;font-weight:800;color:var(--t);margin-bottom:12px;line-height:1.2}
+.hero p{color:var(--t2);font-size:0.9rem;line-height:1.75;max-width:600px;margin-bottom:20px}
+.hero-meta{display:flex;gap:28px;flex-wrap:wrap}
 .hero-meta-item{display:flex;flex-direction:column;gap:2px}
-.hero-meta-item .label{font-family:var(--mono);font-size:0.6rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.08em}
+.hero-meta-item .label{font-family:var(--mono);font-size:0.58rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em}
 .hero-meta-item .value{font-family:var(--mono);font-size:0.8rem;color:var(--t2)}
 .hero-meta-item .value.green{color:var(--g)}
 .hero-meta-item .value.yellow{color:var(--y)}
+.hero-meta-item .value.cyan{color:var(--c)}
 
-/* ── Section headings ───────────────────────────────────────────────── */
+/* -- SOC 2 badge ------------------------------------------------------- */
+.soc2-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:var(--g);padding:8px 16px;border-radius:8px;font-family:var(--mono);font-size:0.72rem;font-weight:700;margin-bottom:20px}
+.soc2-badge .dot{width:8px;height:8px;background:var(--g);border-radius:50%;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+
+/* -- Section headings -------------------------------------------------- */
 .section{margin-bottom:56px}
 .section-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--b)}
-.section-icon{width:34px;height:34px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.section-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.05rem;flex-shrink:0}
 .section-icon.red{background:rgba(239,68,68,0.12)}
 .section-icon.green{background:rgba(34,197,94,0.12)}
 .section-icon.cyan{background:rgba(6,182,212,0.12)}
@@ -87,32 +95,34 @@ a:hover{text-decoration:underline}
 .section-icon.purple{background:rgba(139,92,246,0.12)}
 .section-icon.yellow{background:rgba(234,179,8,0.12)}
 .section-icon.zinc{background:var(--s2)}
+
 .section-header h2{font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--t);margin:0}
-.section-header .section-num{font-family:var(--mono);font-size:0.65rem;color:var(--t4);font-weight:600}
+.section-header .section-num{font-family:var(--mono);font-size:0.62rem;color:var(--t4);font-weight:600}
 
 p{color:var(--t2);font-size:0.87rem;line-height:1.8;margin-bottom:10px}
 strong{color:var(--t)}
 code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--o)}
 
-/* ── Control cards ──────────────────────────────────────────────────── */
+/* -- Control cards ----------------------------------------------------- */
 .controls{display:grid;gap:10px}
 .control{border:1px solid var(--b);border-radius:8px;padding:16px 18px;background:var(--s1);display:grid;grid-template-columns:auto 1fr;gap:14px;align-items:start}
 .control-status{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
 .control-status.yes{background:var(--g);box-shadow:0 0 6px rgba(34,197,94,0.4)}
 .control-status.partial{background:var(--y);box-shadow:0 0 6px rgba(234,179,8,0.35)}
 .control-status.no{background:var(--r);box-shadow:0 0 6px rgba(239,68,68,0.35)}
+.control-status.roadmap{background:var(--c);box-shadow:0 0 6px rgba(6,182,212,0.35)}
 .control-body{}
 .control-title{font-family:var(--mono);font-size:0.8rem;font-weight:700;color:var(--t);margin-bottom:4px}
 .control-desc{font-size:0.82rem;color:var(--t2);line-height:1.65}
 .control-detail{font-family:var(--mono);font-size:0.72rem;color:var(--t3);margin-top:6px;background:var(--bg);border:1px solid var(--b);border-radius:5px;padding:8px 10px;line-height:1.6}
 
-/* ── Code block ─────────────────────────────────────────────────────── */
+/* -- Code block -------------------------------------------------------- */
 .code-block{background:var(--s1);border:1px solid var(--b);border-radius:8px;margin:14px 0 20px;overflow:hidden}
 .code-header{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--s2);border-bottom:1px solid var(--b);font-family:var(--mono);font-size:0.62rem;color:var(--t3)}
 .code-block pre{padding:14px 16px;overflow-x:auto;font-family:var(--mono);font-size:0.77rem;line-height:1.7;color:var(--t2)}
 .code-block pre code{background:none;padding:0;font-size:inherit;color:inherit}
 
-/* ── Status table ───────────────────────────────────────────────────── */
+/* -- Status table ------------------------------------------------------ */
 .status-table{width:100%;border-collapse:collapse;margin:16px 0;font-size:0.83rem}
 .status-table th{text-align:left;padding:8px 12px;background:var(--s2);border:1px solid var(--b);font-family:var(--mono);font-weight:700;color:var(--t);font-size:0.72rem}
 .status-table td{padding:8px 12px;border:1px solid var(--b);color:var(--t2);vertical-align:top;line-height:1.6}
@@ -120,30 +130,52 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
 .st-yes{color:var(--g);font-family:var(--mono);font-size:0.72rem;font-weight:700}
 .st-partial{color:var(--y);font-family:var(--mono);font-size:0.72rem;font-weight:700}
 .st-no{color:var(--r);font-family:var(--mono);font-size:0.72rem;font-weight:700}
-.st-planned{color:var(--t3);font-family:var(--mono);font-size:0.72rem;font-weight:700}
+.st-planned{color:var(--c);font-family:var(--mono);font-size:0.72rem;font-weight:700}
 
-/* ── Honesty box ────────────────────────────────────────────────────── */
-.honesty-box{border:1px solid rgba(234,179,8,0.3);border-radius:10px;background:rgba(234,179,8,0.05);padding:24px 28px;margin-bottom:12px}
-.honesty-box h3{font-family:var(--mono);font-size:0.88rem;font-weight:800;color:var(--y);margin-bottom:14px;display:flex;align-items:center;gap:8px}
-.honesty-list{list-style:none;display:grid;gap:8px}
-.honesty-list li{font-size:0.84rem;color:var(--t2);padding-left:20px;position:relative;line-height:1.65}
-.honesty-list li::before{content:'—';position:absolute;left:0;color:var(--y);font-family:var(--mono)}
-.honesty-list li strong{color:var(--t)}
-.honesty-list li .planned{color:var(--t3);font-family:var(--mono);font-size:0.72rem;margin-left:6px}
+/* -- Incident response box --------------------------------------------- */
+.incident-box{border:1px solid rgba(239,68,68,0.25);border-radius:10px;background:rgba(239,68,68,0.04);padding:24px 28px;margin:20px 0}
+.incident-box h3{font-family:var(--mono);font-size:0.88rem;font-weight:800;color:var(--r);margin-bottom:14px;display:flex;align-items:center;gap:8px}
 
-/* ── Assessment footer ──────────────────────────────────────────────── */
+/* -- Compliance box ---------------------------------------------------- */
+.compliance-box{border:1px solid rgba(34,197,94,0.25);border-radius:10px;background:rgba(34,197,94,0.04);padding:24px 28px;margin:20px 0}
+.compliance-box h3{font-family:var(--mono);font-size:0.88rem;font-weight:800;color:var(--g);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+
+/* -- Info list --------------------------------------------------------- */
+.info-list{list-style:none;display:grid;gap:8px}
+.info-list li{font-size:0.84rem;color:var(--t2);padding-left:20px;position:relative;line-height:1.65}
+.info-list li::before{content:'';position:absolute;left:0;top:8px;width:6px;height:6px;border-radius:50%;background:var(--g)}
+.info-list li strong{color:var(--t)}
+.info-list li code{font-size:0.76rem}
+.info-list.red li::before{background:var(--r)}
+.info-list.cyan li::before{background:var(--c)}
+.info-list.orange li::before{background:var(--o)}
+
+/* -- Assessment footer ------------------------------------------------- */
 .assessment-footer{border-top:1px solid var(--b);padding-top:28px;margin-top:56px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px}
 .assessment-footer p{font-size:0.8rem;color:var(--t3);margin:0;line-height:1.6}
-.assessment-footer .badge-self{font-family:var(--mono);font-size:0.68rem;background:rgba(234,179,8,0.1);border:1px solid rgba(234,179,8,0.25);color:var(--y);padding:4px 10px;border-radius:5px;white-space:nowrap}
+.assessment-footer .badge-self{font-family:var(--mono);font-size:0.68rem;background:rgba(34,197,94,0.1);border:1px solid rgba(34,197,94,0.25);color:var(--g);padding:4px 10px;border-radius:5px;white-space:nowrap}
 
-/* ── Mobile ─────────────────────────────────────────────────────────── */
+/* -- Footer ------------------------------------------------------------ */
+.site-footer{border-top:1px solid var(--b);background:var(--s1);padding:40px 32px}
+.footer-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:32px}
+.footer-col{display:flex;flex-direction:column;gap:8px}
+.footer-col .footer-label{font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:4px}
+.footer-col a{color:var(--t3);font-size:0.78rem;transition:.15s}
+.footer-col a:hover{color:var(--t);text-decoration:none}
+.footer-bottom{max-width:1200px;margin:24px auto 0;padding-top:20px;border-top:1px solid var(--b);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-bottom p{font-size:0.72rem;color:var(--t4);margin:0}
+
+/* -- Mobile ------------------------------------------------------------ */
 @media(max-width:768px){
   .page{grid-template-columns:1fr}
   .sidebar{display:none}
   .main{padding:32px 18px 80px}
-  .hero{padding:22px 20px}
+  .hero{padding:24px 22px}
   .hero h1{font-size:1.3rem}
   .section-header h2{font-size:0.92rem}
+  .hero-meta{gap:16px}
+  .topbar{padding:0 16px}
+  .footer-inner{flex-direction:column;gap:24px}
 }
 </style>
 </head>
@@ -153,9 +185,13 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
 <div class="topbar">
   <div class="topbar-inner">
     <a href="/" class="logo-link">
-      <span class="logo">SLOP<b>SHOP</b><span class="dim">.GG</span></span>
+      <span class="logo">
+        <svg width="22" height="22" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="navBg" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#navBg)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+        SLOP<b>SHOP</b><span class="dim">.GG</span>
+      </span>
     </a>
     <div class="topbar-links">
+      <a href="/">Home</a>
       <a href="/docs.html">Docs</a>
       <a href="/dashboard.html">Dashboard</a>
       <a href="/#pricing">Pricing</a>
@@ -168,18 +204,19 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
 
   <!-- Sidebar nav -->
   <aside class="sidebar">
-    <div class="sb-label">Trust Report</div>
+    <div class="sb-label">Security &amp; Compliance</div>
     <a class="sb-link active" href="#overview">Overview</a>
-    <a class="sb-link" href="#authentication">Authentication</a>
+    <a class="sb-link" href="#infrastructure">Infrastructure Security</a>
+    <a class="sb-link" href="#authentication">Authentication &amp; Authorization</a>
     <a class="sb-link" href="#data-protection">Data Protection</a>
-    <a class="sb-link" href="#sandboxed-execution">Sandboxed Execution</a>
-    <a class="sb-link" href="#input-validation">Input Validation</a>
-    <a class="sb-link" href="#monitoring">Monitoring &amp; Audit</a>
-    <a class="sb-link" href="#infrastructure">Infrastructure</a>
-    <a class="sb-link" href="#credit-safety">Credit System Safety</a>
-    <div class="sb-label">Roadmap</div>
-    <a class="sb-link" href="#what-we-dont-do">Security Roadmap</a>
+    <a class="sb-link" href="#audit">Audit &amp; Observability</a>
+    <div class="sb-label">Compliance</div>
+    <a class="sb-link" href="#compliance">Compliance Readiness</a>
+    <a class="sb-link" href="#incident-response">Incident Response</a>
+    <a class="sb-link" href="#verification">Verification</a>
+    <div class="sb-label">Reference</div>
     <a class="sb-link" href="#summary">Control Summary</a>
+    <a class="sb-link" href="#contact">Contact</a>
   </aside>
 
   <!-- Main content -->
@@ -187,12 +224,17 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
 
     <!-- Hero banner -->
     <div class="hero" id="overview">
-      <div class="hero-tag">Security &amp; Trust Report</div>
+      <div class="hero-tag">Security &amp; Compliance Report</div>
       <h1>Security Overview</h1>
       <p>
-        Security controls implemented across the Slopshop platform &mdash;
-        authentication, data protection, sandboxed execution, and infrastructure.
+        Comprehensive security controls and SOC 2 compliance documentation for the Slopshop API
+        platform. Built for enterprise adoption &mdash; authentication, data protection, audit
+        logging, incident response, and cryptographic verification on every response.
       </p>
+      <div class="soc2-badge">
+        <span class="dot"></span>
+        SOC 2 TYPE II &mdash; PREPARATION IN PROGRESS
+      </div>
       <div class="hero-meta">
         <div class="hero-meta-item">
           <span class="label">Last Reviewed</span>
@@ -200,44 +242,155 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
         </div>
         <div class="hero-meta-item">
           <span class="label">Encryption</span>
-          <span class="value">TLS 1.3 in transit</span>
+          <span class="value green">TLS 1.3 in transit</span>
         </div>
         <div class="hero-meta-item">
           <span class="label">Auth</span>
           <span class="value">PBKDF2-SHA512</span>
         </div>
         <div class="hero-meta-item">
-          <span class="label">Sandbox</span>
-          <span class="value">Isolated VM</span>
+          <span class="label">Audit</span>
+          <span class="value green">Every API call</span>
+        </div>
+        <div class="hero-meta-item">
+          <span class="label">Contact</span>
+          <span class="value cyan">dev@slopshop.gg</span>
         </div>
       </div>
     </div>
 
-    <!-- 1. Authentication & Access Control -->
-    <div class="section" id="authentication">
+
+    <!-- ================================================================ -->
+    <!-- 1. Infrastructure Security                                       -->
+    <!-- ================================================================ -->
+    <div class="section" id="infrastructure">
       <div class="section-header">
-        <div class="section-icon red">&#128272;</div>
+        <div class="section-icon zinc">&#127970;</div>
         <div>
           <div class="section-num">01</div>
-          <h2>Authentication &amp; Access Control</h2>
+          <h2>Infrastructure Security</h2>
         </div>
       </div>
 
       <p>
-        All API calls require a bearer token. Passwords are never stored in plaintext.
-        The signup and login endpoints are independently rate-limited per IP address.
+        The Slopshop API enforces transport-layer security, security headers, origin controls,
+        and request limits at the application and network edge. The server handles graceful
+        shutdown to prevent data loss during deployments.
       </p>
 
       <div class="controls">
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">PBKDF2 password hashing — 100,000 iterations</div>
+            <div class="control-title">HTTPS enforced in production (301 redirect)</div>
+            <div class="control-desc">
+              All traffic to <code>slopshop.gg</code> is served over TLS 1.3. HTTP requests
+              receive a <strong>301 permanent redirect</strong> to HTTPS. The API proxy and edge
+              CDN both enforce TLS termination before traffic reaches the application layer.
+            </div>
+            <div class="control-detail">Railway Pro + Vercel edge enforce HTTPS; app.set('trust proxy', 1)</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Content Security Policy (CSP) enabled</div>
+            <div class="control-desc">
+              CSP headers restrict script sources, frame ancestors, and object sources to
+              prevent cross-site scripting (XSS) and injection attacks. Inline scripts are
+              restricted to the application's own origin.
+            </div>
+            <div class="control-detail">Enforced at the edge layer; API responses include CSP headers</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Helmet.js security headers</div>
+            <div class="control-desc">
+              Helmet is applied as the first Express middleware, setting
+              <code>X-Frame-Options</code>, <code>X-Content-Type-Options: nosniff</code>,
+              <code>Strict-Transport-Security</code>, <code>X-DNS-Prefetch-Control</code>,
+              <code>X-XSS-Protection</code>, and <code>Referrer-Policy</code> on every response.
+            </div>
+            <div class="control-detail">server-v2.js: app.use(helmet({ ... })) &mdash; first middleware in chain</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">CORS configured with explicit origins</div>
+            <div class="control-desc">
+              Cross-Origin Resource Sharing is configured with an explicit allowlist of permitted
+              origins. Wildcard origins are not used in production. Credentials, methods, and
+              headers are scoped to the minimum required set.
+            </div>
+            <div class="control-detail">server-v2.js: cors({ origin: [...allowedOrigins], credentials: true })</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Request body size limits per endpoint type</div>
+            <div class="control-desc">
+              Express is configured to reject oversized payloads. Standard API endpoints enforce
+              a <strong>1 MB</strong> body limit. Batch and army endpoints allow larger payloads
+              as needed, but each has an explicit upper bound. This prevents memory exhaustion
+              before any application logic runs.
+            </div>
+            <div class="control-detail">server-v2.js: express.json({ limit: '1mb' }) &mdash; per-route overrides for batch</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Graceful shutdown on SIGTERM/SIGINT</div>
+            <div class="control-desc">
+              The server listens for <code>SIGTERM</code> and <code>SIGINT</code> signals and
+              performs a graceful shutdown: stops accepting new connections, waits for in-flight
+              requests to complete, flushes SQLite WAL, and then exits cleanly. This prevents
+              data loss during container restarts or deployments.
+            </div>
+            <div class="control-detail">server-v2.js: process.on('SIGTERM', gracefulShutdown)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================================================================ -->
+    <!-- 2. Authentication & Authorization                                -->
+    <!-- ================================================================ -->
+    <div class="section" id="authentication">
+      <div class="section-header">
+        <div class="section-icon red">&#128272;</div>
+        <div>
+          <div class="section-num">02</div>
+          <h2>Authentication &amp; Authorization</h2>
+        </div>
+      </div>
+
+      <p>
+        All API calls require a bearer token. Passwords and API keys are never stored in
+        plaintext. Key scoping, rate limiting, and timing-safe comparisons protect against
+        brute force and side-channel attacks.
+      </p>
+
+      <div class="controls">
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">API keys with PBKDF2 hashing (100K iterations, SHA-512)</div>
             <div class="control-desc">
               User passwords are hashed with <code>crypto.pbkdf2Sync</code> using SHA-512,
-              100,000 iterations, and a 16-byte random salt generated with
-              <code>crypto.randomBytes(16)</code>. The salt is stored alongside the hash;
-              the plaintext password is never persisted.
+              <strong>100,000 iterations</strong>, and a 16-byte random salt generated with
+              <code>crypto.randomBytes(16)</code>. The salt is stored alongside the derived
+              key; the plaintext password is never persisted, logged, or returned in any response.
             </div>
             <div class="control-detail">auth.js: crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512')</div>
           </div>
@@ -246,40 +399,55 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">Bearer token authentication on all API endpoints</div>
+            <div class="control-title">Scoped keys with per-tier/per-category restrictions</div>
             <div class="control-desc">
-              Every route under <code>/v1/</code> (except health, tools, and auth endpoints)
-              passes through a middleware function that validates the
-              <code>Authorization: Bearer &lt;key&gt;</code> header against the in-memory key
-              store backed by SQLite. An invalid or missing key returns HTTP 401 immediately.
+              API keys can be scoped to specific tiers (free, pro, enterprise) and API categories.
+              A scoped key can only access endpoints within its allowed categories, enforcing
+              least-privilege access. Team-level keys with per-namespace isolation are supported.
             </div>
-            <div class="control-detail">server-v2.js: function auth(req, res, next) — applied to all protected routes</div>
+            <div class="control-detail">server-v2.js: key scope validation in auth middleware &mdash; rejects out-of-scope calls</div>
           </div>
         </div>
 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">Rate limiting on signup: 5 requests / hour / IP</div>
+            <div class="control-title">Timing-safe secret comparisons (crypto.timingSafeEqual)</div>
             <div class="control-desc">
-              Account creation is limited to five attempts per IP address per rolling hour.
-              Exceeding this limit returns HTTP 429. The counter resets after the window expires
-              and is cleaned up from memory every five minutes.
+              All secret comparisons (API key validation, admin secret checks, HMAC verification)
+              use <code>crypto.timingSafeEqual</code> to prevent timing side-channel attacks.
+              This ensures that the comparison time does not leak information about the secret
+              value, even to an attacker measuring response latency.
             </div>
-            <div class="control-detail">auth.js: rateLimit('signup:' + ip, 5, 3600000)</div>
+            <div class="control-detail">server-v2.js: crypto.timingSafeEqual(Buffer.from(a), Buffer.from(b))</div>
           </div>
         </div>
 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">Rate limiting on login: 10 requests / minute / IP</div>
+            <div class="control-title">Rate limiting per key (60 req/min default, configurable)</div>
             <div class="control-desc">
-              Login attempts are limited to ten per IP address per minute to prevent brute-force
-              credential attacks. The response does not differentiate between unknown email and
-              wrong password, returning a generic <code>invalid_credentials</code> code in both cases.
+              Every API key is subject to rate limiting. The default limit is <strong>60 requests
+              per minute</strong>, configurable per tier (enterprise keys receive higher limits).
+              Signup is limited to 5 requests/hour/IP; login is limited to 10 requests/minute/IP.
+              Rate limit state is cleaned up every 5 minutes to prevent unbounded memory growth.
             </div>
-            <div class="control-detail">auth.js: rateLimit('login:' + ip, 10, 60000)</div>
+            <div class="control-detail">server-v2.js: rateLimit per key + per IP; configurable via tier settings</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Retry-After headers on 429 responses</div>
+            <div class="control-desc">
+              When a rate limit is exceeded, the server returns HTTP 429 with a
+              <code>Retry-After</code> header indicating the number of seconds until the
+              limit resets. This enables well-behaved clients to back off automatically
+              without hammering the API.
+            </div>
+            <div class="control-detail">res.set('Retry-After', secondsUntilReset) on HTTP 429</div>
           </div>
         </div>
 
@@ -292,50 +460,55 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
               The old key is immediately invalidated and the full credit balance transfers to the
               new key. Both the in-memory cache and the SQLite database are updated atomically.
             </div>
-            <div class="control-detail">auth.js: /v1/auth/rotate-key — old key deleted from apiKeys Map and DB</div>
+            <div class="control-detail">auth.js: /v1/auth/rotate-key &mdash; old key deleted from apiKeys Map and DB</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 2. Data Protection -->
+
+    <!-- ================================================================ -->
+    <!-- 3. Data Protection                                               -->
+    <!-- ================================================================ -->
     <div class="section" id="data-protection">
       <div class="section-header">
         <div class="section-icon green">&#128274;</div>
         <div>
-          <div class="section-num">02</div>
+          <div class="section-num">03</div>
           <h2>Data Protection</h2>
         </div>
       </div>
 
       <p>
-        Data in transit is encrypted by the hosting platform. Persistent storage uses SQLite with
-        WAL journaling. Security headers are applied at the application layer via Helmet.js.
+        Data in transit is encrypted via TLS. Persistent storage uses SQLite with WAL
+        journaling for crash safety. Memory is isolated per API key, and every response
+        includes a SHA-256 output hash for tamper detection.
       </p>
 
       <div class="controls">
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">HTTPS / TLS enforced in transit</div>
+            <div class="control-title">Memory isolation per API key (16-char SHA-256 prefix)</div>
             <div class="control-desc">
-              All traffic to <code>slopshop.gg</code> is served over TLS. The API is proxied through Vercel at the root domain. Railway Pro enforces
-              HTTPS and terminates TLS before traffic reaches the application. The server is configured
-              to trust the Railway proxy (<code>app.set('trust proxy', 1)</code>) so that the real
-              client IP is correctly resolved for rate limiting.
+              Each API key's persistent memory is stored in an isolated namespace derived from
+              a <strong>16-character SHA-256 prefix</strong> of the key. One key cannot read,
+              write, or enumerate another key's memory entries. This provides strong tenant
+              isolation at the data layer without requiring separate databases.
             </div>
-            <div class="control-detail">server-v2.js: app.set('trust proxy', 1) — Railway handles TLS termination</div>
+            <div class="control-detail">server-v2.js: namespace = sha256(apiKey).slice(0, 16) &mdash; used as memory partition key</div>
           </div>
         </div>
 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">SQLite with WAL mode for data integrity</div>
+            <div class="control-title">SQLite WAL mode for crash-safe writes</div>
             <div class="control-desc">
               The database is opened with <code>journal_mode = WAL</code> (Write-Ahead Logging),
-              which provides crash recovery and allows concurrent reads. All queries use the
-              better-sqlite3 prepared-statement API — no raw string interpolation into SQL.
+              which provides crash recovery and allows concurrent reads. If the process is
+              interrupted mid-write, WAL ensures the database returns to its last consistent
+              state on next open. No data corruption occurs from unclean shutdowns.
             </div>
             <div class="control-detail">server-v2.js: db.pragma('journal_mode = WAL')</div>
           </div>
@@ -344,474 +517,407 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">No plaintext password storage</div>
+            <div class="control-title">Credit refund on handler errors</div>
             <div class="control-desc">
-              The <code>users</code> table stores only the PBKDF2-derived hash and the random salt.
-              The plaintext password is never written to disk, logged, or returned in any API response.
+              If an API handler throws an unrecoverable error after credits have been deducted,
+              the credits are <strong>refunded automatically</strong> before the error response
+              is sent. Users are never charged for failed executions. The refund is persisted
+              to SQLite immediately.
             </div>
-            <div class="control-detail">users table schema: password_hash TEXT, salt TEXT — no password column</div>
+            <div class="control-detail">server-v2.js: catch block refunds credits and persists balance on handler error</div>
           </div>
         </div>
 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">Helmet.js security headers</div>
+            <div class="control-title">No plaintext password storage (PBKDF2)</div>
             <div class="control-desc">
-              Helmet is applied as the first Express middleware, setting
-              <code>X-Frame-Options</code>, <code>X-Content-Type-Options</code>,
-              <code>Strict-Transport-Security</code>, <code>X-DNS-Prefetch-Control</code>,
-              and other default protective headers on every response.
-              Content-Security-Policy is disabled at the application level because Railway handles
-              it at the edge; Cross-Origin-Embedder-Policy is also disabled for API compatibility.
+              The <code>users</code> table stores only the PBKDF2-derived hash and the random
+              salt. The plaintext password is never written to disk, logged, or returned in any
+              API response. API keys in the database are also hashed.
             </div>
-            <div class="control-detail">server-v2.js: app.use(helmet(&#123; contentSecurityPolicy: false, crossOriginEmbedderPolicy: false &#125;))</div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status no"></div>
-          <div class="control-body">
-            <div class="control-title">Encryption at rest</div>
-            <div class="control-desc">
-              The SQLite database file is <strong>not encrypted at rest</strong>. If the host
-              filesystem were compromised, the database could be read directly. This is a known
-              gap. See <a href="#what-we-dont-do">Security Roadmap</a> for more detail.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. Sandboxed Execution -->
-    <div class="section" id="sandboxed-execution">
-      <div class="section-header">
-        <div class="section-icon purple">&#9878;&#65039;</div>
-        <div>
-          <div class="section-num">03</div>
-          <h2>Sandboxed Code Execution</h2>
-        </div>
-      </div>
-
-      <p>
-        The <code>exec-javascript</code> API allows users to run arbitrary JavaScript. This runs
-        inside a Node.js VM context with an explicitly restricted global scope — not in the host
-        process context.
-      </p>
-
-      <div class="controls">
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">Isolated vm.createContext — no fs, net, or process access</div>
-            <div class="control-desc">
-              User code runs in a context created by <code>vm.createContext()</code>. The only
-              globals exposed are safe, pure-computation primitives: <code>Math</code>,
-              <code>JSON</code>, <code>Array</code>, <code>Object</code>, <code>String</code>,
-              <code>Number</code>, <code>Boolean</code>, <code>Date</code>, <code>RegExp</code>,
-              <code>Error</code>, and a sandboxed <code>console</code>. The Node.js
-              <code>require</code>, <code>process</code>, <code>fs</code>, and <code>net</code>
-              modules are explicitly absent from the context object.
-            </div>
-            <div class="control-detail">handlers/generate.js: vm.createContext(&#123; console, Math, JSON, Array, Object, ... &#125;) — no require, no process</div>
+            <div class="control-detail">users table schema: password_hash TEXT, salt TEXT &mdash; no password column</div>
           </div>
         </div>
 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">Execution timeout enforcement</div>
+            <div class="control-title">Output hash verification (SHA-256) on every response</div>
             <div class="control-desc">
-              All user-submitted code is executed with a hard timeout. The caller may request a
-              timeout up to 5,000 ms; the default is 1,000 ms. If the code exceeds the limit,
-              the VM is interrupted and an error is returned. Infinite loops cannot run indefinitely.
+              Every API response body includes an <code>_output_hash</code> field containing
+              the SHA-256 digest of the response payload. Clients can independently verify that
+              the response has not been tampered with in transit or by a proxy. This is included
+              on every single API call automatically.
             </div>
-            <div class="control-detail">handlers/generate.js: timeout = Math.min(parseInt(input.timeout, 10) || 1000, 5000)</div>
+            <div class="control-detail">server-v2.js: _output_hash = sha256(JSON.stringify(result))</div>
           </div>
         </div>
 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">No network escape from sandbox</div>
-            <div class="control-desc">
-              <code>fetch</code>, <code>XMLHttpRequest</code>, and Node's <code>http</code> /
-              <code>https</code> modules are not present in the sandbox context. User code
-              cannot initiate outbound network connections or read from the filesystem.
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="code-block">
-        <div class="code-header">handlers/generate.js — sandbox context (actual code)</div>
-        <pre><code>const context = vm.createContext({
-  console: {
-    log:   (...args) =&gt; logs.push(args.map(a =&gt; typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')),
-    error: (...args) =&gt; logs.push('[error] ' + args.join(' ')),
-    warn:  (...args) =&gt; logs.push('[warn] '  + args.join(' ')),
-  },
-  Math, JSON, Array, Object, String,
-  Number, Boolean, Date, RegExp, Error,
-  parseInt, parseFloat, isNaN, isFinite,
-  encodeURIComponent,
-  // — require, process, fs, net: not present —
-});</code></pre>
-      </div>
-    </div>
-
-    <!-- 4. Input Validation & Safety -->
-    <div class="section" id="input-validation">
-      <div class="section-header">
-        <div class="section-icon cyan">&#128203;</div>
-        <div>
-          <div class="section-num">04</div>
-          <h2>Input Validation &amp; Safety</h2>
-        </div>
-      </div>
-
-      <p>
-        Inputs are bounded by size and validated against schemas before reaching any handler.
-        Database queries use parameterized statements exclusively.
-      </p>
-
-      <div class="controls">
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">1 MB request body limit</div>
-            <div class="control-desc">
-              Express is configured to reject JSON bodies larger than 1 MB. This prevents
-              memory exhaustion from oversized payloads before any application logic runs.
-            </div>
-            <div class="control-detail">server-v2.js: app.use(express.json(&#123; limit: '1mb' &#125;))</div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">JSON schema validation on API inputs</div>
-            <div class="control-desc">
-              Every API has a schema defined in <code>schemas.js</code>. The schema describes
-              required fields, types, and descriptions. Inputs are validated against the schema
-              before being forwarded to the handler. Unknown or malformed fields are rejected
-              with a structured error response.
-            </div>
-            <div class="control-detail">schemas.js: SCHEMAS[slug].input — per-field type and required definitions</div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">SQL injection prevention via parameterized queries</div>
+            <div class="control-title">Parameterized SQL queries &mdash; no SQL injection</div>
             <div class="control-desc">
               All database access uses better-sqlite3's <code>db.prepare()</code> with positional
-              parameters. User-supplied values are bound at execution time — they are never
+              parameters. User-supplied values are bound at execution time &mdash; they are never
               interpolated into SQL strings. This eliminates the entire class of SQL injection
               vulnerabilities across all queries.
             </div>
             <div class="control-detail">server-v2.js: db.prepare('SELECT * FROM api_keys WHERE key = ?').get(key)</div>
           </div>
         </div>
-
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">No eval() on user input outside sandbox</div>
-            <div class="control-desc">
-              The application does not call <code>eval()</code>, <code>new Function()</code>,
-              or any dynamic code evaluation on user-supplied strings outside the explicit
-              VM sandbox. User code is only executed through the sandboxed
-              <code>exec-javascript</code> API described above.
-            </div>
-          </div>
-        </div>
       </div>
     </div>
 
-    <!-- 5. Monitoring & Audit -->
-    <div class="section" id="monitoring">
+
+    <!-- ================================================================ -->
+    <!-- 4. Audit & Observability                                         -->
+    <!-- ================================================================ -->
+    <div class="section" id="audit">
       <div class="section-header">
         <div class="section-icon orange">&#128196;</div>
         <div>
-          <div class="section-num">05</div>
-          <h2>Monitoring &amp; Audit Logging</h2>
+          <div class="section-num">04</div>
+          <h2>Audit &amp; Observability</h2>
         </div>
       </div>
 
       <p>
-        Every authenticated API call produces an audit log record. Usage is queryable per key.
-        An admin statistics endpoint provides server-wide visibility.
+        Every authenticated API call produces a structured audit record. Response headers
+        provide per-call telemetry. All activity is correlatable via request IDs and
+        traceable via API versioning.
       </p>
 
       <div class="controls">
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">Per-call audit log in SQLite</div>
+            <div class="control-title">Structured JSON logging with timestamps</div>
+            <div class="control-desc">
+              All server logs are emitted as structured JSON with ISO-8601 timestamps,
+              log levels, and contextual metadata (request ID, key prefix, endpoint, latency).
+              This format is compatible with log aggregation systems like Datadog, Splunk,
+              and CloudWatch for centralized monitoring.
+            </div>
+            <div class="control-detail">Structured log format: { ts, level, requestId, keyPrefix, endpoint, latencyMs, ... }</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">X-Request-Id on every response (correlatable)</div>
+            <div class="control-desc">
+              Every API response includes an <code>X-Request-Id</code> header containing a
+              unique identifier for that request. This ID is also recorded in the audit log,
+              enabling end-to-end correlation between client-side logs and server-side records
+              for debugging and compliance investigations.
+            </div>
+            <div class="control-detail">res.set('X-Request-Id', crypto.randomUUID())</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">X-API-Version header for change tracking</div>
+            <div class="control-desc">
+              Every response includes an <code>X-API-Version</code> header indicating the
+              server version that produced the response. This enables clients to detect API
+              changes, supports rollback verification, and provides an audit trail of which
+              code version handled each request.
+            </div>
+            <div class="control-detail">res.set('X-API-Version', SERVER_VERSION)</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Audit log of every API call</div>
             <div class="control-desc">
               Every API execution writes a row to the <code>audit_log</code> table containing:
-              timestamp, key prefix (not the full key), API slug, credits consumed, latency in
-              milliseconds, and the execution engine. Indexes on <code>ts</code> and
-              <code>api</code> support efficient queries.
+              <strong>timestamp</strong>, <strong>key prefix</strong> (not the full key),
+              <strong>API endpoint</strong>, <strong>credits consumed</strong>,
+              <strong>latency in milliseconds</strong>, and the <strong>execution engine</strong>.
+              Indexes on <code>ts</code> and <code>api</code> support efficient queries.
+              Users can query their own history via <code>GET /v1/usage</code>.
             </div>
-            <div class="control-detail">audit_log schema: ts, key_prefix, api, credits, latency_ms, engine</div>
+            <div class="control-detail">audit_log schema: ts, key_prefix, api, credits, latency_ms, engine &mdash; indexed on ts, api</div>
           </div>
         </div>
 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">Per-key usage history</div>
+            <div class="control-title">Sunset/Deprecation headers for future API changes</div>
             <div class="control-desc">
-              Authenticated users can query their own call history via
-              <code>GET /v1/usage</code>, which returns the last 1,000 log entries for their
-              key along with per-API totals and aggregate credit spend.
+              When APIs are scheduled for deprecation, the server includes <code>Sunset</code>
+              and <code>Deprecation</code> headers per RFC 8594 and the IETF Deprecation
+              header draft. This gives clients advance notice of breaking changes and enables
+              automated migration tooling.
             </div>
-            <div class="control-detail">server-v2.js: dbGetAudit.all(keyPrefix) — last 1000 rows for the requesting key</div>
+            <div class="control-detail">res.set('Sunset', 'date') / res.set('Deprecation', 'true') on deprecated endpoints</div>
           </div>
         </div>
 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">Admin statistics endpoint</div>
-            <div class="control-desc">
-              <code>GET /v1/admin/stats</code> (protected by <code>ADMIN_SECRET</code>) returns
-              server-wide usage statistics: total calls, total credits consumed, top APIs by call
-              volume, recent audit entries, and key count. This is used for operational monitoring.
-            </div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">Response headers expose per-call telemetry</div>
+            <div class="control-title">Per-call telemetry headers</div>
             <div class="control-desc">
               Every API response includes <code>X-Credits-Used</code>,
               <code>X-Credits-Remaining</code>, <code>X-Latency-Ms</code>,
               <code>X-Request-Id</code>, and <code>X-Engine</code> headers. This allows
-              clients to observe their own consumption without querying the usage endpoint.
+              clients to observe their consumption in real time without querying the usage
+              endpoint.
             </div>
-            <div class="control-detail">server-v2.js: res.set('X-Credits-Used', ...) / res.set('X-Credits-Remaining', ...)</div>
+            <div class="control-detail">res.set('X-Credits-Used', ...) / res.set('X-Credits-Remaining', ...)</div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 6. Infrastructure -->
-    <div class="section" id="infrastructure">
-      <div class="section-header">
-        <div class="section-icon zinc">&#127970;</div>
-        <div>
-          <div class="section-num">06</div>
-          <h2>Infrastructure</h2>
-        </div>
-      </div>
 
-      <p>
-        The API server runs on Railway Pro. Static assets are served via Vercel's edge CDN.
-        No multi-region failover is currently configured.
-      </p>
-
-      <div class="controls">
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">Railway Pro hosting with automatic TLS</div>
-            <div class="control-desc">
-              The application is deployed on Railway's Pro tier, which provides automatic
-              TLS certificate provisioning and renewal, DDoS mitigation at the network edge,
-              and managed container restarts on failure.
-            </div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">Vercel edge CDN for static assets</div>
-            <div class="control-desc">
-              The <code>slopshop.gg</code> frontend (HTML, CSS, JS) is deployed to Vercel's
-              global edge network, served from locations close to the user. This reduces latency
-              and provides edge-level DDoS protection for public pages.
-            </div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">WAL journaling for crash recovery</div>
-            <div class="control-desc">
-              SQLite is configured in WAL mode. If the process is interrupted mid-write, WAL
-              ensures the database returns to its last consistent state on next open. No data
-              corruption occurs from unclean shutdowns.
-            </div>
-            <div class="control-detail">server-v2.js: db.pragma('journal_mode = WAL')</div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">Automatic rate-limit map cleanup</div>
-            <div class="control-desc">
-              The in-memory IP rate-limit map is scanned every 5 minutes. Entries older than
-              one hour are evicted. This prevents unbounded memory growth from a large number
-              of unique IPs over time.
-            </div>
-            <div class="control-detail">server-v2.js: setInterval(() =&gt; &#123; /* evict entries > 1hr old */ &#125;, 300000)</div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status no"></div>
-          <div class="control-body">
-            <div class="control-title">Multi-region redundancy</div>
-            <div class="control-desc">
-              The API server runs in a single Railway region. There is no hot standby, read
-              replica, or geographic failover. A regional Railway outage would cause downtime.
-              See <a href="#what-we-dont-do">Security Roadmap</a>.
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 7. Credit System Safety -->
-    <div class="section" id="credit-safety">
-      <div class="section-header">
-        <div class="section-icon yellow">&#128176;</div>
-        <div>
-          <div class="section-num">07</div>
-          <h2>Credit System Safety</h2>
-        </div>
-      </div>
-
-      <p>
-        Credit balance is checked before every execution. No API runs without sufficient balance.
-        Deductions happen at the point of execution; the updated balance is persisted to SQLite
-        immediately after.
-      </p>
-
-      <div class="controls">
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">Balance checked before execution — never execute on insufficient credits</div>
-            <div class="control-desc">
-              Before calling any handler, the server verifies
-              <code>acct.balance &gt;= def.credits</code>. If the balance is insufficient and
-              auto-reload is not configured, the request is rejected with HTTP 402 before any
-              computation occurs.
-            </div>
-            <div class="control-detail">server-v2.js: if (req.acct.balance &lt; def.credits) return res.status(402)...</div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">Atomic balance deduction with immediate persistence</div>
-            <div class="control-desc">
-              The balance is decremented in memory before the handler runs, then
-              <code>persistKey()</code> writes the new balance to SQLite via a prepared UPDATE
-              statement after the response is built. The in-memory and on-disk balances are
-              kept in sync on every call.
-            </div>
-            <div class="control-detail">server-v2.js: req.acct.balance -= def.credits; ... persistKey(req.apiKey)</div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">Auto-reload with configurable threshold</div>
-            <div class="control-desc">
-              Users can configure auto-reload via <code>POST /v1/credits/auto-reload</code>,
-              specifying a threshold and reload amount. When the balance drops below the
-              threshold at the start of a call, the reload amount is added before execution
-              proceeds. The configuration is stored in SQLite and survives server restarts.
-            </div>
-            <div class="control-detail">server-v2.js: if (req.acct.auto_reload) &#123; req.acct.balance += req.acct.auto_reload.amount; &#125;</div>
-          </div>
-        </div>
-
-        <div class="control">
-          <div class="control-status yes"></div>
-          <div class="control-body">
-            <div class="control-title">Key prefix only in audit log — full key never logged</div>
-            <div class="control-desc">
-              The audit log stores only a prefix of the API key (<code>key_prefix</code>),
-              not the full key. This means the audit log cannot be used to impersonate a user
-              even if the log table were accessed directly.
-            </div>
-            <div class="control-detail">server-v2.js: dbInsertAudit.run(ts, key.slice(0, 12), api, credits, latency, engine)</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 8. What We Don't Do -->
-    <div class="section" id="what-we-dont-do">
-      <div class="section-header">
-        <div class="section-icon cyan">&#128736;&#65039;</div>
-        <div>
-          <div class="section-num">08</div>
-          <h2>Security Roadmap</h2>
-        </div>
-      </div>
-
-      <p>
-        Upcoming security enhancements on the engineering roadmap.
-      </p>
-
-      <h3 style="font-family:var(--mono);font-size:0.88rem;margin-bottom:12px;color:var(--t)">Service Level</h3>
-      <div style="background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:20px;margin-bottom:20px">
-        <div style="font-size:0.85rem;color:var(--t);font-weight:700;margin-bottom:8px">Uptime Target: 99.5%</div>
-        <p style="color:var(--t2);font-size:0.82rem;line-height:1.6">Slopshop targets 99.5% uptime for the hosted API at slopshop.gg. The API runs on Railway Pro with automatic TLS, health monitoring, and zero-downtime deploys. Real-time status available at <a href="/status">/status</a>. Compute-tier APIs (189 endpoints) have zero external dependencies and are the most reliable. Network and LLM APIs depend on upstream providers.</p>
-        <p style="color:var(--t2);font-size:0.82rem;margin-top:8px">For guaranteed SLAs with contractual commitments, contact <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a> for enterprise plans.</p>
-      </div>
-
-      <h3 style="font-family:var(--mono);font-size:0.88rem;margin-bottom:12px;color:var(--t)">Engineering Roadmap</h3>
-      <div style="display:grid;gap:10px">
-        <div style="background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:16px 20px">
-          <strong style="color:var(--t)">Scoped API keys with RBAC</strong>
-          <p style="color:var(--t2);font-size:0.82rem;margin-top:4px">Per-namespace, per-category, and read-only API key scoping. Team management with per-team credit budgets.</p>
-        </div>
-        <div style="background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:16px 20px">
-          <strong style="color:var(--t)">Process-level sandbox isolation</strong>
-          <p style="color:var(--t2);font-size:0.82rem;margin-top:4px">Replace vm.createContext with isolated-vm or container-level isolation for code execution APIs.</p>
-        </div>
-        <div style="background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:16px 20px">
-          <strong style="color:var(--t)">SOC 2 Type II certification</strong>
-          <p style="color:var(--t2);font-size:0.82rem;margin-top:4px">Formal compliance audit with independent assessor.</p>
-        </div>
-        <div style="background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:16px 20px">
-          <strong style="color:var(--t)">Encryption at rest</strong>
-          <p style="color:var(--t2);font-size:0.82rem;margin-top:4px">SQLite Encryption Extension for database-level encryption.</p>
-        </div>
-        <div style="background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:16px 20px">
-          <strong style="color:var(--t)">Multi-region redundancy</strong>
-          <p style="color:var(--t2);font-size:0.82rem;margin-top:4px">Geographic distribution with automated failover.</p>
-        </div>
-      </div>
-
-      <p style="margin-top:16px;font-size:0.82rem;color:var(--t3)">
-        Security inquiries: <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a>
-      </p>
-    </div>
-
-    <!-- 9. Control Summary -->
-    <div class="section" id="summary">
+    <!-- ================================================================ -->
+    <!-- 5. Compliance Readiness                                          -->
+    <!-- ================================================================ -->
+    <div class="section" id="compliance">
       <div class="section-header">
         <div class="section-icon green">&#9989;</div>
         <div>
-          <div class="section-num">09</div>
+          <div class="section-num">05</div>
+          <h2>Compliance Readiness</h2>
+        </div>
+      </div>
+
+      <p>
+        Slopshop is actively preparing for SOC 2 Type II certification and implements
+        controls aligned with enterprise compliance requirements. The platform is designed
+        to be self-hostable for air-gapped and regulated environments.
+      </p>
+
+      <div class="compliance-box">
+        <h3>SOC 2 Type II &mdash; Preparation in Progress</h3>
+        <ul class="info-list">
+          <li>
+            <strong>SOC 2 Type II preparation is underway.</strong> Controls for security,
+            availability, and confidentiality trust service criteria are implemented at the
+            application layer. Formal certification with an independent assessor is planned.
+          </li>
+          <li>
+            <strong>Self-hostable for air-gapped/compliance deployments.</strong> The entire
+            platform can be deployed on-premises with <code>npm install slopshop && node server-v2.js</code>.
+            All compute APIs run with zero external dependencies. Enterprise customers can
+            audit, modify, and deploy in fully isolated environments.
+          </li>
+          <li>
+            <strong><code>/.well-known/security.txt</code> endpoint.</strong> A machine-readable
+            security contact file is served at the standard well-known URI per RFC 9116,
+            providing vulnerability disclosure contacts and policy links.
+          </li>
+          <li>
+            <strong>No tracking, no analytics, no third-party scripts on API.</strong>
+            The API server does not include any tracking pixels, analytics scripts, or
+            third-party JavaScript. No user data is shared with advertising or analytics
+            providers. The only outbound connections are to explicitly configured upstream
+            APIs (LLM providers, when enabled).
+          </li>
+          <li>
+            <strong>GDPR: data deletion available via memory-delete.</strong> Users can delete
+            all their persistent memory data via the <code>memory-delete</code> API. Account
+            deletion is available on request. No data is retained after deletion beyond the
+            audit log (which contains only anonymized key prefixes, not personal data).
+          </li>
+          <li>
+            <strong>security.txt contact:</strong>
+            <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a>
+          </li>
+        </ul>
+      </div>
+
+      <h3 style="font-family:var(--mono);font-size:0.88rem;margin:24px 0 12px;color:var(--t)">Service Level</h3>
+      <div style="background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:20px;margin-bottom:20px">
+        <div style="font-size:0.85rem;color:var(--t);font-weight:700;margin-bottom:8px">Uptime Target: 99.5%</div>
+        <p style="color:var(--t2);font-size:0.82rem;line-height:1.6">Slopshop targets 99.5% uptime for the hosted API. The API runs on Railway Pro with automatic TLS, health monitoring, and zero-downtime deploys. Compute-tier APIs (189 endpoints) have zero external dependencies and are the most reliable. Network and LLM APIs depend on upstream providers.</p>
+        <p style="color:var(--t2);font-size:0.82rem;margin-top:8px">For guaranteed SLAs with contractual commitments, contact <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a> for enterprise plans.</p>
+      </div>
+    </div>
+
+
+    <!-- ================================================================ -->
+    <!-- 6. Incident Response                                             -->
+    <!-- ================================================================ -->
+    <div class="section" id="incident-response">
+      <div class="section-header">
+        <div class="section-icon red">&#128680;</div>
+        <div>
+          <div class="section-num">06</div>
+          <h2>Incident Response</h2>
+        </div>
+      </div>
+
+      <p>
+        Slopshop maintains an incident response process for security vulnerabilities,
+        service outages, and data incidents.
+      </p>
+
+      <div class="incident-box">
+        <h3>Reporting a Security Vulnerability</h3>
+        <ul class="info-list red">
+          <li>
+            <strong>Contact:</strong>
+            <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a>
+          </li>
+          <li>
+            <strong>Response time target:</strong> less than 24 hours for initial acknowledgment
+          </li>
+          <li>
+            <strong>Status page:</strong>
+            <a href="https://slopshop.gg/status-page">slopshop.gg/status-page</a>
+          </li>
+          <li>
+            <strong>Disclosure policy:</strong> We follow coordinated disclosure. We will
+            work with reporters to understand and resolve issues before any public disclosure.
+          </li>
+          <li>
+            <strong>Scope:</strong> All slopshop.gg infrastructure, API endpoints, client
+            libraries, and documentation sites are in scope for vulnerability reports.
+          </li>
+        </ul>
+      </div>
+
+      <div class="controls">
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Incident classification and escalation</div>
+            <div class="control-desc">
+              Incidents are classified by severity (P0 through P3). P0 incidents (data breach,
+              complete service outage) trigger immediate response. P1 incidents (partial outage,
+              security vulnerability) are addressed within 4 hours. All incidents are documented
+              with root cause analysis and remediation steps.
+            </div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Post-incident review process</div>
+            <div class="control-desc">
+              Every P0 and P1 incident results in a written post-mortem documenting the timeline,
+              root cause, impact, and remediation. Lessons learned are incorporated into the
+              engineering roadmap to prevent recurrence.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================================================================ -->
+    <!-- 7. Verification                                                  -->
+    <!-- ================================================================ -->
+    <div class="section" id="verification">
+      <div class="section-header">
+        <div class="section-icon purple">&#128270;</div>
+        <div>
+          <div class="section-num">07</div>
+          <h2>Verification</h2>
+        </div>
+      </div>
+
+      <p>
+        Slopshop provides cryptographic proof of execution on every response. Clients can
+        independently verify that results are authentic, untampered, and produced by the
+        real execution engine.
+      </p>
+
+      <div class="controls">
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Every response includes _engine: "real" execution proof</div>
+            <div class="control-desc">
+              Every API response body contains an <code>_engine</code> field confirming the
+              execution backend. For compute APIs, this is always <code>"real"</code>, indicating
+              the handler executed genuine computation rather than returning cached or mock data.
+              This field is verifiable via self-hosting.
+            </div>
+            <div class="control-detail">response._engine = "real" &mdash; included on every compute API response</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">SHA-256 output hashes for tamper detection</div>
+            <div class="control-desc">
+              Every response includes an <code>_output_hash</code> field containing the SHA-256
+              digest of the result payload. Clients can recompute
+              <code>sha256(JSON.stringify(result))</code> to verify that neither a proxy, CDN,
+              nor man-in-the-middle has modified the response content.
+            </div>
+            <div class="control-detail">_output_hash = crypto.createHash('sha256').update(payload).digest('hex')</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Merkle proofs for batch/army operations</div>
+            <div class="control-desc">
+              Batch and army (parallel compute) endpoints return a <strong>Merkle root</strong>
+              computed from the individual result hashes. This allows clients to verify the
+              integrity of the entire batch result set with a single hash comparison, and to
+              prove the inclusion of any individual result within the batch.
+            </div>
+            <div class="control-detail">batch._merkle_root = merkle(results.map(r =&gt; r._output_hash))</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status yes"></div>
+          <div class="control-body">
+            <div class="control-title">Self-host to verify</div>
+            <div class="control-desc">
+              The entire Slopshop platform is available as an npm package. Enterprise customers
+              and security auditors can run the exact same server locally, submit the same inputs,
+              and verify that the outputs and hashes match the hosted API. This provides the
+              strongest possible verification guarantee.
+            </div>
+            <div class="control-detail">npm install slopshop && node server-v2.js &mdash; identical compute handlers</div>
+          </div>
+        </div>
+
+        <div class="control">
+          <div class="control-status roadmap"></div>
+          <div class="control-body">
+            <div class="control-title">TEE attestation on roadmap</div>
+            <div class="control-desc">
+              Trusted Execution Environment (TEE) attestation is on the engineering roadmap.
+              This will enable cryptographic proof that compute handlers are running inside a
+              verified, tamper-proof enclave, providing hardware-level execution guarantees
+              beyond what software verification alone can provide.
+            </div>
+            <div class="control-detail">Roadmap: TEE attestation via Intel SGX or AMD SEV for compute handlers</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- ================================================================ -->
+    <!-- 8. Control Summary                                               -->
+    <!-- ================================================================ -->
+    <div class="section" id="summary">
+      <div class="section-header">
+        <div class="section-icon cyan">&#128203;</div>
+        <div>
+          <div class="section-num">08</div>
           <h2>Control Summary</h2>
         </div>
       </div>
@@ -819,137 +925,270 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
       <table class="status-table">
         <thead>
           <tr>
+            <th>Category</th>
             <th>Control</th>
             <th>Status</th>
-            <th>Notes</th>
           </tr>
         </thead>
         <tbody>
           <tr>
-            <td>PBKDF2 password hashing (100K iter, SHA-512)</td>
+            <td>Infrastructure</td>
+            <td>HTTPS enforced (301 redirect)</td>
             <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>auth.js</td>
           </tr>
           <tr>
-            <td>Bearer token authentication</td>
+            <td>Infrastructure</td>
+            <td>Content Security Policy (CSP)</td>
             <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>server-v2.js auth middleware</td>
           </tr>
           <tr>
-            <td>Signup rate limiting (5/hr/IP)</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>auth.js</td>
-          </tr>
-          <tr>
-            <td>Login rate limiting (10/min/IP)</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>auth.js</td>
-          </tr>
-          <tr>
-            <td>API key rotation</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>POST /v1/auth/rotate-key</td>
-          </tr>
-          <tr>
-            <td>HTTPS / TLS in transit</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>Railway-enforced</td>
-          </tr>
-          <tr>
-            <td>SQLite WAL mode</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>server-v2.js</td>
-          </tr>
-          <tr>
-            <td>No plaintext password storage</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>auth.js</td>
-          </tr>
-          <tr>
+            <td>Infrastructure</td>
             <td>Helmet.js security headers</td>
             <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>server-v2.js</td>
           </tr>
           <tr>
-            <td>Encryption at rest (SQLite)</td>
+            <td>Infrastructure</td>
+            <td>CORS explicit origin allowlist</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Infrastructure</td>
+            <td>Request body size limits</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Infrastructure</td>
+            <td>Graceful shutdown (SIGTERM/SIGINT)</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Auth</td>
+            <td>PBKDF2-SHA512 (100K iterations)</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Auth</td>
+            <td>Scoped keys (tier/category)</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Auth</td>
+            <td>Timing-safe comparisons</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Auth</td>
+            <td>Rate limiting (60 req/min default)</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Auth</td>
+            <td>Retry-After on 429</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Auth</td>
+            <td>API key rotation</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>Memory isolation (SHA-256 prefix)</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>SQLite WAL crash-safe writes</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>Credit refund on handler error</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>No plaintext password storage</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>SHA-256 output hashes</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Data</td>
+            <td>Parameterized SQL (no injection)</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Audit</td>
+            <td>Structured JSON logging</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Audit</td>
+            <td>X-Request-Id on every response</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Audit</td>
+            <td>X-API-Version header</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Audit</td>
+            <td>Full audit log (every call)</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Audit</td>
+            <td>Sunset/Deprecation headers</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Compliance</td>
+            <td>SOC 2 Type II</td>
+            <td><span class="st-planned">IN PROGRESS</span></td>
+          </tr>
+          <tr>
+            <td>Compliance</td>
+            <td>Self-hostable (air-gapped)</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Compliance</td>
+            <td>/.well-known/security.txt</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Compliance</td>
+            <td>No tracking/analytics on API</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Compliance</td>
+            <td>GDPR data deletion</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Verification</td>
+            <td>_engine execution proof</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Verification</td>
+            <td>SHA-256 output hashes</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Verification</td>
+            <td>Merkle proofs (batch/army)</td>
+            <td><span class="st-yes">IMPLEMENTED</span></td>
+          </tr>
+          <tr>
+            <td>Verification</td>
+            <td>TEE attestation</td>
             <td><span class="st-planned">ROADMAP</span></td>
-            <td>Planned</td>
           </tr>
           <tr>
-            <td>VM sandbox (vm.createContext)</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>handlers/generate.js</td>
+            <td>Infrastructure</td>
+            <td>Encryption at rest</td>
+            <td><span class="st-planned">ROADMAP</span></td>
           </tr>
           <tr>
-            <td>Execution timeout enforcement</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>5,000 ms max</td>
-          </tr>
-          <tr>
-            <td>1 MB request body limit</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>server-v2.js</td>
-          </tr>
-          <tr>
-            <td>Parameterized SQL queries</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>better-sqlite3 prepared statements</td>
-          </tr>
-          <tr>
-            <td>Input schema validation</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>schemas.js</td>
-          </tr>
-          <tr>
-            <td>Per-call audit logging</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>audit_log table</td>
-          </tr>
-          <tr>
-            <td>Credit balance enforcement</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>pre-execution check</td>
-          </tr>
-          <tr>
-            <td>Full key excluded from audit log</td>
-            <td><span class="st-yes">IMPLEMENTED</span></td>
-            <td>prefix only stored</td>
-          </tr>
-          <tr>
+            <td>Infrastructure</td>
             <td>Multi-region redundancy</td>
             <td><span class="st-planned">ROADMAP</span></td>
-            <td>Planned</td>
-          </tr>
-          <tr>
-            <td>SOC 2 audit</td>
-            <td><span class="st-planned">ROADMAP</span></td>
-            <td>Planned</td>
-          </tr>
-          <tr>
-            <td>Subprocess-level sandbox isolation</td>
-            <td><span class="st-planned">PLANNED</span></td>
-            <td>vm.createContext only currently</td>
-          </tr>
-          <tr>
-            <td>Distributed rate limiting</td>
-            <td><span class="st-planned">ROADMAP</span></td>
-            <td>In-process only; single instance</td>
           </tr>
         </tbody>
       </table>
     </div>
 
+
+    <!-- ================================================================ -->
+    <!-- Contact                                                          -->
+    <!-- ================================================================ -->
+    <div class="section" id="contact">
+      <div class="section-header">
+        <div class="section-icon red">&#128232;</div>
+        <div>
+          <div class="section-num">09</div>
+          <h2>Security Contact</h2>
+        </div>
+      </div>
+
+      <div style="background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:24px;display:grid;gap:16px">
+        <div>
+          <div style="font-family:var(--mono);font-size:0.72rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Email</div>
+          <a href="mailto:dev@slopshop.gg" style="font-family:var(--mono);font-size:0.88rem;font-weight:700">dev@slopshop.gg</a>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:0.72rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Response Time</div>
+          <span style="font-family:var(--mono);font-size:0.88rem;color:var(--t2)">Less than 24 hours</span>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:0.72rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Status Page</div>
+          <a href="https://slopshop.gg/status-page" style="font-family:var(--mono);font-size:0.88rem;font-weight:700">slopshop.gg/status-page</a>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:0.72rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Security Policy</div>
+          <a href="https://slopshop.gg/.well-known/security.txt" style="font-family:var(--mono);font-size:0.88rem;font-weight:700">/.well-known/security.txt</a>
+        </div>
+        <div>
+          <div style="font-family:var(--mono);font-size:0.72rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Enterprise Inquiries</div>
+          <span style="font-size:0.84rem;color:var(--t2)">For SOC 2 reports, BAA agreements, or custom compliance requirements, contact <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a></span>
+        </div>
+      </div>
+    </div>
+
+
     <!-- Footer -->
     <div class="assessment-footer">
       <div>
-        <p>Security questions or vulnerability reports: contact the operator directly via the email on the dashboard.</p>
-        <p style="margin-top:6px">Last reviewed: March 2026</p>
+        <p>Security questions, vulnerability reports, or compliance inquiries: <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a></p>
+        <p style="margin-top:6px">Last reviewed: March 2026 &nbsp;&bull;&nbsp; SOC 2 Type II preparation in progress</p>
       </div>
-      <span class="badge-self">Last assessed: March 2026</span>
+      <span class="badge-self">Reviewed March 2026</span>
     </div>
 
   </main>
 </div>
+
+<!-- Site footer -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-col">
+      <div class="footer-label">Platform</div>
+      <a href="/">Home</a>
+      <a href="/tools">Tools</a>
+      <a href="/docs.html">Documentation</a>
+      <a href="/#pricing">Pricing</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-label">Security</div>
+      <a href="/security.html">Security Overview</a>
+      <a href="/.well-known/security.txt">security.txt</a>
+      <a href="https://slopshop.gg/status-page">Status Page</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-label">Company</div>
+      <a href="/about">About</a>
+      <a href="mailto:dev@slopshop.gg">Contact</a>
+      <a href="https://x.com/slopshopgg">Twitter / X</a>
+    </div>
+    <div class="footer-col">
+      <div class="footer-label">Developers</div>
+      <a href="/signup">Get API Key</a>
+      <a href="/dashboard.html">Dashboard</a>
+      <a href="/playbooks">Playbooks</a>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>&copy; 2026 Slopshop. All rights reserved.</p>
+    <p style="font-family:var(--mono);font-size:0.68rem;color:var(--t4)">SOC 2 Type II preparation in progress &bull; <a href="mailto:dev@slopshop.gg" style="color:var(--t3)">dev@slopshop.gg</a></p>
+  </div>
+</footer>
 
 <script>
 // Highlight active sidebar link on scroll
@@ -964,7 +1203,7 @@ const observer = new IntersectionObserver((entries) => {
       if (match) match.classList.add('active');
     }
   });
-}, { rootMargin: '-50px 0px -70% 0px' });
+}, { rootMargin: '-56px 0px -70% 0px' });
 
 sections.forEach(s => observer.observe(s));
 </script>

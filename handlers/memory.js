@@ -167,7 +167,7 @@ module.exports = function (db) {
   // 1. memory-set
   // -------------------------------------------------------------------------
   function memorySet(input) {
-    const { key, value, tags = [], namespace = 'default' } = input;
+    const { key, value, tags = [], namespace = 'default', ttl_seconds } = input;
     if (!key) throw new Error('key is required');
     const now = Date.now();
     const existing = stmts.memGet.get(namespace, key);
@@ -178,6 +178,9 @@ module.exports = function (db) {
       stmts.histPrune.run(namespace, key, namespace, key);
     }
 
+    // Item 5: TTL support — if ttl_seconds is provided, set it; otherwise preserve existing
+    const ttl = (ttl_seconds != null && Number(ttl_seconds) > 0) ? Number(ttl_seconds) : 0;
+
     stmts.memUpsert.run({
       namespace,
       key,
@@ -185,10 +188,15 @@ module.exports = function (db) {
       tags: JSON.stringify(tags),
       created: existing ? existing.created : now,
       updated: now,
-      ttl: 0, // preserve existing ttl via ON CONFLICT DO UPDATE logic
+      ttl, // 0 preserves existing ttl via ON CONFLICT DO UPDATE logic; >0 sets new ttl
     });
 
-    return { _engine: 'real', key, status: 'stored' };
+    const result = { _engine: 'real', key, status: 'stored' };
+    if (ttl > 0) {
+      result.ttl_seconds = ttl;
+      result.expires_at = (existing ? existing.created : now) + ttl * 1000;
+    }
+    return result;
   }
 
   // -------------------------------------------------------------------------
