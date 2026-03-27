@@ -1,8 +1,35 @@
 node_modules/
 .data/
 .env
+.env.*
 *.log
 stress-dashboard.html
 .DS_Store
-
 .vercel
+
+# Internal strategy & survey docs (keep local only)
+STRATEGY*.md
+FOUNDER*.md
+COUNCIL*.md
+HACKATHON*.md
+SUPERPOWER*.md
+FEATURES*.md
+COMPETITOR*.md
+TODO.md
+LAUNCH.md
+
+# Test/audit files
+audit.js
+lobster-test.js
+simulate.js
+deep-simulate.js
+stress-test.js
+launch-qa.js
+launch-qa-report.json
+benchmark-results.json
+generate-seo.js
+js_block.txt
+
+# Build artifacts
+catalog-embed.json
+server.json
