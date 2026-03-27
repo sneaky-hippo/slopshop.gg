@@ -108,6 +108,13 @@ function request(method, path, body, auth = true) {
     if (auth && API_KEY) {
       options.headers['Authorization'] = `Bearer ${API_KEY}`;
     }
+    // Attach memory session header for memory endpoints (2FA)
+    if (path.includes('memory-') || path.includes('/memory')) {
+      const cfg = loadConfig();
+      if (cfg.memory_session) {
+        options.headers['X-Memory-Session'] = cfg.memory_session;
+      }
+    }
     if (payload) {
       options.headers['Content-Length'] = Buffer.byteLength(payload);
     }
@@ -1512,7 +1519,116 @@ async function cmdMemory(args) {
     console.log(`  ${cyan('slop memory get')} ${dim('<key>')}             Retrieve a value`);
     console.log(`  ${cyan('slop memory search')} ${dim('<query>')}        Search memory`);
     console.log(`  ${cyan('slop memory list')}                    List all keys`);
-    console.log(`  ${cyan('slop memory delete')} ${dim('<key>')}          Delete a key\n`);
+    console.log(`  ${cyan('slop memory delete')} ${dim('<key>')}          Delete a key`);
+    console.log('');
+    console.log(`  ${bold('2FA Protection')}`);
+    console.log(`  ${cyan('slop memory 2fa enable')} ${dim('--email x@y.com')}  Enable email 2FA`);
+    console.log(`  ${cyan('slop memory 2fa disable')}              Disable 2FA`);
+    console.log(`  ${cyan('slop memory 2fa status')}               Check 2FA status`);
+    console.log(`  ${cyan('slop memory session')}                  Create verified session`);
+    console.log('');
+    return;
+  }
+
+  // 2FA subcommands
+  if (sub === '2fa') {
+    const action = args[1];
+    if (action === 'enable') {
+      const emailIdx = args.indexOf('--email');
+      const email = emailIdx >= 0 ? args[emailIdx + 1] : null;
+      if (!email) die('Usage: slop memory 2fa enable --email your@email.com');
+      spinnerStart('Enabling memory 2FA...');
+      try {
+        const res = await request('POST', '/v1/memory/2fa/enable', { email });
+        spinnerStop(true);
+        const d = res.data || res;
+        if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+        console.log(`\n  ${green('Memory 2FA enabled!')}`);
+        console.log(`  ${bold('Email:')} ${d.email || email}`);
+        console.log(`  All memory operations now require a verified session.`);
+        console.log(`  ${dim('Create a session:')} ${cyan('slop memory session')}\n`);
+      } catch(e) { spinnerStop(false); handleError(e); }
+      return;
+    }
+    if (action === 'disable') {
+      if (process.stdin.isTTY && !quiet) {
+        const answer = await prompt('  Disable memory 2FA? This removes session requirements. (y/N) ');
+        if (answer.toLowerCase() !== 'y') { console.log(dim('  Cancelled.\n')); return; }
+      }
+      try {
+        const res = await request('POST', '/v1/memory/2fa/disable', {});
+        if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+        console.log(green('\n  Memory 2FA disabled.\n'));
+      } catch(e) { handleError(e); }
+      return;
+    }
+    if (action === 'status') {
+      try {
+        const res = await request('GET', '/v1/memory/2fa/status');
+        const d = res.data || res;
+        if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+        console.log(`\n  ${bold('Memory 2FA:')} ${d.enabled ? green('ENABLED') : dim('disabled')}`);
+        if (d.email) console.log(`  ${bold('Email:')} ${d.email}`);
+        console.log('');
+      } catch(e) { handleError(e); }
+      return;
+    }
+    console.log(`\n  ${bold('Memory 2FA')}\n`);
+    console.log(`  ${cyan('slop memory 2fa enable --email x@y.com')}`);
+    console.log(`  ${cyan('slop memory 2fa disable')}`);
+    console.log(`  ${cyan('slop memory 2fa status')}\n`);
+    return;
+  }
+
+  // Session management
+  if (sub === 'session') {
+    spinnerStart('Creating memory session...');
+    try {
+      const res = await request('POST', '/v1/memory/session/create', {});
+      spinnerStop(true);
+      const d = res.data || res;
+      if (d.session_id === 'no-2fa') {
+        if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+        console.log(dim('\n  2FA not enabled. Memory ops work without a session.\n'));
+        console.log(`  ${dim('Enable:')} ${cyan('slop memory 2fa enable --email your@email.com')}\n`);
+        return;
+      }
+      if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+      console.log(`\n  ${green('Session created!')}`);
+      console.log(`  ${bold('Session ID:')} ${cyan(d.session_id)}`);
+      console.log(`  ${bold('Expires:')} ${d.expires_in}`);
+      if (d.dev_code) {
+        console.log(`  ${yellow('Dev code:')} ${bold(d.dev_code)} ${dim('(shown because no email service)')}`);
+      } else {
+        console.log(`  ${dim('Verification code sent to your email.')}`);
+      }
+      console.log(`\n  ${dim('Verify:')} ${cyan('slop memory verify --session ' + d.session_id + ' --code 123456')}`);
+
+      // Save session to config for convenience
+      const cfg = loadConfig();
+      cfg.memory_session = d.session_id;
+      saveConfig(cfg);
+      console.log(`  ${dim('Session saved to config. Will be used automatically.')}\n`);
+    } catch(e) { spinnerStop(false); handleError(e); }
+    return;
+  }
+
+  if (sub === 'verify') {
+    const sessIdx = args.indexOf('--session');
+    const codeIdx = args.indexOf('--code');
+    const cfg = loadConfig();
+    const sessionId = sessIdx >= 0 ? args[sessIdx + 1] : cfg.memory_session;
+    const code = codeIdx >= 0 ? args[codeIdx + 1] : args[1];
+    if (!sessionId || !code) die('Usage: slop memory verify --session <id> --code <6-digit>');
+    spinnerStart('Verifying...');
+    try {
+      const res = await request('POST', '/v1/memory/session/verify', { session_id: sessionId, code });
+      spinnerStop(true);
+      const d = res.data || res;
+      if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+      console.log(`\n  ${green('Session verified!')} Expires: ${d.expires || 'in 1 hour'}`);
+      console.log(`  ${dim('Memory operations now work with this session.')}\n`);
+    } catch(e) { spinnerStop(false); handleError(e); }
     return;
   }
 

@@ -303,6 +303,120 @@ db.exec(`CREATE TABLE IF NOT EXISTS branches (id TEXT PRIMARY KEY, parent_id TEX
 db.exec(`CREATE TABLE IF NOT EXISTS failure_journal (id INTEGER PRIMARY KEY AUTOINCREMENT, api_key TEXT, api TEXT, error_type TEXT, error_message TEXT, input_summary TEXT, ts INTEGER)`);
 db.exec(`CREATE TABLE IF NOT EXISTS ab_tests (id TEXT PRIMARY KEY, api_key TEXT, name TEXT, variant_a TEXT, variant_b TEXT, results_a TEXT DEFAULT '[]', results_b TEXT DEFAULT '[]', ts INTEGER)`);
 
+// ===== MEMORY 2FA — Session-gated persistent memory with email verification =====
+db.exec(`CREATE TABLE IF NOT EXISTS memory_sessions (
+  id TEXT PRIMARY KEY,
+  api_key TEXT NOT NULL,
+  verified INTEGER DEFAULT 0,
+  code TEXT,
+  code_expires INTEGER,
+  created INTEGER NOT NULL,
+  expires INTEGER NOT NULL
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS memory_2fa_settings (
+  api_key TEXT PRIMARY KEY,
+  enabled INTEGER DEFAULT 0,
+  email TEXT,
+  updated INTEGER NOT NULL
+)`);
+
+const dbGetMemSession = db.prepare('SELECT * FROM memory_sessions WHERE id = ? AND api_key = ?');
+const dbInsertMemSession = db.prepare('INSERT OR REPLACE INTO memory_sessions (id, api_key, verified, code, code_expires, created, expires) VALUES (?, ?, ?, ?, ?, ?, ?)');
+const dbVerifyMemSession = db.prepare('UPDATE memory_sessions SET verified = 1 WHERE id = ? AND api_key = ?');
+const dbGet2faSetting = db.prepare('SELECT * FROM memory_2fa_settings WHERE api_key = ?');
+const dbSet2faSetting = db.prepare('INSERT OR REPLACE INTO memory_2fa_settings (api_key, enabled, email, updated) VALUES (?, ?, ?, ?)');
+
+// Memory 2FA middleware — checks session before allowing memory ops
+function memoryAuth(req, res, next) {
+  const slug = req.params.slug;
+  if (!slug || !slug.startsWith('memory-')) return next();
+
+  const setting = dbGet2faSetting.get(req.apiKey);
+  if (!setting || !setting.enabled) return next(); // 2FA not enabled, pass through
+
+  const sessionId = req.headers['x-memory-session'] || req.body._memory_session;
+  if (!sessionId) {
+    return res.status(401).json({
+      error: { code: 'memory_session_required', message: 'Memory 2FA is enabled. Get a session: POST /v1/memory/session/create, then verify with the emailed code: POST /v1/memory/session/verify' }
+    });
+  }
+
+  const session = dbGetMemSession.get(sessionId, req.apiKey);
+  if (!session) return res.status(401).json({ error: { code: 'invalid_memory_session' } });
+  if (session.expires < Date.now()) return res.status(401).json({ error: { code: 'memory_session_expired', message: 'Session expired. Create a new one.' } });
+  if (!session.verified) return res.status(401).json({ error: { code: 'memory_session_unverified', message: 'Verify your session with the emailed code: POST /v1/memory/session/verify' } });
+
+  req.memorySession = session;
+  next();
+}
+
+// Memory 2FA endpoints
+app.post('/v1/memory/2fa/enable', auth, (req, res) => {
+  const email = req.body.email;
+  if (!email || !email.includes('@')) return res.status(422).json({ error: { code: 'email_required' } });
+  dbSet2faSetting.run(req.apiKey, 1, email, Date.now());
+  res.json({ ok: true, message: 'Memory 2FA enabled. All memory operations now require a verified session.', email: email.replace(/(.{2}).*(@.*)/, '$1***$2') });
+});
+
+app.post('/v1/memory/2fa/disable', auth, (req, res) => {
+  dbSet2faSetting.run(req.apiKey, 0, null, Date.now());
+  res.json({ ok: true, message: 'Memory 2FA disabled. Memory operations no longer require session verification.' });
+});
+
+app.get('/v1/memory/2fa/status', auth, (req, res) => {
+  const setting = dbGet2faSetting.get(req.apiKey);
+  res.json({ enabled: !!(setting && setting.enabled), email: setting?.email ? setting.email.replace(/(.{2}).*(@.*)/, '$1***$2') : null });
+});
+
+app.post('/v1/memory/session/create', auth, (req, res) => {
+  const setting = dbGet2faSetting.get(req.apiKey);
+  if (!setting || !setting.enabled) {
+    return res.json({ ok: true, session_id: 'no-2fa', message: '2FA not enabled. Memory ops work without session.', verified: true });
+  }
+  const sessionId = 'memsess-' + crypto.randomUUID();
+  const code = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit code
+  const now = Date.now();
+  const expires = now + 3600000; // 1 hour session
+  const codeExpires = now + 600000; // 10 min code validity
+  dbInsertMemSession.run(sessionId, req.apiKey, 0, code, codeExpires, now, expires);
+
+  // In production, send email. For now, log it (would use SendGrid/SES in production)
+  log.info('Memory 2FA code generated', { key_prefix: req.apiKey.slice(0, 12), email: setting.email, code_hint: code.slice(0, 2) + '****' });
+
+  // If we have a webhook or email handler, send the code
+  if (allHandlers['ext-email-send'] && process.env.SENDGRID_API_KEY) {
+    allHandlers['ext-email-send']({ to: setting.email, subject: 'Slopshop Memory 2FA Code', body: 'Your verification code is: ' + code + '\nExpires in 10 minutes.' }).catch(() => {});
+  }
+
+  res.json({
+    ok: true,
+    session_id: sessionId,
+    message: 'Verification code sent to ' + setting.email.replace(/(.{2}).*(@.*)/, '$1***$2') + '. Verify with POST /v1/memory/session/verify',
+    expires_in: '1 hour',
+    code_expires_in: '10 minutes',
+    // DEV MODE: include code if no email service configured
+    ...(!process.env.SENDGRID_API_KEY ? { dev_code: code, dev_note: 'Code shown because no email service configured. Set SENDGRID_API_KEY for production.' } : {}),
+  });
+});
+
+app.post('/v1/memory/session/verify', auth, (req, res) => {
+  const { session_id, code } = req.body;
+  if (!session_id || !code) return res.status(422).json({ error: { code: 'missing_fields', fields: ['session_id', 'code'] } });
+
+  const session = dbGetMemSession.get(session_id, req.apiKey);
+  if (!session) return res.status(404).json({ error: { code: 'session_not_found' } });
+  if (session.verified) return res.json({ ok: true, message: 'Already verified.', session_id });
+  if (session.code_expires < Date.now()) return res.status(410).json({ error: { code: 'code_expired', message: 'Code expired. Create a new session.' } });
+
+  // Timing-safe comparison
+  if (!crypto.timingSafeEqual(Buffer.from(String(code)), Buffer.from(String(session.code)))) {
+    return res.status(401).json({ error: { code: 'invalid_code' } });
+  }
+
+  dbVerifyMemSession.run(session_id, req.apiKey);
+  res.json({ ok: true, message: 'Session verified. Include X-Memory-Session: ' + session_id + ' header on memory requests.', session_id, expires: new Date(session.expires).toISOString() });
+});
+
 // ===== AGENT CHAINING & PROMPT QUEUE TABLES =====
 db.exec(`CREATE TABLE IF NOT EXISTS agent_chains (
   id TEXT PRIMARY KEY,
@@ -6089,7 +6203,7 @@ app.post('/v1/wallet/transfer', auth, (req, res) => {
 });
 
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
-app.post('/v1/:slug', auth, BODY_LIMIT_COMPUTE, async (req, res) => {
+app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
   if (!def) return res.status(404).json({ error: { code: 'api_not_found', slug: req.params.slug, hint: 'GET /v1/tools to browse, POST /v1/resolve to search' } });
 
