@@ -137,6 +137,8 @@ for (const candidate of DB_CANDIDATES) {
   try {
     const dir = path.dirname(candidate);
     if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    // Touch the file first (Railway volumes need this)
+    if (!fs.existsSync(candidate)) fs.writeFileSync(candidate, '');
     // Test by actually opening the database
     db = new Database(candidate);
     DB_PATH = candidate;
