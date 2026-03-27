@@ -3,31 +3,43 @@
 
 ---
 
-## CLI Stats After v4 Feature Round
+## CLI Stats — v3.4.0
 
 ```
-38 commands | 12 global flags | 2,878 lines | 45+ NL patterns
+42 commands | 12 global flags | 3,298 lines | 50+ NL patterns
 Zero native deps | Pure Node.js | <100ms cold start
+```
+
+## Measured Server Performance (v3.4.0)
+
+```
+Handler execution:   0.003ms avg | 0.012ms P95 | 0.098ms P99 | 927/927 pass
+HTTP throughput:     5,694 req/sec (50 concurrent, keep-alive)
+Per-request latency: 0.18ms avg (localhost)
+Production RTT:      490-670ms (includes US→railway network hop)
+Compression:         78-80% savings (42KB → 8-9KB gzip)
+Cache hit:           0cr cost, <1ms response
+Rate limit:          120 req/min per key
 ```
 
 ---
 
-## Updated Parity Scores (Before → After)
+## Updated Parity Scores (Original → v3.4.0)
 
-| Competitor | Before | After | Gained | Key Features Added |
-|------------|:------:|:-----:|:------:|-------------------|
-| Claude Code | 20% | 35% | +15% | plan mode, model selection, debug |
-| Codex CLI | 20% | 35% | +15% | plan, cloud handoff, model switching |
-| GH Copilot | 40% | 55% | +15% | plan mode, multi-model, profiles |
-| AWS CLI (AI) | 40% | 55% | +15% | pagination, profiles, model selection, structured output |
-| Vercel | 30% | 50% | +20% | logs, dev server, env management |
-| Supabase | 10% | 30% | +20% | env mgmt, types generation, dev server |
-| Stripe | 30% | 50% | +20% | webhook listener, cost estimation, batch, dry-run |
-| Railway | 10% | 30% | +20% | logs, dev, env management |
-| Cursor | 10% | 30% | +20% | plan mode, model switching, debug |
-| Warp | 40% | 55% | +15% | NL routing (stronger), debug, profiles |
+| Competitor | Original | v3.4.0 | Gained | Key Features Added |
+|------------|:--------:|:------:|:------:|-------------------|
+| Claude Code | 20% | 50% | +30% | plan, models, debug, review, file, git, session |
+| Codex CLI | 20% | 45% | +25% | plan, cloud, models, session, file |
+| GH Copilot | 40% | 65% | +25% | plan, multi-model, profiles, git, review |
+| AWS CLI (AI) | 40% | 60% | +20% | pagination, profiles, models, types |
+| Vercel | 30% | 55% | +25% | logs, dev, env, file ops |
+| Supabase | 10% | 35% | +25% | env, types, dev, file, sessions |
+| Stripe | 30% | 55% | +25% | listen, cost, batch, dry-run, profiles |
+| Railway | 10% | 35% | +25% | logs, dev, env, git |
+| Cursor | 10% | 40% | +30% | plan, models, debug, review, file, git |
+| Warp | 40% | 60% | +20% | NL routing, debug, profiles, file ops |
 
-**Average parity: 25% → 42.5%** (+17.5pp)
+**Average parity: 25% → 50%** (+25pp, doubled)
 
 ---
 
@@ -183,21 +195,30 @@ Score = (distinct_operations × pipe_composability × NL_accuracy) / startup_tim
 | 14 | Pagination controls | 2 | `--limit N --offset N` |
 | 15 | NL routing for new cmds | — | plan, debug, cloud, models |
 
-**Total: 15 features in this round, 25 features across both rounds.**
+**Total: 29 new features across all rounds (v3.0 → v3.4.0).**
+
+### Round 3: Local Tool Integration (v3.4.0)
+
+| # | Feature | Competitors Had It | CLI Command |
+|---|---------|:------------------:|-------------|
+| 1 | Local file read/write/edit | 5 | `slop file read/write/edit/list/info` |
+| 2 | Git integration | 4 | `slop git status/diff/log/commit/push/branch/stash` |
+| 3 | AI code review | 3 | `slop review [file]` or piped stdin |
+| 4 | Session persistence | 3 | `slop session save/resume/list/delete` |
 
 ---
 
-## Remaining Gap to 70% Parity (~10 features)
+## Remaining Gap to 70% Parity (~6 features)
 
-1. Local file read/write (`slop file read/write`)
-2. Git integration (`slop git status/commit/push/pr`)
-3. Code review (`slop review`)
-4. Session persistence (`slop session save/resume`)
-5. Interactive TUI (`slop tui`)
-6. Plugin system (`slop plugin install/list`)
-7. Voice input (`slop voice`)
-8. Custom themes (`slop theme set`)
-9. Diagram rendering (`slop diagram`)
-10. Conversation forking (`slop fork`)
+1. ~~Local file read/write~~ DONE: `slop file read/write/edit/list/info`
+2. ~~Git integration~~ DONE: `slop git status/diff/log/commit/push/branch/stash`
+3. ~~Code review~~ DONE: `slop review [file]` (AI-powered)
+4. ~~Session persistence~~ DONE: `slop session save/resume/list/delete`
+5. Interactive TUI (`slop tui`) — needs blessed/ink
+6. Plugin system (`slop plugin install/list`) — needs registry
+7. Voice input (`slop voice`) — needs audio capture
+8. Custom themes (`slop theme set`) — low priority
+9. Diagram rendering (`slop diagram`) — nice-to-have
+10. Conversation forking (`slop fork`) — nice-to-have
 
 These require deeper local system integration (filesystem, git, audio) and are Phase 2 features.
