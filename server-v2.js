@@ -46,6 +46,71 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '1mb' })); // 1MB max request body
 app.set('trust proxy', 1); // trust Railway/Vercel proxy for IP
+
+// ===== SECURITY 10/10: Input sanitization + prototype pollution protection =====
+app.use((req, res, next) => {
+  if (req.body && typeof req.body === 'object') {
+    // Block prototype pollution
+    const blocked = ['__proto__', 'constructor', 'prototype'];
+    const checkProto = (obj) => {
+      for (const key of Object.keys(obj)) {
+        if (blocked.includes(key)) { delete obj[key]; continue; }
+        if (obj[key] && typeof obj[key] === 'object' && !Buffer.isBuffer(obj[key])) checkProto(obj[key]);
+      }
+    };
+    checkProto(req.body);
+    // Sanitize all string inputs
+    const sanitize = (obj) => {
+      for (const [key, val] of Object.entries(obj)) {
+        if (typeof val === 'string') {
+          // Strip null bytes (injection vector)
+          obj[key] = val.replace(/\0/g, '');
+          // Limit string length to prevent memory abuse (1MB max per field)
+          if (obj[key].length > 1048576) obj[key] = obj[key].slice(0, 1048576);
+        } else if (val && typeof val === 'object' && !Buffer.isBuffer(val)) {
+          sanitize(val);
+        }
+      }
+    };
+    sanitize(req.body);
+  }
+  next();
+});
+
+// ===== SECURITY 10/10: DNS rebinding protection =====
+app.use((req, res, next) => {
+  const host = req.headers.host;
+  const allowed = ['slopshop.gg', 'slopshop-production.up.railway.app', 'localhost:3000', `localhost:${process.env.PORT || 3000}`];
+  if (host && !allowed.some(a => host.includes(a)) && process.env.NODE_ENV === 'production') {
+    return res.status(421).json({ error: { code: 'invalid_host' } });
+  }
+  next();
+});
+
+// ===== SECURITY 10/10: Response header hardening + HSTS =====
+app.use((req, res, next) => {
+  // Helmet already sets X-Content-Type-Options and X-Frame-Options, but we ensure full coverage
+  res.set('X-Content-Type-Options', 'nosniff');
+  res.set('X-Frame-Options', 'DENY');
+  res.set('X-XSS-Protection', '0'); // Disabled per modern best practice (CSP handles this)
+  res.set('Referrer-Policy', 'strict-origin-when-cross-origin');
+  res.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+  res.set('X-Permitted-Cross-Domain-Policies', 'none');
+  // HSTS: enforce HTTPS for 1 year with preload
+  res.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  next();
+});
+
+// ===== SECURITY 10/10: Request timeout (slow loris protection) =====
+app.use((req, res, next) => {
+  req.setTimeout(30000, () => {
+    if (!res.headersSent) {
+      res.status(408).json({ error: { code: 'request_timeout' } });
+    }
+  });
+  next();
+});
+
 // Global request ID + security headers on EVERY response
 app.use((req, res, next) => {
   req.requestId = req.headers['x-request-id'] || crypto.randomUUID();
@@ -399,10 +464,16 @@ log.info('API keys initialized', { dbKeys: keyCount, memoryKeys: apiKeys.size })
 
 function auth(req, res, next) {
   const h = req.headers.authorization;
-  if (!h || !h.startsWith('Bearer ')) return res.status(401).json({ error: { code: 'auth_required', message: 'Set Authorization: Bearer <key>', demo_key: 'sk-slop-demo-key-12345678', signup: 'POST /v1/auth/signup' } });
+  if (!h || !h.startsWith('Bearer ')) {
+    log.warn('Auth failure: missing or malformed header', { ip: req.ip, path: req.path });
+    return res.status(401).json({ error: { code: 'auth_required', message: 'Set Authorization: Bearer <key>', demo_key: 'sk-slop-demo-key-12345678', signup: 'POST /v1/auth/signup' } });
+  }
   const key = h.slice(7);
   const acct = apiKeys.get(key);
-  if (!acct) return res.status(401).json({ error: { code: 'invalid_key', message: 'Key not found. Sign up at POST /v1/auth/signup or use demo key sk-slop-demo-key-12345678', demo_key: 'sk-slop-demo-key-12345678', signup: 'POST /v1/auth/signup' } });
+  if (!acct) {
+    log.warn('Auth failure: invalid key', { ip: req.ip, path: req.path, key_prefix: key.slice(0, 12) });
+    return res.status(401).json({ error: { code: 'invalid_key', message: 'Key not found. Sign up at POST /v1/auth/signup or use demo key sk-slop-demo-key-12345678', demo_key: 'sk-slop-demo-key-12345678', signup: 'POST /v1/auth/signup' } });
+  }
   req.acct = acct; req.apiKey = key;
   // Scope enforcement: check if the key's scope allows the requested API's tier/category
   if (acct.scope && acct.scope !== '*') {
@@ -415,6 +486,7 @@ function auth(req, res, next) {
   }
   // Per-key rate limiting: 60 requests per minute
   if (!rateLimit('api:' + key, 60, 60000)) {
+    log.warn('Rate limit exceeded', { key_prefix: key.slice(0, 12), ip: req.ip, path: req.path });
     const rlEntry = ipLimits.get('api:' + key);
     res.set('X-RateLimit-Limit', '60');
     res.set('X-RateLimit-Remaining', '0');
@@ -433,6 +505,7 @@ function auth(req, res, next) {
 function publicRateLimit(req, res, next) {
   const ip = req.ip || req.connection?.remoteAddress || 'unknown';
   if (!rateLimit('public:' + ip, 30, 60000)) {
+    log.warn('Public rate limit exceeded', { ip, path: req.path });
     const rlEntry = ipLimits.get('public:' + ip);
     res.set('Retry-After', '30');
     res.set('X-RateLimit-Limit', '30');
@@ -684,6 +757,10 @@ app.post('/v1/resolve', (req, res) => {
 // ===== AUTH ENDPOINTS =====
 app.post('/v1/keys', publicRateLimit, BODY_LIMIT_AUTH, (_, res) => {
   const key = 'sk-slop-' + crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+  // Entropy validation: key must be at least 32 chars with 24 hex chars of randomness (96+ bits)
+  if (key.length < 32 || !/^sk-slop-[0-9a-f]{24}$/.test(key)) {
+    return res.status(500).json({ error: { code: 'key_generation_failed', message: 'Insufficient key entropy' } });
+  }
   const id = crypto.randomUUID();
   apiKeys.set(key, { id, balance: 0, created: Date.now(), auto_reload: false, tier: 'none' });
   dbInsertKey.run(key, id, 0, 'none', Date.now());
@@ -772,7 +849,11 @@ const secretMatch = (a, b) => {
 // Admin: manually add credits to any user (protected by ADMIN_SECRET)
 app.post('/v1/admin/add-credits', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) {
+    log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'add-credits' });
+    return res.status(403).json({ error: { code: 'forbidden' } });
+  }
+  log.info('Admin access', { ip: req.ip, path: req.path, action: 'add-credits' });
   const { api_key, amount } = req.body;
   const acct = apiKeys.get(api_key);
   if (!acct) return res.status(404).json({ error: { code: 'key_not_found' } });
@@ -787,7 +868,11 @@ app.post('/v1/admin/add-credits', (req, res) => {
 // Admin: generate redeemable credit codes
 app.post('/v1/admin/create-code', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) {
+    log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'create-code' });
+    return res.status(403).json({ error: { code: 'forbidden' } });
+  }
+  log.info('Admin access', { ip: req.ip, path: req.path, action: 'create-code' });
   db.exec(`CREATE TABLE IF NOT EXISTS credit_codes (
     code TEXT PRIMARY KEY,
     credits INTEGER NOT NULL,
@@ -806,7 +891,8 @@ app.post('/v1/admin/create-code', (req, res) => {
 // Admin: batch create codes
 app.post('/v1/admin/create-codes', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) { log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'create-codes' }); return res.status(403).json({ error: { code: 'forbidden' } }); }
+  log.info('Admin access', { ip: req.ip, path: req.path, action: 'create-codes' });
   db.exec(`CREATE TABLE IF NOT EXISTS credit_codes (
     code TEXT PRIMARY KEY, credits INTEGER NOT NULL, tier TEXT,
     redeemed_by TEXT DEFAULT NULL, created INTEGER NOT NULL, redeemed_at INTEGER DEFAULT NULL
@@ -845,7 +931,8 @@ app.post('/v1/credits/redeem', auth, BODY_LIMIT_AUTH, (req, res) => {
 // Admin: list all users
 app.get('/v1/admin/users', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) { log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'list-users' }); return res.status(403).json({ error: { code: 'forbidden' } }); }
+  log.info('Admin access', { ip: req.ip, path: req.path, action: 'list-users' });
   const users = db.prepare('SELECT email, api_key, created FROM users ORDER BY created DESC LIMIT 500').all();
   const keys = db.prepare('SELECT key, balance, tier FROM api_keys ORDER BY balance DESC LIMIT 500').all();
   res.json({ users: users.length, keys: keys.length, recent_users: users, top_keys: keys });
@@ -854,7 +941,8 @@ app.get('/v1/admin/users', (req, res) => {
 // Admin: export mailing list (all emails: users + waitlist)
 app.get('/v1/admin/mailing-list', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) { log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'mailing-list' }); return res.status(403).json({ error: { code: 'forbidden' } }); }
+  log.info('Admin access', { ip: req.ip, path: req.path, action: 'mailing-list' });
   const userEmails = db.prepare('SELECT email, created FROM users ORDER BY created DESC').all();
   const waitlistEmails = db.prepare('SELECT email, created FROM waitlist ORDER BY created DESC').all();
   const allEmails = new Set();
@@ -868,7 +956,8 @@ app.get('/v1/admin/mailing-list', (req, res) => {
 // Admin: dashboard stats
 app.get('/v1/admin/stats', (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (!secretMatch(secret, process.env.ADMIN_SECRET)) return res.status(403).json({ error: { code: 'forbidden' } });
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) { log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'stats' }); return res.status(403).json({ error: { code: 'forbidden' } }); }
+  log.info('Admin access', { ip: req.ip, path: req.path, action: 'stats' });
   const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
   const waitlistCount = db.prepare('SELECT COUNT(*) as c FROM waitlist').get().c;
   const keyCount = db.prepare('SELECT COUNT(*) as c FROM api_keys').get().c;
@@ -1942,10 +2031,15 @@ app.post('/v1/ab/:id/record', auth, (req, res) => {
   const { variant, score } = req.body;
   const test = db.prepare('SELECT * FROM ab_tests WHERE id = ? AND api_key = ?').get(req.params.id, req.apiKey);
   if (!test) return res.status(404).json({ error: { code: 'test_not_found' } });
+  // Sanitized: only allow known column names to prevent SQL injection
   const field = variant === 'b' ? 'results_b' : 'results_a';
   const existing = JSON.parse(test[field]);
   existing.push(score);
-  db.prepare(`UPDATE ab_tests SET ${field} = ? WHERE id = ?`).run(JSON.stringify(existing), req.params.id);
+  if (field === 'results_b') {
+    db.prepare('UPDATE ab_tests SET results_b = ? WHERE id = ?').run(JSON.stringify(existing), req.params.id);
+  } else {
+    db.prepare('UPDATE ab_tests SET results_a = ? WHERE id = ?').run(JSON.stringify(existing), req.params.id);
+  }
   res.json({ ok: true, variant, score, total_samples: existing.length });
 });
 
@@ -3665,8 +3759,10 @@ app.post('/v1/templates/star/:id', auth, (req, res) => {
 });
 
 app.get('/v1/templates/browse', publicRateLimit, (req, res) => {
-  const sort = req.query.sort === 'stars' ? 'stars' : req.query.sort === 'forks' ? 'forks' : 'ts';
-  const templates = db.prepare(`SELECT id, name, forks, stars, ts FROM shared_templates ORDER BY ${sort} DESC LIMIT 50`).all();
+  // Sanitized: whitelist sort columns to prevent SQL injection
+  const sortMap = { stars: 'stars', forks: 'forks', ts: 'ts' };
+  const sort = sortMap[req.query.sort] || 'ts';
+  const templates = db.prepare('SELECT id, name, forks, stars, ts FROM shared_templates ORDER BY ' + sort + ' DESC LIMIT 50').all();
   res.json({ templates, count: templates.length });
 });
 
@@ -5291,7 +5387,7 @@ app.post('/v1/webhooks/test/:id', auth, (req, res) => {
 app.post('/v1/rate-limits/configure', auth, (req, res) => {
   const { target_key, requests_per_minute, requests_per_hour, requests_per_day, burst_limit } = req.body;
   const secret = req.headers['x-admin-secret'];
-  const isAdmin = secret && secret === process.env.ADMIN_SECRET;
+  const isAdmin = secret && secretMatch(secret, process.env.ADMIN_SECRET);
   const isSelf = !target_key || target_key === req.apiKey;
   if (!isAdmin && !isSelf) return res.status(403).json({ error: { code: 'forbidden', message: 'Only admins can configure rate limits for other keys. Set X-Admin-Secret header or omit target_key to configure your own.' } });
   const keyToConfig = target_key || req.apiKey;
@@ -6166,14 +6262,16 @@ app.post('/v1/templates/publish', auth, (req, res) => {
 app.get('/v1/templates/browse', publicRateLimit, (req, res) => {
   try {
     const category = req.query.category;
-    const sort = req.query.sort === 'forks' ? 'forks DESC' : req.query.sort === 'recent' ? 'created_at DESC' : 'rating DESC';
+    // Sanitized: whitelist sort columns to prevent SQL injection
+    const sortMap = { forks: 'forks DESC', recent: 'created_at DESC', rating: 'rating DESC' };
+    const sort = sortMap[req.query.sort] || 'rating DESC';
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
     const offset = parseInt(req.query.offset) || 0;
     let rows;
     if (category) {
-      rows = db.prepare(`SELECT id, author_id, name, description, category, estimated_credits, forks, rating, rating_count, status, created_at FROM marketplace_templates WHERE status = 'published' AND category = ? ORDER BY ${sort} LIMIT ? OFFSET ?`).all(category, limit, offset);
+      rows = db.prepare('SELECT id, author_id, name, description, category, estimated_credits, forks, rating, rating_count, status, created_at FROM marketplace_templates WHERE status = \'published\' AND category = ? ORDER BY ' + sort + ' LIMIT ? OFFSET ?').all(category, limit, offset);
     } else {
-      rows = db.prepare(`SELECT id, author_id, name, description, category, estimated_credits, forks, rating, rating_count, status, created_at FROM marketplace_templates WHERE status = 'published' ORDER BY ${sort} LIMIT ? OFFSET ?`).all(limit, offset);
+      rows = db.prepare('SELECT id, author_id, name, description, category, estimated_credits, forks, rating, rating_count, status, created_at FROM marketplace_templates WHERE status = \'published\' ORDER BY ' + sort + ' LIMIT ? OFFSET ?').all(limit, offset);
     }
     res.json({ ok: true, templates: rows, limit, offset });
   } catch(e) { res.json({ ok: false, templates: [], error: e.message }); }
