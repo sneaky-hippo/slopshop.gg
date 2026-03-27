@@ -113,12 +113,17 @@ const apiCount = Object.keys(API_DEFS).length;
 // Handler verification moved to after memory init (see below)
 
 // ===== PERSISTENCE (SQLite) =====
+// On Railway: set DB_PATH=/data/slopshop.db and mount a volume at /data
+// On local: defaults to .data/slopshop.db
 const fs = require('fs');
 const Database = require('better-sqlite3');
 const DB_PATH = process.env.DB_PATH || path.join(__dirname, '.data', 'slopshop.db');
 if (!fs.existsSync(path.dirname(DB_PATH))) fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
 const db = new Database(DB_PATH);
 db.pragma('journal_mode = WAL'); // fast concurrent reads
+db.pragma('busy_timeout = 5000'); // wait up to 5s for locks instead of failing
+db.pragma('synchronous = NORMAL'); // faster writes, still crash-safe with WAL
+log.info('Database initialized', { path: DB_PATH, tables: db.prepare("SELECT count(*) as c FROM sqlite_master WHERE type='table'").get().c });
 
 // Create tables
 db.exec(`

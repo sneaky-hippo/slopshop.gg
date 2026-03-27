@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Sign Up — Slopshop</title>
+<meta name="description" content="Create a free Slopshop account. 2,000 free credits. Memory is always free.">
+<link rel="canonical" href="https://slopshop.gg/signup">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/signup">
+<meta property="og:title" content="Sign Up — Slopshop">
+<meta property="og:description" content="Create a free Slopshop account. 2,000 free credits. Memory is always free.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Sign Up — Slopshop">
+<meta name="twitter:description" content="Create a free Slopshop account. 2,000 free credits. Memory is always free.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75;min-height:100vh;display:flex;flex-direction:column}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;height:56px;
+  background:rgba(5,5,5,0.85);
+  backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid var(--b);
+  display:flex;align-items:center;padding:0 32px
+}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:var(--t);text-decoration:none}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2)}
+
+.main{flex:1;display:flex;align-items:center;justify-content:center;padding:80px 24px 48px}
+.card{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:48px 40px;max-width:420px;width:100%}
+.card h1{font-family:var(--mono);font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:8px;text-align:center}
+.card .subtitle{color:var(--t2);font-size:0.8rem;text-align:center;margin-bottom:32px}
+.card .subtitle b{color:var(--t);font-weight:600}
+
+label{display:block;font-size:0.72rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px}
+input[type="email"],input[type="password"]{
+  width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--b2);border-radius:8px;
+  color:var(--t);font-family:var(--sans);font-size:0.85rem;outline:none;transition:border-color 0.2s;
+  margin-bottom:20px
+}
+input[type="email"]:focus,input[type="password"]:focus{border-color:var(--r)}
+input[type="email"]::placeholder,input[type="password"]::placeholder{color:var(--t4)}
+
+.btn-submit{
+  width:100%;padding:14px;background:var(--r);color:#fff;border:none;border-radius:10px;
+  font-family:var(--mono);font-size:0.85rem;font-weight:700;cursor:pointer;transition:background 0.2s,transform 0.15s
+}
+.btn-submit:hover{background:var(--r2)}
+.btn-submit:active{transform:scale(0.98)}
+.btn-submit:disabled{opacity:0.6;cursor:not-allowed}
+
+.free-note{text-align:center;margin-top:16px;font-size:0.72rem;color:var(--t3)}
+.free-note b{color:var(--g);font-weight:600}
+
+.error-msg{display:none;background:rgba(255,51,51,0.1);border:1px solid rgba(255,51,51,0.2);color:var(--r2);padding:10px 14px;border-radius:8px;font-size:0.8rem;margin-bottom:16px;text-align:center}
+
+.login-link{text-align:center;margin-top:24px;font-size:0.78rem;color:var(--t3)}
+.login-link a{color:var(--r);font-weight:600}
+
+@media(max-width:480px){
+  .card{padding:36px 24px;border-radius:12px}
+  nav{padding:0 12px;height:50px}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><radialGradient id="navBg" cx="50%" cy="50%"><stop offset="0%" stop-color="#ff6644"/><stop offset="100%" stop-color="#ff2222"/></radialGradient></defs><rect width="512" height="512" rx="112" fill="url(#navBg)"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+    <span class="mark">SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/tools">Tools</a>
+    <a href="/docs">Docs</a>
+    <a href="/login">Log In</a>
+  </div>
+</div></nav>
+
+<div class="main">
+  <div class="card">
+    <h1>Create your account</h1>
+    <p class="subtitle"><b>2,000 free credits.</b> Memory is always free.</p>
+
+    <div id="error" class="error-msg"></div>
+
+    <form id="signupForm" autocomplete="on">
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email">
+
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="Min 8 characters" required minlength="8" autocomplete="new-password">
+
+      <button type="submit" id="submitBtn" class="btn-submit">Create Account</button>
+    </form>
+
+    <div id="result"></div>
+
+    <p class="free-note"><b>No credit card required.</b> Start building in 30 seconds.</p>
+    <p class="login-link">Already have an account? <a href="/login">Log in</a></p>
+  </div>
+</div>
+
+<script>
+document.getElementById('signupForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  const btn = document.getElementById('submitBtn');
+  const result = document.getElementById('result');
+  const error = document.getElementById('error');
+
+  btn.disabled = true;
+  btn.textContent = 'Creating account...';
+  error.style.display = 'none';
+
+  try {
+    const res = await fetch('/v1/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password })
+    });
+    const data = await res.json();
+
+    if (data.api_key || data.data?.api_key) {
+      const key = data.api_key || data.data?.api_key;
+      result.innerHTML = `
+        <div style="background:var(--s1);border:1px solid var(--g);border-radius:8px;padding:24px;margin-top:20px">
+          <div style="color:var(--g);font-weight:700;margin-bottom:12px">&#10003; Account created &mdash; 2,000 free credits loaded</div>
+          <div style="font-family:var(--mono);font-size:0.85rem;background:var(--bg);padding:12px;border-radius:6px;margin-bottom:12px;word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:8px">
+            <span id="apiKeyText">${key}</span>
+            <button onclick="navigator.clipboard.writeText('${key}');this.textContent='Copied!'" style="flex-shrink:0;background:var(--r);color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:0.75rem;font-family:var(--mono)">Copy</button>
+          </div>
+          <div style="font-size:0.8rem;color:var(--t3);line-height:2">
+            <strong style="color:var(--t2)">Next steps:</strong><br>
+            <code style="background:var(--s2);padding:2px 6px;border-radius:3px">npm install -g slopshop</code><br>
+            <code style="background:var(--s2);padding:2px 6px;border-radius:3px">slop key set ${key}</code><br>
+            <code style="background:var(--s2);padding:2px 6px;border-radius:3px">slop call crypto-hash-sha256 --text "hello world"</code>
+          </div>
+        </div>`;
+      document.getElementById('signupForm').style.display = 'none';
+    } else {
+      error.textContent = data.error?.message || data.message || 'Signup failed';
+      error.style.display = 'block';
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
+    }
+  } catch(err) {
+    error.textContent = 'Connection error. Try again.';
+    error.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Create Account';
+  }
+});
+</script>
+</body>
+</html>
