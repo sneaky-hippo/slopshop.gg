@@ -58,8 +58,11 @@ const API_KEY  = process.env.SLOPSHOP_KEY || _cfg.api_key || '';
 const BASE_URL = (process.env.SLOPSHOP_BASE || _cfg.base_url || 'https://slopshop.gg').replace(/\/$/, '');
 
 // ============================================================
-// HTTP HELPER
+// HTTP HELPER — PERF: Connection pooling with keep-alive agents
 // ============================================================
+const httpsAgent = new https.Agent({ keepAlive: true, maxSockets: 6, keepAliveMsecs: 30000 });
+const httpAgent = new http.Agent({ keepAlive: true, maxSockets: 6, keepAliveMsecs: 30000 });
+
 function request(method, path, body, auth = true) {
   return new Promise((resolve, reject) => {
     const urlStr = BASE_URL + path;
@@ -80,10 +83,13 @@ function request(method, path, body, auth = true) {
       port: parsed.port || (isHttps ? 443 : 80),
       path: parsed.pathname + parsed.search,
       method,
+      agent: isHttps ? httpsAgent : httpAgent, // PERF: Reuse TCP connections
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'slopshop-cli/1.0.0',
+        'User-Agent': 'slopshop-cli/3.3.0',
+        'Connection': 'keep-alive',
+        'Accept-Encoding': 'gzip, deflate', // PERF: Request compressed responses
       },
     };
 
@@ -100,9 +106,17 @@ function request(method, path, body, auth = true) {
     }
 
     const req = lib.request(options, (res) => {
+      // PERF: Handle gzip/deflate compressed responses
+      let stream = res;
+      const encoding = res.headers['content-encoding'];
+      if (encoding === 'gzip' || encoding === 'deflate') {
+        const zlib = require('zlib');
+        stream = encoding === 'gzip' ? res.pipe(zlib.createGunzip()) : res.pipe(zlib.createInflate());
+      }
+
       let data = '';
-      res.on('data', (chunk) => { data += chunk; });
-      res.on('end', () => {
+      stream.on('data', (chunk) => { data += chunk; });
+      stream.on('end', () => {
         if (verbose) {
           console.error(dim(`  [verbose] ${res.statusCode} ${JSON.stringify(res.headers).slice(0, 200)}`));
         }
@@ -129,6 +143,33 @@ function request(method, path, body, auth = true) {
     if (payload) req.write(payload);
     req.end();
   });
+}
+
+// ============================================================
+// SPINNER — Progress indicator during API calls
+// ============================================================
+const SPINNER_FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏'];
+let spinnerTimer = null;
+let spinnerFrame = 0;
+
+function spinnerStart(msg) {
+  if (quiet || jsonMode || !process.stderr.isTTY) return;
+  spinnerFrame = 0;
+  spinnerTimer = setInterval(() => {
+    const frame = noColor ? '-' : SPINNER_FRAMES[spinnerFrame % SPINNER_FRAMES.length];
+    process.stderr.write(`\r  ${cyan(frame)} ${dim(msg)}`);
+    spinnerFrame++;
+  }, 80);
+}
+
+function spinnerStop(success = true) {
+  if (spinnerTimer) {
+    clearInterval(spinnerTimer);
+    spinnerTimer = null;
+    if (process.stderr.isTTY) {
+      process.stderr.write('\r' + ' '.repeat(80) + '\r');
+    }
+  }
 }
 
 // ============================================================
@@ -250,6 +291,23 @@ async function cmdCall(args) {
   const slug = args[0];
   if (!slug) die('Usage: slop call <api-slug> [--key value]...');
 
+  // --dry-run: show what would happen without executing
+  if (args.includes('--dry-run')) {
+    try {
+      spinnerStart(`Estimating cost for ${slug}...`);
+      const res = await request('POST', '/v1/dry-run/' + slug, {}, false);
+      spinnerStop(true);
+      if (jsonMode) { console.log(JSON.stringify(res.data, null, 2)); return; }
+      const d = res.data;
+      console.log(`\n  ${bold('Dry Run:')} ${cyan(slug)}`);
+      console.log(`  ${bold('Credits:')} ${yellow(String(d.credits || 0))}`);
+      console.log(`  ${bold('Tier Required:')} ${dim(d.tier || 'any')}`);
+      console.log(`  ${bold('Would execute:')} ${green('yes')}`);
+      console.log(dim('  Use without --dry-run to execute.\n'));
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
   // --help: show API schema info (dry-run)
   if (args.includes('--help')) {
     try {
@@ -305,6 +363,12 @@ async function cmdCall(args) {
     i++; // skip value
   }
 
+  // --model flag: pass model selection for LLM APIs
+  const modelIdx = process.argv.indexOf('--model');
+  if (modelIdx >= 0 && process.argv[modelIdx + 1]) {
+    input.model = process.argv[modelIdx + 1];
+  }
+
   // Accept piped stdin as text/input field
   const stdinData = await readStdin();
   if (stdinData) {
@@ -313,13 +377,14 @@ async function cmdCall(args) {
     }
   }
 
-  if (!quiet && !jsonMode) console.log(dim(`  Calling ${cyan(slug)}...`));
+  spinnerStart(`Calling ${slug}...`);
 
   let lastErr;
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      if (attempt > 0 && !quiet && !jsonMode) console.log(dim(`  Retry ${attempt}/${maxRetries}...`));
+      if (attempt > 0) spinnerStart(`Retry ${attempt}/${maxRetries} — ${slug}...`);
       const res = await request('POST', `/v1/${slug}`, input);
+      spinnerStop(true);
       printResult(res.data, slug);
 
       // Save to history
@@ -334,6 +399,7 @@ async function cmdCall(args) {
       return;
     } catch (err) {
       lastErr = err;
+      spinnerStop(false);
       if (attempt >= maxRetries) break;
       // Wait a bit before retry (exponential backoff)
       await new Promise(r => setTimeout(r, 1000 * Math.pow(2, attempt)));
@@ -433,10 +499,11 @@ async function cmdSearch(args) {
   const query = args.filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
   if (!query) die('Usage: slop search <query>');
 
-  if (!quiet && !jsonMode) console.log(dim(`  Searching for: "${query}"...`));
+  spinnerStart(`Searching for: "${query}"...`);
 
   try {
     const res = await request('POST', '/v1/resolve', { query }, false);
+    spinnerStop(true);
 
     if (jsonMode) {
       console.log(JSON.stringify(res.data, null, 2));
@@ -474,13 +541,22 @@ async function cmdSearch(args) {
 }
 
 async function cmdList(args) {
-  const filteredArgs = args.filter(a => !GLOBAL_FLAGS.includes(a));
+  const filteredArgs = args.filter(a => !GLOBAL_FLAGS.includes(a) && !a.startsWith('--limit') && !a.startsWith('--offset') && !a.startsWith('--page'));
   const category = filteredArgs[0] || '';
 
-  if (!quiet && !jsonMode) console.log(dim(`  Loading APIs${category ? ` in category: ${category}` : ''}...`));
+  // Pagination flags
+  const limitIdx = args.indexOf('--limit');
+  const offsetIdx = args.indexOf('--offset');
+  const pageIdx = args.indexOf('--page');
+  const limit = limitIdx >= 0 ? parseInt(args[limitIdx + 1]) || 50 : 0;
+  const offset = offsetIdx >= 0 ? parseInt(args[offsetIdx + 1]) || 0 : (pageIdx >= 0 ? ((parseInt(args[pageIdx + 1]) || 1) - 1) * (limit || 50) : 0);
+
+  spinnerStart(`Loading APIs${category ? ` in category: ${category}` : ''}...`);
 
   try {
-    const res = await request('GET', '/v1/tools', null, false);
+    const queryParams = limit ? `?limit=${limit}&offset=${offset}` : '';
+    const res = await request('GET', '/v1/tools' + queryParams, null, false);
+    spinnerStop(true);
     const tools = res.data?.tools || res.data?.apis || res.tools || res.apis || [];
     const total = res.data?.total || res.total || tools.length;
 
@@ -538,7 +614,8 @@ async function cmdList(args) {
       console.log(row);
     }
 
-    console.log(dim(`\n  Showing ${filtered.length} of ${total}. Use a category name to filter.`));
+    const pageInfo = limit ? `  Showing ${offset + 1}-${Math.min(offset + limit, filtered.length)} of ${total}.` : `  Showing ${filtered.length} of ${total}.`;
+    console.log(dim(`\n${pageInfo} Use --limit N --offset N or --page N to paginate. Use a category name to filter.`));
   } catch (err) {
     handleError(err);
   }
@@ -697,8 +774,8 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'version', 'upgrade', 'completions', 'help'],
-      flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N'],
+      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'version', 'upgrade', 'completions', 'help'],
+      flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N', '--model M', '--dry-run', '--limit N', '--offset N'],
       version: '1.0.0'
     }, null, 2));
     return;
@@ -730,21 +807,44 @@ ${C.reset}`;
   console.log(`    ${cyan('slop health')}                            Server health check`);
   console.log(`    ${cyan('slop mcp')}                               Set up MCP for Claude Code`);
   console.log(`    ${cyan('slop help')}                              Show this help\n`);
+  console.log(`  ${bold('AI & PLANNING')}`);
+  console.log(`    ${cyan('slop plan')} ${dim('"task description"')}          Plan before executing`);
+  console.log(`    ${cyan('slop plan --execute')}                    Execute saved plan`);
+  console.log(`    ${cyan('slop review')} ${dim('[file]')}                   AI code review`);
+  console.log(`    ${cyan('slop debug')} ${dim('"error message"')}            AI error debugging`);
+  console.log(`    ${cyan('slop models')}                            List/set AI models`);
+  console.log(`    ${cyan('slop cost')} ${dim('<slug>')}                     Estimate credit cost\n`);
+  console.log(`  ${bold('LOCAL TOOLS')}`);
+  console.log(`    ${cyan('slop file')} ${dim('read|write|edit|list|info')}   Local file operations`);
+  console.log(`    ${cyan('slop git')} ${dim('status|diff|log|commit|push')} Git integration`);
+  console.log(`    ${cyan('slop session')} ${dim('save|resume|list')}         Save/resume CLI sessions\n`);
+  console.log(`  ${bold('CLOUD & INFRA')}`);
+  console.log(`    ${cyan('slop cloud')} ${dim('run|status|list')}            Cloud task handoff`);
+  console.log(`    ${cyan('slop logs')} ${dim('[--follow --filter X]')}       Stream platform logs`);
+  console.log(`    ${cyan('slop listen')} ${dim('[--forward-to URL]')}        Webhook event listener`);
+  console.log(`    ${cyan('slop dev')} ${dim('[--port 3000]')}                Start local dev server`);
+  console.log(`    ${cyan('slop env')} ${dim('list|set|get|delete')}          Manage env variables\n`);
   console.log(`  ${bold('PRODUCTIVITY')}`);
   console.log(`    ${cyan('slop batch')} ${dim('<file> or "cmd1" "cmd2"')}    Execute multiple commands`);
-  console.log(`    ${cyan('slop watch')} ${dim('<slug> [--interval 5]')}     Repeat a command every N seconds`);
-  console.log(`    ${cyan('slop alias')} ${dim('<name> = <command>')}        Create shorthand aliases`);
-  console.log(`    ${cyan('slop history')} ${dim('[N | clear]')}             Show recent commands`);
-  console.log(`    ${cyan('slop version')}                           Show version info`);
-  console.log(`    ${cyan('slop upgrade')}                           Check for CLI updates`);
-  console.log(`    ${cyan('slop completions')} ${dim('[bash|zsh|fish]')}     Generate shell completions\n`);
+  console.log(`    ${cyan('slop watch')} ${dim('<slug> [--interval 5]')}      Repeat a command every N seconds`);
+  console.log(`    ${cyan('slop alias')} ${dim('<name> = <command>')}         Create shorthand aliases`);
+  console.log(`    ${cyan('slop history')} ${dim('[N | clear]')}              Show recent commands`);
+  console.log(`    ${cyan('slop profile')} ${dim('list|add|switch')}          Multi-profile management`);
+  console.log(`    ${cyan('slop types')} ${dim('[ts|py|go]')}                 Generate API type definitions`);
+  console.log(`    ${cyan('slop version')}                            Show version info`);
+  console.log(`    ${cyan('slop upgrade')}                            Check for CLI updates`);
+  console.log(`    ${cyan('slop completions')} ${dim('[bash|zsh|fish]')}      Generate shell completions\n`);
   console.log(`  ${bold('FLAGS')}`);
   console.log(`    ${yellow('--quiet, -q')}    Suppress decorative output, data only`);
   console.log(`    ${yellow('--json')}         Output raw JSON (for piping)`);
   console.log(`    ${yellow('--no-color')}     Disable ANSI colors`);
   console.log(`    ${yellow('--verbose, -V')}  Show request/response details`);
   console.log(`    ${yellow('--timeout=N')}    Request timeout in seconds (default: 30)`);
-  console.log(`    ${yellow('--retry N')}      Retry failed requests N times\n`);
+  console.log(`    ${yellow('--retry N')}      Retry failed requests N times`);
+  console.log(`    ${yellow('--model M')}      Override AI model for LLM calls`);
+  console.log(`    ${yellow('--dry-run')}      Preview cost without executing`);
+  console.log(`    ${yellow('--limit N')}      Limit results (list/batch)`);
+  console.log(`    ${yellow('--offset N')}     Offset results (list)\n`);
   console.log(`  ${bold('EXAMPLES')}`);
   console.log(`    ${dim('# Generate a UUID')}`);
   console.log(`    ${cyan('slop call generate-value-uuid')}\n`);
@@ -1489,10 +1589,11 @@ async function cmdRun(args) {
   const task = args.filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
   if (!task) die('Usage: slop run "describe your task in natural language"');
 
-  if (!quiet && !jsonMode) console.log(dim(`\n  Running: "${task}"...`));
+  spinnerStart(`Running: "${task}"...`);
 
   try {
     const res = await request('POST', '/v1/agent/run', { task });
+    spinnerStop(true);
     const d = res.data || res;
 
     if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
@@ -1531,10 +1632,11 @@ async function cmdDiscover(args) {
   const query = args.filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
   if (!query) die('Usage: slop discover "what you want to accomplish"');
 
-  if (!quiet && !jsonMode) console.log(dim(`\n  Discovering: "${query}"...`));
+  spinnerStart(`Discovering: "${query}"...`);
 
   try {
     const res = await request('POST', '/v1/discover', { query }, false);
+    spinnerStop(true);
     const d = res.data || res;
 
     if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
@@ -1778,7 +1880,7 @@ async function cmdUpgrade() {
 function cmdCompletions(args) {
   const shell = args[0] || 'bash';
 
-  const commands = ['call','pipe','run','search','list','discover','org','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','health','mcp','help','batch','watch','alias','history','version','upgrade','completions','do'];
+  const commands = ['call','pipe','run','search','list','discover','org','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do'];
 
   if (shell === 'bash') {
     console.log(`# Add to ~/.bashrc:`);
@@ -1802,6 +1904,1018 @@ function cmdCompletions(args) {
     console.log(`  ${cyan('slop completions zsh')}    Generate zsh completions`);
     console.log(`  ${cyan('slop completions fish')}   Generate fish completions\n`);
   }
+}
+
+// ============================================================
+// PLAN — Plan before executing
+// ============================================================
+async function cmdPlan(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (sub === '--execute' || sub === '--run') {
+    // Execute last saved plan
+    const cfg = loadConfig();
+    if (!cfg.last_plan || !cfg.last_plan.steps) {
+      die('No plan saved. Run: slop plan "your task"');
+    }
+    if (!quiet && !jsonMode) console.log(`\n  ${bold('Executing plan:')} ${cfg.last_plan.task}\n`);
+    for (let i = 0; i < cfg.last_plan.steps.length; i++) {
+      const step = cfg.last_plan.steps[i];
+      if (!quiet && !jsonMode) console.log(`  ${dim(String(i + 1) + '.')} ${cyan(step.action || step.tool || step)}`);
+      if (step.slug) {
+        try {
+          spinnerStart(`Step ${i + 1}: ${step.slug}...`);
+          const res = await request('POST', '/v1/' + step.slug, step.input || {});
+          spinnerStop(true);
+          if (!quiet && !jsonMode) console.log(`     ${green('✓')} ${JSON.stringify(res.data).slice(0, 100)}`);
+        } catch(e) {
+          spinnerStop(false);
+          console.log(`     ${red('✗')} ${e.message}`);
+        }
+      }
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === '--show') {
+    const cfg = loadConfig();
+    if (!cfg.last_plan) { console.log(dim('\n  No plan saved.\n')); return; }
+    if (jsonMode) { console.log(JSON.stringify(cfg.last_plan, null, 2)); return; }
+    console.log(`\n  ${bold('Last Plan:')} ${cfg.last_plan.task}\n`);
+    for (let i = 0; i < (cfg.last_plan.steps || []).length; i++) {
+      const s = cfg.last_plan.steps[i];
+      console.log(`  ${dim(String(i + 1) + '.')} ${cyan(s.action || s.tool || s.slug || String(s))}`);
+      if (s.description) console.log(`     ${dim(s.description)}`);
+    }
+    console.log(`\n  ${dim('Run with:')} ${cyan('slop plan --execute')}\n`);
+    return;
+  }
+
+  const task = args.filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
+  if (!task) die('Usage: slop plan "describe your task"\n  Options: --execute (run last plan), --show (view last plan)');
+
+  spinnerStart(`Planning: "${task}"...`);
+
+  try {
+    const res = await request('POST', '/v1/agent/run', { task, plan_only: true });
+    spinnerStop(true);
+    const d = res.data || res;
+
+    // Save plan to config
+    const cfg = loadConfig();
+    cfg.last_plan = { task, steps: d.steps || d.plan || [{ action: task }], created: new Date().toISOString() };
+    saveConfig(cfg);
+
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+
+    console.log(`\n  ${bold('Plan for:')} "${task}"\n`);
+    const steps = d.steps || d.plan || [];
+    if (steps.length === 0) {
+      console.log(`  ${dim('1.')} ${cyan('agent/run')} — Execute task directly`);
+    } else {
+      for (let i = 0; i < steps.length; i++) {
+        const s = steps[i];
+        const cost = s.credits ? ` ${dim('(' + s.credits + 'cr)')}` : '';
+        console.log(`  ${dim(String(i + 1) + '.')} ${cyan(s.action || s.tool || s.slug || String(s))}${cost}`);
+        if (s.description) console.log(`     ${dim(s.description)}`);
+      }
+    }
+    const totalCost = steps.reduce((sum, s) => sum + (s.credits || 0), 0);
+    if (totalCost) console.log(`\n  ${bold('Estimated cost:')} ${yellow(totalCost + ' credits')}`);
+    console.log(`\n  ${dim('Execute with:')} ${cyan('slop plan --execute')}\n`);
+  } catch (err) {
+    spinnerStop(false);
+    handleError(err);
+  }
+}
+
+// ============================================================
+// MODELS — List and set AI model
+// ============================================================
+async function cmdModels(args) {
+  const sub = args[0];
+
+  if (sub === 'set') {
+    const model = args[1];
+    if (!model) die('Usage: slop models set <model-id>');
+    const cfg = loadConfig();
+    cfg.default_model = model;
+    saveConfig(cfg);
+    console.log(green(`\n  Default model set to: ${cyan(model)}\n`));
+    return;
+  }
+
+  if (jsonMode) {
+    console.log(JSON.stringify({
+      default: loadConfig().default_model || 'claude-opus-4-6',
+      available: [
+        { id: 'claude-opus-4-6', provider: 'anthropic', context: '1M', cost: '1x' },
+        { id: 'claude-sonnet-4-6', provider: 'anthropic', context: '200K', cost: '0.2x' },
+        { id: 'claude-haiku-4-5', provider: 'anthropic', context: '200K', cost: '0.04x' },
+        { id: 'gpt-5.4', provider: 'openai', context: '128K', cost: '1.2x', note: 'requires multi-llm tier' },
+        { id: 'grok-3', provider: 'xai', context: '128K', cost: '0.8x', note: 'requires multi-llm tier' },
+      ]
+    }, null, 2));
+    return;
+  }
+
+  const cfg = loadConfig();
+  const current = cfg.default_model || 'claude-opus-4-6';
+
+  console.log(`\n  ${bold('Available Models')}\n`);
+  console.log(`  ${bold('Current:')} ${cyan(current)}\n`);
+
+  const models = [
+    { id: 'claude-opus-4-6',   provider: 'Anthropic', ctx: '1M',   cost: '1x',    note: '' },
+    { id: 'claude-sonnet-4-6', provider: 'Anthropic', ctx: '200K', cost: '0.2x',  note: '' },
+    { id: 'claude-haiku-4-5',  provider: 'Anthropic', ctx: '200K', cost: '0.04x', note: '' },
+    { id: 'gpt-5.4',           provider: 'OpenAI',    ctx: '128K', cost: '1.2x',  note: 'multi-llm tier' },
+    { id: 'grok-3',            provider: 'xAI',       ctx: '128K', cost: '0.8x',  note: 'multi-llm tier' },
+  ];
+
+  for (const m of models) {
+    const active = m.id === current ? green(' ●') : '  ';
+    const note = m.note ? dim(` (${m.note})`) : '';
+    console.log(`  ${active} ${cyan(m.id.padEnd(22))} ${dim(m.provider.padEnd(10))} ${dim(m.ctx.padEnd(5))} ${yellow(m.cost.padEnd(6))}${note}`);
+  }
+  console.log(`\n  ${dim('Set default:')} ${cyan('slop models set <model-id>')}`);
+  console.log(`  ${dim('Per-call:')}    ${cyan('slop call <slug> --model <model-id>')}\n`);
+}
+
+// ============================================================
+// PROFILE — Multi-profile support
+// ============================================================
+function cmdProfile(args) {
+  const sub = args[0] || 'list';
+  const cfg = loadConfig();
+  cfg.profiles = cfg.profiles || {};
+
+  if (sub === 'list') {
+    const active = cfg.active_profile || 'default';
+    console.log(`\n  ${bold('Profiles')}\n`);
+    console.log(`  ${active === 'default' ? green('●') : dim('○')} ${cyan('default')} ${dim(cfg.email || 'no email')} ${dim(cfg.base_url || BASE_URL)}`);
+    for (const [name, profile] of Object.entries(cfg.profiles)) {
+      const isActive = name === active;
+      console.log(`  ${isActive ? green('●') : dim('○')} ${cyan(name)} ${dim(profile.email || 'no email')} ${dim(profile.base_url || BASE_URL)}`);
+    }
+    console.log(`\n  ${dim('Commands:')} add, switch, remove\n`);
+    return;
+  }
+
+  if (sub === 'add' || sub === 'create') {
+    const name = args[1];
+    if (!name) die('Usage: slop profile add <name>');
+    const keyIdx = args.indexOf('--key');
+    const urlIdx = args.indexOf('--url');
+    const emailIdx = args.indexOf('--email');
+    cfg.profiles[name] = {
+      api_key: keyIdx >= 0 ? args[keyIdx + 1] : '',
+      base_url: urlIdx >= 0 ? args[urlIdx + 1] : BASE_URL,
+      email: emailIdx >= 0 ? args[emailIdx + 1] : '',
+    };
+    saveConfig(cfg);
+    console.log(green(`\n  Profile "${name}" created.`));
+    console.log(`  ${dim('Switch to it:')} ${cyan('slop profile switch ' + name)}\n`);
+    return;
+  }
+
+  if (sub === 'switch' || sub === 'use') {
+    const name = args[1];
+    if (!name) die('Usage: slop profile switch <name>');
+    if (name !== 'default' && !cfg.profiles[name]) die(`Profile "${name}" not found. Run: slop profile list`);
+    cfg.active_profile = name;
+    if (name !== 'default' && cfg.profiles[name]) {
+      // Swap active keys
+      if (cfg.profiles[name].api_key) cfg.api_key = cfg.profiles[name].api_key;
+      if (cfg.profiles[name].base_url) cfg.base_url = cfg.profiles[name].base_url;
+      if (cfg.profiles[name].email) cfg.email = cfg.profiles[name].email;
+    }
+    saveConfig(cfg);
+    console.log(green(`\n  Switched to profile: ${cyan(name)}\n`));
+    return;
+  }
+
+  if (sub === 'remove' || sub === 'delete') {
+    const name = args[1];
+    if (!name) die('Usage: slop profile remove <name>');
+    delete cfg.profiles[name];
+    if (cfg.active_profile === name) cfg.active_profile = 'default';
+    saveConfig(cfg);
+    console.log(green(`\n  Profile "${name}" removed.\n`));
+    return;
+  }
+
+  console.log(`\n  ${bold('Profile Management')}\n`);
+  console.log(`  ${cyan('slop profile list')}                     Show all profiles`);
+  console.log(`  ${cyan('slop profile add')} ${dim('<name> [--key K --url U --email E]')}`);
+  console.log(`  ${cyan('slop profile switch')} ${dim('<name>')}          Switch active profile`);
+  console.log(`  ${cyan('slop profile remove')} ${dim('<name>')}          Delete a profile\n`);
+}
+
+// ============================================================
+// COST — Estimate cost of an API call or pipe
+// ============================================================
+async function cmdCost(args) {
+  const filteredArgs = args.filter(a => !GLOBAL_FLAGS.includes(a));
+  if (filteredArgs.length === 0) {
+    die('Usage: slop cost <slug> or slop cost <slug1> <slug2> (for pipe cost)');
+  }
+
+  spinnerStart('Estimating cost...');
+  let totalCredits = 0;
+  const breakdown = [];
+
+  for (const slug of filteredArgs) {
+    try {
+      const res = await request('POST', '/v1/dry-run/' + slug, {}, false);
+      const d = res.data;
+      const credits = d.credits || 0;
+      totalCredits += credits;
+      breakdown.push({ slug, credits, tier: d.tier || 'any' });
+    } catch(e) {
+      breakdown.push({ slug, credits: '?', error: e.message });
+    }
+  }
+
+  spinnerStop(true);
+
+  if (jsonMode) { console.log(JSON.stringify({ breakdown, total: totalCredits }, null, 2)); return; }
+
+  console.log(`\n  ${bold('Cost Estimate')}\n`);
+  for (const b of breakdown) {
+    if (b.error) {
+      console.log(`  ${red('✗')} ${cyan(b.slug)} — ${dim(b.error)}`);
+    } else {
+      console.log(`  ${green('✓')} ${cyan(b.slug.padEnd(35))} ${yellow(b.credits + ' credits')} ${dim('tier: ' + b.tier)}`);
+    }
+  }
+  if (filteredArgs.length > 1) {
+    console.log(`  ${dim('─'.repeat(50))}`);
+    console.log(`  ${bold('Total:')} ${yellow(totalCredits + ' credits')}`);
+  }
+  console.log('');
+}
+
+// ============================================================
+// DEBUG — Explain and fix errors
+// ============================================================
+async function cmdDebug(args) {
+  requireKey();
+
+  // Check for --last flag
+  if (args.includes('--last')) {
+    die('--last requires shell integration. Pipe errors directly:\n  command 2>&1 | slop debug');
+  }
+
+  let errorText = args.filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
+
+  // Accept piped stdin
+  const stdinData = await readStdin();
+  if (stdinData) errorText = stdinData;
+
+  if (!errorText) die('Usage: slop debug "error message"\n  Or: command 2>&1 | slop debug');
+
+  spinnerStart('Analyzing error...');
+
+  try {
+    const res = await request('POST', '/v1/llm-analyze-text', { text: `Debug this error and explain the fix:\n\n${errorText}`, task: 'debug' });
+    spinnerStop(true);
+    const d = res.data || res;
+
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+
+    console.log(`\n  ${bold('Error Analysis')}`);
+    console.log(`  ${dim('─'.repeat(42))}`);
+    const analysis = d.result || d.analysis || d.response || d.output || JSON.stringify(d);
+    console.log(`\n  ${analysis}\n`);
+    if (d.credits_used) console.log(dim(`  [${d.credits_used}cr used]\n`));
+  } catch (err) {
+    spinnerStop(false);
+    handleError(err);
+  }
+}
+
+// ============================================================
+// CLOUD — Cloud task handoff
+// ============================================================
+async function cmdCloud(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Cloud Tasks')}\n`);
+    console.log(`  ${cyan('slop cloud run')} ${dim('"task description"')}   Send task to cloud`);
+    console.log(`  ${cyan('slop cloud status')} ${dim('<task-id>')}          Check task progress`);
+    console.log(`  ${cyan('slop cloud list')}                        List cloud tasks\n`);
+    return;
+  }
+
+  if (sub === 'run') {
+    const task = args.slice(1).filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
+    if (!task) die('Usage: slop cloud run "your task description"');
+
+    spinnerStart('Submitting task to cloud...');
+    try {
+      const res = await request('POST', '/v1/prompt-queue/add', { prompt: task, priority: 'normal' });
+      spinnerStop(true);
+      const d = res.data || res;
+
+      if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+
+      console.log(`\n  ${green('✓ Task submitted to cloud!')}`);
+      console.log(`  ${bold('Task ID:')}  ${cyan(d.id || d.queue_id || 'queued')}`);
+      console.log(`  ${bold('Status:')}   ${dim(d.status || 'pending')}`);
+      console.log(`\n  ${dim('Check progress:')} ${cyan('slop cloud status ' + (d.id || d.queue_id || '<task-id>'))}\n`);
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  if (sub === 'status') {
+    const taskId = args[1];
+    if (!taskId) die('Usage: slop cloud status <task-id>');
+
+    spinnerStart('Checking task...');
+    try {
+      const res = await request('GET', '/v1/prompt-queue/status/' + taskId);
+      spinnerStop(true);
+      const d = res.data || res;
+
+      if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+
+      const statusColor = d.status === 'complete' ? green : d.status === 'running' ? yellow : dim;
+      console.log(`\n  ${bold('Task:')} ${taskId}`);
+      console.log(`  ${bold('Status:')} ${statusColor(d.status || 'unknown')}`);
+      if (d.result) console.log(`  ${bold('Result:')} ${green(String(d.result).slice(0, 200))}`);
+      if (d.progress) console.log(`  ${bold('Progress:')} ${yellow(d.progress)}`);
+      console.log('');
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  if (sub === 'list') {
+    spinnerStart('Loading tasks...');
+    try {
+      const res = await request('GET', '/v1/prompt-queue/list');
+      spinnerStop(true);
+      const items = res.data?.items || res.data?.queue || res.items || [];
+
+      if (jsonMode) { console.log(JSON.stringify(items, null, 2)); return; }
+
+      console.log(`\n  ${bold('Cloud Tasks')}\n`);
+      if (items.length === 0) { console.log(dim('  No tasks found.\n')); return; }
+      for (const item of items) {
+        const statusColor = item.status === 'complete' ? green : item.status === 'running' ? yellow : dim;
+        console.log(`  ${cyan(String(item.id || '').padEnd(10))} ${statusColor((item.status || 'pending').padEnd(10))} ${dim(String(item.prompt || item.task || '').slice(0, 60))}`);
+      }
+      console.log('');
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  die('Unknown cloud command: ' + sub + '. Run slop cloud help');
+}
+
+// ============================================================
+// LOGS — Stream platform logs
+// ============================================================
+async function cmdLogs(args) {
+  requireKey();
+
+  const filterIdx = args.indexOf('--filter');
+  const sinceIdx = args.indexOf('--since');
+  const filter = filterIdx >= 0 ? args[filterIdx + 1] : null;
+  const since = sinceIdx >= 0 ? args[sinceIdx + 1] : '1h';
+  const follow = args.includes('--follow') || args.includes('-f');
+
+  spinnerStart('Loading logs...');
+
+  try {
+    const res = await request('GET', `/v1/usage/today`);
+    spinnerStop(true);
+    const d = res.data || res;
+
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+
+    console.log(`\n  ${bold('Platform Logs')} ${dim('(last ' + since + ')')}\n`);
+
+    // Display usage as log entries
+    const entries = d.recent || d.calls || d.entries || [];
+    if (entries.length === 0 && typeof d === 'object') {
+      // Fallback: display available stats as log entries
+      for (const [k, v] of Object.entries(d)) {
+        if (k.startsWith('_')) continue;
+        const line = `${dim(new Date().toISOString().slice(11, 19))} ${cyan(k)} ${dim('→')} ${green(String(v))}`;
+        if (!filter || line.toLowerCase().includes(filter.toLowerCase())) {
+          console.log(`  ${line}`);
+        }
+      }
+    } else {
+      for (const entry of entries) {
+        const time = dim(entry.time || entry.timestamp || '');
+        const slug = cyan(entry.slug || entry.endpoint || entry.action || '');
+        const status = entry.error ? red('ERR') : green('OK');
+        const line = `  ${time} ${status} ${slug} ${dim(String(entry.credits || '') + 'cr')}`;
+        if (!filter || line.toLowerCase().includes(filter.toLowerCase())) {
+          console.log(line);
+        }
+      }
+    }
+
+    if (follow) {
+      console.log(dim('\n  Tailing logs (Ctrl+C to stop)...\n'));
+      setInterval(async () => {
+        try {
+          const r = await request('GET', '/v1/usage/today');
+          const d2 = r.data || r;
+          // Show delta
+          console.log(`  ${dim(new Date().toISOString().slice(11, 19))} ${dim('calls:')} ${yellow(String(d2.calls || d2.requests || 0))} ${dim('credits:')} ${yellow(String(d2.credits_used || 0))}`);
+        } catch(e) { /* ignore */ }
+      }, 5000);
+    } else {
+      console.log('');
+    }
+  } catch (err) {
+    spinnerStop(false);
+    handleError(err);
+  }
+}
+
+// ============================================================
+// DEV — Local development server
+// ============================================================
+async function cmdDev(args) {
+  const portIdx = args.indexOf('--port');
+  const port = portIdx >= 0 ? args[portIdx + 1] : '3000';
+
+  console.log(`\n  ${bold('Starting local dev server...')}\n`);
+
+  const { execSync, spawn } = require('child_process');
+  const serverPath = path.join(__dirname, 'server-v2.js');
+
+  if (!fs.existsSync(serverPath)) {
+    die('server-v2.js not found. Run from the slopshop project directory.');
+  }
+
+  console.log(`  ${dim('Server:')} ${serverPath}`);
+  console.log(`  ${dim('Port:')}   ${port}`);
+  console.log(`  ${dim('URL:')}    ${cyan('http://localhost:' + port)}\n`);
+  console.log(dim('  Press Ctrl+C to stop.\n'));
+
+  const child = spawn('node', [serverPath], {
+    env: { ...process.env, PORT: port },
+    stdio: 'inherit',
+  });
+
+  child.on('error', (err) => {
+    console.error(red('\n  Failed to start server: ') + err.message);
+  });
+
+  child.on('exit', (code) => {
+    console.log(dim(`\n  Server exited (code ${code})\n`));
+  });
+
+  // Keep alive
+  process.on('SIGINT', () => {
+    child.kill('SIGINT');
+    process.exit(0);
+  });
+}
+
+// ============================================================
+// ENV — Environment variable management (memory-backed)
+// ============================================================
+async function cmdEnv(args) {
+  requireKey();
+  const sub = args[0] || 'list';
+
+  if (sub === 'list') {
+    spinnerStart('Loading env vars...');
+    try {
+      const res = await request('POST', '/v1/memory-list', { prefix: 'env:' });
+      spinnerStop(true);
+      const keys = res.data?.keys || res.data?.entries || [];
+      if (jsonMode) { console.log(JSON.stringify(keys, null, 2)); return; }
+      console.log(`\n  ${bold('Environment Variables')}\n`);
+      if (keys.length === 0) { console.log(dim('  No env vars set. Use: slop env set KEY=value\n')); return; }
+      for (const k of keys) {
+        const key = typeof k === 'string' ? k : (k.key || '');
+        const val = typeof k === 'string' ? '' : (k.value || '');
+        console.log(`  ${cyan(key.replace(/^env:/, ''))} = ${green(val)}`);
+      }
+      console.log('');
+    } catch(err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  if (sub === 'set') {
+    const pair = args.slice(1).join(' ');
+    const eqIdx = pair.indexOf('=');
+    if (eqIdx < 0) die('Usage: slop env set KEY=value');
+    const key = pair.slice(0, eqIdx).trim();
+    const value = pair.slice(eqIdx + 1).trim();
+    await request('POST', '/v1/memory-set', { key: 'env:' + key, value });
+    if (jsonMode) { console.log(JSON.stringify({ ok: true, key, value })); return; }
+    console.log(green(`\n  Set env:${key}\n`));
+    return;
+  }
+
+  if (sub === 'get') {
+    const key = args[1];
+    if (!key) die('Usage: slop env get KEY');
+    try {
+      const res = await request('POST', '/v1/memory-get', { key: 'env:' + key });
+      const d = res.data || res;
+      if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+      console.log(d.value !== undefined ? d.value : dim('(not set)'));
+    } catch(e) { console.log(dim('(not set)')); }
+    return;
+  }
+
+  if (sub === 'delete' || sub === 'rm') {
+    const key = args[1];
+    if (!key) die('Usage: slop env delete KEY');
+    await request('POST', '/v1/memory-delete', { key: 'env:' + key });
+    if (!quiet) console.log(green(`\n  Deleted env:${key}\n`));
+    return;
+  }
+
+  console.log(`\n  ${bold('Environment Variables')}\n`);
+  console.log(`  ${cyan('slop env list')}              List all env vars`);
+  console.log(`  ${cyan('slop env set KEY=value')}     Set an env var`);
+  console.log(`  ${cyan('slop env get KEY')}           Get an env var`);
+  console.log(`  ${cyan('slop env delete KEY')}        Delete an env var\n`);
+}
+
+// ============================================================
+// LISTEN — Webhook listener
+// ============================================================
+async function cmdListen(args) {
+  requireKey();
+
+  const forwardIdx = args.indexOf('--forward-to');
+  const forwardUrl = forwardIdx >= 0 ? args[forwardIdx + 1] : null;
+  const eventsIdx = args.indexOf('--events');
+  const events = eventsIdx >= 0 ? args[eventsIdx + 1].split(',') : [];
+
+  console.log(`\n  ${bold('Webhook Listener')}`);
+  console.log(`  ${dim('─'.repeat(42))}`);
+  if (forwardUrl) console.log(`  ${bold('Forwarding to:')} ${cyan(forwardUrl)}`);
+  if (events.length > 0) console.log(`  ${bold('Events:')} ${events.map(e => cyan(e)).join(', ')}`);
+  console.log(dim('  Listening for events (Ctrl+C to stop)...\n'));
+
+  // Poll for new events
+  let lastCheck = Date.now();
+  const poll = async () => {
+    try {
+      const res = await request('GET', '/v1/usage/today');
+      const d = res.data || res;
+      const timestamp = new Date().toISOString().slice(11, 19);
+      console.log(`  ${dim(timestamp)} ${cyan('heartbeat')} ${dim('calls=' + (d.calls || d.requests || 0) + ' credits=' + (d.credits_used || 0))}`);
+
+      if (forwardUrl) {
+        // Forward event to local endpoint
+        try {
+          await request('POST', forwardUrl.replace(BASE_URL, ''), { type: 'heartbeat', data: d }, false);
+        } catch(e) { /* forward failed, log only */ }
+      }
+    } catch(e) { /* ignore */ }
+  };
+
+  await poll();
+  setInterval(poll, 10000);
+}
+
+// ============================================================
+// TYPES — Generate TypeScript/Go/Python types from OpenAPI
+// ============================================================
+async function cmdTypes(args) {
+  const lang = args.find(a => ['typescript', 'ts', 'go', 'python', 'py', 'rust'].includes(a)) || 'typescript';
+  const slug = args.find(a => !['typescript', 'ts', 'go', 'python', 'py', 'rust', '--output'].includes(a) && !GLOBAL_FLAGS.includes(a));
+  const outputIdx = args.indexOf('--output');
+  const outputFile = outputIdx >= 0 ? args[outputIdx + 1] : null;
+
+  spinnerStart('Generating types...');
+
+  try {
+    const res = await request('GET', '/v1/openapi.json', null, false);
+    spinnerStop(true);
+    const spec = res.data;
+    const paths = spec.paths || {};
+
+    let output = '';
+
+    if (lang === 'typescript' || lang === 'ts') {
+      output += '// Auto-generated Slopshop API types\n';
+      output += '// Generated: ' + new Date().toISOString() + '\n\n';
+      output += 'export interface SlopResponse<T = any> {\n  data: T;\n  meta: { credits_used: number; latency_ms: number; credits_remaining: number; };\n}\n\n';
+
+      let count = 0;
+      for (const [path, methods] of Object.entries(paths)) {
+        if (slug && !path.includes(slug)) continue;
+        const name = path.replace('/v1/', '').replace(/-/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+        const pascalName = name.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join('');
+        output += `export interface ${pascalName}Input { [key: string]: any; }\n`;
+        output += `export interface ${pascalName}Output { [key: string]: any; }\n\n`;
+        count++;
+        if (count > 50 && !slug) { output += '// ... and more. Use slop types <slug> for specific API.\n'; break; }
+      }
+    } else if (lang === 'python' || lang === 'py') {
+      output += '# Auto-generated Slopshop API types\n';
+      output += 'from typing import Any, Dict, Optional\nfrom dataclasses import dataclass\n\n';
+      output += '@dataclass\nclass SlopResponse:\n    data: Any\n    meta: Dict[str, Any]\n\n';
+    } else if (lang === 'go') {
+      output += '// Auto-generated Slopshop API types\npackage slopshop\n\n';
+      output += 'type SlopResponse struct {\n\tData interface{} `json:"data"`\n\tMeta SlopMeta    `json:"meta"`\n}\n\n';
+      output += 'type SlopMeta struct {\n\tCreditsUsed      int `json:"credits_used"`\n\tLatencyMs        int `json:"latency_ms"`\n\tCreditsRemaining int `json:"credits_remaining"`\n}\n';
+    }
+
+    if (outputFile) {
+      fs.writeFileSync(outputFile, output);
+      console.log(green(`\n  Types written to ${outputFile}\n`));
+    } else {
+      console.log(output);
+    }
+  } catch(err) {
+    spinnerStop(false);
+    handleError(err);
+  }
+}
+
+// ============================================================
+// FILE — Local file read/write (5 competitors have this)
+// ============================================================
+function cmdFile(args) {
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('File Operations')}\n`);
+    console.log(`  ${cyan('slop file read')} ${dim('<path>')}              Read a file`);
+    console.log(`  ${cyan('slop file write')} ${dim('<path> --content "..."')} Write to a file`);
+    console.log(`  ${cyan('slop file edit')} ${dim('<path> --find X --replace Y')} Find & replace`);
+    console.log(`  ${cyan('slop file list')} ${dim('[dir]')}               List directory contents`);
+    console.log(`  ${cyan('slop file info')} ${dim('<path>')}              File metadata\n`);
+    return;
+  }
+
+  if (sub === 'read' || sub === 'cat') {
+    const filePath = args[1];
+    if (!filePath) die('Usage: slop file read <path>');
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      if (jsonMode) { console.log(JSON.stringify({ path: filePath, content, size: content.length, lines: content.split('\n').length })); return; }
+      if (quiet) { console.log(content); return; }
+      const lines = content.split('\n');
+      console.log(`\n  ${bold(filePath)} ${dim('(' + lines.length + ' lines, ' + content.length + ' bytes)')}\n`);
+      for (let i = 0; i < lines.length; i++) {
+        console.log(`  ${dim(String(i + 1).padStart(4))} ${lines[i]}`);
+      }
+      console.log('');
+    } catch(e) { die('Cannot read file: ' + e.message); }
+    return;
+  }
+
+  if (sub === 'write') {
+    const filePath = args[1];
+    const contentIdx = args.indexOf('--content');
+    const content = contentIdx >= 0 ? args.slice(contentIdx + 1).join(' ') : null;
+    if (!filePath || content === null) die('Usage: slop file write <path> --content "text"');
+    try {
+      fs.writeFileSync(filePath, content);
+      if (jsonMode) { console.log(JSON.stringify({ ok: true, path: filePath, bytes: content.length })); return; }
+      console.log(green(`\n  Written ${content.length} bytes to ${filePath}\n`));
+    } catch(e) { die('Cannot write file: ' + e.message); }
+    return;
+  }
+
+  if (sub === 'edit') {
+    const filePath = args[1];
+    const findIdx = args.indexOf('--find');
+    const replaceIdx = args.indexOf('--replace');
+    if (!filePath || findIdx < 0 || replaceIdx < 0) die('Usage: slop file edit <path> --find "old" --replace "new"');
+    const findStr = args.slice(findIdx + 1, replaceIdx).join(' ');
+    const replaceStr = args.slice(replaceIdx + 1).join(' ');
+    try {
+      let content = fs.readFileSync(filePath, 'utf8');
+      const count = (content.match(new RegExp(findStr.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g')) || []).length;
+      content = content.split(findStr).join(replaceStr);
+      fs.writeFileSync(filePath, content);
+      if (jsonMode) { console.log(JSON.stringify({ ok: true, path: filePath, replacements: count })); return; }
+      console.log(green(`\n  Replaced ${count} occurrence(s) in ${filePath}\n`));
+    } catch(e) { die('Cannot edit file: ' + e.message); }
+    return;
+  }
+
+  if (sub === 'list' || sub === 'ls') {
+    const dir = args[1] || '.';
+    try {
+      const entries = fs.readdirSync(dir, { withFileTypes: true });
+      if (jsonMode) { console.log(JSON.stringify(entries.map(e => ({ name: e.name, type: e.isDirectory() ? 'dir' : 'file' })))); return; }
+      if (quiet) { entries.forEach(e => console.log(e.name)); return; }
+      console.log(`\n  ${bold(path.resolve(dir))}\n`);
+      for (const entry of entries) {
+        const icon = entry.isDirectory() ? cyan('d') : dim('f');
+        console.log(`  ${icon} ${entry.isDirectory() ? bold(entry.name + '/') : entry.name}`);
+      }
+      console.log(dim(`\n  ${entries.length} entries\n`));
+    } catch(e) { die('Cannot list: ' + e.message); }
+    return;
+  }
+
+  if (sub === 'info' || sub === 'stat') {
+    const filePath = args[1];
+    if (!filePath) die('Usage: slop file info <path>');
+    try {
+      const stat = fs.statSync(filePath);
+      const info = { path: filePath, size: stat.size, modified: stat.mtime.toISOString(), created: stat.birthtime.toISOString(), isDirectory: stat.isDirectory() };
+      if (jsonMode) { console.log(JSON.stringify(info)); return; }
+      console.log(`\n  ${bold(filePath)}`);
+      console.log(`  Size:     ${yellow(stat.size + ' bytes')}`);
+      console.log(`  Modified: ${dim(stat.mtime.toISOString())}`);
+      console.log(`  Created:  ${dim(stat.birthtime.toISOString())}`);
+      console.log(`  Type:     ${stat.isDirectory() ? 'directory' : 'file'}\n`);
+    } catch(e) { die('Cannot stat: ' + e.message); }
+    return;
+  }
+
+  die('Unknown file command: ' + sub + '. Run slop file help');
+}
+
+// ============================================================
+// GIT — Git integration (4 competitors have this)
+// ============================================================
+async function cmdGit(args) {
+  const { execSync } = require('child_process');
+  const sub = args[0];
+
+  const git = (cmd) => {
+    try { return execSync('git ' + cmd, { encoding: 'utf8', timeout: 10000 }).trim(); }
+    catch(e) { throw new Error(e.stderr?.trim() || e.message); }
+  };
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Git Integration')}\n`);
+    console.log(`  ${cyan('slop git status')}                    Working tree status`);
+    console.log(`  ${cyan('slop git diff')} ${dim('[--staged]')}          Show changes`);
+    console.log(`  ${cyan('slop git log')} ${dim('[--limit N]')}          Recent commits`);
+    console.log(`  ${cyan('slop git commit')} ${dim('"message"')}         Commit staged changes`);
+    console.log(`  ${cyan('slop git push')}                      Push to remote`);
+    console.log(`  ${cyan('slop git branch')}                    List branches`);
+    console.log(`  ${cyan('slop git stash')} ${dim('[pop]')}              Stash/unstash changes\n`);
+    return;
+  }
+
+  try {
+    if (sub === 'status' || sub === 'st') {
+      const branch = git('branch --show-current');
+      const status = git('status --short');
+      if (jsonMode) {
+        const lines = status.split('\n').filter(l => l.trim());
+        const parsed = lines.map(l => ({ status: l.slice(0, 2).trim(), file: l.slice(3) }));
+        console.log(JSON.stringify({ branch, files: parsed, clean: lines.length === 0 }));
+        return;
+      }
+      console.log(`\n  ${bold('Branch:')} ${cyan(branch)}`);
+      if (!status) { console.log(green('  Working tree clean.\n')); return; }
+      console.log('');
+      for (const line of status.split('\n')) {
+        if (!line.trim()) continue;
+        const st = line.slice(0, 2);
+        const file = line.slice(3);
+        const color = st.includes('M') ? yellow : st.includes('?') ? dim : st.includes('A') ? green : st.includes('D') ? red : dim;
+        console.log(`  ${color(st)} ${file}`);
+      }
+      console.log('');
+      return;
+    }
+
+    if (sub === 'diff') {
+      const staged = args.includes('--staged') || args.includes('--cached');
+      const diff = git('diff' + (staged ? ' --staged' : '') + ' --stat');
+      const fullDiff = git('diff' + (staged ? ' --staged' : ''));
+      if (jsonMode) { console.log(JSON.stringify({ staged, stat: diff, diff: fullDiff.slice(0, 5000) })); return; }
+      if (!diff) { console.log(dim('\n  No changes.\n')); return; }
+      console.log(`\n  ${bold(staged ? 'Staged changes:' : 'Unstaged changes:')}\n`);
+      for (const line of diff.split('\n')) {
+        if (line.includes('|')) {
+          const [file, rest] = line.split('|');
+          console.log(`  ${cyan(file.trim().padEnd(40))} ${rest.replace(/\+/g, green('+')).replace(/-/g, red('-'))}`);
+        } else {
+          console.log(`  ${dim(line)}`);
+        }
+      }
+      console.log('');
+      return;
+    }
+
+    if (sub === 'log') {
+      const limitIdx = args.indexOf('--limit');
+      const limit = limitIdx >= 0 ? parseInt(args[limitIdx + 1]) || 10 : 10;
+      const log = git(`log --oneline -${limit} --format="%h %s (%ar)"`);
+      if (jsonMode) {
+        const entries = log.split('\n').filter(l => l).map(l => {
+          const [hash, ...rest] = l.split(' ');
+          return { hash, message: rest.join(' ') };
+        });
+        console.log(JSON.stringify(entries));
+        return;
+      }
+      console.log(`\n  ${bold('Recent Commits')}\n`);
+      for (const line of log.split('\n')) {
+        if (!line.trim()) continue;
+        const hash = line.slice(0, 7);
+        const rest = line.slice(8);
+        console.log(`  ${yellow(hash)} ${rest}`);
+      }
+      console.log('');
+      return;
+    }
+
+    if (sub === 'commit') {
+      const msg = args.slice(1).filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
+      if (!msg) die('Usage: slop git commit "your commit message"');
+      git('add -A');
+      const result = git(`commit -m "${msg.replace(/"/g, '\\"')}"`);
+      if (jsonMode) { console.log(JSON.stringify({ ok: true, message: msg, output: result })); return; }
+      console.log(`\n  ${green('Committed:')} ${msg}`);
+      console.log(dim('  ' + result.split('\n')[0]) + '\n');
+      return;
+    }
+
+    if (sub === 'push') {
+      spinnerStart('Pushing...');
+      const result = git('push 2>&1');
+      spinnerStop(true);
+      if (jsonMode) { console.log(JSON.stringify({ ok: true, output: result })); return; }
+      console.log(`\n  ${green('Pushed!')}\n  ${dim(result)}\n`);
+      return;
+    }
+
+    if (sub === 'branch' || sub === 'branches') {
+      const branches = git('branch -a');
+      if (jsonMode) {
+        const parsed = branches.split('\n').filter(l => l.trim()).map(l => ({ name: l.replace(/^\*?\s+/, ''), current: l.startsWith('*') }));
+        console.log(JSON.stringify(parsed));
+        return;
+      }
+      console.log(`\n  ${bold('Branches')}\n`);
+      for (const line of branches.split('\n')) {
+        if (!line.trim()) continue;
+        if (line.startsWith('*')) {
+          console.log(`  ${green('*')} ${cyan(line.slice(2))}`);
+        } else {
+          console.log(`    ${line.trim()}`);
+        }
+      }
+      console.log('');
+      return;
+    }
+
+    if (sub === 'stash') {
+      if (args[1] === 'pop') {
+        const result = git('stash pop');
+        console.log(green(`\n  Stash popped.\n`));
+      } else if (args[1] === 'list') {
+        const stashes = git('stash list');
+        console.log(`\n  ${bold('Stashes')}\n  ${stashes || dim('No stashes.')}\n`);
+      } else {
+        const result = git('stash');
+        console.log(green(`\n  Changes stashed.\n`));
+      }
+      return;
+    }
+
+    die('Unknown git command: ' + sub + '. Run slop git help');
+  } catch (err) {
+    if (!quiet) console.error(red('\n  Git error: ') + err.message + '\n');
+  }
+}
+
+// ============================================================
+// REVIEW — Code review (3 competitors have this)
+// ============================================================
+async function cmdReview(args) {
+  requireKey();
+  const { execSync } = require('child_process');
+
+  let code = '';
+  let source = '';
+
+  // slop review <file>
+  const filePath = args.find(a => !a.startsWith('--') && !GLOBAL_FLAGS.includes(a));
+  const severity = args.includes('--severity') ? args[args.indexOf('--severity') + 1] : 'all';
+
+  if (filePath && fs.existsSync(filePath)) {
+    code = fs.readFileSync(filePath, 'utf8');
+    source = filePath;
+  } else {
+    // Default: review staged/unstaged git changes
+    try {
+      code = execSync('git diff --staged', { encoding: 'utf8', timeout: 5000 });
+      source = 'staged changes';
+      if (!code.trim()) {
+        code = execSync('git diff', { encoding: 'utf8', timeout: 5000 });
+        source = 'unstaged changes';
+      }
+      if (!code.trim()) {
+        code = execSync('git diff HEAD~1', { encoding: 'utf8', timeout: 5000 });
+        source = 'last commit';
+      }
+    } catch(e) { /* not a git repo */ }
+  }
+
+  // Accept piped stdin
+  const stdinData = await readStdin();
+  if (stdinData) { code = stdinData; source = 'stdin'; }
+
+  if (!code.trim()) die('Usage: slop review <file> or run in a git repo\n  Also: cat file.js | slop review');
+
+  // Truncate to fit in LLM context
+  if (code.length > 15000) code = code.slice(0, 15000) + '\n... (truncated)';
+
+  spinnerStart(`Reviewing ${source}...`);
+
+  try {
+    const prompt = `Review this code. List issues by severity (critical, high, medium, low). For each issue, give the line context and a fix suggestion. Be concise.\n\nSource: ${source}\n\`\`\`\n${code}\n\`\`\``;
+    const res = await request('POST', '/v1/llm-analyze-text', { text: prompt, task: 'code-review' });
+    spinnerStop(true);
+    const d = res.data || res;
+
+    if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+
+    console.log(`\n  ${bold('Code Review:')} ${source}`);
+    console.log(`  ${dim('─'.repeat(50))}\n`);
+    const review = d.result || d.analysis || d.response || d.output || JSON.stringify(d);
+    console.log(`  ${review}\n`);
+    if (d.credits_used) console.log(dim(`  [${d.credits_used}cr used]\n`));
+  } catch (err) {
+    spinnerStop(false);
+    handleError(err);
+  }
+}
+
+// ============================================================
+// SESSION — Session persistence (3 competitors have this)
+// ============================================================
+async function cmdSession(args) {
+  const sub = args[0] || 'list';
+  const cfg = loadConfig();
+  cfg.sessions = cfg.sessions || {};
+
+  if (sub === 'list') {
+    if (jsonMode) { console.log(JSON.stringify(Object.entries(cfg.sessions).map(([id, s]) => ({ id, ...s })))); return; }
+    console.log(`\n  ${bold('Saved Sessions')}\n`);
+    const entries = Object.entries(cfg.sessions);
+    if (entries.length === 0) { console.log(dim('  No sessions saved.\n')); return; }
+    for (const [id, session] of entries) {
+      console.log(`  ${cyan(id.padEnd(20))} ${dim(session.created || '')} ${dim(String(session.commands?.length || 0) + ' commands')}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'save') {
+    const name = args[1] || 'session-' + Date.now().toString(36);
+    cfg.sessions[name] = {
+      created: new Date().toISOString(),
+      commands: cfg.history || [],
+      config_snapshot: { base_url: cfg.base_url, email: cfg.email },
+    };
+    saveConfig(cfg);
+    if (jsonMode) { console.log(JSON.stringify({ ok: true, session_id: name })); return; }
+    console.log(green(`\n  Session saved: ${cyan(name)}`));
+    console.log(dim(`  ${(cfg.history || []).length} commands captured.\n`));
+    return;
+  }
+
+  if (sub === 'resume' || sub === 'load') {
+    const name = args[1];
+    if (!name) die('Usage: slop session resume <name>');
+    const session = cfg.sessions[name];
+    if (!session) die('Session not found: ' + name);
+    cfg.history = session.commands || [];
+    saveConfig(cfg);
+    if (jsonMode) { console.log(JSON.stringify({ ok: true, session_id: name, commands: session.commands?.length || 0 })); return; }
+    console.log(green(`\n  Session resumed: ${cyan(name)}`));
+    console.log(dim(`  ${session.commands?.length || 0} commands loaded into history.\n`));
+    return;
+  }
+
+  if (sub === 'delete' || sub === 'rm') {
+    const name = args[1];
+    if (!name) die('Usage: slop session delete <name>');
+    delete cfg.sessions[name];
+    saveConfig(cfg);
+    console.log(green(`\n  Session deleted: ${name}\n`));
+    return;
+  }
+
+  console.log(`\n  ${bold('Session Management')}\n`);
+  console.log(`  ${cyan('slop session list')}              Show saved sessions`);
+  console.log(`  ${cyan('slop session save')} ${dim('[name]')}       Save current session`);
+  console.log(`  ${cyan('slop session resume')} ${dim('<name>')}    Resume a session`);
+  console.log(`  ${cyan('slop session delete')} ${dim('<name>')}    Delete a session\n`);
 }
 
 // ============================================================
@@ -1858,6 +2972,24 @@ async function main() {
     case 'watch':   await cmdWatch(args);  break;
     case 'alias':   cmdAlias(args);        break;
     case 'history': cmdHistory(args);      break;
+    case 'plan':    await cmdPlan(args);   break;
+    case 'models':  await cmdModels(args); break;
+    case 'model':   await cmdModels(args); break;
+    case 'profile': cmdProfile(args);      break;
+    case 'profiles': cmdProfile(args);     break;
+    case 'cost':    await cmdCost(args);   break;
+    case 'debug':   await cmdDebug(args);  break;
+    case 'cloud':   await cmdCloud(args);  break;
+    case 'logs':    await cmdLogs(args);   break;
+    case 'log':     await cmdLogs(args);   break;
+    case 'dev':     await cmdDev(args);    break;
+    case 'env':     await cmdEnv(args);    break;
+    case 'listen':  await cmdListen(args); break;
+    case 'types':   await cmdTypes(args);  break;
+    case 'file':    cmdFile(args);         break;
+    case 'git':     await cmdGit(args);    break;
+    case 'review':  await cmdReview(args); break;
+    case 'session': await cmdSession(args); break;
     case 'version': case '-v': case '--version': {
       try {
         const pkg = require('./package.json');
@@ -2054,6 +3186,47 @@ async function cmdNatural(cmd, args) {
   if (/^(search|find|look)\s+(my\s+)?(memory|memories|stored|data)\s+(?:for\s+)?(.+)/i.test(fullInput)) {
     const m = fullInput.match(/(?:search|find|look)\s+(?:my\s+)?(?:memory|memories|stored|data)\s+(?:for\s+)?(.+)/i);
     return cmdMemory(['search', m[1]]);
+  }
+
+  // Plan mode
+  if (/^(plan|plan out|design|architect|outline)\s+(.+)/i.test(fullInput)) {
+    const task = fullInput.replace(/^(?:plan|plan out|design|architect|outline)\s+/i, '');
+    return cmdPlan([task]);
+  }
+
+  // Debug
+  if (/^(debug|explain|fix|diagnose)\s+(this\s+)?(error|bug|issue|problem)\s*:?\s*(.+)/i.test(fullInput)) {
+    const error = fullInput.replace(/^(?:debug|explain|fix|diagnose)\s+(?:this\s+)?(?:error|bug|issue|problem)\s*:?\s*/i, '');
+    return cmdDebug([error]);
+  }
+
+  // Cloud
+  if (/^(run|execute|do)\s+(.+)\s+(in the cloud|on cloud|remotely|async)/i.test(fullInput)) {
+    const task = fullInput.replace(/\s+(in the cloud|on cloud|remotely|async)\s*$/i, '').replace(/^(?:run|execute|do)\s+/i, '');
+    return cmdCloud(['run', task]);
+  }
+
+  // Models
+  if (/^(what|which|list|show)\s+(models?|llms?|ais?)/i.test(lower)) {
+    return cmdModels([]);
+  }
+
+  // Code review
+  if (/^(review|code review|check code|audit code|lint)\s*(.*)/i.test(fullInput)) {
+    const file = fullInput.replace(/^(?:review|code review|check code|audit code|lint)\s*/i, '').trim();
+    return cmdReview(file ? [file] : []);
+  }
+
+  // File operations
+  if (/^(read|cat|open|show)\s+(file\s+)?(.+\.\w+)/i.test(fullInput)) {
+    const file = fullInput.match(/(?:read|cat|open|show)\s+(?:file\s+)?(.+)/i)[1].trim();
+    return cmdFile(['read', file]);
+  }
+
+  // Git shortcuts
+  if (/^(commit|push|stash|branch(es)?|git status|git diff|git log)/i.test(lower)) {
+    const parts = fullInput.replace(/^git\s*/i, '').split(/\s+/);
+    return cmdGit(parts);
   }
 
   // Search for tools
