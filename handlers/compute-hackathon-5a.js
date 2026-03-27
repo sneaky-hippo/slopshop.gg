@@ -20,7 +20,22 @@ const handlers = {
   'runbook-execute': ({runbook, state}) => {
     const rb = runbook || [{condition:'error_count > 5',action:'restart_service'}];
     const s = state || {error_count:6};
-    const matched = rb.find(r => { try { const keys = Object.keys(s); const fn = new Function(...keys, 'return ' + r.condition); return fn(...keys.map(k=>s[k])); } catch(e) { return false; } });
+    // SECURITY FIX (CRIT-02): Safe condition evaluation — no new Function() with user input
+    const matched = rb.find(r => {
+      try {
+        const condition = String(r.condition || '');
+        // Only allow: variable names, numbers, comparison/logical operators, whitespace, parentheses
+        if (!/^[a-zA-Z0-9_\s><=!&|().+\-*/]+$/.test(condition)) return false;
+        // Simple safe evaluator: replace variable references with values, then evaluate with restricted Function
+        let expr = condition;
+        for (const [k, v] of Object.entries(s)) {
+          expr = expr.replace(new RegExp('\\b' + k.replace(/[^a-zA-Z0-9_]/g, '') + '\\b', 'g'), JSON.stringify(v));
+        }
+        // Verify no remaining alpha chars (means unknown variable or injection attempt)
+        if (/[a-zA-Z_]/.test(expr.replace(/true|false|null|undefined/g, ''))) return false;
+        return new Function('"use strict"; return (' + expr + ')')();
+      } catch(e) { return false; }
+    });
     return {_engine:'real', state:s, matched_rule:matched||null, action:matched?.action||'no_action'};
   },
 

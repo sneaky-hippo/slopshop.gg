@@ -101,7 +101,10 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     if (!user) return res.status(401).json({ error: { code: 'invalid_credentials' } });
 
     const hash = hashPassword(password, user.salt);
-    if (hash !== user.password_hash) return res.status(401).json({ error: { code: 'invalid_credentials' } });
+    // SECURITY FIX (HIGH-06): Use timing-safe comparison to prevent timing attacks
+    const hashBuf = Buffer.from(hash);
+    const storedBuf = Buffer.from(user.password_hash);
+    if (hashBuf.length !== storedBuf.length || !crypto.timingSafeEqual(hashBuf, storedBuf)) return res.status(401).json({ error: { code: 'invalid_credentials' } });
 
     // Refresh key in cache
     const acct = apiKeys.get(user.api_key);

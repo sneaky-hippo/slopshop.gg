@@ -8,6 +8,7 @@ stress-dashboard.html
 .vercel
 
 DEPLOY-AUDIT.md
+SECURITY-AUDIT.md
 
 # Internal strategy & survey docs (keep local only)
 STRATEGY*.md

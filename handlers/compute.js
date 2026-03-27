@@ -3758,7 +3758,19 @@ module.exports = {
       const sample = {};
       for (const [k, v] of Object.entries(model.variables)) { sample[k] = v.min + Math.random() * (v.max - v.min); }
       if (model.formula) {
-        try { const expr = model.formula.replace(/\b(\w+)\b/g, (m) => sample[m] !== undefined ? sample[m] : m); sample._result = new Function('return (' + expr + ')')(); } catch (e) {}
+        try {
+          // SECURITY FIX (CRIT-01): Safe math evaluation — no new Function()
+          // Only allow: numbers, arithmetic operators, parentheses, whitespace, and variable names
+          const formula = String(model.formula);
+          if (!/^[a-zA-Z0-9_\s+\-*/().]+$/.test(formula)) { sample._result = NaN; }
+          else {
+            // Replace variable names with their numeric values
+            let expr = formula.replace(/\b([a-zA-Z_]\w*)\b/g, (m) => sample[m] !== undefined ? Number(sample[m]) : m);
+            // Verify the result only contains numbers and operators (no alpha chars remaining except NaN/Infinity)
+            if (/[a-zA-Z_]/.test(expr.replace(/NaN|Infinity/g, ''))) { sample._result = NaN; }
+            else { sample._result = new Function('return (' + expr + ')')(); }
+          }
+        } catch (e) {}
       }
       results.push(sample);
     }

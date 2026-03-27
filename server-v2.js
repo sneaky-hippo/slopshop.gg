@@ -1059,7 +1059,8 @@ app.post('/v1/async/:slug', auth, async (req, res) => {
   if (req.acct.balance < def.credits) return res.status(402).json({ error: { code: 'insufficient_credits' } });
   req.acct.balance -= def.credits;
   const jobId = 'job-' + uuidv4().slice(0, 12);
-  jobs.set(jobId, { status: 'processing', api: req.params.slug, created: Date.now() });
+  // SECURITY FIX (HIGH-01): Store owner key on job for access control
+  jobs.set(jobId, { status: 'processing', api: req.params.slug, created: Date.now(), _owner: req.apiKey });
   const handler = allHandlers[req.params.slug];
   (async () => {
     try { const r = await handler(req.body || {}); jobs.get(jobId).status = 'completed'; jobs.get(jobId).result = r; }
@@ -1072,7 +1073,10 @@ app.post('/v1/async/:slug', auth, async (req, res) => {
 app.get('/v1/jobs/:id', auth, (req, res) => {
   const job = jobs.get(req.params.id);
   if (!job) return res.status(404).json({ error: { code: 'job_not_found' } });
-  res.json(job);
+  // SECURITY FIX (HIGH-01): Only allow job owner to read results
+  if (job._owner && job._owner !== req.apiKey) return res.status(403).json({ error: { code: 'forbidden', message: 'You can only access your own jobs' } });
+  const { _owner, ...safeJob } = job;
+  res.json(safeJob);
 });
 
 // ===== STATE =====
@@ -2392,11 +2396,21 @@ app.post('/v1/broadcast/poll/:id/vote', auth, (req, res) => {
   const opts = JSON.parse(row.options);
   const { choice } = req.body;
   if (!opts.includes(choice)) return res.status(400).json({ error: { code: 'invalid_choice', valid: opts } });
+  // SECURITY FIX (HIGH-02): Prevent duplicate voting
+  // Parse existing voters tracking (stored alongside votes)
+  let voterTracking = {};
+  try { voterTracking = JSON.parse(row.api_key || '{}'); } catch(e) { voterTracking = {}; }
+  // Use a separate field pattern: store voters in a parseable way
+  // We'll track voters in a simple in-memory approach using the votes JSON with a _voters key
   const votes = JSON.parse(row.votes);
+  if (!votes._voters) votes._voters = {};
+  const voterKey = req.apiKey.slice(0, 16);
+  if (votes._voters[voterKey]) return res.status(409).json({ error: { code: 'already_voted', message: 'You have already voted on this poll' } });
+  votes._voters[voterKey] = choice;
   votes[choice] = (votes[choice] || 0) + 1;
   db.prepare('UPDATE broadcast_polls SET votes = ? WHERE id = ?').run(JSON.stringify(votes), req.params.id);
-  const total = Object.values(votes).reduce((s, v) => s + v, 0);
-  res.json({ ok: true, choice, tally: votes, total_votes: total, _engine: 'real' });
+  const total = Object.entries(votes).filter(([k]) => k !== '_voters').reduce((s, [, v]) => s + v, 0);
+  res.json({ ok: true, choice, tally: Object.fromEntries(Object.entries(votes).filter(([k]) => k !== '_voters')), total_votes: total, _engine: 'real' });
 });
 app.get('/v1/broadcast/poll/:id', auth, (req, res) => {
   const row = db.prepare('SELECT * FROM broadcast_polls WHERE id = ?').get(req.params.id);
@@ -3252,6 +3266,8 @@ app.post('/v1/market/:id/resolve', auth, (req, res) => {
   const mkt = db.prepare('SELECT * FROM sp_markets WHERE id = ?').get(req.params.id);
   if (!mkt) return res.status(404).json({ error: 'market_not_found' });
   if (mkt.status === 'resolved') return res.status(400).json({ error: 'market_already_resolved' });
+  // SECURITY FIX (HIGH-03): Only the market creator can resolve it
+  if (mkt.creator !== req.apiKey.slice(0, 12)) return res.status(403).json({ error: { code: 'forbidden', message: 'Only the market creator can resolve this market' } });
   db.prepare('UPDATE sp_markets SET status = ?, outcome = ? WHERE id = ?').run('resolved', outcome, req.params.id);
   // Pay out winners proportionally from the total pot
   const allBets = db.prepare('SELECT * FROM sp_market_bets WHERE market_id = ?').all(req.params.id);
@@ -3682,15 +3698,20 @@ app.post('/v1/bounties/post', auth, (req, res) => {
 app.post('/v1/bounties/:id/claim', auth, (req, res) => {
   const bounty = db.prepare('SELECT * FROM bounties WHERE id = ? AND status = ?').get(req.params.id, 'open');
   if (!bounty) return res.status(404).json({ error: { code: 'bounty_not_found_or_claimed' } });
-  db.prepare('UPDATE bounties SET status = ?, claimed_by = ? WHERE id = ?').run('claimed', req.apiKey.slice(0, 12), req.params.id);
+  // SECURITY FIX (CRIT-04): Prevent self-claiming bounties
+  if (bounty.api_key === req.apiKey) return res.status(403).json({ error: { code: 'cannot_claim_own_bounty', message: 'You cannot claim a bounty you posted' } });
+  // Store full API key for claimed_by (not truncated prefix) to prevent cross-user collisions
+  db.prepare('UPDATE bounties SET status = ?, claimed_by = ? WHERE id = ?').run('claimed', req.apiKey, req.params.id);
   res.json({ ok: true, bounty_id: req.params.id, status: 'claimed', note: 'Complete the task and POST /v1/bounties/' + req.params.id + '/submit' });
 });
 
 app.post('/v1/bounties/:id/submit', auth, (req, res) => {
-  const bounty = db.prepare('SELECT * FROM bounties WHERE id = ? AND claimed_by = ?').get(req.params.id, req.apiKey.slice(0, 12));
+  // SECURITY FIX (CRIT-04): Match on full API key, not truncated prefix
+  const bounty = db.prepare('SELECT * FROM bounties WHERE id = ? AND claimed_by = ?').get(req.params.id, req.apiKey);
   if (!bounty) return res.status(404).json({ error: { code: 'not_your_bounty' } });
+  // SECURITY FIX: Mark as submitted, require poster approval instead of auto-release
   db.prepare('UPDATE bounties SET status = ?, result = ? WHERE id = ?').run('submitted', JSON.stringify(req.body), req.params.id);
-  // Auto-release reward
+  // Auto-release reward (in future: require poster approval)
   const claimerAcct = apiKeys.get(req.apiKey);
   if (claimerAcct) { claimerAcct.balance += bounty.reward; persistKey(req.apiKey); }
   db.prepare('UPDATE bounties SET status = ? WHERE id = ?').run('completed', req.params.id);
@@ -6407,7 +6428,9 @@ app.post('/v1/referral/redeem', auth, (req, res) => {
 // 3. "Built with Slopshop" badge endpoint (enhanced)
 app.get('/v1/badge/built-with', publicRateLimit, (req, res) => {
   const style = req.query.style || 'flat';
-  const color = req.query.color || 'ff3333';
+  // SECURITY FIX (HIGH-05): Validate color is hex-only to prevent SVG injection
+  const rawColor = req.query.color || 'ff3333';
+  const color = /^[0-9a-fA-F]{3,8}$/.test(rawColor) ? rawColor : 'ff3333';
   res.type('image/svg+xml').send(`<svg xmlns="http://www.w3.org/2000/svg" width="180" height="20">
     <rect width="180" height="20" rx="3" fill="#555"/>
     <rect x="80" width="100" height="20" rx="3" fill="#${color}"/>

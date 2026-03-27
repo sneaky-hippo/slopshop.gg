@@ -321,7 +321,14 @@ const handlers = {
     simplified = simplified.replace(/(\w)\s*\/\s*\1\b/g, '1');
     simplified = simplified.trim().replace(/^\+\s*/, '').replace(/\s+/g, ' ');
     let evaluated = null;
-    try { evaluated = Function('"use strict"; return (' + simplified.replace(/[^0-9+\-*/().]/g, '') + ')')(); } catch(e) {}
+    // SECURITY FIX (CRIT-03): Stricter sanitization for expression evaluation
+    try {
+      const sanitized = simplified.replace(/[^0-9+\-*/(). ]/g, '').trim();
+      // Additional check: must not contain consecutive dots, empty parens, or other suspicious patterns
+      if (sanitized && /^[0-9+\-*/().\s]+$/.test(sanitized) && !sanitized.includes('..') && sanitized.length < 200) {
+        evaluated = Function('"use strict"; return (' + sanitized + ')')();
+      }
+    } catch(e) {}
     return {_engine:'real', original:expression, simplified:simplified||expression, evaluated, rules_applied:simplified!==expression?'constant_folding':'none'};
   },
 
