@@ -1,19 +1,21 @@
 # Slopshop — The Infrastructure Layer for AI Agents
 
-**Free persistent memory. 1,250 real compute APIs. One key. One credit balance.**
+**22 features. 321 endpoints. 1,250 real compute APIs. One key. One credit balance.**
 
 Replace Redis + Cron + Zapier + 10 other services with a single `npm install`.
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![Tools](https://img.shields.io/badge/Tools-1250-brightgreen)](https://slopshop.gg)
+[![Features](https://img.shields.io/badge/Features-22-blue)](https://slopshop.gg/docs.html)
+[![Endpoints](https://img.shields.io/badge/Endpoints-321-orange)](https://slopshop.gg/docs.html)
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-purple)](https://modelcontextprotocol.io)
 
 ---
 
 ## What is Slopshop?
 
-Slopshop is the infrastructure layer your AI agents are missing. One API key gives you persistent memory (free forever), 1,250 real compute APIs, scheduling, webhooks, observability, and a compute exchange where you earn credits by sharing idle resources.
+Slopshop is the infrastructure layer your AI agents are missing. One API key gives you 22 features across 321 endpoints: persistent memory (free forever), 1,250 real compute APIs, agent chaining, template marketplace, evaluations, credit trading, agent wallets, reputation system, replay, scheduling, webhooks, observability, and a compute exchange where you earn credits by sharing idle resources.
 
 Every endpoint runs real computation against your input — no mocks, no canned responses. Proof ships in every response: `_engine: "real"`. Self-hostable with zero external dependencies for compute APIs. Works with Claude, GPT, Grok, Gemini, LangChain, CrewAI, and any agent framework that supports function calling or MCP.
 
@@ -40,9 +42,38 @@ Expected output:
 
 ---
 
+## Complete Feature List (22 Features)
+
+| # | Feature | Description |
+|---|---------|-------------|
+| 1 | **Agent Chaining** | Infinite agent-to-agent chains with loop mode, pause/resume, and context passing |
+| 2 | **Prompt Queue** | Deferred and overnight batch job execution at any frequency |
+| 3 | **Template Marketplace** | Publish, browse, fork, and rate agent workflow templates |
+| 4 | **Agent Evaluations** | Run evals with test cases, compare agents, public leaderboard |
+| 5 | **Replay System** | Save and replay entire swarm runs for debugging and auditing |
+| 6 | **Credit Trading** | Peer-to-peer credit market -- offer credits for sale, buy from others |
+| 7 | **Agent Wallets** | Sub-wallets per agent with budgets, auto-refill, and transfers |
+| 8 | **Agent Reputation** | Upvote/downvote agents, public reputation leaderboard |
+| 9 | **Local Compute Enhancement** | Enhance local computation results with cloud-powered tools |
+| 10 | **Swarm Visualizer** | Real-time interactive visualization of agent swarms and chains |
+| 11 | **Hive Workspaces** | Always-on shared workspaces for multi-agent collaboration |
+| 12 | **Army Deployment** | Deploy up to 10,000 parallel agents for massive-scale tasks |
+| 13 | **Dream Scheduling** | Recurring background task processing (daily, hourly, weekly) |
+| 14 | **Copilot System** | Spawn second-agent copilots for parallel review and debugging |
+| 15 | **Compute Exchange** | Earn credits by sharing idle compute resources |
+| 16 | **Knowledge Graph** | Entity-relationship storage with BFS walks and shortest path |
+| 17 | **Prediction Markets** | Create markets, place bets, aggregate collective intelligence |
+| 18 | **Governance** | Decentralized proposals, voting, and consensus |
+| 19 | **Free Memory** | Persistent key-value, queues, counters, vector search -- always free |
+| 20 | **Pipes** | 14 pre-built multi-step workflows + custom pipe builder |
+| 21 | **Agent Runner** | Natural language task execution with auto tool selection |
+| 22 | **Enterprise Ops** | SLA monitoring, capacity planning, runbook automation, compliance |
+
+---
+
 ## API Catalog
 
-1,250 APIs across 78 categories. Every one ships a real handler.
+1,250 APIs across 78 categories and 321 endpoints. Every one ships a real handler.
 
 ---
 
@@ -806,8 +837,8 @@ Every response includes metadata fields:
 ## Architecture
 
 ```
-server-v2.js          Express server, auth middleware, routing
-  └── registry.js     Source of truth: all 1,250 API definitions
+server-v2.js          Express server, auth middleware, routing (321 endpoints)
+  └── registry.js     Source of truth: all 1,250 API definitions (22 features)
   └── handlers/
         compute.js    Pure compute: hashes, text, math, dates, codegen
         llm.js        LLM calls: Claude/GPT content, analysis, code, business

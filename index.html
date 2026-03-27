@@ -998,6 +998,78 @@ Connect to /v1/stream/usage for live data</div>
       <div class="pf-epcount">Live node graph &middot; status colors &middot; communication pulses &middot; credit tracking</div>
     </div>
 
+    <!-- 19. SHARE MY ARMY -->
+    <div class="pf-card" style="border-top:3px solid var(--g)">
+      <div class="pf-badge" style="background:var(--gg);color:var(--g)"><span class="pf-live"></span> LIVE &middot; NEW</div>
+      <h3 style="color:var(--g)">SHARE MY ARMY</h3>
+      <p class="pf-desc">Generate public links for any army deployment. Recipients can view your swarm config, fork it into their playground, and remix it. One-click sharing for collaborative AI.</p>
+      <div class="pf-endpoint">POST /v1/army/share &rarr; public share link + playground fork</div>
+      <div class="pf-epcount">2 endpoints &middot; share, browse shared &middot; auto-generates playground fork URL</div>
+    </div>
+
+    <!-- 20. REFERRAL PROGRAM -->
+    <div class="pf-card" style="border-top:3px solid var(--o)">
+      <div class="pf-badge" style="background:var(--og);color:var(--o)"><span class="pf-live"></span> LIVE &middot; NEW</div>
+      <h3 style="color:var(--o)">REFERRAL PROGRAM</h3>
+      <p class="pf-desc">Invite 3 friends and earn 5,000 bonus credits. Track invite status, see who signed up, and redeem your bonus automatically.</p>
+      <div class="pf-endpoint">POST /v1/referral/invite &rarr; send invites, earn credits</div>
+      <div class="pf-epcount">3 endpoints &middot; invite, status, redeem &middot; 5K credits for 3 signups</div>
+    </div>
+
+    <!-- 21. MULTI-LLM SMART ROUTER -->
+    <div class="pf-card" style="border-top:3px solid var(--v)">
+      <div class="pf-badge" style="background:var(--vg);color:var(--v)"><span class="pf-live"></span> LIVE &middot; NEW</div>
+      <h3 style="color:var(--v)">MULTI-LLM SMART ROUTER</h3>
+      <p class="pf-desc">Route tasks to the optimal LLM provider across Anthropic, OpenAI, Grok, DeepSeek, and Groq. Cost + quality scoring with constraint-based selection.</p>
+      <div class="pf-endpoint">POST /v1/router/smart &rarr; optimal provider selection</div>
+      <div class="pf-epcount">1 endpoint &middot; 5 providers &middot; cost/quality/latency scoring</div>
+    </div>
+
+    <!-- 22. MEMORY HEALTH + LEADERBOARD -->
+    <div class="pf-card" style="border-top:3px solid var(--c)">
+      <div class="pf-badge" style="background:var(--cg);color:var(--c)"><span class="pf-live"></span> LIVE &middot; NEW</div>
+      <h3 style="color:var(--c)">MEMORY HEALTH + LEADERBOARD</h3>
+      <p class="pf-desc">Memory Health Score dashboard (A-D grade) with recommendations. Public leaderboard of most valuable memory graphs. Knowledge auto-discovery from stored data.</p>
+      <div class="pf-endpoint">GET /v1/memory/health &middot; GET /v1/memory/leaderboard</div>
+      <div class="pf-epcount">3 endpoints &middot; health score, leaderboard, auto-discovery</div>
+    </div>
+
+    <!-- 23. MERKLE PROOFS + COST OPTIMIZER -->
+    <div class="pf-card" style="border-top:3px solid var(--r)">
+      <div class="pf-badge" style="background:var(--rg);color:var(--r)"><span class="pf-live"></span> LIVE &middot; NEW</div>
+      <h3 style="color:var(--r)">MERKLE PROOFS + COST OPTIMIZER</h3>
+      <p class="pf-desc">Auto-generate Merkle proofs for cryptographic task verification. Optimize any swarm for 40% cheaper with intelligent alternative suggestions. Multi-LLM cost analysis.</p>
+      <div class="pf-endpoint">POST /v1/proof/merkle &middot; POST /v1/optimize/swarm &middot; POST /v1/optimize/cost</div>
+      <div class="pf-epcount">3 endpoints &middot; Merkle trees, swarm optimizer, LLM cost analysis</div>
+    </div>
+
+    <!-- 24. GROK MCP TEMPLATES + AMBASSADOR -->
+    <div class="pf-card" style="border-top:3px solid var(--g)">
+      <div class="pf-badge" style="background:var(--gg);color:var(--g)"><span class="pf-live"></span> LIVE &middot; NEW</div>
+      <h3 style="color:var(--g)">GROK TEMPLATES + AMBASSADOR PROGRAM</h3>
+      <p class="pf-desc">Grok-optimized MCP tool templates. Ambassador program with 50K credits/month, early access, and revenue share. Agent of the Week spotlight for top performers.</p>
+      <div class="pf-endpoint">GET /v1/mcp/grok-templates &middot; POST /v1/ambassador/apply</div>
+      <div class="pf-epcount">4 endpoints &middot; Grok MCP, ambassador, spotlight, badge</div>
+    </div>
+
+    <!-- 25. CLI + OPENAPI-MCP + ECOSYSTEM -->
+    <div class="pf-card" style="border-top:3px solid var(--o)">
+      <div class="pf-badge" style="background:var(--og);color:var(--o)"><span class="pf-live"></span> LIVE &middot; NEW</div>
+      <h3 style="color:var(--o)">CLI + ECOSYSTEM INTEGRATIONS</h3>
+      <p class="pf-desc">CLI scaffold (<code>slop init</code> + <code>slop doctor</code>), OpenAPI-to-MCP auto-generator, VS Code extension (soon), Terraform/Pulumi providers (soon), one-command Docker + K8s deployment.</p>
+      <div class="pf-endpoint">GET /v1/cli/init-template &middot; GET /v1/cli/doctor &middot; POST /v1/mcp/generate-from-openapi</div>
+      <div class="pf-epcount">5 endpoints &middot; scaffold, doctor, OpenAPI-MCP, ecosystem, enterprise</div>
+    </div>
+
+    <!-- 26. ENTERPRISE CAPABILITIES -->
+    <div class="pf-card" style="border-top:3px solid var(--v)">
+      <div class="pf-badge" style="background:var(--vg);color:var(--v)">ENTERPRISE</div>
+      <h3 style="color:var(--v)">ENTERPRISE GRADE</h3>
+      <p class="pf-desc">Multi-region deployment, SOC 2 certification path, p99 &lt;100ms latency guarantee, air-gapped version, open-source core handlers, self-host/cloud hybrid sync, and case studies.</p>
+      <div class="pf-endpoint">GET /v1/enterprise/capabilities &middot; GET /v1/case-studies</div>
+      <div class="pf-epcount">Multi-region &middot; SOC 2 &middot; air-gapped &middot; K8s manifest &middot; open-source core</div>
+    </div>
+
   </div>
 
   <div style="text-align:center;margin-top:40px">

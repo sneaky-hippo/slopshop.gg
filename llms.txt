@@ -1,6 +1,6 @@
-# slopshop.gg — 1,250 production APIs for AI agents. One key. Structured outputs. Real compute. Free persistent memory. Copilot agents. Compute exchange. Streaming. Batch. Enterprise.
+# slopshop.gg — 22 features, 321 endpoints, 1,250 production APIs for AI agents. One key. Structured outputs. Real compute. Free persistent memory. Agent chaining. Template marketplace. Evaluations. Credit trading. Agent wallets. Reputation. Replay. Copilot agents. Compute exchange. Streaming. Batch. Enterprise.
 
-One API key. 1,250 APIs across 78 categories. 927 compute handlers (all benchmarked, 100% pass rate), 76 SQLite tables. 0 credits for compute (free persistent memory). Guaranteed structured outputs. Plus: always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, and full enterprise features.
+One API key. 22 features. 321 endpoints. 1,250 APIs across 78 categories. 927 compute handlers (all benchmarked, 100% pass rate), 76 SQLite tables. 0 credits for compute (free persistent memory). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, and full enterprise features.
 
 ## Quick Start
 1. Get a key: POST https://slopshop.gg/v1/auth/signup with {"email":"you@example.com"} — returns API key with 2,000 free credits.
@@ -30,7 +30,7 @@ Every response includes `{ ok, data, meta: { credits_used, latency_ms, engine, c
 - Semantic search: POST /v1/resolve {"query": "what you need"}
 - MCP server: available for Claude Code integration
 
-## Categories (78)
+## Categories (78) — 22 Features — 321 Endpoints
 
 ### Text Processing (72 tools)
 Extract, transform, analyze, and manipulate text. Word count, regex, diff, slugify, case convert, encoding, entropy, haiku, and more.
@@ -648,6 +648,349 @@ POST /v1/eval/run with { "agent_id": "...", "benchmark": "...", "inputs": [...] 
 
 ## Auto-optimizer — cheapest and fastest tool selection
 POST /v1/optimize with { "task": "...", "constraints": { "max_credits": ..., "max_latency_ms": ... } }. Returns the optimal tool or tool chain under your constraints.
+
+## Agent Chaining (Infinite Consciousness)
+Create infinite agent-to-agent chains where output from one agent becomes input for the next. Supports loop mode, pause/resume, and context passing between steps.
+POST /v1/chain/create — Create agent chain with steps and loop mode
+POST /v1/chain/advance — Advance to next step with context passing
+POST /v1/chain/queue — Queue prompts for overnight batch
+GET /v1/chain/status/:id — Check chain status
+POST /v1/chain/pause/:id — Pause running chain
+POST /v1/chain/resume/:id — Resume paused chain
+GET /v1/chain/list — List user's chains
+
+Example — create a looping research chain:
+curl -X POST https://slopshop.gg/v1/chain/create \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"research-loop","loop":true,"steps":[{"agent":"claude","prompt":"Research AI news"},{"agent":"grok","prompt":"Critique and improve"}]}'
+
+Example — advance to next step:
+curl -X POST https://slopshop.gg/v1/chain/advance \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"chain_id":"CHAIN_ID","context":{"previous_output":"AI news summary from step 1"}}'
+
+Example — pause and resume:
+curl -X POST https://slopshop.gg/v1/chain/pause/CHAIN_ID \
+  -H "Authorization: Bearer $KEY"
+curl -X POST https://slopshop.gg/v1/chain/resume/CHAIN_ID \
+  -H "Authorization: Bearer $KEY"
+
+Example — list chains:
+curl https://slopshop.gg/v1/chain/list \
+  -H "Authorization: Bearer $KEY"
+
+## Prompt Queue
+Queue prompts for deferred or overnight batch execution at any frequency. Set schedule and frequency for automatic recurring jobs.
+POST /v1/chain/queue — Queue prompts for deferred execution
+
+Example — daily batch job:
+curl -X POST https://slopshop.gg/v1/chain/queue \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"prompts":[{"prompt":"Analyze competitors","agent":"claude"}],"frequency":"daily","schedule":"2026-03-28T09:00:00Z"}'
+
+Example — one-time deferred job:
+curl -X POST https://slopshop.gg/v1/chain/queue \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"prompts":[{"prompt":"Generate weekly analytics report","agent":"claude"},{"prompt":"Summarize findings","agent":"grok"}],"frequency":"once","schedule":"2026-03-28T03:00:00Z"}'
+
+## Template Marketplace
+Publish, browse, fork, and rate agent templates. Share workflows with the community and discover templates from other builders.
+POST /v1/templates/publish — Publish template to marketplace
+GET /v1/templates/browse — Browse marketplace (supports ?tag= filter)
+POST /v1/templates/fork/:id — Fork a template into your account
+POST /v1/templates/rate/:id — Rate 1-5 with optional review
+
+Example — publish a template:
+curl -X POST https://slopshop.gg/v1/templates/publish \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"SEO Content Pipeline","description":"Generate SEO-optimized blog posts","steps":[{"api":"llm-blog-outline","input":{"topic":"{{topic}}"}},{"api":"llm-blog-draft"},{"api":"text-readability-score"}],"tags":["seo","content"]}'
+
+Example — browse templates:
+curl https://slopshop.gg/v1/templates/browse \
+  -H "Authorization: Bearer $KEY"
+
+Example — fork a template:
+curl -X POST https://slopshop.gg/v1/templates/fork/TEMPLATE_ID \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"My Custom SEO Pipeline"}'
+
+Example — rate a template:
+curl -X POST https://slopshop.gg/v1/templates/rate/TEMPLATE_ID \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"rating":5,"review":"Excellent pipeline, saved me hours"}'
+
+## Agent Evaluations
+Run structured evaluations with test cases, compare agents head-to-head, and view the public leaderboard.
+POST /v1/eval/run — Run eval with test cases against an agent
+GET /v1/eval/leaderboard — Public leaderboard by eval score
+POST /v1/eval/compare — Compare two agents on same test cases
+GET /v1/eval/report/:id — Detailed report with per-case results
+
+Example — run evaluation:
+curl -X POST https://slopshop.gg/v1/eval/run \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"my-research-agent","test_cases":[{"input":"Summarize quantum computing","expected_keywords":["qubit","superposition","entanglement"]},{"input":"Explain RSA encryption","expected_keywords":["prime","modular","public key"]}]}'
+
+Example — compare two agents:
+curl -X POST https://slopshop.gg/v1/eval/compare \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_a":"research-v1","agent_b":"research-v2","test_cases":[{"input":"What is CRISPR?"}]}'
+
+Example — view leaderboard:
+curl https://slopshop.gg/v1/eval/leaderboard \
+  -H "Authorization: Bearer $KEY"
+
+Example — get detailed report:
+curl https://slopshop.gg/v1/eval/report/EVAL_ID \
+  -H "Authorization: Bearer $KEY"
+
+## Credit Market
+Peer-to-peer credit trading. Offer your unused credits for sale at your price, or buy from other users at market rates.
+POST /v1/credits/offer — List credits for sale on the market
+POST /v1/credits/buy-offer/:id — Buy credits from an existing offer
+GET /v1/credits/market — Browse all available credit offers
+
+Example — offer credits for sale:
+curl -X POST https://slopshop.gg/v1/credits/offer \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"amount":500,"price_per_credit":0.008,"currency":"USD"}'
+
+Example — buy from an offer:
+curl -X POST https://slopshop.gg/v1/credits/buy-offer/OFFER_ID \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"amount":200}'
+
+Example — browse market:
+curl https://slopshop.gg/v1/credits/market \
+  -H "Authorization: Bearer $KEY"
+
+## Agent Wallets
+Create sub-wallets for individual agents with their own budgets. Control per-agent spending and transfer credits between wallets.
+POST /v1/wallet/create — Create agent sub-wallet with budget
+POST /v1/wallet/transfer — Transfer credits between wallets
+
+Example — create a sub-wallet:
+curl -X POST https://slopshop.gg/v1/wallet/create \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_name":"research-bot","budget":500,"auto_refill":true,"refill_threshold":50,"refill_amount":200}'
+
+Example — transfer between wallets:
+curl -X POST https://slopshop.gg/v1/wallet/transfer \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"from_wallet":"main","to_wallet":"research-bot","amount":100}'
+
+## Agent Reputation
+Upvote or downvote agents based on quality. Public reputation leaderboard for discovering the best agents.
+POST /v1/reputation/vote — Upvote or downvote an agent
+GET /v1/reputation/leaderboard — Top agents by reputation score
+
+Example — vote on an agent:
+curl -X POST https://slopshop.gg/v1/reputation/vote \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"research-bot-v2","vote":"up","reason":"Consistently high-quality output"}'
+
+Example — view leaderboard:
+curl https://slopshop.gg/v1/reputation/leaderboard \
+  -H "Authorization: Bearer $KEY"
+
+## Replay System
+Save and replay entire swarm runs for debugging, auditing, or demonstration. Captures every step and agent decision.
+POST /v1/replay/save — Save a swarm run for later replay
+GET /v1/replay/:id — Get full replay data with all steps
+
+Example — save a swarm run:
+curl -X POST https://slopshop.gg/v1/replay/save \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"run_id":"RUN_ID","name":"Q1 research swarm","tags":["research","quarterly"]}'
+
+Example — retrieve replay:
+curl https://slopshop.gg/v1/replay/REPLAY_ID \
+  -H "Authorization: Bearer $KEY"
+
+## Local Compute Enhancement
+Run computations locally for speed and privacy, then enhance results with Slopshop cloud tools. Combine local processing with cloud-powered analysis and LLM insights.
+Example workflow:
+LOCAL_HASH=$(sha256sum myfile.txt | cut -d' ' -f1)
+curl -X POST https://slopshop.gg/v1/agent/run \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d "{\"task\":\"I computed SHA256 hash $LOCAL_HASH for myfile.txt. Verify format and store in memory.\",\"store_result\":true}"
+
+## Swarm Visualizer
+Interactive real-time visualization of agent swarms, chains, and workflows. Access at https://slopshop.gg/visualizer. Shows agent nodes with status indicators, data flow arrows, credit usage per step, and a timeline view of execution history. Reads from active chains, hive workspaces, and army deployments. Updates in real time via SSE.
+
+## Share My Army — Public Links
+Share your army deployments with public links that auto-generate playground forks. Others can view, fork, and remix your swarm configurations.
+- POST /v1/army/share — Create a public share link for an army deployment
+- GET /v1/army/shared/:id — View a shared army (public, no auth required)
+curl -X POST https://slopshop.gg/v1/army/share \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"deployment_id":"dep_123","name":"My Research Swarm","description":"10-agent research pipeline"}'
+
+## Referral Program — Invite Friends, Earn Credits
+Invite friends to Slopshop. When 3 friends sign up, you get 5,000 bonus credits.
+- POST /v1/referral/invite — Send referral invites (up to 10 emails)
+- GET /v1/referral/status — Check referral progress
+- POST /v1/referral/redeem — Claim bonus when 3+ friends signed up
+curl -X POST https://slopshop.gg/v1/referral/invite \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"emails":["friend1@example.com","friend2@example.com","friend3@example.com"]}'
+
+## "Built with Slopshop" Badge
+Embeddable SVG badge for your projects. Customizable style and color.
+- GET /v1/badge/built-with — Returns SVG badge (supports ?style=flat&color=ff3333)
+- GET /v1/badge.svg — Powered by Slopshop badge
+Embed: `<img src="https://slopshop.gg/v1/badge/built-with" alt="Built with Slopshop" />`
+
+## Agent Standup Email Digest
+Configure daily email summaries of your HIVE workspace activity, agent runs, credit usage, and standup submissions.
+- POST /v1/standup/email-digest — Configure email digest (daily/weekly)
+curl -X POST https://slopshop.gg/v1/standup/email-digest \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"you@example.com","frequency":"daily","hive_id":"HIVE_ID"}'
+
+## Auto-Save Playground Runs
+Every playground run can be auto-saved as a reusable template. Build your library of working examples.
+- POST /v1/playground/auto-save — Save a playground run as template
+curl -X POST https://slopshop.gg/v1/playground/auto-save \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"slug":"crypto-hash-sha256","input":{"text":"hello"},"result":{"hash":"2cf24dba..."},"name":"SHA256 Demo"}'
+
+## Memory Health Score
+Dashboard showing the health and utilization of your memory graph. Includes grade (A-D), key counts, size, recommendations.
+- GET /v1/memory/health — Get memory health score and recommendations (supports ?namespace=)
+curl https://slopshop.gg/v1/memory/health \
+  -H "Authorization: Bearer YOUR_KEY"
+
+## Clone Last Successful Swarm
+One-click clone of your last successful army deployment. Get the config back ready to re-deploy.
+- POST /v1/army/clone-last — Clone last successful swarm configuration
+curl -X POST https://slopshop.gg/v1/army/clone-last \
+  -H "Authorization: Bearer YOUR_KEY"
+
+## Credit Expiration Warning + Auto-Topup
+Monitor credit balance, get low-balance warnings, and configure auto-topup.
+- GET /v1/credits/expiration — Check balance, warnings, and auto-topup status
+- POST /v1/credits/auto-reload — Configure auto-topup (existing endpoint)
+curl https://slopshop.gg/v1/credits/expiration \
+  -H "Authorization: Bearer YOUR_KEY"
+
+## Memory Graph Leaderboard
+Public leaderboard ranking the most valuable and complex memory graphs on the platform.
+- GET /v1/memory/leaderboard — View public leaderboard (no auth required)
+curl https://slopshop.gg/v1/memory/leaderboard
+
+## Multi-LLM Smart Router
+Intelligent routing across LLM providers (Anthropic, OpenAI, Grok, DeepSeek, Groq) with cost + quality scoring. Constraint-based selection.
+- POST /v1/router/smart — Route a task to the optimal LLM provider
+curl -X POST https://slopshop.gg/v1/router/smart \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"task":"Summarize this document","prefer":"anthropic","max_cost":3.0}'
+
+## Knowledge Graph Auto-Discovery
+Automatically discover entities and relationships from your existing memory data, building a knowledge graph without manual entry.
+- POST /v1/knowledge/auto-discover — Scan memory namespace and extract entities + relationships
+curl -X POST https://slopshop.gg/v1/knowledge/auto-discover \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace":"default"}'
+
+## Auto-Merkle Proof Generation
+Generate Merkle trees and proofs for any set of data items. Cryptographic verification of task outputs.
+- POST /v1/proof/merkle — Generate Merkle tree with root hash and proof
+curl -X POST https://slopshop.gg/v1/proof/merkle \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"data":["task1_output","task2_output","task3_output"]}'
+
+## Optimize Swarm for Cost
+Analyze a swarm's tool usage and suggest cheaper alternatives to reduce cost by a target percentage.
+- POST /v1/optimize/swarm — Optimize swarm configuration for cost reduction
+curl -X POST https://slopshop.gg/v1/optimize/swarm \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"steps":[{"slug":"llm-summarize"},{"slug":"sense-url-content"},{"slug":"text-word-count"}],"target_reduction":40}'
+
+## Cost Optimizer (Multi-LLM)
+Analyze your workload across all LLM providers and find the cheapest option that meets quality requirements.
+- POST /v1/optimize/cost — Get cost optimization recommendations
+curl -X POST https://slopshop.gg/v1/optimize/cost \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"monthly_budget":100,"tasks_per_day":500}'
+
+## Grok-Specific MCP Templates
+Curated tool set optimized for Grok/xAI agent integration with setup instructions.
+- GET /v1/mcp/grok-templates — Get Grok-optimized tool list with MCP config
+curl https://slopshop.gg/v1/mcp/grok-templates
+
+## Agent of the Week Spotlight
+Weekly recognition of the most active and highest-performing agent on the platform.
+- GET /v1/spotlight/agent-of-the-week — View current spotlight
+curl https://slopshop.gg/v1/spotlight/agent-of-the-week
+
+## Ambassador Program
+Apply to become a Slopshop ambassador. Benefits include 50K free credits/month, early access, and revenue share.
+- POST /v1/ambassador/apply — Submit ambassador application
+- GET /v1/ambassador/status — Check application status
+curl -X POST https://slopshop.gg/v1/ambassador/apply \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"Your Name","platform":"twitter","audience_size":10000,"why":"I build AI agent tutorials"}'
+
+## CLI Scaffold + Doctor
+Reference for the CLI scaffolding command and health check.
+- GET /v1/cli/init-template — Get scaffold template for `slop init my-project`
+- GET /v1/cli/doctor — Run health check on your Slopshop connection
+curl https://slopshop.gg/v1/cli/doctor \
+  -H "Authorization: Bearer YOUR_KEY"
+
+## OpenAPI to MCP Auto-Generator
+Convert any OpenAPI 3.x spec into an MCP-compatible tool manifest automatically.
+- POST /v1/mcp/generate-from-openapi — Generate MCP server config from OpenAPI spec
+curl -X POST https://slopshop.gg/v1/mcp/generate-from-openapi \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"openapi_spec":{"openapi":"3.0.0","info":{"title":"My API","version":"1.0"},"paths":{"/users":{"get":{"summary":"List users"}}}}}'
+
+## Integrations Ecosystem (VS Code, Terraform, Pulumi, K8s)
+Reference for all platform integrations including coming-soon items.
+- GET /v1/integrations/ecosystem — Full ecosystem listing with statuses
+curl https://slopshop.gg/v1/integrations/ecosystem
+
+## Enterprise Capabilities
+Multi-region, SOC 2 path, p99 latency guarantees, air-gapped version, open-source core, self-host/cloud hybrid sync, Kubernetes manifests.
+- GET /v1/enterprise/capabilities — Full enterprise feature listing
+curl https://slopshop.gg/v1/enterprise/capabilities
+
+## Case Studies
+Real-world use cases of Slopshop in production environments.
+- GET /v1/case-studies — Browse case studies
+curl https://slopshop.gg/v1/case-studies
+
+## "Replace Redis + Zapier" Comparison
+See why teams replace Redis, Zapier, and Cron with a single Slopshop instance: https://slopshop.gg/why.html
+Detailed comparison: https://slopshop.gg/compare.html
 
 ## Full API catalog
 See https://slopshop.gg/llms-full.txt for every API with slug, description, and credit cost.

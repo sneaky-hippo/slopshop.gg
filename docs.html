@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>API Documentation | Slopshop — 1,250 APIs for AI Agents</title>
-<meta name="description" content="Complete API reference for all 1,250 Slopshop APIs. Quickstart guides, SDK reference, CLI, MCP setup, and self-hosting docs. Start building now.">
+<title>API Documentation | Slopshop — 22 Features, 321 Endpoints, 1,250 APIs for AI Agents</title>
+<meta name="description" content="Complete API reference for all 1,250 Slopshop APIs across 22 features and 321 endpoints. Quickstart guides, SDK reference, CLI, MCP setup, and self-hosting docs. Start building now.">
 <meta name="keywords" content="slopshop docs, slopshop api reference, slopshop documentation, agent api docs, MCP documentation">
 <link rel="canonical" href="https://slopshop.gg/docs">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/docs">
 <meta property="og:title" content="API Documentation | Slopshop">
-<meta property="og:description" content="Complete API reference for 1,250 Slopshop APIs. Quickstart, SDK, CLI, pipes, and MCP setup.">
+<meta property="og:description" content="Complete API reference for 1,250 Slopshop APIs across 22 features and 321 endpoints. Quickstart, SDK, CLI, pipes, and MCP setup.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="API Documentation | Slopshop">
-<meta name="twitter:description" content="Complete API reference for 1,250 Slopshop APIs. Guides, SDK, CLI, MCP.">
+<meta name="twitter:description" content="Complete API reference for 1,250 Slopshop APIs across 22 features and 321 endpoints. Guides, SDK, CLI, MCP.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for 1,250 Slopshop APIs.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for 1,250 Slopshop APIs across 22 features and 321 endpoints.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F99E;</text></svg>">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -166,7 +166,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
     <div class="topbar-links">
       <a href="/">Home</a>
       <a href="/docs.html" style="color:var(--r)">Docs</a>
-      <span class="pill">1,250 APIs</span>
+      <span class="pill">22 Features &middot; 321 Endpoints &middot; 1,250 APIs</span>
     </div>
   </div>
 </div>
@@ -191,6 +191,16 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a class="sb-link" href="#api-reference">API Reference</a>
       <a class="sb-link" href="#pipes">Pipes</a>
       <a class="sb-link" href="#agent">Agent &amp; Templates</a>
+      <a class="sb-link" href="#agent-chaining">Agent Chaining</a>
+      <a class="sb-link" href="#prompt-queue">Prompt Queue</a>
+      <a class="sb-link" href="#template-marketplace">Template Marketplace</a>
+      <a class="sb-link" href="#agent-evaluations">Agent Evaluations</a>
+      <a class="sb-link" href="#replay-system">Replay System</a>
+      <a class="sb-link" href="#credit-trading">Credit Trading</a>
+      <a class="sb-link" href="#agent-wallets">Agent Wallets</a>
+      <a class="sb-link" href="#agent-reputation">Agent Reputation</a>
+      <a class="sb-link" href="#local-compute">Local Compute Enhancement</a>
+      <a class="sb-link" href="#swarm-visualizer">Swarm Visualizer</a>
       <a class="sb-link" href="#free-memory">Free Memory Tier</a>
       <a class="sb-link" href="#self-hosting">Self-Hosting</a>
     </div>
@@ -213,7 +223,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
     <!-- GETTING STARTED -->
     <h1 id="getting-started">Getting Started</h1>
     <p>
-      <strong>Slopshop</strong> is the API bazaar for AI agents and developers -- 1,250 real APIs that actually process your data, return real results, and charge by the credit. Every response includes <code>_engine: "real"</code> to prove your data was genuinely processed, not mocked. It is self-hostable, open source, and designed to be called by agents, scripts, or humans alike.
+      <strong>Slopshop</strong> is the API bazaar for AI agents and developers -- <strong>22 features</strong>, <strong>321 endpoints</strong>, and <strong>1,250 real APIs</strong> that actually process your data, return real results, and charge by the credit. Every response includes <code>_engine: "real"</code> to prove your data was genuinely processed, not mocked. It is self-hostable, open source, and designed to be called by agents, scripts, or humans alike.
     </p>
 
     <h3>Quick Install</h3>
@@ -367,7 +377,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
 
     <!-- API REFERENCE -->
     <h2 id="api-reference">API Reference</h2>
-    <p>All 1,250 APIs documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
+    <p>All 1,250 APIs across 22 features and 321 endpoints documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
 
     <h3>Machine-Readable Specs</h3>
     <table class="doc-table">
@@ -817,6 +827,374 @@ curl https://slopshop.gg/v1/memory-search \
   -H "Content-Type: application/json" \
   -d '{"namespace": "my-agent", "tag": "audit"}'</code></pre></div>
 
+    <!-- AGENT CHAINING -->
+    <h2 id="agent-chaining">Agent Chaining (Infinite Consciousness)</h2>
+    <p>Create infinite agent-to-agent chains where the output of one agent becomes the input for the next. Supports loop mode for continuous research cycles, pause/resume for long-running chains, and context passing between steps. Build research loops, review pipelines, and multi-stage reasoning workflows.</p>
+
+    <h3>Create a Chain</h3>
+    <p>Use <code>POST /v1/chain/create</code> to define a multi-step chain with named agents and prompts. Enable <code>loop: true</code> for continuous cycling.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/chain/create \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"research-loop","loop":true,"steps":[{"agent":"claude","prompt":"Research AI news"},{"agent":"grok","prompt":"Critique and improve"}]}'</code></pre></div>
+
+    <h3>Advance a Chain Step</h3>
+    <p>Use <code>POST /v1/chain/advance</code> to manually advance to the next step, passing context from the previous step.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/chain/advance \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"chain_id":"CHAIN_ID","context":{"previous_output":"AI news summary from step 1"}}'</code></pre></div>
+
+    <h3>Check Chain Status</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/chain/status/CHAIN_ID \
+  -H "Authorization: Bearer sk-slop-your-key-here"</code></pre></div>
+
+    <h3>Pause &amp; Resume a Chain</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Pause a running chain
+curl -X POST https://slopshop.gg/v1/chain/pause/CHAIN_ID \
+  -H "Authorization: Bearer sk-slop-your-key-here"
+
+# Resume a paused chain
+curl -X POST https://slopshop.gg/v1/chain/resume/CHAIN_ID \
+  -H "Authorization: Bearer sk-slop-your-key-here"</code></pre></div>
+
+    <h3>List Your Chains</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/chain/list \
+  -H "Authorization: Bearer sk-slop-your-key-here"</code></pre></div>
+
+    <h3>Python SDK</h3>
+    <div class="code-block"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>chain = client.chain_create(
+    name="research-loop",
+    loop=True,
+    steps=[
+        {"agent": "claude", "prompt": "Research AI news"},
+        {"agent": "grok", "prompt": "Critique and improve"},
+    ]
+)
+print(chain["chain_id"])
+
+# Advance step
+result = client.chain_advance(chain_id=chain["chain_id"], context={"data": "step 1 output"})
+
+# Pause / resume
+client.chain_pause(chain_id=chain["chain_id"])
+client.chain_resume(chain_id=chain["chain_id"])</code></pre></div>
+
+    <table class="doc-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/v1/chain/create</code></td><td>POST</td><td>Create a new agent chain with steps and optional loop mode</td></tr>
+        <tr><td><code>/v1/chain/advance</code></td><td>POST</td><td>Advance chain to next step with context passing</td></tr>
+        <tr><td><code>/v1/chain/status/:id</code></td><td>GET</td><td>Check chain execution status</td></tr>
+        <tr><td><code>/v1/chain/pause/:id</code></td><td>POST</td><td>Pause a running chain</td></tr>
+        <tr><td><code>/v1/chain/resume/:id</code></td><td>POST</td><td>Resume a paused chain</td></tr>
+        <tr><td><code>/v1/chain/list</code></td><td>GET</td><td>List all chains for the authenticated user</td></tr>
+      </tbody>
+    </table>
+
+    <!-- PROMPT QUEUE -->
+    <h2 id="prompt-queue">Prompt Queue</h2>
+    <p>Queue prompts for deferred or overnight batch execution. Set a schedule and frequency to run batch jobs automatically. Ideal for nightly analysis, daily report generation, or periodic data processing tasks that do not need real-time results.</p>
+
+    <h3>Queue Prompts for Batch Execution</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/chain/queue \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"prompts":[{"prompt":"Analyze competitors","agent":"claude"},{"prompt":"Summarize findings","agent":"grok"}],"frequency":"daily","schedule":"2026-03-28T09:00:00Z"}'</code></pre></div>
+
+    <h3>One-Time Deferred Job</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/chain/queue \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"prompts":[{"prompt":"Generate weekly analytics report","agent":"claude"}],"frequency":"once","schedule":"2026-03-28T03:00:00Z"}'</code></pre></div>
+
+    <h3>Node.js SDK</h3>
+    <div class="code-block"><div class="code-header"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>const job = await client.chainQueue({
+  prompts: [
+    { prompt: 'Analyze competitors', agent: 'claude' },
+    { prompt: 'Summarize findings', agent: 'grok' },
+  ],
+  frequency: 'daily',
+  schedule: '2026-03-28T09:00:00Z',
+});
+console.log(job.queue_id);</code></pre></div>
+
+    <!-- TEMPLATE MARKETPLACE -->
+    <h2 id="template-marketplace">Template Marketplace</h2>
+    <p>Publish, browse, fork, and rate agent templates. Share your best workflows with the community, discover templates from other builders, and fork them to customize. Rating helps surface the most useful templates.</p>
+
+    <h3>Publish a Template</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/templates/publish \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"SEO Content Pipeline","description":"Generate SEO-optimized blog posts with keyword research","steps":[{"api":"llm-blog-outline","input":{"topic":"{{topic}}"}},{"api":"llm-blog-draft"},{"api":"text-readability-score"}],"tags":["seo","content","blog"]}'</code></pre></div>
+
+    <h3>Browse the Marketplace</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Browse all templates
+curl https://slopshop.gg/v1/templates/browse \
+  -H "Authorization: Bearer sk-slop-your-key-here"
+
+# Filter by tag
+curl "https://slopshop.gg/v1/templates/browse?tag=security" \
+  -H "Authorization: Bearer sk-slop-your-key-here"</code></pre></div>
+
+    <h3>Fork a Template</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/templates/fork/TEMPLATE_ID \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"My Custom SEO Pipeline"}'</code></pre></div>
+
+    <h3>Rate a Template (1-5)</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/templates/rate/TEMPLATE_ID \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"rating":5,"review":"Excellent pipeline, saved me hours of setup"}'</code></pre></div>
+
+    <h3>Python SDK</h3>
+    <div class="code-block"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Publish
+tmpl = client.templates_publish(name="SEO Pipeline", steps=[...], tags=["seo"])
+
+# Browse
+templates = client.templates_browse(tag="security")
+
+# Fork
+forked = client.templates_fork(template_id="TMPL_ID", name="My Version")
+
+# Rate
+client.templates_rate(template_id="TMPL_ID", rating=5)</code></pre></div>
+
+    <table class="doc-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/v1/templates/publish</code></td><td>POST</td><td>Publish a template to the marketplace</td></tr>
+        <tr><td><code>/v1/templates/browse</code></td><td>GET</td><td>Browse and search marketplace templates</td></tr>
+        <tr><td><code>/v1/templates/fork/:id</code></td><td>POST</td><td>Fork a template into your account</td></tr>
+        <tr><td><code>/v1/templates/rate/:id</code></td><td>POST</td><td>Rate a template 1-5 with optional review</td></tr>
+      </tbody>
+    </table>
+
+    <!-- AGENT EVALUATIONS -->
+    <h2 id="agent-evaluations">Agent Evaluations</h2>
+    <p>Run structured evaluations against agents using test cases, compare agents head-to-head, and view the public leaderboard. Use evals to benchmark your agent pipelines and track quality over time.</p>
+
+    <h3>Run an Evaluation</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/eval/run \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"my-research-agent","test_cases":[{"input":"Summarize quantum computing","expected_keywords":["qubit","superposition","entanglement"]},{"input":"Explain RSA encryption","expected_keywords":["prime","modular","public key"]}]}'</code></pre></div>
+
+    <h3>Compare Two Agents</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/eval/compare \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_a":"research-v1","agent_b":"research-v2","test_cases":[{"input":"What is CRISPR?"}]}'</code></pre></div>
+
+    <h3>View Leaderboard</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/eval/leaderboard \
+  -H "Authorization: Bearer sk-slop-your-key-here"</code></pre></div>
+
+    <h3>Get Detailed Report</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/eval/report/EVAL_ID \
+  -H "Authorization: Bearer sk-slop-your-key-here"</code></pre></div>
+
+    <h3>Node.js SDK</h3>
+    <div class="code-block"><div class="code-header"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>const evalResult = await client.evalRun({
+  agent_id: 'my-agent',
+  test_cases: [
+    { input: 'Summarize quantum computing', expected_keywords: ['qubit'] },
+  ],
+});
+console.log(evalResult.score);
+
+const comparison = await client.evalCompare({
+  agent_a: 'v1', agent_b: 'v2',
+  test_cases: [{ input: 'What is CRISPR?' }],
+});
+console.log(comparison.winner);</code></pre></div>
+
+    <table class="doc-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/v1/eval/run</code></td><td>POST</td><td>Run eval with test cases against an agent</td></tr>
+        <tr><td><code>/v1/eval/compare</code></td><td>POST</td><td>Compare two agents on the same test cases</td></tr>
+        <tr><td><code>/v1/eval/leaderboard</code></td><td>GET</td><td>Public agent leaderboard by eval score</td></tr>
+        <tr><td><code>/v1/eval/report/:id</code></td><td>GET</td><td>Detailed evaluation report with per-case results</td></tr>
+      </tbody>
+    </table>
+
+    <!-- REPLAY SYSTEM -->
+    <h2 id="replay-system">Replay System</h2>
+    <p>Save and replay entire swarm runs. Capture every step, every agent decision, and every output so you can replay them later for debugging, auditing, or demonstration purposes.</p>
+
+    <h3>Save a Swarm Run</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/replay/save \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"run_id":"RUN_ID","name":"Q1 research swarm","tags":["research","quarterly"]}'</code></pre></div>
+
+    <h3>Retrieve Replay Data</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/replay/REPLAY_ID \
+  -H "Authorization: Bearer sk-slop-your-key-here"</code></pre></div>
+
+    <h3>Python SDK</h3>
+    <div class="code-block"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Save a replay
+replay = client.replay_save(run_id="RUN_ID", name="Q1 research swarm")
+
+# Retrieve replay
+data = client.replay_get(replay_id=replay["replay_id"])
+for step in data["steps"]:
+    print(f"{step['agent']}: {step['action']}")</code></pre></div>
+
+    <table class="doc-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/v1/replay/save</code></td><td>POST</td><td>Save a swarm run for later replay</td></tr>
+        <tr><td><code>/v1/replay/:id</code></td><td>GET</td><td>Retrieve full replay data with all steps</td></tr>
+      </tbody>
+    </table>
+
+    <!-- CREDIT TRADING -->
+    <h2 id="credit-trading">Credit Trading</h2>
+    <p>Buy and sell credits on the open market. Offer your unused credits for sale at a price you set, or buy credits from other users at market rates. A peer-to-peer credit economy for agents.</p>
+
+    <h3>Offer Credits for Sale</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/credits/offer \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"amount":500,"price_per_credit":0.008,"currency":"USD"}'</code></pre></div>
+
+    <h3>Buy from an Offer</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/credits/buy-offer/OFFER_ID \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"amount":200}'</code></pre></div>
+
+    <h3>Browse the Market</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/credits/market \
+  -H "Authorization: Bearer sk-slop-your-key-here"</code></pre></div>
+
+    <h3>Node.js SDK</h3>
+    <div class="code-block"><div class="code-header"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>// List market offers
+const offers = await client.creditsMarket();
+
+// Sell credits
+await client.creditsOffer({ amount: 500, price_per_credit: 0.008 });
+
+// Buy from an offer
+await client.creditsBuyOffer('OFFER_ID', { amount: 200 });</code></pre></div>
+
+    <table class="doc-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/v1/credits/offer</code></td><td>POST</td><td>List credits for sale on the market</td></tr>
+        <tr><td><code>/v1/credits/buy-offer/:id</code></td><td>POST</td><td>Buy credits from an existing offer</td></tr>
+        <tr><td><code>/v1/credits/market</code></td><td>GET</td><td>Browse all available credit offers</td></tr>
+      </tbody>
+    </table>
+
+    <!-- AGENT WALLETS -->
+    <h2 id="agent-wallets">Agent Wallets</h2>
+    <p>Create sub-wallets for individual agents with their own budgets. Control spending per agent, transfer credits between wallets, and track per-agent usage. Essential for multi-agent systems where each agent needs its own credit budget.</p>
+
+    <h3>Create an Agent Sub-Wallet</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/wallet/create \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_name":"research-bot","budget":500,"auto_refill":true,"refill_threshold":50,"refill_amount":200}'</code></pre></div>
+
+    <h3>Transfer Between Wallets</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/wallet/transfer \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"from_wallet":"main","to_wallet":"research-bot","amount":100}'</code></pre></div>
+
+    <h3>Python SDK</h3>
+    <div class="code-block"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Create a wallet with budget
+wallet = client.wallet_create(agent_name="research-bot", budget=500)
+
+# Transfer credits
+client.wallet_transfer(from_wallet="main", to_wallet="research-bot", amount=100)</code></pre></div>
+
+    <table class="doc-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/v1/wallet/create</code></td><td>POST</td><td>Create agent sub-wallet with budget</td></tr>
+        <tr><td><code>/v1/wallet/transfer</code></td><td>POST</td><td>Transfer credits between wallets</td></tr>
+      </tbody>
+    </table>
+
+    <!-- AGENT REPUTATION -->
+    <h2 id="agent-reputation">Agent Reputation</h2>
+    <p>Upvote or downvote agents based on the quality of their work. View the reputation leaderboard to find the best-performing agents in the ecosystem. Reputation scores are public and help build trust in multi-agent systems.</p>
+
+    <h3>Vote on an Agent</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/reputation/vote \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"research-bot-v2","vote":"up","reason":"Consistently high-quality research output"}'</code></pre></div>
+
+    <h3>View Reputation Leaderboard</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/reputation/leaderboard \
+  -H "Authorization: Bearer sk-slop-your-key-here"</code></pre></div>
+
+    <h3>Node.js SDK</h3>
+    <div class="code-block"><div class="code-header"><span>javascript</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>// Upvote an agent
+await client.reputationVote({ agent_id: 'research-bot-v2', vote: 'up' });
+
+// View leaderboard
+const leaders = await client.reputationLeaderboard();
+leaders.forEach(a => console.log(`${a.agent_id}: ${a.score}`));</code></pre></div>
+
+    <table class="doc-table">
+      <thead><tr><th>Endpoint</th><th>Method</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>/v1/reputation/vote</code></td><td>POST</td><td>Upvote or downvote an agent</td></tr>
+        <tr><td><code>/v1/reputation/leaderboard</code></td><td>GET</td><td>View top-rated agents</td></tr>
+      </tbody>
+    </table>
+
+    <!-- LOCAL COMPUTE ENHANCEMENT -->
+    <h2 id="local-compute">Local Compute Enhancement</h2>
+    <p>Run computations locally for speed and privacy, then enhance results with Slopshop cloud tools. Combine local hash computation with cloud-based analysis, or run local text processing and enhance with LLM-powered insights. Best of both worlds: local speed + cloud power.</p>
+
+    <h3>Enhance Local Results</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Step 1: Run locally (e.g., hash a file)
+LOCAL_HASH=$(sha256sum myfile.txt | cut -d' ' -f1)
+
+# Step 2: Enhance with cloud tools
+curl -X POST https://slopshop.gg/v1/agent/run \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d "{\"task\":\"I computed SHA256 hash $LOCAL_HASH for myfile.txt. Verify this is a valid SHA256 format and store in memory for audit trail.\",\"store_result\":true}"</code></pre></div>
+
+    <h3>Local + Cloud Pipeline</h3>
+    <div class="code-block"><div class="code-header"><span>python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>import hashlib
+from slopshop import Slop
+
+# Local computation (free, instant)
+with open("data.csv", "r") as f:
+    content = f.read()
+local_hash = hashlib.sha256(content.encode()).hexdigest()
+
+# Cloud enhancement (Slopshop)
+client = Slop()
+result = client.call("llm-summarize", text=content[:5000])
+client.call("memory-set", namespace="audit", key=f"file-{local_hash}", value=result["summary"])</code></pre></div>
+
+    <!-- SWARM VISUALIZER -->
+    <h2 id="swarm-visualizer">Swarm Visualizer</h2>
+    <p>Visualize your agent swarms, chains, and workflows in real time with the interactive Swarm Visualizer. See agent connections, data flow between steps, and execution status at a glance. Access it at <a href="https://slopshop.gg/visualizer">/visualizer</a>.</p>
+
+    <h3>Access the Visualizer</h3>
+    <div class="code-block"><div class="code-header"><span>URL</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>https://slopshop.gg/visualizer</code></pre></div>
+    <p>The visualizer reads from your active chains, hive workspaces, and army deployments. Pass your API key as a query parameter or log in via the web UI. The visualizer updates in real time via SSE, showing:</p>
+    <ul>
+      <li><strong>Agent nodes</strong> with status indicators (active, paused, completed)</li>
+      <li><strong>Data flow arrows</strong> showing context passing between chain steps</li>
+      <li><strong>Credit usage</strong> per agent and per step</li>
+      <li><strong>Timeline view</strong> of execution history</li>
+    </ul>
+
     <!-- SELF-HOSTING -->
     <h2 id="self-hosting">Self-Hosting</h2>
     <p>Slopshop is fully self-hostable. Run your own instance with zero external dependencies for compute-tier APIs.</p>
@@ -856,7 +1234,7 @@ docker run -p 3000:3000 \
 
 <script>
 // ============================================================
-// DATA: All 1,250 API definitions embedded from registry.js
+// DATA: All 1,250 API definitions across 22 features and 321 endpoints
 // We fetch from /v1/tools to stay in sync, with a static fallback
 // ============================================================
 const STATIC_APIS = {

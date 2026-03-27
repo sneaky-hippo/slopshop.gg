@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "Slopshop",
-  "description": "API platform with 1,250 real tools across 288 endpoints. Every tool actually works - no mocks, no stubs.",
+  "description": "API platform with 22 features, 1,250 real tools across 321 endpoints. Agent chaining, template marketplace, evaluations, credit trading, agent wallets, reputation, replay, and more. Every tool actually works - no mocks, no stubs.",
   "url": "https://slopshop.gg",
   "logo": "https://slopshop.gg/logo.png",
   "contact_email": "dev@slopshop.gg",
@@ -19,7 +19,8 @@
     "sitemap": "https://slopshop.gg/sitemap.xml"
   },
   "total_tools": 1250,
-  "total_endpoints": 288,
+  "total_features": 22,
+  "total_endpoints": 321,
   "categories": [
     {
       "name": "Agent Superpowers",
@@ -520,6 +521,93 @@
       "slug": "visualization",
       "description": "Visualization tools.",
       "endpoint_count": 1
+    },
+    {
+      "name": "Agent Chaining",
+      "slug": "agent-chaining",
+      "description": "Infinite agent-to-agent chains with loop mode, pause/resume, context passing, and prompt queue for batch jobs.",
+      "endpoint_count": 7,
+      "endpoints": [
+        "POST /v1/chain/create",
+        "POST /v1/chain/advance",
+        "POST /v1/chain/queue",
+        "GET /v1/chain/status/:id",
+        "POST /v1/chain/pause/:id",
+        "POST /v1/chain/resume/:id",
+        "GET /v1/chain/list"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Template Marketplace",
+      "slug": "template-marketplace",
+      "description": "Publish, browse, fork, and rate agent workflow templates. Community-driven template sharing.",
+      "endpoint_count": 4,
+      "endpoints": [
+        "POST /v1/templates/publish",
+        "GET /v1/templates/browse",
+        "POST /v1/templates/fork/:id",
+        "POST /v1/templates/rate/:id"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Evaluations",
+      "slug": "evaluations",
+      "description": "Run structured evals with test cases, compare agents head-to-head, view public leaderboard, and get detailed reports.",
+      "endpoint_count": 4,
+      "endpoints": [
+        "POST /v1/eval/run",
+        "GET /v1/eval/leaderboard",
+        "POST /v1/eval/compare",
+        "GET /v1/eval/report/:id"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Credit Market",
+      "slug": "credit-market",
+      "description": "Peer-to-peer credit trading. Offer credits for sale, buy from other users, browse market offers.",
+      "endpoint_count": 3,
+      "endpoints": [
+        "POST /v1/credits/offer",
+        "POST /v1/credits/buy-offer/:id",
+        "GET /v1/credits/market"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Agent Wallets",
+      "slug": "agent-wallets",
+      "description": "Sub-wallets for individual agents with budgets, auto-refill, and inter-wallet transfers.",
+      "endpoint_count": 2,
+      "endpoints": [
+        "POST /v1/wallet/create",
+        "POST /v1/wallet/transfer"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Reputation",
+      "slug": "reputation",
+      "description": "Upvote/downvote agents and view public reputation leaderboard.",
+      "endpoint_count": 2,
+      "endpoints": [
+        "POST /v1/reputation/vote",
+        "GET /v1/reputation/leaderboard"
+      ],
+      "highlight": true
+    },
+    {
+      "name": "Replay",
+      "slug": "replay",
+      "description": "Save and replay entire swarm runs for debugging, auditing, and demonstration.",
+      "endpoint_count": 2,
+      "endpoints": [
+        "POST /v1/replay/save",
+        "GET /v1/replay/:id"
+      ],
+      "highlight": true
     }
   ]
 }
