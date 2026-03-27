@@ -417,7 +417,7 @@ async function execPython(input) {
   if (!code) return { _engine: 'real', error: 'No code provided' };
 
   // Block dangerous operations
-  const blocked = ['os.environ', 'subprocess', 'socket', '__import__', 'eval(', 'exec(', 'open(', 'os.system', 'os.popen', 'shutil', 'pathlib'];
+  const blocked = ['os.environ', 'subprocess', 'socket', '__import__', 'eval(', 'exec(', 'open(', 'os.system', 'os.popen', 'shutil', 'pathlib', 'importlib', 'sys.modules', 'ctypes', 'compile(', 'breakpoint', 'os.walk', 'os.listdir', 'os.remove', 'os.rename', 'os.mkdir', 'signal', 'multiprocessing', 'threading'];
   const lowerCode = code.toLowerCase();
   for (const b of blocked) {
     if (lowerCode.includes(b.toLowerCase())) {

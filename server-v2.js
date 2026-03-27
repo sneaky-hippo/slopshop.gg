@@ -754,7 +754,7 @@ app.get('/v1/status', (_, res) => {
 app.get('/v1/tools', publicRateLimit, (req, res) => {
   const format = req.query.format || 'native';
   const cat = req.query.category;
-  const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  const limit = Math.min(parseInt(req.query.limit) || 2000, 5000);
   const offset = parseInt(req.query.offset) || 0;
   let apis = Object.entries(API_DEFS).map(([slug, d]) => ({ slug, ...d }));
   if (cat) apis = apis.filter(a => a.cat === cat);
@@ -917,8 +917,18 @@ const secretMatch = (a, b) => {
   try { return crypto.timingSafeEqual(Buffer.from(String(a)), Buffer.from(String(b))); } catch(e) { return false; }
 };
 
+// Admin rate limit: 10 req/min per IP on admin endpoints
+function adminRateLimit(req, res, next) {
+  const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+  if (!rateLimit('admin:' + ip, 10, 60000)) {
+    log.warn('Admin rate limit exceeded', { ip, path: req.path });
+    return res.status(429).json({ error: { code: 'rate_limited', message: 'Admin endpoints limited to 10 req/min' } });
+  }
+  next();
+}
+
 // Admin: manually add credits to any user (protected by ADMIN_SECRET)
-app.post('/v1/admin/add-credits', (req, res) => {
+app.post('/v1/admin/add-credits', adminRateLimit, (req, res) => {
   const secret = req.headers['x-admin-secret'];
   if (!secretMatch(secret, process.env.ADMIN_SECRET)) {
     log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'add-credits' });
@@ -937,7 +947,7 @@ app.post('/v1/admin/add-credits', (req, res) => {
 });
 
 // Admin: generate redeemable credit codes
-app.post('/v1/admin/create-code', (req, res) => {
+app.post('/v1/admin/create-code', adminRateLimit, (req, res) => {
   const secret = req.headers['x-admin-secret'];
   if (!secretMatch(secret, process.env.ADMIN_SECRET)) {
     log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'create-code' });
@@ -960,7 +970,7 @@ app.post('/v1/admin/create-code', (req, res) => {
 });
 
 // Admin: batch create codes
-app.post('/v1/admin/create-codes', (req, res) => {
+app.post('/v1/admin/create-codes', adminRateLimit, (req, res) => {
   const secret = req.headers['x-admin-secret'];
   if (!secretMatch(secret, process.env.ADMIN_SECRET)) { log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'create-codes' }); return res.status(403).json({ error: { code: 'forbidden' } }); }
   log.info('Admin access', { ip: req.ip, path: req.path, action: 'create-codes' });
@@ -1000,7 +1010,7 @@ app.post('/v1/credits/redeem', auth, BODY_LIMIT_AUTH, (req, res) => {
 });
 
 // Admin: list all users
-app.get('/v1/admin/users', (req, res) => {
+app.get('/v1/admin/users', adminRateLimit, (req, res) => {
   const secret = req.headers['x-admin-secret'];
   if (!secretMatch(secret, process.env.ADMIN_SECRET)) { log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'list-users' }); return res.status(403).json({ error: { code: 'forbidden' } }); }
   log.info('Admin access', { ip: req.ip, path: req.path, action: 'list-users' });
@@ -1010,7 +1020,7 @@ app.get('/v1/admin/users', (req, res) => {
 });
 
 // Admin: export mailing list (all emails: users + waitlist)
-app.get('/v1/admin/mailing-list', (req, res) => {
+app.get('/v1/admin/mailing-list', adminRateLimit, (req, res) => {
   const secret = req.headers['x-admin-secret'];
   if (!secretMatch(secret, process.env.ADMIN_SECRET)) { log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'mailing-list' }); return res.status(403).json({ error: { code: 'forbidden' } }); }
   log.info('Admin access', { ip: req.ip, path: req.path, action: 'mailing-list' });
@@ -1025,7 +1035,7 @@ app.get('/v1/admin/mailing-list', (req, res) => {
 });
 
 // Admin: dashboard stats
-app.get('/v1/admin/stats', (req, res) => {
+app.get('/v1/admin/stats', adminRateLimit, (req, res) => {
   const secret = req.headers['x-admin-secret'];
   if (!secretMatch(secret, process.env.ADMIN_SECRET)) { log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'stats' }); return res.status(403).json({ error: { code: 'forbidden' } }); }
   log.info('Admin access', { ip: req.ip, path: req.path, action: 'stats' });
@@ -1198,7 +1208,7 @@ app.get('/v1/uptime', (_, res) => {
 });
 
 // Dashboard data endpoint
-app.get('/v1/dashboard', (_, res) => {
+app.get('/v1/dashboard', auth, (_, res) => {
   const recent = dbGetRecentAudit.all(20);
   const totalCalls = dbAuditCount.get().cnt;
   res.json({
