@@ -6948,6 +6948,294 @@ app.get('/v1/credits/forecast', auth, (req, res) => {
   } catch(e) { res.json({ ok: true, balance: req.acct.balance, daily_burn: 0, days_remaining: null, days_remaining_display: 'unlimited', weekly_calls: 0, weekly_credits: 0, _engine: 'real' }); }
 });
 
+// ===== AGENT ORGANIZATION (Cosmos) =====
+
+// POST /v1/org/launch — Launch an agent organization with one call
+app.post('/v1/org/launch', auth, async (req, res) => {
+  const { name, agents, channels, standup_frequency, auto_handoff } = req.body;
+  // agents: [{name: "Alice", role: "researcher", model: "claude", skills: ["search", "analyze"]}, ...]
+  // channels: ["general", "research", "code-review", "shipping"]
+
+  const orgId = uuidv4();
+
+  // 1. Create a Hive workspace
+  const hiveId = 'hive-' + orgId.slice(0, 8);
+  db.prepare('INSERT INTO hives (id, api_key, name, channels, members, created) VALUES (?, ?, ?, ?, ?, ?)').run(
+    hiveId, req.acct?.email || req.apiKey, name || 'Agent Org',
+    JSON.stringify(channels || ['general', 'standup', 'handoff']),
+    JSON.stringify((agents || []).map(a => a.name)),
+    Date.now()
+  );
+
+  // 2. Create copilots for each agent
+  const orgAgents = (agents || [
+    { name: 'Researcher', role: 'researcher', model: 'claude', skills: ['search', 'analyze', 'summarize'] },
+    { name: 'Writer', role: 'writer', model: 'gpt', skills: ['draft', 'edit', 'format'] },
+    { name: 'Reviewer', role: 'reviewer', model: 'grok', skills: ['critique', 'fact-check', 'improve'] },
+    { name: 'Engineer', role: 'engineer', model: 'claude', skills: ['code', 'test', 'debug'] },
+  ]).map(agent => {
+    const copilotId = 'agent-' + uuidv4().slice(0, 8);
+    db.prepare('INSERT INTO copilot_sessions (id, main_session_id, role, system_prompt, status, message_count) VALUES (?, ?, ?, ?, ?, 0)').run(
+      copilotId, orgId, agent.role,
+      `You are ${agent.name}, a ${agent.role} in the ${name || 'Agent Org'} organization. Your model is ${agent.model}. Your skills: ${(agent.skills || []).join(', ')}. When you finish a task, hand it off to the next agent by posting to the handoff channel.`,
+      'active'
+    );
+    return { ...agent, agent_id: copilotId };
+  });
+
+  // 3. Create an agent chain for the handoff workflow
+  const chainId = uuidv4();
+  const chainSteps = orgAgents.map(a => ({
+    agent: a.model,
+    prompt: `[${a.name}] Process the task using your ${a.role} skills: ${(a.skills || []).join(', ')}`,
+    pass_context: true
+  }));
+  db.prepare('INSERT INTO agent_chains (id, user_id, name, steps, loop, context, status, current_step) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+    chainId, req.acct?.email || req.apiKey, (name || 'Agent Org') + ' Chain',
+    JSON.stringify(chainSteps), auto_handoff ? 1 : 0, '{}', 'active', 0
+  );
+
+  // 4. Store org metadata
+  const now = Date.now();
+  db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated) VALUES (?, ?, ?, ?, ?, ?)').run(
+    'org:' + orgId, 'config',
+    JSON.stringify({ name, agents: orgAgents, channels, hive_id: hiveId, chain_id: chainId, standup_frequency: standup_frequency || 'daily' }),
+    'org,config', now, now
+  );
+
+  res.json({
+    ok: true,
+    org_id: orgId,
+    name: name || 'Agent Org',
+    agents: orgAgents,
+    hive_id: hiveId,
+    chain_id: chainId,
+    channels: channels || ['general', 'standup', 'handoff'],
+    auto_handoff: !!auto_handoff,
+    standup_frequency: standup_frequency || 'daily',
+    endpoints: {
+      send_task: `POST /v1/org/${orgId}/task`,
+      standup: `GET /v1/org/${orgId}/standup`,
+      status: `GET /v1/org/${orgId}/status`,
+      scale: `POST /v1/org/${orgId}/scale`,
+    },
+    _engine: 'real'
+  });
+});
+
+// POST /v1/org/:id/task — Send a task to the organization
+app.post('/v1/org/:id/task', auth, async (req, res) => {
+  const { task, priority, assign_to } = req.body;
+  const orgId = req.params.id;
+
+  // Get org config from memory
+  const orgData = db.prepare("SELECT value FROM memory WHERE namespace = ? AND key = 'config'").get('org:' + orgId);
+  if (!orgData) return res.status(404).json({ error: { code: 'org_not_found' } });
+
+  const org = JSON.parse(orgData.value);
+  const taskId = uuidv4();
+
+  // Post task to hive
+  db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, ts) VALUES (?, ?, ?, ?, ?)').run(
+    org.hive_id, 'general', 'system', JSON.stringify({ task_id: taskId, task, priority: priority || 'normal', assigned_to: assign_to || org.agents[0]?.name }),
+    Date.now()
+  );
+
+  // If auto_handoff, advance the chain
+  let chainResult = null;
+  if (org.chain_id) {
+    const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(org.chain_id);
+    if (chain) {
+      const steps = JSON.parse(chain.steps);
+      const ctx = JSON.parse(chain.context || '{}');
+      ctx.current_task = task;
+      ctx.task_id = taskId;
+      db.prepare('UPDATE agent_chains SET context = ? WHERE id = ?').run(JSON.stringify(ctx), org.chain_id);
+      chainResult = { chain_id: org.chain_id, next_step: steps[chain.current_step]?.agent || 'pending' };
+    }
+  }
+
+  res.json({
+    ok: true,
+    task_id: taskId,
+    org_id: orgId,
+    assigned_to: assign_to || org.agents[0]?.name,
+    chain: chainResult,
+    hive_id: org.hive_id,
+    _engine: 'real'
+  });
+});
+
+// GET /v1/org/:id/status — Get organization status
+app.get('/v1/org/:id/status', auth, (req, res) => {
+  const orgData = db.prepare("SELECT value FROM memory WHERE namespace = ? AND key = 'config'").get('org:' + req.params.id);
+  if (!orgData) return res.status(404).json({ error: { code: 'org_not_found' } });
+  const org = JSON.parse(orgData.value);
+
+  // Get recent activity
+  const messages = db.prepare('SELECT COUNT(*) as count FROM hive_messages WHERE hive_id = ?').get(org.hive_id);
+  const chain = db.prepare('SELECT status, current_step FROM agent_chains WHERE id = ?').get(org.chain_id);
+
+  res.json({
+    ok: true,
+    org_id: req.params.id,
+    name: org.name,
+    agents: org.agents,
+    agent_count: org.agents.length,
+    channels: org.channels,
+    messages_total: messages?.count || 0,
+    chain_status: chain?.status || 'unknown',
+    chain_step: chain?.current_step || 0,
+    _engine: 'real'
+  });
+});
+
+// POST /v1/org/:id/scale — Scale agents up or down
+app.post('/v1/org/:id/scale', auth, (req, res) => {
+  const { add_agents, remove_agents } = req.body;
+  const orgData = db.prepare("SELECT value FROM memory WHERE namespace = ? AND key = 'config'").get('org:' + req.params.id);
+  if (!orgData) return res.status(404).json({ error: { code: 'org_not_found' } });
+
+  const org = JSON.parse(orgData.value);
+
+  // Add new agents
+  if (add_agents && Array.isArray(add_agents)) {
+    for (const agent of add_agents) {
+      const copilotId = 'agent-' + uuidv4().slice(0, 8);
+      db.prepare('INSERT INTO copilot_sessions (id, main_session_id, role, system_prompt, status, message_count) VALUES (?, ?, ?, ?, ?, 0)').run(
+        copilotId, req.params.id, agent.role,
+        `You are ${agent.name}, a ${agent.role}. Model: ${agent.model}.`,
+        'active'
+      );
+      org.agents.push({ ...agent, agent_id: copilotId });
+    }
+  }
+
+  // Remove agents
+  if (remove_agents && Array.isArray(remove_agents)) {
+    org.agents = org.agents.filter(a => !remove_agents.includes(a.name));
+  }
+
+  // Update config
+  db.prepare("UPDATE memory SET value = ?, updated = ? WHERE namespace = ? AND key = 'config'").run(
+    JSON.stringify(org), Date.now(), 'org:' + req.params.id
+  );
+
+  res.json({ ok: true, org_id: req.params.id, agents: org.agents, agent_count: org.agents.length, _engine: 'real' });
+});
+
+// GET /v1/org/:id/standup — Get latest standup from all agents
+app.get('/v1/org/:id/standup', auth, (req, res) => {
+  const orgData = db.prepare("SELECT value FROM memory WHERE namespace = ? AND key = 'config'").get('org:' + req.params.id);
+  if (!orgData) return res.status(404).json({ error: { code: 'org_not_found' } });
+  const org = JSON.parse(orgData.value);
+
+  // Get today's standups
+  const today = new Date().toISOString().slice(0, 10);
+  const standups = db.prepare("SELECT * FROM standups WHERE date = ? ORDER BY ts DESC").all(today);
+
+  res.json({
+    ok: true,
+    org_id: req.params.id,
+    agents: org.agents.map(a => ({
+      name: a.name,
+      role: a.role,
+      model: a.model,
+      standup: standups.find(s => s.api_key === a.name) || { status: 'no standup today' }
+    })),
+    _engine: 'real'
+  });
+});
+
+// GET /v1/org/templates — Pre-built org templates
+app.get('/v1/org/templates', publicRateLimit, (req, res) => {
+  res.json({
+    ok: true,
+    templates: [
+      {
+        id: 'startup-team',
+        name: 'Startup Team (16 agents)',
+        description: 'Full startup org: CEO, CTO, PM, 4 engineers, 2 designers, 2 marketers, 2 sales, support lead, data analyst, QA lead',
+        agents: [
+          { name: 'CEO', role: 'strategy', model: 'claude', skills: ['planning', 'decision-making', 'vision'] },
+          { name: 'CTO', role: 'technical-lead', model: 'claude', skills: ['architecture', 'code-review', 'technical-decisions'] },
+          { name: 'PM', role: 'product', model: 'gpt', skills: ['specs', 'prioritization', 'user-research'] },
+          { name: 'Engineer-1', role: 'backend', model: 'claude', skills: ['api', 'database', 'infrastructure'] },
+          { name: 'Engineer-2', role: 'frontend', model: 'gpt', skills: ['ui', 'react', 'css'] },
+          { name: 'Engineer-3', role: 'fullstack', model: 'grok', skills: ['integration', 'testing', 'deployment'] },
+          { name: 'Engineer-4', role: 'data', model: 'claude', skills: ['analytics', 'pipeline', 'ml'] },
+          { name: 'Designer-1', role: 'ux', model: 'gpt', skills: ['wireframes', 'user-flows', 'research'] },
+          { name: 'Designer-2', role: 'visual', model: 'gpt', skills: ['branding', 'ui-design', 'assets'] },
+          { name: 'Marketer-1', role: 'growth', model: 'grok', skills: ['seo', 'content', 'analytics'] },
+          { name: 'Marketer-2', role: 'community', model: 'grok', skills: ['social', 'engagement', 'partnerships'] },
+          { name: 'Sales-1', role: 'outbound', model: 'gpt', skills: ['prospecting', 'demos', 'closing'] },
+          { name: 'Sales-2', role: 'enterprise', model: 'claude', skills: ['enterprise-sales', 'contracts', 'relationships'] },
+          { name: 'Support', role: 'support-lead', model: 'gpt', skills: ['tickets', 'docs', 'onboarding'] },
+          { name: 'Analyst', role: 'data-analyst', model: 'claude', skills: ['metrics', 'reporting', 'insights'] },
+          { name: 'QA', role: 'quality', model: 'grok', skills: ['testing', 'automation', 'bug-tracking'] },
+        ],
+        channels: ['general', 'engineering', 'design', 'marketing', 'sales', 'support', 'standups', 'leadership'],
+      },
+      {
+        id: 'research-lab',
+        name: 'Research Lab (8 agents)',
+        description: 'Academic research team: PI, 3 researchers, 2 analysts, reviewer, writer',
+        agents: [
+          { name: 'PI', role: 'principal-investigator', model: 'claude', skills: ['direction', 'review', 'publishing'] },
+          { name: 'Researcher-1', role: 'primary-researcher', model: 'claude', skills: ['literature-review', 'hypothesis', 'experiments'] },
+          { name: 'Researcher-2', role: 'secondary-researcher', model: 'gpt', skills: ['data-collection', 'methodology', 'replication'] },
+          { name: 'Researcher-3', role: 'junior-researcher', model: 'grok', skills: ['search', 'summarize', 'annotate'] },
+          { name: 'Analyst-1', role: 'statistician', model: 'claude', skills: ['statistics', 'modeling', 'visualization'] },
+          { name: 'Analyst-2', role: 'data-engineer', model: 'claude', skills: ['pipeline', 'cleaning', 'storage'] },
+          { name: 'Reviewer', role: 'peer-reviewer', model: 'grok', skills: ['critique', 'fact-check', 'methodology-review'] },
+          { name: 'Writer', role: 'technical-writer', model: 'gpt', skills: ['drafting', 'editing', 'formatting'] },
+        ],
+        channels: ['general', 'literature', 'experiments', 'analysis', 'writing', 'standups'],
+      },
+      {
+        id: 'dev-agency',
+        name: 'Dev Agency (6 agents)',
+        description: 'Software development team: architect, 2 devs, QA, DevOps, PM',
+        agents: [
+          { name: 'Architect', role: 'architect', model: 'claude', skills: ['system-design', 'code-review', 'standards'] },
+          { name: 'Dev-1', role: 'senior-dev', model: 'claude', skills: ['backend', 'api', 'database'] },
+          { name: 'Dev-2', role: 'junior-dev', model: 'gpt', skills: ['frontend', 'testing', 'docs'] },
+          { name: 'QA', role: 'tester', model: 'grok', skills: ['testing', 'automation', 'reporting'] },
+          { name: 'DevOps', role: 'infrastructure', model: 'claude', skills: ['ci-cd', 'monitoring', 'deployment'] },
+          { name: 'PM', role: 'project-manager', model: 'gpt', skills: ['planning', 'tracking', 'communication'] },
+        ],
+        channels: ['general', 'code', 'testing', 'deployment', 'standups'],
+      },
+      {
+        id: 'content-studio',
+        name: 'Content Studio (5 agents)',
+        description: 'Content creation team: editor, 2 writers, SEO specialist, social manager',
+        agents: [
+          { name: 'Editor', role: 'editor-in-chief', model: 'claude', skills: ['editing', 'strategy', 'quality'] },
+          { name: 'Writer-1', role: 'long-form', model: 'gpt', skills: ['articles', 'guides', 'research'] },
+          { name: 'Writer-2', role: 'short-form', model: 'grok', skills: ['social', 'captions', 'headlines'] },
+          { name: 'SEO', role: 'seo-specialist', model: 'claude', skills: ['keywords', 'optimization', 'analytics'] },
+          { name: 'Social', role: 'social-manager', model: 'gpt', skills: ['scheduling', 'engagement', 'trends'] },
+        ],
+        channels: ['general', 'drafts', 'published', 'analytics', 'standups'],
+      },
+      {
+        id: 'security-ops',
+        name: 'Security Ops (4 agents)',
+        description: 'Security team: CISO, pentester, analyst, incident responder',
+        agents: [
+          { name: 'CISO', role: 'security-lead', model: 'claude', skills: ['policy', 'risk-assessment', 'compliance'] },
+          { name: 'Pentester', role: 'offensive-security', model: 'grok', skills: ['vulnerability-scanning', 'exploitation', 'reporting'] },
+          { name: 'Analyst', role: 'threat-analyst', model: 'claude', skills: ['monitoring', 'intelligence', 'triage'] },
+          { name: 'Responder', role: 'incident-response', model: 'gpt', skills: ['containment', 'forensics', 'remediation'] },
+        ],
+        channels: ['general', 'alerts', 'incidents', 'compliance', 'standups'],
+      },
+    ],
+    _engine: 'real'
+  });
+});
+
 // ===== START =====
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
