@@ -485,7 +485,7 @@ function textRot13(input) {
 function cryptoHashSha256(input) { return { _engine: 'real',hash:crypto.createHash('sha256').update(input.text||'').digest('hex'),algorithm:'sha256'}; }
 function cryptoHashSha512(input) { return { _engine: 'real',hash:crypto.createHash('sha512').update(input.text||'').digest('hex'),algorithm:'sha512'}; }
 function cryptoHashMd5(input) { return { _engine: 'real',hash:crypto.createHash('md5').update(input.text||'').digest('hex'),algorithm:'md5'}; }
-function cryptoHmac(input) { return { _engine: 'real',hmac:crypto.createHmac('sha256',input.secret||'').update(input.text||'').digest('hex'),algorithm:'hmac-sha256'}; }
+function cryptoHmac(input) { return { _engine: 'real',hmac:crypto.createHmac('sha256',input.secret||input.key||'').update(input.text||input.data||'').digest('hex'),algorithm:'hmac-sha256'}; }
 function cryptoUuid() { return { _engine: 'real',uuid:crypto.randomUUID()}; }
 
 function cryptoNanoid(input) {
@@ -3057,6 +3057,8 @@ module.exports = {
   'crypto-hash-sha512': cryptoHashSha512,
   'crypto-hash-md5': cryptoHashMd5,
   'crypto-hmac': cryptoHmac,
+  'hash-hmac': cryptoHmac,
+  'crypto-hmac-sha256': cryptoHmac,
   'crypto-uuid': cryptoUuid,
   'crypto-nanoid': cryptoNanoid,
   'crypto-password-generate': cryptoPasswordGenerate,
