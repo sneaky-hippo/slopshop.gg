@@ -1374,6 +1374,7 @@ async function cmdMemory(args) {
     const res = await request('POST', '/v1/memory-set', { key, value });
     const d = res.data || res;
     if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    if (quiet) { console.log(d.key || key || 'stored'); return; }
     console.log(`\n  ${green('\u2713 Stored:')} ${cyan(key)}\n`);
     return;
   }
@@ -1384,7 +1385,7 @@ async function cmdMemory(args) {
     const res = await request('POST', '/v1/memory-get', { key });
     const d = res.data || res;
     if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
-    if (quiet) { console.log(d.value !== undefined ? d.value : ''); return; }
+    if (quiet) { const val = d.value || d.data?.value || ''; console.log(val); return; }
     console.log(`\n  ${bold(key + ':')} ${green(String(d.value !== undefined ? d.value : dim('(not found)')))}\n`);
     return;
   }
@@ -1395,6 +1396,7 @@ async function cmdMemory(args) {
     const res = await request('POST', '/v1/memory-search', { query });
     const results = res.data?.results || res.results || [];
     if (jsonMode) { console.log(JSON.stringify(results, null, 2)); return; }
+    if (quiet) { for (const r of results) console.log(r.key || r.id || ''); return; }
     console.log(`\n  ${bold('Memory Search:')} "${query}"\n`);
     if (results.length === 0) { console.log(dim('  No results found.\n')); return; }
     for (const r of results) {
@@ -1408,6 +1410,7 @@ async function cmdMemory(args) {
     const res = await request('POST', '/v1/memory-list', {});
     const keys = res.data?.keys || res.keys || res.data?.entries || [];
     if (jsonMode) { console.log(JSON.stringify(keys, null, 2)); return; }
+    if (quiet) { for (const k of keys) console.log(typeof k === 'string' ? k : (k.key || k.id || '')); return; }
     console.log(`\n  ${bold('Memory Keys')}\n`);
     if (keys.length === 0) { console.log(dim('  No keys stored.\n')); return; }
     for (const k of keys) {
@@ -1427,6 +1430,7 @@ async function cmdMemory(args) {
     const res = await request('POST', '/v1/memory-delete', { key });
     const d = res.data || res;
     if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
+    if (quiet) { console.log('deleted'); return; }
     console.log(`\n  ${green('\u2713 Deleted:')} ${cyan(key)}\n`);
     return;
   }
@@ -1608,6 +1612,7 @@ async function main() {
     case 'run':     await cmdRun(args);    break;
     case 'discover': await cmdDiscover(args); break;
     case 'stats':   await cmdStats(args);  break;
+    case 'do':      await cmdNatural(args[0] || '', args.slice(1)); break;
     default:
       // Natural language routing — understand what the user wants
       await cmdNatural(cmd, args);
@@ -1627,21 +1632,21 @@ async function cmdNatural(cmd, args) {
   const lower = fullInput.toLowerCase();
 
   // Memory operations
-  if (/^(remember|store|save|set|put)\s+(\w+)\s*[=:]\s*(.+)/i.test(fullInput)) {
-    const m = fullInput.match(/^(?:remember|store|save|set|put)\s+(\w+)\s*[=:]\s*(.+)/i);
-    return cmdMemory(['set', m[1], m[2]]);
+  if (/^(remember|store|save|set|put)\s+["']?(\S+?)["']?\s*[=:]\s*(.+)/i.test(fullInput)) {
+    const m = fullInput.match(/^(?:remember|store|save|set|put)\s+["']?(\S+?)["']?\s*[=:]\s*(.+)/i);
+    return cmdMemory(['set', m[1].trim(), m[2].trim().replace(/^['"]|['"]$/g, '')]);
   }
-  if (/^(recall|get|fetch|retrieve|what is|what's|whats)\s+(\w+)/i.test(fullInput)) {
-    const m = fullInput.match(/^(?:recall|get|fetch|retrieve|what is|what's|whats)\s+(\S+)/i);
-    return cmdMemory(['get', m[1]]);
+  if (/^(recall|get|fetch|retrieve|what is|what's|whats)\s+["']?(\S+?)["']?\s*$/i.test(fullInput)) {
+    const m = fullInput.match(/^(?:recall|get|fetch|retrieve|what is|what's|whats)\s+["']?(\S+?)["']?\s*$/i);
+    return cmdMemory(['get', m[1].trim()]);
   }
   if (/^(find|search|look for|where)\s+(.+)\s+in\s+memory/i.test(fullInput)) {
     const m = fullInput.match(/^(?:find|search|look for|where)\s+(.+)\s+in\s+memory/i);
-    return cmdMemory(['search', m[1]]);
+    return cmdMemory(['search', m[1].trim()]);
   }
-  if (/^(forget|delete|remove|clear)\s+(\w+)/i.test(fullInput)) {
-    const m = fullInput.match(/^(?:forget|delete|remove|clear)\s+(\S+)/i);
-    return cmdMemory(['delete', m[1]]);
+  if (/^(forget|delete|remove|clear)\s+["']?(\S+?)["']?\s*$/i.test(fullInput)) {
+    const m = fullInput.match(/^(?:forget|delete|remove|clear)\s+["']?(\S+?)["']?\s*$/i);
+    return cmdMemory(['delete', m[1].trim()]);
   }
 
   // Hash/crypto
@@ -1715,6 +1720,84 @@ async function cmdNatural(cmd, args) {
   // Stats
   if (/^(status|stats|how is|platform|health)/i.test(lower)) {
     return cmdStats(args);
+  }
+
+  // Math
+  if (/^(calculate|compute|math|eval)\s+(.+)/i.test(fullInput)) {
+    const expr = fullInput.replace(/^(?:calculate|compute|math|eval)\s+/i, '');
+    return cmdCall(['math-evaluate', '--expression', expr]);
+  }
+
+  // JSON operations
+  if (/^(parse|format|prettify|validate)\s+json\s+(.+)/i.test(fullInput)) {
+    const data = fullInput.replace(/^(?:parse|format|prettify|validate)\s+json\s+/i, '');
+    return cmdCall(['json-format', '--json', data]);
+  }
+
+  // Time/date
+  if (/^(what time|current time|now|timestamp|date)/i.test(lower)) {
+    return cmdCall(['date-now']);
+  }
+
+  // Password generation
+  if (/^(generate|create|new)\s+(password|pass|secret)/i.test(lower)) {
+    return cmdCall(['crypto-password-generate', '--length', '24']);
+  }
+
+  // Random number
+  if (/^(random|roll|dice|flip)/i.test(lower)) {
+    return cmdCall(['crypto-random-int', '--min', '1', '--max', '100']);
+  }
+
+  // Base64 decode
+  if (/^(decode|debase)\s+base64\s+(.+)/i.test(fullInput)) {
+    const data = fullInput.match(/(?:decode|debase)\s+base64\s+(.+)/i)[1];
+    return cmdCall(['text-base64-decode', '--text', data]);
+  }
+
+  // IP/DNS
+  if (/^(lookup|resolve|dns)\s+(\S+)/i.test(fullInput)) {
+    const domain = fullInput.match(/(?:lookup|resolve|dns)\s+(\S+)/i)[1];
+    return cmdCall(['net-dns-lookup', '--domain', domain]);
+  }
+
+  // JWT decode
+  if (/^(decode|inspect)\s+jwt\s+(.+)/i.test(fullInput)) {
+    const token = fullInput.match(/(?:decode|inspect)\s+jwt\s+(.+)/i)[1];
+    return cmdCall(['crypto-jwt-decode', '--token', token]);
+  }
+
+  // Who am I
+  if (/^(who am i|whoami|my account|my info|about me)/i.test(lower)) {
+    return cmdWhoami();
+  }
+
+  // Help variants
+  if (/^(help|how|what can|commands|usage)/i.test(lower)) {
+    return cmdHelp();
+  }
+
+  // Pipe operations with natural language
+  if (/^(.+)\s+then\s+(.+)/i.test(fullInput)) {
+    // "hash hello then base64 encode" -> pipe
+    console.log(dim('\n  Tip: Use slop pipe <api1> <api2> for chaining.\n'));
+  }
+
+  // Cost estimation
+  if (/^(how much|cost|price|estimate)\s+(.+)/i.test(fullInput)) {
+    const task = fullInput.replace(/^(?:how much|cost|price|estimate)\s+(?:does|would|will|to)?\s*/i, '');
+    return cmdCall(['cost-estimate-llm', '--prompt', task, '--model', 'claude-4-sonnet']);
+  }
+
+  // List all memory
+  if (/^(list|show|all)\s+(my\s+)?(memories|memory|stored|data|keys)/i.test(lower)) {
+    return cmdMemory(['list']);
+  }
+
+  // Search memory
+  if (/^(search|find|look)\s+(my\s+)?(memory|memories|stored|data)\s+(?:for\s+)?(.+)/i.test(fullInput)) {
+    const m = fullInput.match(/(?:search|find|look)\s+(?:my\s+)?(?:memory|memories|stored|data)\s+(?:for\s+)?(.+)/i);
+    return cmdMemory(['search', m[1]]);
   }
 
   // Search for tools
