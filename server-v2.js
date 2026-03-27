@@ -152,6 +152,15 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts);
   CREATE INDEX IF NOT EXISTS idx_audit_api ON audit_log(api);
+`);
+
+// Migrate: add columns that may be missing from older databases
+const apiKeysCols = db.pragma('table_info(api_keys)').map(c => c.name);
+if (!apiKeysCols.includes('scope')) db.exec(`ALTER TABLE api_keys ADD COLUMN scope TEXT DEFAULT '*'`);
+if (!apiKeysCols.includes('label')) db.exec(`ALTER TABLE api_keys ADD COLUMN label TEXT DEFAULT NULL`);
+if (!apiKeysCols.includes('max_credits')) db.exec(`ALTER TABLE api_keys ADD COLUMN max_credits INTEGER DEFAULT NULL`);
+
+db.exec(`
   CREATE TABLE IF NOT EXISTS schedules (
     id TEXT PRIMARY KEY,
     api_key TEXT NOT NULL,
@@ -2753,6 +2762,8 @@ app.post('/v1/hive/create', auth, (req, res) => {
   );
 
   res.json({
+    ok: true,
+    id: id,
     hive_id: id,
     name: name || 'My Hive',
     channels: [...new Set(defaultChannels)],
@@ -3363,7 +3374,7 @@ app.post('/v1/eval/run', auth, async (req, res) => {
   const score = Math.round(passed / test_cases.length * 100);
   const id = 'eval-' + crypto.randomUUID().slice(0, 12);
   db.prepare('INSERT INTO evals (id, api_key, agent_config, test_cases, results, score, ts) VALUES (?, ?, ?, ?, ?, ?, ?)').run(id, req.apiKey, JSON.stringify({ tool }), JSON.stringify(test_cases), JSON.stringify(results.slice(0, 50)), score, Date.now());
-  res.json({ eval_id: id, score: score + '%', passed, total: test_cases.length, results: results.slice(0, 20), _engine: 'real' });
+  res.json({ ok: true, eval_id: id, score: score + '%', passed, total: test_cases.length, results: results.slice(0, 20), _engine: 'real' });
 });
 
 app.get('/v1/eval/history', auth, (req, res) => {
@@ -4825,6 +4836,8 @@ app.get('/v1/analytics/usage', auth, (req, res) => {
     const lastCall = db.prepare('SELECT MAX(ts) as last FROM audit_log WHERE key_prefix = ?').get(kp)?.last;
     res.json({
       ok: true,
+      total_calls: totalCalls,
+      total_credits_spent: totalCredits,
       summary: {
         total_calls: totalCalls,
         total_credits_spent: totalCredits,
@@ -5241,7 +5254,7 @@ app.post('/v1/agent/run', auth, async (req, res) => {
 app.post('/v1/chain/create', auth, (req, res) => {
   const { name, steps, loop, context } = req.body;
   const id = uuidv4();
-  db.prepare('INSERT INTO agent_chains (id, user_id, name, steps, loop, context, status, current_step, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))').run(
+  db.prepare('INSERT INTO agent_chains (id, user_id, name, steps, loop, context, status, current_step, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').run(
     id, req.acct?.email || req.apiKey, name || 'Chain', JSON.stringify(steps || []), loop ? 1 : 0, JSON.stringify(context || {}), 'active', 0
   );
   res.json({ ok: true, chain_id: id, steps: (steps || []).length, loop: !!loop, status: 'active' });
@@ -5290,7 +5303,7 @@ app.post('/v1/chain/advance', auth, (req, res) => {
 app.post('/v1/chain/queue', auth, (req, res) => {
   const { prompts, schedule, frequency } = req.body;
   const id = uuidv4();
-  db.prepare('INSERT INTO prompt_queue (id, user_id, prompts, schedule, frequency, status, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))').run(
+  db.prepare('INSERT INTO prompt_queue (id, user_id, prompts, schedule, frequency, status, created_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').run(
     id, req.acct?.email || req.apiKey, JSON.stringify(prompts || []), schedule || 'now', frequency || 'once', 'queued'
   );
   res.json({ ok: true, queue_id: id, prompt_count: (prompts || []).length, schedule: schedule || 'now', frequency: frequency || 'once' });
@@ -5430,8 +5443,9 @@ app.post('/v1/credits/offer', auth, (req, res) => {
   req.acct.balance -= amount;
   persistKey(req.apiKey);
 
-  db.prepare('INSERT INTO credit_market (id, seller_id, amount, price_per_credit, remaining, status, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now", "+" || ? || " hours"), datetime("now"))').run(
-    id, req.acct?.email || req.apiKey, amount, price_per_credit || 0.005, amount, 'active', expires_hours || 24
+  const expiresAt = new Date(Date.now() + (expires_hours || 24) * 3600000).toISOString();
+  db.prepare("INSERT INTO credit_market (id, seller_id, amount, price_per_credit, remaining, status, expires_at, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)").run(
+    id, req.acct?.email || req.apiKey, amount, price_per_credit || 0.005, amount, 'active', expiresAt
   );
 
   res.json({ ok: true, offer_id: id, amount, price_per_credit: price_per_credit || 0.005, escrowed: true });
@@ -5463,7 +5477,7 @@ app.post('/v1/credits/buy-offer/:id', auth, (req, res) => {
 
 // GET /v1/credits/market — Browse credit market
 app.get('/v1/credits/market', publicRateLimit, (req, res) => {
-  const offers = db.prepare('SELECT id, seller_id, amount, price_per_credit, remaining, status, expires_at, created_at FROM credit_market WHERE status = "active" AND expires_at > datetime("now") ORDER BY price_per_credit ASC LIMIT 50').all();
+  const offers = db.prepare('SELECT id, seller_id, amount, price_per_credit, remaining, status, expires_at, created_at FROM credit_market WHERE status = "active" AND expires_at > CURRENT_TIMESTAMP ORDER BY price_per_credit ASC LIMIT 50').all();
   res.json({ ok: true, offers, count: offers.length });
 });
 
@@ -5498,14 +5512,14 @@ app.post('/v1/reputation/vote', auth, (req, res) => {
 
   const existing = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(agent_id);
   if (!existing) {
-    db.prepare('INSERT INTO agent_reputation (agent_id, score, tasks_completed, upvotes, downvotes, updated_at) VALUES (?, ?, 0, ?, ?, datetime("now"))').run(
+    db.prepare('INSERT INTO agent_reputation (agent_id, score, tasks_completed, upvotes, downvotes, updated_at) VALUES (?, ?, 0, ?, ?, CURRENT_TIMESTAMP)').run(
       agent_id, vote === 'up' ? 1 : -1, vote === 'up' ? 1 : 0, vote === 'down' ? 1 : 0
     );
   } else {
     if (vote === 'up') {
-      db.prepare('UPDATE agent_reputation SET upvotes = upvotes + 1, score = score + 1, updated_at = datetime("now") WHERE agent_id = ?').run(agent_id);
+      db.prepare('UPDATE agent_reputation SET upvotes = upvotes + 1, score = score + 1, updated_at = CURRENT_TIMESTAMP WHERE agent_id = ?').run(agent_id);
     } else {
-      db.prepare('UPDATE agent_reputation SET downvotes = downvotes + 1, score = score - 1, updated_at = datetime("now") WHERE agent_id = ?').run(agent_id);
+      db.prepare('UPDATE agent_reputation SET downvotes = downvotes + 1, score = score - 1, updated_at = CURRENT_TIMESTAMP WHERE agent_id = ?').run(agent_id);
     }
   }
 
@@ -5526,7 +5540,7 @@ app.post('/v1/wallet/create', auth, (req, res) => {
   req.acct.balance -= initial;
   persistKey(req.apiKey);
 
-  db.prepare('INSERT INTO agent_wallets (id, owner_id, agent_name, balance, budget_limit, total_earned, total_spent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime("now"))').run(
+  db.prepare('INSERT INTO agent_wallets (id, owner_id, agent_name, balance, budget_limit, total_earned, total_spent, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').run(
     id, req.acct?.email || req.apiKey, agent_name || 'Agent', initial, budget_limit || 1000, 0, 0
   );
 
@@ -5793,7 +5807,7 @@ app.post('/v1/eval/run', auth, async (req, res) => {
   const accuracy = Math.round(results.filter(r => r.correct).length / Math.max(results.length, 1) * 100);
   const avgLatency = Math.round(results.reduce((s, r) => s + r.latency_ms, 0) / Math.max(results.length, 1));
 
-  db.prepare('INSERT INTO evaluations (id, user_id, agent_slug, accuracy, avg_latency, results, created_at) VALUES (?, ?, ?, ?, ?, ?, datetime("now"))').run(
+  db.prepare('INSERT INTO evaluations (id, user_id, agent_slug, accuracy, avg_latency, results, created_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').run(
     id, req.acct?.email || req.apiKey, agent_slug, accuracy, avgLatency, JSON.stringify(results)
   );
 
@@ -5870,7 +5884,7 @@ app.get('/v1/eval/report/:id', auth, (req, res) => {
 app.post('/v1/templates/publish', auth, (req, res) => {
   const { name, description, category, steps, tools, estimated_credits } = req.body;
   const id = uuidv4();
-  db.prepare('INSERT INTO marketplace_templates (id, author_id, name, description, category, steps, tools, estimated_credits, forks, rating, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))').run(
+  db.prepare('INSERT INTO marketplace_templates (id, author_id, name, description, category, steps, tools, estimated_credits, forks, rating, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').run(
     id, req.acct?.email || req.apiKey, name, description, category || 'general', JSON.stringify(steps || []), JSON.stringify(tools || []), estimated_credits || 0, 0, 0, 'published'
   );
   res.json({ ok: true, template_id: id, status: 'published' });
@@ -5898,7 +5912,7 @@ app.post('/v1/templates/fork/:id', auth, (req, res) => {
   const tmpl = db.prepare('SELECT * FROM marketplace_templates WHERE id = ?').get(req.params.id);
   if (!tmpl) return res.status(404).json({ error: { code: 'template_not_found' } });
   const newId = uuidv4();
-  db.prepare('INSERT INTO marketplace_templates (id, author_id, name, description, category, steps, tools, estimated_credits, forks, rating, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime("now"))').run(
+  db.prepare('INSERT INTO marketplace_templates (id, author_id, name, description, category, steps, tools, estimated_credits, forks, rating, status, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').run(
     newId, req.acct?.email || req.apiKey, (req.body.name || tmpl.name) + ' (fork)', tmpl.description, tmpl.category, tmpl.steps, tmpl.tools, tmpl.estimated_credits, 0, 0, 'published'
   );
   db.prepare('UPDATE marketplace_templates SET forks = forks + 1 WHERE id = ?').run(req.params.id);
@@ -5923,7 +5937,7 @@ app.post('/v1/templates/rate/:id', auth, (req, res) => {
 app.post('/v1/replay/save', auth, (req, res) => {
   const { name, events, tools_used, total_credits, duration_ms } = req.body;
   const id = uuidv4();
-  db.prepare('INSERT INTO replays (id, user_id, name, events, tools_used, total_credits, duration_ms, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, datetime("now"))').run(
+  db.prepare('INSERT INTO replays (id, user_id, name, events, tools_used, total_credits, duration_ms, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').run(
     id, req.acct?.email || req.apiKey, name || 'Replay', JSON.stringify(events || []), JSON.stringify(tools_used || []), total_credits || 0, duration_ms || 0
   );
   res.json({ ok: true, replay_id: id });

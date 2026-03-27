@@ -11,6 +11,47 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 -H "Authorization: Bearer
 5. Semantic search: POST https://slopshop.gg/v1/resolve -H "Authorization: Bearer sk-slop-demo-key-12345678" -H "Content-Type: application/json" -d '{"query":"hash a string"}'
 6. Full catalog: https://slopshop.gg/llms-full.txt (every API with slug, description, and credit cost)
 
+## What You Can Build (Combo Features)
+
+### Non-Stop Research Agent
+Chain Claude → Grok → Claude in an infinite loop with free memory storage.
+curl -X POST https://slopshop.gg/v1/chain/create -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" -d '{"name":"research-loop","loop":true,"steps":[{"agent":"claude","prompt":"Research latest AI infrastructure trends","pass_context":true},{"agent":"grok","prompt":"Critique the research, find gaps and contradictions","pass_context":true},{"agent":"claude","prompt":"Improve the research based on critique, find new angles","pass_context":true}]}'
+Then queue it for overnight: POST /v1/chain/queue with frequency:"daily"
+Results auto-stored in free memory: POST /v1/memory-get key:"chain_results"
+
+### Agent Organization (5-Agent Team)
+1. Create workspace: POST /v1/hive/create {"name":"product-team","channels":["research","writing","review"]}
+2. Assign agents: POST /v1/copilot/scale {"main_session_id":"product-team","count":5,"roles":["researcher","writer","critic","editor","publisher"]}
+3. Daily standups: POST /v1/standup/submit {"yesterday":"Wrote 3 articles","today":"Review and publish"}
+4. Knowledge sharing: POST /v1/knowledge/add {"subject":"article-1","predicate":"reviewed_by","object":"critic-agent"}
+5. Democratic decisions: POST /v1/governance/propose {"title":"Should we pivot topics?"}
+
+### 10,000 Parallel Analysts
+1. Choose best LLM: POST /v1/router/smart {"task":"analyze financial data","optimize_for":"cost"}
+2. Deploy army: POST /v1/army/deploy {"task":"analyze","count":10000,"api":"text-word-count"}
+3. Save replay: POST /v1/replay/save {"name":"big-analysis","events":[...]}
+4. Verify results: POST /v1/proof/merkle {"data":"...results..."}
+
+### Self-Improving Agent
+1. Run baseline eval: POST /v1/eval/run {"agent_slug":"text-word-count","test_cases":[...]}
+2. Store lessons: POST /v1/memory-set {"key":"eval_lessons","value":"accuracy was 95%"}
+3. Compete: POST /v1/tournament/create {"name":"best-analyzer","participants":["agent-v1","agent-v2"]}
+4. Auto-improve: Use chain to loop eval → learn → re-eval
+
+### Agent Economy
+1. Create wallet: POST /v1/wallet/create {"agent_name":"worker-1","initial_credits":100}
+2. Register as supplier: POST /v1/exchange/register {"capabilities":["compute","text"]}
+3. Post bounty: POST /v1/bounties/post {"title":"Analyze dataset","reward":50}
+4. Create market: POST /v1/market/create {"question":"Will agent-v2 beat v1?"}
+5. Trade credits: POST /v1/credits/offer {"amount":1000,"price_per_credit":0.003}
+
+### Enterprise Fleet
+1. Create team: POST /v1/teams/create {"name":"Engineering"}
+2. Set budgets: POST /v1/keys/set-budget {"monthly_budget":50000}
+3. Monitor: GET /v1/analytics/usage
+4. Forecast costs: GET /v1/analytics/cost-forecast
+5. Set alerts: POST /v1/webhooks/create {"url":"https://slack.com/webhook","events":["budget_alert"]}
+
 ## Core capabilities (by handler type)
 - **Compute** (927 handlers, all benchmarked, 100% pass rate, `_engine: "real"`): hashing, encryption, text processing, math, statistics, data transforms, JSON/CSV/XML, schema validation, PII detection, RAG primitives, SVG chart generation, code AST parsing, context window management — all pure Node.js `crypto`/`zlib`/`Buffer`, zero external dependencies, p95 latency <50ms
 - **Network** (22 handlers): DNS lookup, SSL check, HTTP status, WHOIS, subdomain enum, cert transparency — real `dns.resolve` / `tls.connect` socket connections

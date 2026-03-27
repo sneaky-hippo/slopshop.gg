@@ -71,6 +71,23 @@ Expected output:
 
 ---
 
+## What You Can Build
+
+These combos show the real power -- not individual tools, but what you build by combining them.
+
+| Combo | Features Used | What It Does |
+|-------|--------------|--------------|
+| **Non-Stop Research Agent** | Chain + Queue + Memory | Claude and Grok critique each other in an infinite loop, results stored in free memory overnight |
+| **Agent Organization (5-Agent Team)** | Hive + Copilot + Standup + Knowledge + Governance | Full product team with workspace, roles, daily standups, shared knowledge graph, and democratic votes |
+| **10,000 Parallel Analysts** | Router + Army + Replay + Proof | Smart-route to cheapest LLM, deploy 10k agents, save replay for audit, verify with Merkle proofs |
+| **Self-Improving Agent** | Eval + Memory + Tournament + Chain | Run evals, store lessons, compete in tournaments, loop to auto-improve |
+| **Agent Economy** | Wallet + Exchange + Bounties + Market + Credits | Agents get wallets, trade credits, post bounties, and bet on prediction markets |
+| **Enterprise Fleet** | Teams + Budget + Analytics + Webhooks | Create teams, set budgets, monitor usage, forecast costs, Slack alerts on budget warnings |
+
+See [examples.html](https://slopshop.gg/examples) for full copy-paste code for each combo.
+
+---
+
 ## API Catalog
 
 1,250 APIs across 78 categories and 321 endpoints. Every one ships a real handler.
