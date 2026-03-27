@@ -1151,15 +1151,7 @@ function luhn(partial) {
   return partial+((10-s%10)%10);
 }
 
-function genFakeCreditCard(input) {
-  const {type='visa'}=input;
-  const pre={visa:'4',mastercard:'5'+rndInt(1,5),amex:'3'+rnd(['4','7']),discover:'6011'};
-  const prefix=pre[type]||pre.visa,length=type==='amex'?15:16;
-  let partial=prefix;
-  while(partial.length<length-1)partial+=rndInt(0,9);
-  const number=luhn(partial);
-  return { _engine: 'real',number,type,expiry:String(rndInt(1,12)).padStart(2,'0')+'/'+(new Date().getFullYear()+rndInt(1,5)),cvv:String(rndInt(100,999)),note:'FAKE - testing only'};
-}
+// gen-fake-credit-card REMOVED — liability risk (generates Luhn-valid CC numbers)
 
 function genFakeUuid() { return { _engine: 'real',uuid:crypto.randomUUID()}; }
 
@@ -1173,10 +1165,7 @@ const WB='the quick brown fox jumps over lazy dog sun shines bright sky blue gre
 function genFakeSentence(input) { const {words=8}=input; const ws=Array.from({length:words},()=>rnd(WB)); ws[0]=ws[0][0].toUpperCase()+ws[0].slice(1); return { _engine: 'real',sentence:ws.join(' ')+'.'}; }
 function genFakeParagraph(input) { const {sentences=5}=input; return { _engine: 'real',paragraph:Array.from({length:sentences},()=>genFakeSentence({words:rndInt(6,14)}).sentence).join(' ')}; }
 
-function genFakeUser() {
-  const n=genFakeName(),e=genFakeEmail(),co=genFakeCompany(),a=genFakeAddress(),ph=genFakePhone();
-  return { _engine: 'real',id:crypto.randomUUID(),firstName:n.firstName,lastName:n.lastName,fullName:n.fullName,email:e.email,company:co.company,phone:ph.phone,address:a.full,username:n.firstName.toLowerCase()+rndInt(10,99),avatar:'https://i.pravatar.cc/150?u='+crypto.randomUUID(),birthdate:genFakeDate({from:'1950-01-01',to:'2000-12-31'}).date,createdAt:new Date().toISOString()};
-}
+// gen-fake-user REMOVED — generates realistic fake PII profiles (liability risk)
 
 function genColorPalette(input) {
   const {color='#3498db',count=5}=input;
@@ -3136,12 +3125,12 @@ module.exports = {
   'gen-fake-company': genFakeCompany,
   'gen-fake-address': genFakeAddress,
   'gen-fake-phone': genFakePhone,
-  'gen-fake-credit-card': genFakeCreditCard,
+  // 'gen-fake-credit-card': REMOVED — liability risk
   'gen-fake-uuid': genFakeUuid,
   'gen-fake-date': genFakeDate,
   'gen-fake-sentence': genFakeSentence,
   'gen-fake-paragraph': genFakeParagraph,
-  'gen-fake-user': genFakeUser,
+  // 'gen-fake-user': REMOVED — liability risk
   'gen-color-palette': genColorPalette,
   'gen-slug': genSlug,
   'gen-short-id': genShortId,
@@ -4479,7 +4468,7 @@ module.exports = {
     return {_engine:'real', constitution_id: id, preamble: preamble||'We the agents, in order to form a more perfect union...', articles: arts, article_count: arts.length, ratified_by: ratified_by||[], status: (ratified_by||[]).length >= 3 ? 'ratified':'draft', drafted_at: new Date().toISOString()};
   },
 
-  'war-game-simulate': ({force_a, force_b, terrain, rounds}) => {
+  'strategy-simulate': ({force_a, force_b, terrain, rounds}) => {
     const r = rounds || 5;
     const a = {name: force_a||'Alpha', strength:100, morale:100};
     const b = {name: force_b||'Bravo', strength:100, morale:100};

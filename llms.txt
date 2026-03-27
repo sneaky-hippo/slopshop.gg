@@ -54,7 +54,7 @@ curl -X POST https://slopshop.gg/v1/code-json-to-typescript -H "Authorization: B
 
 ### Generate (58 tools)
 Fake data, SVG avatars, QR codes, color palettes, short IDs, lorem ipsum, passwords, cron expressions, Dockerfiles, READMEs.
-curl -X POST https://slopshop.gg/v1/gen-fake-user -H "Authorization: Bearer sk-slop-demo-key-12345678" -H "Content-Type: application/json" -d '{}'
+curl -X POST https://slopshop.gg/v1/gen-fake-name -H "Authorization: Bearer sk-slop-demo-key-12345678" -H "Content-Type: application/json" -d '{}'
 
 ### Network & DNS (28 tools)
 DNS A/AAAA/MX/TXT/NS/CNAME lookup, HTTP status, SSL check, WHOIS, redirect chain, email validation, CIDR.

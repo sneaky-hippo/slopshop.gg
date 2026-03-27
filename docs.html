@@ -559,7 +559,7 @@ console.log(result.summary);</code></pre></div>
     <div class="pipe-card">
       <h4>Lead from Text <span class="badge badge-credits">7 credits</span></h4>
       <p>Extract emails from text, validate they exist, generate prospect profiles.</p>
-      <div class="pipe-steps"><span class="pipe-step">text-extract-emails</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">net-email-validate</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">gen-fake-user</span></div>
+      <div class="pipe-steps"><span class="pipe-step">text-extract-emails</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">net-email-validate</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">gen-fake-name</span></div>
       <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>lead-from-text</code> | Category: Sales</div>
     </div>
 
@@ -650,7 +650,7 @@ console.log(result.summary);</code></pre></div>
     <div class="pipe-card">
       <h4>Onboarding Pack <span class="badge badge-credits">3 credits</span></h4>
       <p>Generate fake test user, create a JWT for them, hash their password.</p>
-      <div class="pipe-steps"><span class="pipe-step">gen-fake-user</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-jwt-sign</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-password-hash</span></div>
+      <div class="pipe-steps"><span class="pipe-step">gen-fake-name</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-jwt-sign</span><span class="pipe-arrow">&rarr;</span><span class="pipe-step">crypto-password-hash</span></div>
       <div style="font-size:0.72rem;color:var(--t4)">Slug: <code>onboarding-pack</code> | Category: Dev</div>
     </div>
 
@@ -1363,8 +1363,8 @@ const STATIC_APIS = {
   'gen-fake-company': { cat: 'Generate', name: 'Fake Company', desc: 'Generate fake company name.', credits: 1, tier: 'compute' },
   'gen-fake-address': { cat: 'Generate', name: 'Fake Address', desc: 'Generate fake US address.', credits: 1, tier: 'compute' },
   'gen-fake-phone': { cat: 'Generate', name: 'Fake Phone', desc: 'Generate fake phone number.', credits: 1, tier: 'compute' },
-  'gen-fake-user': { cat: 'Generate', name: 'Fake User Profile', desc: 'Generate full fake user profile (name, email, company, address, phone).', credits: 1, tier: 'compute' },
-  'gen-fake-credit-card': { cat: 'Generate', name: 'Fake Credit Card', desc: 'Generate Luhn-valid fake CC number (NOT real, for testing only).', credits: 1, tier: 'compute' },
+  'gen-fake-name': { cat: 'Generate', name: 'Fake User Profile', desc: 'Generate full fake user profile (name, email, company, address, phone).', credits: 1, tier: 'compute' },
+  'crypto-uuid': { cat: 'Generate', name: 'Fake Credit Card', desc: 'Generate Luhn-valid fake CC number (NOT real, for testing only).', credits: 1, tier: 'compute' },
   'gen-color-palette': { cat: 'Generate', name: 'Color Palette', desc: 'Generate harmonious color palette from base hex color.', credits: 1, tier: 'compute' },
   'gen-short-id': { cat: 'Generate', name: 'Short ID', desc: 'Generate compact URL-safe unique ID.', credits: 1, tier: 'compute' },
   'gen-avatar-svg': { cat: 'Generate', name: 'Avatar SVG', desc: 'Generate deterministic identicon SVG from any string (hash-based grid).', credits: 1, tier: 'compute' },
@@ -1555,8 +1555,8 @@ const EXAMPLE_INPUTS = {
   'gen-fake-company': {},
   'gen-fake-address': {},
   'gen-fake-phone': {},
-  'gen-fake-user': {},
-  'gen-fake-credit-card': {},
+  'gen-fake-name': {},
+  'crypto-uuid': {},
   'gen-color-palette': { color: '#ef4444' },
   'gen-short-id': {},
   'gen-avatar-svg': { input: 'alice@example.com' },

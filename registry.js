@@ -261,13 +261,12 @@ const API_DEFS = {
   'crypto-totp-generate': { cat: 'Crypto & Security', name: 'TOTP Generate', desc: 'Generate time-based OTP (Google Authenticator compatible).', credits: CREDIT_COSTS.simple, tier: 'compute' },
 
   // ====== GENERATE ======
-  'gen-fake-name': { cat: 'Generate', name: 'Fake Name', desc: 'Generate realistic fake full name.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
-  'gen-fake-email': { cat: 'Generate', name: 'Fake Email', desc: 'Generate fake email address.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
-  'gen-fake-company': { cat: 'Generate', name: 'Fake Company', desc: 'Generate fake company name.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
-  'gen-fake-address': { cat: 'Generate', name: 'Fake Address', desc: 'Generate fake US address.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
-  'gen-fake-phone': { cat: 'Generate', name: 'Fake Phone', desc: 'Generate fake phone number.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
-  'gen-fake-user': { cat: 'Generate', name: 'Fake User Profile', desc: 'Generate full fake user profile (name, email, company, address, phone).', credits: CREDIT_COSTS.simple, tier: 'compute' },
-  'gen-fake-credit-card': { cat: 'Generate', name: 'Fake Credit Card', desc: 'Generate Luhn-valid fake CC number (NOT real, for testing only).', credits: CREDIT_COSTS.simple, tier: 'compute' },
+  'gen-fake-name': { cat: 'Generate', name: 'Sample Name', desc: 'Generate sample full name.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
+  'gen-fake-email': { cat: 'Generate', name: 'Sample Email', desc: 'Generate sample email address.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
+  'gen-fake-company': { cat: 'Generate', name: 'Sample Company', desc: 'Generate sample company name.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
+  'gen-fake-address': { cat: 'Generate', name: 'Sample Address', desc: 'Generate sample US address.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
+  'gen-fake-phone': { cat: 'Generate', name: 'Sample Phone', desc: 'Generate sample phone number.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
+  // gen-fake-user and gen-fake-credit-card REMOVED — liability risk (fake PII generation)
   'gen-color-palette': { cat: 'Generate', name: 'Color Palette', desc: 'Generate harmonious color palette from base hex color.', credits: CREDIT_COSTS.simple, tier: 'compute' },
   'gen-short-id': { cat: 'Generate', name: 'Short ID', desc: 'Generate compact URL-safe unique ID.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
 
@@ -668,7 +667,7 @@ const API_DEFS = {
   'time-dilation': { cat: 'Agent Superpowers', name: 'Time Dilation', desc: 'Speed up or slow down perceived time to match task urgency.', credits: 0, tier: 'compute' },
   'episodic-memory': { cat: 'Agent Superpowers', name: 'Episodic Memory', desc: 'Store memories as full relivable episodes with emotions and context.', credits: 0, tier: 'compute' },
   'constitution-draft': { cat: 'Agent Superpowers', name: 'Constitution Draft', desc: 'Draft and ratify governance constitutions for agent collectives.', credits: 0, tier: 'compute' },
-  'war-game-simulate': { cat: 'Agent Superpowers', name: 'War Game Simulate', desc: 'Full wargame simulation with strategy, resources, and terrain.', credits: 0, tier: 'compute' },
+  'strategy-simulate': { cat: 'Agent Superpowers', name: 'Strategy Simulate', desc: 'Competitive strategy simulation with resources and terrain modeling.', credits: 0, tier: 'compute' },
   'socratic-method': { cat: 'Agent Superpowers', name: 'Socratic Method', desc: 'Auto-generate probing questions that expose assumptions and contradictions.', credits: 0, tier: 'compute' },
   'health-check-deep': { cat: 'Agent Superpowers', name: 'Deep Health Check', desc: 'Comprehensive agent diagnostic covering memory, performance, and errors.', credits: 0, tier: 'compute' },
   'brainstorm-diverge': { cat: 'Agent Superpowers', name: 'Brainstorm Diverge', desc: 'Generate up to 100 ideas using SCAMPER and random association methods.', credits: 0, tier: 'compute' },
@@ -724,7 +723,7 @@ const API_DEFS = {
   'forecast': { cat: 'Analyze', name: 'Forecast', desc: 'Predict near-term values from data trends via linear extrapolation.', credits: 0, tier: 'compute' },
   'mise-en-place': { cat: 'Agent Superpowers', name: 'Mise en Place', desc: 'Prepare and verify all inputs and tools before complex processing.', credits: 0, tier: 'compute' },
   'coach-assign': { cat: 'Agent Superpowers', name: 'Coach Assign', desc: 'Match agents with performance coaches based on skill gaps.', credits: 0, tier: 'compute' },
-  'honey-pot': { cat: 'Crypto & Security', name: 'Honey Pot', desc: 'Create tempting fake resources that detect unauthorized access.', credits: 0, tier: 'compute' },
+  'decoy-resource': { cat: 'Crypto & Security', name: 'Decoy Resource', desc: 'Create monitored decoy resources that detect unauthorized access attempts.', credits: 0, tier: 'compute' },
   'jury-select': { cat: 'Agent Superpowers', name: 'Jury Select', desc: 'Select impartial peer agents with voir dire for fair trials.', credits: 0, tier: 'compute' },
   'epidemic-model': { cat: 'Analyze', name: 'Epidemic Model', desc: 'SIR epidemic model showing how patterns spread through populations.', credits: 0, tier: 'compute' },
   'trend-detect': { cat: 'Analyze', name: 'Trend Detect', desc: 'Identify rising, falling, or stable trends in data series.', credits: 0, tier: 'compute' },

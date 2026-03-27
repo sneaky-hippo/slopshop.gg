@@ -95,7 +95,7 @@ const handlers = {
     return {_engine:'real', weakest_link:weakest, all_links:links, recommendation:'Strengthen '+weakest.name+' (exploitability: '+weakest.exploitability+')'};
   },
 
-  'threat-persona-synth': ({attack_surface}) => {
+  'security-persona-model': ({attack_surface}) => {
     const personas=[{name:'Script Kiddie',skill:'low',motivation:'notoriety',resources:'minimal',tactics:['automated_scanning','known_exploits']},{name:'Insider Threat',skill:'medium',motivation:'financial',resources:'internal_access',tactics:['privilege_escalation','data_exfil']},{name:'APT Group',skill:'high',motivation:'strategic',resources:'state_backed',tactics:['zero_day','supply_chain','persistence']}];
     const selected=personas[Math.floor(Math.random()*personas.length)];
     return {_engine:'real', persona:selected, attack_surface:attack_surface||'web_application', likely_approach:selected.tactics[0], defense_priority:selected.skill==='high'?'critical':'moderate'};

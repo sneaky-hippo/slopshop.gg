@@ -11,7 +11,7 @@ const PIPES = {
   'lead-from-text': {
     name: 'Lead from Text',
     desc: 'Extract emails from text, validate they exist, generate prospect profiles.',
-    steps: ['text-extract-emails', 'net-email-validate', 'gen-fake-user'],
+    steps: ['text-extract-emails', 'net-email-validate', 'gen-fake-name'],
     credits: 7,
     category: 'Sales',
     example_input: { text: 'Hey reach out to alice@acme.com and bob@example.org about the deal' },
@@ -114,8 +114,8 @@ const PIPES = {
   },
   'onboarding-pack': {
     name: 'Onboarding Pack',
-    desc: 'Generate fake test user, create a JWT for them, hash their password.',
-    steps: ['gen-fake-user', 'crypto-jwt-sign', 'crypto-password-hash'],
+    desc: 'Generate test name, create a JWT for them, hash their password.',
+    steps: ['gen-fake-name', 'crypto-jwt-sign', 'crypto-password-hash'],
     credits: 3,
     category: 'Dev',
     example_input: { secret: 'my-app-secret' },

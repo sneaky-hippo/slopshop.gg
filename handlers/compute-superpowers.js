@@ -246,7 +246,7 @@ const superpowerHandlers = {
     return {_engine:'real', assigned_coach: matched[0], skill_gap: gap, match_quality: matched[0].specialty===gap?'perfect':'adequate', program:'8-week improvement plan', check_in_frequency:'weekly'};
   },
 
-  'honey-pot': ({resource_name, resource_type, alert_on_access}) => {
+  'decoy-resource': ({resource_name, resource_type, alert_on_access}) => {
     const id = crypto.randomUUID();
     return {_engine:'real', honeypot_id: id, resource_name: resource_name||'tempting_data.json', resource_type: resource_type||'file', appears_as:'legitimate resource', actually:'monitoring trap', alert_on_access: alert_on_access!==false, created_at: new Date().toISOString(), access_log:[], status:'active'};
   },

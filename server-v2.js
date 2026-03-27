@@ -1166,7 +1166,7 @@ const MCP_RECOMMENDED = new Set([
   // High-value compute (1cr)
   'crypto-hash-sha256','crypto-hash-sha512','text-word-count','text-token-count','text-slugify',
   'text-extract-emails','text-extract-urls','text-json-validate','text-diff','text-readability-score',
-  'math-statistics','math-eval','gen-uuid','gen-short-id','gen-fake-user','date-parse','date-format',
+  'math-statistics','math-eval','gen-uuid','gen-short-id','gen-fake-name','date-parse','date-format',
   // Data transforms (1-3cr)
   'text-csv-to-json','text-json-to-csv','exec-filter-json','exec-sort-json','exec-join-json',
   'analyze-json-stats','data-pivot',
@@ -1280,25 +1280,60 @@ function getCacheFingerprint(slug, body) {
   return crypto.createHash('sha256').update(normalized).digest('hex').slice(0, 16);
 }
 
-// ===== QUICKSTART: 10 tools that do 80% of the work =====
+// ===== QUICKSTART: Getting-started steps =====
 app.get('/v1/quickstart', publicRateLimit, (req, res) => {
-  const TOP_10 = [
-    { task: 'Extract structured data', api: 'llm-data-extract', credits: 10, example: '{"text":"Invoice #123 John $50","schema":{"id":"string","name":"string","amount":"number"}}' },
-    { task: 'Summarize text', api: 'llm-summarize', credits: 10, example: '{"text":"Your long text here..."}' },
-    { task: 'Hash data (SHA-256)', api: 'crypto-hash-sha256', credits: 1, example: '{"text":"hello world"}' },
-    { task: 'Fetch any URL', api: 'sense-url-content', credits: 3, example: '{"url":"https://example.com"}' },
-    { task: 'Detect tech stack', api: 'sense-url-tech-stack', credits: 3, example: '{"url":"https://stripe.com"}' },
-    { task: 'Run JavaScript', api: 'exec-javascript', credits: 5, example: '{"code":"return 2+2"}' },
-    { task: 'Store memory (FREE)', api: 'memory-set', credits: 0, example: '{"namespace":"my-agent","key":"hello","value":"world"}' },
-    { task: 'Retrieve memory (FREE)', api: 'memory-get', credits: 0, example: '{"namespace":"my-agent","key":"hello"}' },
-    { task: 'Word count + stats', api: 'text-word-count', credits: 1, example: '{"text":"Count these words please"}' },
-    { task: 'Validate JSON', api: 'text-json-validate', credits: 1, example: '{"text":"{\\"valid\\":true}"}' },
-  ];
   res.json({
-    quickstart: TOP_10,
-    note: '10 tools that solve 80% of agent tasks. 2 are free. POST /v1/{api} with the example body to try.',
-    signup: 'POST /v1/auth/signup → 2,000 free credits',
-    demo_key: 'sk-slop-demo-key-12345678',
+    ok: true,
+    steps: [
+      { step: 1, action: 'Sign up', command: 'curl -X POST https://slopshop.gg/v1/auth/signup -d \'{"email":"you@example.com","password":"secure123"}\'' },
+      { step: 2, action: 'Make your first call', command: 'curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 -H "Authorization: Bearer YOUR_KEY" -d \'{"text":"hello"}\'' },
+      { step: 3, action: 'Store a memory (free)', command: 'curl -X POST https://slopshop.gg/v1/memory-set -H "Authorization: Bearer YOUR_KEY" -d \'{"key":"first_memory","value":"hello world"}\'' },
+      { step: 4, action: 'Chain two agents', command: 'curl -X POST https://slopshop.gg/v1/chain/create -H "Authorization: Bearer YOUR_KEY" -d \'{"name":"my-chain","steps":[{"agent":"claude","prompt":"Hello"},{"agent":"grok","prompt":"Respond"}]}\'' },
+      { step: 5, action: 'Explore all tools', command: 'curl https://slopshop.gg/v1/tools/categories' }
+    ],
+    features: 22,
+    endpoints: 348,
+    free_credits: 2000
+  });
+});
+
+// ===== FEATURE DISCOVERY =====
+app.post('/v1/discover', publicRateLimit, (req, res) => {
+  const { goal } = req.body;
+  const g = (goal || '').toLowerCase();
+
+  const features = [
+    { name: 'Agent Chains', endpoint: '/v1/chain/create', when: 'multi-step workflows, infinite loops, cross-LLM chaining', keywords: ['chain', 'loop', 'sequence', 'workflow', 'multi-step', 'consciousness'] },
+    { name: 'Free Memory', endpoint: '/v1/memory-set', when: 'persistent state across sessions and LLMs', keywords: ['remember', 'memory', 'state', 'persist', 'store', 'save'] },
+    { name: 'Army (10K Parallel)', endpoint: '/v1/army/deploy', when: 'massive parallel execution', keywords: ['parallel', 'scale', 'army', '1000', 'swarm', 'deploy'] },
+    { name: 'Hive Workspace', endpoint: '/v1/hive/create', when: 'always-on agent collaboration', keywords: ['workspace', 'team', 'collaborate', 'channel', 'standup'] },
+    { name: 'Smart Router', endpoint: '/v1/router/smart', when: 'choosing the best LLM for a task', keywords: ['route', 'choose', 'best', 'llm', 'model', 'provider'] },
+    { name: 'Prompt Queue', endpoint: '/v1/chain/queue', when: 'scheduling overnight batch work', keywords: ['schedule', 'overnight', 'batch', 'queue', 'later', 'cron'] },
+    { name: 'Knowledge Graph', endpoint: '/v1/knowledge/add', when: 'connecting entities and finding paths', keywords: ['knowledge', 'graph', 'entity', 'relationship', 'connect'] },
+    { name: 'Copilot', endpoint: '/v1/copilot/spawn', when: 'second agent working alongside main agent', keywords: ['copilot', 'pair', 'assist', 'helper', 'second'] },
+    { name: 'Evaluations', endpoint: '/v1/eval/run', when: 'testing and benchmarking agents', keywords: ['eval', 'test', 'benchmark', 'score', 'accuracy'] },
+    { name: 'Prediction Markets', endpoint: '/v1/market/create', when: 'agents betting on outcomes', keywords: ['predict', 'bet', 'forecast', 'market'] },
+    { name: 'Template Marketplace', endpoint: '/v1/templates/browse', when: 'finding pre-built agent templates', keywords: ['template', 'marketplace', 'pre-built', 'starter'] },
+    { name: 'Compute Exchange', endpoint: '/v1/exchange/register', when: 'earning credits by sharing compute', keywords: ['earn', 'exchange', 'share', 'compute', 'credits'] },
+    { name: 'Credit Market', endpoint: '/v1/credits/market', when: 'buying/selling credits', keywords: ['buy', 'sell', 'trade', 'credits'] },
+    { name: 'Agent Wallets', endpoint: '/v1/wallet/create', when: 'agents with their own budgets', keywords: ['wallet', 'budget', 'sub-account'] },
+    { name: 'Streaming', endpoint: '/v1/stream/:slug', when: 'real-time SSE output', keywords: ['stream', 'real-time', 'sse', 'live'] },
+    { name: 'Batch', endpoint: '/v1/batch', when: 'executing multiple calls at once', keywords: ['batch', 'multiple', 'bulk', 'parallel'] },
+    { name: 'Replay', endpoint: '/v1/replay/save', when: 'recording and replaying swarm runs', keywords: ['replay', 'record', 'playback', 'debug'] },
+  ];
+
+  const matched = features.map(f => ({
+    ...f,
+    relevance: f.keywords.filter(k => g.includes(k)).length
+  })).filter(f => f.relevance > 0 || !goal).sort((a, b) => b.relevance - a.relevance);
+
+  res.json({
+    ok: true,
+    goal,
+    recommended: matched.slice(0, 5),
+    all_features: matched,
+    total: features.length,
+    _engine: 'real'
   });
 });
 
@@ -6097,32 +6132,49 @@ app.get('/v1/memory/leaderboard', publicRateLimit, (req, res) => {
   }
 });
 
-// 10. Multi-LLM router with cost + quality scoring
-app.post('/v1/router/smart', auth, async (req, res) => {
-  const { task, prefer, max_cost, max_latency_ms } = req.body;
-  if (!task) return res.status(400).json({ error: { code: 'missing_task' } });
-  const providers = [
-    { name: 'anthropic', model: 'claude-sonnet-4-20250514', cost_per_1k: 3.0, quality: 95, avg_latency_ms: 2000, available: !!process.env.ANTHROPIC_API_KEY },
-    { name: 'openai', model: 'gpt-4o', cost_per_1k: 2.5, quality: 92, avg_latency_ms: 1500, available: !!process.env.OPENAI_API_KEY },
-    { name: 'grok', model: 'grok-3', cost_per_1k: 5.0, quality: 90, avg_latency_ms: 1800, available: !!process.env.XAI_API_KEY },
-    { name: 'deepseek', model: 'deepseek-chat', cost_per_1k: 0.14, quality: 85, avg_latency_ms: 2500, available: !!process.env.DEEPSEEK_API_KEY },
-    { name: 'groq', model: 'llama-3.1-70b', cost_per_1k: 0.59, quality: 82, avg_latency_ms: 500, available: !!process.env.GROQ_API_KEY },
-  ];
-  let candidates = providers.filter(p => p.available || prefer === p.name);
-  if (max_cost) candidates = candidates.filter(p => p.cost_per_1k <= max_cost);
-  if (max_latency_ms) candidates = candidates.filter(p => p.avg_latency_ms <= max_latency_ms);
-  if (prefer) {
-    const preferred = candidates.find(p => p.name === prefer);
-    if (preferred) candidates = [preferred, ...candidates.filter(p => p.name !== prefer)];
-  }
-  // Score: weighted by quality (60%) and inverse cost (40%)
-  const scored = candidates.map(p => ({ ...p, score: Math.round(p.quality * 0.6 + (100 - p.cost_per_1k * 10) * 0.4) })).sort((a, b) => b.score - a.score);
-  const selected = scored[0] || providers[0];
+// 10. Multi-LLM smart router with cost, speed, quality, and task-fit scoring
+app.post('/v1/router/smart', auth, (req, res) => {
+  const { task, providers, optimize_for } = req.body;
+  const opt = optimize_for || 'balanced'; // 'cost', 'speed', 'quality', 'balanced'
+
+  const providerProfiles = {
+    'claude': { cost: 3, speed: 7, quality: 9, best_for: ['reasoning', 'code', 'analysis', 'writing'] },
+    'grok': { cost: 2, speed: 9, quality: 8, best_for: ['real-time', 'search', 'humor', 'speed'] },
+    'gpt': { cost: 5, speed: 6, quality: 9, best_for: ['general', 'creative', 'structured'] },
+    'gemini': { cost: 3, speed: 8, quality: 7, best_for: ['multimodal', 'long-context', 'search'] },
+    'llama': { cost: 1, speed: 8, quality: 6, best_for: ['cost-sensitive', 'self-host', 'privacy'] },
+    'mistral': { cost: 1, speed: 9, quality: 7, best_for: ['speed', 'code', 'european'] },
+    'deepseek': { cost: 1, speed: 7, quality: 8, best_for: ['code', 'math', 'reasoning'] },
+  };
+
+  const taskWords = (task || '').toLowerCase().split(/\s+/);
+  const available = providers || Object.keys(providerProfiles);
+
+  const scored = available.map(p => {
+    const profile = providerProfiles[p] || { cost: 5, speed: 5, quality: 5, best_for: [] };
+    let score = 0;
+
+    // Task fit bonus
+    const taskFit = profile.best_for.filter(b => taskWords.some(w => b.includes(w))).length;
+    score += taskFit * 3;
+
+    // Optimization preference weighting
+    if (opt === 'cost') score += (10 - profile.cost) * 2;
+    else if (opt === 'speed') score += profile.speed * 2;
+    else if (opt === 'quality') score += profile.quality * 2;
+    else score += profile.quality + profile.speed + (10 - profile.cost); // balanced
+
+    return { provider: p, score: Math.round(score * 100) / 100, ...profile, task_fit: taskFit };
+  }).sort((a, b) => b.score - a.score);
+
+  const recommended = scored[0];
   res.json({
-    ok: true, selected_provider: selected.name, selected_model: selected.model,
-    reasoning: `Selected ${selected.name} (quality: ${selected.quality}, cost: $${selected.cost_per_1k}/1k tokens, latency: ~${selected.avg_latency_ms}ms)`,
-    all_options: scored,
-    tip: 'Set prefer, max_cost, or max_latency_ms to constrain selection',
+    ok: true,
+    recommended: recommended.provider,
+    reasoning: `${recommended.provider} scored highest for "${opt}" optimization with task fit ${recommended.task_fit}`,
+    all_scores: scored,
+    optimize_for: opt,
+    _engine: 'real'
   });
 });
 
@@ -6251,7 +6303,7 @@ app.get('/v1/mcp/grok-templates', publicRateLimit, (req, res) => {
     { slug: 'sense-url-content', note: 'Fetch and analyze web pages' },
     { slug: 'text-csv-to-json', note: 'Transform data formats' },
     { slug: 'analyze-ab-test', note: 'Statistical analysis for decision-making' },
-    { slug: 'gen-fake-user', note: 'Generate test data on demand' },
+    { slug: 'gen-fake-name', note: 'Generate test data on demand' },
   ];
   const enriched = grokTools.map(t => {
     const def = API_DEFS[t.slug];

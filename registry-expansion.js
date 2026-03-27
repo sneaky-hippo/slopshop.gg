@@ -1442,10 +1442,10 @@ module.exports = {
     'gen-qr-data': { cat: 'Communicate', name: 'QR Data', desc: 'Generate QR code data for any text or URL.', credits: 1, tier: 'compute' },
 
     // Generate
-    'gen-fake-uuid': { cat: 'Generate', name: 'Fake UUID', desc: 'Generate a fake but valid-looking UUID.', credits: 0, tier: 'compute' },
-    'gen-fake-date': { cat: 'Generate', name: 'Fake Date', desc: 'Generate a random realistic date.', credits: 0, tier: 'compute' },
-    'gen-fake-sentence': { cat: 'Generate', name: 'Fake Sentence', desc: 'Generate a random realistic sentence.', credits: 0, tier: 'compute' },
-    'gen-fake-paragraph': { cat: 'Generate', name: 'Fake Paragraph', desc: 'Generate a random realistic paragraph.', credits: 0, tier: 'compute' },
+    'gen-fake-uuid': { cat: 'Generate', name: 'Sample UUID', desc: 'Generate a sample but valid-looking UUID.', credits: 0, tier: 'compute' },
+    'gen-fake-date': { cat: 'Generate', name: 'Sample Date', desc: 'Generate a random sample date.', credits: 0, tier: 'compute' },
+    'gen-fake-sentence': { cat: 'Generate', name: 'Sample Sentence', desc: 'Generate a random sample sentence.', credits: 0, tier: 'compute' },
+    'gen-fake-paragraph': { cat: 'Generate', name: 'Sample Paragraph', desc: 'Generate a random sample paragraph.', credits: 0, tier: 'compute' },
     'gen-slug': { cat: 'Generate', name: 'URL Slug', desc: 'Generate a URL-safe slug from any text.', credits: 0, tier: 'compute' },
 
   }

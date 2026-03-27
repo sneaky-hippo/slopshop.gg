@@ -18,6 +18,11 @@ const HANDLER_FILES = [
   'handlers/compute-hackathon-5b.js',
   'handlers/compute-competitor-1.js',
   'handlers/compute-competitor-2.js',
+  'handlers/compute-rapidapi-1.js',
+  'handlers/compute-rapidapi-2.js',
+  'handlers/compute-rapidapi-3.js',
+  'handlers/compute-power-1.js',
+  'handlers/compute-power-2.js',
 ];
 
 const TIMING_ITERATIONS = 10;

@@ -550,8 +550,7 @@ const SCHEMAS = {
   'gen-fake-company': { input: {}, output: { company: 'string' }, example: { input: {}, output: { company: 'Acme Corp' } } },
   'gen-fake-address': { input: {}, output: { street: 'string', city: 'string', state: 'string', zip: 'string' }, example: { input: {}, output: { street: '123 Main St', city: 'Springfield' } } },
   'gen-fake-phone': { input: {}, output: { phone: 'string' }, example: { input: {}, output: { phone: '(555) 123-4567' } } },
-  'gen-fake-user': { input: {}, output: { name: 'object', email: 'string', company: 'string', phone: 'string', address: 'object' }, example: { input: {}, output: { name: { full: 'Alice Smith' }, email: 'alice@example.com' } } },
-  'gen-fake-credit-card': { input: {}, output: { number: 'string', type: 'string', expiry: 'string' }, example: { input: {}, output: { number: '4532...', type: 'Visa', note: 'FAKE' } } },
+  // gen-fake-user and gen-fake-credit-card REMOVED — liability risk
   'gen-color-palette': {
     input: { hex: { type: 'string', description: 'Base hex color (e.g. #3b82f6)' } },
     output: { palette: 'string[]', names: 'string[]' },

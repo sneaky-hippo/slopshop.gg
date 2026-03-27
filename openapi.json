@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Slopshop API",
-    "description": "The infrastructure layer for AI agents. 1250 real compute APIs.",
+    "description": "The infrastructure layer for AI agents. 1248 real compute APIs.",
     "version": "3.2.0",
     "contact": {
       "email": "dev@slopshop.gg",
@@ -6478,88 +6478,6 @@
               "application/json": {
                 "schema": {
                   "phone": "string"
-                }
-              }
-            }
-          },
-          "402": {
-            "description": "Insufficient credits"
-          },
-          "404": {
-            "description": "API not found"
-          },
-          "500": {
-            "description": "Handler error (credits refunded)"
-          }
-        }
-      }
-    },
-    "/v1/gen-fake-user": {
-      "post": {
-        "summary": "Fake User Profile",
-        "description": "Generate full fake user profile (name, email, company, address, phone).",
-        "tags": [
-          "Generate"
-        ],
-        "operationId": "gen-fake-user",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {}
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "name": "object",
-                  "email": "string",
-                  "company": "string",
-                  "phone": "string",
-                  "address": "object"
-                }
-              }
-            }
-          },
-          "402": {
-            "description": "Insufficient credits"
-          },
-          "404": {
-            "description": "API not found"
-          },
-          "500": {
-            "description": "Handler error (credits refunded)"
-          }
-        }
-      }
-    },
-    "/v1/gen-fake-credit-card": {
-      "post": {
-        "summary": "Fake Credit Card",
-        "description": "Generate Luhn-valid fake CC number (NOT real, for testing only).",
-        "tags": [
-          "Generate"
-        ],
-        "operationId": "gen-fake-credit-card",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {}
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Success",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "number": "string",
-                  "type": "string",
-                  "expiry": "string"
                 }
               }
             }
@@ -21346,14 +21264,14 @@
         }
       }
     },
-    "/v1/war-game-simulate": {
+    "/v1/strategy-simulate": {
       "post": {
-        "summary": "War Game Simulate",
-        "description": "Full wargame simulation with strategy, resources, and terrain.",
+        "summary": "Strategy Simulate",
+        "description": "Competitive strategy simulation with resources and terrain modeling.",
         "tags": [
           "Agent Superpowers"
         ],
-        "operationId": "war-game-simulate",
+        "operationId": "strategy-simulate",
         "requestBody": {
           "content": {
             "application/json": {
@@ -23876,14 +23794,14 @@
         }
       }
     },
-    "/v1/honey-pot": {
+    "/v1/decoy-resource": {
       "post": {
-        "summary": "Honey Pot",
-        "description": "Create tempting fake resources that detect unauthorized access.",
+        "summary": "Decoy Resource",
+        "description": "Create monitored decoy resources that detect unauthorized access attempts.",
         "tags": [
           "Crypto & Security"
         ],
-        "operationId": "honey-pot",
+        "operationId": "decoy-resource",
         "requestBody": {
           "content": {
             "application/json": {
@@ -37630,14 +37548,14 @@
         }
       }
     },
-    "/v1/threat-persona-synth": {
+    "/v1/security-persona-model": {
       "post": {
-        "summary": "Threat Persona Synth",
-        "description": "Threat Persona Synth — pure compute superpower for AI agents.",
+        "summary": "Security Persona Model",
+        "description": "Security Persona Model — pure compute superpower for AI agents.",
         "tags": [
-          "Adversarial Thinking"
+          "Auth & Security"
         ],
-        "operationId": "threat-persona-synth",
+        "operationId": "security-persona-model",
         "requestBody": {
           "content": {
             "application/json": {
