@@ -668,17 +668,17 @@ function auth(req, res, next) {
     }
   }
   // Per-key rate limiting: 120 requests per minute (PERF: doubled from 60)
-  if (!rateLimit('api:' + key, 120, 60000)) {
+  const rlMax = acct.tier === 'leviathan' ? 1000 : acct.tier === 'reef-boss' ? 300 : 120; if (!rateLimit('api:' + key, rlMax, 60000)) {
     log.warn('Rate limit exceeded', { key_prefix: key.slice(0, 12), ip: req.ip, path: req.path });
     const rlEntry = ipLimits.get('api:' + key);
-    res.set('X-RateLimit-Limit', '120');
+    res.set('X-RateLimit-Limit', String(rlMax||120));
     res.set('X-RateLimit-Remaining', '0');
     res.set('X-RateLimit-Reset', String(rlEntry ? Math.ceil((rlEntry.s + 60000) / 1000) : Math.ceil(Date.now() / 1000) + 60));
     res.set('Retry-After', '30');
     return res.status(429).json({ error: { code: 'rate_limited', message: 'Max 120 requests/min per API key. Retry after 30 seconds.', retry_after: 30 } });
   }
   const rlEntry = ipLimits.get('api:' + key);
-  res.set('X-RateLimit-Limit', '120');
+  res.set('X-RateLimit-Limit', String(rlMax||120));
   res.set('X-RateLimit-Remaining', String(Math.max(0, 120 - (rlEntry?.c || 0))));
   res.set('X-RateLimit-Reset', String(rlEntry ? Math.ceil((rlEntry.s + 60000) / 1000) : Math.ceil(Date.now() / 1000) + 60));
   next();
@@ -6385,7 +6385,7 @@ app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => 
   }
 
   // Store in cache for compute-tier (deterministic) APIs
-  if (def.tier === 'compute' && !handlerError) {
+  if (def.tier === 'compute' && !handlerError && !req.params.slug.includes('uuid') && !req.params.slug.includes('random') && !req.params.slug.includes('password')) {
     responseCache.set(cacheKey, { data: response, ts: Date.now() });
     res.set('X-Cache', 'MISS');
   }

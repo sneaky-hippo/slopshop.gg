@@ -77,7 +77,7 @@ JSON array only, no explanation:`;
       });
       const req = https.request({
         hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
-        headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json', 'Content-Length': data.length },
+        headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
         timeout: 30000,
       }, (res) => {
         let body = '';
@@ -214,7 +214,7 @@ Provide a clear, concise answer to the user's original question based on these r
       });
       const req = https.request({
         hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
-        headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json', 'Content-Length': data.length },
+        headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
         timeout: 30000,
       }, (res) => {
         let body = '';
