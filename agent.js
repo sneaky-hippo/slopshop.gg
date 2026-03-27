@@ -92,13 +92,13 @@ JSON array only, no explanation:`;
               try { resolve({ steps: JSON.parse(match[0]), model: j.model }); }
               catch(pe) { resolve(keywordFallback(task)); }
             }
-            else if (j.error) { resolve(keywordFallback(task)); }
-            else resolve(keywordFallback(task));
+            else if (j.error) { console.error('[agent-planner] Anthropic error:', JSON.stringify(j.error).slice(0,200)); resolve(keywordFallback(task)); }
+            else { console.error('[agent-planner] No JSON array in LLM response:', text.slice(0,200)); resolve(keywordFallback(task)); }
           } catch (e) { resolve({ error: e.message }); }
         });
       });
-      req.on('error', e => resolve(keywordFallback(task)));
-      req.on('timeout', () => { req.destroy(); resolve(keywordFallback(task)); });
+      req.on('error', e => { console.error('[agent-planner] LLM error:', e.message); resolve(keywordFallback(task)); });
+      req.on('timeout', () => { console.error('[agent-planner] LLM timeout'); req.destroy(); resolve(keywordFallback(task)); });
       req.write(data);
       req.end();
     });
@@ -408,7 +408,12 @@ Provide a clear, concise answer to the user's original question based on these r
         answer,
         task,
         run_id: runId,
-        steps: execution.results.map(r => ({ api: r.api, reason: r.reason, credits: r.credits, success: !r.error, fallback_used: r.fallback_used || false })),
+        steps: execution.results.map(r => {
+          const step = { api: r.api, reason: r.reason, credits: r.credits, success: !r.error, fallback_used: r.fallback_used || false };
+          if (r.data) { const { _engine, ...clean } = r.data; step.result = clean; }
+          if (r.error) step.error = r.error;
+          return step;
+        }),
         total_credits: execution.total_credits + 20,
         balance: acct?.balance,
         time_ms: totalTime,
@@ -442,7 +447,16 @@ Provide a clear, concise answer to the user's original question based on these r
       answer,
       task,
       run_id: runId,
-      steps: execution.results.map(r => ({ api: r.api, reason: r.reason, credits: r.credits, success: !r.error, fallback_used: r.fallback_used || false })),
+      steps: execution.results.map(r => {
+        const step = { api: r.api, reason: r.reason, credits: r.credits, success: !r.error, fallback_used: r.fallback_used || false };
+        // Include handler result data (was being stripped — P0 bug)
+        if (r.data) {
+          const { _engine, ...clean } = r.data;
+          step.result = clean;
+        }
+        if (r.error) step.error = r.error;
+        return step;
+      }),
       total_credits: execution.total_credits + 20,
       balance: acct?.balance,
       time_ms: totalTime,
