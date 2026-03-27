@@ -4,7 +4,7 @@
 
 ### The infrastructure layer for AI agents
 
-**1,248 real compute APIs. Free persistent memory. Agent chaining. One API key.**
+**Free persistent memory. Real compute. Agent chaining. One API key.**
 
 ```bash
 npm install -g slopshop
@@ -12,7 +12,7 @@ npm install -g slopshop
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
 [![Tests](https://img.shields.io/badge/tests-925%20passing-brightgreen)](https://slopshop.gg)
-[![APIs](https://img.shields.io/badge/APIs-1248-blue)](https://slopshop.gg/tools.html)
+[![Categories](https://img.shields.io/badge/Categories-78-blue)](https://slopshop.gg/tools.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP Compatible](https://img.shields.io/badge/MCP-compatible-purple)](https://modelcontextprotocol.io)
 [![Features](https://img.shields.io/badge/Features-22-orange)](https://slopshop.gg/docs.html)
@@ -25,7 +25,7 @@ npm install -g slopshop
 
 ## What is Slopshop?
 
-Slopshop gives AI agents production-grade tools through a single API key. It provides free persistent memory that no other platform offers, 1,248 real compute APIs across 78 categories, and agent-to-agent chaining with infinite loops -- all self-hostable with zero external dependencies. Works with Claude, GPT, Grok, Gemini, LangChain, CrewAI, and any framework that supports function calling or MCP.
+Slopshop gives AI agents production-grade tools through a single API key. It provides free persistent memory that no other platform offers, real compute APIs across 78 categories (crypto, text, math, validation, finance, DevOps, and more), and agent-to-agent chaining with infinite loops -- all self-hostable with zero external dependencies. Works with Claude, GPT, Grok, Gemini, LangChain, CrewAI, and any framework that supports function calling or MCP.
 
 ---
 
@@ -68,7 +68,7 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 | # | Feature | Description |
 |---|---------|-------------|
 | 1 | **Free Persistent Memory** | Key-value store, queues, counters, vector search -- 0 credits, free forever |
-| 2 | **1,248 Compute APIs** | Crypto, text, math, data transform, validation, PII detection, SVG charts, AST parsing |
+| 2 | **78 Categories of Compute Tools** | Crypto, text, math, data transform, validation, PII detection, SVG charts, AST parsing |
 | 3 | **Agent Chaining** | Claude -> GPT -> Grok infinite loops with auto context passing |
 | 4 | **Army Deployment** | Deploy 10,000 parallel agents with Merkle proof verification |
 | 5 | **Hive Workspaces** | Always-on multi-agent collaboration with channels and roles |

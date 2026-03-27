@@ -4,20 +4,20 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Security & Compliance | Slopshop — Enterprise-Grade API Security</title>
-<meta name="description" content="Slopshop security and SOC 2 compliance documentation. Infrastructure security, authentication, data protection, audit logging, incident response, and verification controls.">
-<meta name="keywords" content="slopshop security, SOC 2 compliance, api security, PBKDF2, data protection, audit logging, enterprise security, GDPR">
+<meta name="description" content="Slopshop security documentation. Infrastructure security, authentication, data protection, audit logging, incident response, and verification controls. SOC 2 Type II in preparation (not yet certified).">
+<meta name="keywords" content="slopshop security, SOC 2 readiness, api security, PBKDF2, data protection, audit logging, enterprise security, GDPR">
 <link rel="canonical" href="https://slopshop.gg/security">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/security">
 <meta property="og:title" content="Security & Compliance | Slopshop">
-<meta property="og:description" content="SOC 2 compliance documentation. Infrastructure security, authentication, data protection, audit logging, and incident response.">
+<meta property="og:description" content="Security documentation and SOC 2 readiness (not yet certified). Infrastructure security, authentication, data protection, audit logging, and incident response.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="Slopshop Security & Compliance">
-<meta name="twitter:description" content="Enterprise-grade security: SOC 2 readiness, PBKDF2 auth, audit logging, data protection, incident response.">
+<meta name="twitter:description" content="Security controls documentation. SOC 2 Type II in preparation (not yet certified). PBKDF2 auth, audit logging, data protection, incident response.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Slopshop Security & Compliance","url":"https://slopshop.gg/security","description":"SOC 2 compliance documentation and security overview for the Slopshop API platform.","publisher":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Slopshop Security & Compliance","url":"https://slopshop.gg/security","description":"Security controls documentation for the Slopshop API platform. SOC 2 Type II in preparation (not yet certified).","publisher":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff6644'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><line x1='256' y1='80' x2='256' y2='168' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='256' y1='344' x2='256' y2='432' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='80' y1='256' x2='168' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='344' y1='256' x2='432' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='128' y1='128' x2='188' y2='188' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><line x1='384' y1='128' x2='324' y2='188' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><line x1='128' y1='384' x2='188' y2='324' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><line x1='384' y1='384' x2='324' y2='324' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
 <meta name="theme-color" content="#ff3333">
@@ -80,9 +80,8 @@ a:hover{text-decoration:underline}
 .hero-meta-item .value.cyan{color:var(--c)}
 
 /* -- SOC 2 badge ------------------------------------------------------- */
-.soc2-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.2);color:var(--g);padding:8px 16px;border-radius:8px;font-family:var(--mono);font-size:0.72rem;font-weight:700;margin-bottom:20px}
-.soc2-badge .dot{width:8px;height:8px;background:var(--g);border-radius:50%;animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.soc2-badge{display:inline-flex;align-items:center;gap:8px;background:rgba(234,179,8,0.08);border:1px solid rgba(234,179,8,0.25);color:#eab308;padding:8px 16px;border-radius:8px;font-family:var(--mono);font-size:0.72rem;font-weight:700;margin-bottom:20px}
+.soc2-badge .dot{width:8px;height:8px;background:#eab308;border-radius:50%}
 
 /* -- Section headings -------------------------------------------------- */
 .section{margin-bottom:56px}
@@ -229,14 +228,15 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
       <div class="hero-tag">Security &amp; Compliance Report</div>
       <h1>Security Overview</h1>
       <p>
-        Comprehensive security controls and SOC 2 compliance documentation for the Slopshop API
+        Comprehensive security controls and compliance readiness documentation for the Slopshop API
         platform. Built for enterprise adoption &mdash; authentication, data protection, audit
         logging, incident response, and cryptographic verification on every response.
       </p>
       <div class="soc2-badge">
         <span class="dot"></span>
-        SOC 2 TYPE II &mdash; PREPARATION IN PROGRESS
+        SOC 2 TYPE II &mdash; IN PREPARATION (NOT YET CERTIFIED)
       </div>
+      <p style="font-size:0.75rem;color:var(--t3);max-width:640px;margin:0 auto 20px;text-align:center">We are working toward SOC 2 certification. This page documents our current security controls, not a certification status.</p>
       <div class="hero-meta">
         <div class="hero-meta-item">
           <span class="label">Last Reviewed</span>
@@ -324,13 +324,11 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
         <div class="control">
           <div class="control-status yes"></div>
           <div class="control-body">
-            <div class="control-title">CORS configured with explicit origins</div>
+            <div class="control-title">CORS: Access-Control-Allow-Origin: * (public API)</div>
             <div class="control-desc">
-              Cross-Origin Resource Sharing is configured with an explicit allowlist of permitted
-              origins. Wildcard origins are not used in production. Credentials, methods, and
-              headers are scoped to the minimum required set.
+              CORS: Access-Control-Allow-Origin: * (public API &mdash; standard for REST APIs like Stripe and Twilio). Configurable via <code>CORS_ORIGIN</code> environment variable for self-hosted deployments.
             </div>
-            <div class="control-detail">server-v2.js: cors({ origin: [...allowedOrigins], credentials: true })</div>
+            <div class="control-detail">server-v2.js: cors({ origin: process.env.CORS_ORIGIN || '*' })</div>
           </div>
         </div>
 
@@ -696,18 +694,18 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
       </div>
 
       <p>
-        Slopshop is actively preparing for SOC 2 Type II certification and implements
+        Slopshop is working toward SOC 2 Type II certification but is not yet certified. We implement
         controls aligned with enterprise compliance requirements. The platform is designed
         to be self-hostable for air-gapped and regulated environments.
       </p>
 
       <div class="compliance-box">
-        <h3>SOC 2 Type II &mdash; Preparation in Progress</h3>
+        <h3>SOC 2 Type II &mdash; In Preparation (Not Yet Certified)</h3>
         <ul class="info-list">
           <li>
-            <strong>SOC 2 Type II preparation is underway.</strong> Controls for security,
-            availability, and confidentiality trust service criteria are implemented at the
-            application layer. Formal certification with an independent assessor is planned.
+            <strong>SOC 2 Type II certification has not been completed.</strong> We are implementing controls for security,
+            availability, and confidentiality trust service criteria at the
+            application layer. Formal audit with an independent assessor is planned but not yet scheduled.
           </li>
           <li>
             <strong>Self-hostable for air-gapped/compliance deployments.</strong> The entire
@@ -950,7 +948,7 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
           </tr>
           <tr>
             <td>Infrastructure</td>
-            <td>CORS explicit origin allowlist</td>
+            <td>CORS: Allow-Origin: * (public API, configurable via CORS_ORIGIN env var)</td>
             <td><span class="st-yes">IMPLEMENTED</span></td>
           </tr>
           <tr>
@@ -1051,7 +1049,7 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
           <tr>
             <td>Compliance</td>
             <td>SOC 2 Type II</td>
-            <td><span class="st-planned">IN PROGRESS</span></td>
+            <td><span class="st-planned">IN PREPARATION (NOT YET CERTIFIED)</span></td>
           </tr>
           <tr>
             <td>Compliance</td>
@@ -1139,7 +1137,7 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
         </div>
         <div>
           <div style="font-family:var(--mono);font-size:0.72rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px">Enterprise Inquiries</div>
-          <span style="font-size:0.84rem;color:var(--t2)">For SOC 2 reports, BAA agreements, or custom compliance requirements, contact <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a></span>
+          <span style="font-size:0.84rem;color:var(--t2)">For SOC 2 readiness details, BAA agreements, or custom compliance requirements, contact <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a></span>
         </div>
       </div>
     </div>
@@ -1149,7 +1147,7 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
     <div class="assessment-footer">
       <div>
         <p>Security questions, vulnerability reports, or compliance inquiries: <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a></p>
-        <p style="margin-top:6px">Last reviewed: March 2026 &nbsp;&bull;&nbsp; SOC 2 Type II preparation in progress</p>
+        <p style="margin-top:6px">Last reviewed: March 2026 &nbsp;&bull;&nbsp; SOC 2 Type II in preparation (not yet certified)</p>
       </div>
       <span class="badge-self">Reviewed March 2026</span>
     </div>
@@ -1188,7 +1186,7 @@ code{font-family:var(--mono);font-size:0.81rem;background:var(--s2);padding:2px 
   </div>
   <div class="footer-bottom">
     <p>&copy; 2026 Slopshop. All rights reserved.</p>
-    <p style="font-family:var(--mono);font-size:0.68rem;color:var(--t4)">SOC 2 Type II preparation in progress &bull; <a href="mailto:dev@slopshop.gg" style="color:var(--t3)">dev@slopshop.gg</a></p>
+    <p style="font-family:var(--mono);font-size:0.68rem;color:var(--t4)">SOC 2 Type II in preparation (not yet certified) &bull; <a href="mailto:dev@slopshop.gg" style="color:var(--t3)">dev@slopshop.gg</a></p>
   </div>
 </footer>
 

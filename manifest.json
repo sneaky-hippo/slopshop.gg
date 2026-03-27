@@ -1,7 +1,7 @@
 {
   "name": "Slopshop",
   "short_name": "Slopshop",
-  "description": "1,248 superpowers for your AI agent. Free persistent memory. Real compute APIs.",
+  "description": "The missing backend for AI agents. Free persistent memory. Real compute. Agent orchestration.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#050505",

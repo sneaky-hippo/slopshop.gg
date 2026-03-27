@@ -1,4 +1,4 @@
-# Slopshop.gg — Complete API Catalog (1248 tools)
+# Slopshop.gg — Complete API Catalog — 78 Categories of Real Tools
 # SLOP: Stateless Lightweight Operational Primitives
 
 ## Agent Superpowers (94)

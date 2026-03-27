@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Slopshop API",
-    "description": "SLOP: Stateless Lightweight Operational Primitives. 1248 real compute APIs for AI agents across 78 categories.",
+    "description": "SLOP: Stateless Lightweight Operational Primitives. Real compute tools for AI agents across 78 categories.",
     "version": "2.0.0",
     "contact": {
       "name": "Slopshop",
