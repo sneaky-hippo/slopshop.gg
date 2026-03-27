@@ -2,8 +2,8 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install Python for exec-python handler
-RUN apt-get update && apt-get install -y python3 curl --no-install-recommends && rm -rf /var/lib/apt/lists/*
+# Install Python + CA certificates for outbound HTTPS
+RUN apt-get update && apt-get install -y python3 curl ca-certificates --no-install-recommends && rm -rf /var/lib/apt/lists/* && update-ca-certificates
 
 COPY package*.json ./
 RUN npm ci --production

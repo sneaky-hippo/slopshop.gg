@@ -6178,6 +6178,10 @@ app.post('/v1/:slug', auth, BODY_LIMIT_COMPUTE, async (req, res) => {
   let result, handlerError = false;
   try { result = await handler(body); }
   catch (e) { result = null; handlerError = e.message; }
+  // Also detect soft errors — handlers that return {_error: "..."} instead of throwing
+  if (result && result._error && !handlerError) {
+    handlerError = result._error;
+  }
   const latency = Date.now() - start;
 
   dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', req.params.slug, def.credits, latency, handlerError ? 'error' : (result?._engine || 'unknown'));

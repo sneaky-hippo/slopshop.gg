@@ -70,7 +70,7 @@ async function callLLM(systemPrompt, userMessage, input = {}) {
   const provider = getProvider();
   if (!provider) throw new Error('No API key configured');
 
-  const model = input.model || process.env.DEFAULT_LLM_MODEL || 'claude-sonnet-4-6-20250514';
+  const model = input.model || process.env.DEFAULT_LLM_MODEL || 'claude-sonnet-4-6';
   const temperature = input.temperature !== undefined ? input.temperature : 0.7;
 
   if (provider === 'anthropic') {
