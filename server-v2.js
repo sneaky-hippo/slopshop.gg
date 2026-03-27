@@ -37,15 +37,22 @@ app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Admin-Secret'],
-  exposedHeaders: ['X-Request-Id', 'X-Credits-Used', 'X-Credits-Remaining', 'X-Latency-Ms', 'X-Engine', 'X-Cost-USD'],
+  exposedHeaders: [
+    'X-Request-Id', 'X-Credits-Used', 'X-Credits-Remaining', 'X-Latency-Ms', 'X-Engine', 'X-Cost-USD',
+    'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset',
+    'X-API-Version', 'Retry-After', 'Sunset', 'Deprecation'
+  ],
   maxAge: 86400,
 }));
 app.use(express.json({ limit: '1mb' })); // 1MB max request body
 app.set('trust proxy', 1); // trust Railway/Vercel proxy for IP
-// Global request ID
+// Global request ID + security headers on EVERY response
 app.use((req, res, next) => {
   req.requestId = req.headers['x-request-id'] || crypto.randomUUID();
   res.set('X-Request-Id', req.requestId);
+  res.set('X-API-Version', '2026.03.27');
+  res.set('Sunset', '');
+  res.set('Deprecation', '');
   next();
 });
 
@@ -354,6 +361,18 @@ log.info('Server loaded', { apis: apiCount, handlers: Object.keys(allHandlers).l
 log.info('API keys initialized', { dbKeys: keyCount, memoryKeys: apiKeys.size });
 
 // ===== AUTH =====
+// TODO [SECURITY 8/10]: API keys are stored in plaintext in SQLite.
+// For 8/10 security score, store SHA-256 hash of key in DB instead of raw key.
+// On auth, hash the incoming key and compare to the stored hash.
+// This is a breaking change — all existing keys would need to be re-hashed.
+// Implementation plan:
+//   1. Add a 'key_hash' column to api_keys table
+//   2. On key creation, store crypto.createHash('sha256').update(key).digest('hex')
+//   3. On auth, hash incoming key and look up by hash
+//   4. Migration script to hash all existing keys
+//   5. Remove plaintext 'key' column after migration
+// Enable via HASH_API_KEYS=1 env var when ready to migrate.
+
 function auth(req, res, next) {
   const h = req.headers.authorization;
   if (!h || !h.startsWith('Bearer ')) return res.status(401).json({ error: { code: 'auth_required', message: 'Set Authorization: Bearer <key>', demo_key: 'sk-slop-demo-key-12345678', signup: 'POST /v1/auth/signup' } });
@@ -370,10 +389,19 @@ function auth(req, res, next) {
       return res.status(403).json({ error: { code: 'scope_denied', message: 'This key does not have permission for ' + def.tier + ' tier APIs', scope: acct.scope } });
     }
   }
+  // Per-key rate limiting: 60 requests per minute
+  if (!rateLimit('api:' + key, 60, 60000)) {
+    const rlEntry = ipLimits.get('api:' + key);
+    res.set('X-RateLimit-Limit', '60');
+    res.set('X-RateLimit-Remaining', '0');
+    res.set('X-RateLimit-Reset', String(rlEntry ? Math.ceil((rlEntry.start + 60000) / 1000) : Math.ceil(Date.now() / 1000) + 60));
+    res.set('Retry-After', '30');
+    return res.status(429).json({ error: { code: 'rate_limited', message: 'Max 60 requests/min per API key. Retry after 30 seconds.', retry_after: 30 } });
+  }
   const rlEntry = ipLimits.get('api:' + key);
   res.set('X-RateLimit-Limit', '60');
   res.set('X-RateLimit-Remaining', String(Math.max(0, 60 - (rlEntry?.count || 0))));
-  res.set('X-RateLimit-Reset', String(rlEntry ? Math.ceil((rlEntry.start + 60000 - Date.now()) / 1000) : 60));
+  res.set('X-RateLimit-Reset', String(rlEntry ? Math.ceil((rlEntry.start + 60000) / 1000) : Math.ceil(Date.now() / 1000) + 60));
   next();
 }
 
@@ -381,13 +409,17 @@ function auth(req, res, next) {
 function publicRateLimit(req, res, next) {
   const ip = req.ip || req.connection?.remoteAddress || 'unknown';
   if (!rateLimit('public:' + ip, 30, 60000)) {
-    res.set('Retry-After', '60');
-    return res.status(429).json({ error: { code: 'rate_limited', message: 'Max 30 requests/min for public endpoints. Authenticate for higher limits.' } });
+    const rlEntry = ipLimits.get('public:' + ip);
+    res.set('Retry-After', '30');
+    res.set('X-RateLimit-Limit', '30');
+    res.set('X-RateLimit-Remaining', '0');
+    res.set('X-RateLimit-Reset', String(rlEntry ? Math.ceil((rlEntry.start + 60000) / 1000) : Math.ceil(Date.now() / 1000) + 60));
+    return res.status(429).json({ error: { code: 'rate_limited', message: 'Max 30 requests/min for public endpoints. Authenticate for higher limits.', retry_after: 30 } });
   }
   const rlEntry = ipLimits.get('public:' + ip);
   res.set('X-RateLimit-Limit', '30');
   res.set('X-RateLimit-Remaining', String(Math.max(0, 30 - (rlEntry?.count || 0))));
-  res.set('X-RateLimit-Reset', String(rlEntry ? Math.ceil((rlEntry.start + 60000 - Date.now()) / 1000) : 60));
+  res.set('X-RateLimit-Reset', String(rlEntry ? Math.ceil((rlEntry.start + 60000) / 1000) : Math.ceil(Date.now() / 1000) + 60));
   next();
 }
 
@@ -432,6 +464,35 @@ if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
     next();
   });
 }
+
+// ===== REQUEST BODY SIZE VALIDATION PER ENDPOINT =====
+// Global limit is 1MB (express.json above), but tighter limits per route type
+function bodySizeLimit(maxBytes) {
+  return (req, res, next) => {
+    const contentLength = parseInt(req.headers['content-length'] || '0', 10);
+    if (contentLength > maxBytes) {
+      return res.status(413).json({ error: { code: 'payload_too_large', message: `Request body exceeds ${maxBytes} byte limit for this endpoint`, max_bytes: maxBytes, received_bytes: contentLength } });
+    }
+    // Also check actual body size (content-length can be spoofed)
+    if (req.body && JSON.stringify(req.body).length > maxBytes) {
+      return res.status(413).json({ error: { code: 'payload_too_large', message: `Request body exceeds ${maxBytes} byte limit for this endpoint`, max_bytes: maxBytes } });
+    }
+    next();
+  };
+}
+const BODY_LIMIT_AUTH = bodySizeLimit(1024);        // 1KB for auth endpoints
+const BODY_LIMIT_COMPUTE = bodySizeLimit(102400);   // 100KB for compute handlers
+const BODY_LIMIT_BATCH = bodySizeLimit(512000);     // 500KB for batch (50 calls)
+const BODY_LIMIT_ARMY = bodySizeLimit(10240);       // 10KB for army deploy
+
+// ===== SECURITY.TXT =====
+app.get('/.well-known/security.txt', (req, res) => {
+  res.type('text/plain').send(`Contact: dev@slopshop.gg
+Preferred-Languages: en
+Canonical: https://slopshop.gg/.well-known/security.txt
+Policy: https://slopshop.gg/security
+`);
+});
 
 // Agent discovery: /.well-known/ai-tools.json (like robots.txt for agents)
 app.get('/.well-known/ai-tools.json', publicRateLimit, (req, res) => {
@@ -597,7 +658,7 @@ app.post('/v1/resolve', (req, res) => {
 });
 
 // ===== AUTH ENDPOINTS =====
-app.post('/v1/keys', publicRateLimit, (_, res) => {
+app.post('/v1/keys', publicRateLimit, BODY_LIMIT_AUTH, (_, res) => {
   const key = 'sk-slop-' + crypto.randomUUID().replace(/-/g, '').slice(0, 24);
   const id = crypto.randomUUID();
   apiKeys.set(key, { id, balance: 0, created: Date.now(), auto_reload: false, tier: 'none' });
@@ -606,7 +667,7 @@ app.post('/v1/keys', publicRateLimit, (_, res) => {
 });
 
 // Waitlist
-app.post('/v1/waitlist', (req, res) => {
+app.post('/v1/waitlist', BODY_LIMIT_AUTH, (req, res) => {
   const email = req.body.email;
   if (!email || !email.includes('@')) return res.status(400).json({ error: { code: 'invalid_email' } });
   const existing = dbGetWaitlistPos.get(email);
@@ -620,7 +681,7 @@ app.get('/v1/credits/balance', auth, (req, res) => res.json({
   balance: req.acct.balance, tier: req.acct.tier, auto_reload: req.acct.auto_reload,
 }));
 
-app.post('/v1/credits/buy', auth, (req, res) => {
+app.post('/v1/credits/buy', auth, BODY_LIMIT_AUTH, (req, res) => {
   // In production: redirect to Stripe checkout via POST /v1/checkout
   // This endpoint now only works for:
   // 1. Demo key (for testing)
@@ -646,7 +707,7 @@ app.post('/v1/credits/buy', auth, (req, res) => {
   res.json({ status: 'credits_added', amount: req.body.amount, balance: req.acct.balance, note: isDemoKey ? 'demo_key' : 'internal' });
 });
 
-app.post('/v1/credits/transfer', auth, (req, res) => {
+app.post('/v1/credits/transfer', auth, BODY_LIMIT_AUTH, (req, res) => {
   const { to_key, amount, note } = req.body;
   if (!to_key || !amount || amount <= 0) {
     return res.status(400).json({ error: { code: 'invalid_transfer', message: 'Provide to_key (recipient API key) and amount (positive number)' } });
@@ -739,7 +800,7 @@ app.post('/v1/admin/create-codes', (req, res) => {
 });
 
 // Redeem a credit code
-app.post('/v1/credits/redeem', auth, (req, res) => {
+app.post('/v1/credits/redeem', auth, BODY_LIMIT_AUTH, (req, res) => {
   const code = (req.body.code || '').trim().toUpperCase();
   if (!code) return res.status(400).json({ error: { code: 'missing_code', message: 'Provide a credit code' } });
   db.exec(`CREATE TABLE IF NOT EXISTS credit_codes (
@@ -793,7 +854,7 @@ app.get('/v1/admin/stats', (req, res) => {
   res.json({ users: userCount, waitlist: waitlistCount, api_keys: keyCount, total_calls: totalCalls, total_credits_spent: totalCreditsSpent, top_apis: topAPIs });
 });
 
-app.post('/v1/credits/auto-reload', auth, (req, res) => {
+app.post('/v1/credits/auto-reload', auth, BODY_LIMIT_AUTH, (req, res) => {
   const config = {
     threshold: req.body.threshold || 100,
     amount: req.body.amount || 10000,
@@ -809,7 +870,7 @@ app.post('/v1/credits/auto-reload', auth, (req, res) => {
 });
 
 // ===== BATCH =====
-app.post('/v1/batch', auth, async (req, res) => {
+app.post('/v1/batch', auth, BODY_LIMIT_BATCH, async (req, res) => {
   const { calls } = req.body;
   if (!Array.isArray(calls) || !calls.length) return res.status(400).json({ error: { code: 'invalid_batch', message: 'Provide { calls: [{ slug: "api-slug", input: {...} }, ...] }' } });
   if (calls.length > 50) return res.status(400).json({ error: { code: 'max_50_per_batch', message: 'Maximum 50 calls per batch request' } });
@@ -2529,7 +2590,7 @@ app.post('/v1/army/quick-poll', auth, (req, res) => {
 db.exec(`CREATE TABLE IF NOT EXISTS compute_runs (id TEXT PRIMARY KEY, api_key TEXT, config TEXT, results TEXT, agent_count INTEGER, status TEXT DEFAULT 'running', verified INTEGER DEFAULT 0, ts INTEGER)`);
 
 // POST /v1/army/deploy — Deploy N agents to execute a task in parallel with verified outputs
-app.post('/v1/army/deploy', auth, async (req, res) => {
+app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
   const { task, tool, input, agents, verify } = req.body;
   if (!task && !tool) return res.status(400).json({ error: { code: 'missing_task', message: 'Provide task (natural language) or tool (slug) + input' } });
 
@@ -5606,7 +5667,7 @@ app.post('/v1/wallet/transfer', auth, (req, res) => {
 });
 
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
-app.post('/v1/:slug', auth, async (req, res) => {
+app.post('/v1/:slug', auth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
   if (!def) return res.status(404).json({ error: { code: 'api_not_found', slug: req.params.slug, hint: 'GET /v1/tools to browse, POST /v1/resolve to search' } });
 

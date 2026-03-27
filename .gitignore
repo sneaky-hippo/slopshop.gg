@@ -7,6 +7,8 @@ stress-dashboard.html
 .DS_Store
 .vercel
 
+DEPLOY-AUDIT.md
+
 # Internal strategy & survey docs (keep local only)
 STRATEGY*.md
 FOUNDER*.md

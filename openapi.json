@@ -3,7 +3,7 @@
   "info": {
     "title": "Slopshop API",
     "description": "The infrastructure layer for AI agents. 1248 real compute APIs.",
-    "version": "3.2.0",
+    "version": "3.3.0",
     "contact": {
       "email": "dev@slopshop.gg",
       "url": "https://slopshop.gg"
@@ -6301,8 +6301,8 @@
     },
     "/v1/gen-fake-name": {
       "post": {
-        "summary": "Fake Name",
-        "description": "Generate realistic fake full name.",
+        "summary": "Sample Name",
+        "description": "Generate sample full name.",
         "tags": [
           "Generate"
         ],
@@ -6341,8 +6341,8 @@
     },
     "/v1/gen-fake-email": {
       "post": {
-        "summary": "Fake Email",
-        "description": "Generate fake email address.",
+        "summary": "Sample Email",
+        "description": "Generate sample email address.",
         "tags": [
           "Generate"
         ],
@@ -6379,8 +6379,8 @@
     },
     "/v1/gen-fake-company": {
       "post": {
-        "summary": "Fake Company",
-        "description": "Generate fake company name.",
+        "summary": "Sample Company",
+        "description": "Generate sample company name.",
         "tags": [
           "Generate"
         ],
@@ -6417,8 +6417,8 @@
     },
     "/v1/gen-fake-address": {
       "post": {
-        "summary": "Fake Address",
-        "description": "Generate fake US address.",
+        "summary": "Sample Address",
+        "description": "Generate sample US address.",
         "tags": [
           "Generate"
         ],
@@ -6458,8 +6458,8 @@
     },
     "/v1/gen-fake-phone": {
       "post": {
-        "summary": "Fake Phone",
-        "description": "Generate fake phone number.",
+        "summary": "Sample Phone",
+        "description": "Generate sample phone number.",
         "tags": [
           "Generate"
         ],
@@ -34974,8 +34974,8 @@
     },
     "/v1/gen-fake-uuid": {
       "post": {
-        "summary": "Fake UUID",
-        "description": "Generate a fake but valid-looking UUID.",
+        "summary": "Sample UUID",
+        "description": "Generate a sample but valid-looking UUID.",
         "tags": [
           "Generate"
         ],
@@ -35020,8 +35020,8 @@
     },
     "/v1/gen-fake-date": {
       "post": {
-        "summary": "Fake Date",
-        "description": "Generate a random realistic date.",
+        "summary": "Sample Date",
+        "description": "Generate a random sample date.",
         "tags": [
           "Generate"
         ],
@@ -35066,8 +35066,8 @@
     },
     "/v1/gen-fake-sentence": {
       "post": {
-        "summary": "Fake Sentence",
-        "description": "Generate a random realistic sentence.",
+        "summary": "Sample Sentence",
+        "description": "Generate a random sample sentence.",
         "tags": [
           "Generate"
         ],
@@ -35112,8 +35112,8 @@
     },
     "/v1/gen-fake-paragraph": {
       "post": {
-        "summary": "Fake Paragraph",
-        "description": "Generate a random realistic paragraph.",
+        "summary": "Sample Paragraph",
+        "description": "Generate a random sample paragraph.",
         "tags": [
           "Generate"
         ],

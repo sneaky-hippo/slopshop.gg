@@ -1,5 +1,7 @@
 # Slopshop — The Infrastructure Layer for AI Agents
 
+> **SLOP: Stateless Lightweight Operational Primitives**
+
 **22 features. 321 endpoints. 1,250 real compute APIs. One key. One credit balance.**
 
 Replace Redis + Cron + Zapier + 10 other services with a single `npm install`.

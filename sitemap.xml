@@ -473,16 +473,8 @@
   <url><loc>https://slopshop.gg/api/text-yaml-to-json</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/api/webhook-send</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/changelog.html</loc><changefreq>weekly</changefreq><priority>0.7</priority><lastmod>2026-03-27</lastmod></url>
-  <url><loc>https://slopshop.gg/code-analysis</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
-  <url><loc>https://slopshop.gg/compute-exchange</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
-  <url><loc>https://slopshop.gg/copilot</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
-  <url><loc>https://slopshop.gg/dashboard.html</loc><changefreq>daily</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
-  <url><loc>https://slopshop.gg/observability</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
-  <url><loc>https://slopshop.gg/rag-primitives</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/status.html</loc><changefreq>always</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/stress-dashboard.html</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
-  <url><loc>https://slopshop.gg/structured-output</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
-  <url><loc>https://slopshop.gg/visualization</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/legal.html</loc><changefreq>monthly</changefreq><priority>0.5</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/ai-agent-api-comparison.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
   <url><loc>https://slopshop.gg/free-ai-agent-memory.html</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-27</lastmod></url>
