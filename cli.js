@@ -28,10 +28,16 @@ const bold   = (s) => `${C.bold}${s}${C.reset}`;
 const yellow = (s) => `${C.yellow}${s}${C.reset}`;
 
 // ============================================================
-// CONFIG
+// CONFIG (env vars → config file → defaults)
 // ============================================================
-const API_KEY  = process.env.SLOPSHOP_KEY;
-const BASE_URL = (process.env.SLOPSHOP_BASE || 'https://slopshop.gg').replace(/\/$/, '');
+const _os = require('os');
+const _fs = require('fs');
+const _path = require('path');
+const _CONFIG_FILE = _path.join(_os.homedir(), '.slopshop', 'config.json');
+function _loadCfg() { try { return JSON.parse(_fs.readFileSync(_CONFIG_FILE, 'utf8')); } catch(e) { return {}; } }
+const _cfg = _loadCfg();
+const API_KEY  = process.env.SLOPSHOP_KEY || _cfg.api_key || '';
+const BASE_URL = (process.env.SLOPSHOP_BASE || _cfg.base_url || 'https://slopshop.gg').replace(/\/$/, '');
 
 // ============================================================
 // HTTP HELPER
@@ -468,6 +474,7 @@ ${C.reset}`;
   console.log(`    ${cyan('slop signup')}                            Create a new account`);
   console.log(`    ${cyan('slop login')}                             Log in to your account`);
   console.log(`    ${cyan('slop whoami')}                            Show current user info`);
+  console.log(`    ${cyan('slop key')} ${dim('[set|remove|rotate]')}          Manage your API key`);
   console.log(`    ${cyan('slop config')} ${dim('[key] [value]')}              View or set config`);
   console.log(`    ${cyan('slop balance')}                           Check credit balance`);
   console.log(`    ${cyan('slop buy')} <amount>                      Buy credits (1k/10k/100k/1M)`);
@@ -497,7 +504,7 @@ ${C.reset}`;
 // ============================================================
 function requireKey() {
   if (!API_KEY) {
-    die('SLOPSHOP_KEY environment variable is required.\n  Set it with: export SLOPSHOP_KEY=sk-slop-...\n  Get a key:   curl -X POST ' + BASE_URL + '/v1/keys');
+    die('No API key found.\n  Set via CLI:  slop config api_key sk-slop-YOUR-KEY\n  Or env var:   export SLOPSHOP_KEY=sk-slop-...\n  Sign up:      slop signup\n  Config file:  ' + _CONFIG_FILE);
   }
 }
 
@@ -728,6 +735,73 @@ function cmdConfig(args) {
 }
 
 // ============================================================
+// KEY MANAGEMENT
+// ============================================================
+
+function cmdKey(args) {
+  const sub = args[0] || '';
+  const cfg = loadConfig();
+
+  if (!sub || sub === 'show') {
+    // Show current key (masked)
+    const key = API_KEY || cfg.api_key;
+    if (key) {
+      console.log(`\n  ${bold('API Key:')}  ${cyan(key.slice(0, 16) + '...' + key.slice(-4))}`);
+      console.log(`  ${bold('Source:')}   ${process.env.SLOPSHOP_KEY ? 'environment variable' : 'config file'}`);
+      console.log(dim(`  ${_CONFIG_FILE}\n`));
+    } else {
+      console.log(dim('\n  No API key configured.\n'));
+      console.log(`  ${bold('Set a key:')}   ${cyan('slop key set sk-slop-YOUR-KEY')}`);
+      console.log(`  ${bold('Or sign up:')}  ${cyan('slop signup')}\n`);
+    }
+    return;
+  }
+
+  if (sub === 'set') {
+    const newKey = args[1];
+    if (!newKey) return die('Usage: slop key set sk-slop-YOUR-KEY');
+    if (!newKey.startsWith('sk-slop-')) return die('Invalid key format. Keys start with sk-slop-');
+    cfg.api_key = newKey;
+    saveConfig(cfg);
+    console.log(green(`\n  API key saved!`));
+    console.log(`  ${bold('Key:')}  ${cyan(newKey.slice(0, 16) + '...' + newKey.slice(-4))}`);
+    console.log(dim(`  Saved to ${_CONFIG_FILE}\n`));
+    return;
+  }
+
+  if (sub === 'remove' || sub === 'delete' || sub === 'clear') {
+    delete cfg.api_key;
+    saveConfig(cfg);
+    console.log(green(`\n  API key removed from config.`));
+    console.log(dim(`  To fully clear, also: unset SLOPSHOP_KEY\n`));
+    return;
+  }
+
+  if (sub === 'rotate') {
+    requireKey();
+    console.log(dim('  Rotating key...'));
+    request('POST', '/v1/auth/rotate-key').then(res => {
+      const d = res.data;
+      const newKey = d.api_key || d.new_key || d.key;
+      if (newKey) {
+        cfg.api_key = newKey;
+        saveConfig(cfg);
+        console.log(green(`\n  Key rotated!`));
+        console.log(`  ${bold('New key:')}  ${cyan(newKey.slice(0, 16) + '...' + newKey.slice(-4))}`);
+        console.log(dim(`  Old key is now invalid.\n`));
+      }
+    }).catch(handleError);
+    return;
+  }
+
+  console.log(`\n  ${bold('Key Management')}\n`);
+  console.log(`  ${cyan('slop key')}           Show current key`);
+  console.log(`  ${cyan('slop key set KEY')}   Save a new key`);
+  console.log(`  ${cyan('slop key remove')}    Remove saved key`);
+  console.log(`  ${cyan('slop key rotate')}    Rotate key (invalidates old)\n`);
+}
+
+// ============================================================
 // MAIN ENTRYPOINT
 // ============================================================
 async function main() {
@@ -750,6 +824,7 @@ async function main() {
     case 'login':   await cmdLogin();      break;
     case 'whoami':  await cmdWhoami();     break;
     case 'config':  cmdConfig(args);       break;
+    case 'key':     cmdKey(args);          break;
     default:
       console.error(red(`\n  Unknown command: ${cmd}`));
       console.error(dim('  Run `slop help` for usage.\n'));
