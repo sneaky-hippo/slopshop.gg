@@ -82,6 +82,145 @@ const ESSENTIAL_SLUGS = new Set([
   'text-chunk', 'kv-set', 'kv-get',
 ]);
 
+// Orchestration tools — exposed as custom MCP tools (not from /v1/tools)
+const ORCHESTRATION_TOOLS = [
+  {
+    name: 'slop-org-launch',
+    description: '[5cr] Launch a multi-agent organization. Templates: startup-team (16), research-lab (8), dev-agency (6), content-studio (5), security-ops (4). Or pass custom agents array.',
+    inputSchema: { type: 'object', properties: {
+      name: { type: 'string', description: 'Organization name' },
+      template: { type: 'string', description: 'Template ID (startup-team, research-lab, dev-agency, content-studio, security-ops)' },
+      agents: { type: 'array', description: 'Custom agents array [{name, role, model, skills}]' },
+      channels: { type: 'array', description: 'Communication channels' },
+      vision: { type: 'string', description: 'North star / mission for the org' },
+    }, required: ['name'] },
+    endpoint: '/v1/org/launch',
+  },
+  {
+    name: 'slop-org-task',
+    description: '[2cr] Assign a task to an agent organization',
+    inputSchema: { type: 'object', properties: {
+      org_id: { type: 'string', description: 'Organization ID' },
+      task: { type: 'string', description: 'Task description' },
+      assign_to: { type: 'string', description: 'Agent name to assign (optional)' },
+      priority: { type: 'string', description: 'urgent, high, normal, low' },
+    }, required: ['org_id', 'task'] },
+    endpoint: null, // dynamic
+  },
+  {
+    name: 'slop-org-status',
+    description: '[0cr] Get full status of an agent organization',
+    inputSchema: { type: 'object', properties: {
+      org_id: { type: 'string', description: 'Organization ID' },
+    }, required: ['org_id'] },
+    endpoint: null,
+  },
+  {
+    name: 'slop-org-standup',
+    description: '[0cr] Get daily standups from all agents in an org',
+    inputSchema: { type: 'object', properties: {
+      org_id: { type: 'string', description: 'Organization ID' },
+    }, required: ['org_id'] },
+    endpoint: null,
+  },
+  {
+    name: 'slop-chain-create',
+    description: '[2cr] Create an agent chain (multi-step pipeline across LLMs). Supports infinite loops.',
+    inputSchema: { type: 'object', properties: {
+      name: { type: 'string', description: 'Chain name' },
+      steps: { type: 'array', description: 'Steps: [{model, role, prompt}]' },
+      loop: { type: 'boolean', description: 'Loop infinitely (true/false)' },
+    }, required: ['name', 'steps'] },
+    endpoint: '/v1/chain/create',
+  },
+  {
+    name: 'slop-chain-advance',
+    description: '[1cr] Advance a chain to its next step, passing context',
+    inputSchema: { type: 'object', properties: {
+      chain_id: { type: 'string', description: 'Chain ID' },
+      input: { type: 'string', description: 'Input for next step' },
+    }, required: ['chain_id'] },
+    endpoint: '/v1/chain/advance',
+  },
+  {
+    name: 'slop-army-deploy',
+    description: '[N×1cr] Deploy N parallel agents (up to 10,000). Each runs the same tool with variations.',
+    inputSchema: { type: 'object', properties: {
+      task: { type: 'string', description: 'Task or tool slug' },
+      count: { type: 'number', description: 'Number of agents (1-10000)' },
+      input: { type: 'object', description: 'Base input for all agents' },
+      variations: { type: 'array', description: 'Per-agent input overrides' },
+    }, required: ['task', 'count'] },
+    endpoint: '/v1/army/deploy',
+  },
+  {
+    name: 'slop-hive-create',
+    description: '[3cr] Create an always-on agent workspace with channels, state, and standups',
+    inputSchema: { type: 'object', properties: {
+      name: { type: 'string', description: 'Workspace name' },
+      channels: { type: 'array', description: 'Channel names' },
+      members: { type: 'array', description: 'Member names' },
+    }, required: ['name'] },
+    endpoint: '/v1/hive/create',
+  },
+  {
+    name: 'slop-hive-send',
+    description: '[0cr] Post a message to a hive channel',
+    inputSchema: { type: 'object', properties: {
+      hive_id: { type: 'string', description: 'Hive ID' },
+      channel: { type: 'string', description: 'Channel name' },
+      from: { type: 'string', description: 'Sender name' },
+      message: { type: 'string', description: 'Message text' },
+    }, required: ['hive_id', 'channel', 'message'] },
+    endpoint: null,
+  },
+  {
+    name: 'slop-hive-sync',
+    description: '[0cr] Get all changes in a hive since last sync',
+    inputSchema: { type: 'object', properties: {
+      hive_id: { type: 'string', description: 'Hive ID' },
+      since: { type: 'string', description: 'ISO timestamp to sync from' },
+    }, required: ['hive_id'] },
+    endpoint: null,
+  },
+  {
+    name: 'slop-agent-run',
+    description: '[20cr] Run an autonomous agent task. Plans tools, executes, returns results.',
+    inputSchema: { type: 'object', properties: {
+      task: { type: 'string', description: 'Natural language task description' },
+      plan_only: { type: 'boolean', description: 'Only plan, do not execute' },
+    }, required: ['task'] },
+    endpoint: '/v1/agent/run',
+  },
+  {
+    name: 'slop-memory-set',
+    description: '[0cr] Store a value in persistent memory (survives restarts, free forever)',
+    inputSchema: { type: 'object', properties: {
+      key: { type: 'string', description: 'Memory key' },
+      value: { type: 'string', description: 'Value to store' },
+    }, required: ['key', 'value'] },
+    endpoint: '/v1/memory-set',
+  },
+  {
+    name: 'slop-memory-get',
+    description: '[0cr] Retrieve a value from persistent memory',
+    inputSchema: { type: 'object', properties: {
+      key: { type: 'string', description: 'Memory key' },
+    }, required: ['key'] },
+    endpoint: '/v1/memory-get',
+  },
+  {
+    name: 'slop-copilot-spawn',
+    description: '[1cr] Spawn a parallel copilot agent that works alongside the main agent',
+    inputSchema: { type: 'object', properties: {
+      parent_session: { type: 'string', description: 'Parent session ID' },
+      role: { type: 'string', description: 'Copilot role (e.g. researcher, reviewer, coder)' },
+      task: { type: 'string', description: 'Initial task for copilot' },
+    }, required: ['role'] },
+    endpoint: '/v1/copilot/spawn',
+  },
+];
+
 // Load tool list from server (filtered to essentials for MCP, full for API)
 async function loadTools() {
   const all = [];
@@ -111,7 +250,7 @@ async function handleMessage(msg) {
         result: {
           protocolVersion: '2024-11-05',
           capabilities: { tools: { listChanged: false } },
-          serverInfo: { name: 'slopshop', version: '3.0.0' },
+          serverInfo: { name: 'slopshop', version: '3.4.0' },
         },
       };
 
@@ -120,57 +259,68 @@ async function handleMessage(msg) {
 
     case 'tools/list':
       if (!toolList) await loadTools();
+      // Combine essential compute tools + orchestration tools
+      const computeTools = toolList.map(t => {
+        const props = {};
+        const required = [];
+        if (t.input_schema && typeof t.input_schema === 'object') {
+          for (const [k, v] of Object.entries(t.input_schema)) {
+            if (k === '_note') continue;
+            props[k] = { type: v.type || 'string', description: v.description || k };
+            if (v.required) required.push(k);
+          }
+        }
+        if (Object.keys(props).length === 0) {
+          props.input = { type: 'string', description: 'Input data' };
+        }
+        return {
+          name: `slop-${t.slug}`,
+          description: `[${t.credits}cr] ${t.description}`,
+          inputSchema: { type: 'object', properties: props, ...(required.length ? { required } : {}) },
+        };
+      });
+      const orchTools = ORCHESTRATION_TOOLS.map(t => ({
+        name: t.name,
+        description: t.description,
+        inputSchema: t.inputSchema,
+      }));
       return {
         jsonrpc: '2.0', id,
-        result: {
-          tools: toolList.map(t => {
-            // Build real input schema from the tool's schema
-            const props = {};
-            const required = [];
-            if (t.input_schema && typeof t.input_schema === 'object') {
-              for (const [k, v] of Object.entries(t.input_schema)) {
-                if (k === '_note') continue;
-                props[k] = { type: v.type || 'string', description: v.description || k };
-                if (v.required) required.push(k);
-              }
-            }
-            if (Object.keys(props).length === 0) {
-              props.input = { type: 'string', description: 'Input data' };
-            }
-            return {
-              name: `slop-${t.slug}`,
-              description: `[${t.credits}cr] ${t.description}`,
-              inputSchema: {
-                type: 'object',
-                properties: props,
-                ...(required.length ? { required } : {}),
-              },
-            };
-          }),
-        },
+        result: { tools: [...computeTools, ...orchTools] },
       };
 
     case 'tools/call': {
-      const toolName = params.name.replace(/^slop-/, '');
-      let input = {};
+      const rawName = params.name;
+      let input = params.arguments || {};
 
-      // Parse input from MCP arguments
-      if (params.arguments) {
-        if (params.arguments.data) {
-          try { input = JSON.parse(params.arguments.data); }
-          catch (e) { input.data = params.arguments.data; }
+      // Route orchestration tools to their specific endpoints
+      const orchTool = ORCHESTRATION_TOOLS.find(t => t.name === rawName);
+      let endpoint;
+
+      if (orchTool) {
+        if (orchTool.endpoint) {
+          endpoint = orchTool.endpoint;
+        } else if (rawName === 'slop-org-task') {
+          endpoint = `/v1/org/${input.org_id}/task`;
+        } else if (rawName === 'slop-org-status') {
+          endpoint = `/v1/org/${input.org_id}/status`;
+        } else if (rawName === 'slop-org-standup') {
+          endpoint = `/v1/org/${input.org_id}/standup`;
+        } else if (rawName === 'slop-hive-send') {
+          endpoint = `/v1/hive/${input.hive_id}/send`;
+        } else if (rawName === 'slop-hive-sync') {
+          endpoint = `/v1/hive/${input.hive_id}/sync`;
         }
-        if (params.arguments.input) {
-          input.input = params.arguments.input;
-          input.text = params.arguments.input;
-        }
-        // Copy any other args
-        for (const [k, v] of Object.entries(params.arguments)) {
-          if (k !== 'input' && k !== 'data') input[k] = v;
-        }
+      } else {
+        // Standard tool — strip slop- prefix
+        const toolName = rawName.replace(/^slop-/, '');
+        endpoint = `/v1/${toolName}`;
+        // Map input/text for compatibility
+        if (input.input && !input.text) input.text = input.input;
       }
 
-      const result = await apiCall('POST', `/v1/${toolName}`, input);
+      const method = endpoint.includes('/status') || endpoint.includes('/standup') || endpoint.includes('/sync') ? 'GET' : 'POST';
+      const result = await apiCall(method, endpoint, method === 'POST' ? input : null);
 
       return {
         jsonrpc: '2.0', id,

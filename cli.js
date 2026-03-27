@@ -795,7 +795,7 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'version', 'upgrade', 'completions', 'help'],
+      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'version', 'upgrade', 'completions', 'help'],
       flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N', '--model M', '--dry-run', '--limit N', '--offset N'],
       version: PKG_VERSION
     }, null, 2));
@@ -815,7 +815,9 @@ ${C.reset}`;
   console.log(`  ${bold('AGENT ORCHESTRATION')}`);
   console.log(`    ${cyan('slop org')} ${dim('<sub>')}                         Launch/manage agent organizations`);
   console.log(`    ${cyan('slop chain')} ${dim('<sub>')}                       Create/manage agent chains`);
-  console.log(`    ${cyan('slop memory')} ${dim('<sub>')}                      Direct memory key-value operations\n`);
+  console.log(`    ${cyan('slop memory')} ${dim('<sub>')}                      Direct memory key-value operations`);
+  console.log(`    ${cyan('slop live')} ${dim('<org-id>')}                     Real-time agent dashboard (The Sims for AI)`);
+  console.log(`    ${cyan('slop live --launch')}                    Launch 30-agent startup + watch\n`);
   console.log(`  ${bold('ACCOUNT & CONFIG')}`);
   console.log(`    ${cyan('slop signup')}                            Create a new account`);
   console.log(`    ${cyan('slop login')}                             Log in`);
@@ -2937,6 +2939,165 @@ async function cmdSession(args) {
 }
 
 // ============================================================
+// LIVE — Real-time agent organization dashboard (The Sims for AI agents)
+// ============================================================
+async function cmdLive(args) {
+  requireKey();
+  const orgId = args[0];
+
+  if (!orgId) {
+    // List orgs or prompt to launch one
+    console.log(`\n  ${bold('Live Agent Dashboard')}\n`);
+    console.log(`  ${cyan('slop live <org-id>')}        Watch an organization in real-time`);
+    console.log(`  ${cyan('slop live --launch')}        Launch full-startup template and watch`);
+    console.log(`  ${cyan('slop live --templates')}     List available org templates\n`);
+
+    if (args.includes('--templates')) {
+      spinnerStart('Loading templates...');
+      try {
+        const res = await request('GET', '/v1/org/templates', null, false);
+        spinnerStop(true);
+        const templates = res.data?.templates || res.templates || [];
+        console.log(`  ${bold('Organization Templates')}\n`);
+        for (const t of templates) {
+          console.log(`  ${cyan(t.id.padEnd(22))} ${yellow(String(t.agents?.length || 0).padEnd(3))} agents  ${dim(t.description || t.name)}`);
+        }
+        console.log(`\n  ${dim('Launch:')} ${cyan('slop org launch --template full-startup --name "My Company"')}\n`);
+      } catch(e) { spinnerStop(false); handleError(e); }
+      return;
+    }
+
+    if (args.includes('--launch')) {
+      spinnerStart('Launching 30-agent startup...');
+      try {
+        const tmplRes = await request('GET', '/v1/org/templates', null, false);
+        const templates = tmplRes.data?.templates || tmplRes.templates || [];
+        const fullStartup = templates.find(t => t.id === 'full-startup') || templates[0];
+        const res = await request('POST', '/v1/org/launch', {
+          name: 'AI Startup ' + Date.now().toString(36),
+          agents: fullStartup.agents,
+          channels: fullStartup.channels,
+          auto_handoff: true,
+        });
+        spinnerStop(true);
+        const d = res.data || res;
+        console.log(`\n  ${green('Organization launched!')}`);
+        console.log(`  ${bold('Org ID:')} ${cyan(d.org_id)}`);
+        console.log(`  ${bold('Agents:')} ${d.agents?.length || 0}`);
+        console.log(`\n  ${dim('Now watch it live:')}`);
+        console.log(`  ${cyan('slop live ' + d.org_id)}\n`);
+      } catch(e) { spinnerStop(false); handleError(e); }
+      return;
+    }
+    return;
+  }
+
+  // Real-time dashboard for an org
+  console.log(`\n  ${bold('LIVE DASHBOARD')} ${dim('— ' + orgId)}`);
+  console.log(`  ${dim('Press Ctrl+C to exit. Press Enter to send a command.')}\n`);
+
+  let lastSync = new Date(0).toISOString();
+
+  const refresh = async () => {
+    try {
+      const status = await request('GET', `/v1/org/${orgId}/status`);
+      const d = status.data || status;
+
+      // Clear screen effect
+      const now = new Date().toISOString().slice(11, 19);
+      console.log(`\n  ${dim('─'.repeat(60))}`);
+      console.log(`  ${bold(d.name || 'Organization')} ${dim('|')} ${cyan(orgId)} ${dim('|')} ${now}`);
+      console.log(`  ${dim('Agents:')} ${yellow(String(d.agent_count || d.agents?.length || 0))} ${dim('| Messages:')} ${d.messages_total || 0} ${dim('| Chain:')} ${d.chain_status || 'active'}`);
+
+      // Show agents with status indicators
+      if (d.agents && Array.isArray(d.agents)) {
+        console.log('');
+        for (const agent of d.agents) {
+          const statusIcon = agent.status === 'working' ? green('●') : agent.status === 'idle' ? dim('○') : yellow('◐');
+          const model = dim(`[${agent.model || '?'}]`);
+          console.log(`  ${statusIcon} ${cyan(String(agent.name || agent.role || '').padEnd(16))} ${dim(String(agent.role || '').padEnd(20))} ${model} ${dim(agent.last_action || '')}`);
+        }
+      }
+
+      // Check for new messages in hive
+      if (d.hive_id) {
+        try {
+          const sync = await request('GET', `/v1/hive/${d.hive_id}/sync?since=${encodeURIComponent(lastSync)}`);
+          const msgs = sync.data?.messages || [];
+          if (msgs.length > 0) {
+            console.log(`\n  ${bold('Recent Activity:')}`);
+            for (const msg of msgs.slice(-5)) {
+              console.log(`  ${dim(String(msg.ts || '').slice(11, 19))} ${cyan(String(msg.from || '').padEnd(12))} ${dim('#' + (msg.channel || 'general'))} ${msg.message?.slice(0, 60) || ''}`);
+            }
+            lastSync = msgs[msgs.length - 1].ts || lastSync;
+          }
+        } catch(e) { /* no hive messages yet */ }
+      }
+
+      console.log(`\n  ${dim('Commands: task <text> | scale <n> | standup | vision <text> | quit')}`);
+    } catch (e) {
+      console.log(`  ${red('Error:')} ${e.message}`);
+    }
+  };
+
+  await refresh();
+  const timer = setInterval(refresh, 8000);
+
+  // Interactive command input
+  const rl = readline.createInterface({ input: process.stdin, output: process.stderr, terminal: true });
+  rl.on('line', async (line) => {
+    const input = line.trim();
+    if (!input) return;
+    if (input === 'quit' || input === 'exit' || input === 'q') {
+      clearInterval(timer);
+      rl.close();
+      console.log(dim('\n  Dashboard closed.\n'));
+      process.exit(0);
+    }
+    if (input.startsWith('task ')) {
+      const task = input.slice(5);
+      try {
+        const res = await request('POST', `/v1/org/${orgId}/task`, { task });
+        console.log(`  ${green('Task sent:')} ${task}`);
+      } catch(e) { console.log(`  ${red('Error:')} ${e.message}`); }
+    } else if (input.startsWith('scale ')) {
+      const count = parseInt(input.slice(6));
+      try {
+        await request('POST', `/v1/org/${orgId}/scale`, { count });
+        console.log(`  ${green('Scaled to')} ${count} agents`);
+      } catch(e) { console.log(`  ${red('Error:')} ${e.message}`); }
+    } else if (input === 'standup') {
+      try {
+        const res = await request('GET', `/v1/org/${orgId}/standup`);
+        const agents = res.data?.agents || [];
+        console.log(`\n  ${bold('Daily Standup')}`);
+        for (const a of agents) {
+          console.log(`  ${cyan(a.name)} (${a.role}): ${dim(a.standup?.status || 'no standup')}`);
+        }
+      } catch(e) { console.log(`  ${red('Error:')} ${e.message}`); }
+    } else if (input.startsWith('vision ')) {
+      const vision = input.slice(7);
+      try {
+        const d = (await request('GET', `/v1/org/${orgId}/status`)).data || {};
+        if (d.hive_id) {
+          await request('POST', `/v1/hive/${d.hive_id}/vision`, { vision });
+          console.log(`  ${green('Vision set:')} ${vision}`);
+        }
+      } catch(e) { console.log(`  ${red('Error:')} ${e.message}`); }
+    } else {
+      console.log(dim(`  Unknown command: ${input}`));
+    }
+  });
+
+  process.on('SIGINT', () => {
+    clearInterval(timer);
+    rl.close();
+    console.log(dim('\n  Dashboard closed.\n'));
+    process.exit(0);
+  });
+}
+
+// ============================================================
 // MAIN ENTRYPOINT
 // ============================================================
 async function main() {
@@ -3025,6 +3186,7 @@ async function main() {
     case 'git':     await cmdGit(args);    break;
     case 'review':  await cmdReview(args); break;
     case 'session': await cmdSession(args); break;
+    case 'live':    await cmdLive(args);    break;
     case 'version': case '-v': case '--version': {
       if (jsonMode) {
         console.log(JSON.stringify({ version: PKG_VERSION, name: 'slopshop', node: process.version, platform: `${process.platform}-${process.arch}`, config: CONFIG_FILE }));
