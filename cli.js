@@ -53,6 +53,7 @@ const fs = require('fs');
 const path = require('path');
 const CONFIG_DIR = path.join(os.homedir(), '.slopshop');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
+const THEMES={default:{r:"[38;2;239;68;68m"},dracula:{r:"[38;2;189;147;249m"},nord:{r:"[38;2;136;192;208m"},monokai:{r:"[38;2;249;38;114m"}};
 const PKG_VERSION = (() => { try { return require('./package.json').version; } catch { return 'unknown'; } })();
 
 function loadConfig() {
