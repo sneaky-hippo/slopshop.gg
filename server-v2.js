@@ -6513,7 +6513,7 @@ app.get('/v1/enterprise/capabilities', publicRateLimit, (req, res) => {
       self_host_cloud_sync: { status: 'roadmap', description: 'Hybrid mode: self-host compute, sync memory and state to slopshop.gg cloud', features: ['Bidirectional memory sync', 'Cloud backup of local state', 'Unified billing'], roadmap: 'Q2 2027' },
       kubernetes: { manifest_url: 'https://slopshop.gg/deploy/k8s-manifest.yaml', helm_chart: 'helm install slopshop slopshop/slopshop', one_command: 'kubectl apply -f https://slopshop.gg/deploy/k8s-manifest.yaml' },
     },
-    contact: 'enterprise@slopshop.gg',
+    contact: 'dev@slopshop.gg',
   });
 });
 
