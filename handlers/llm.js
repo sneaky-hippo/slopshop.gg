@@ -11,16 +11,39 @@ const https = require('https');
 // PROVIDER DETECTION
 // ============================================================
 
-function getProvider() {
+// Multi-LLM provider support: Anthropic, OpenAI, Grok (xAI), DeepSeek
+const PROVIDERS = {
+  anthropic: { host: 'api.anthropic.com', path: '/v1/messages', keyEnv: 'ANTHROPIC_API_KEY', format: 'anthropic' },
+  openai: { host: 'api.openai.com', path: '/v1/chat/completions', keyEnv: 'OPENAI_API_KEY', format: 'openai' },
+  grok: { host: 'api.x.ai', path: '/v1/chat/completions', keyEnv: 'XAI_API_KEY', format: 'openai' },
+  deepseek: { host: 'api.deepseek.com', path: '/v1/chat/completions', keyEnv: 'DEEPSEEK_API_KEY', format: 'openai' },
+};
+
+const DEFAULT_MODELS = {
+  anthropic: 'claude-opus-4-6',
+  openai: 'gpt-4o',
+  grok: 'grok-3',
+  deepseek: 'deepseek-chat',
+};
+
+function getProvider(requested) {
+  if (requested && PROVIDERS[requested] && process.env[PROVIDERS[requested].keyEnv]) return requested;
   if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
   if (process.env.OPENAI_API_KEY) return 'openai';
+  if (process.env.XAI_API_KEY) return 'grok';
+  if (process.env.DEEPSEEK_API_KEY) return 'deepseek';
   return null;
+}
+
+function getAvailableProviders() {
+  return Object.entries(PROVIDERS).filter(([_, p]) => process.env[p.keyEnv]).map(([name]) => name);
 }
 
 function noKeyResponse(slug) {
   return {
     _engine: 'needs_key',
-    _unlock: 'Set ANTHROPIC_API_KEY or OPENAI_API_KEY env var',
+    _unlock: 'Set ANTHROPIC_API_KEY, OPENAI_API_KEY, XAI_API_KEY, or DEEPSEEK_API_KEY',
+    available_providers: getAvailableProviders(),
     api: slug,
   };
 }
@@ -67,60 +90,35 @@ function httpsPost(hostname, path, headers, body) {
 // ============================================================
 
 async function callLLM(systemPrompt, userMessage, input = {}) {
-  const provider = getProvider();
-  if (!provider) throw new Error('No API key configured');
+  // Support explicit provider selection: input.provider = 'grok' | 'deepseek' | 'openai' | 'anthropic'
+  const providerName = getProvider(input.provider);
+  if (!providerName) throw new Error('No API key configured. Available: ' + getAvailableProviders().join(', '));
 
-  const model = input.model || process.env.DEFAULT_LLM_MODEL || 'claude-opus-4-6';
+  const providerConfig = PROVIDERS[providerName];
+  const model = input.model || DEFAULT_MODELS[providerName];
   const temperature = input.temperature !== undefined ? input.temperature : 0.7;
+  const apiKey = process.env[providerConfig.keyEnv];
 
-  if (provider === 'anthropic') {
+  if (providerConfig.format === 'anthropic') {
     const resp = await httpsPost(
-      'api.anthropic.com',
-      '/v1/messages',
-      {
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      {
-        model,
-        max_tokens: 1024,
-        temperature,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userMessage }],
-      }
+      providerConfig.host,
+      providerConfig.path,
+      { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
+      { model, max_tokens: 1024, temperature, system: systemPrompt, messages: [{ role: 'user', content: userMessage }] }
     );
-
-    if (resp.status !== 200) {
-      throw new Error(`Anthropic API error ${resp.status}: ${JSON.stringify(resp.body)}`);
-    }
-
-    const text = resp.body?.content?.[0]?.text ?? '';
-    return { text, model: resp.body?.model ?? model, provider: 'anthropic' };
+    if (resp.status !== 200) throw new Error(`${providerName} error ${resp.status}: ${JSON.stringify(resp.body).slice(0, 200)}`);
+    return { text: resp.body?.content?.[0]?.text ?? '', model: resp.body?.model ?? model, provider: providerName };
   }
 
-  // OpenAI
-  const openaiModel = input.model || process.env.DEFAULT_LLM_MODEL || 'gpt-4o-mini';
+  // OpenAI-compatible format (OpenAI, Grok/xAI, DeepSeek)
   const resp = await httpsPost(
-    'api.openai.com',
-    '/v1/chat/completions',
-    { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-    {
-      model: openaiModel,
-      max_tokens: 1024,
-      temperature,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user', content: userMessage },
-      ],
-    }
+    providerConfig.host,
+    providerConfig.path,
+    { Authorization: `Bearer ${apiKey}` },
+    { model, max_tokens: 1024, temperature, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }] }
   );
-
-  if (resp.status !== 200) {
-    throw new Error(`OpenAI API error ${resp.status}: ${JSON.stringify(resp.body)}`);
-  }
-
-  const text = resp.body?.choices?.[0]?.message?.content ?? '';
-  return { text, model: resp.body?.model ?? openaiModel, provider: 'openai' };
+  if (resp.status !== 200) throw new Error(`${providerName} error ${resp.status}: ${JSON.stringify(resp.body).slice(0, 200)}`);
+  return { text: resp.body?.choices?.[0]?.message?.content ?? '', model: resp.body?.model ?? model, provider: providerName };
 }
 
 // ============================================================
@@ -345,6 +343,34 @@ If asked to decide, make a clear decision with reasoning.
 Respond in JSON: { "answer": string, "confidence": number (0-1), "action_items": string[] }`,
   (input) => input.text || input.question || input.prompt || ''
 );
+
+// llm-council — Get feedback from ALL available LLM providers on the same prompt
+handlers['llm-council'] = async (input) => {
+  const available = getAvailableProviders();
+  if (available.length === 0) return noKeyResponse('llm-council');
+
+  const prompt = input.text || input.question || '';
+  const systemPrompt = 'You are a senior AI advisor. Answer directly and specifically. Keep it under 200 words.';
+  const responses = {};
+
+  for (const providerName of available) {
+    try {
+      const { text, model, provider } = await callLLM(systemPrompt, prompt, { provider: providerName });
+      // Extract answer from JSON if present
+      let answer = text;
+      try { const parsed = JSON.parse(text); answer = parsed.answer || text; } catch(e) {}
+      if (answer.includes('```json')) {
+        answer = answer.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+        try { const p = JSON.parse(answer); answer = p.answer || answer; } catch(e) {}
+      }
+      responses[providerName] = { model, answer: answer.slice(0, 500) };
+    } catch (e) {
+      responses[providerName] = { error: e.message };
+    }
+  }
+
+  return { _engine: 'llm', council: responses, providers_queried: available.length, question: prompt.slice(0, 200) };
+};
 
 // llm-summarize-thread
 handlers['llm-summarize-thread'] = makeHandler(

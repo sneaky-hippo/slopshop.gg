@@ -33,11 +33,29 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 // LLM think: ask the LLM a question and get a reasoned answer
 async function think(prompt) {
   const res = await api('POST', '/v1/llm-think', { text: prompt });
-  return (res.data || {}).summary || (res.data || {})._error || 'no response';
+  const d = res.data || {};
+  let raw = d.answer || d.summary || d.result || '';
+  if (!raw && d.raw) raw = typeof d.raw === 'string' ? d.raw : JSON.stringify(d.raw);
+  if (!raw) return d._error || 'no response';
+  // Clean markdown code fences from LLM output
+  raw = String(raw).replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+  // If it's a JSON string with an answer field, extract it
+  if (raw.startsWith('{')) {
+    try { const p = JSON.parse(raw); if (p.answer) raw = p.answer; } catch(e) {}
+  }
+  return raw;
 }
 
 // Memory operations
 async function remember(key, value) {
+  // Clean LLM output before storing
+  if (typeof value === 'string') {
+    value = value.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
+    if (value.startsWith('{')) {
+      try { const p = JSON.parse(value); value = p.answer || p.summary || value; } catch(e) {}
+    }
+  }
+  // Store full value — no truncation
   await api('POST', '/v1/memory-set', { key, value: typeof value === 'string' ? value : JSON.stringify(value) });
 }
 async function recall(key) {
