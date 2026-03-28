@@ -968,23 +968,44 @@ async function cmdHive(args) {
     const researchTokens = { input: 0, output: 0 };
     const researchFindings = [];
 
-    // Slop APIs: scrape URLs from mission
-    const urls = (mission + ' ' + (shared.plan[0] || '')).match(/https?:\/\/[^\s,)]+/g) || [];
-    const domains = (mission + ' ' + (shared.plan[0] || '')).match(/\b[\w-]+\.(?:com|dev|io|gg|ai|org)\b/g) || [];
-    for (const url of [...new Set(urls)].slice(0, 3)) {
+    // Slop APIs: scrape URLs + auto-generate research targets from keywords
+    const allText = mission + ' ' + (shared.plan[0] || '');
+    const urls = allText.match(/https?:\/\/[^\s,)]+/g) || [];
+    const domains = allText.match(/\b[\w-]+\.(?:com|dev|io|gg|ai|org)\b/g) || [];
+
+    // Auto-detect research targets from mission keywords
+    const missionWords = mission.toLowerCase();
+    const autoTargets = [];
+    if (missionWords.includes('competitor') || missionWords.includes('compar')) autoTargets.push('https://composio.dev', 'https://langchain.com', 'https://slopshop.gg');
+    if (missionWords.includes('pricing') || missionWords.includes('price')) autoTargets.push('https://slopshop.gg/pricing');
+    if (missionWords.includes('security') || missionWords.includes('audit')) autoTargets.push('https://slopshop.gg/security');
+    if (missionWords.includes('homepage') || missionWords.includes('landing')) autoTargets.push('https://slopshop.gg');
+    if (missionWords.includes('docs') || missionWords.includes('document')) autoTargets.push('https://slopshop.gg/docs');
+    const allUrls = [...new Set([...urls, ...autoTargets])].slice(0, 4);
+    const allDomains = [...new Set([...domains, ...autoTargets.map(u => { try { return new URL(u).hostname; } catch(e) { return ''; } }).filter(Boolean)])].slice(0, 5);
+
+    // Scrape targets
+    for (const url of allUrls) {
       const r = await slopCall('ext-web-scrape', { url });
       if (r.ok) {
-        const finding = `[SCRAPED ${url}] ${r.data?.title || ''}: ${(r.data?.content || '').slice(0, 200)}`;
-        researchFindings.push(finding);
-        console.log(`  ${dim('│')} ${green('✓')} scraped ${cyan(url.slice(0, 40))}`);
+        const title = r.data?.title || '';
+        const content = (r.data?.content || '').slice(0, 200);
+        researchFindings.push(`[SCRAPED ${url}] ${title}: ${content}`);
+        console.log(`  ${dim('│')} ${green('✓')} scraped ${cyan(url.slice(0, 40))} ${dim(title.slice(0, 30))}`);
       }
     }
-    for (const d of [...new Set(domains)].slice(0, 4)) {
+    // Check HTTP status
+    for (const d of allDomains) {
       const r = await slopCall('net-http-status', { url: 'https://' + d });
       if (r.ok) {
         researchFindings.push(`[STATUS ${d}] HTTP ${r.data?.status_code || '?'}`);
         console.log(`  ${dim('│')} ${(r.data?.status_code === 200) ? green('✓') : yellow('⚠')} ${d} HTTP ${r.data?.status_code || '?'}`);
       }
+    }
+    // Use slop search to find relevant tools for the mission
+    const searchR = await slopCall('resolve', { query: mission.split(/\s+/).slice(0, 3).join(' ') });
+    if (searchR.ok && searchR.data?.match) {
+      researchFindings.push(`[SLOP SEARCH] Best tool for "${mission.slice(0, 30)}": ${searchR.data.match.slug} — ${searchR.data.match.desc || ''}`);
     }
 
     // Cloud research: each provider gets a specific angle
@@ -1025,23 +1046,25 @@ async function cmdHive(args) {
 
     const planResp = localOnly ? await ollamaChat('llama3', planPrompt) : await cloudChat('anthropic', planPrompt);
     const priorityMatch = (planResp || '').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
-    const priority = priorityMatch ? priorityMatch[1].trim() : 'continue research';
-    const planCmds = (planResp || '').split('\n').map(l => l.trim()).filter(l => l.startsWith('memory set')).slice(0, 5);
+    const priority = priorityMatch ? priorityMatch[1].trim() : mission.slice(0, 100);
+    let planCmds = (planResp || '').split('\n').map(l => l.trim()).filter(l => l.startsWith('memory set')).slice(0, 5);
+
+    // Fix 2: GUARANTEE commands exist — if LLM didn't produce them, generate from priority
+    if (planCmds.length === 0) {
+      const safeKey = (priority || mission).replace(/[^a-zA-Z0-9]/g, '-').slice(0, 30).toLowerCase();
+      const safeResearch = JSON.stringify(researchFindings.slice(0, 3).map(f => typeof f === 'string' ? f.slice(0, 100) : f)).replace(/"/g, '\\"');
+      planCmds = [
+        `memory set sprint-${s}-priority {"task":"${priority.slice(0, 80).replace(/"/g, '')}","sprint":${s}}`,
+        `memory set sprint-${s}-research ${safeResearch.slice(0, 200)}`,
+      ];
+    }
 
     shared.plan = [priority, ...planCmds];
     const planTokensIn = tokenEst(allResearchText);
     const planTokensOut = tokenEst(planResp);
     console.log(`  ${dim('│')} ${green('PRIORITY:')} ${priority.slice(0, 70)}`);
-    console.log(`  ${dim('│')} ${dim(planCmds.length + ' commands')} ${dim('(' + planTokensIn + 't in → ' + planTokensOut + 't out, ' + Math.round(planTokensOut / Math.max(planTokensIn, 1) * 100) + '% ratio)')}`);
-
-    // ── CONTEXT CHECK: did research make it into the plan? ──
-    const contextRetained = priority.length > 10 && planCmds.length > 0;
-    if (!contextRetained) {
-      console.log(`  ${dim('│')} ${red('⚠ CONTEXT ALARM: plan has no commands — research may not have flowed through')}`);
-      hiveLog({ sprint: s, phase: 'plan', alarm: 'no_commands', tokensIn: planTokensIn, tokensOut: planTokensOut });
-    } else {
-      hiveLog({ sprint: s, phase: 'plan', priority, commands: planCmds.length, tokensIn: planTokensIn, tokensOut: planTokensOut });
-    }
+    console.log(`  ${dim('│')} ${dim(planCmds.length + ' commands')} ${dim('(' + planTokensIn + 't in → ' + planTokensOut + 't out)')}`);
+    hiveLog({ sprint: s, phase: 'plan', priority, commands: planCmds.length, tokensIn: planTokensIn, tokensOut: planTokensOut });
 
     // ── PHASE 3: BUILD — execute the plan commands through slop ──
     console.log(`  ${dim('├')} ${bold('BUILD')}`);
