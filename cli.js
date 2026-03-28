@@ -1975,9 +1975,11 @@ async function cmdMemory(args) {
     if (!key) die('Usage: slop memory get <key>');
     const res = await request('POST', '/v1/memory-get', { key });
     const d = res.data || res;
+    const val = d.data?.value ?? d.value;
+    const found = val !== undefined && val !== null;
     if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
-    if (quiet) { const val = d.value || d.data?.value || ''; console.log(val); return; }
-    console.log(`\n  ${bold(key + ':')} ${green(String(d.value !== undefined ? d.value : dim('(not found)')))}\n`);
+    if (quiet) { console.log(found ? String(val) : ''); return; }
+    console.log(`\n  ${bold(key + ':')} ${found ? green(String(val)) : dim('(not found)')}\n`);
     return;
   }
 
