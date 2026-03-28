@@ -61,7 +61,7 @@ Return ONLY a JSON array: [{"api":"slug","input":{fields},"reason":"why"}]
 
     try {
       const result = await llmHandler({ text: prompt, task: 'tool-planning' });
-      const text = result?.result || result?.analysis || result?.response || '';
+      const text = result?.summary || result?.result || result?.analysis || result?.response || '';
       const match = String(text).match(/\[[\s\S]*?\]/);
       if (match) {
         try {
@@ -175,7 +175,7 @@ Return ONLY a JSON array: [{"api":"slug","input":{fields},"reason":"why"}]
     try {
       const prompt = `User asked: "${task}"\n\nTool results:\n${JSON.stringify(results, null, 2).slice(0, 4000)}\n\nProvide a clear, concise answer based on these results. 2-3 sentences max.`;
       const result = await llmHandler({ text: prompt, task: 'summarize-agent-results' });
-      return result?.result || result?.analysis || result?.response || null;
+      return result?.summary || result?.result || result?.analysis || result?.response || null;
     } catch (e) { return null; }
   }
 
