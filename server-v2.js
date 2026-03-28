@@ -7251,6 +7251,62 @@ app.post('/v1/fine-tuning/jobs/:id/cancel', auth, (req, res) => {
   res.json({ ok: true, ...job, _engine: 'real' });
 });
 
+// ===== WORKFLOW TRIGGERS (Claude asked 20 consecutive times) =====
+app.post('/v1/workflows/triggers', auth, (req, res) => {
+  const { name, workflow_steps, event, webhook_url, schedule } = req.body;
+  if (!name || !workflow_steps) return res.status(422).json({ error: { code: 'missing_fields', required: ['name', 'workflow_steps'] } });
+  const triggerId = 'trigger-' + crypto.randomUUID().slice(0, 12);
+  const trigger = {
+    id: triggerId, name, steps: workflow_steps,
+    event: event || 'manual', webhook_url: webhook_url || null, schedule: schedule || null,
+    enabled: true, executions: 0, last_run: null,
+    created: new Date().toISOString(),
+  };
+  db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run('wf-triggers:' + triggerId, JSON.stringify(trigger));
+  res.json({ ok: true, trigger, _engine: 'real' });
+});
+
+app.get('/v1/workflows/triggers', auth, (req, res) => {
+  const rows = db.prepare("SELECT key AS k, value FROM agent_state WHERE k LIKE 'wf-triggers:%'").all();
+  const triggers = rows.map(r => { try { return JSON.parse(r.value); } catch(e) { return null; } }).filter(Boolean);
+  res.json({ ok: true, triggers, count: triggers.length, _engine: 'real' });
+});
+
+app.post('/v1/workflows/triggers/:id/execute', auth, async (req, res) => {
+  const row = db.prepare('SELECT value FROM agent_state WHERE key = ?').get('wf-triggers:' + req.params.id);
+  if (!row) return res.status(404).json({ error: { code: 'trigger_not_found' } });
+  const trigger = JSON.parse(row.value);
+
+  // Execute the workflow
+  const results = [];
+  let context = req.body.input || {};
+  for (const step of (trigger.steps || []).slice(0, 20)) {
+    const handler = allHandlers[step.api];
+    const def = apiMap.get(step.api);
+    if (!handler || !def) { results.push({ api: step.api, error: 'not found' }); continue; }
+    const acct = apiKeys.get(req.apiKey);
+    if (!acct || acct.balance < def.credits) { results.push({ api: step.api, error: 'insufficient credits' }); break; }
+    acct.balance -= def.credits;
+    try {
+      const output = await handler({ ...context, ...(step.input || {}) });
+      if (output && typeof output === 'object') { const { _engine, ...clean } = output; context = { ...context, ...clean }; }
+      results.push({ api: step.api, credits: def.credits, result: output });
+    } catch(e) { acct.balance += def.credits; results.push({ api: step.api, error: e.message }); }
+  }
+  persistKey(req.apiKey);
+
+  trigger.executions++;
+  trigger.last_run = new Date().toISOString();
+  db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run('wf-triggers:' + req.params.id, JSON.stringify(trigger));
+
+  res.json({ ok: true, trigger_id: req.params.id, results, steps_executed: results.length, _engine: 'real' });
+});
+
+app.delete('/v1/workflows/triggers/:id', auth, (req, res) => {
+  db.prepare('DELETE FROM agent_state WHERE key = ?').run('wf-triggers:' + req.params.id);
+  res.json({ ok: true, deleted: req.params.id, _engine: 'real' });
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
