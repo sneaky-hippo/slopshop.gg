@@ -334,6 +334,18 @@ Length: ${input.length || 'medium'}
 Focus: ${input.focus || 'general'}`
 );
 
+// llm-think — Pure reasoning agent. Answers questions directly. Does not summarize.
+handlers['llm-think'] = makeHandler(
+  'llm-think',
+  `You are a senior AI consultant. Answer the user's question directly, specifically, and actionably.
+Do NOT summarize or describe the question. ANSWER it.
+If asked to write something (spec, plan, copy), write it directly.
+If asked to analyze, give concrete findings.
+If asked to decide, make a clear decision with reasoning.
+Respond in JSON: { "answer": string, "confidence": number (0-1), "action_items": string[] }`,
+  (input) => input.text || input.question || input.prompt || ''
+);
+
 // llm-summarize-thread
 handlers['llm-summarize-thread'] = makeHandler(
   'llm-summarize-thread',

@@ -302,6 +302,7 @@ const API_DEFS = {
 
   // ====== AI: ANALYSIS (needs LLM key) ======
   'llm-summarize': { cat: 'AI: Analysis', name: 'Summarize', desc: 'Summarize any text. Configurable length and format.', credits: CREDIT_COSTS.llm_small, tier: 'llm' },
+  'llm-think': { cat: 'AI: Analysis', name: 'Think', desc: 'Pure reasoning agent. Answers questions directly, makes decisions, writes specs.', credits: CREDIT_COSTS.llm_small, tier: 'llm' },
   'llm-summarize-thread': { cat: 'AI: Analysis', name: 'Thread Summary', desc: 'Summarize email/chat thread with decisions + action items.', credits: CREDIT_COSTS.llm_medium, tier: 'llm' },
   'llm-sentiment': { cat: 'AI: Analysis', name: 'Sentiment Analysis', desc: 'Analyze sentiment with aspect-level detail and confidence.', credits: CREDIT_COSTS.llm_small, tier: 'llm' },
   'llm-classify': { cat: 'AI: Analysis', name: 'Text Classify', desc: 'Classify text into your provided categories.', credits: CREDIT_COSTS.llm_small, tier: 'llm' },

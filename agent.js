@@ -93,7 +93,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     return { steps: topTools.map(t => ({ api: t.slug, input: { text: task }, reason: `Keyword (score ${t.score})` })), model: 'keyword' };
   }
 
-  const llmHandler = allHandlers['llm-summarize'];
+  const llmHandler = allHandlers['llm-think'] || allHandlers['llm-summarize'];
 
   async function planTools(task, options = {}) {
     // 1. Try smart direct routing first (instant, no LLM, no credits)
@@ -113,7 +113,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
           topKeyword.slice(0, 4000) + '\n\nTask: "' + task + '"\n\nJSON array:';
 
         const result = await llmHandler({ text: prompt, task: 'plan' });
-        const text = result?.summary || '';
+        const text = result?.answer || result?.summary || '';
         const match = text.match(/\[[\s\S]*?\]/);
         if (match) {
           const steps = JSON.parse(match[0]);
@@ -224,7 +224,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     try {
       const prompt = `User asked: "${task}"\n\nTool results:\n${JSON.stringify(results, null, 2).slice(0, 4000)}\n\nProvide a clear, concise answer based on these results. 2-3 sentences max.`;
       const result = await llmHandler({ text: prompt, task: 'summarize-agent-results' });
-      return result?.summary || result?.result || result?.analysis || result?.response || null;
+      return result?.answer || result?.summary || result?.result || result?.analysis || null;
     } catch (e) { return null; }
   }
 
