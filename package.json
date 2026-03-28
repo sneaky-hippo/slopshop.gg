@@ -1,11 +1,12 @@
 {
   "name": "slopshop",
   "version": "3.7.0",
-  "description": "The protocol layer of intelligence. 1,255 APIs, multi-LLM orchestration (Claude+GPT+Grok+DeepSeek), agent organizations, free persistent memory, Universal Model Mesh. Self-hostable.",
+  "description": "The missing backend for AI agents. 1,255 APIs, native MCP server, free persistent memory, multi-LLM orchestration (Claude+GPT+Grok+DeepSeek+Ollama), Army Mode 10k agents, Hive workspaces. Works with Goose, Cursor, Cline, OpenCode, Aider, LangChain. Self-hostable.",
   "main": "server-v2.js",
   "bin": {
     "slop": "cli.js",
-    "slopshop": "cli.js"
+    "slopshop": "cli.js",
+    "slopshop-mcp": "mcp-server.js"
   },
   "scripts": {
     "start": "node server-v2.js",

@@ -8260,7 +8260,7 @@ app.get('/v1/enterprise/capabilities', publicRateLimit, (req, res) => {
     ok: true,
     enterprise: {
       multi_region: { status: 'roadmap', regions: ['us-east-1', 'eu-west-1', 'ap-southeast-1'], description: 'Multi-region deployment with automatic failover', roadmap: 'Q4 2026' },
-      soc2: { status: 'in_progress', description: 'SOC 2 Type II certification in progress', path: 'Audit scheduled Q3 2026, expected completion Q4 2026', current: 'All data encrypted at rest (SQLite WAL) and in transit (TLS 1.3)' },
+      soc2: { status: 'in_progress', description: 'SOC 2 Type II certification in progress', path: 'Audit scheduled Q3 2026, expected completion Q4 2026', current: 'Data encrypted in transit (TLS 1.3). SQLite with WAL mode for durability. Encryption at rest via Railway volume encryption. Self-hosted users should enable disk encryption.' },
       p99_latency: { guarantee: '<100ms for compute APIs', measured: '<50ms p95, <100ms p99 for all 927 compute handlers', sla: 'Enterprise SLA available on request' },
       air_gapped: { status: 'available', description: 'Air-gapped enterprise version — zero internet required for 927 compute APIs', setup: 'docker run --network=none slopshop/slopshop-airgap:latest', note: 'Network and LLM APIs require connectivity' },
       open_source_core: { status: 'available', description: 'All 927 compute handlers are open-source (MIT). LLM and enterprise features are proprietary.', repo: 'https://github.com/slopshop/slopshop' },
