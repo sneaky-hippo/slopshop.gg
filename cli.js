@@ -923,14 +923,32 @@ async function cmdHive(args) {
 
   // ── Shared state ──
   const HIVE_KEY = 'hive-' + Date.now();
-  const shared = { mission, sprints_done: 0, research: [], plan: [], builds: [], qa: [], scores: [], context_log: [] };
-  const saveShared = async () => { await slopMem(HIVE_KEY, shared); };
-
-  // ── Local log ──
+  const localDoc = path.join(CONFIG_DIR, 'hive-shared.json');
   const localLog = path.join(CONFIG_DIR, 'hive-log.json');
   const logEntries = [];
   const hiveLog = (entry) => { logEntries.push({ ...entry, ts: new Date().toISOString() }); };
   const saveLog = () => { try { fs.writeFileSync(localLog, JSON.stringify(logEntries, null, 2)); } catch(e) {} };
+
+  // ── Pull cloud memory into local at session start ──
+  let shared = { mission, sprints_done: 0, research: [], plan: [], builds: [], qa: [], scores: [], context_log: [] };
+  try {
+    // Check if a previous hive doc exists locally
+    if (fs.existsSync(localDoc)) {
+      const prev = JSON.parse(fs.readFileSync(localDoc, 'utf8'));
+      if (prev.research?.length > 0) {
+        shared = { ...shared, ...prev, mission, sprints_done: prev.sprints_done || 0 };
+        console.log(dim(`  Loaded ${prev.research?.length || 0} research, ${prev.builds?.length || 0} builds from local cache`));
+      }
+    }
+  } catch(e) {}
+
+  // Save both local + cloud
+  const saveShared = async () => {
+    // Always save locally first (instant, survives network issues)
+    try { fs.writeFileSync(localDoc, JSON.stringify(shared, null, 2)); } catch(e) {}
+    // Then sync to cloud memory
+    await slopMem(HIVE_KEY, shared);
+  };
 
   console.log('');
   console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════╗${C.reset}`);
@@ -938,7 +956,7 @@ async function cmdHive(args) {
   console.log(`  ${C.red}${C.bold}║  Research → Plan → Build → QA · every sprint  ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════╝${C.reset}`);
   console.log(`  ${bold('Mission:')} ${green(mission)}`);
-  console.log(`  ${dim('Sprints:')} ${sprints}  ${dim('Doc:')} ${cyan(HIVE_KEY)}  ${dim('Log:')} ${dim(localLog)}`);
+  console.log(`  ${dim('Sprints:')} ${sprints}  ${dim('Local:')} ${dim(localDoc)}  ${dim('Cloud:')} ${cyan(HIVE_KEY)}`);
   console.log('');
 
   for (let s = 1; s <= sprints; s++) {
