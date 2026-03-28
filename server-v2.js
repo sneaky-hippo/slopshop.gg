@@ -947,10 +947,14 @@ app.get('/v1/tools', publicRateLimit, (req, res) => {
 app.post('/v1/resolve', (req, res) => {
   const q = (req.body.query || '').toLowerCase();
   if (!q) return res.status(400).json({ error: { code: 'missing_query' } });
+  // Synonym expansion (discovered via hive-v2 dogfood testing)
+  const SYN = { 'identifier': 'uuid', 'unique': 'uuid', 'id': 'uuid', 'encrypt': 'aes', 'decrypt': 'aes', 'password': 'generate', 'validate': 'check', 'secure': 'hash' };
+  const words = q.split(/\s+/);
+  const expanded = [...new Set([...words, ...words.map(w => SYN[w]).filter(Boolean)])];
   const scored = Object.entries(API_DEFS).map(([slug, d]) => {
     const hay = `${slug} ${d.name} ${d.desc} ${d.cat}`.toLowerCase();
     let score = 0;
-    for (const w of q.split(/\s+/)) { if (hay.includes(w)) score++; if (slug.includes(w)) score += 2; }
+    for (const w of expanded) { if (hay.includes(w)) score++; if (slug.includes(w)) score += 2; }
     return { slug, ...d, score };
   }).filter(s => s.score > 0).sort((a, b) => b.score - a.score);
   if (!scored.length) return res.json({ match: null, alternatives: [] });
