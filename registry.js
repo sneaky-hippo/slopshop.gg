@@ -304,6 +304,13 @@ const API_DEFS = {
   'llm-summarize': { cat: 'AI: Analysis', name: 'Summarize', desc: 'Summarize any text. Configurable length and format.', credits: CREDIT_COSTS.llm_small, tier: 'llm' },
   'llm-think': { cat: 'AI: Analysis', name: 'Think', desc: 'Pure reasoning agent. Answers questions directly, makes decisions, writes specs. Pass provider=grok|deepseek|openai to choose model.', credits: CREDIT_COSTS.llm_small, tier: 'llm' },
   'llm-council': { cat: 'AI: Analysis', name: 'Multi-LLM Council', desc: 'Get feedback from ALL available LLMs (Claude, GPT, Grok, DeepSeek) on the same question. Returns each providers answer.', credits: CREDIT_COSTS.llm_medium, tier: 'llm' },
+  'context-session': { cat: 'Agent Tools', name: 'Session Context', desc: 'Get full execution context: goal, memory state, capabilities, recent results. Designed for LLMs.', credits: 0, tier: 'compute' },
+  'introspect': { cat: 'Agent Tools', name: 'API Introspect', desc: 'Discover schemas, limits, docs for any API in real-time. LLMs use this to reason about tool selection.', credits: 0, tier: 'compute' },
+  'route': { cat: 'Agent Tools', name: 'Smart Route', desc: 'Auto-select the best API for a task based on intent, cost, and reliability.', credits: 0, tier: 'compute' },
+  'state-set': { cat: 'Agent Tools', name: 'Shared State Set', desc: 'Set versioned shared state for multi-agent coordination.', credits: 0, tier: 'compute' },
+  'state-get': { cat: 'Agent Tools', name: 'Shared State Get', desc: 'Get versioned shared state.', credits: 0, tier: 'compute' },
+  'state-list': { cat: 'Agent Tools', name: 'Shared State List', desc: 'List all shared state entries.', credits: 0, tier: 'compute' },
+
   'llm-summarize-thread': { cat: 'AI: Analysis', name: 'Thread Summary', desc: 'Summarize email/chat thread with decisions + action items.', credits: CREDIT_COSTS.llm_medium, tier: 'llm' },
   'llm-sentiment': { cat: 'AI: Analysis', name: 'Sentiment Analysis', desc: 'Analyze sentiment with aspect-level detail and confidence.', credits: CREDIT_COSTS.llm_small, tier: 'llm' },
   'llm-classify': { cat: 'AI: Analysis', name: 'Text Classify', desc: 'Classify text into your provided categories.', credits: CREDIT_COSTS.llm_small, tier: 'llm' },

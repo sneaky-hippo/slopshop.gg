@@ -6202,6 +6202,190 @@ app.post('/v1/wallet/transfer', auth, (req, res) => {
   res.json({ ok: true, from: from_wallet_id, to: to_wallet_id, amount, transferred: true });
 });
 
+// ===== UNIVERSAL MODEL MESH — 4 pillars requested by Claude/GPT/Grok/DeepSeek =====
+
+// PILLAR 1: /context/session — Structured execution context (Claude's request)
+// Gives any LLM full awareness of: goal, memory state, capabilities, recent results
+app.post('/v1/context/session', auth, (req, res) => {
+  const sessionId = req.body.session_id || 'default';
+  const keyPrefix = req.acct._nsPrefix || crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+
+  // Get recent memory changes
+  const memoryKeys = [];
+  try {
+    const rows = db.prepare('SELECT key, updated FROM memory WHERE namespace = ? ORDER BY updated DESC LIMIT 20').all(keyPrefix);
+    rows.forEach(r => memoryKeys.push({ key: r.key, updated: new Date(r.updated).toISOString() }));
+  } catch(e) {}
+
+  // Get recent agent runs
+  const recentRuns = [];
+  try {
+    const rows = db.prepare('SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE key_prefix = ? ORDER BY id DESC LIMIT 10').all(req.apiKey.slice(0, 12) + '...');
+    rows.forEach(r => recentRuns.push({ api: r.api, credits: r.credits, latency_ms: r.latency_ms, engine: r.engine, time: r.ts }));
+  } catch(e) {}
+
+  // Available capabilities
+  const capabilities = {
+    total_apis: apiCount,
+    categories: catalog.length,
+    compute_handlers: Object.keys(allHandlers).length,
+    llm_providers: ['anthropic', 'openai', 'grok', 'deepseek'].filter(p => {
+      const envMap = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', grok: 'XAI_API_KEY', deepseek: 'DEEPSEEK_API_KEY' };
+      return process.env[envMap[p]];
+    }),
+    memory: { free: true, persistent: true },
+    orchestration: ['org/launch', 'chain/create', 'army/deploy', 'hive/create', 'copilot/spawn'],
+    rate_limit: { max_per_min: req.acct.tier === 'leviathan' ? 1000 : req.acct.tier === 'reef-boss' ? 300 : 120, remaining: 'check X-RateLimit-Remaining header' },
+  };
+
+  // Current goal (from hive vision if available)
+  let goal = null;
+  try {
+    const vision = db.prepare("SELECT value FROM memory WHERE namespace = ? AND key = '_vision' ORDER BY updated DESC LIMIT 1").get(keyPrefix);
+    if (vision) goal = vision.value;
+  } catch(e) {}
+
+  res.json({
+    ok: true,
+    session_id: sessionId,
+    goal,
+    balance: req.acct.balance,
+    tier: req.acct.tier,
+    memory: { recent_keys: memoryKeys, total: memoryKeys.length },
+    recent_activity: recentRuns,
+    capabilities,
+    timestamp: new Date().toISOString(),
+    _engine: 'real',
+  });
+});
+
+// PILLAR 2: /introspect — Dynamic API discovery (GPT's request)
+// Any LLM can discover schemas, limits, docs for any tool in real-time
+app.get('/v1/introspect', auth, (req, res) => {
+  const query = req.query.q || req.query.query || '';
+  const slug = req.query.slug || '';
+  const category = req.query.category || '';
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+
+  let results = Object.entries(API_DEFS);
+
+  if (slug) {
+    const def = apiMap.get(slug);
+    if (!def) return res.status(404).json({ error: { code: 'not_found', slug } });
+    const schema = SCHEMAS?.[slug] || {};
+    return res.json({
+      ok: true,
+      slug, name: def.name, description: def.desc, credits: def.credits, tier: def.tier, category: def.cat,
+      input_schema: schema.input || null,
+      output_schema: schema.output || null,
+      example: schema.example || null,
+      handler_exists: !!allHandlers[slug],
+      _engine: 'real',
+    });
+  }
+
+  if (category) results = results.filter(([_, d]) => d.cat.toLowerCase().includes(category.toLowerCase()));
+  if (query) {
+    const q = query.toLowerCase();
+    results = results.filter(([slug, d]) => slug.includes(q) || d.name.toLowerCase().includes(q) || d.desc.toLowerCase().includes(q));
+  }
+
+  res.json({
+    ok: true,
+    total: results.length,
+    results: results.slice(0, limit).map(([slug, d]) => ({
+      slug, name: d.name, description: d.desc, credits: d.credits, tier: d.tier, category: d.cat,
+      has_handler: !!allHandlers[slug],
+      input_schema: SCHEMAS?.[slug]?.input || null,
+    })),
+    query: query || category || 'all',
+    _engine: 'real',
+  });
+});
+
+// PILLAR 3: /route — Smart API routing (Grok's request)
+// Auto-selects the best API for a task based on intent, cost, reliability
+app.post('/v1/route', auth, (req, res) => {
+  const task = req.body.task || req.body.query || '';
+  if (!task) return res.status(422).json({ error: { code: 'missing_task' } });
+
+  const lower = task.toLowerCase();
+
+  // Use the smart routing from agent.js patterns + scoring
+  const scored = [];
+  for (const [slug, def] of Object.entries(API_DEFS)) {
+    const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
+    let score = 0;
+    const words = lower.split(/\s+/).filter(w => w.length > 2);
+    words.forEach(w => { if (text.includes(w)) score++; if (slug.includes(w)) score += 3; });
+
+    // Boost compute tier (cheaper, faster, more reliable)
+    if (def.tier === 'compute') score += 2;
+    if (def.credits <= 1) score += 1;
+
+    if (score > 2) {
+      scored.push({
+        slug, name: def.name, description: def.desc,
+        credits: def.credits, tier: def.tier, category: def.cat,
+        relevance_score: score,
+        has_handler: !!allHandlers[slug],
+        input_schema: SCHEMAS?.[slug]?.input || null,
+      });
+    }
+  }
+
+  scored.sort((a, b) => b.relevance_score - a.relevance_score);
+
+  res.json({
+    ok: true,
+    task,
+    recommended: scored[0] || null,
+    alternatives: scored.slice(1, 5),
+    total_matches: scored.length,
+    _engine: 'real',
+  });
+});
+
+// PILLAR 4: /state — Shared state sync (DeepSeek's request)
+// Versioned shared state that multiple agents can read/write concurrently
+app.post('/v1/state/set', auth, (req, res) => {
+  const { key, value, namespace } = req.body;
+  if (!key) return res.status(422).json({ error: { code: 'missing_key' } });
+  const ns = namespace || 'shared:' + req.apiKey.slice(0, 12);
+  const version = Date.now();
+
+  db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run(
+    ns + ':' + key,
+    JSON.stringify({ value, version, updated_by: req.apiKey.slice(0, 12), ts: new Date().toISOString() })
+  );
+
+  res.json({ ok: true, key, version, namespace: ns, _engine: 'real' });
+});
+
+app.post('/v1/state/get', auth, (req, res) => {
+  const { key, namespace } = req.body;
+  if (!key) return res.status(422).json({ error: { code: 'missing_key' } });
+  const ns = namespace || 'shared:' + req.apiKey.slice(0, 12);
+  const row = db.prepare('SELECT value FROM agent_state WHERE key = ?').get(ns + ':' + key);
+  if (!row) return res.json({ ok: true, key, value: null, version: null });
+  try {
+    const parsed = JSON.parse(row.value);
+    res.json({ ok: true, key, ...parsed, namespace: ns, _engine: 'real' });
+  } catch(e) {
+    res.json({ ok: true, key, value: row.value, namespace: ns, _engine: 'real' });
+  }
+});
+
+app.post('/v1/state/list', auth, (req, res) => {
+  const ns = req.body.namespace || 'shared:' + req.apiKey.slice(0, 12);
+  const rows = db.prepare("SELECT key, value FROM agent_state WHERE key LIKE ? || ':%'").all(ns);
+  const entries = rows.map(r => {
+    const shortKey = r.key.replace(ns + ':', '');
+    try { return { key: shortKey, ...JSON.parse(r.value) }; } catch(e) { return { key: shortKey, value: r.value }; }
+  });
+  res.json({ ok: true, namespace: ns, entries, count: entries.length, _engine: 'real' });
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
