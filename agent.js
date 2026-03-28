@@ -35,73 +35,48 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     return { steps: topTools.map(t => ({ api: t.slug, input: { text: task, task }, reason: `Keyword match (score ${t.score})` })), model: 'keyword-fallback' };
   }
 
+  // Use the existing LLM handler infrastructure instead of raw HTTPS
+  // (the handler already handles TLS, model selection, and error handling)
+  const llmHandler = allHandlers['llm-analyze-text'];
+
   async function planTools(task, options = {}) {
     const key = process.env.ANTHROPIC_API_KEY;
-    if (!key) {
-      // Fallback: keyword-based tool matching when no LLM key is available
-      const taskWords = task.toLowerCase().split(/\s+/).filter(w => w.length > 2);
-      const scored = [];
-      for (const [slug, def] of Object.entries(API_DEFS)) {
-        const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
-        let score = 0;
-        taskWords.forEach(w => { if (text.includes(w)) score++; if (slug.includes(w)) score += 2; });
-        if (score > 0 && def.credits <= 5) scored.push({ slug, score, credits: def.credits });
+    if (!key || !llmHandler) return keywordFallback(task);
+
+    const compactIndex = Object.entries(API_DEFS)
+      .filter(([_, d]) => d.credits <= 10)
+      .slice(0, 200)
+      .map(([slug, d]) => `${slug}: ${d.desc} [${d.credits}cr]`)
+      .join('\n');
+
+    const prompt = `You are a tool-selection agent. Select which APIs to call for this task.
+
+Tools (slug: description):
+${compactIndex.slice(0, 8000)}
+
+Task: "${task}"
+
+Return ONLY a JSON array: [{"api":"slug","input":{fields},"reason":"why"}]
+1-3 steps max. JSON array only:`;
+
+    try {
+      const result = await llmHandler({ text: prompt, task: 'tool-planning' });
+      const text = result?.result || result?.analysis || result?.response || '';
+      const match = String(text).match(/\[[\s\S]*?\]/);
+      if (match) {
+        try {
+          const steps = JSON.parse(match[0]);
+          if (Array.isArray(steps) && steps.length > 0) {
+            return { steps, model: result?._model || 'llm' };
+          }
+        } catch(e) { /* parse failed, fall through */ }
       }
-      const topTools = scored.sort((a, b) => b.score - a.score).slice(0, 5);
-      if (topTools.length === 0) return { error: 'No matching tools found for task' };
-      return {
-        steps: topTools.map(t => ({ api: t.slug, input: { text: task, task }, reason: `Keyword match (score ${t.score})` })),
-        model: 'keyword-fallback'
-      };
+      // LLM responded but didn't return valid JSON array — use keyword
+      return keywordFallback(task);
+    } catch (e) {
+      console.error('[agent-planner] LLM error:', e.message);
+      return keywordFallback(task);
     }
-    const model = options.model || process.env.PLANNER_MODEL || 'claude-opus-4-6';
-
-    const prompt = `You are a tool-selection agent. Given a user task, select which Slopshop APIs to call and what inputs to pass.
-
-Available tools (slug: description):
-${toolIndex.slice(0, 12000)}
-
-User task: "${task}"
-
-Respond ONLY with a JSON array of steps. Each step: {"api": "slug", "input": {fields}, "reason": "why"}
-If the task can be done with 1 tool, return 1 step. Max 5 steps.
-Example: [{"api":"sense-url-content","input":{"url":"https://stripe.com"},"reason":"Fetch page content"}]
-
-JSON array only, no explanation:`;
-
-    return new Promise((resolve) => {
-      const data = JSON.stringify({
-        model,
-        max_tokens: 1024,
-        messages: [{ role: 'user', content: prompt }],
-      });
-      const req = https.request({
-        hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
-        headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
-        timeout: 30000,
-      }, (res) => {
-        let body = '';
-        res.on('data', c => body += c);
-        res.on('end', () => {
-          try {
-            const j = JSON.parse(body);
-            const text = j.content?.[0]?.text || '';
-            // Extract JSON array from response
-            const match = text.match(/\[[\s\S]*\]/);
-            if (match) {
-              try { resolve({ steps: JSON.parse(match[0]), model: j.model }); }
-              catch(pe) { resolve(keywordFallback(task)); }
-            }
-            else if (j.error) { console.error('[agent-planner] Anthropic error:', JSON.stringify(j.error).slice(0,200)); resolve(keywordFallback(task)); }
-            else { console.error('[agent-planner] No JSON array in LLM response:', text.slice(0,200)); resolve(keywordFallback(task)); }
-          } catch (e) { resolve({ error: e.message }); }
-        });
-      });
-      req.on('error', e => { console.error('[agent-planner] LLM error:', e.message); resolve(keywordFallback(task)); });
-      req.on('timeout', () => { console.error('[agent-planner] LLM timeout'); req.destroy(); resolve(keywordFallback(task)); });
-      req.write(data);
-      req.end();
-    });
   }
 
   // Fallback map: if a tool fails, try these alternatives in order
@@ -194,43 +169,14 @@ JSON array only, no explanation:`;
     return { results, total_credits: totalCredits };
   }
 
-  // Summarize results using LLM
+  // Summarize results using LLM handler (same infra that powers llm-* endpoints)
   async function summarize(task, results) {
-    const key = process.env.ANTHROPIC_API_KEY;
-    if (!key) return null;
-
-    const prompt = `User asked: "${task}"
-
-Here are the tool results:
-${JSON.stringify(results, null, 2).slice(0, 6000)}
-
-Provide a clear, concise answer to the user's original question based on these results. Be specific with data. 2-3 sentences max.`;
-
-    return new Promise((resolve) => {
-      const data = JSON.stringify({
-        model: 'claude-opus-4-6',
-        max_tokens: 512,
-        messages: [{ role: 'user', content: prompt }],
-      });
-      const req = https.request({
-        hostname: 'api.anthropic.com', path: '/v1/messages', method: 'POST',
-        headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
-        timeout: 30000,
-      }, (res) => {
-        let body = '';
-        res.on('data', c => body += c);
-        res.on('end', () => {
-          try {
-            const j = JSON.parse(body);
-            resolve(j.content?.[0]?.text || null);
-          } catch (e) { resolve(null); }
-        });
-      });
-      req.on('error', () => resolve(null));
-      req.on('timeout', () => { req.destroy(); resolve(null); });
-      req.write(data);
-      req.end();
-    });
+    if (!llmHandler) return null;
+    try {
+      const prompt = `User asked: "${task}"\n\nTool results:\n${JSON.stringify(results, null, 2).slice(0, 4000)}\n\nProvide a clear, concise answer based on these results. 2-3 sentences max.`;
+      const result = await llmHandler({ text: prompt, task: 'summarize-agent-results' });
+      return result?.result || result?.analysis || result?.response || null;
+    } catch (e) { return null; }
   }
 
   // === AGENT TEMPLATES ===
