@@ -953,8 +953,16 @@ app.post('/v1/resolve', (req, res) => {
   const expanded = [...new Set([...words, ...words.map(w => SYN[w]).filter(Boolean)])];
   const scored = Object.entries(API_DEFS).map(([slug, d]) => {
     const hay = `${slug} ${d.name} ${d.desc} ${d.cat}`.toLowerCase();
+    const slugParts = slug.split('-');
     let score = 0;
-    for (const w of expanded) { if (hay.includes(w)) score++; if (slug.includes(w)) score += 2; }
+    for (const w of expanded) {
+      if (hay.includes(w)) score++;
+      if (slug.includes(w)) score += 2;
+      // Bonus: exact slug segment match (e.g., "hash" matches "crypto-hash-sha256" segment)
+      if (slugParts.includes(w)) score += 3;
+      // Bonus: name starts with query word
+      if (d.name.toLowerCase().startsWith(w)) score += 2;
+    }
     return { slug, ...d, score };
   }).filter(s => s.score > 0).sort((a, b) => b.score - a.score);
   if (!scored.length) return res.json({ match: null, alternatives: [] });
