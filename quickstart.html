@@ -147,7 +147,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
   -d <span class="hl-str">'{"email":"you@example.com","password":"yourpassword"}'</span>
 
 <span class="hl-comment"># Returns:</span>
-<span class="hl-comment"># { "api_key": "sk-slop-...", "balance": 2000 }</span></code></pre>
+<span class="hl-comment"># { "api_key": "sk-slop-...", "balance": 500 }</span></code></pre>
     </div>
   </div>
 
@@ -191,10 +191,30 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 
   <p style="font-size:0.85rem;color:var(--t2);line-height:1.7;text-align:center">That's it. You now have access to <b style="color:var(--t)">78 categories of tools</b> across crypto, text, math, network, AI, memory, code execution, and more.</p>
 
+  <!-- ECOSYSTEM QUICK COMMANDS -->
+  <div class="cmd" style="margin-top:32px">
+    <div class="cmd-label">
+      <div class="num" style="background:var(--v)">+</div>
+      <div class="text">Ecosystem integrations</div>
+    </div>
+    <p class="cmd-desc">Use Slopshop from your favorite tools with a single command. <a href="/docs.html#ecosystem-integrations">Full ecosystem docs &rarr;</a></p>
+    <div class="code-block">
+      <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><code><span class="hl-comment"># Start the MCP server (works with Claude Desktop, Cursor, Goose, Cline, OpenCode)</span>
+slop mcp serve
+
+<span class="hl-comment"># Scaffold a new full-stack project with Slopshop wired in</span>
+slop init --full-stack
+
+<span class="hl-comment"># Spin up a local agent pool</span>
+slop agents</code></pre>
+    </div>
+  </div>
+
   <div class="next">
     <div class="left">
       <h3>Want to go deeper?</h3>
-      <p>The full tutorial covers memory, agents, MCP setup, and more.</p>
+      <p>The full tutorial covers memory, agents, MCP setup, ecosystem integrations, and more.</p>
     </div>
     <div class="right">
       <a href="/getting-started.html" class="btn-primary">Full tutorial</a>

@@ -672,6 +672,61 @@ messages = [{<span class="hl-str">"role"</span>: <span class="hl-str">"user"</sp
   </div>
 </div>
 
+<hr class="divider">
+
+<div class="sec">
+  <div class="sec-label">Ecosystem integrations &mdash; v3.7.0</div>
+  <h2>Works with every agent IDE</h2>
+  <p class="desc">Slopshop plugs into Goose, Cline, OpenCode, Aider, and any MCP-compatible client. One <code>slop mcp serve</code> command exposes the full tool catalog.</p>
+
+  <div class="discovery-grid">
+    <div class="disc-card">
+      <h3>MCP Server</h3>
+      <div class="endpoint">slop mcp serve</div>
+      <p>Universal MCP server for Claude Desktop, Cursor, Goose, Cline, and OpenCode. Start once, connect from anywhere.</p>
+    </div>
+    <div class="disc-card">
+      <h3>Goose Recipes</h3>
+      <div class="endpoint">integrations/goose-recipes/</div>
+      <p>Pre-built Goose recipes for security audits, data pipelines, and content workflows. Drop into your Goose config.</p>
+    </div>
+    <div class="disc-card">
+      <h3>Aider Commands</h3>
+      <div class="endpoint">.aider.conf.yml</div>
+      <p>Custom Aider commands like <code>/slop-hash</code> and <code>/slop-resolve</code> for inline tool calls while pair-programming.</p>
+    </div>
+    <div class="disc-card">
+      <h3>OpenCode Plugin</h3>
+      <div class="endpoint">opencode plugin add slopshop</div>
+      <p>Native OpenCode plugin. Install once and all Slopshop tools appear as OpenCode actions.</p>
+    </div>
+    <div class="disc-card">
+      <h3>Cline Skills</h3>
+      <div class="endpoint">Cline MCP settings</div>
+      <p>Register Slopshop as a Cline skill set. Cline autonomously discovers and calls tools during coding sessions.</p>
+    </div>
+    <div class="disc-card">
+      <h3>LangChain / LangGraph</h3>
+      <div class="endpoint">GET /v1/tools?format=openai</div>
+      <p>Fetch tool definitions in OpenAI format. Auto-convert to LangChain tools or LangGraph nodes.</p>
+    </div>
+  </div>
+
+  <div class="code-block">
+    <div class="code-header"><span class="lang">bash &mdash; quick setup for any agent IDE</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+    <pre><code><span class="hl-comment"># Start the MCP server (works with Claude Desktop, Cursor, Goose, Cline, OpenCode)</span>
+slop mcp serve
+
+<span class="hl-comment"># Scaffold a new full-stack project with Slopshop wired in</span>
+slop init --full-stack my-agent-app
+
+<span class="hl-comment"># Spin up a local agent pool for batch processing</span>
+slop agents</code></pre>
+  </div>
+
+  <p style="font-size:0.83rem;color:var(--t3);line-height:1.7">Full configuration details for each client are in the <a href="/docs.html#ecosystem-integrations">Ecosystem Integrations docs</a>.</p>
+</div>
+
 <div class="cta-banner">
   <h2>Give your agent <span class="red">superpowers</span></h2>
   <p>500 free credits. 8 memory APIs always free. All 78 categories of tools. MCP server included. No credit card required.</p>
