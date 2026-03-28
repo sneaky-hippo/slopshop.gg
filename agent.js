@@ -460,7 +460,8 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
         if (r.error) step.error = r.error;
         return step;
       }),
-      total_credits: execution.total_credits + 20,
+      total_credits: execution.total_credits + overhead,
+      plan_model: plan.model,
       balance: acct?.balance,
       time_ms: totalTime,
       _engine: 'agent',
