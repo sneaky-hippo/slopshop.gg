@@ -2192,8 +2192,8 @@ async function cmdAgents(args) {
 
   if (sub === 'set' || sub === 'count') {
     const count = parseInt(args[1]);
-    if (isNaN(count) || count < 0 || count > 32) {
-      console.log(red('\n  Invalid count. Use 0-32.\n'));
+    if (isNaN(count) || count < 0 || count > 256) {
+      console.log(red('\n  Invalid count. Use 0-256.\n'));
       return;
     }
     const cfg = loadConfig();
@@ -2342,7 +2342,7 @@ async function cmdAgents(args) {
 
   // Default: show help
   console.log(`\n  ${bold('Local Agent Pool')} ${dim('— configure always-running Ollama agents')}\n`);
-  console.log(`  ${cyan('slop agents set <N>')}              Set agent count (0-32)`);
+  console.log(`  ${cyan('slop agents set <N>')}              Set agent count (0-256)`);
   console.log(`  ${cyan('slop agents models <m1> <m2>...')}  Set Ollama models to use`);
   console.log(`  ${cyan('slop agents start')}                Start the agent pool`);
   console.log(`  ${cyan('slop agents start 8')}              Start 8 agents`);
