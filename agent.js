@@ -52,6 +52,17 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     'decrypt': { slug: 'crypto-decrypt-aes', inputMap: t => ({ text: t.replace(/^.*decrypts*(the)?s*(text|string)?s*:?s*/i, '').trim(), key: 'default' }) },
     'jwt': { slug: 'crypto-jwt-decode', inputMap: t => ({ token: t.replace(/^.*(?:decode|inspect)s*jwts*:?s*/i, '').trim() }) },
     'dns': { slug: 'net-dns-a', inputMap: t => ({ domain: t.replace(/^.*(?:dns|lookup|resolve)s*(for)?s*:?s*/i, '').trim() }) },
+    'sentiment': { slug: 'text-sentiment', inputMap: t => ({ text: t.replace(/^.*sentiments*(of|for|in)?s*:?s*/i, '').trim() }) },
+    'keywords': { slug: 'text-extract-keywords', inputMap: t => ({ text: t.replace(/^.*keywords?s*(of|from|in|for)?s*:?s*/i, '').trim() }) },
+    'readability': { slug: 'text-readability-score', inputMap: t => ({ text: t.replace(/^.*readabilitys*(of|for|score)?s*:?s*/i, '').trim() }) },
+    'token count': { slug: 'text-token-count', inputMap: t => ({ text: t.replace(/^.*tokens*counts*(of|for|in)?s*:?s*/i, '').trim() }) },
+    'tokens': { slug: 'text-token-count', inputMap: t => ({ text: t.replace(/^.*tokens?s*(in|of|for)?s*:?s*/i, '').trim() }) },
+    'ip address': { slug: 'validate-ip-address', inputMap: t => { const m=t.match(/(d+.d+.d+.d+)/); return { ip: m?m[1]:'' }; } },
+    'json validate': { slug: 'json-format', inputMap: t => ({ json: t.replace(/^.*(?:validate|check|verify)s*(?:thes*)?jsons*:?s*/i, '').trim() }) },
+    'diff': { slug: 'text-diff', inputMap: t => ({ a: 'original', b: t.replace(/^.*diffs*:?s*/i, '').trim() }) },
+    'regex': { slug: 'text-regex-test', inputMap: t => ({ text: t, pattern: '.*' }) },
+    'lorem': { slug: 'gen-lorem-ipsum', inputMap: t => { const m=t.match(/(d+)/); return { sentences: m?parseInt(m[1]):3 }; } },
+
     'count char': { slug: 'text-char-count', inputMap: t => ({ text: t.replace(/^.*count\s*(the\s*)?char\w*\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
     'character count': { slug: 'text-char-count', inputMap: t => ({ text: t.replace(/^.*char\w*\s*count\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
   };
@@ -107,7 +118,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
         if (match) {
           const steps = JSON.parse(match[0]);
           if (Array.isArray(steps) && steps.length > 0 && steps[0].api) {
-            return { steps: steps.slice(0, 3), model: result?._model || 'llm' };
+            return { steps: steps.slice(0, 3), plan_model: plan.model, model: result?._model || 'llm' };
           }
         }
       } catch (e) { /* LLM planning failed, fall through to keyword */ }
@@ -167,9 +178,9 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
       }
 
       try {
-        const result = await handler(input);
+        const _stepStart = Date.now(); const result = await handler(input); const _stepMs = Date.now() - _stepStart;
         lastResult = result;
-        const stepData = { api: step.api, credits: def.credits, reason: step.reason, data: result };
+        const stepData = { api: step.api, credits: def.credits, reason: step.reason, data: result, time_ms: _stepMs };
         results.push(stepData);
         if (onStep) onStep(stepData);
       } catch (e) {
@@ -269,10 +280,14 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     const plan = await planTools(task);
     if (plan.error) return res.status(500).json({ error: { code: 'planning_failed', message: plan.error } });
     const execution = await executePlan(plan.steps, req.apiKey);
-    const answer = await summarize(task, execution.results);
+    // Skip LLM summarize for smart-routed tasks (result is self-explanatory)
+    const skipSummarize = plan.model === 'smart-route' && execution.results.length <= 2;
+    const answer = skipSummarize 
+      ? 'Result: ' + JSON.stringify(execution.results[0]?.data || {}).slice(0, 500)
+      : await summarize(task, execution.results);
     const totalTime = Date.now() - startTime;
     const acct = apiKeys.get(req.apiKey);
-    if (acct) { if (acct.balance < 20) return res.status(402).json({ error: { code: 'insufficient_credits', need: 20, have: acct.balance, message: 'Buy credits: POST /v1/credits/buy' } }); acct.balance -= 20; }
+    const overhead = (plan.model === 'smart-route') ? 0 : 20; if (acct && overhead > 0) { if (acct.balance < overhead) return res.status(402).json({ error: { code: 'insufficient_credits', need: overhead, have: acct.balance } }); acct.balance -= overhead; }
 
     // Auto-store in memory (free - 0 credits)
     const runId = `run-${Date.now().toString(36)}`;
