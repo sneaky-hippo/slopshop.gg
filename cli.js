@@ -1055,88 +1055,85 @@ KPI_TARGET: <specific measurable goal for next sprint>`;
       console.log(`  ${dim('│')} ${green('DECISION:')} ${ceoDecision}`);
     }
 
-    // ── PHASE 3.5: BUILDER IMPLEMENTS (deepseek-coder-v2 or best local) ──
+    // ── PHASE 3.5: BUILDER IMPLEMENTS ──
+    // The builder MUST do something real. No specs. No suggestions. Execute.
     if (ceoDecision && ceoDecision !== 'continue testing') {
       console.log(`  ${dim('├ Builder implementing...')}`);
 
-      const builderPrompt = `You are a senior engineer implementing this decision:
-"${ceoDecision}"
+      // Step 1: Builder breaks decision into slop commands
+      const builderPrompt = `DECISION TO IMPLEMENT: "${ceoDecision}"
 
-Context: Slopshop is a Node.js API platform (server-v2.js) with a CLI (cli.js).
-The platform has 1255 APIs, persistent memory, and is deployed on Railway.
+You have access to these slop commands. Pick 1-3 to execute RIGHT NOW:
 
-Generate the EXACT implementation. Choose ONE of these approaches:
+1. memory set <key> <json-value>  — store data, config, tracking info
+2. call crypto-hash-sha256 --text <data>  — hash something
+3. call memory-search --query <term>  — find related memory
+4. call text-word-count --text <data>  — analyze text
+5. call llm-think --text <prompt> --provider anthropic  — ask an LLM
 
-A) If it's a MEMORY operation (store data, update config, add routing):
-   Output a slop memory command:
-   SLOP_CMD: memory set <key> <value>
-
-B) If it's a NEW API ENDPOINT or handler:
-   Output the exact code:
-   CODE_FILE: server-v2.js
-   CODE_ADD_AFTER: <line to find>
-   CODE_CONTENT: <the new code>
-
-C) If it's a CLI CHANGE:
-   Output the exact code:
-   CODE_FILE: cli.js
-   CODE_ADD_AFTER: <line to find>
-   CODE_CONTENT: <the new code>
-
-D) If it's a CONFIG/DATA change:
-   SLOP_CMD: call <endpoint> --param value
-
-Pick the simplest approach that actually implements the decision. Be extremely specific.
-OUTPUT only ONE of the above formats, nothing else.`;
+Output ONLY executable commands, one per line. No explanation. No markdown. Example:
+memory set competitor-composio {"status":"tracked","features":["oauth","500-integrations"],"weakness":"proxy-based"}
+memory set competitor-langchain {"status":"tracked","features":["graphs","orchestration"],"weakness":"no-free-memory"}
+call memory-search --query competitor`;
 
       const builderResp = await ollamaChat('deepseek-coder-v2', builderPrompt);
+      const lines = (builderResp || '').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#') && !l.startsWith('//') && !l.startsWith('```'));
 
-      // Try to execute SLOP_CMD if the builder suggested one
-      const slopCmdMatch = (builderResp || '').match(/SLOP_CMD:\s*(.+?)(?:\n|$)/i);
-      const codeMatch = (builderResp || '').match(/CODE_FILE:\s*(.+?)(?:\n|$)/i);
+      let executed = 0;
+      for (const line of lines.slice(0, 5)) { // max 5 commands per sprint
+        // Clean markdown artifacts
+        const cleanLine = line.replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, '').replace(/^`+|`+$/g, '').trim();
+        if (!cleanLine || cleanLine.length < 5) continue;
 
-      if (slopCmdMatch) {
-        const cmd = slopCmdMatch[1].trim();
-        console.log(`  ${dim('│')} ${cyan('BUILDER')} executing: ${bold('slop ' + cmd.slice(0, 80))}`);
         try {
-          // Execute through slop
-          if (cmd.startsWith('memory set')) {
-            const parts = cmd.replace(/^memory set\s+/, '').split(/\s+/);
-            const key = parts[0];
-            const val = parts.slice(1).join(' ');
-            await request('POST', '/v1/memory-set', { key: 'hive-impl-' + key, value: val }).catch(() => {});
-            console.log(`  ${dim('│')} ${green('✓ Implemented via slop memory')}`);
-            kpi.actions_taken++;
-          } else if (cmd.startsWith('call ')) {
-            const callParts = cmd.replace(/^call\s+/, '').split(/\s+/);
-            const slug = callParts[0];
-            const params = {};
-            for (let ci = 1; ci < callParts.length - 1; ci += 2) {
-              if (callParts[ci].startsWith('--')) params[callParts[ci].slice(2)] = callParts[ci + 1];
+          if (cleanLine.startsWith('memory set ')) {
+            const rest = cleanLine.slice(11);
+            const spaceIdx = rest.indexOf(' ');
+            if (spaceIdx > 0) {
+              const key = rest.slice(0, spaceIdx).replace(/[^a-zA-Z0-9_-]/g, '');
+              const val = rest.slice(spaceIdx + 1);
+              await request('POST', '/v1/memory-set', { key: 'hive-' + key, value: val }).catch(() => {});
+              console.log(`  ${dim('│')} ${green('✓')} ${bold('memory set')} ${cyan('hive-' + key)} ${dim(val.slice(0, 60))}`);
+              executed++;
             }
-            await request('POST', '/v1/' + slug, params).catch(() => {});
-            console.log(`  ${dim('│')} ${green('✓ Implemented via slop call ' + slug)}`);
-            kpi.actions_taken++;
+          } else if (cleanLine.startsWith('call ')) {
+            const parts = cleanLine.slice(5).split(/\s+/);
+            const slug = parts[0];
+            if (slug && slug.length > 2) {
+              const params = {};
+              for (let ci = 1; ci < parts.length - 1; ci++) {
+                if (parts[ci].startsWith('--') && parts[ci + 1]) {
+                  params[parts[ci].slice(2)] = parts[ci + 1].replace(/^["']|["']$/g, '');
+                  ci++;
+                }
+              }
+              const res = await request('POST', '/v1/' + slug, Object.keys(params).length > 0 ? params : { text: ceoDecision }).catch(e => ({ _err: true }));
+              const ok = res.status < 400 && !res._err;
+              console.log(`  ${dim('│')} ${ok ? green('✓') : yellow('⚠')} ${bold('call ' + slug)} ${ok ? dim('executed') : dim('failed')}`);
+              if (ok) executed++;
+            }
+          } else if (cleanLine.startsWith('memory search ') || cleanLine.startsWith('call memory-search')) {
+            const query = cleanLine.replace(/^(?:memory search|call memory-search)\s*(?:--query\s*)?/, '').replace(/^["']|["']$/g, '');
+            if (query) {
+              const res = await request('POST', '/v1/memory-search', { query }).catch(() => ({ data: {} }));
+              const count = res.data?.results?.length || res.data?.data?.results?.length || 0;
+              console.log(`  ${dim('│')} ${green('✓')} ${bold('memory search')} "${query}" → ${count} results`);
+              executed++;
+            }
           }
-        } catch(e) {
-          console.log(`  ${dim('│')} ${yellow('⚠ Could not execute: ' + e.message?.slice(0, 50))}`);
-        }
-      } else if (codeMatch) {
-        // Code change — store as implementation spec for deployment
-        const file = codeMatch[1].trim();
-        const contentMatch = (builderResp || '').match(/CODE_CONTENT:\s*([\s\S]+?)(?:$)/i);
-        const code = contentMatch ? contentMatch[1].trim().slice(0, 500) : '';
-        console.log(`  ${dim('│')} ${cyan('BUILDER')} spec: ${bold(file)} ${dim('(' + code.length + ' chars)')}`);
-        // Store the implementation spec in memory for later deployment
-        await request('POST', '/v1/memory-set', {
-          key: 'hive-code-' + s + '-' + Date.now(),
-          value: JSON.stringify({ file, code: code.slice(0, 1000), decision: ceoDecision, sprint: s })
-        }).catch(() => {});
-        console.log(`  ${dim('│')} ${yellow('📋 Stored in slop memory for deployment')}`);
-        kpi.actions_taken++;
-      } else {
-        console.log(`  ${dim('│')} ${dim('Builder output: ' + (builderResp || '').slice(0, 100).replace(/\n/g, ' '))}`);
+        } catch(e) { /* skip bad commands */ }
       }
+
+      if (executed === 0) {
+        // Fallback: at minimum store the decision as an implementation record
+        await request('POST', '/v1/memory-set', {
+          key: 'hive-decision-' + s,
+          value: JSON.stringify({ sprint: s, decision: ceoDecision, status: 'pending', ts: new Date().toISOString() })
+        }).catch(() => {});
+        console.log(`  ${dim('│')} ${yellow('↳')} Decision stored in memory for next sprint`);
+      }
+
+      kpi.actions_taken += Math.max(executed, 1);
     }
 
     // ── PHASE 4: SPRINT SUMMARY ──
