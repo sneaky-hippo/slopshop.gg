@@ -6949,6 +6949,131 @@ app.get('/v1/healthcheck/deep', auth, async (req, res) => {
   });
 });
 
+// ===== GUARDRAILS — Content safety + PII + prompt injection (Claude roadmap #1) =====
+const PII_PATTERNS = [
+  { name: 'email', pattern: /[\w.+-]+@[\w.-]+\.\w{2,}/g },
+  { name: 'phone', pattern: /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g },
+  { name: 'ssn', pattern: /\b\d{3}-\d{2}-\d{4}\b/g },
+  { name: 'credit_card', pattern: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g },
+  { name: 'ip_address', pattern: /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g },
+  { name: 'api_key', pattern: /\b(sk-[a-zA-Z0-9]{20,}|xai-[a-zA-Z0-9]{20,}|key-[a-zA-Z0-9]{20,})\b/g },
+];
+
+const INJECTION_PATTERNS = [
+  /ignore\s+(all\s+)?previous\s+instructions/i,
+  /you\s+are\s+now\s+(a|an)\s+/i,
+  /system\s*:\s*you\s+are/i,
+  /\]\s*\}\s*\{\s*"role"\s*:\s*"system"/i,
+  /pretend\s+you\s+(are|have)\s+no\s+rules/i,
+  /disregard\s+(your|all|any)\s+(instructions|rules|guidelines)/i,
+  /do\s+not\s+follow\s+(your|any)\s+(instructions|rules)/i,
+];
+
+app.post('/v1/guardrails/scan', auth, (req, res) => {
+  const text = req.body.text || '';
+  if (!text) return res.status(422).json({ error: { code: 'missing_text' } });
+
+  // PII Detection
+  const pii_found = [];
+  for (const { name, pattern } of PII_PATTERNS) {
+    const matches = text.match(pattern);
+    if (matches) pii_found.push({ type: name, count: matches.length, samples: matches.slice(0, 3).map(m => m.slice(0, 4) + '***') });
+  }
+
+  // Prompt Injection Detection
+  const injections = [];
+  for (const pattern of INJECTION_PATTERNS) {
+    if (pattern.test(text)) injections.push({ pattern: pattern.source.slice(0, 40), matched: true });
+  }
+
+  // Toxicity (basic keyword check — production would use a classifier)
+  const toxicKeywords = ['kill', 'bomb', 'hack into', 'steal', 'exploit vulnerability'];
+  const toxicity = toxicKeywords.filter(k => text.toLowerCase().includes(k));
+
+  const safe = pii_found.length === 0 && injections.length === 0 && toxicity.length === 0;
+
+  res.json({
+    ok: true, safe,
+    pii: { found: pii_found.length > 0, items: pii_found },
+    injection: { found: injections.length > 0, items: injections },
+    toxicity: { found: toxicity.length > 0, keywords: toxicity },
+    text_length: text.length,
+    _engine: 'real',
+  });
+});
+
+app.post('/v1/guardrails/redact', auth, (req, res) => {
+  let text = req.body.text || '';
+  if (!text) return res.status(422).json({ error: { code: 'missing_text' } });
+  const redactions = [];
+  for (const { name, pattern } of PII_PATTERNS) {
+    const matches = text.match(pattern);
+    if (matches) {
+      redactions.push({ type: name, count: matches.length });
+      text = text.replace(pattern, '[' + name.toUpperCase() + '_REDACTED]');
+    }
+  }
+  res.json({ ok: true, redacted_text: text, redactions, _engine: 'real' });
+});
+
+// ===== PROMPT REGISTRY — Versioned templates (Claude roadmap #4) =====
+app.post('/v1/prompts/save', auth, (req, res) => {
+  const { name, template, variables, tags } = req.body;
+  if (!name || !template) return res.status(422).json({ error: { code: 'missing_name_or_template' } });
+  const ns = 'prompts:' + req.apiKey.slice(0, 12);
+  const version = Date.now();
+  const entry = { template, variables: variables || [], tags: tags || [], version, created: new Date().toISOString() };
+
+  // Store current version
+  db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run(ns + ':' + name, JSON.stringify(entry));
+  // Store version history
+  db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run(ns + ':' + name + ':v' + version, JSON.stringify(entry));
+
+  res.json({ ok: true, name, version, _engine: 'real' });
+});
+
+app.post('/v1/prompts/render', auth, (req, res) => {
+  const { name, params } = req.body;
+  if (!name) return res.status(422).json({ error: { code: 'missing_name' } });
+  const ns = 'prompts:' + req.apiKey.slice(0, 12);
+  const row = db.prepare('SELECT value FROM agent_state WHERE key = ?').get(ns + ':' + name);
+  if (!row) return res.status(404).json({ error: { code: 'prompt_not_found' } });
+  const entry = JSON.parse(row.value);
+  let rendered = entry.template;
+  for (const [k, v] of Object.entries(params || {})) {
+    rendered = rendered.replace(new RegExp('{{' + k + '}}', 'g'), v);
+  }
+  res.json({ ok: true, name, rendered, version: entry.version, _engine: 'real' });
+});
+
+app.get('/v1/prompts/list', auth, (req, res) => {
+  const ns = 'prompts:' + req.apiKey.slice(0, 12);
+  const rows = db.prepare("SELECT key AS k, value FROM agent_state WHERE k LIKE ? AND k NOT LIKE '%:v%'").all(ns + ':%');
+  const prompts = rows.map(r => { try { const e = JSON.parse(r.value); return { name: r.k.replace(ns + ':', ''), ...e }; } catch(e) { return null; } }).filter(Boolean);
+  res.json({ ok: true, prompts, count: prompts.length, _engine: 'real' });
+});
+
+// ===== SEMANTIC CACHE (Claude roadmap #2 — simplified version) =====
+const semanticCache = new Map();
+app.post('/v1/cache/check', auth, (req, res) => {
+  const text = req.body.text || '';
+  const key = text.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/).sort().join(' ').slice(0, 200);
+  const cached = semanticCache.get(key);
+  if (cached && Date.now() - cached.ts < (req.body.ttl || 300000)) {
+    return res.json({ ok: true, hit: true, cached_response: cached.value, age_ms: Date.now() - cached.ts, _engine: 'real' });
+  }
+  res.json({ ok: true, hit: false, cache_key: key, _engine: 'real' });
+});
+
+app.post('/v1/cache/set', auth, (req, res) => {
+  const text = req.body.text || '';
+  const value = req.body.value || req.body.response;
+  const key = text.toLowerCase().replace(/[^a-z0-9 ]/g, '').split(/\s+/).sort().join(' ').slice(0, 200);
+  semanticCache.set(key, { value, ts: Date.now() });
+  if (semanticCache.size > 10000) { const oldest = [...semanticCache.entries()].sort((a, b) => a[1].ts - b[1].ts).slice(0, 2000); for (const [k] of oldest) semanticCache.delete(k); }
+  res.json({ ok: true, cached: true, key, _engine: 'real' });
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
