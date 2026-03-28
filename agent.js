@@ -37,7 +37,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
 
   // Use the existing LLM handler infrastructure instead of raw HTTPS
   // (the handler already handles TLS, model selection, and error handling)
-  const llmHandler = allHandlers['llm-analyze-text'];
+  const llmHandler = allHandlers['llm-summarize'] || allHandlers['llm-analyze-text'];
 
   async function planTools(task, options = {}) {
     const key = process.env.ANTHROPIC_API_KEY;
