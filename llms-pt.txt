@@ -12,7 +12,7 @@ Slopshop fornece infraestrutura de produção para agentes de IA. Uma única cha
 curl -X POST https://slopshop.gg/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"seu@email.com","password":"sua_senha"}'
-→ 2.000 créditos gratuitos. API de memória sempre gratuita.
+→ 500 créditos gratuitos. API de memória sempre gratuita.
 
 2. Ou use a chave demo imediatamente: sk-slop-demo-key-12345678 (200 créditos, sem registro)
 
@@ -24,7 +24,9 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 
 4. Descobrir ferramentas: GET https://slopshop.gg/v1/tools?format=anthropic (também openai, mcp)
 
-5. Busca semântica:
+5. Scaffold rápido: slop init --full-stack
+
+6. Busca semântica:
 curl -X POST https://slopshop.gg/v1/resolve \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
@@ -93,7 +95,7 @@ Processamento de texto (72), Transformação de dados (54), Criptografia (48), M
 
 ## Preços
 
-- 2.000 créditos gratuitos ao registrar
+- 500 créditos gratuitos ao registrar
 - API de memória sempre gratuita (0 créditos)
 - APIs de computação: 1-5 créditos/chamada
 - APIs de IA: 10-50 créditos/chamada
@@ -103,6 +105,8 @@ Processamento de texto (72), Transformação de dados (54), Criptografia (48), M
 
 - REST API: https://slopshop.gg/v1/
 - Servidor MCP: integração direta com Claude Code
+- Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
+- Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 - Especificação OpenAPI: https://slopshop.gg/v1/openapi.json
 - Descoberta de ferramentas: GET /v1/tools?format=anthropic|openai|mcp
 

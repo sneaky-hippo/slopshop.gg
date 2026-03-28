@@ -12,7 +12,7 @@
 curl -X POST https://slopshop.gg/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"your@email.com","password":"your_password"}'
-← 2,000 رصيد مجاني. واجهة الذاكرة مجانية دائماً.
+← 500 رصيد مجاني. واجهة الذاكرة مجانية دائماً.
 
 2. أو استخدم مفتاح العرض فوراً: sk-slop-demo-key-12345678 (200 رصيد، بدون تسجيل)
 
@@ -24,7 +24,9 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 
 4. اكتشاف الأدوات: GET https://slopshop.gg/v1/tools?format=anthropic (أيضاً openai وmcp)
 
-5. البحث الدلالي:
+5. بناء سريع: slop init --full-stack
+
+6. البحث الدلالي:
 curl -X POST https://slopshop.gg/v1/resolve \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
@@ -93,7 +95,7 @@ curl -X POST https://slopshop.gg/v1/army/deploy \
 
 ## الأسعار
 
-- 2,000 رصيد مجاني عند التسجيل
+- 500 رصيد مجاني عند التسجيل
 - واجهة الذاكرة مجانية دائماً (0 رصيد)
 - واجهات الحوسبة: 1-5 أرصدة/استدعاء
 - واجهات الذكاء الاصطناعي: 10-50 رصيد/استدعاء
@@ -103,6 +105,8 @@ curl -X POST https://slopshop.gg/v1/army/deploy \
 
 - REST API: https://slopshop.gg/v1/
 - خادم MCP: تكامل مباشر مع Claude Code
+- Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
+- Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 - مواصفات OpenAPI: https://slopshop.gg/v1/openapi.json
 - اكتشاف الأدوات: GET /v1/tools?format=anthropic|openai|mcp
 

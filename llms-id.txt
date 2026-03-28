@@ -12,7 +12,7 @@ Slopshop menyediakan infrastruktur tingkat produksi untuk agen AI. Satu kunci AP
 curl -X POST https://slopshop.gg/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"your@email.com","password":"your_password"}'
-→ Gratis 2.000 kredit. API memori selalu gratis.
+→ Gratis 500 kredit. API memori selalu gratis.
 
 2. Atau gunakan kunci demo: sk-slop-demo-key-12345678 (200 kredit, tanpa pendaftaran)
 
@@ -24,7 +24,9 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 
 4. Penemuan alat: GET https://slopshop.gg/v1/tools?format=anthropic (atau openai, mcp)
 
-5. Pencarian semantik:
+5. Scaffold cepat: slop init --full-stack
+
+6. Pencarian semantik:
 curl -X POST https://slopshop.gg/v1/resolve \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
@@ -93,7 +95,7 @@ Pemrosesan Teks (72), Transformasi Data (54), Kriptografi (48), Matematika & Sta
 
 ## Harga
 
-- Pendaftaran gratis 2.000 kredit
+- Pendaftaran gratis 500 kredit
 - API memori selalu gratis (0 kredit)
 - API komputasi: 1-5 kredit per panggilan
 - API AI: 10-50 kredit per panggilan
@@ -103,6 +105,8 @@ Pemrosesan Teks (72), Transformasi Data (54), Kriptografi (48), Matematika & Sta
 
 - REST API: https://slopshop.gg/v1/
 - MCP Server: Mendukung integrasi langsung Claude Code
+- Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
+- Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 - Spesifikasi OpenAPI: https://slopshop.gg/v1/openapi.json
 - Penemuan Alat: GET /v1/tools?format=anthropic|openai|mcp
 

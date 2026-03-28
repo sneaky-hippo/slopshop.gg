@@ -12,7 +12,7 @@ Slopshop AI एजेंट के लिए प्रोडक्शन-ग्�
 curl -X POST https://slopshop.gg/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"your@email.com","password":"your_password"}'
-→ 2,000 मुफ्त क्रेडिट। मेमोरी API हमेशा मुफ्त।
+→ 500 मुफ्त क्रेडिट। मेमोरी API हमेशा मुफ्त।
 
 2. या डेमो की तुरंत उपयोग करें: sk-slop-demo-key-12345678 (200 क्रेडिट, पंजीकरण अनावश्यक)
 
@@ -24,7 +24,9 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 
 4. टूल्स खोजें: GET https://slopshop.gg/v1/tools?format=anthropic (openai, mcp भी उपलब्ध)
 
-5. सिमेंटिक सर्च:
+5. त्वरित स्कैफोल्ड: slop init --full-stack
+
+6. सिमेंटिक सर्च:
 curl -X POST https://slopshop.gg/v1/resolve \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
@@ -93,7 +95,7 @@ curl -X POST https://slopshop.gg/v1/army/deploy \
 
 ## मूल्य निर्धारण
 
-- पंजीकरण पर 2,000 मुफ्त क्रेडिट
+- पंजीकरण पर 500 मुफ्त क्रेडिट
 - मेमोरी API हमेशा मुफ्त (0 क्रेडिट)
 - कम्प्यूट API: 1-5 क्रेडिट/कॉल
 - AI API: 10-50 क्रेडिट/कॉल
@@ -103,6 +105,8 @@ curl -X POST https://slopshop.gg/v1/army/deploy \
 
 - REST API: https://slopshop.gg/v1/
 - MCP सर्वर: Claude Code के साथ सीधा एकीकरण
+- Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
+- Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 - OpenAPI विनिर्देश: https://slopshop.gg/v1/openapi.json
 - टूल डिस्कवरी: GET /v1/tools?format=anthropic|openai|mcp
 

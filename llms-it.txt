@@ -12,7 +12,7 @@ Slopshop fornisce infrastruttura di livello produzione per agenti IA. Una sola c
 curl -X POST https://slopshop.gg/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"your@email.com","password":"your_password"}'
-→ 2.000 crediti gratuiti. Le API di memoria sono sempre gratuite.
+→ 500 crediti gratuiti. Le API di memoria sono sempre gratuite.
 
 2. Oppure usa la chiave demo: sk-slop-demo-key-12345678 (200 crediti, senza registrazione)
 
@@ -93,7 +93,7 @@ Elaborazione Testo (72), Trasformazione Dati (54), Crittografia (48), Matematica
 
 ## Prezzi
 
-- Registrazione: 2.000 crediti gratuiti
+- Registrazione: 500 crediti gratuiti
 - API di memoria sempre gratuite (0 crediti)
 - API di calcolo: 1-5 crediti per chiamata
 - API IA: 10-50 crediti per chiamata

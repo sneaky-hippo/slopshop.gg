@@ -12,7 +12,7 @@ Slopshop, yapay zeka ajanları için üretim düzeyinde altyapı sağlar. Tek AP
 curl -X POST https://slopshop.gg/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"your@email.com","password":"your_password"}'
-→ Ücretsiz 2.000 kredi. Bellek API'leri her zaman ücretsiz.
+→ Ücretsiz 500 kredi. Bellek API'leri her zaman ücretsiz.
 
 2. Veya demo anahtarını kullanın: sk-slop-demo-key-12345678 (200 kredi, kayıt gerektirmez)
 
@@ -24,7 +24,9 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 
 4. Araç keşfi: GET https://slopshop.gg/v1/tools?format=anthropic (veya openai, mcp)
 
-5. Anlamsal arama:
+5. Hızlı scaffold: slop init --full-stack
+
+6. Anlamsal arama:
 curl -X POST https://slopshop.gg/v1/resolve \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
@@ -93,7 +95,7 @@ Metin İşleme (72), Veri Dönüştürme (54), Kriptografi (48), Matematik ve İ
 
 ## Fiyatlandırma
 
-- Kayıtta ücretsiz 2.000 kredi
+- Kayıtta ücretsiz 500 kredi
 - Bellek API'leri her zaman ücretsiz (0 kredi)
 - Hesaplama API'leri: çağrı başına 1-5 kredi
 - Yapay Zeka API'leri: çağrı başına 10-50 kredi
@@ -103,6 +105,8 @@ Metin İşleme (72), Veri Dönüştürme (54), Kriptografi (48), Matematik ve İ
 
 - REST API: https://slopshop.gg/v1/
 - MCP Sunucu: Claude Code ile doğrudan entegrasyon
+- Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
+- Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 - OpenAPI Spesifikasyonu: https://slopshop.gg/v1/openapi.json
 - Araç Keşfi: GET /v1/tools?format=anthropic|openai|mcp
 

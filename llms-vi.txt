@@ -12,7 +12,7 @@ Slopshop cung cấp hạ tầng cấp sản xuất cho tác tử AI. Một khóa
 curl -X POST https://slopshop.gg/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"your@email.com","password":"your_password"}'
-→ Miễn phí 2.000 tín dụng. API bộ nhớ luôn miễn phí.
+→ Miễn phí 500 tín dụng. API bộ nhớ luôn miễn phí.
 
 2. Hoặc sử dụng khóa demo: sk-slop-demo-key-12345678 (200 tín dụng, không cần đăng ký)
 
@@ -24,7 +24,9 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 
 4. Khám phá công cụ: GET https://slopshop.gg/v1/tools?format=anthropic (hoặc openai, mcp)
 
-5. Tìm kiếm ngữ nghĩa:
+5. Scaffold nhanh: slop init --full-stack
+
+6. Tìm kiếm ngữ nghĩa:
 curl -X POST https://slopshop.gg/v1/resolve \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
@@ -93,7 +95,7 @@ Xử lý Văn bản (72), Chuyển đổi Dữ liệu (54), Mã hóa (48), Toán
 
 ## Giá cả
 
-- Đăng ký miễn phí 2.000 tín dụng
+- Đăng ký miễn phí 500 tín dụng
 - API bộ nhớ luôn miễn phí (0 tín dụng)
 - API tính toán: 1-5 tín dụng mỗi lần gọi
 - API AI: 10-50 tín dụng mỗi lần gọi
@@ -103,6 +105,8 @@ Xử lý Văn bản (72), Chuyển đổi Dữ liệu (54), Mã hóa (48), Toán
 
 - REST API: https://slopshop.gg/v1/
 - MCP Server: Hỗ trợ tích hợp trực tiếp Claude Code
+- Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
+- Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 - Đặc tả OpenAPI: https://slopshop.gg/v1/openapi.json
 - Khám phá công cụ: GET /v1/tools?format=anthropic|openai|mcp
 

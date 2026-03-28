@@ -12,7 +12,7 @@ Slopshop biedt productie-infrastructuur voor AI-agents. Een API-sleutel, gratis 
 curl -X POST https://slopshop.gg/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"email":"your@email.com","password":"your_password"}'
-→ Gratis 2.000 credits. Geheugen-API's altijd gratis.
+→ Gratis 500 credits. Geheugen-API's altijd gratis.
 
 2. Of gebruik de demo-sleutel: sk-slop-demo-key-12345678 (200 credits, zonder registratie)
 
@@ -24,7 +24,9 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 
 4. Tool-ontdekking: GET https://slopshop.gg/v1/tools?format=anthropic (of openai, mcp)
 
-5. Semantisch zoeken:
+5. Snelle scaffold: slop init --full-stack
+
+6. Semantisch zoeken:
 curl -X POST https://slopshop.gg/v1/resolve \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
@@ -93,7 +95,7 @@ Tekstverwerking (72), Datatransformatie (54), Cryptografie (48), Wiskunde & Stat
 
 ## Prijzen
 
-- Registratie: gratis 2.000 credits
+- Registratie: gratis 500 credits
 - Geheugen-API's altijd gratis (0 credits)
 - Compute-API's: 1-5 credits per aanroep
 - AI-API's: 10-50 credits per aanroep
@@ -103,6 +105,8 @@ Tekstverwerking (72), Datatransformatie (54), Cryptografie (48), Wiskunde & Stat
 
 - REST API: https://slopshop.gg/v1/
 - MCP-server: Directe integratie met Claude Code
+- Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
+- Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 - OpenAPI-specificatie: https://slopshop.gg/v1/openapi.json
 - Tool-ontdekking: GET /v1/tools?format=anthropic|openai|mcp
 

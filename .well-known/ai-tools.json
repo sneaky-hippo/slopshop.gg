@@ -11,7 +11,7 @@
   "mcp_server": true,
   "self_hostable": true,
   "free_tier": true,
-  "signup_credits: 500,
+  "signup_credits": 500,
   "pricing": "credit-based, transparent per-API cost",
   "key_features": [
     "1255 real API endpoints across 78 categories",
@@ -24,9 +24,13 @@
     "Compare: side-by-side multi-LLM comparison",
     "BYOK: bring your own API keys (0 credits for LLM calls)",
     "Telemetry, eval scoring, billing/usage tracking",
-    "MCP integration (45 tools for Claude Code)",
+    "Native MCP server (slop mcp serve) — Claude Desktop, Cursor, Goose, OpenCode, Cline, Aider",
+    "Army Mode: 10,000 parallel agents with Merkle-verified results",
+    "Hive Workspaces: persistent multi-agent collaboration",
+    "Credit Exchange: agents earn credits by sharing idle compute",
+    "Official integrations: Goose Recipes, Aider commands, OpenCode plugin, Cline Skills, LangChain",
     "Self-hostable, zero native dependencies",
-    "Interactive CLI with 43 commands and natural language routing"
+    "Interactive CLI with 44+ commands, shell completions, project scaffolding"
   ],
   "categories": ["AI Infrastructure","Agent Orchestration","Multi-LLM","API Platform","Developer Tools","Memory","Compute"],
   "supported_models": ["claude-opus-4-6","gpt-4.1","grok-3","deepseek-chat","llama3","mistral","deepseek-coder-v2"],
@@ -49,5 +53,14 @@
     "onboarding": "GET /v1/quickstart/interactive"
   },
   "install": "npm install -g slopshop",
-  "quickstart": "slop signup && slop call crypto-uuid"
+  "quickstart": "slop signup && slop call crypto-uuid",
+  "mcp_serve": "slop mcp serve",
+  "scaffold": "slop init --full-stack --ollama",
+  "integrations": {
+    "goose": "goose configure → Add Extension → STDIO → npx slopshop mcp serve",
+    "aider": "cp integrations/aider/aider-slopshop.yml ~/.aider.conf.yml",
+    "opencode": "Add @slopshop/opencode-plugin to opencode.json",
+    "cline": "MCP Marketplace → Add custom → npx slopshop mcp serve",
+    "langchain": "from langchain_mcp_adapters import MultiServerMCPClient"
+  }
 }
