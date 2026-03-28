@@ -6558,6 +6558,48 @@ app.post('/v1/mesh/eval', auth, async (req, res) => {
   }
 });
 
+
+// ===== COMPARE — Side-by-side multi-LLM comparison (unanimously requested by all 4 LLMs) =====
+app.post('/v1/compare', auth, async (req, res) => {
+  const prompt = req.body.prompt || req.body.text || '';
+  const models = req.body.models || ['anthropic', 'openai', 'grok', 'deepseek'];
+  if (!prompt) return res.status(422).json({ error: { code: 'missing_prompt' } });
+
+  const results = [];
+  for (const provider of models) {
+    const start = Date.now();
+    try {
+      const handler = allHandlers['llm-think'];
+      if (!handler) { results.push({ provider, error: 'no handler' }); continue; }
+      const result = await handler({ text: prompt, provider });
+      const ms = Date.now() - start;
+      let answer = result?.answer || result?.summary || '';
+      answer = String(answer).trim();
+      if (answer.startsWith('{')) try { answer = JSON.parse(answer).answer || answer; } catch(e) {}
+      results.push({ provider, model: result?._model || provider, answer: answer.slice(0, 500), latency_ms: ms, credits: 10 });
+    } catch(e) {
+      results.push({ provider, error: e.message, latency_ms: Date.now() - start });
+    }
+  }
+
+  // Rank by response quality (length as proxy for now)
+  results.sort((a, b) => (b.answer || '').length - (a.answer || '').length);
+  results.forEach((r, i) => r.rank = i + 1);
+
+  const totalCredits = results.filter(r => !r.error).length * 10;
+  const acct = apiKeys.get(req.apiKey);
+  if (acct) acct.balance -= totalCredits;
+  persistKey(req.apiKey);
+
+  res.json({
+    ok: true, prompt: prompt.slice(0, 200),
+    providers_queried: models.length,
+    results, total_credits: totalCredits,
+    fastest: results.filter(r => r.latency_ms).sort((a, b) => a.latency_ms - b.latency_ms)[0]?.provider,
+    _engine: 'real',
+  });
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
