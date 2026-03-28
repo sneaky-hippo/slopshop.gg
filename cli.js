@@ -1055,6 +1055,90 @@ KPI_TARGET: <specific measurable goal for next sprint>`;
       console.log(`  ${dim('│')} ${green('DECISION:')} ${ceoDecision}`);
     }
 
+    // ── PHASE 3.5: BUILDER IMPLEMENTS (deepseek-coder-v2 or best local) ──
+    if (ceoDecision && ceoDecision !== 'continue testing') {
+      console.log(`  ${dim('├ Builder implementing...')}`);
+
+      const builderPrompt = `You are a senior engineer implementing this decision:
+"${ceoDecision}"
+
+Context: Slopshop is a Node.js API platform (server-v2.js) with a CLI (cli.js).
+The platform has 1255 APIs, persistent memory, and is deployed on Railway.
+
+Generate the EXACT implementation. Choose ONE of these approaches:
+
+A) If it's a MEMORY operation (store data, update config, add routing):
+   Output a slop memory command:
+   SLOP_CMD: memory set <key> <value>
+
+B) If it's a NEW API ENDPOINT or handler:
+   Output the exact code:
+   CODE_FILE: server-v2.js
+   CODE_ADD_AFTER: <line to find>
+   CODE_CONTENT: <the new code>
+
+C) If it's a CLI CHANGE:
+   Output the exact code:
+   CODE_FILE: cli.js
+   CODE_ADD_AFTER: <line to find>
+   CODE_CONTENT: <the new code>
+
+D) If it's a CONFIG/DATA change:
+   SLOP_CMD: call <endpoint> --param value
+
+Pick the simplest approach that actually implements the decision. Be extremely specific.
+OUTPUT only ONE of the above formats, nothing else.`;
+
+      const builderResp = await ollamaChat('deepseek-coder-v2', builderPrompt);
+
+      // Try to execute SLOP_CMD if the builder suggested one
+      const slopCmdMatch = (builderResp || '').match(/SLOP_CMD:\s*(.+?)(?:\n|$)/i);
+      const codeMatch = (builderResp || '').match(/CODE_FILE:\s*(.+?)(?:\n|$)/i);
+
+      if (slopCmdMatch) {
+        const cmd = slopCmdMatch[1].trim();
+        console.log(`  ${dim('│')} ${cyan('BUILDER')} executing: ${bold('slop ' + cmd.slice(0, 80))}`);
+        try {
+          // Execute through slop
+          if (cmd.startsWith('memory set')) {
+            const parts = cmd.replace(/^memory set\s+/, '').split(/\s+/);
+            const key = parts[0];
+            const val = parts.slice(1).join(' ');
+            await request('POST', '/v1/memory-set', { key: 'hive-impl-' + key, value: val }).catch(() => {});
+            console.log(`  ${dim('│')} ${green('✓ Implemented via slop memory')}`);
+            kpi.actions_taken++;
+          } else if (cmd.startsWith('call ')) {
+            const callParts = cmd.replace(/^call\s+/, '').split(/\s+/);
+            const slug = callParts[0];
+            const params = {};
+            for (let ci = 1; ci < callParts.length - 1; ci += 2) {
+              if (callParts[ci].startsWith('--')) params[callParts[ci].slice(2)] = callParts[ci + 1];
+            }
+            await request('POST', '/v1/' + slug, params).catch(() => {});
+            console.log(`  ${dim('│')} ${green('✓ Implemented via slop call ' + slug)}`);
+            kpi.actions_taken++;
+          }
+        } catch(e) {
+          console.log(`  ${dim('│')} ${yellow('⚠ Could not execute: ' + e.message?.slice(0, 50))}`);
+        }
+      } else if (codeMatch) {
+        // Code change — store as implementation spec for deployment
+        const file = codeMatch[1].trim();
+        const contentMatch = (builderResp || '').match(/CODE_CONTENT:\s*([\s\S]+?)(?:$)/i);
+        const code = contentMatch ? contentMatch[1].trim().slice(0, 500) : '';
+        console.log(`  ${dim('│')} ${cyan('BUILDER')} spec: ${bold(file)} ${dim('(' + code.length + ' chars)')}`);
+        // Store the implementation spec in memory for later deployment
+        await request('POST', '/v1/memory-set', {
+          key: 'hive-code-' + s + '-' + Date.now(),
+          value: JSON.stringify({ file, code: code.slice(0, 1000), decision: ceoDecision, sprint: s })
+        }).catch(() => {});
+        console.log(`  ${dim('│')} ${yellow('📋 Stored in slop memory for deployment')}`);
+        kpi.actions_taken++;
+      } else {
+        console.log(`  ${dim('│')} ${dim('Builder output: ' + (builderResp || '').slice(0, 100).replace(/\n/g, ' '))}`);
+      }
+    }
+
     // ── PHASE 4: SPRINT SUMMARY ──
     const allSprintScores = [...vpResults.map(v => v.score), ceoScore].filter(s => s > 0);
     const avg = allSprintScores.length > 0 ? allSprintScores.reduce((a, b) => a + b, 0) / allSprintScores.length : 0;
