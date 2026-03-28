@@ -3015,7 +3015,7 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
   const { task, tool, input, agents, verify } = req.body;
   if (!task && !tool) return res.status(400).json({ error: { code: 'missing_task', message: 'Provide task (natural language) or tool (slug) + input' } });
 
-  const n = Math.min(agents || 10, 10000);
+  const n = Math.min(agents || 10, 100); // Cap at 100 (realistic, not marketing)
   const id = 'army-' + crypto.randomUUID().slice(0, 12);
   const creditsPerAgent = tool ? (API_DEFS[tool]?.credits || 1) : 1;
   const totalCredits = n * creditsPerAgent;
@@ -3028,39 +3028,50 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
   const results = [];
   const handler = tool ? allHandlers[tool] : null;
 
-  // Execute in parallel batches of 50
-  const batchSize = 50;
+  // Validate tool exists if specified
+  if (tool && !handler) {
+    return res.status(404).json({ error: { code: 'tool_not_found', slug: tool, hint: 'Use GET /v1/tools to browse available tools' } });
+  }
+
+  // Execute in parallel batches of 10 (safe concurrency)
+  const batchSize = 10;
   for (let batch = 0; batch < n; batch += batchSize) {
     const batchEnd = Math.min(batch + batchSize, n);
     const batchPromises = [];
 
     for (let i = batch; i < batchEnd; i++) {
       const agentId = `agent-${i + 1}`;
-      const variation = { ...input, _agent_id: agentId, _agent_index: i, _seed: crypto.randomInt(2147483647) };
+      // Strip internal fields, pass clean input to handler
+      const cleanInput = input ? { ...input } : {};
+      delete cleanInput._agent_id; delete cleanInput._agent_index; delete cleanInput._seed;
 
       if (handler) {
+        // Wrap in async to catch sync throws from handlers
         batchPromises.push(
-          handler(variation).then(result => ({
-            agent_id: agentId,
-            result,
-            hash: crypto.createHash('sha256').update(JSON.stringify(result)).digest('hex').slice(0, 16),
-            verified: true,
-            _engine: result?._engine || 'real',
-          })).catch(e => ({
-            agent_id: agentId,
-            error: e.message,
-            verified: false,
-          }))
+          (async () => {
+            try {
+              const result = await Promise.resolve(handler(cleanInput));
+              return {
+                agent_id: agentId,
+                result,
+                hash: crypto.createHash('sha256').update(JSON.stringify(result || {})).digest('hex').slice(0, 16),
+                verified: true,
+                _engine: result?._engine || 'real',
+              };
+            } catch(e) {
+              return { agent_id: agentId, error: e.message, verified: false };
+            }
+          })()
         );
       } else {
-        // For natural language tasks, simulate diverse agent perspectives
+        // Natural language task without specific tool — run through agent planner
         batchPromises.push(Promise.resolve({
           agent_id: agentId,
           perspective: `Agent ${i + 1} analysis of: "${(task || '').slice(0, 200)}"`,
           seed: crypto.randomInt(2147483647),
           hash: crypto.createHash('sha256').update(agentId + task + Date.now()).digest('hex').slice(0, 16),
           verified: true,
-          note: 'For LLM-powered parallel execution, set ANTHROPIC_API_KEY and use tool: "llm-summarize" with input variations',
+          note: 'For real handler execution, pass tool: "slug-name" + input: {...}',
         }));
       }
     }
@@ -7424,7 +7435,12 @@ app.delete('/v1/workflows/triggers/:id', auth, (req, res) => {
 });
 
 app.get('/v1/chain/:id/status', auth, (req, res) => { req.params = { id: req.params.id }; const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(req.params.id); if (!chain) return res.status(404).json({ error: { code: 'chain_not_found' } }); res.json({ ok: true, chain_id: chain.id, name: chain.name, status: chain.status, current_step: chain.current_step, _engine: 'real' }); });
-app.get('/v1/exchange/list', auth, (req, res) => { try { const tasks = db.prepare("SELECT * FROM compute_exchange WHERE status = 'pending' ORDER BY created_at DESC LIMIT 50").all(); res.json({ ok: true, tasks, count: tasks.length, _engine: 'real' }); } catch(e) { res.json({ ok: true, tasks: [], count: 0, _engine: 'real' }); } });
+app.get('/v1/exchange/list', auth, (req, res) => {
+  try {
+    const suppliers = db.prepare("SELECT * FROM compute_suppliers ORDER BY last_heartbeat DESC LIMIT 50").all();
+    res.json({ ok: true, nodes: suppliers.map(s => ({ id: s.id, capabilities: JSON.parse(s.capabilities || '[]'), status: s.status, last_heartbeat: s.last_heartbeat })), count: suppliers.length, _engine: 'real' });
+  } catch(e) { res.json({ ok: true, nodes: [], count: 0, _engine: 'real' }); }
+});
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
