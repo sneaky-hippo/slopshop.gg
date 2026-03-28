@@ -86,7 +86,7 @@ Every response includes `{ ok, data, meta: { credits_used, latency_ms, engine, c
 ## How to use
 - API base: https://slopshop.gg/v1/
 - Auth: Bearer token (get key at POST /v1/auth/signup)
-- Demo key for quick testing: sk-slop-demo-key-12345678 (200 credits, no signup needed). Full signup: POST /v1/auth/signup gives 2,000 credits.
+- Demo key for quick testing: sk-slop-demo-key-12345678 (200 credits, no signup needed). Full signup: POST /v1/auth/signup gives 500 credits.
 - Tool discovery: GET /v1/tools?format=anthropic (or openai, mcp)
 - Semantic search: POST /v1/resolve {"query": "what you need"}
 - MCP server: available for Claude Code integration

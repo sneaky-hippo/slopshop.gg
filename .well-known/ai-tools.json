@@ -11,7 +11,7 @@
   "mcp_server": true,
   "self_hostable": true,
   "free_tier": true,
-  "signup_credits": 2000,
+  "signup_credits: 500,
   "pricing": "credit-based, transparent per-API cost",
   "key_features": [
     "1255 real API endpoints across 78 categories",

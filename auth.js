@@ -79,7 +79,7 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     // Create API key with 2000 free credits (memory APIs are free / 0 credits)
     const dbInsertKey = db.prepare('INSERT OR REPLACE INTO api_keys (key, id, balance, tier, scope, label, max_credits, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
     dbInsertKey.run(key, id, 2000, 'free', '*', null, null, Date.now());
-    apiKeys.set(key, { id, balance: 2000, tier: 'free', auto_reload: false, scope: '*', label: null, max_credits: null, created: Date.now() });
+    apiKeys.set(key, { id, balance: 500, tier: 'free', auto_reload: false, scope: '*', label: null, max_credits: null, created: Date.now() });
 
     // Referral bonus
     if (req.body.referral_code) {
@@ -97,7 +97,7 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
       user_id: id,
       email,
       api_key: key,
-      balance: 2000,
+      balance: 500,
       message: 'Account created. 2,000 free credits loaded. Memory APIs are always free. Set SLOPSHOP_KEY=' + key,
     });
   });

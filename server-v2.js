@@ -976,7 +976,7 @@ app.post('/v1/credits/buy', auth, BODY_LIMIT_AUTH, (req, res) => {
       status: 'redirect_to_checkout',
       message: 'Use POST /v1/checkout to buy credits with real payment.',
       checkout_endpoint: 'POST /v1/checkout { "amount": 10000 }',
-      tiers: { 1000: '$9', 10000: '$49', 100000: '$299', 1000000: '$1,999' },
+      tiers: { 5000: '$9', 50000: '$49', 500000: '$299', 1000000: '$1,999' },
     });
   }
 
@@ -7307,6 +7307,8 @@ app.delete('/v1/workflows/triggers/:id', auth, (req, res) => {
   res.json({ ok: true, deleted: req.params.id, _engine: 'real' });
 });
 
+app.get('/v1/chain/:id/status', auth, (req, res) => { req.params = { id: req.params.id }; const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(req.params.id); if (!chain) return res.status(404).json({ error: { code: 'chain_not_found' } }); res.json({ ok: true, chain_id: chain.id, name: chain.name, status: chain.status, current_step: chain.current_step, _engine: 'real' }); });
+app.get('/v1/exchange/list', auth, (req, res) => { try { const tasks = db.prepare("SELECT * FROM compute_exchange WHERE status = 'pending' ORDER BY created_at DESC LIMIT 50").all(); res.json({ ok: true, tasks, count: tasks.length, _engine: 'real' }); } catch(e) { res.json({ ok: true, tasks: [], count: 0, _engine: 'real' }); } });
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
