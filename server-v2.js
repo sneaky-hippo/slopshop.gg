@@ -4879,7 +4879,14 @@ app.get('/v1/exchange/my-earnings/:user_id', auth, (req, res) => {
 // POST /v1/tools/search — Semantic tool search
 app.post('/v1/tools/search', publicRateLimit, (req, res) => {
   const { query, category, max_results, min_relevance } = req.body;
-  const q = (query || '').toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  // Synonym expansion for better search (dogfood-tested via hive-v2)
+  const SYNONYMS = {
+    'identifier': ['uuid', 'guid', 'id'], 'unique': ['uuid', 'random'], 'generate': ['create', 'new'],
+    'encrypt': ['aes', 'cipher'], 'decrypt': ['aes', 'decipher'], 'password': ['secret', 'generate'],
+    'validate': ['check', 'verify'], 'secure': ['hash', 'encrypt', 'security'],
+  };
+  const rawQ = (query || '').toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const q = [...new Set(rawQ.flatMap(w => [w, ...(SYNONYMS[w] || [])]))];
   const maxR = Math.min(max_results || 20, 100);
   const minRel = min_relevance || 0.1;
 
