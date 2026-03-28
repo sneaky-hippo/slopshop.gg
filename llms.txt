@@ -1,6 +1,6 @@
 # slopshop.gg — The missing backend for AI agents. Free persistent memory. Real compute across 78 tool categories. Agent chaining and orchestration. One API key. Self-hostable. Works with Claude, GPT, Grok, Gemini, and every LLM.
 
-One API key. 1,248 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 927 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, and full enterprise features.
+One API key. 1,255 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 927 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, and full enterprise features.
 
 ## Universal Model Mesh (NEW in v3.7.0)
 
@@ -94,7 +94,7 @@ Every response includes `{ ok, data, meta: { credits_used, latency_ms, engine, c
 - Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
 - Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 
-## Categories (78) — 1,248 Endpoints
+## Categories (78) — 1,255 Endpoints
 
 ### Text Processing (72 tools)
 Extract, transform, analyze, and manipulate text. Word count, regex, diff, slugify, case convert, encoding, entropy, haiku, and more.

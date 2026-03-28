@@ -2445,7 +2445,7 @@ async function cmdAgents(args) {
   }
 
   if (sub === 'start') {
-    const count = agentConfig.count || parseInt(args[1]) || 3;
+    const count = parseInt(args[1]) || agentConfig.count || 3;
     console.log(`\n  ${bold('Starting ' + count + ' local agents...')}`);
     console.log(`  ${dim('Models:')} ${agentConfig.models.join(', ')}`);
     console.log(`  ${dim('Each agent runs in background, processing tasks from the queue')}\n`);
@@ -4172,7 +4172,7 @@ async function main() {
       console.log(`  ${bold('Quick start:')}`);
       console.log(`    1. ${cyan('slop signup')}                    Create free account (500 credits)`);
       console.log(`    2. ${cyan('slop call crypto-uuid')}          Your first API call`);
-      console.log(`    3. ${cyan('slop search "what you need"')}    Find any of 1,248 APIs`);
+      console.log(`    3. ${cyan('slop search "what you need"')}    Find any of 1,255 APIs`);
       console.log(`    4. ${cyan('slop pipe api1 api2')}            Chain APIs together\n`);
       console.log(`  ${bold('Already have a key?')}`);
       console.log(`    ${cyan('slop key set sk-slop-YOUR-KEY')}\n`);
