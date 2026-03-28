@@ -27,6 +27,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     'hash': { slug: 'crypto-hash-sha256', inputMap: t => ({ text: t.replace(/^.*hash\s*/i, '').replace(/^(the\s+)?(word|text|string)\s*/i, '').replace(/\s*(with|using)\s*sha.*/i, '').trim() }) },
     'uuid': { slug: 'crypto-uuid', inputMap: () => ({}) },
     'reverse': { slug: 'text-reverse', inputMap: t => ({ text: t.replace(/^.*reverse\s*(the\s*)?(string|text)?\s*:?\s*/i, '').trim() }) },
+    'count the words': { slug: 'text-word-count', inputMap: t => ({ text: t.replace(/^.*count\s*(the\s*)?words\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
     'count words': { slug: 'text-word-count', inputMap: t => ({ text: t.replace(/^.*count\s*(the\s*)?words\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
     'word count': { slug: 'text-word-count', inputMap: t => ({ text: t.replace(/^.*word\s*count\s*(of|in|for)?\s*:?\s*/i, '').trim() }) },
     'slugify': { slug: 'text-slugify', inputMap: t => ({ text: t.replace(/^.*slugify\s*(the\s*)?(text|string)?\s*:?\s*/i, '').trim() }) },
@@ -36,9 +37,13 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     'random': { slug: 'crypto-random-int', inputMap: t => { const m = t.match(/(\d+)\s*(?:and|to)\s*(\d+)/); return { min: m ? parseInt(m[1]) : 1, max: m ? parseInt(m[2]) : 100 }; } },
     'validate json': { slug: 'json-format', inputMap: t => ({ json: t.replace(/^.*validate\s*(the\s*)?json\s*:?\s*/i, '').trim() }) },
     'validate email': { slug: 'validate-email-syntax', inputMap: t => { const m = t.match(/[\w.+-]+@[\w.-]+/); return { email: m ? m[0] : '' }; } },
+    'validate this email': { slug: 'validate-email-syntax', inputMap: t => { const m = t.match(/[\w.+-]+@[\w.-]+/); return { email: m ? m[0] : '' }; } },
+    'email valid': { slug: 'validate-email-syntax', inputMap: t => { const m = t.match(/[\w.+-]+@[\w.-]+/); return { email: m ? m[0] : '' }; } },
     'totp': { slug: 'crypto-totp-generate', inputMap: () => ({}) },
     'statistics': { slug: 'math-statistics', inputMap: t => { const nums = t.match(/[\d.]+/g); return { data: nums ? nums.map(Number) : [] }; } },
     'char count': { slug: 'text-char-count', inputMap: t => ({ text: t.replace(/^.*count\s*(the\s*)?char\w*\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
+    'count char': { slug: 'text-char-count', inputMap: t => ({ text: t.replace(/^.*count\s*(the\s*)?char\w*\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
+    'character count': { slug: 'text-char-count', inputMap: t => ({ text: t.replace(/^.*char\w*\s*count\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
   };
 
   function smartRoute(task) {
