@@ -8,6 +8,7 @@
  */
 const crypto = require('crypto');
 
+const signupLimits = new Map();
 module.exports = function mountAuth(app, db, apiKeys, persistKey) {
 
   // Ensure users table
@@ -42,7 +43,20 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
   }
 
   // Signup: create account + API key + 500 free credits
-  app.post('/v1/auth/signup', (req, res) => {
+  // Sybil protection: max 3 signups per IP per day
+  const signupRateLimit = (req, res, next) => {
+    const ip = req.ip || req.connection?.remoteAddress || 'unknown';
+    const key = 'signup:' + ip;
+    const now = Date.now();
+    const entry = signupLimits.get(key);
+    if (entry && now - entry.start < 86400000 && entry.count >= 3) {
+      return res.status(429).json({ error: { code: 'signup_rate_limited', message: 'Max 3 accounts per IP per day', retry_after: Math.ceil((entry.start + 86400000 - now) / 1000) } });
+    }
+    if (!entry || now - entry.start > 86400000) signupLimits.set(key, { count: 1, start: now });
+    else entry.count++;
+    next();
+  };
+  app.post('/v1/auth/signup', signupRateLimit, (req, res) => {
     const ip = req.ip || req.connection.remoteAddress;
     if (!rateLimit('signup:' + ip, 5, 3600000)) {
       return res.status(429).json({ error: { code: 'rate_limited', message: 'Max 5 signups per hour. Try again later.' } });

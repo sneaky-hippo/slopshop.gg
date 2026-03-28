@@ -100,7 +100,8 @@ async function callLLM(systemPrompt, userMessage, input = {}) {
   const providerConfig = PROVIDERS[providerName];
   const model = input.model || DEFAULT_MODELS[providerName];
   const temperature = input.temperature !== undefined ? input.temperature : 0.7;
-  const apiKey = process.env[providerConfig.keyEnv];
+  // BYOK: Use user-provided key if present, fall back to platform key
+  const apiKey = input._api_key || process.env[providerConfig.keyEnv];
 
   if (providerConfig.format === 'anthropic') {
     const resp = await httpsPost(

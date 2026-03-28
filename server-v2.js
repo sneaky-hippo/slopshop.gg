@@ -6202,6 +6202,37 @@ app.post('/v1/wallet/transfer', auth, (req, res) => {
   res.json({ ok: true, from: from_wallet_id, to: to_wallet_id, amount, transferred: true });
 });
 
+// ===== USER LLM KEY MANAGEMENT (BYOK — Bring Your Own Key) =====
+// Users store their own API keys. When set, LLM calls use USER keys = 0 slopshop credits.
+app.post('/v1/keys/llm/set', auth, (req, res) => {
+  const { provider, key } = req.body;
+  const valid = ['anthropic', 'openai', 'grok', 'deepseek'];
+  if (!provider || !valid.includes(provider)) return res.status(422).json({ error: { code: 'invalid_provider', valid } });
+  if (!key || key.length < 10) return res.status(422).json({ error: { code: 'invalid_key' } });
+  const ns = 'user-keys:' + req.apiKey.slice(0, 16);
+  db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run(
+    ns + ':' + provider,
+    JSON.stringify({ key: Buffer.from(key).toString('base64'), provider, set_at: new Date().toISOString() })
+  );
+  res.json({ ok: true, provider, message: 'Key saved. LLM calls with provider=' + provider + ' now use YOUR key (0 slopshop credits).', _engine: 'real' });
+});
+
+app.get('/v1/keys/llm/list', auth, (req, res) => {
+  const ns = 'user-keys:' + req.apiKey.slice(0, 16);
+  const rows = db.prepare("SELECT key AS k, value FROM agent_state WHERE k LIKE ?").all(ns + ':%');
+  const keys = rows.map(r => {
+    try { const d = JSON.parse(r.value); return { provider: d.provider, set_at: d.set_at, key_preview: Buffer.from(d.key, 'base64').toString().slice(0, 8) + '...' }; }
+    catch(e) { return null; }
+  }).filter(Boolean);
+  res.json({ ok: true, keys, count: keys.length, _engine: 'real' });
+});
+
+app.delete('/v1/keys/llm/:provider', auth, (req, res) => {
+  const ns = 'user-keys:' + req.apiKey.slice(0, 16);
+  db.prepare('DELETE FROM agent_state WHERE key = ?').run(ns + ':' + req.params.provider);
+  res.json({ ok: true, provider: req.params.provider, deleted: true, _engine: 'real' });
+});
+
 // ===== UNIVERSAL MODEL MESH — 4 pillars requested by Claude/GPT/Grok/DeepSeek =====
 
 // PILLAR 1: /context/session — Structured execution context (Claude's request)
