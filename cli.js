@@ -1152,19 +1152,21 @@ ${C.reset}`;
   console.log(`    ${yellow('--offset N')}     Offset results (list)\n`);
   console.log(`  ${bold('EXAMPLES')}`);
   console.log(`    ${dim('# Generate a UUID')}`);
-  console.log(`    ${cyan('slop call generate-value-uuid')}\n`);
+  console.log(`    ${cyan('slop call crypto-uuid')}\n`);
   console.log(`    ${dim('# Hash some text')}`);
-  console.log(`    ${cyan('slop call generate-value-hash-sha256 --input "hello world"')}\n`);
-  console.log(`    ${dim('# Pipe text through word-count')}`);
-  console.log(`    ${cyan('echo "hello world" | slop call text-string-word-count')}\n`);
+  console.log(`    ${cyan('slop call crypto-hash-sha256 --text "hello world"')}\n`);
+  console.log(`    ${dim('# Count words')}`);
+  console.log(`    ${cyan('slop call text-word-count --text "one two three"')}\n`);
   console.log(`    ${dim('# Chain APIs: encode then hash')}`);
-  console.log(`    ${cyan('slop pipe convert-data-base64-encode generate-value-hash-sha256 --input "test"')}\n`);
-  console.log(`    ${dim('# Find APIs for currency conversion')}`);
-  console.log(`    ${cyan('slop search currency convert')}\n`);
-  console.log(`    ${dim('# List all text APIs')}`);
-  console.log(`    ${cyan('slop list text')}\n`);
-  console.log(`    ${dim('# Get JSON output for scripting')}`);
-  console.log(`    ${cyan('slop balance --json | jq .balance')}\n`);
+  console.log(`    ${cyan('slop pipe text-base64-encode crypto-hash-sha256 --text "test"')}\n`);
+  console.log(`    ${dim('# Store in persistent memory (free)')}`);
+  console.log(`    ${cyan('slop memory set mykey "my value"')}\n`);
+  console.log(`    ${dim('# Search 925+ tools')}`);
+  console.log(`    ${cyan('slop search "validate email"')}\n`);
+  console.log(`    ${dim('# Run iterative hive')}`);
+  console.log(`    ${cyan('slop hive 10 "review competitors and find gaps"')}\n`);
+  console.log(`    ${dim('# Check your setup')}`);
+  console.log(`    ${cyan('slop doctor')}\n`);
   console.log(`  ${bold('ENVIRONMENT')}`);
   console.log(`    ${yellow('SLOPSHOP_KEY')}   ${dim('Required. Your API key.')}`);
   console.log(`    ${yellow('SLOPSHOP_BASE')}  ${dim(`Optional. Server URL. Default: https://slopshop.gg`)}\n`);
@@ -1711,9 +1713,11 @@ async function cmdKey(args) {
   }
 
   if (sub === 'set') {
-    const newKey = args[1];
+    // Handle: slop key set sk-slop-xxx OR slop key set KEY sk-slop-xxx
+    let newKey = args[1];
+    if (newKey && !newKey.startsWith('sk-slop-') && args[2]?.startsWith('sk-slop-')) newKey = args[2];
     if (!newKey) return die('Usage: slop key set sk-slop-YOUR-KEY');
-    if (!newKey.startsWith('sk-slop-')) return die('Invalid key format. Keys start with sk-slop-');
+    if (!newKey.startsWith('sk-slop-')) return die('Invalid key format. Keys start with sk-slop-\n  Example: slop key set sk-slop-5a42dc9cbc7341f5bbd0d755');
     cfg.api_key = newKey;
     saveConfig(cfg);
     console.log(green(`\n  API key saved!`));
@@ -1754,7 +1758,7 @@ async function cmdKey(args) {
 
   console.log(`\n  ${bold('Key Management')}\n`);
   console.log(`  ${cyan('slop key')}           Show current key`);
-  console.log(`  ${cyan('slop key set KEY')}   Save a new key`);
+  console.log(`  ${cyan('slop key set sk-slop-xxx')}   Save a new key`);
   console.log(`  ${cyan('slop key remove')}    Remove saved key`);
   console.log(`  ${cyan('slop key rotate')}    Rotate key (invalidates old)\n`);
 }
