@@ -21,6 +21,37 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
   ).join('\n');
 
   // Call Anthropic to plan which tools to use
+  // Smart keyword matching — picks the 1 BEST tool with proper input mapping
+  // This is the fast path (no LLM needed) for common operations
+  const DIRECT_ROUTES = {
+    'hash': { slug: 'crypto-hash-sha256', inputMap: t => ({ text: t.replace(/^.*hash\s*/i, '').replace(/^(the\s+)?(word|text|string)\s*/i, '').replace(/\s*(with|using)\s*sha.*/i, '').trim() }) },
+    'uuid': { slug: 'crypto-uuid', inputMap: () => ({}) },
+    'reverse': { slug: 'text-reverse', inputMap: t => ({ text: t.replace(/^.*reverse\s*(the\s*)?(string|text)?\s*:?\s*/i, '').trim() }) },
+    'count words': { slug: 'text-word-count', inputMap: t => ({ text: t.replace(/^.*count\s*(the\s*)?words\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
+    'word count': { slug: 'text-word-count', inputMap: t => ({ text: t.replace(/^.*word\s*count\s*(of|in|for)?\s*:?\s*/i, '').trim() }) },
+    'slugify': { slug: 'text-slugify', inputMap: t => ({ text: t.replace(/^.*slugify\s*(the\s*)?(text|string)?\s*:?\s*/i, '').trim() }) },
+    'password': { slug: 'crypto-password-generate', inputMap: t => { const m = t.match(/(\d+)\s*char/); return { length: m ? parseInt(m[1]) : 20 }; } },
+    'base64 encode': { slug: 'text-base64-encode', inputMap: t => ({ text: t.replace(/^.*base64\s*encode\s*(the\s*)?(text|string)?\s*:?\s*/i, '').trim() }) },
+    'base64 decode': { slug: 'text-base64-decode', inputMap: t => ({ text: t.replace(/^.*base64\s*decode\s*(the\s*)?(text|string)?\s*:?\s*/i, '').trim() }) },
+    'random': { slug: 'crypto-random-int', inputMap: t => { const m = t.match(/(\d+)\s*(?:and|to)\s*(\d+)/); return { min: m ? parseInt(m[1]) : 1, max: m ? parseInt(m[2]) : 100 }; } },
+    'validate json': { slug: 'json-format', inputMap: t => ({ json: t.replace(/^.*validate\s*(the\s*)?json\s*:?\s*/i, '').trim() }) },
+    'validate email': { slug: 'validate-email-syntax', inputMap: t => { const m = t.match(/[\w.+-]+@[\w.-]+/); return { email: m ? m[0] : '' }; } },
+    'totp': { slug: 'crypto-totp-generate', inputMap: () => ({}) },
+    'statistics': { slug: 'math-statistics', inputMap: t => { const nums = t.match(/[\d.]+/g); return { data: nums ? nums.map(Number) : [] }; } },
+    'char count': { slug: 'text-char-count', inputMap: t => ({ text: t.replace(/^.*count\s*(the\s*)?char\w*\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
+  };
+
+  function smartRoute(task) {
+    const lower = task.toLowerCase();
+    for (const [trigger, route] of Object.entries(DIRECT_ROUTES)) {
+      if (lower.includes(trigger)) {
+        const input = route.inputMap(task);
+        return { steps: [{ api: route.slug, input, reason: 'Direct route: ' + trigger }], model: 'smart-route' };
+      }
+    }
+    return null;
+  }
+
   function keywordFallback(task) {
     const taskWords = task.toLowerCase().split(/\s+/).filter(w => w.length > 2);
     const scored = [];
@@ -30,53 +61,45 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
       taskWords.forEach(w => { if (text.includes(w)) score++; if (slug.includes(w)) score += 2; });
       if (score > 0 && def.credits <= 5) scored.push({ slug, score, credits: def.credits });
     }
-    const topTools = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+    // Only pick the TOP 1-2 matches, not 5
+    const topTools = scored.sort((a, b) => b.score - a.score).slice(0, 2);
     if (topTools.length === 0) return { error: 'No matching tools found for task' };
-    return { steps: topTools.map(t => ({ api: t.slug, input: { text: task, task }, reason: `Keyword match (score ${t.score})` })), model: 'keyword-fallback' };
+    return { steps: topTools.map(t => ({ api: t.slug, input: { text: task }, reason: `Keyword (score ${t.score})` })), model: 'keyword' };
   }
 
-  // Use the existing LLM handler infrastructure instead of raw HTTPS
-  // (the handler already handles TLS, model selection, and error handling)
-  const llmHandler = allHandlers['llm-summarize'] || allHandlers['llm-analyze-text'];
+  const llmHandler = allHandlers['llm-summarize'];
 
   async function planTools(task, options = {}) {
-    const key = process.env.ANTHROPIC_API_KEY;
-    if (!key || !llmHandler) return keywordFallback(task);
+    // 1. Try smart direct routing first (instant, no LLM, no credits)
+    const direct = smartRoute(task);
+    if (direct) return direct;
 
-    const compactIndex = Object.entries(API_DEFS)
-      .filter(([_, d]) => d.credits <= 10)
-      .slice(0, 200)
-      .map(([slug, d]) => `${slug}: ${d.desc} [${d.credits}cr]`)
-      .join('\n');
+    // 2. Try LLM planning if available
+    if (process.env.ANTHROPIC_API_KEY && llmHandler) {
+      try {
+        const topKeyword = Object.entries(API_DEFS)
+          .filter(([_, d]) => d.credits <= 5)
+          .slice(0, 100)
+          .map(([slug, d]) => slug + ': ' + d.desc)
+          .join('\n');
 
-    const prompt = `You are a tool-selection agent. Select which APIs to call for this task.
+        const prompt = 'Pick 1-2 APIs for this task. Return ONLY JSON: [{"api":"slug","input":{...},"reason":"..."}]\n\nAPIs:\n' +
+          topKeyword.slice(0, 4000) + '\n\nTask: "' + task + '"\n\nJSON array:';
 
-Tools (slug: description):
-${compactIndex.slice(0, 8000)}
-
-Task: "${task}"
-
-Return ONLY a JSON array: [{"api":"slug","input":{fields},"reason":"why"}]
-1-3 steps max. JSON array only:`;
-
-    try {
-      const result = await llmHandler({ text: prompt, task: 'tool-planning' });
-      const text = result?.summary || result?.result || result?.analysis || result?.response || '';
-      const match = String(text).match(/\[[\s\S]*?\]/);
-      if (match) {
-        try {
+        const result = await llmHandler({ text: prompt, task: 'plan' });
+        const text = result?.summary || '';
+        const match = text.match(/\[[\s\S]*?\]/);
+        if (match) {
           const steps = JSON.parse(match[0]);
-          if (Array.isArray(steps) && steps.length > 0) {
-            return { steps, model: result?._model || 'llm' };
+          if (Array.isArray(steps) && steps.length > 0 && steps[0].api) {
+            return { steps: steps.slice(0, 3), model: result?._model || 'llm' };
           }
-        } catch(e) { /* parse failed, fall through */ }
-      }
-      // LLM responded but didn't return valid JSON array — use keyword
-      return keywordFallback(task);
-    } catch (e) {
-      console.error('[agent-planner] LLM error:', e.message);
-      return keywordFallback(task);
+        }
+      } catch (e) { /* LLM planning failed, fall through to keyword */ }
     }
+
+    // 3. Keyword fallback (reduced to 1-2 tools)
+    return keywordFallback(task);
   }
 
   // Fallback map: if a tool fails, try these alternatives in order
