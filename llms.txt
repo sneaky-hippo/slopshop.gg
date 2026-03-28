@@ -12,6 +12,16 @@ Four infrastructure endpoints that make every LLM composable:
 
 All free. All auth-gated. Designed by asking Claude, GPT, Grok, and DeepSeek what they need.
 
+## Latest (v3.5)
+
+- POST /v1/compare — Side-by-side multi-LLM comparison (Claude+GPT+Grok+DeepSeek)
+- POST /v1/workflows/run — Declarative multi-step conditional chains
+- GET /v1/telemetry — Observability: calls, credits, latency, top APIs
+- POST /v1/mesh/eval — LLM-powered output evaluation (score 1-10)
+- POST /v1/keys/llm/set — BYOK: use your own API keys (0cr LLM calls)
+- Sybil protection: 3 signups per IP per day
+- Accounts persist across deploys (fixed DB volume path)
+
 ## Quick Start
 1. Get a key: POST https://slopshop.gg/v1/auth/signup with {"email":"you@example.com"} — returns API key with 2,000 free credits.
 2. Or use the demo key immediately: sk-slop-demo-key-12345678 (200 credits, no signup).

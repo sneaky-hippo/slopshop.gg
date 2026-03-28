@@ -1,6 +1,6 @@
 {
   "name": "slopshop",
-  "version": "3.5.0",
+  "version": "3.5.2",
   "description": "The protocol layer of intelligence. 1,255 APIs, multi-LLM orchestration (Claude+GPT+Grok+DeepSeek), agent organizations, free persistent memory, Universal Model Mesh. Self-hostable.",
   "main": "server-v2.js",
   "bin": {

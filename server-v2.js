@@ -826,7 +826,7 @@ app.get('/v1/health', (_, res) => {
   try { const row = db.prepare("SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table'").get(); sqliteTableCount = row?.cnt || 76; } catch (e) {}
   res.json({
     status: 'healthy',
-    version: '3.5.0',
+    version: '3.5.2',
     apis: apiCount,
     uptime_seconds: Math.floor((Date.now() - serverStart) / 1000),
     memory_mb: Math.round(mem.rss / 1024 / 1024),
@@ -7487,7 +7487,7 @@ app.get('/v1/cli/doctor', auth, (req, res) => {
   checks.push({ check: 'handlers', status: missing.length === 0 ? 'pass' : 'warn', detail: `${handlerCount} handlers loaded, ${missing.length} missing` });
   checks.push({ check: 'llm_provider', status: process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY ? 'pass' : 'info', detail: process.env.ANTHROPIC_API_KEY ? 'Anthropic configured' : process.env.OPENAI_API_KEY ? 'OpenAI configured' : 'No LLM key (AI APIs unavailable)' });
   const passing = checks.filter(c => c.status === 'pass').length;
-  res.json({ ok: true, healthy: passing >= 3, checks, score: `${passing}/${checks.length}`, version: '3.5.0' });
+  res.json({ ok: true, healthy: passing >= 3, checks, score: `${passing}/${checks.length}`, version: '3.5.2' });
 });
 
 // 20. OpenAPI -> MCP auto-generator
