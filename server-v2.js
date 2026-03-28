@@ -826,7 +826,7 @@ app.get('/v1/health', (_, res) => {
   try { const row = db.prepare("SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table'").get(); sqliteTableCount = row?.cnt || 76; } catch (e) {}
   res.json({
     status: 'healthy',
-    version: '3.5.2',
+    version: '3.6.0',
     apis: apiCount,
     uptime_seconds: Math.floor((Date.now() - serverStart) / 1000),
     memory_mb: Math.round(mem.rss / 1024 / 1024),
@@ -6653,7 +6653,7 @@ app.get('/v1/status/dashboard', (req, res) => {
   res.json({
     ok: true,
     status: 'operational',
-    version: '3.5.2',
+    version: '3.6.0',
     uptime_seconds: uptime,
     uptime_human: Math.floor(uptime / 3600) + 'h ' + Math.floor((uptime % 3600) / 60) + 'm',
     apis: apiCount,
@@ -6705,7 +6705,7 @@ app.get('/v1/docs/overview', (req, res) => {
   }
   res.json({
     ok: true,
-    version: '3.5.2',
+    version: '3.6.0',
     total_apis: Object.keys(API_DEFS).length,
     categories: Object.entries(categories).map(([name, data]) => ({ name, count: data.count, sample_apis: data.apis.slice(0, 3) })),
     llm_providers: ['anthropic (Claude)', 'openai (GPT)', 'grok (xAI)', 'deepseek', 'ollama (local)'],
@@ -6725,6 +6725,65 @@ app.get('/v1/docs/overview', (req, res) => {
     _engine: 'real',
   });
 });
+// ===== API EXPLORER — Try any API with live results (Claude's #1 request for 9.5) =====
+app.post('/v1/explorer/try', auth, async (req, res) => {
+  const { slug, input } = req.body;
+  if (!slug) return res.status(422).json({ error: { code: 'missing_slug', hint: 'GET /v1/introspect to discover APIs' } });
+
+  const def = apiMap.get(slug);
+  const handler = allHandlers[slug];
+  const schema = SCHEMAS?.[slug] || {};
+
+  if (!def) return res.status(404).json({ error: { code: 'not_found', slug, similar: Object.keys(API_DEFS).filter(s => s.includes(slug.split('-')[0])).slice(0, 5) } });
+
+  const result = { slug, name: def.name, category: def.cat, credits: def.credits, tier: def.tier, input_schema: schema.input || null };
+
+  if (!handler) {
+    result.executable = false;
+    result.reason = 'No handler (needs external key or not implemented)';
+    return res.json({ ok: true, ...result, _engine: 'real' });
+  }
+
+  // Execute with timing
+  result.executable = true;
+  const acct = apiKeys.get(req.apiKey);
+  if (!acct || acct.balance < def.credits) return res.status(402).json({ error: { code: 'insufficient_credits', need: def.credits } });
+
+  acct.balance -= def.credits;
+  const start = process.hrtime.bigint();
+  try {
+    const output = await handler(input || {});
+    const latencyNs = Number(process.hrtime.bigint() - start);
+    result.output = output;
+    result.latency_ms = +(latencyNs / 1e6).toFixed(3);
+    result.latency_us = +(latencyNs / 1e3).toFixed(1);
+    result.cost_usd = '$' + (def.credits * 0.009).toFixed(4);
+  } catch(e) {
+    acct.balance += def.credits;
+    result.error = e.message;
+    result.latency_ms = +(Number(process.hrtime.bigint() - start) / 1e6).toFixed(3);
+  }
+  persistKey(req.apiKey);
+  result.balance_after = acct.balance;
+
+  res.json({ ok: true, ...result, _engine: 'real' });
+});
+
+// List all executable APIs for the explorer
+app.get('/v1/explorer/apis', auth, (req, res) => {
+  const category = req.query.category || '';
+  const q = req.query.q || '';
+  let apis = Object.entries(API_DEFS).map(([slug, def]) => ({
+    slug, name: def.name, category: def.cat, credits: def.credits, tier: def.tier,
+    executable: !!allHandlers[slug],
+    has_schema: !!SCHEMAS?.[slug],
+  }));
+  if (category) apis = apis.filter(a => a.category.toLowerCase().includes(category.toLowerCase()));
+  if (q) apis = apis.filter(a => a.slug.includes(q) || a.name.toLowerCase().includes(q));
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  res.json({ ok: true, total: apis.length, apis: apis.slice(0, limit), categories: [...new Set(apis.map(a => a.category))], _engine: 'real' });
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
@@ -7615,7 +7674,7 @@ app.get('/v1/cli/doctor', auth, (req, res) => {
   checks.push({ check: 'handlers', status: missing.length === 0 ? 'pass' : 'warn', detail: `${handlerCount} handlers loaded, ${missing.length} missing` });
   checks.push({ check: 'llm_provider', status: process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY ? 'pass' : 'info', detail: process.env.ANTHROPIC_API_KEY ? 'Anthropic configured' : process.env.OPENAI_API_KEY ? 'OpenAI configured' : 'No LLM key (AI APIs unavailable)' });
   const passing = checks.filter(c => c.status === 'pass').length;
-  res.json({ ok: true, healthy: passing >= 3, checks, score: `${passing}/${checks.length}`, version: '3.5.2' });
+  res.json({ ok: true, healthy: passing >= 3, checks, score: `${passing}/${checks.length}`, version: '3.6.0' });
 });
 
 // 20. OpenAPI -> MCP auto-generator
