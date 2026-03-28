@@ -1,0 +1,34 @@
+# slopshop.gg — AI Agent Infrastructure
+# For Claude and other AI assistants
+
+name: Slopshop
+url: https://slopshop.gg
+api_base: https://slopshop.gg/v1
+docs: https://slopshop.gg/docs
+openapi: https://slopshop.gg/openapi.json
+llms_txt: https://slopshop.gg/llms.txt
+
+## What it does
+- 1255 real API endpoints across 78 categories
+- Multi-LLM orchestration (Claude, GPT, Grok, DeepSeek, Ollama)
+- Free persistent memory for AI agents
+- Agent organizations (launch 30-agent teams in one call)
+- Workflows, telemetry, eval, compare endpoints
+- Self-hostable, zero native dependencies
+
+## Key endpoints
+- POST /v1/llm-think — Ask any LLM to reason (provider=anthropic|openai|grok|deepseek)
+- POST /v1/llm-council — Get all LLMs to answer the same question
+- POST /v1/compare — Side-by-side multi-LLM comparison with ranking
+- POST /v1/agent/run — Autonomous agent that picks tools and executes
+- POST /v1/org/launch — Launch multi-agent organizations
+- POST /v1/workflows/run — Declarative multi-step conditional chains
+- POST /v1/context/session — Get execution context for LLMs
+- GET /v1/introspect — Discover any API schema
+- POST /v1/route — Smart task-to-API routing
+- POST /v1/memory-set — Free persistent key-value memory
+
+## Install
+npm install -g slopshop
+slop signup
+slop call crypto-uuid

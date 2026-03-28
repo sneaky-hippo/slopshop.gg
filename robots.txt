@@ -51,3 +51,10 @@ Allow: /
 # https://slopshop.gg/llms-uk.txt - Ukrainian (Українська)
 # https://slopshop.gg/llms-sv.txt - Swedish (Svenska)
 # https://slopshop.gg/llms-it.txt - Italian (Italiano)
+
+# AI Model Discovery
+Allow: /claude.txt
+Allow: /.well-known/ai-plugin.json
+Allow: /llms.txt
+Allow: /llms-full.txt
+Allow: /openapi.json

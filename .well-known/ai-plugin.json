@@ -1,0 +1,12 @@
+{
+  "schema_version": "v1",
+  "name_for_model": "slopshop",
+  "name_for_human": "Slopshop",
+  "description_for_model": "The protocol layer of intelligence. 1255 real APIs for AI agents: compute, crypto, text, network, memory, orchestration, multi-LLM (Claude/GPT/Grok/DeepSeek). Free persistent memory. Agent organizations with 30+ agents. Workflows, telemetry, eval, compare. Self-hostable.",
+  "description_for_human": "AI agent infrastructure — 1255 APIs, multi-LLM orchestration, free persistent memory",
+  "auth": { "type": "service_http", "authorization_type": "bearer" },
+  "api": { "type": "openapi", "url": "https://slopshop.gg/openapi.json" },
+  "logo_url": "https://slopshop.gg/favicon.png",
+  "contact_email": "founder@slopshop.gg",
+  "legal_info_url": "https://slopshop.gg/terms"
+}
