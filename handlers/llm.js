@@ -17,6 +17,7 @@ const PROVIDERS = {
   openai: { host: 'api.openai.com', path: '/v1/chat/completions', keyEnv: 'OPENAI_API_KEY', format: 'openai' },
   grok: { host: 'api.x.ai', path: '/v1/chat/completions', keyEnv: 'XAI_API_KEY', format: 'openai' },
   deepseek: { host: 'api.deepseek.com', path: '/v1/chat/completions', keyEnv: 'DEEPSEEK_API_KEY', format: 'openai' },
+  ollama: { host: process.env.OLLAMA_HOST || 'localhost', port: process.env.OLLAMA_PORT || 11434, path: '/api/chat', keyEnv: 'OLLAMA_ENABLED', format: 'ollama' },
 };
 
 const DEFAULT_MODELS = {
@@ -24,6 +25,7 @@ const DEFAULT_MODELS = {
   openai: 'gpt-4o',
   grok: 'grok-3',
   deepseek: 'deepseek-chat',
+  ollama: process.env.OLLAMA_MODEL || 'llama3',
 };
 
 function getProvider(requested) {
@@ -32,6 +34,7 @@ function getProvider(requested) {
   if (process.env.OPENAI_API_KEY) return 'openai';
   if (process.env.XAI_API_KEY) return 'grok';
   if (process.env.DEEPSEEK_API_KEY) return 'deepseek';
+  if (process.env.OLLAMA_ENABLED) return 'ollama';
   return null;
 }
 
@@ -108,6 +111,19 @@ async function callLLM(systemPrompt, userMessage, input = {}) {
     );
     if (resp.status !== 200) throw new Error(`${providerName} error ${resp.status}: ${JSON.stringify(resp.body).slice(0, 200)}`);
     return { text: resp.body?.content?.[0]?.text ?? '', model: resp.body?.model ?? model, provider: providerName };
+  }
+
+  // Ollama (local open source models)
+  if (providerConfig.format === 'ollama') {
+    const http = require('http');
+    const body = JSON.stringify({ model, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }], stream: false });
+    const resp = await new Promise(resolve => {
+      const req = http.request({ hostname: providerConfig.host, port: providerConfig.port, path: providerConfig.path, method: 'POST', headers: { 'Content-Type': 'application/json' }, timeout: 60000 }, res => {
+        let d = ''; res.on('data', c => d += c); res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { resolve({ error: d }); } });
+      }); req.on('error', e => resolve({ error: e.message })); req.write(body); req.end();
+    });
+    if (resp.error) throw new Error('Ollama error: ' + JSON.stringify(resp.error).slice(0, 200));
+    return { text: resp.message?.content || '', model: resp.model || model, provider: 'ollama' };
   }
 
   // OpenAI-compatible format (OpenAI, Grok/xAI, DeepSeek)
