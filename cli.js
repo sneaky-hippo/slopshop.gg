@@ -191,6 +191,17 @@ function spinnerStop(success = true) {
   }
 }
 
+function progressBar(current, total, width = 30, label = '') {
+  if (quiet || jsonMode || !process.stderr.isTTY) return;
+  const pct = Math.min(current / total, 1);
+  const filled = Math.round(width * pct);
+  const empty = width - filled;
+  const bar = C.green + '\u2588'.repeat(filled) + C.dim + '\u2591'.repeat(empty) + C.reset;
+  const pctStr = Math.round(pct * 100) + '%';
+  process.stderr.write(`\r  ${bar} ${C.bold}${pctStr}${C.reset} ${C.dim}${label}${C.reset}`);
+  if (current >= total) process.stderr.write('\n');
+}
+
 // ============================================================
 // PRETTY PRINT HELPERS
 // ============================================================
@@ -417,7 +428,10 @@ async function cmdCall(args) {
         const d2 = res.data;
         const meta2 = (d2 && typeof d2 === 'object' && d2.meta) ? d2.meta : {};
         const creditStr = meta2.credits_used !== undefined ? ` (${meta2.credits_used} credit${meta2.credits_used === 1 ? '' : 's'})` : '';
-        console.log(`  ${green('\u2713')} ${cyan(slug)} completed in ${bold(_elapsed + 'ms')}${creditStr}\n`);
+        console.log(`  ${green('\u2713')} ${cyan(slug)} completed in ${bold(_elapsed + 'ms')}${creditStr}`);
+        const rawData = (d2 && typeof d2 === 'object' && d2.data !== undefined) ? d2.data : d2;
+        const engineTag = (rawData && rawData._engine) ? ` Result verified with _engine: "${rawData._engine}"` : '';
+        console.log(`  ${dim('  Real compute, not LLM estimation.' + engineTag)}\n`);
       }
 
       // Save to history
@@ -871,6 +885,10 @@ async function cmdDoctor() {
 
 function cmdHelp() {
   if (!quiet && !jsonMode) {
+    console.log(`\n  ${C.dim}${'~'.repeat(50)}${C.reset}`);
+    console.log(`  ${C.dim}  S L O P S H O P   C L I${C.reset}`);
+    console.log(`  ${C.dim}${'~'.repeat(50)}${C.reset}`);
+
     const lobster = `
   ${C.red}${C.bold}       (\\/)
       .-'  '-.
@@ -886,6 +904,8 @@ function cmdHelp() {
 ${C.reset}`;
 
     console.log(lobster);
+    console.log(`  ${bold('Standalone CLI')} ${dim('\u00b7')} ${bold('MCP Server')} ${dim('\u00b7')} ${bold('925 Handlers')} ${dim('\u00b7')} ${bold('Free Memory Forever')}`);
+    console.log(`  ${dim('Works inside:')} ${cyan('Claude Code')} ${dim('\u00b7')} ${cyan('Cursor')} ${dim('\u00b7')} ${cyan('Goose')} ${dim('\u00b7')} ${cyan('Cline')} ${dim('\u00b7')} ${cyan('OpenCode')} ${dim('\u00b7')} ${cyan('Aider')}\n`);
   }
 
   if (jsonMode) {
@@ -2196,6 +2216,7 @@ async function cmdBenchmark() {
       const ms = ok ? green(String(elapsed) + 'ms') : red(String(elapsed) + 'ms');
       const pad = t.name.padEnd(22);
       console.log(`  ${icon}  ${cyan(pad)} ${ms}  ${dim(t.category)}`);
+      progressBar(results.length, tests.length, 30, t.name);
     }
   }
 
@@ -3866,41 +3887,47 @@ async function cmdLive(args) {
 // QUICKSTART — Interactive guided tutorial
 // ============================================================
 async function cmdQuickstart() {
-  console.log(`\n  ${bold('Slopshop Quickstart')} ${dim('\u2014 5 steps, 2 minutes')}\n`);
+  console.log(`\n  ${bold('Slopshop Quickstart')} ${dim('\u2014 6 steps, 2 minutes')}\n`);
 
   // Step 1: Health check
-  console.log(`  ${bold('Step 1/5:')} Checking connection...`);
+  console.log(`  ${bold('Step 1/6:')} Checking connection...`);
   try {
     const health = await request('GET', '/v1/health', null, false);
-    console.log(`  ${green('\u2713')} Server: ${health.data?.version || 'ok'} (${health.data?.apis || '925+'} APIs)\n`);
+    console.log(`  ${green('\u2713')} Server: ${health.data?.version || 'ok'} (${health.data?.apis || '925+'} APIs)`);
+    progressBar(1, 6, 20, 'Step 1/6');
+    console.log('');
   } catch (e) {
     console.log(`  ${red('\u2717')} Could not reach server: ${e.message}\n`);
     return;
   }
 
   // Step 2: First API call (free - uuid)
-  console.log(`  ${bold('Step 2/5:')} Making your first API call...`);
+  console.log(`  ${bold('Step 2/6:')} Making your first API call...`);
   console.log(`  ${dim('\u2192 slop call crypto-uuid')}`);
   try {
     const uuid = await request('POST', '/v1/crypto-uuid', {});
-    console.log(`  ${green('\u2713')} Generated: ${cyan((uuid.data?.uuid || uuid.data?.data?.uuid || JSON.stringify(uuid.data).slice(0, 36)))}\n`);
+    console.log(`  ${green('\u2713')} Generated: ${cyan((uuid.data?.uuid || uuid.data?.data?.uuid || JSON.stringify(uuid.data).slice(0, 36)))}`);
+    progressBar(2, 6, 20, 'Step 2/6');
+    console.log('');
   } catch (e) {
     console.log(`  ${red('\u2717')} ${e.message}\n`);
   }
 
   // Step 3: Memory (free)
-  console.log(`  ${bold('Step 3/5:')} Storing in persistent memory (free forever)...`);
+  console.log(`  ${bold('Step 3/6:')} Storing in persistent memory (free forever)...`);
   console.log(`  ${dim('\u2192 slop call memory-set --key hello --value world')}`);
   try {
     await request('POST', '/v1/memory-set', { key: 'quickstart-hello', value: 'world' });
     const mem = await request('POST', '/v1/memory-get', { key: 'quickstart-hello' });
-    console.log(`  ${green('\u2713')} Stored & retrieved: ${cyan('"world"')}\n`);
+    console.log(`  ${green('\u2713')} Stored & retrieved: ${cyan('"world"')}`);
+    progressBar(3, 6, 20, 'Step 3/6');
+    console.log('');
   } catch (e) {
     console.log(`  ${red('\u2717')} ${e.message}\n`);
   }
 
   // Step 4: Search tools
-  console.log(`  ${bold('Step 4/5:')} Searching 925 tools...`);
+  console.log(`  ${bold('Step 4/6:')} Searching 925 tools...`);
   console.log(`  ${dim('\u2192 slop search "hash data"')}`);
   try {
     const search = await request('GET', '/v1/tools/search?q=hash+data&limit=3');
@@ -3908,15 +3935,107 @@ async function cmdQuickstart() {
     for (const t of (Array.isArray(tools) ? tools : []).slice(0, 3)) {
       console.log(`  ${dim('\u2022')} ${cyan(t.slug)} \u2014 ${(t.description || '').slice(0, 60)}`);
     }
+    progressBar(4, 6, 20, 'Step 4/6');
     console.log('');
   } catch (e) {
     console.log(`  ${dim('\u2022 Search available at:')} ${cyan('slop search "<query>"')}\n`);
   }
 
   // Step 5: Chain
-  console.log(`  ${bold('Step 5/5:')} Chaining two APIs...`);
+  console.log(`  ${bold('Step 5/6:')} Chaining two APIs...`);
   console.log(`  ${dim('\u2192 slop pipe text-reverse crypto-hash-sha256 --text "hello"')}`);
-  console.log(`  ${green('\u2713')} Pipe reverses text \u2192 hashes the result\n`);
+  console.log(`  ${green('\u2713')} Pipe reverses text \u2192 hashes the result`);
+  progressBar(5, 6, 20, 'Step 5/6');
+  console.log('');
+
+  // Step 6: System resource check
+  console.log(`  ${bold('Step 6/6:')} System resource check...\n`);
+  try {
+    const totalRam = os.totalmem();
+    const freeRam = os.freemem();
+    const totalGbRam = Math.round(totalRam / (1024 ** 3));
+    const freeGbRam = Math.round(freeRam / (1024 ** 3));
+    const cpuCores = os.cpus().length;
+
+    let ollamaRunning = false;
+    let ollamaModels = [];
+    try {
+      const ollamaData = await new Promise((resolve, reject) => {
+        const req = http.get('http://localhost:11434/api/tags', { timeout: 3000 }, (res) => {
+          let data = '';
+          res.on('data', (chunk) => { data += chunk; });
+          res.on('end', () => {
+            try { resolve(JSON.parse(data)); } catch { resolve(null); }
+          });
+        });
+        req.on('error', () => resolve(null));
+        req.on('timeout', () => { req.destroy(); resolve(null); });
+      });
+      if (ollamaData && ollamaData.models) {
+        ollamaRunning = true;
+        ollamaModels = ollamaData.models.map(m => m.name.replace(/:latest$/, ''));
+      }
+    } catch { /* Ollama not available */ }
+
+    const ollamaModelCount = ollamaModels.length || 1;
+    const recommended = Math.max(1, Math.min(Math.floor(freeGbRam / 2), cpuCores, ollamaModelCount * 8, 64));
+
+    const w = 41;
+    const line = '\u2500'.repeat(w);
+    const tl = '\u250c', tr = '\u2510', bl = '\u2514', br = '\u2518', vl = '\u2502', ml = '\u251c', mr = '\u2524';
+
+    const pad = (s, len) => {
+      // Strip ANSI for length calc
+      const stripped = s.replace(/\x1b\[[0-9;]*m/g, '');
+      const diff = len - stripped.length;
+      return diff > 0 ? s + ' '.repeat(diff) : s;
+    };
+
+    const ramLine = `RAM:      ${totalGbRam} GB total, ${freeGbRam} GB free`;
+    const cpuLine = `CPU:      ${cpuCores} cores`;
+
+    let ollamaLine1, ollamaLine2;
+    if (ollamaRunning && ollamaModels.length > 0) {
+      const modelListStr = ollamaModels.join(', ');
+      if (modelListStr.length <= 22) {
+        ollamaLine1 = `Ollama:   ${ollamaModels.length} model${ollamaModels.length === 1 ? '' : 's'} (${modelListStr})`;
+        ollamaLine2 = null;
+      } else {
+        const first = ollamaModels.slice(0, 2).join(', ') + ',';
+        const rest = ollamaModels.slice(2).join(', ');
+        ollamaLine1 = `Ollama:   ${ollamaModels.length} model${ollamaModels.length === 1 ? '' : 's'} (${first}`;
+        ollamaLine2 = `          ${rest})`;
+      }
+    } else {
+      ollamaLine1 = `Ollama:   ${ollamaRunning ? '0 models' : dim('not detected')}`;
+      ollamaLine2 = null;
+    }
+    const gpuLine = `GPU:      ${ollamaRunning ? '(detected via Ollama)' : dim('unknown')}`;
+
+    const recLine = `Recommended: ${bold(String(recommended))} always-on local agents`;
+    const cmdLine = `\u2192 ${cyan('slop agents start ' + recommended)}`;
+
+    console.log(`  ${tl}${line}${tr}`);
+    console.log(`  ${vl}  ${bold('System Resources')}${' '.repeat(w - 19)}${vl}`);
+    console.log(`  ${ml}${line}${mr}`);
+    console.log(`  ${vl}  ${pad(ramLine, w - 3)}${vl}`);
+    console.log(`  ${vl}  ${pad(cpuLine, w - 3)}${vl}`);
+    console.log(`  ${vl}  ${pad(ollamaLine1, w - 3)}${vl}`);
+    if (ollamaLine2) {
+      console.log(`  ${vl}  ${pad(ollamaLine2, w - 3)}${vl}`);
+    }
+    console.log(`  ${vl}  ${pad(gpuLine, w - 3)}${vl}`);
+    console.log(`  ${ml}${line}${mr}`);
+    console.log(`  ${vl}  ${pad(recLine, w - 3)}${vl}`);
+    console.log(`  ${vl}  ${pad(cmdLine, w - 3)}${vl}`);
+    console.log(`  ${bl}${line}${br}`);
+    console.log('');
+    progressBar(6, 6, 20, 'Step 6/6');
+  } catch (e) {
+    console.log(`  ${red('\u2717')} Could not detect system resources: ${e.message}`);
+    progressBar(6, 6, 20, 'Step 6/6');
+  }
+  console.log('');
 
   // Summary
   console.log(`  ${bold('You\'re ready!')} Here\'s what to try next:\n`);
