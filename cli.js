@@ -884,7 +884,8 @@ async function cmdDoctor() {
 }
 
 // ============================================================
-// HIVE — Shared-state org. One doc, CEO directs, agents sync.
+// HIVE — 4-phase sprint: Research → Plan → Build → QA
+// Shared doc. Context measured. CEO directs. Real data.
 // Usage: slop hive [sprints] [--local-only] "mission"
 // ============================================================
 async function cmdHive(args) {
@@ -894,11 +895,11 @@ async function cmdHive(args) {
   const localOnly = args.includes('--local-only');
   const mission = args.filter(a => !/^\d+$/.test(a) && !a.startsWith('--')).join(' ').trim() || 'improve slopshop';
 
-  // Helpers
+  // ── Helpers ──
   const ollamaChat = (model, prompt) => new Promise(r => {
     const body = JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false });
     const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
-      headers: { 'Content-Type': 'application/json' }, timeout: 90000 }, res => {
+      headers: { 'Content-Type': 'application/json' }, timeout: 120000 }, res => {
       let d = ''; res.on('data', c => d += c);
       res.on('end', () => { try { r(JSON.parse(d).message?.content || ''); } catch(e) { r(''); } });
     });
@@ -909,126 +910,229 @@ async function cmdHive(args) {
     try { const r = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 3000), provider }); return r.data?.data?.answer || r.data?.answer || ''; }
     catch(e) { return ''; }
   };
-  const extractScore = t => { const m = (t||'').match(/(\d+\.?\d*)\s*\/\s*10/); return m ? parseFloat(m[1]) : 0; };
-
-  // ── THE SHARED DOC: one object in memory, every sprint reads + writes it ──
-  const HIVE_KEY = 'hive-shared-' + Date.now();
-  let shared = { mission, research: [], spec: null, builds: [], qa: [], shipped: [], ceo_notes: [], scores: [] };
-  const saveShared = async () => {
-    await request('POST', '/v1/memory-set', { key: HIVE_KEY, value: JSON.stringify(shared) }).catch(() => {});
+  const slopCall = async (slug, params) => {
+    try { const r = await request('POST', '/v1/' + slug, params); return { ok: true, data: r.data?.data || r.data }; }
+    catch(e) { return { ok: false, err: e.message }; }
   };
+  const slopMem = async (key, value) => {
+    const r = await slopCall('memory-set', { key, value: typeof value === 'string' ? value : JSON.stringify(value) });
+    return r.ok;
+  };
+  const extractScore = t => { const m = (t||'').match(/(\d+\.?\d*)\s*\/\s*10/); return m ? parseFloat(m[1]) : 0; };
+  const tokenEst = s => Math.ceil((s || '').length / 4); // rough token estimate
+
+  // ── Shared state ──
+  const HIVE_KEY = 'hive-' + Date.now();
+  const shared = { mission, sprints_done: 0, research: [], plan: [], builds: [], qa: [], scores: [], context_log: [] };
+  const saveShared = async () => { await slopMem(HIVE_KEY, shared); };
+
+  // ── Local log ──
+  const localLog = path.join(CONFIG_DIR, 'hive-log.json');
+  const logEntries = [];
+  const hiveLog = (entry) => { logEntries.push({ ...entry, ts: new Date().toISOString() }); };
+  const saveLog = () => { try { fs.writeFileSync(localLog, JSON.stringify(logEntries, null, 2)); } catch(e) {} };
 
   console.log('');
   console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║            SLOPSHOP HIVE v7                    ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║  ${sprints} sprints · shared state · CEO directs     ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║            SLOPSHOP HIVE v8                    ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║  Research → Plan → Build → QA · every sprint  ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════╝${C.reset}`);
   console.log(`  ${bold('Mission:')} ${green(mission)}`);
-  console.log(`  ${dim('Shared doc:')} ${cyan(HIVE_KEY)}`);
-  console.log(`  ${dim('Every sprint reads the doc, adds to it, CEO reviews.')}`);
+  console.log(`  ${dim('Sprints:')} ${sprints}  ${dim('Doc:')} ${cyan(HIVE_KEY)}  ${dim('Log:')} ${dim(localLog)}`);
   console.log('');
 
   for (let s = 1; s <= sprints; s++) {
+    const sprintStart = Date.now();
     console.log(`  ${C.red}${C.bold}══ SPRINT ${s}/${sprints} ══${C.reset}`);
 
-    // ── Every agent reads the shared doc ──
-    const ctx = JSON.stringify(shared, null, 0).slice(0, 1500);
+    // ── PHASE 1: RESEARCH — real data from internet via slop + cloud LLMs ──
+    console.log(`  ${dim('┌')} ${bold('RESEARCH')}`);
+    const researchTokens = { input: 0, output: 0 };
+    const researchFindings = [];
 
-    // ── CEO SETS DIRECTION for this sprint ──
-    const ceoDirective = s === 1
-      ? `First sprint. Mission: "${mission}". Direct the team: what should they research? Be specific — name URLs to scrape, competitors to check, questions to answer. OUTPUT only: DIRECTIVE: <what to do>`
-      : `Sprint ${s}. Shared state:\n${ctx}\n\nBased on what we have so far, what should sprint ${s} focus on? Be specific. DIRECTIVE: <what to do>`;
-
-    const ceoResp = localOnly ? await ollamaChat('llama3', ceoDirective) : await cloudChat('anthropic', ceoDirective);
-    const dirMatch = (ceoResp || '').match(/DIRECTIVE:\s*(.+?)(?:\n|$)/i);
-    const directive = dirMatch ? dirMatch[1].trim() : mission;
-    console.log(`  ${dim('│')} ${C.red}${bold('CEO')}${C.reset} ${directive.slice(0, 80)}`);
-
-    // ── WORKERS EXECUTE the directive using slop APIs ──
-    console.log(`  ${dim('│')} ${bold('Workers executing...')}`);
-
-    // Extract URLs from directive + mission
-    const allText = mission + ' ' + directive;
-    const urls = allText.match(/https?:\/\/[^\s,)]+/g) || [];
-    const domains = allText.match(/\b[\w-]+\.(?:com|dev|io|gg|ai|org)\b/g) || [];
-
-    // Worker 1: Scrape URLs via slop
+    // Slop APIs: scrape URLs from mission
+    const urls = (mission + ' ' + (shared.plan[0] || '')).match(/https?:\/\/[^\s,)]+/g) || [];
+    const domains = (mission + ' ' + (shared.plan[0] || '')).match(/\b[\w-]+\.(?:com|dev|io|gg|ai|org)\b/g) || [];
     for (const url of [...new Set(urls)].slice(0, 3)) {
-      console.log(`  ${dim('│')} ${dim('scraping')} ${cyan(url.slice(0, 50))}...`);
-      const r = await request('POST', '/v1/ext-web-scrape', { url }).catch(() => ({ data: {} }));
-      const title = r.data?.data?.title || r.data?.title || '';
-      const content = (r.data?.data?.content || r.data?.content || '').slice(0, 300);
-      if (title || content) {
-        shared.research.push({ url, title, content: content.slice(0, 200), sprint: s });
-        console.log(`  ${dim('│')} ${green('✓')} ${title.slice(0, 40) || 'scraped'} ${dim('(' + content.length + ' chars)')}`);
+      const r = await slopCall('ext-web-scrape', { url });
+      if (r.ok) {
+        const finding = `[SCRAPED ${url}] ${r.data?.title || ''}: ${(r.data?.content || '').slice(0, 200)}`;
+        researchFindings.push(finding);
+        console.log(`  ${dim('│')} ${green('✓')} scraped ${cyan(url.slice(0, 40))}`);
+      }
+    }
+    for (const d of [...new Set(domains)].slice(0, 4)) {
+      const r = await slopCall('net-http-status', { url: 'https://' + d });
+      if (r.ok) {
+        researchFindings.push(`[STATUS ${d}] HTTP ${r.data?.status_code || '?'}`);
+        console.log(`  ${dim('│')} ${(r.data?.status_code === 200) ? green('✓') : yellow('⚠')} ${d} HTTP ${r.data?.status_code || '?'}`);
       }
     }
 
-    // Worker 2: Check domains via slop
-    for (const domain of [...new Set(domains)].slice(0, 5)) {
-      const url = 'https://' + domain;
-      const r = await request('POST', '/v1/net-http-status', { url }).catch(() => ({ data: {} }));
-      const status = r.data?.data?.status_code || r.data?.status_code;
-      if (status) {
-        shared.research.push({ domain, status, sprint: s });
-        console.log(`  ${dim('│')} ${status === 200 ? green('✓') : yellow('⚠')} ${domain} HTTP ${status}`);
+    // Cloud research: each provider gets a specific angle
+    const prevContext = shared.research.slice(-5).map(f => typeof f === 'string' ? f : f.text || JSON.stringify(f)).join('\n').slice(0, 500);
+    const researchPrompts = [
+      { provider: 'grok', prompt: `Mission: "${mission}". Previous findings: ${prevContext}\nSearch for the latest news, tweets, and discussions about this topic. What are people saying RIGHT NOW? Give 5 specific findings with sources.` },
+      { provider: 'anthropic', prompt: `Mission: "${mission}". Previous findings: ${prevContext}\nAnalyze the competitive landscape. Name specific companies, features, pricing, weaknesses. 5 findings.` },
+      { provider: 'openai', prompt: `Mission: "${mission}". Previous findings: ${prevContext}\nWhat would a user searching for this product want? What keywords, what pain points, what alternatives would they find? 5 findings.` },
+    ];
+    if (localOnly) {
+      // Local-only: use all 3 local models instead
+      const localPrompt = `Mission: "${mission}". Previous: ${prevContext}\nGive 5 specific research findings. Be concrete — names, numbers, URLs.`;
+      for (const m of ['llama3', 'mistral', 'deepseek-coder-v2']) {
+        const resp = await ollamaChat(m, localPrompt);
+        if (resp) researchFindings.push(`[${m}] ${resp.slice(0, 300)}`);
+      }
+    } else {
+      for (const rp of researchPrompts) {
+        const resp = await cloudChat(rp.provider, rp.prompt);
+        if (resp) {
+          researchFindings.push(`[${rp.provider}] ${resp.slice(0, 300)}`);
+          console.log(`  ${dim('│')} ${yellow(rp.provider.padEnd(10))} ${dim(resp.slice(0, 60))}`);
+        }
+        researchTokens.input += tokenEst(rp.prompt);
+        researchTokens.output += tokenEst(resp);
       }
     }
 
-    // Worker 3: Local model analyzes what we have
-    const analysisPrompt = `CEO directive: "${directive}"\nData gathered so far: ${JSON.stringify(shared.research.slice(-5))}\n\nProvide 3 specific, actionable insights. Then output slop commands to store results:\nmemory set <key> <json-value>\n\nINSIGHTS:\n1.`;
-    const analysis = await ollamaChat('llama3', analysisPrompt);
-    const insights = (analysis || '').split('\n').filter(l => l.match(/^\d+\.|^-|^•/)).slice(0, 3);
-    shared.research.push(...insights.map(i => ({ insight: i.trim(), sprint: s })));
-    for (const i of insights.slice(0, 2)) console.log(`  ${dim('│')} ${dim(i.slice(0, 80))}`);
+    shared.research.push(...researchFindings.map(f => ({ text: typeof f === 'string' ? f : JSON.stringify(f), sprint: s })));
+    const totalResearchTokens = researchFindings.reduce((a, f) => a + tokenEst(f), 0);
+    console.log(`  ${dim('│')} ${green(researchFindings.length + ' findings')} ${dim('(' + totalResearchTokens + ' tokens)')}`);
+    hiveLog({ sprint: s, phase: 'research', findings: researchFindings.length, tokens: totalResearchTokens });
 
-    // Worker 4: Execute any memory set commands from analysis
-    const cmds = (analysis || '').split('\n').filter(l => l.trim().startsWith('memory set')).slice(0, 3);
-    for (const cmd of cmds) {
+    // ── PHASE 2: PLAN — PM Claude synthesizes ALL research into priorities ──
+    console.log(`  ${dim('├')} ${bold('PLAN')}`);
+    const allResearchText = shared.research.map(r => r.text || JSON.stringify(r)).join('\n').slice(0, 2000);
+    const planPrompt = `You are PM. Mission: "${mission}"\n\nALL RESEARCH (${shared.research.length} items across ${s} sprints):\n${allResearchText}\n\nPrevious builds: ${shared.builds.map(b => b.key).join(', ') || 'none'}\nPrevious QA: ${shared.qa.length} checks\n\nFrom ALL research, pick the #1 HIGHEST IMPACT thing to implement THIS sprint. Must be implementable via slop memory commands.\n\nPRIORITY: <one sentence — the #1 thing>\nCOMMANDS:\nmemory set <key> <json-value>\nmemory set <key> <json-value>`;
+
+    const planResp = localOnly ? await ollamaChat('llama3', planPrompt) : await cloudChat('anthropic', planPrompt);
+    const priorityMatch = (planResp || '').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
+    const priority = priorityMatch ? priorityMatch[1].trim() : 'continue research';
+    const planCmds = (planResp || '').split('\n').map(l => l.trim()).filter(l => l.startsWith('memory set')).slice(0, 5);
+
+    shared.plan = [priority, ...planCmds];
+    const planTokensIn = tokenEst(allResearchText);
+    const planTokensOut = tokenEst(planResp);
+    console.log(`  ${dim('│')} ${green('PRIORITY:')} ${priority.slice(0, 70)}`);
+    console.log(`  ${dim('│')} ${dim(planCmds.length + ' commands')} ${dim('(' + planTokensIn + 't in → ' + planTokensOut + 't out, ' + Math.round(planTokensOut / Math.max(planTokensIn, 1) * 100) + '% ratio)')}`);
+
+    // ── CONTEXT CHECK: did research make it into the plan? ──
+    const contextRetained = priority.length > 10 && planCmds.length > 0;
+    if (!contextRetained) {
+      console.log(`  ${dim('│')} ${red('⚠ CONTEXT ALARM: plan has no commands — research may not have flowed through')}`);
+      hiveLog({ sprint: s, phase: 'plan', alarm: 'no_commands', tokensIn: planTokensIn, tokensOut: planTokensOut });
+    } else {
+      hiveLog({ sprint: s, phase: 'plan', priority, commands: planCmds.length, tokensIn: planTokensIn, tokensOut: planTokensOut });
+    }
+
+    // ── PHASE 3: BUILD — execute the plan commands through slop ──
+    console.log(`  ${dim('├')} ${bold('BUILD')}`);
+    let buildCount = 0;
+
+    // Execute plan commands
+    for (const cmd of planCmds) {
       const rest = cmd.replace(/^memory set\s+/, '').trim();
       const si = rest.indexOf(' ');
       if (si > 0) {
         const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, '');
-        const v = rest.slice(si + 1);
-        if (k.length > 1 && v.length > 2) {
-          await request('POST', '/v1/memory-set', { key: 'hive-' + k, value: v }).catch(() => {});
-          shared.builds.push({ key: 'hive-' + k, sprint: s });
-          console.log(`  ${dim('│')} ${green('✓ built')} ${cyan('hive-' + k)}`);
+        const v = rest.slice(si + 1).trim();
+        if (k.length > 1 && v.length > 1) {
+          const ok = await slopMem('hive-' + k, v);
+          if (ok) {
+            shared.builds.push({ key: 'hive-' + k, value: v.slice(0, 50), sprint: s });
+            buildCount++;
+            console.log(`  ${dim('│')} ${green('✓')} ${cyan('hive-' + k)} ${dim(v.slice(0, 50))}`);
+          }
         }
       }
     }
 
-    // Worker 5 (cloud): VP analysis if not local-only
-    if (!localOnly && s <= 3) {
-      const vpResp = await cloudChat('grok', `${directive}\nData: ${JSON.stringify(shared.research.slice(-5))}\nGive 2 competitive insights. Be specific.`);
-      if (vpResp) {
-        shared.research.push({ vp: 'grok', insight: vpResp.slice(0, 200), sprint: s });
-        console.log(`  ${dim('│')} ${yellow('VP grok')} ${dim(vpResp.slice(0, 60))}`);
+    if (buildCount === 0 && planCmds.length === 0) {
+      // Fallback: ask local builder to generate commands from priority
+      const buildPrompt = `Implement this: "${priority}"\nOutput 2-3 slop memory set commands. ONLY commands, nothing else:\nmemory set <key> <json>`;
+      const buildResp = await ollamaChat('deepseek-coder-v2', buildPrompt);
+      const fallbackCmds = (buildResp || '').split('\n').filter(l => l.trim().startsWith('memory set')).slice(0, 3);
+      for (const cmd of fallbackCmds) {
+        const rest = cmd.replace(/^memory set\s+/, '').trim();
+        const si = rest.indexOf(' ');
+        if (si > 0) {
+          const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, '');
+          const v = rest.slice(si + 1).trim();
+          if (k.length > 1 && v.length > 1) {
+            await slopMem('hive-' + k, v);
+            shared.builds.push({ key: 'hive-' + k, value: v.slice(0, 50), sprint: s });
+            buildCount++;
+            console.log(`  ${dim('│')} ${green('✓')} ${cyan('hive-' + k)} ${dim(v.slice(0, 40))}`);
+          }
+        }
       }
     }
 
-    // ── SYNC: save shared doc to slop memory ──
-    await saveShared();
-    console.log(`  ${dim('│')} ${green('synced')} ${dim(shared.research.length + ' research, ' + shared.builds.length + ' builds')}`);
+    console.log(`  ${dim('│')} ${buildCount > 0 ? green(buildCount + ' built') : yellow('0 built')} ${dim('via slop memory')}`);
+    hiveLog({ sprint: s, phase: 'build', count: buildCount });
 
-    // ── CEO REVIEW every sprint ──
-    const reviewPrompt = `Sprint ${s} complete. Shared state:\n${JSON.stringify(shared, null, 0).slice(0, 1500)}\n\nRate this sprint /10. What was accomplished? What's missing? One specific instruction for next sprint.\nSCORE: X.X/10\nACCOMPLISHED: <what>\nMISSING: <what>\nNEXT_SPRINT: <specific instruction>`;
+    // ── PHASE 4: QA — verify builds exist + test endpoints ──
+    console.log(`  ${dim('├')} ${bold('QA')}`);
+    let qaPass = 0, qaFail = 0;
+
+    // Verify each build exists
+    for (const b of shared.builds.filter(b => b.sprint === s)) {
+      const r = await slopCall('memory-get', { key: b.key });
+      const val = r.data?.value ?? r.data?.data?.value;
+      if (val !== undefined && val !== null) { qaPass++; }
+      else { qaFail++; console.log(`  ${dim('│')} ${red('✗ missing:')} ${b.key}`); }
+    }
+
+    // Test 3 core endpoints
+    for (const slug of ['crypto-uuid', 'text-word-count', 'memory-set']) {
+      const params = slug === 'memory-set' ? { key: 'qa-' + s, value: 'ok' } : { text: 'qa' };
+      const r = await slopCall(slug, params);
+      if (r.ok) qaPass++; else qaFail++;
+    }
+
+    shared.qa.push({ sprint: s, pass: qaPass, fail: qaFail });
+    console.log(`  ${dim('│')} ${qaFail === 0 ? green(qaPass + '/' + (qaPass + qaFail) + ' pass') : yellow(qaPass + '/' + (qaPass + qaFail) + ' pass, ' + qaFail + ' fail')}`);
+    hiveLog({ sprint: s, phase: 'qa', pass: qaPass, fail: qaFail });
+
+    // ── CONTEXT FLOW LOG ──
+    const contextFlow = {
+      research_tokens: totalResearchTokens,
+      plan_tokens_in: planTokensIn,
+      plan_tokens_out: planTokensOut,
+      builds: buildCount,
+      qa_pass: qaPass,
+      qa_fail: qaFail,
+      research_to_plan: planTokensIn > 0 ? Math.round(planTokensOut / planTokensIn * 100) + '%' : '?',
+      plan_to_build: planCmds.length > 0 ? Math.round(buildCount / planCmds.length * 100) + '%' : '?',
+    };
+    shared.context_log.push(contextFlow);
+
+    // ── CEO REVIEW ──
+    const reviewPrompt = `Sprint ${s}/${sprints}. Mission: "${mission}"\nResearch: ${shared.research.length} items. Priority: "${priority}". Built: ${buildCount}. QA: ${qaPass}/${qaPass + qaFail}.\nContext flow: ${JSON.stringify(contextFlow)}\n\nRate /10. What worked? What next?\nSCORE: X.X/10\nNEXT: <specific directive for next sprint>`;
     const review = localOnly ? await ollamaChat('mistral', reviewPrompt) : await cloudChat('anthropic', reviewPrompt);
     const score = extractScore(review);
-    const nextMatch = (review || '').match(/NEXT_SPRINT:\s*(.+?)(?:\n|$)/i);
-    const accomplishedMatch = (review || '').match(/ACCOMPLISHED:\s*(.+?)(?:\n|$)/i);
+    const nextMatch = (review || '').match(/NEXT:\s*(.+?)(?:\n|$)/i);
 
     if (score > 0) shared.scores.push({ sprint: s, score });
-    if (nextMatch) shared.ceo_notes.push({ sprint: s, next: nextMatch[1].trim() });
+    if (nextMatch) shared.plan.unshift(nextMatch[1].trim()); // CEO's next directive feeds into next sprint
 
-    console.log(`  ${dim('└')} ${C.red}${bold('CEO')}${C.reset} ${bold((score || '?') + '/10')} ${accomplishedMatch ? green(accomplishedMatch[1].slice(0, 50)) : ''} ${nextMatch ? yellow('→ ' + nextMatch[1].slice(0, 50)) : ''}`);
+    const sprintMs = Date.now() - sprintStart;
+    console.log(`  ${dim('└')} ${C.red}${bold('CEO')}${C.reset} ${bold((score || '?') + '/10')} ${nextMatch ? yellow('→ ' + nextMatch[1].slice(0, 60)) : ''} ${dim(sprintMs + 'ms')}`);
+
+    // ── ALARMS ──
+    if (totalResearchTokens === 0) console.log(`    ${red('⚠ ALARM: zero research tokens — nothing was gathered')}`);
+    if (buildCount === 0 && planCmds.length > 0) console.log(`    ${red('⚠ ALARM: plan had commands but nothing was built')}`);
+    if (qaFail > 0) console.log(`    ${red('⚠ ALARM: ' + qaFail + ' QA failures')}`);
+
+    shared.sprints_done = s;
+    await saveShared();
+    saveLog();
     console.log('');
 
-    await saveShared();
-    await new Promise(r => setTimeout(r, 1000));
+    await new Promise(r => setTimeout(r, 500));
   }
 
-  // ── FINAL ──
+  // ── FINAL REPORT ──
   console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════╗${C.reset}`);
   console.log(`  ${C.red}${C.bold}║            HIVE COMPLETE                       ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════╝${C.reset}`);
@@ -1036,10 +1140,18 @@ async function cmdHive(args) {
   console.log(`  Sprints:    ${sprints}`);
   console.log(`  Avg score:  ${bold(avgScore + '/10')}`);
   console.log(`  Research:   ${shared.research.length} items`);
-  console.log(`  Builds:     ${shared.builds.length} stored in memory`);
-  console.log(`  Shared doc: ${cyan(HIVE_KEY)}`);
-  console.log(`  ${dim('View it:')} ${cyan('slop memory get ' + HIVE_KEY)}`);
+  console.log(`  Builds:     ${shared.builds.length} in memory`);
+  console.log(`  QA:         ${shared.qa.reduce((a, q) => a + q.pass, 0)} pass / ${shared.qa.reduce((a, q) => a + q.fail, 0)} fail`);
+  console.log(`  Doc:        ${cyan(HIVE_KEY)}`);
+  console.log(`  Log:        ${dim(localLog)}`);
   if (shared.scores.length > 0) console.log(`  Scores:     ${shared.scores.map(s => s.score.toFixed(1)).join(' → ')}`);
+  // Context flow summary
+  if (shared.context_log.length > 0) {
+    const avgResearch = Math.round(shared.context_log.reduce((a, c) => a + c.research_tokens, 0) / shared.context_log.length);
+    const avgBuilds = (shared.context_log.reduce((a, c) => a + c.builds, 0) / shared.context_log.length).toFixed(1);
+    console.log(`  Context:    avg ${avgResearch} research tokens/sprint, ${avgBuilds} builds/sprint`);
+  }
+  saveLog();
   console.log('');
 }
 
