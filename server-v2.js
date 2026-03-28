@@ -6596,6 +6596,9 @@ app.post('/v1/compare', auth, async (req, res) => {
     providers_queried: models.length,
     results, total_credits: totalCredits,
     fastest: results.filter(r => r.latency_ms).sort((a, b) => a.latency_ms - b.latency_ms)[0]?.provider,
+    slowest: results.filter(r => r.latency_ms).sort((a, b) => b.latency_ms - a.latency_ms)[0]?.provider,
+    cost_per_model: results.filter(r => !r.error).reduce((o, r) => { o[r.provider] = r.credits + 'cr'; return o; }, {}),
+    avg_latency_ms: Math.round(results.filter(r => r.latency_ms).reduce((s, r) => s + r.latency_ms, 0) / results.filter(r => r.latency_ms).length),
     _engine: 'real',
   });
 });
@@ -6691,10 +6694,44 @@ app.get('/v1/benchmark', auth, async (req, res) => {
   });
 });
 
+
+// Machine-readable documentation endpoint
+app.get('/v1/docs/overview', (req, res) => {
+  const categories = {};
+  for (const [slug, def] of Object.entries(API_DEFS)) {
+    if (!categories[def.cat]) categories[def.cat] = { count: 0, apis: [] };
+    categories[def.cat].count++;
+    categories[def.cat].apis.push({ slug, name: def.name, credits: def.credits });
+  }
+  res.json({
+    ok: true,
+    version: '3.5.2',
+    total_apis: Object.keys(API_DEFS).length,
+    categories: Object.entries(categories).map(([name, data]) => ({ name, count: data.count, sample_apis: data.apis.slice(0, 3) })),
+    llm_providers: ['anthropic (Claude)', 'openai (GPT)', 'grok (xAI)', 'deepseek', 'ollama (local)'],
+    key_endpoints: [
+      { path: '/v1/agent/run', desc: 'Autonomous agent — describe task, get results' },
+      { path: '/v1/compare', desc: 'Side-by-side multi-LLM comparison' },
+      { path: '/v1/llm-think', desc: 'Ask any LLM to reason (provider=anthropic|openai|grok|deepseek)' },
+      { path: '/v1/llm-council', desc: 'Get all LLMs to answer same question' },
+      { path: '/v1/org/launch', desc: 'Launch multi-agent organization' },
+      { path: '/v1/workflows/run', desc: 'Multi-step conditional workflow' },
+      { path: '/v1/introspect', desc: 'Discover any API schema' },
+      { path: '/v1/context/session', desc: 'Get execution context for LLMs' },
+      { path: '/v1/memory-set', desc: 'Free persistent memory' },
+      { path: '/v1/quickstart/interactive', desc: 'Guided 5-step onboarding' },
+    ],
+    quickstart: 'npm install -g slopshop && slop signup && slop call crypto-uuid',
+    _engine: 'real',
+  });
+});
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
-  if (!def) return res.status(404).json({ error: { code: 'api_not_found', slug: req.params.slug, hint: 'GET /v1/tools to browse, POST /v1/resolve to search' } });
+  if (!def) {
+    const similar = Object.keys(API_DEFS).filter(s => s.includes(req.params.slug.split('-')[0]) || req.params.slug.includes(s.split('-')[0])).slice(0, 5);
+    return res.status(404).json({ error: { code: 'api_not_found', slug: req.params.slug, suggestions: similar.length > 0 ? similar : undefined, hint: 'GET /v1/tools to browse, GET /v1/introspect?q=TERM to search, POST /v1/route to auto-select' } });
+  }
 
   const handler = allHandlers[req.params.slug];
   if (!handler) return res.status(501).json({ error: { code: 'no_handler', slug: req.params.slug } });
