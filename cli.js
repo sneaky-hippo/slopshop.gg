@@ -977,113 +977,131 @@ async function cmdHive(args) {
     kpi.latency_samples++; kpi.avg_latency = ((kpi.avg_latency * (kpi.latency_samples - 1)) + latency) / kpi.latency_samples;
     console.log(`  ${dim('│')} tests:${passed}/3 search:"${searchQ}"→${cyan(searchSlug)} ${dim(latency + 'ms')}`);
 
-    // ── RESEARCH phase: VPs + workers gather intel ──
+    // Full sprint context — every sprint sees everything that came before
+    const ctx = `MISSION: ${mission || 'improve slopshop'}
+SPRINT: ${s}/${sprints} (phase: ${phase.name})
+PREVIOUS RESEARCH: ${researchData.slice(-10).join(' | ').slice(0, 500) || 'none yet'}
+PREVIOUS SPECS: ${specs.slice(-3).join(' | ').slice(0, 300) || 'none yet'}
+KPIs: tests ${kpi.tests_passed}/${kpi.tests_run}, research ${kpi.research_items}, specs ${kpi.specs_written}, builds ${kpi.builds_executed}, shipped ${kpi.shipped}, latency ${Math.round(kpi.avg_latency)}ms
+LAST SCORES: ${kpi.scores.slice(-3).map(s => s.toFixed(1)).join('→') || 'none'}`;
+
+    // ── RESEARCH: all agents gather intel, ONE synthesis ──
     if (phase.name === 'RESEARCH') {
-      console.log(`  ${dim('│')} ${bold('Research team (' + phase.agents + ' agents)')}`);
-      const researchPrompt = `${missionDirective}You are a research analyst. Investigate this topic and return FINDINGS as bullet points. Be specific with data, names, URLs, features. Max 5 bullets.\nFINDINGS:`;
-      for (let a = 0; a < Math.min(phase.agents, localModels.length); a++) {
-        const resp = await ollamaChat(localModels[a % localModels.length], researchPrompt);
-        const findings = (resp || '').split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('•')).map(l => l.trim()).slice(0, 5);
-        researchData.push(...findings);
-        kpi.research_items += findings.length;
-        console.log(`  ${dim('│')} ${cyan(localModels[a % localModels.length].padEnd(15))} ${green(findings.length + ' findings')}`);
-      }
+      console.log(`  ${dim('│')} ${bold('Researching...')}`);
+      const prompt = `${ctx}\n\nResearch this mission. Return exactly 5 bullet points of SPECIFIC findings (competitor names, feature gaps, data points). No fluff.\nFINDINGS:`;
+      const responses = await Promise.all(localModels.map(m => ollamaChat(m, prompt)));
       if (!localOnly) {
-        for (const vp of ['anthropic', 'grok', 'deepseek']) {
-          const resp = await cloudChat(vp, researchPrompt);
-          const findings = (resp || '').split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('•')).map(l => l.trim()).slice(0, 5);
-          researchData.push(...findings);
-          kpi.research_items += findings.length;
-          console.log(`  ${dim('│')} ${yellow(vp.padEnd(15))} ${green(findings.length + ' findings')}`);
+        for (const vp of ['anthropic', 'grok']) {
+          responses.push(await cloudChat(vp, prompt));
         }
       }
-      // Store research
-      await request('POST', '/v1/memory-set', { key: 'hive4-research-' + s, value: JSON.stringify(researchData.slice(-20)) }).catch(() => {});
-    }
-
-    // ── SPEC phase: workers write specs from research ──
-    if (phase.name === 'SPEC') {
-      console.log(`  ${dim('│')} ${bold('Spec team (' + phase.agents + ' agents)')}`);
-      const recentResearch = researchData.slice(-15).join('\n');
-      const specPrompt = `${missionDirective}Research findings:\n${recentResearch}\n\nWrite a specific implementation SPEC. Format:\nSPEC: <what to build>\nSLOP_CMDS: <slop commands to execute, one per line>`;
-      for (let a = 0; a < Math.min(phase.agents, localModels.length); a++) {
-        const resp = await ollamaChat(localModels[a % localModels.length], specPrompt);
-        const specMatch = (resp || '').match(/SPEC:\s*(.+?)(?:\n|$)/i);
-        if (specMatch) specs.push(specMatch[1].trim());
-        kpi.specs_written++;
-        console.log(`  ${dim('│')} ${cyan(localModels[a % localModels.length].padEnd(15))} ${specMatch ? green('spec: ' + specMatch[1].slice(0, 60)) : dim('no spec')}`);
+      for (const resp of responses) {
+        const findings = (resp || '').split('\n').filter(l => l.trim().match(/^[-•*]/)).map(l => l.trim()).slice(0, 5);
+        researchData.push(...findings);
+        kpi.research_items += findings.length;
       }
-      await request('POST', '/v1/memory-set', { key: 'hive4-specs-' + s, value: JSON.stringify(specs.slice(-10)) }).catch(() => {});
+      // Synthesize into ONE summary via best model
+      const synthResp = await ollamaChat('llama3', `Synthesize these into the 5 MOST IMPORTANT findings. One line each.\n${researchData.slice(-20).join('\n')}`);
+      const synth = (synthResp || '').split('\n').filter(l => l.trim().length > 10).slice(0, 5);
+      researchData.length = 0; researchData.push(...synth); // replace with synthesis
+      console.log(`  ${dim('│')} ${green(kpi.research_items + ' raw → ' + synth.length + ' synthesized findings')}`);
+      for (const f of synth.slice(0, 3)) console.log(`  ${dim('│')} ${dim(f.slice(0, 80))}`);
+      await request('POST', '/v1/memory-set', { key: 'hive-research-' + s, value: JSON.stringify(synth) }).catch(() => {});
     }
 
-    // ── BUILD phase: execute slop commands from specs ──
+    // ── SPEC: ONE spec from research, actionable ──
+    if (phase.name === 'SPEC') {
+      console.log(`  ${dim('│')} ${bold('Writing spec...')}`);
+      const prompt = `${ctx}\n\nFrom the research, write ONE implementation spec. It must be:\n1. Specific (name the exact slop memory keys or API endpoints)\n2. Executable (list exact "memory set <key> <json>" commands)\n3. Testable (how to verify it worked)\n\nSPEC: <one line description>\nCOMMANDS:\nmemory set <key> <json-value>\nmemory set <key> <json-value>\nVERIFY: memory search <query>`;
+      const resp = await ollamaChat('llama3', prompt);
+      const specMatch = (resp || '').match(/SPEC:\s*(.+?)(?:\n|$)/i);
+      if (specMatch) { specs.length = 0; specs.push(specMatch[1].trim()); } // ONE spec, replaces previous
+      // Extract commands from spec
+      const cmds = (resp || '').split('\n').filter(l => l.trim().startsWith('memory set') || l.trim().startsWith('call ')).slice(0, 5);
+      specs.push(...cmds.map(c => c.trim()));
+      kpi.specs_written++;
+      console.log(`  ${dim('│')} ${green('SPEC: ' + (specMatch ? specMatch[1].slice(0, 70) : 'none'))}`);
+      console.log(`  ${dim('│')} ${dim(cmds.length + ' commands ready to execute')}`);
+      await request('POST', '/v1/memory-set', { key: 'hive-spec-' + s, value: JSON.stringify({ spec: specMatch?.[1], cmds }) }).catch(() => {});
+    }
+
+    // ── BUILD: execute the spec commands directly ──
     if (phase.name === 'BUILD') {
-      console.log(`  ${dim('│')} ${bold('Build team (' + phase.agents + ' agents)')}`);
-      const recentSpecs = specs.slice(-5).join('\n');
-      const buildPrompt = `SPECS TO IMPLEMENT:\n${recentSpecs}\n\nOutput ONLY slop commands, one per line. No markdown.\nExample:\nmemory set feature-x {"status":"built","detail":"..."}\ncall memory-search --query feature`;
-      const resp = await ollamaChat('deepseek-coder-v2', buildPrompt);
-      const cmds = (resp || '').split('\n').map(l => l.trim().replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, '').replace(/^`+|`+$/g, '').trim()).filter(l => l.length > 5 && (l.startsWith('memory') || l.startsWith('call')));
-      for (const cmd of cmds.slice(0, 5)) {
+      console.log(`  ${dim('│')} ${bold('Building...')}`);
+      // Get commands from specs array (spec phase stored them)
+      const cmds = specs.filter(l => l.startsWith('memory set') || l.startsWith('call '));
+      if (cmds.length === 0) {
+        // No pre-built commands — ask builder to generate from context
+        const prompt = `${ctx}\n\nGenerate 3-5 slop commands to advance the mission. Output ONLY commands, no explanation:\nmemory set <key> <json>\ncall <endpoint> --param value`;
+        const resp = await ollamaChat('deepseek-coder-v2', prompt);
+        const generated = (resp || '').split('\n').map(l => l.trim().replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, '').replace(/^`+|`+$/g, '').trim()).filter(l => l.startsWith('memory set') || l.startsWith('call '));
+        cmds.push(...generated.slice(0, 5));
+      }
+      for (const cmd of cmds) {
         try {
           if (cmd.startsWith('memory set ')) {
             const rest = cmd.slice(11); const si = rest.indexOf(' ');
             if (si > 0) {
               const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, ''), v = rest.slice(si + 1);
               await request('POST', '/v1/memory-set', { key: 'hive-' + k, value: v }).catch(() => {});
-              console.log(`  ${dim('│')} ${green('✓')} ${bold('set')} ${cyan('hive-' + k)} ${dim(v.slice(0, 50))}`);
+              console.log(`  ${dim('│')} ${green('✓ set')} ${cyan('hive-' + k)} ${dim(v.slice(0, 50))}`);
               kpi.builds_executed++;
             }
           } else if (cmd.startsWith('call ')) {
-            const parts = cmd.slice(5).split(/\s+/); const slug = parts[0];
-            if (slug) { await request('POST', '/v1/' + slug, { text: mission || 'hive build' }).catch(() => {}); console.log(`  ${dim('│')} ${green('✓')} ${bold('call')} ${cyan(slug)}`); kpi.builds_executed++; }
+            const slug = cmd.slice(5).split(/\s+/)[0];
+            if (slug && slug.length > 2) {
+              await request('POST', '/v1/' + slug, { text: mission || 'hive' }).catch(() => {});
+              console.log(`  ${dim('│')} ${green('✓ call')} ${cyan(slug)}`);
+              kpi.builds_executed++;
+            }
           }
         } catch(e) {}
       }
-      if (cmds.length === 0) { console.log(`  ${dim('│')} ${yellow('↳ no executable commands generated')}`); }
+      if (kpi.builds_executed === 0) console.log(`  ${dim('│')} ${yellow('↳ no commands executed')}`);
     }
 
-    // ── QA phase: test everything ──
+    // ── QA: test what was built ──
     if (phase.name === 'QA') {
-      console.log(`  ${dim('│')} ${bold('QA team (' + phase.agents + ' agents)')}`);
-      const qaTests = ['crypto-uuid', 'crypto-hash-sha256', 'text-word-count', 'memory-set', 'memory-search'];
+      console.log(`  ${dim('│')} ${bold('QA...')}`);
+      const qaEndpoints = ['crypto-uuid', 'crypto-hash-sha256', 'text-word-count', 'memory-set', 'memory-search'];
       let qaPassed = 0;
-      for (const slug of qaTests) {
-        const params = slug.includes('memory-set') ? { key: 'qa-' + Date.now(), value: 'ok' } : slug.includes('memory-search') ? { query: 'hive' } : { text: 'qa test' };
+      for (const slug of qaEndpoints) {
+        const params = slug === 'memory-set' ? { key: 'qa-' + Date.now(), value: 'ok' } : slug === 'memory-search' ? { query: 'hive' } : { text: 'test' };
         const r = await request('POST', '/v1/' + slug, params).catch(() => ({ _err: true }));
-        const ok = !r._err && r.status < 400;
-        if (ok) qaPassed++;
-        console.log(`  ${dim('│')} ${ok ? green('✓') : red('✗')} ${slug}`);
+        if (!r._err && r.status < 400) qaPassed++;
       }
-      kpi.qa_passed += qaPassed; kpi.tests_run += qaTests.length; kpi.tests_passed += qaPassed;
-      console.log(`  ${dim('│')} QA: ${qaPassed}/${qaTests.length}`);
+      // Also verify hive-built data exists
+      const hiveData = await request('POST', '/v1/memory-search', { query: 'hive' }).catch(() => ({}));
+      const hiveCount = hiveData.data?.results?.length || hiveData.data?.data?.results?.length || 0;
+      kpi.qa_passed += qaPassed; kpi.tests_run += qaEndpoints.length; kpi.tests_passed += qaPassed;
+      console.log(`  ${dim('│')} endpoints: ${qaPassed}/${qaEndpoints.length}  hive data: ${hiveCount} entries`);
     }
 
-    // ── SHIP phase: docs, SEO, marketing via memory ──
+    // ── SHIP: store docs/SEO/changelog ──
     if (phase.name === 'SHIP') {
-      console.log(`  ${dim('│')} ${bold('Ship team (' + phase.agents + ' agents)')}`);
-      const shipPrompt = `${missionDirective}We just built: ${specs.slice(-3).join('; ')}.\nWrite 3 slop memory set commands to update docs/SEO/marketing:\nmemory set docs-update {"page":"...","change":"..."}\nmemory set seo-keyword {"term":"...","page":"..."}\nmemory set changelog {"version":"...","items":[...]}`;
-      const resp = await ollamaChat('mistral', shipPrompt);
-      const cmds = (resp || '').split('\n').filter(l => l.trim().startsWith('memory set')).slice(0, 3);
-      for (const cmd of cmds) {
-        const rest = cmd.replace(/^memory set\s+/, '').trim(); const si = rest.indexOf(' ');
-        if (si > 0) {
-          const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, '');
-          await request('POST', '/v1/memory-set', { key: 'hive-ship-' + k, value: rest.slice(si + 1) }).catch(() => {});
-          console.log(`  ${dim('│')} ${green('✓')} shipped: ${cyan(k)}`);
-          kpi.shipped++;
-        }
-      }
+      console.log(`  ${dim('│')} ${bold('Shipping...')}`);
+      const shipData = {
+        changelog: { version: '3.7.' + s, items: specs.filter(s => !s.startsWith('memory')).slice(0, 3), ts: new Date().toISOString() },
+        seo: { keywords: (mission || '').split(/\s+/).filter(w => w.length > 3).slice(0, 5), mission },
+      };
+      await request('POST', '/v1/memory-set', { key: 'hive-changelog-' + s, value: JSON.stringify(shipData.changelog) }).catch(() => {});
+      await request('POST', '/v1/memory-set', { key: 'hive-seo-' + s, value: JSON.stringify(shipData.seo) }).catch(() => {});
+      kpi.shipped += 2;
+      console.log(`  ${dim('│')} ${green('✓')} changelog + SEO keywords stored`);
     }
 
-    // ── REVIEW phase: CEO scores everything ──
+    // ── REVIEW: CEO scores with full context ──
     if (phase.name === 'REVIEW') {
       console.log(`  ${dim('│')} ${bold('CEO Review')}`);
-      const reviewPrompt = `${missionDirective}Sprint cycle complete. KPIs: tests ${kpi.tests_passed}/${kpi.tests_run}, research ${kpi.research_items} items, specs ${kpi.specs_written}, builds ${kpi.builds_executed}, QA ${kpi.qa_passed}, shipped ${kpi.shipped}. Avg latency ${Math.round(kpi.avg_latency)}ms.\n\nRate OVERALL /10 and give ONE priority for next cycle.\nSCORE: X.X/10\nNEXT_PRIORITY: <specific>`;
-      const resp = localOnly ? await ollamaChat('llama3', reviewPrompt) : await cloudChat('anthropic', reviewPrompt);
+      const prompt = `${ctx}\n\nRate this sprint cycle /10. What worked, what didn't, what's the #1 priority for the next cycle?\nSCORE: X.X/10\nWORKED: <what went well>\nFAILED: <what didn't work>\nNEXT: <#1 priority>`;
+      const resp = localOnly ? await ollamaChat('llama3', prompt) : await cloudChat('anthropic', prompt);
       const score = extractScore(resp);
-      const nextMatch = (resp || '').match(/NEXT_PRIORITY:\s*(.+?)(?:\n|$)/i);
+      const nextMatch = (resp || '').match(/NEXT:\s*(.+?)(?:\n|$)/i);
+      const workedMatch = (resp || '').match(/WORKED:\s*(.+?)(?:\n|$)/i);
       if (score > 0) sprintScores.push(score);
-      console.log(`  ${dim('│')} ${C.red}${bold('CEO')}${C.reset} ${bold((score || '?') + '/10')} ${nextMatch ? dim('next: ' + nextMatch[1].slice(0, 80)) : ''}`);
+      console.log(`  ${dim('│')} ${C.red}${bold('CEO')}${C.reset} ${bold((score || '?') + '/10')}`);
+      if (workedMatch) console.log(`  ${dim('│')} ${green('✓')} ${workedMatch[1].slice(0, 80)}`);
+      if (nextMatch) console.log(`  ${dim('│')} ${yellow('→')} ${nextMatch[1].slice(0, 80)}`);
     }
 
     // ── Sprint summary ──
