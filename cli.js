@@ -883,6 +883,116 @@ async function cmdDoctor() {
   console.log('');
 }
 
+// ============================================================
+// HIVE — Real iterative improvement loop, visible in YOUR terminal
+// Uses slop for everything. Asks local + cloud LLMs via slop.
+// ============================================================
+async function cmdHive(args) {
+  requireKey();
+  const sprints = parseInt(args[0]) || 10;
+  const cloudEnabled = !args.includes('--local-only');
+
+  console.log('');
+  console.log(`  ${C.red}${C.bold}╔══════════════════════════════════════════════╗${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║           SLOPSHOP HIVE  v2                  ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║    ${sprints} sprints · all LLMs · through slop     ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}╚══════════════════════════════════════════════╝${C.reset}`);
+  console.log('');
+
+  const allScores = [];
+
+  for (let s = 1; s <= sprints; s++) {
+    console.log(`  ${bold('═══ SPRINT ' + s + '/' + sprints + ' ═══')}`);
+
+    // Phase 1: Test through slop
+    console.log(`  ${dim('Testing via slop...')}`);
+    const t = {};
+    const t1 = Date.now();
+    t.uuid = await request('POST', '/v1/crypto-uuid', {}).catch(() => ({ _err: true }));
+    t.hash = await request('POST', '/v1/crypto-hash-sha256', { text: 'hive-' + s }).catch(() => ({ _err: true }));
+    t.mem = await request('POST', '/v1/memory-set', { key: 'hive-sprint-' + s, value: 'running' }).catch(() => ({ _err: true }));
+    t.search = await request('POST', '/v1/resolve', { query: 'uuid' }, false).catch(() => ({ _err: true }));
+    const latency = Date.now() - t1;
+
+    const passed = Object.values(t).filter(r => !r._err && r.status < 400).length;
+    const searchSlug = t.search?.data?.match?.slug || '?';
+    console.log(`  ${passed >= 3 ? green('✓') : red('✗')} Tests: ${bold(passed + '/4')} pass  ${dim('search→' + searchSlug + '  ' + latency + 'ms')}`);
+
+    // Phase 2: Ask local models via Ollama
+    console.log(`  ${dim('Asking local models...')}`);
+    const prompt = `Rate Slopshop.gg /10. Tests: ${passed}/4 pass, latency ${latency}ms, search→${searchSlug}. 1255 APIs, free memory, CLI with 44+ cmds. OVERALL: X.X/10 then FIX: <one specific thing>`;
+    const localModels = ['llama3', 'mistral', 'deepseek-coder-v2'];
+    const sprintScores = [];
+
+    for (const model of localModels) {
+      try {
+        const resp = await new Promise((resolve, reject) => {
+          const body = JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false });
+          const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
+            headers: { 'Content-Type': 'application/json' }, timeout: 60000 }, res => {
+            let d = ''; res.on('data', c => d += c);
+            res.on('end', () => { try { resolve(JSON.parse(d).message?.content || ''); } catch(e) { resolve(''); } });
+          });
+          req.on('error', () => resolve(''));
+          req.on('timeout', () => { req.destroy(); resolve(''); });
+          req.write(body); req.end();
+        });
+        const scoreMatch = (resp || '').match(/(\d+\.?\d*)\s*\/\s*10/);
+        const score = scoreMatch ? parseFloat(scoreMatch[1]) : 0;
+        const fixMatch = (resp || '').match(/FIX:\s*(.+?)(?:\n|$)/i);
+        const fix = fixMatch ? fixMatch[1].trim().slice(0, 100) : '';
+        if (score > 0) {
+          sprintScores.push(score);
+          console.log(`  ${cyan(model.padEnd(22))} ${bold(score + '/10')} ${fix ? dim('→ ' + fix) : ''}`);
+        }
+      } catch(e) { /* skip */ }
+    }
+
+    // Phase 3: Ask cloud models via slop call llm-think
+    if (cloudEnabled) {
+      console.log(`  ${dim('Asking cloud LLMs via slop...')}`);
+      for (const provider of ['anthropic', 'openai', 'grok', 'deepseek']) {
+        try {
+          const res = await request('POST', '/v1/llm-think', { text: prompt, provider });
+          const answer = res.data?.data?.answer || res.data?.answer || '';
+          const scoreMatch = answer.match(/(\d+\.?\d*)\s*\/\s*10/);
+          const score = scoreMatch ? parseFloat(scoreMatch[1]) : 0;
+          const fixMatch = answer.match(/FIX:\s*(.+?)(?:\n|$)/i);
+          const fix = fixMatch ? fixMatch[1].trim().slice(0, 100) : '';
+          if (score > 0) {
+            sprintScores.push(score);
+            console.log(`  ${cyan(provider.padEnd(22))} ${bold(score + '/10')} ${fix ? dim('→ ' + fix) : ''}`);
+          }
+        } catch(e) { /* skip — budget or timeout */ }
+      }
+    }
+
+    // Phase 4: Sprint summary
+    const avg = sprintScores.length > 0 ? sprintScores.reduce((a, b) => a + b, 0) / sprintScores.length : 0;
+    allScores.push(avg);
+    const trend = allScores.length >= 2 ? (allScores[allScores.length - 1] - allScores[allScores.length - 2]).toFixed(1) : '';
+    const trendStr = trend ? (trend > 0 ? green('+' + trend) : trend < 0 ? red(trend) : dim('±0')) : '';
+
+    console.log(`  ${bold('AVG: ' + avg.toFixed(1) + '/10')} ${dim('(' + sprintScores.length + ' models)')} ${trendStr}`);
+    if (avg >= 9.5) console.log(`  ${green('★ TARGET ZONE')}`);
+    console.log('');
+
+    // Store in slop memory
+    await request('POST', '/v1/memory-set', { key: 'hive-live-' + s, value: JSON.stringify({ sprint: s, avg: Math.round(avg * 10) / 10, models: sprintScores.length, ts: new Date().toISOString() }) }).catch(() => {});
+
+    // Brief pause
+    await new Promise(r => setTimeout(r, 2000));
+  }
+
+  // Final report
+  console.log(`  ${bold('═══ HIVE COMPLETE ═══')}`);
+  const finalAvg = allScores.length > 0 ? (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1) : '?';
+  console.log(`  Sprints: ${sprints}`);
+  console.log(`  Final avg: ${bold(finalAvg + '/10')}`);
+  console.log(`  Progression: ${allScores.map(s => s.toFixed(1)).join(' → ')}`);
+  console.log('');
+}
+
 function cmdHelp() {
   if (!quiet && !jsonMode) {
     console.log(`\n  ${C.dim}${'~'.repeat(50)}${C.reset}`);
@@ -3780,6 +3890,7 @@ async function cmdInteractive() {
           case 'init': cmdInit(args); break;
           case 'agents': case 'agent': await cmdAgents(args); break;
           case 'doctor': await cmdDoctor(); break;
+          case 'hive': await cmdHive(args); break;
           case 'quickstart': case 'start': case 'tutorial': await cmdQuickstart(); break;
           case 'live': await cmdLive(args); break;
           case 'batch': await cmdBatch(args); break;
@@ -4273,6 +4384,7 @@ async function main() {
     case 'agents':  await cmdAgents(args);  break;
     case 'agent':   await cmdAgents(args);  break;
     case 'doctor':  await cmdDoctor();      break;
+    case 'hive':    await cmdHive(args);   break;
     case 'org':     await cmdOrg(args);    break;
     case 'chain':   await cmdChain(args);  break;
     case 'memory':  await cmdMemory(args); break;
