@@ -7490,8 +7490,10 @@ app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => 
   const confidence = engine === 'real' ? 0.99 : engine === 'llm' ? 0.85 : engine === 'needs_key' ? 0.0 : engine === 'error' ? 0.0 : 0.80;
 
   // REAL verification: SHA-256 hash of output proves the data was actually computed
-  // This is not just a label — the hash can be independently verified
-  const outputStr = JSON.stringify(result);
+  // Uses sorted-keys canonical JSON so any language can independently verify:
+  // hash = sha256(JSON.stringify(data, Object.keys(data).sort()))[:16]
+  const sortedKeys = result && typeof result === 'object' ? Object.keys(result).sort() : [];
+  const outputStr = JSON.stringify(result, sortedKeys);
   const outputHash = crypto.createHash('sha256').update(outputStr).digest('hex').slice(0, 16);
 
   res.set('X-Engine', engine);
