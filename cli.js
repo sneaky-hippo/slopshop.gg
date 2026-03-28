@@ -782,6 +782,83 @@ async function cmdHealth() {
   }
 }
 
+async function cmdDoctor() {
+  console.log(`\n  ${bold('Slopshop Doctor')} ${dim('— diagnosing your setup')}\n`);
+  const checks = [];
+
+  // 1. API Key
+  const hasKey = !!API_KEY;
+  checks.push({ name: 'API Key', ok: hasKey, detail: hasKey ? dim(API_KEY.slice(0, 12) + '...') : red('Not set. Run: slop signup') });
+
+  // 2. Server reachable
+  let serverOk = false;
+  try {
+    const res = await request('GET', '/v1/health', null, false);
+    serverOk = res.data?.status === 'healthy' || res.data?.status === 'operational';
+    checks.push({ name: 'Server', ok: serverOk, detail: serverOk ? green(res.data?.version || 'ok') + ' ' + dim(BASE_URL) : red('Unreachable: ' + BASE_URL) });
+  } catch(e) { checks.push({ name: 'Server', ok: false, detail: red('Unreachable: ' + BASE_URL) }); }
+
+  // 3. Credits
+  if (hasKey) {
+    try {
+      const bal = await request('GET', '/v1/credits/balance');
+      const b = bal.data?.balance ?? bal.balance ?? 0;
+      checks.push({ name: 'Credits', ok: b > 0, detail: b > 0 ? green(b + 'cr') + ' (' + (bal.data?.tier || bal.tier || 'free') + ')' : red('0 credits. Run: slop buy') });
+    } catch(e) { checks.push({ name: 'Credits', ok: false, detail: yellow('Could not check') }); }
+  }
+
+  // 4. Ollama (local LLM)
+  let ollamaOk = false;
+  try {
+    const ollamaRes = await new Promise((resolve, reject) => {
+      const req = http.get('http://localhost:11434/api/tags', res => {
+        let d = ''; res.on('data', c => d += c);
+        res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      });
+      req.on('error', reject);
+      req.setTimeout(3000, () => { req.destroy(); reject(new Error('timeout')); });
+    });
+    const models = (ollamaRes.models || []).map(m => m.name).slice(0, 5);
+    ollamaOk = models.length > 0;
+    checks.push({ name: 'Ollama', ok: ollamaOk, detail: ollamaOk ? green(models.length + ' models') + ' ' + dim(models.join(', ')) : yellow('No models. Run: ollama pull llama3') });
+  } catch(e) { checks.push({ name: 'Ollama', ok: false, detail: dim('Not running (optional). Start: ollama serve') }); }
+
+  // 5. MCP config
+  const mcpPath = path.join(os.homedir(), '.claude', 'settings.json');
+  let mcpOk = false;
+  try {
+    const settings = JSON.parse(fs.readFileSync(mcpPath, 'utf8'));
+    mcpOk = !!settings.mcpServers?.slopshop;
+    checks.push({ name: 'MCP (Claude)', ok: mcpOk, detail: mcpOk ? green('Configured') : dim('Not set. Run: slop mcp') });
+  } catch(e) { checks.push({ name: 'MCP (Claude)', ok: false, detail: dim('Not set. Run: slop mcp') }); }
+
+  // 6. Config file
+  const configExists = fs.existsSync(CONFIG_FILE);
+  checks.push({ name: 'Config', ok: configExists, detail: configExists ? dim(CONFIG_FILE) : red('Missing. Run: slop signup') });
+
+  // 7. Memory writable
+  if (hasKey && serverOk) {
+    try {
+      const ts = Date.now();
+      await request('POST', '/v1/memory-set', { key: 'doctor-' + ts, value: 'ok' });
+      const get = await request('POST', '/v1/memory-get', { key: 'doctor-' + ts });
+      const memOk = (get.data?.value || get.value) === 'ok';
+      checks.push({ name: 'Memory', ok: memOk, detail: memOk ? green('Read/write OK (free forever)') : red('Write failed') });
+    } catch(e) { checks.push({ name: 'Memory', ok: false, detail: red('Error: ' + e.message) }); }
+  }
+
+  // Display results
+  const passed = checks.filter(c => c.ok).length;
+  for (const c of checks) {
+    console.log(`  ${c.ok ? green('✓') : (c.detail.includes('optional') || c.detail.includes('Not set') ? yellow('○') : red('✗'))} ${bold(c.name.padEnd(14))} ${c.detail}`);
+  }
+
+  console.log(`\n  ${bold('Result:')} ${passed}/${checks.length} checks passed`);
+  if (passed === checks.length) console.log(`  ${green('Everything looks good!')}`);
+  else console.log(`  ${yellow('Some items need attention. See above.')}`);
+  console.log('');
+}
+
 function cmdHelp() {
   if (!quiet && !jsonMode) {
     const lobster = `
@@ -843,6 +920,7 @@ ${C.reset}`;
   console.log(`    ${cyan('slop mcp config')}                        Show MCP config for all clients`);
   console.log(`    ${cyan('slop init')} ${dim('[--full-stack --ollama]')}    Scaffold Slopshop project`);
   console.log(`    ${cyan('slop agents')} ${dim('set|start|stop|status')}   Configure always-running local agents`);
+  console.log(`    ${cyan('slop doctor')}                            Diagnose your setup (key, server, Ollama, MCP)`);
   console.log(`    ${cyan('slop help')}                              Show this help\n`);
   console.log(`  ${bold('AI & PLANNING')}`);
   console.log(`    ${cyan('slop plan')} ${dim('"task description"')}          Plan before executing`);
@@ -3807,6 +3885,7 @@ async function main() {
     case 'init':    cmdInit(args);          break;
     case 'agents':  await cmdAgents(args);  break;
     case 'agent':   await cmdAgents(args);  break;
+    case 'doctor':  await cmdDoctor();      break;
     case 'org':     await cmdOrg(args);    break;
     case 'chain':   await cmdChain(args);  break;
     case 'memory':  await cmdMemory(args); break;

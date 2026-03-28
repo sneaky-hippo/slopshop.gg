@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 /**
  * SLOPSHOP MCP SERVER
  *
