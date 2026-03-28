@@ -884,19 +884,19 @@ async function cmdDoctor() {
 }
 
 // ============================================================
-// HIVE — Org with hierarchy. CEO decides, VPs advise, workers execute.
-// Tests through slop, implements through slop, tracks KPIs in slop memory.
+// HIVE — Phased org. Research → Spec → Build → QA → Ship → Review.
+// Usage: slop hive [sprints] [--size N] [--local-only] "mission"
 // ============================================================
 async function cmdHive(args) {
   requireKey();
-  // Parse: slop hive 30 "review slopshop.gg and suggest improvements"
-  const numArg = args.find(a => /^\d+$/.test(a));
-  const sprints = numArg ? parseInt(numArg) : 10;
+  const numArgs = args.filter(a => /^\d+$/.test(a));
+  const sprints = numArgs[0] ? parseInt(numArgs[0]) : 10;
+  const sizeFlag = args.indexOf('--size');
+  const hiveSize = sizeFlag >= 0 ? parseInt(args[sizeFlag + 1]) || 10 : 10;
   const localOnly = args.includes('--local-only');
-  // Everything that's not a number or flag is the mission
   const mission = args.filter(a => !/^\d+$/.test(a) && !a.startsWith('--')).join(' ').trim();
 
-  // Ollama helper
+  // Helpers
   const ollamaChat = (model, prompt) => new Promise(r => {
     const body = JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false });
     const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
@@ -907,270 +907,213 @@ async function cmdHive(args) {
     req.on('error', () => r('')); req.on('timeout', () => { req.destroy(); r(''); });
     req.write(body); req.end();
   });
-
-  // Cloud LLM via slop
   const cloudChat = async (provider, prompt) => {
-    try {
-      const res = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 2000), provider });
-      return res.data?.data?.answer || res.data?.answer || '';
-    } catch(e) { return ''; }
+    try { const r = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 2000), provider }); return r.data?.data?.answer || r.data?.answer || ''; }
+    catch(e) { return ''; }
+  };
+  const extractScore = t => { const m = (t||'').match(/(\d+\.?\d*)\s*\/\s*10/); return m ? parseFloat(m[1]) : 0; };
+  const localModels = ['llama3', 'mistral', 'deepseek-coder-v2'];
+  const SEARCH_QUERIES = ['hash data','generate uuid','count words','validate email','encrypt text','dns lookup','reverse string','json validate','base64 encode','password generate','statistics','timestamp','sentiment analysis','extract keywords','diff text','http status check','ssl certificate','token count','slugify','lorem ipsum'];
+
+  // Assign agents across phases based on hive size
+  const researchAgents = Math.max(2, Math.floor(hiveSize * 0.2));
+  const specAgents = Math.max(2, Math.floor(hiveSize * 0.2));
+  const buildAgents = Math.max(2, Math.floor(hiveSize * 0.2));
+  const qaAgents = Math.max(1, Math.floor(hiveSize * 0.1));
+  const shipAgents = Math.max(1, Math.floor(hiveSize * 0.1));
+  const reviewAgents = Math.max(1, Math.floor(hiveSize * 0.1));
+
+  // Sprint phase map: what % of sprints does each phase get
+  const phaseMap = [
+    { name: 'RESEARCH', pct: 0.2, icon: '🔍', agents: researchAgents, desc: 'Cloud VPs + workers gather intel' },
+    { name: 'SPEC', pct: 0.3, icon: '📋', agents: specAgents, desc: 'Workers spec solutions from research' },
+    { name: 'BUILD', pct: 0.2, icon: '🔨', agents: buildAgents, desc: 'Builder executes via slop commands' },
+    { name: 'QA', pct: 0.1, icon: '✓', agents: qaAgents, desc: 'Test everything through slop' },
+    { name: 'SHIP', pct: 0.1, icon: '🚀', agents: shipAgents, desc: 'Docs, SEO, memory, marketing' },
+    { name: 'REVIEW', pct: 0.1, icon: '👔', agents: reviewAgents, desc: 'CEO reviews and scores' },
+  ];
+  const getPhase = (s, total) => {
+    let cum = 0;
+    for (const p of phaseMap) { cum += p.pct; if (s / total <= cum) return p; }
+    return phaseMap[phaseMap.length - 1];
   };
 
-  const extractScore = t => { const m = (t||'').match(/(\d+\.?\d*)\s*\/\s*10/); return m ? parseFloat(m[1]) : 0; };
-  const extractAction = t => { const m = (t||'').match(/(?:ACTION|FIX|BUILD|SHIP|IMPLEMENT):\s*(.+?)(?:\n|$)/i); return m ? m[1].trim().slice(0,150) : ''; };
-
-  // Randomized search queries to test real discovery
-  const SEARCH_QUERIES = [
-    'hash data', 'generate uuid', 'count words', 'validate email', 'encrypt text',
-    'dns lookup', 'reverse string', 'json validate', 'base64 encode', 'password generate',
-    'statistics', 'timestamp', 'sentiment analysis', 'extract keywords', 'diff text',
-    'http status check', 'ssl certificate', 'token count', 'slugify', 'lorem ipsum',
-  ];
-
   console.log('');
-  console.log(`  ${C.red}${C.bold}╔═══════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║              SLOPSHOP HIVE v3                     ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║  ${sprints} sprints · CEO + VP council · KPI tracking    ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}╚═══════════════════════════════════════════════════╝${C.reset}`);
+  console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════════════╗${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║                  SLOPSHOP HIVE v4                      ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║  ${String(sprints).padStart(3)} sprints · ${hiveSize} agents · phased pipeline          ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════════════╝${C.reset}`);
   if (mission) console.log(`  ${bold('Mission:')} ${green(mission)}`);
-  console.log(`  ${dim('Hierarchy: Claude=CEO · GPT+Grok+DeepSeek=VPs · Local=Workers')}`);
-  console.log(`  ${dim('Pipeline:  Test → Diagnose → Decide → Implement → Verify')}`);
+  console.log(`  ${dim('CEO: Claude · VPs: GPT+Grok+DeepSeek · Workers: ' + localModels.join('+'))}`);
+  console.log(`  ${dim('Phases: Research(' + researchAgents + ') → Spec(' + specAgents + ') → Build(' + buildAgents + ') → QA(' + qaAgents + ') → Ship(' + shipAgents + ') → Review(' + reviewAgents + ')')}`);
   console.log('');
 
-  // KPI tracking
   const kpi = { tests_run: 0, tests_passed: 0, searches_correct: 0, searches_total: 0,
-    avg_latency: 0, latency_samples: 0, actions_taken: 0, scores: [], sprints_complete: 0 };
+    avg_latency: 0, latency_samples: 0, actions_taken: 0, scores: [], sprints_complete: 0,
+    research_items: 0, specs_written: 0, builds_executed: 0, qa_passed: 0, shipped: 0 };
+  const researchData = [];
+  const specs = [];
 
   for (let s = 1; s <= sprints; s++) {
-    console.log(`  ${C.red}${C.bold}══ SPRINT ${s}/${sprints} ══${C.reset}`);
+    const phase = getPhase(s, sprints);
+    console.log(`  ${C.red}${C.bold}══ SPRINT ${s}/${sprints} ══${C.reset} ${bold(phase.name)} ${dim(phase.desc)}`);
 
-    // ── PHASE 1: WORKERS TEST (local models verify endpoints) ──
-    console.log(`  ${dim('┌ Workers testing via slop...')}`);
+    const missionDirective = mission ? `\nMISSION: "${mission}"\n` : '';
     const searchQ = SEARCH_QUERIES[(s - 1) % SEARCH_QUERIES.length];
+    const sprintScores = [];
+
+    // ── Every sprint: quick health check ──
     const t1 = Date.now();
-
-    const tests = await Promise.all([
+    const healthTests = await Promise.all([
       request('POST', '/v1/crypto-uuid', {}).catch(() => ({ _err: true })),
-      request('POST', '/v1/crypto-hash-sha256', { text: 'sprint-' + s }).catch(() => ({ _err: true })),
-      request('POST', '/v1/memory-set', { key: 'hive3-' + s, value: 'sprint-' + s + '-' + Date.now() }).catch(() => ({ _err: true })),
-      request('POST', '/v1/memory-get', { key: 'hive3-' + s }).catch(() => ({ _err: true })),
+      request('POST', '/v1/memory-set', { key: 'hive4-' + s, value: 'S' + s + '-' + phase.name }).catch(() => ({ _err: true })),
       request('POST', '/v1/resolve', { query: searchQ }, false).catch(() => ({ _err: true })),
-      request('POST', '/v1/text-word-count', { text: 'one two three four five' }).catch(() => ({ _err: true })),
     ]);
-
     const latency = Date.now() - t1;
-    const passed = tests.filter(t => !t._err && t.status < 400).length;
-    const searchResult = tests[4]?.data?.match?.slug || '?';
-    const memValue = tests[3]?.data?.data?.value || tests[3]?.data?.value || '?';
-    const wordCount = tests[5]?.data?.data?.words || tests[5]?.data?.words || '?';
+    const passed = healthTests.filter(t => !t._err && t.status < 400).length;
+    const searchSlug = healthTests[2]?.data?.match?.slug || '?';
+    kpi.tests_run += 3; kpi.tests_passed += passed; kpi.searches_total++;
+    if (searchSlug !== '?') kpi.searches_correct++;
+    kpi.latency_samples++; kpi.avg_latency = ((kpi.avg_latency * (kpi.latency_samples - 1)) + latency) / kpi.latency_samples;
+    console.log(`  ${dim('│')} tests:${passed}/3 search:"${searchQ}"→${cyan(searchSlug)} ${dim(latency + 'ms')}`);
 
-    kpi.tests_run += 6;
-    kpi.tests_passed += passed;
-    kpi.searches_total++;
-    if (searchResult !== '?') kpi.searches_correct++;
-    kpi.latency_samples++;
-    kpi.avg_latency = ((kpi.avg_latency * (kpi.latency_samples - 1)) + latency) / kpi.latency_samples;
-
-    console.log(`  ${dim('│')} Tests: ${passed >= 5 ? green(passed + '/6') : yellow(passed + '/6')}  search:"${searchQ}"→${cyan(searchResult)}  mem:${memValue === 'sprint-' + s + '-' ? green('✓') : (memValue.startsWith('sprint') ? green('✓') : yellow(memValue.slice(0,10)))}  words:${wordCount === 5 ? green('5') : yellow(String(wordCount))}  ${dim(latency + 'ms')}`);
-
-    // ── PHASE 2: VP COUNCIL (cloud models diagnose + advise) ──
-    const statusReport = `Sprint ${s}. Tests: ${passed}/6 pass. Search "${searchQ}"→${searchResult}. Memory persistence: ${memValue !== '?' ? 'OK' : 'FAIL'}. Latency: ${latency}ms. KPIs: ${kpi.tests_passed}/${kpi.tests_run} lifetime pass rate (${Math.round(kpi.tests_passed/kpi.tests_run*100)}%), search accuracy ${kpi.searches_correct}/${kpi.searches_total}, avg latency ${Math.round(kpi.avg_latency)}ms.`;
-
-    const missionDirective = mission ? `\nMISSION FROM FOUNDER: "${mission}"\nAll actions must advance this mission.\n` : '';
-    const vpPrompt = `You are a VP at an AI platform company. Status: ${statusReport}
-${missionDirective}
-Your job: identify the ONE highest-impact action for this sprint. Must be specific enough to implement in code. No vague advice.
-
-Rules:
-- If the founder gave a MISSION, your action must directly advance it
-- If tests fail, ACTION must fix the failing test
-- If search returns wrong result, ACTION must fix search ranking
-- If latency > 2000ms, ACTION must address latency
-- If all tests pass and no mission, find the next improvement
-
-FORMAT (strict):
-DIAGNOSIS: <what's the #1 issue right now>
-ACTION: <exact thing to implement — name the endpoint, command, or code change>
-SCORE: X.X/10`;
-
-    console.log(`  ${dim('├ VP Council advising...')}`);
-    const vpResults = [];
-
-    // Local VPs (workers doubling as advisors)
-    for (const model of ['llama3', 'mistral']) {
-      const resp = await ollamaChat(model, vpPrompt);
-      const score = extractScore(resp);
-      const action = extractAction(resp);
-      if (score > 0) vpResults.push({ role: model, score, action, source: 'local' });
-      if (score > 0) console.log(`  ${dim('│')} ${dim('worker')} ${cyan(model.padEnd(12))} ${bold(score + '/10')} ${action ? dim('→ ' + action.slice(0, 70)) : ''}`);
-    }
-
-    // Cloud VPs
-    if (!localOnly) {
-      for (const vp of [
-        { provider: 'openai', title: 'VP Product' },
-        { provider: 'grok', title: 'VP Eng' },
-        { provider: 'deepseek', title: 'VP Data' },
-      ]) {
-        const resp = await cloudChat(vp.provider, vpPrompt);
-        const score = extractScore(resp);
-        const action = extractAction(resp);
-        if (score > 0) vpResults.push({ role: vp.title, score, action, source: vp.provider });
-        if (score > 0) console.log(`  ${dim('│')} ${yellow(vp.title.padEnd(12))} ${cyan(vp.provider.padEnd(10))} ${bold(score + '/10')} ${action ? dim('→ ' + action.slice(0, 60)) : ''}`);
+    // ── RESEARCH phase: VPs + workers gather intel ──
+    if (phase.name === 'RESEARCH') {
+      console.log(`  ${dim('│')} ${bold('Research team (' + phase.agents + ' agents)')}`);
+      const researchPrompt = `${missionDirective}You are a research analyst. Investigate this topic and return FINDINGS as bullet points. Be specific with data, names, URLs, features. Max 5 bullets.\nFINDINGS:`;
+      for (let a = 0; a < Math.min(phase.agents, localModels.length); a++) {
+        const resp = await ollamaChat(localModels[a % localModels.length], researchPrompt);
+        const findings = (resp || '').split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('•')).map(l => l.trim()).slice(0, 5);
+        researchData.push(...findings);
+        kpi.research_items += findings.length;
+        console.log(`  ${dim('│')} ${cyan(localModels[a % localModels.length].padEnd(15))} ${green(findings.length + ' findings')}`);
       }
+      if (!localOnly) {
+        for (const vp of ['anthropic', 'grok', 'deepseek']) {
+          const resp = await cloudChat(vp, researchPrompt);
+          const findings = (resp || '').split('\n').filter(l => l.trim().startsWith('-') || l.trim().startsWith('•')).map(l => l.trim()).slice(0, 5);
+          researchData.push(...findings);
+          kpi.research_items += findings.length;
+          console.log(`  ${dim('│')} ${yellow(vp.padEnd(15))} ${green(findings.length + ' findings')}`);
+        }
+      }
+      // Store research
+      await request('POST', '/v1/memory-set', { key: 'hive4-research-' + s, value: JSON.stringify(researchData.slice(-20)) }).catch(() => {});
     }
 
-    // ── PHASE 3: CEO DECISION (Claude makes the call) ──
-    const vpSummary = vpResults.map(v => `${v.role}(${v.score}/10): ${v.action || 'no action'}`).join('\n');
-    const ceoPrompt = `You are the CEO. Sprint ${s} status: ${statusReport}
-${missionDirective}
-VP recommendations:
-${vpSummary}
-
-Your job: Pick ONE action to execute this sprint. Must be the highest-ROI item that advances the mission. If VPs disagree, break the tie.
-
-FORMAT (strict — one line each):
-DECISION: <what we're doing this sprint — specific and implementable>
-SCORE: X.X/10
-KPI_TARGET: <specific measurable goal for next sprint>`;
-
-    let ceoDecision = '', ceoScore = 0;
-    if (!localOnly) {
-      console.log(`  ${dim('├ CEO deciding...')}`);
-      const ceoResp = await cloudChat('anthropic', ceoPrompt);
-      ceoScore = extractScore(ceoResp);
-      const decMatch = (ceoResp || '').match(/DECISION:\s*(.+?)(?:\n|$)/i);
-      ceoDecision = decMatch ? decMatch[1].trim().slice(0, 150) : vpResults[0]?.action || 'continue testing';
-      const kpiMatch = (ceoResp || '').match(/KPI_TARGET:\s*(.+?)(?:\n|$)/i);
-      const kpiTarget = kpiMatch ? kpiMatch[1].trim().slice(0, 100) : '';
-      console.log(`  ${dim('│')} ${C.red}${bold('CEO')}${C.reset}   ${cyan('claude'.padEnd(10))} ${bold((ceoScore || '?') + '/10')}`);
-      console.log(`  ${dim('│')} ${green('DECISION:')} ${ceoDecision}`);
-      if (kpiTarget) console.log(`  ${dim('│')} ${yellow('KPI TARGET:')} ${kpiTarget}`);
-    } else {
-      // In local-only mode, highest-scored local VP is acting CEO
-      const best = vpResults.sort((a, b) => b.score - a.score)[0];
-      ceoDecision = best?.action || 'continue testing';
-      ceoScore = best?.score || 0;
-      console.log(`  ${dim('├')} ${C.red}${bold('LEAD')}${C.reset}  ${cyan((best?.role || '?').padEnd(10))} ${bold((ceoScore || '?') + '/10')}`);
-      console.log(`  ${dim('│')} ${green('DECISION:')} ${ceoDecision}`);
+    // ── SPEC phase: workers write specs from research ──
+    if (phase.name === 'SPEC') {
+      console.log(`  ${dim('│')} ${bold('Spec team (' + phase.agents + ' agents)')}`);
+      const recentResearch = researchData.slice(-15).join('\n');
+      const specPrompt = `${missionDirective}Research findings:\n${recentResearch}\n\nWrite a specific implementation SPEC. Format:\nSPEC: <what to build>\nSLOP_CMDS: <slop commands to execute, one per line>`;
+      for (let a = 0; a < Math.min(phase.agents, localModels.length); a++) {
+        const resp = await ollamaChat(localModels[a % localModels.length], specPrompt);
+        const specMatch = (resp || '').match(/SPEC:\s*(.+?)(?:\n|$)/i);
+        if (specMatch) specs.push(specMatch[1].trim());
+        kpi.specs_written++;
+        console.log(`  ${dim('│')} ${cyan(localModels[a % localModels.length].padEnd(15))} ${specMatch ? green('spec: ' + specMatch[1].slice(0, 60)) : dim('no spec')}`);
+      }
+      await request('POST', '/v1/memory-set', { key: 'hive4-specs-' + s, value: JSON.stringify(specs.slice(-10)) }).catch(() => {});
     }
 
-    // ── PHASE 3.5: BUILDER IMPLEMENTS ──
-    // The builder MUST do something real. No specs. No suggestions. Execute.
-    if (ceoDecision && ceoDecision !== 'continue testing') {
-      console.log(`  ${dim('├ Builder implementing...')}`);
-
-      // Step 1: Builder breaks decision into slop commands
-      const builderPrompt = `DECISION TO IMPLEMENT: "${ceoDecision}"
-
-You have access to these slop commands. Pick 1-3 to execute RIGHT NOW:
-
-1. memory set <key> <json-value>  — store data, config, tracking info
-2. call crypto-hash-sha256 --text <data>  — hash something
-3. call memory-search --query <term>  — find related memory
-4. call text-word-count --text <data>  — analyze text
-5. call llm-think --text <prompt> --provider anthropic  — ask an LLM
-
-Output ONLY executable commands, one per line. No explanation. No markdown. Example:
-memory set competitor-composio {"status":"tracked","features":["oauth","500-integrations"],"weakness":"proxy-based"}
-memory set competitor-langchain {"status":"tracked","features":["graphs","orchestration"],"weakness":"no-free-memory"}
-call memory-search --query competitor`;
-
-      const builderResp = await ollamaChat('deepseek-coder-v2', builderPrompt);
-      const lines = (builderResp || '').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#') && !l.startsWith('//') && !l.startsWith('```'));
-
-      let executed = 0;
-      for (const line of lines.slice(0, 5)) { // max 5 commands per sprint
-        // Clean markdown artifacts
-        const cleanLine = line.replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, '').replace(/^`+|`+$/g, '').trim();
-        if (!cleanLine || cleanLine.length < 5) continue;
-
+    // ── BUILD phase: execute slop commands from specs ──
+    if (phase.name === 'BUILD') {
+      console.log(`  ${dim('│')} ${bold('Build team (' + phase.agents + ' agents)')}`);
+      const recentSpecs = specs.slice(-5).join('\n');
+      const buildPrompt = `SPECS TO IMPLEMENT:\n${recentSpecs}\n\nOutput ONLY slop commands, one per line. No markdown.\nExample:\nmemory set feature-x {"status":"built","detail":"..."}\ncall memory-search --query feature`;
+      const resp = await ollamaChat('deepseek-coder-v2', buildPrompt);
+      const cmds = (resp || '').split('\n').map(l => l.trim().replace(/^\d+\.\s*/, '').replace(/^[-*]\s*/, '').replace(/^`+|`+$/g, '').trim()).filter(l => l.length > 5 && (l.startsWith('memory') || l.startsWith('call')));
+      for (const cmd of cmds.slice(0, 5)) {
         try {
-          if (cleanLine.startsWith('memory set ')) {
-            const rest = cleanLine.slice(11);
-            const spaceIdx = rest.indexOf(' ');
-            if (spaceIdx > 0) {
-              const key = rest.slice(0, spaceIdx).replace(/[^a-zA-Z0-9_-]/g, '');
-              const val = rest.slice(spaceIdx + 1);
-              await request('POST', '/v1/memory-set', { key: 'hive-' + key, value: val }).catch(() => {});
-              console.log(`  ${dim('│')} ${green('✓')} ${bold('memory set')} ${cyan('hive-' + key)} ${dim(val.slice(0, 60))}`);
-              executed++;
+          if (cmd.startsWith('memory set ')) {
+            const rest = cmd.slice(11); const si = rest.indexOf(' ');
+            if (si > 0) {
+              const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, ''), v = rest.slice(si + 1);
+              await request('POST', '/v1/memory-set', { key: 'hive-' + k, value: v }).catch(() => {});
+              console.log(`  ${dim('│')} ${green('✓')} ${bold('set')} ${cyan('hive-' + k)} ${dim(v.slice(0, 50))}`);
+              kpi.builds_executed++;
             }
-          } else if (cleanLine.startsWith('call ')) {
-            const parts = cleanLine.slice(5).split(/\s+/);
-            const slug = parts[0];
-            if (slug && slug.length > 2) {
-              const params = {};
-              for (let ci = 1; ci < parts.length - 1; ci++) {
-                if (parts[ci].startsWith('--') && parts[ci + 1]) {
-                  params[parts[ci].slice(2)] = parts[ci + 1].replace(/^["']|["']$/g, '');
-                  ci++;
-                }
-              }
-              const res = await request('POST', '/v1/' + slug, Object.keys(params).length > 0 ? params : { text: ceoDecision }).catch(e => ({ _err: true }));
-              const ok = res.status < 400 && !res._err;
-              console.log(`  ${dim('│')} ${ok ? green('✓') : yellow('⚠')} ${bold('call ' + slug)} ${ok ? dim('executed') : dim('failed')}`);
-              if (ok) executed++;
-            }
-          } else if (cleanLine.startsWith('memory search ') || cleanLine.startsWith('call memory-search')) {
-            const query = cleanLine.replace(/^(?:memory search|call memory-search)\s*(?:--query\s*)?/, '').replace(/^["']|["']$/g, '');
-            if (query) {
-              const res = await request('POST', '/v1/memory-search', { query }).catch(() => ({ data: {} }));
-              const count = res.data?.results?.length || res.data?.data?.results?.length || 0;
-              console.log(`  ${dim('│')} ${green('✓')} ${bold('memory search')} "${query}" → ${count} results`);
-              executed++;
-            }
+          } else if (cmd.startsWith('call ')) {
+            const parts = cmd.slice(5).split(/\s+/); const slug = parts[0];
+            if (slug) { await request('POST', '/v1/' + slug, { text: mission || 'hive build' }).catch(() => {}); console.log(`  ${dim('│')} ${green('✓')} ${bold('call')} ${cyan(slug)}`); kpi.builds_executed++; }
           }
-        } catch(e) { /* skip bad commands */ }
+        } catch(e) {}
       }
-
-      if (executed === 0) {
-        // Fallback: at minimum store the decision as an implementation record
-        await request('POST', '/v1/memory-set', {
-          key: 'hive-decision-' + s,
-          value: JSON.stringify({ sprint: s, decision: ceoDecision, status: 'pending', ts: new Date().toISOString() })
-        }).catch(() => {});
-        console.log(`  ${dim('│')} ${yellow('↳')} Decision stored in memory for next sprint`);
-      }
-
-      kpi.actions_taken += Math.max(executed, 1);
+      if (cmds.length === 0) { console.log(`  ${dim('│')} ${yellow('↳ no executable commands generated')}`); }
     }
 
-    // ── PHASE 4: SPRINT SUMMARY ──
-    const allSprintScores = [...vpResults.map(v => v.score), ceoScore].filter(s => s > 0);
-    const avg = allSprintScores.length > 0 ? allSprintScores.reduce((a, b) => a + b, 0) / allSprintScores.length : 0;
-    kpi.scores.push(avg);
+    // ── QA phase: test everything ──
+    if (phase.name === 'QA') {
+      console.log(`  ${dim('│')} ${bold('QA team (' + phase.agents + ' agents)')}`);
+      const qaTests = ['crypto-uuid', 'crypto-hash-sha256', 'text-word-count', 'memory-set', 'memory-search'];
+      let qaPassed = 0;
+      for (const slug of qaTests) {
+        const params = slug.includes('memory-set') ? { key: 'qa-' + Date.now(), value: 'ok' } : slug.includes('memory-search') ? { query: 'hive' } : { text: 'qa test' };
+        const r = await request('POST', '/v1/' + slug, params).catch(() => ({ _err: true }));
+        const ok = !r._err && r.status < 400;
+        if (ok) qaPassed++;
+        console.log(`  ${dim('│')} ${ok ? green('✓') : red('✗')} ${slug}`);
+      }
+      kpi.qa_passed += qaPassed; kpi.tests_run += qaTests.length; kpi.tests_passed += qaPassed;
+      console.log(`  ${dim('│')} QA: ${qaPassed}/${qaTests.length}`);
+    }
+
+    // ── SHIP phase: docs, SEO, marketing via memory ──
+    if (phase.name === 'SHIP') {
+      console.log(`  ${dim('│')} ${bold('Ship team (' + phase.agents + ' agents)')}`);
+      const shipPrompt = `${missionDirective}We just built: ${specs.slice(-3).join('; ')}.\nWrite 3 slop memory set commands to update docs/SEO/marketing:\nmemory set docs-update {"page":"...","change":"..."}\nmemory set seo-keyword {"term":"...","page":"..."}\nmemory set changelog {"version":"...","items":[...]}`;
+      const resp = await ollamaChat('mistral', shipPrompt);
+      const cmds = (resp || '').split('\n').filter(l => l.trim().startsWith('memory set')).slice(0, 3);
+      for (const cmd of cmds) {
+        const rest = cmd.replace(/^memory set\s+/, '').trim(); const si = rest.indexOf(' ');
+        if (si > 0) {
+          const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, '');
+          await request('POST', '/v1/memory-set', { key: 'hive-ship-' + k, value: rest.slice(si + 1) }).catch(() => {});
+          console.log(`  ${dim('│')} ${green('✓')} shipped: ${cyan(k)}`);
+          kpi.shipped++;
+        }
+      }
+    }
+
+    // ── REVIEW phase: CEO scores everything ──
+    if (phase.name === 'REVIEW') {
+      console.log(`  ${dim('│')} ${bold('CEO Review')}`);
+      const reviewPrompt = `${missionDirective}Sprint cycle complete. KPIs: tests ${kpi.tests_passed}/${kpi.tests_run}, research ${kpi.research_items} items, specs ${kpi.specs_written}, builds ${kpi.builds_executed}, QA ${kpi.qa_passed}, shipped ${kpi.shipped}. Avg latency ${Math.round(kpi.avg_latency)}ms.\n\nRate OVERALL /10 and give ONE priority for next cycle.\nSCORE: X.X/10\nNEXT_PRIORITY: <specific>`;
+      const resp = localOnly ? await ollamaChat('llama3', reviewPrompt) : await cloudChat('anthropic', reviewPrompt);
+      const score = extractScore(resp);
+      const nextMatch = (resp || '').match(/NEXT_PRIORITY:\s*(.+?)(?:\n|$)/i);
+      if (score > 0) sprintScores.push(score);
+      console.log(`  ${dim('│')} ${C.red}${bold('CEO')}${C.reset} ${bold((score || '?') + '/10')} ${nextMatch ? dim('next: ' + nextMatch[1].slice(0, 80)) : ''}`);
+    }
+
+    // ── Sprint summary ──
+    const avg = sprintScores.length > 0 ? sprintScores.reduce((a, b) => a + b, 0) / sprintScores.length : (kpi.scores.length > 0 ? kpi.scores[kpi.scores.length - 1] : 0);
+    if (avg > 0) kpi.scores.push(avg);
     kpi.sprints_complete++;
-    kpi.actions_taken++;
-
     const trend = kpi.scores.length >= 2 ? (kpi.scores[kpi.scores.length - 1] - kpi.scores[kpi.scores.length - 2]).toFixed(1) : '';
-    const trendStr = trend ? (parseFloat(trend) > 0 ? green('+' + trend) : parseFloat(trend) < 0 ? red(trend) : dim('±0')) : '';
-
-    console.log(`  ${dim('└')} ${bold('AVG: ' + avg.toFixed(1) + '/10')} ${dim('(' + allSprintScores.length + ' models)')} ${trendStr}  ${dim('actions:' + kpi.actions_taken + ' tests:' + kpi.tests_passed + '/' + kpi.tests_run + ' latency:' + Math.round(kpi.avg_latency) + 'ms')}`);
-    if (avg >= 9.5) console.log(`  ${green('  ★ TARGET ZONE (9.5+)')}`);
+    const trendStr = trend ? (parseFloat(trend) > 0 ? green('+' + trend) : parseFloat(trend) < 0 ? red(trend) : '') : '';
+    console.log(`  ${dim('└')} ${phase.name} done ${avg > 0 ? bold(avg.toFixed(1) + '/10') : ''} ${trendStr} ${dim('research:' + kpi.research_items + ' specs:' + kpi.specs_written + ' builds:' + kpi.builds_executed + ' shipped:' + kpi.shipped)}`);
     console.log('');
 
-    // Store in slop memory
-    await request('POST', '/v1/memory-set', {
-      key: 'hive3-sprint-' + s,
-      value: JSON.stringify({ sprint: s, avg: Math.round(avg * 10) / 10, decision: ceoDecision, kpi, ts: new Date().toISOString() })
-    }).catch(() => {});
-
+    await request('POST', '/v1/memory-set', { key: 'hive4-' + s, value: JSON.stringify({ s, phase: phase.name, kpi, ts: new Date().toISOString() }) }).catch(() => {});
     await new Promise(r => setTimeout(r, 1000));
   }
 
   // ── FINAL REPORT ──
-  console.log(`  ${C.red}${C.bold}╔═══════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║              HIVE COMPLETE                        ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}╚═══════════════════════════════════════════════════╝${C.reset}`);
+  console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════════════╗${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║                   HIVE COMPLETE                        ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════════════╝${C.reset}`);
   const finalAvg = kpi.scores.length > 0 ? (kpi.scores.reduce((a, b) => a + b, 0) / kpi.scores.length).toFixed(1) : '?';
-  console.log(`  Sprints:      ${sprints}`);
+  console.log(`  Sprints:      ${sprints} (${hiveSize} agents)`);
   console.log(`  Final avg:    ${bold(finalAvg + '/10')}`);
-  console.log(`  Test rate:    ${kpi.tests_passed}/${kpi.tests_run} (${Math.round(kpi.tests_passed / kpi.tests_run * 100)}%)`);
-  console.log(`  Search acc:   ${kpi.searches_correct}/${kpi.searches_total} (${Math.round(kpi.searches_correct / kpi.searches_total * 100)}%)`);
+  console.log(`  Research:     ${kpi.research_items} findings`);
+  console.log(`  Specs:        ${kpi.specs_written} written`);
+  console.log(`  Builds:       ${kpi.builds_executed} executed via slop`);
+  console.log(`  QA:           ${kpi.qa_passed} passed`);
+  console.log(`  Shipped:      ${kpi.shipped} items`);
+  console.log(`  Test rate:    ${kpi.tests_passed}/${kpi.tests_run} (${kpi.tests_run > 0 ? Math.round(kpi.tests_passed / kpi.tests_run * 100) : 0}%)`);
   console.log(`  Avg latency:  ${Math.round(kpi.avg_latency)}ms`);
-  console.log(`  Actions:      ${kpi.actions_taken}`);
-  console.log(`  Progression:  ${kpi.scores.map(s => s.toFixed(1)).join(' → ')}`);
+  if (kpi.scores.length > 0) console.log(`  Progression:  ${kpi.scores.map(s => s.toFixed(1)).join(' → ')}`);
   console.log('');
 }
 
