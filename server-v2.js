@@ -826,7 +826,7 @@ app.get('/v1/health', (_, res) => {
   try { const row = db.prepare("SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table'").get(); sqliteTableCount = row?.cnt || 76; } catch (e) {}
   res.json({
     status: 'healthy',
-    version: '3.6.0',
+    version: '3.7.0',
     apis: apiCount,
     uptime_seconds: Math.floor((Date.now() - serverStart) / 1000),
     memory_mb: Math.round(mem.rss / 1024 / 1024),
@@ -6653,7 +6653,7 @@ app.get('/v1/status/dashboard', (req, res) => {
   res.json({
     ok: true,
     status: 'operational',
-    version: '3.6.0',
+    version: '3.7.0',
     uptime_seconds: uptime,
     uptime_human: Math.floor(uptime / 3600) + 'h ' + Math.floor((uptime % 3600) / 60) + 'm',
     apis: apiCount,
@@ -6705,7 +6705,7 @@ app.get('/v1/docs/overview', (req, res) => {
   }
   res.json({
     ok: true,
-    version: '3.6.0',
+    version: '3.7.0',
     total_apis: Object.keys(API_DEFS).length,
     categories: Object.entries(categories).map(([name, data]) => ({ name, count: data.count, sample_apis: data.apis.slice(0, 3) })),
     llm_providers: ['anthropic (Claude)', 'openai (GPT)', 'grok (xAI)', 'deepseek', 'ollama (local)'],
