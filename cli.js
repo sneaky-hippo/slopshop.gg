@@ -1846,6 +1846,8 @@ async function cmdMemory(args) {
     console.log(`  ${cyan('slop memory search')} ${dim('<query>')}        Search memory`);
     console.log(`  ${cyan('slop memory list')}                    List all keys`);
     console.log(`  ${cyan('slop memory delete')} ${dim('<key>')}          Delete a key`);
+    console.log(`  ${cyan('slop memory export')} ${dim('[file]')}         Export ALL memory to local JSON`);
+    console.log(`  ${cyan('slop memory import')} ${dim('<file>')}         Import memory from JSON file`);
     console.log('');
     console.log(`  ${bold('2FA Protection')}`);
     console.log(`  ${cyan('slop memory 2fa enable')} ${dim('--email x@y.com')}  Enable email 2FA`);
@@ -2025,6 +2027,60 @@ async function cmdMemory(args) {
     if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
     if (quiet) { console.log('deleted'); return; }
     console.log(`\n  ${green('\u2713 Deleted:')} ${cyan(key)}\n`);
+    return;
+  }
+
+  if (sub === 'export') {
+    // Export ALL memory data to a local JSON file — data portability
+    const outFile = args[1] || path.join(process.cwd(), 'slopshop-memory-export.json');
+    console.log(`\n  ${bold('Exporting all memory...')}`);
+    spinnerStart('Fetching keys...');
+    const listRes = await request('POST', '/v1/memory-list', {});
+    const keys = (listRes.data?.keys || listRes.data?.entries || []).map(k => typeof k === 'string' ? k : (k.key || k.id));
+    spinnerStop(true);
+    console.log(`  Found ${bold(String(keys.length))} keys. Fetching values...`);
+
+    const exported = {};
+    let fetched = 0;
+    for (const key of keys) {
+      try {
+        const getRes = await request('POST', '/v1/memory-get', { key });
+        const val = getRes.data?.data?.value ?? getRes.data?.value;
+        if (val !== undefined) exported[key] = val;
+        fetched++;
+        if (fetched % 50 === 0) process.stderr.write(dim(`  ... ${fetched}/${keys.length}\n`));
+      } catch(e) { /* skip failed keys */ }
+    }
+
+    // Also save locally
+    const localDir = path.join(CONFIG_DIR, 'memory');
+    if (!fs.existsSync(localDir)) fs.mkdirSync(localDir, { recursive: true });
+    const localFile = path.join(localDir, 'export-' + new Date().toISOString().slice(0, 10) + '.json');
+    fs.writeFileSync(localFile, JSON.stringify(exported, null, 2));
+    fs.writeFileSync(outFile, JSON.stringify(exported, null, 2));
+
+    console.log(`\n  ${green('✓')} Exported ${bold(String(Object.keys(exported).length))} entries`);
+    console.log(`  ${dim('Local backup:')} ${localFile}`);
+    console.log(`  ${dim('Export file:')}  ${outFile}`);
+    console.log(`  ${dim('Your data. Your control. Always exportable.')}\n`);
+    return;
+  }
+
+  if (sub === 'import') {
+    const inFile = args[1];
+    if (!inFile || !fs.existsSync(inFile)) die('Usage: slop memory import <file.json>');
+    const data = JSON.parse(fs.readFileSync(inFile, 'utf8'));
+    const entries = Object.entries(data);
+    console.log(`\n  ${bold('Importing ' + entries.length + ' entries...')}`);
+    let imported = 0;
+    for (const [key, value] of entries) {
+      try {
+        await request('POST', '/v1/memory-set', { key, value: typeof value === 'string' ? value : JSON.stringify(value) });
+        imported++;
+        if (imported % 50 === 0) process.stderr.write(dim(`  ... ${imported}/${entries.length}\n`));
+      } catch(e) { /* skip */ }
+    }
+    console.log(`  ${green('✓')} Imported ${bold(String(imported))} entries\n`);
     return;
   }
 
