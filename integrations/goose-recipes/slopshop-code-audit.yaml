@@ -1,0 +1,78 @@
+version: "1.0.0"
+title: "Slopshop Code Audit"
+description: "Audit a codebase for security vulnerabilities, code quality, and best practices using Slopshop's real compute handlers — deterministic hashing, PII detection, sandbox execution, and structured extraction."
+
+instructions: |
+  Perform a comprehensive code audit on {{ repo_path }}:
+  1. Scan files for hardcoded secrets and PII using slop-pii-detect and slop-pii-redact.
+  2. Hash critical files with slop-crypto-hash-sha256 for integrity verification.
+  3. Run code snippets in sandbox using slop-sandbox-exec to verify behavior.
+  4. Use slop-data-extract-json and slop-data-extract-structured to parse config files.
+  5. Store audit results in persistent memory with slop-memory-set.
+  6. If swarm_size > 1, deploy parallel agents to audit different directories simultaneously.
+  7. Generate a final audit report with severity ratings.
+
+prompt: "Audit the codebase at {{ repo_path }} for security issues, code quality, and best practices using Slopshop deterministic compute."
+
+parameters:
+  - key: repo_path
+    input_type: string
+    requirement: required
+    description: "Path to the repository or directory to audit"
+  - key: focus
+    input_type: string
+    requirement: optional
+    default: "all"
+    description: "Audit focus area: security, quality, performance, dependencies, or all"
+  - key: swarm_size
+    input_type: number
+    requirement: optional
+    default: "1"
+    description: "Number of parallel audit agents (1 = single agent, 5+ recommended for large repos)"
+  - key: severity_threshold
+    input_type: string
+    requirement: optional
+    default: "low"
+    description: "Minimum severity to report: critical, high, medium, low"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 600
+    description: "925+ real deterministic compute handlers for code analysis, hashing, PII detection, and sandbox execution"
+    env_keys: [SLOPSHOP_KEY]
+
+response:
+  json_schema:
+    type: object
+    properties:
+      repo_path: { type: string }
+      files_scanned: { type: number }
+      findings:
+        type: array
+        items:
+          type: object
+          properties:
+            file: { type: string }
+            line: { type: number }
+            severity: { type: string, enum: [critical, high, medium, low] }
+            category: { type: string }
+            description: { type: string }
+            recommendation: { type: string }
+      integrity_hashes:
+        type: object
+        description: "SHA-256 hashes of audited files for tamper detection"
+      pii_detected:
+        type: array
+        description: "Files containing PII or hardcoded secrets"
+      summary:
+        type: object
+        properties:
+          critical: { type: number }
+          high: { type: number }
+          medium: { type: number }
+          low: { type: number }
+          total: { type: number }
+    required: [repo_path, files_scanned, findings, summary]

@@ -219,6 +219,29 @@ const ORCHESTRATION_TOOLS = [
     }, required: ['role'] },
     endpoint: '/v1/copilot/spawn',
   },
+  {
+    name: 'slop-memory-search',
+    description: '[0cr] Semantic search across persistent memory',
+    inputSchema: { type: 'object', properties: {
+      query: { type: 'string', description: 'Search query' },
+    }, required: ['query'] },
+    endpoint: '/v1/memory-search',
+  },
+  {
+    name: 'slop-credit-balance',
+    description: '[0cr] Check your credit balance',
+    inputSchema: { type: 'object', properties: {} },
+    endpoint: '/v1/credits/balance',
+    method: 'GET',
+  },
+  {
+    name: 'slop-tools-search',
+    description: '[0cr] Semantic search across 925+ tools to find the right handler',
+    inputSchema: { type: 'object', properties: {
+      query: { type: 'string', description: 'Search query' },
+    }, required: ['query'] },
+    endpoint: '/v1/tools/search',
+  },
 ];
 
 // Load tool list from server (filtered to essentials for MCP, full for API)
@@ -248,14 +271,44 @@ async function handleMessage(msg) {
       return {
         jsonrpc: '2.0', id,
         result: {
-          protocolVersion: '2024-11-05',
-          capabilities: { tools: { listChanged: false } },
-          serverInfo: { name: 'slopshop', version: '3.4.0' },
+          protocolVersion: '2025-06-18',
+          capabilities: { tools: { listChanged: false }, resources: { listChanged: false } },
+          serverInfo: { name: 'slopshop', version: '3.7.0' },
         },
       };
 
     case 'notifications/initialized':
       return null; // No response needed
+
+    case 'resources/list':
+      return {
+        jsonrpc: '2.0', id,
+        result: {
+          resources: [{
+            uri: 'slopshop://memory',
+            name: 'Slopshop Persistent Memory',
+            description: 'Free persistent key-value memory that survives restarts. Cross-LLM, cross-session.',
+            mimeType: 'application/json',
+          }],
+        },
+      };
+
+    case 'resources/read': {
+      const uri = params.uri || '';
+      const uriObj = new URL(uri);
+      const query = uriObj.searchParams.get('query') || '';
+      const memResult = await apiCall('GET', `/v1/memory-search?query=${encodeURIComponent(query)}`);
+      return {
+        jsonrpc: '2.0', id,
+        result: {
+          contents: [{
+            uri,
+            mimeType: 'application/json',
+            text: JSON.stringify(memResult.data || memResult, null, 2),
+          }],
+        },
+      };
+    }
 
     case 'tools/list':
       if (!toolList) await loadTools();
@@ -319,8 +372,8 @@ async function handleMessage(msg) {
         if (input.input && !input.text) input.text = input.input;
       }
 
-      const method = endpoint.includes('/status') || endpoint.includes('/standup') || endpoint.includes('/sync') ? 'GET' : 'POST';
-      const result = await apiCall(method, endpoint, method === 'POST' ? input : null);
+      const httpMethod = (orchTool && orchTool.method) || (endpoint.includes('/status') || endpoint.includes('/standup') || endpoint.includes('/sync') || endpoint.includes('/balance') ? 'GET' : 'POST');
+      const result = await apiCall(httpMethod, endpoint, httpMethod === 'POST' ? input : null);
 
       return {
         jsonrpc: '2.0', id,

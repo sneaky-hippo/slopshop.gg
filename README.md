@@ -31,7 +31,7 @@ Slopshop is the protocol layer of intelligence — the universal nervous system 
 
 **1,255 real APIs** across 78 categories. **7 AI models** (Claude, GPT-4.1, Grok-3, DeepSeek + Llama 3, Mistral, DeepSeek-Coder locally). **Free persistent memory** that survives sessions, model swaps, and restarts. **Multi-LLM orchestration** — launch 30-agent organizations mixing Claude, GPT, and Grok agents. **Self-hostable** with zero native dependencies.
 
-Works with Claude Code (MCP), any OpenAI-compatible client, LangChain, CrewAI, or raw HTTP.
+Works with Claude Code (MCP), Goose, Cursor, OpenCode, Cline, Aider, LangChain, CrewAI, or raw HTTP.
 
 ---
 
@@ -205,18 +205,59 @@ result = s.call('crypto-hash-sha256', {'data': 'hello world'})
 print(result['hash'])
 ```
 
-**MCP (Claude Code / Cursor)**
+**MCP (Claude Code / Cursor / Goose / Cline / OpenCode)**
 
 ```json
 {
   "mcpServers": {
     "slopshop": {
       "command": "npx",
-      "args": ["slopshop", "mcp"],
+      "args": ["slopshop", "mcp", "serve"],
       "env": { "SLOPSHOP_KEY": "sk-slop-your-key-here" }
     }
   }
 }
+```
+
+**Goose (Block) — Native MCP Extension + Recipes**
+
+```bash
+# Add as extension (zero code needed)
+goose configure  # → Add Extension → STDIO → "npx slopshop mcp serve"
+
+# Or use official Recipes
+goose run --recipe integrations/goose-recipes/slopshop-research-swarm.yaml --params url=https://stripe.com
+```
+
+**Aider — Custom Commands**
+
+```bash
+# Copy the integration config
+cp integrations/aider/aider-slopshop.yml ~/.aider.conf.yml
+
+# Use in Aider chat:
+# /slop crypto-hash-sha256 --data "secret"
+# /slop-memory "project-state" "phase-2"
+# /slop-swarm 50
+```
+
+**Cline — MCP Marketplace + Skills**
+
+```
+# In Cline VS Code sidebar → MCP Marketplace → Add custom
+# Command: npx slopshop mcp serve
+# Or use SKILL.md templates from integrations/cline/
+```
+
+**LangChain / LangGraph**
+
+```python
+from langchain_mcp_adapters import MultiServerMCPClient
+from langgraph.prebuilt import create_react_agent
+
+client = MultiServerMCPClient([{"url": "http://localhost:8765"}])  # Slopshop MCP
+tools = await client.get_tools()  # 925+ real compute tools
+agent = create_react_agent(llm, tools)
 ```
 
 ---
@@ -228,7 +269,11 @@ slop call crypto-hash-sha256 --data "hello world"   # Call any API
 slop search "convert temperature"                     # Semantic search
 slop list "Crypto & Security"                         # Browse by category
 slop pipe text-base64-encode crypto-hash-sha256 --text "secret"  # Chain APIs
+slop mcp serve                                        # Start MCP server
+slop mcp config                                       # Show config for all clients
+slop init --full-stack --ollama                        # Scaffold project
 slop balance                                          # Check credits
+slop completions bash                                  # Shell completions
 ```
 
 ---
@@ -239,8 +284,8 @@ Credits never expire. Memory APIs are always free.
 
 | Tier | Credits | Price |
 |------|---------|-------|
-| Free | 2,000 | $0 (on signup) |
-| Baby Lobster | 1,000 | $9 |
+| Free | 500 | $0 (on signup) |
+| Baby Lobster | 5,000 | $9 |
 | Lobster | 10,000 | $49 |
 | Big Lobster | 100,000 | $299 |
 | Kraken | 1,000,000 | $1,999 |

@@ -6,17 +6,17 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <title>Sign Up — Slopshop</title>
-<meta name="description" content="Create a free Slopshop account. 2,000 free credits. Memory is always free.">
+<meta name="description" content="Create a free Slopshop account. 500 free credits. Memory is always free.">
 <link rel="canonical" href="https://slopshop.gg/signup">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/signup">
 <meta property="og:title" content="Sign Up — Slopshop">
-<meta property="og:description" content="Create a free Slopshop account. 2,000 free credits. Memory is always free.">
+<meta property="og:description" content="Create a free Slopshop account. 500 free credits. Memory is always free.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="Sign Up — Slopshop">
-<meta name="twitter:description" content="Create a free Slopshop account. 2,000 free credits. Memory is always free.">
+<meta name="twitter:description" content="Create a free Slopshop account. 500 free credits. Memory is always free.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <meta name="theme-color" content="#ff3333">
@@ -108,7 +108,7 @@ input[type="email"]::placeholder,input[type="password"]::placeholder{color:var(-
 <div class="main">
   <div class="card">
     <h1>Create your account</h1>
-    <p class="subtitle"><b>2,000 free credits.</b> Memory is always free.</p>
+    <p class="subtitle"><b>500 free credits.</b> Memory is always free.</p>
 
     <div id="error" class="error-msg"></div>
 
@@ -155,7 +155,7 @@ document.getElementById('signupForm').addEventListener('submit', async (e) => {
       const key = data.api_key || data.data?.api_key;
       result.innerHTML = `
         <div style="background:var(--s1);border:1px solid var(--g);border-radius:8px;padding:24px;margin-top:20px">
-          <div style="color:var(--g);font-weight:700;margin-bottom:12px">&#10003; Account created &mdash; 2,000 free credits loaded</div>
+          <div style="color:var(--g);font-weight:700;margin-bottom:12px">&#10003; Account created &mdash; 500 free credits loaded</div>
           <div style="font-family:var(--mono);font-size:0.85rem;background:var(--bg);padding:12px;border-radius:6px;margin-bottom:12px;word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:8px">
             <span id="apiKeyText">${key}</span>
             <button onclick="navigator.clipboard.writeText('${key}');this.textContent='Copied!'" style="flex-shrink:0;background:var(--r);color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:0.75rem;font-family:var(--mono)">Copy</button>

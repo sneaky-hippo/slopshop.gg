@@ -23,7 +23,7 @@ All free. All auth-gated. Designed by asking Claude, GPT, Grok, and DeepSeek wha
 - Accounts persist across deploys (fixed DB volume path)
 
 ## Quick Start
-1. Get a key: POST https://slopshop.gg/v1/auth/signup with {"email":"you@example.com"} — returns API key with 2,000 free credits.
+1. Get a key: POST https://slopshop.gg/v1/auth/signup with {"email":"you@example.com"} — returns API key with 500 free credits.
 2. Or use the demo key immediately: sk-slop-demo-key-12345678 (200 credits, no signup).
 3. Make your first call:
 curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 -H "Authorization: Bearer sk-slop-demo-key-12345678" -H "Content-Type: application/json" -d '{"text":"hello"}'
@@ -581,7 +581,7 @@ curl -X POST https://slopshop.gg/v1/agent/run \
 - GET /v1/agent/history - Retrieve past agent runs from auto-stored memory
 
 ## Pricing
-Credit-based. 1 credit = 1 simple API call. Plans from $9/1K credits to $1,999/1M credits. 2,000 free credits on signup. Memory APIs (set, get, search, list, delete, stats) are FREE - 0 credits.
+Credit-based. 1 credit = 1 simple API call. Plans from $9/1K credits to $1,999/1M credits. 500 free credits on signup. Memory APIs (set, get, search, list, delete, stats) are FREE - 0 credits.
 
 ## Quickstart (10 tools for 80% of tasks)
 GET /v1/quickstart — returns the 10 highest-value tools with examples. Includes 2 free memory tools. Demo key: sk-slop-demo-key-12345678.

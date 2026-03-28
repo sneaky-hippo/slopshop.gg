@@ -1,0 +1,39 @@
+version: "1.0.0"
+title: "Slopshop Security Sweep"
+description: "Run a comprehensive security analysis on a domain using real network tools: DNS, SSL/TLS, HTTP headers, redirect chains, and email validation."
+
+instructions: |
+  Perform a full security sweep on {{ domain }}:
+  1. Check DNS records (A, MX, all records)
+  2. Validate SSL/TLS certificate
+  3. Inspect HTTP headers for security headers (CSP, HSTS, X-Frame-Options)
+  4. Follow redirect chains
+  5. Check email validation (MX records)
+  6. Store complete audit in Slopshop memory
+
+prompt: "Run a complete security sweep on {{ domain }}"
+
+parameters:
+  - key: domain
+    input_type: string
+    requirement: required
+    description: "Domain to scan (e.g., example.com)"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 300
+    env_keys: [SLOPSHOP_KEY]
+
+response:
+  json_schema:
+    type: object
+    properties:
+      domain: { type: string }
+      ssl_valid: { type: boolean }
+      security_headers: { type: object }
+      dns_records: { type: object }
+      vulnerabilities: { type: array }
+    required: [domain, ssl_valid]

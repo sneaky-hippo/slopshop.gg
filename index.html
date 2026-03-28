@@ -1453,7 +1453,7 @@ async function run(){
       saveHistory({slug,input:inp,ts:Date.now()});
       // Contextual conversion CTA after successful call
       const ctaEl=document.getElementById('pgConversionCta');
-      if(ctaEl){const cr=d.meta?.credits_used||1;ctaEl.innerHTML=`<span style="color:var(--t2)">That call cost <b style="color:var(--t)">${cr} credit${cr!==1?'s':''}</b>. You get <b style="color:var(--g)">2,000 free</b>.</span> <a href="/signup" style="color:var(--r);font-weight:700">Sign up to keep building &rarr;</a>`;ctaEl.style.display='block';}
+      if(ctaEl){const cr=d.meta?.credits_used||1;ctaEl.innerHTML=`<span style="color:var(--t2)">That call cost <b style="color:var(--t)">${cr} credit${cr!==1?'s':''}</b>. You get <b style="color:var(--g)">500 free</b>.</span> <a href="/signup" style="color:var(--r);font-weight:700">Sign up to keep building &rarr;</a>`;ctaEl.style.display='block';}
     }else out.innerHTML=`<span style="color:var(--r)">${r.status} ${JSON.stringify(d.error,null,2)}</span>`;
   }catch(e){out.innerHTML=`<span style="color:var(--r)">Error: ${e.message}</span>`;}
   btn.disabled=false;btn.textContent='Run';

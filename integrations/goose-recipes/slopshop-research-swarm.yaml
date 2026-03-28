@@ -1,0 +1,32 @@
+version: "1.0.0"
+title: "Slopshop Research Swarm"
+description: "Research a URL or topic using Slopshop's 925+ real compute handlers, store findings in persistent memory, and optionally verify with parallel agents."
+
+instructions: |
+  Use Slopshop extensions to research {{ url }}.
+  1. Use network sense tools to analyze the target (HTTP status, SSL, DNS, tech stack detection).
+  2. Store all findings in persistent memory using memory-set.
+  3. Summarize findings with structured extraction.
+  If swarm_size > 1, launch parallel verification agents.
+
+prompt: "Research {{ url }} comprehensively using Slopshop tools and store results."
+
+parameters:
+  - key: url
+    input_type: string
+    requirement: required
+    description: "Target URL or topic to research"
+  - key: swarm_size
+    input_type: number
+    requirement: optional
+    default: "1"
+    description: "Number of parallel verification agents (1 = no swarm)"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 300
+    description: "925+ real deterministic compute handlers + free persistent memory + Army swarms"
+    env_keys: [SLOPSHOP_KEY]

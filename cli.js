@@ -838,6 +838,9 @@ ${C.reset}`;
   console.log(`    ${cyan('slop stats')}                             Platform statistics & usage`);
   console.log(`    ${cyan('slop health')}                            Server health check`);
   console.log(`    ${cyan('slop mcp')}                               Set up MCP for Claude Code`);
+  console.log(`    ${cyan('slop mcp serve')}                         Start MCP server (Goose/Cursor/Cline)`);
+  console.log(`    ${cyan('slop mcp config')}                        Show MCP config for all clients`);
+  console.log(`    ${cyan('slop init')} ${dim('[--full-stack --ollama]')}    Scaffold Slopshop project`);
   console.log(`    ${cyan('slop help')}                              Show this help\n`);
   console.log(`  ${bold('AI & PLANNING')}`);
   console.log(`    ${cyan('slop plan')} ${dim('"task description"')}          Plan before executing`);
@@ -901,15 +904,78 @@ ${C.reset}`;
 // ============================================================
 // MCP SETUP
 // ============================================================
-function cmdMcp() {
+function cmdMcp(args) {
+  const sub = (args || [])[0];
+
+  if (sub === 'serve') {
+    // Start MCP server in STDIO mode for any MCP client (Goose, Cursor, Claude Desktop, etc.)
+    const port = parseInt((args || [])[1]) || 0;
+    console.error(`Slopshop MCP Server v${PKG_VERSION} — 925+ real compute tools + free memory`);
+    console.error(`Discoverable by Claude Desktop, Cursor, VS Code Copilot, Goose, OpenCode, Cline`);
+    console.error(`Base: ${BASE_URL}`);
+    if (port) {
+      console.error(`HTTP mode on port ${port} (for remote MCP clients)`);
+      // HTTP transport for remote MCP clients
+      const httpServer = require('http').createServer((req, res) => {
+        let body = '';
+        req.on('data', c => body += c);
+        req.on('end', () => {
+          res.setHeader('Content-Type', 'application/json');
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+          if (req.method === 'OPTIONS') { res.writeHead(200); res.end(); return; }
+          try {
+            // Forward to MCP server process
+            const { execSync } = require('child_process');
+            const result = execSync(`echo '${body.replace(/'/g, "\\'")}' | node "${path.join(__dirname, 'mcp-server.js')}"`, {
+              env: { ...process.env, SLOPSHOP_KEY: API_KEY, SLOPSHOP_BASE: BASE_URL },
+              timeout: 30000,
+            });
+            res.writeHead(200);
+            res.end(result);
+          } catch(e) {
+            res.writeHead(500);
+            res.end(JSON.stringify({ error: e.message }));
+          }
+        });
+      });
+      httpServer.listen(port, () => console.error(`MCP HTTP server listening on port ${port}`));
+    } else {
+      // STDIO mode (default — works with Goose, Claude Desktop, Cursor, etc.)
+      require('./mcp-server.js');
+    }
+    return;
+  }
+
+  if (sub === 'config') {
+    // Show MCP config for various clients
+    const mcpConfig = {
+      slopshop: {
+        command: 'npx',
+        args: ['slopshop', 'mcp', 'serve'],
+        env: { SLOPSHOP_KEY: API_KEY || 'sk-slop-your-key-here' }
+      }
+    };
+    console.log(`\n  ${bold('MCP Server Configuration')}\n`);
+    console.log(`  ${cyan('Claude Desktop / Cursor / VS Code Copilot:')}`);
+    console.log(`  Add to your MCP settings:\n`);
+    console.log(JSON.stringify({ mcpServers: mcpConfig }, null, 2));
+    console.log(`\n  ${cyan('Goose:')}`);
+    console.log(`  goose configure → Add Extension → STDIO → "npx slopshop mcp serve"\n`);
+    console.log(`  ${cyan('OpenCode:')}`);
+    console.log(`  Add to opencode.json: { "plugins": ["@slopshop/opencode-plugin"] }\n`);
+    console.log(`  ${cyan('Cline:')}`);
+    console.log(`  MCP Marketplace → Add custom → command: "npx slopshop mcp serve"\n`);
+    console.log(`  ${cyan('Aider:')}`);
+    console.log(`  Copy integrations/aider/aider-slopshop.yml to ~/.aider.conf.yml\n`);
+    return;
+  }
+
+  // Default: setup for Claude Code (legacy behavior)
   console.log(`\n  ${bold('Setting up Slopshop MCP for Claude Code...')}\n`);
   try {
     require('./setup-mcp.js');
   } catch(e) {
-    // If setup-mcp.js isn't available (npm install), use inline setup
-    const os = require('os');
-    const fs = require('fs');
-    const path = require('path');
     const settingsPath = path.join(os.homedir(), '.claude', 'settings.json');
 
     let settings = {};
@@ -933,6 +999,109 @@ function cmdMcp() {
     console.log(dim(`  Settings: ${settingsPath}`));
     console.log(`\n  ${bold('Restart Claude Code to activate.')}\n`);
   }
+
+  console.log(`\n  ${bold('Other MCP options:')}`);
+  console.log(`  ${cyan('slop mcp serve')}       Start MCP server (STDIO mode for any client)`);
+  console.log(`  ${cyan('slop mcp serve 8765')}  Start MCP server (HTTP mode on port 8765)`);
+  console.log(`  ${cyan('slop mcp config')}      Show config for all MCP clients\n`);
+}
+
+// ============================================================
+// INIT — Scaffold a new Slopshop-powered project
+// ============================================================
+function cmdInit(args) {
+  const flags = (args || []).join(' ');
+  const withOllama = flags.includes('--ollama') || flags.includes('--full-stack');
+  const withGoose = flags.includes('--goose') || flags.includes('--full-stack');
+  const projectDir = process.cwd();
+
+  console.log(`\n  ${bold('Initializing Slopshop project...')}\n`);
+
+  // Create .slopshop directory
+  const slopDir = path.join(projectDir, '.slopshop');
+  if (!fs.existsSync(slopDir)) fs.mkdirSync(slopDir, { recursive: true });
+
+  // Write MCP config for the project
+  const mcpConfig = {
+    mcpServers: {
+      slopshop: {
+        command: 'npx',
+        args: ['slopshop', 'mcp', 'serve'],
+        env: { SLOPSHOP_KEY: '${SLOPSHOP_KEY}' }
+      }
+    }
+  };
+  fs.writeFileSync(path.join(slopDir, 'mcp.json'), JSON.stringify(mcpConfig, null, 2));
+  console.log(green('  ✓') + ` Created ${dim('.slopshop/mcp.json')} (MCP server config)`);
+
+  // Write Goose Recipe if requested
+  if (withGoose) {
+    const recipe = `version: "1.0.0"
+title: "Slopshop Agent Workflow"
+description: "Use Slopshop tools for compute, memory, and orchestration"
+
+instructions: |
+  Use Slopshop extensions for reliable compute operations.
+  Store findings in persistent memory.
+
+prompt: "Start the workflow."
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 300
+    env_keys: [SLOPSHOP_KEY]
+`;
+    fs.writeFileSync(path.join(slopDir, 'recipe.yaml'), recipe);
+    console.log(green('  ✓') + ` Created ${dim('.slopshop/recipe.yaml')} (Goose Recipe template)`);
+  }
+
+  // Write docker-compose if full-stack
+  if (withOllama) {
+    const compose = `version: "3.8"
+services:
+  slopshop:
+    image: node:20-slim
+    working_dir: /app
+    command: npx slopshop mcp serve 8765
+    ports:
+      - "8765:8765"
+    environment:
+      - SLOPSHOP_KEY=\${SLOPSHOP_KEY}
+      - SLOPSHOP_BASE=\${SLOPSHOP_BASE:-https://slopshop.gg}
+    volumes:
+      - slopshop-data:/app/data
+
+  ollama:
+    image: ollama/ollama
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+
+volumes:
+  slopshop-data:
+  ollama-data:
+`;
+    fs.writeFileSync(path.join(slopDir, 'docker-compose.yml'), compose);
+    console.log(green('  ✓') + ` Created ${dim('.slopshop/docker-compose.yml')} (full stack with Ollama)`);
+  }
+
+  // Write .env template
+  if (!fs.existsSync(path.join(projectDir, '.env'))) {
+    fs.writeFileSync(path.join(projectDir, '.env'), `# Slopshop Configuration\nSLOPSHOP_KEY=${API_KEY || 'sk-slop-your-key-here'}\nSLOPSHOP_BASE=https://slopshop.gg\n`);
+    console.log(green('  ✓') + ` Created ${dim('.env')} (API key config)`);
+  }
+
+  console.log(`\n  ${bold('Next steps:')}`);
+  console.log(`  ${cyan('slop mcp serve')}         Start MCP server`);
+  console.log(`  ${cyan('slop call crypto-uuid')}   Test a tool call`);
+  console.log(`  ${cyan('slop memory set hello world')}  Store persistent memory`);
+  if (withOllama) console.log(`  ${cyan('docker compose -f .slopshop/docker-compose.yml up')}  Start full stack`);
+  if (withGoose) console.log(`  ${cyan('goose run --recipe .slopshop/recipe.yaml')}  Run Goose Recipe`);
+  console.log('');
 }
 
 // ============================================================
@@ -2019,7 +2188,7 @@ async function cmdUpgrade() {
 function cmdCompletions(args) {
   const shell = args[0] || 'bash';
 
-  const commands = ['call','pipe','run','search','list','discover','org','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do'];
+  const commands = ['call','pipe','run','search','list','discover','org','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui'];
 
   if (shell === 'bash') {
     console.log(`# Add to ~/.bashrc:`);
@@ -3353,7 +3522,7 @@ async function main() {
     if (!cmd && !API_KEY && !jsonMode) {
       console.log(`\n  ${C.red}${C.bold}SLOPSHOP${C.reset} v${PKG_VERSION} ${dim('— the missing CLI for AI agents')}\n`);
       console.log(`  ${bold('Quick start:')}`);
-      console.log(`    1. ${cyan('slop signup')}                    Create free account (2,000 credits)`);
+      console.log(`    1. ${cyan('slop signup')}                    Create free account (500 credits)`);
       console.log(`    2. ${cyan('slop call crypto-uuid')}          Your first API call`);
       console.log(`    3. ${cyan('slop search "what you need"')}    Find any of 1,248 APIs`);
       console.log(`    4. ${cyan('slop pipe api1 api2')}            Chain APIs together\n`);
@@ -3383,7 +3552,8 @@ async function main() {
     case 'whoami':  await cmdWhoami();     break;
     case 'config':  cmdConfig(args);       break;
     case 'key':     await cmdKey(args);     break;
-    case 'mcp':     cmdMcp();              break;
+    case 'mcp':     cmdMcp(args);           break;
+    case 'init':    cmdInit(args);          break;
     case 'org':     await cmdOrg(args);    break;
     case 'chain':   await cmdChain(args);  break;
     case 'memory':  await cmdMemory(args); break;

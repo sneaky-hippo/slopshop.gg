@@ -1,0 +1,77 @@
+version: "1.0.0"
+title: "Slopshop Credit Earning Pipeline"
+description: "Automate credit earning through Slopshop's Credit Exchange — complete compute tasks, contribute to the network, and earn credits redeemable for premium features and extended compute time."
+
+instructions: |
+  Set up and run a credit earning pipeline:
+  1. Check current credit balance using slop-credit-balance.
+  2. List available credit-earning tasks from the Credit Exchange using slop-credit-tasks.
+  3. Based on {{ strategy }}, select and execute tasks:
+     - compute: Run deterministic compute tasks (hashing, transforms, validation) for the network.
+     - contribute: Share useful tool outputs and memory entries with the community.
+     - verify: Participate in Merkle verification of other agents' swarm results.
+     - hybrid: Combine all strategies for maximum earning.
+  4. Execute {{ batch_size }} tasks per cycle.
+  5. Store earning history and performance metrics in persistent memory.
+  6. Report total credits earned and current balance.
+
+prompt: "Run a credit earning pipeline using the {{ strategy }} strategy, processing {{ batch_size }} tasks."
+
+parameters:
+  - key: strategy
+    input_type: string
+    requirement: optional
+    default: "hybrid"
+    description: "Earning strategy: compute, contribute, verify, or hybrid"
+  - key: batch_size
+    input_type: number
+    requirement: optional
+    default: "10"
+    description: "Number of tasks to process per cycle"
+  - key: cycles
+    input_type: number
+    requirement: optional
+    default: "1"
+    description: "Number of earning cycles to run (each cycle processes batch_size tasks)"
+  - key: min_payout
+    input_type: number
+    requirement: optional
+    default: "0"
+    description: "Minimum credit threshold before stopping (0 = run all cycles regardless)"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 600
+    description: "925+ real compute handlers with Credit Exchange for earning and spending credits"
+    env_keys: [SLOPSHOP_KEY]
+
+response:
+  json_schema:
+    type: object
+    properties:
+      strategy: { type: string }
+      cycles_completed: { type: number }
+      tasks_completed: { type: number }
+      tasks_failed: { type: number }
+      credits_earned: { type: number }
+      credits_balance: { type: number }
+      earnings_breakdown:
+        type: object
+        properties:
+          compute: { type: number }
+          contribute: { type: number }
+          verify: { type: number }
+      task_history:
+        type: array
+        items:
+          type: object
+          properties:
+            task_id: { type: string }
+            type: { type: string }
+            credits: { type: number }
+            status: { type: string, enum: [completed, failed, skipped] }
+            timestamp: { type: string }
+    required: [strategy, cycles_completed, tasks_completed, credits_earned, credits_balance]

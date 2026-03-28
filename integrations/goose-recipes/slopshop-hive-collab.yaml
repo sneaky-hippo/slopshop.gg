@@ -1,0 +1,75 @@
+version: "1.0.0"
+title: "Slopshop Hive Collaboration"
+description: "Create a collaborative Hive workspace where multiple agents share persistent memory, coordinate tasks, and build on each other's work — with full audit trails and Merkle-verified results."
+
+instructions: |
+  Set up and manage a Hive collaboration workspace for {{ project_name }}:
+  1. Create a new Hive workspace using slop-hive-create with the project name.
+  2. Store the project brief and objectives in shared Hive memory using slop-memory-set.
+  3. Deploy {{ agent_count }} agents into the Hive, each assigned a specific role:
+     - Researcher: gathers information using network sense tools
+     - Analyst: processes and structures data using extraction tools
+     - Writer: synthesizes findings into coherent output
+     - Reviewer: verifies claims and checks for accuracy
+  4. Agents communicate through shared Hive memory namespaced by role.
+  5. Use slop-hive-broadcast to coordinate handoffs between agents.
+  6. Collect and merge all agent outputs into a final deliverable.
+  7. Generate Merkle proof of all contributions for verifiability.
+
+prompt: "Create a Hive collaboration workspace for {{ project_name }} with {{ agent_count }} coordinated agents."
+
+parameters:
+  - key: project_name
+    input_type: string
+    requirement: required
+    description: "Name for the Hive workspace and project"
+  - key: project_brief
+    input_type: string
+    requirement: required
+    description: "Description of what the collaboration should accomplish"
+  - key: agent_count
+    input_type: number
+    requirement: optional
+    default: "4"
+    description: "Number of agents to deploy in the Hive (default: 4 role-based agents)"
+  - key: roles
+    input_type: string
+    requirement: optional
+    default: "researcher,analyst,writer,reviewer"
+    description: "Comma-separated list of agent roles to assign"
+  - key: timeout_minutes
+    input_type: number
+    requirement: optional
+    default: "30"
+    description: "Maximum time in minutes before the Hive auto-completes"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 1800
+    description: "925+ real compute handlers with Hive collaboration, shared memory, and Army swarm coordination"
+    env_keys: [SLOPSHOP_KEY]
+
+response:
+  json_schema:
+    type: object
+    properties:
+      hive_id: { type: string }
+      project_name: { type: string }
+      agents_deployed: { type: number }
+      agent_roles:
+        type: array
+        items:
+          type: object
+          properties:
+            role: { type: string }
+            agent_id: { type: string }
+            status: { type: string, enum: [active, completed, failed] }
+            contributions: { type: number }
+      shared_memory_keys: { type: array, items: { type: string } }
+      merkle_root: { type: string, description: "Merkle root hash of all agent contributions" }
+      final_output: { type: string }
+      duration_seconds: { type: number }
+    required: [hive_id, project_name, agents_deployed, merkle_root]

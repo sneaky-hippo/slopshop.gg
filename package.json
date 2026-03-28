@@ -1,6 +1,6 @@
 {
   "name": "slopshop",
-  "version": "3.6.0",
+  "version": "3.7.0",
   "description": "The protocol layer of intelligence. 1,255 APIs, multi-LLM orchestration (Claude+GPT+Grok+DeepSeek), agent organizations, free persistent memory, Universal Model Mesh. Self-hostable.",
   "main": "server-v2.js",
   "bin": {
@@ -13,7 +13,8 @@
     "test": "node test.js",
     "benchmark": "node benchmark.js",
     "openapi": "node openapi-gen.js",
-    "mcp": "node mcp-server.js"
+    "mcp": "node mcp-server.js",
+    "mcp:serve": "node mcp-server.js"
   },
   "files": [
     "cli.js",
@@ -35,7 +36,8 @@
     "openapi-gen.js",
     "README.md",
     "LICENSE",
-    "llms.txt"
+    "llms.txt",
+    "integrations/"
   ],
   "keywords": [
     "api",

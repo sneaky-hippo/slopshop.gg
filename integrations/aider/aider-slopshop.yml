@@ -1,0 +1,44 @@
+# Slopshop Integration for Aider — Official Configuration
+# Place in ~/.aider.conf.yml or project .aider/aider_commands.yml
+#
+# Gives Aider access to 925+ real deterministic compute handlers,
+# free persistent memory, and verifiable parallel agent swarms.
+#
+# Requirements: npm install -g slopshop && export SLOPSHOP_KEY=sk-slop-xxx
+
+commands:
+  - name: slop
+    description: "Call any of Slopshop's 925+ real compute handlers (hash, crypto, data transform, sandbox exec, memory, network sense)"
+    min_num_of_args: 1
+    aider_command: "slop call {0} --json"
+    add_output_to_chat: true
+
+  - name: slop-memory
+    description: "Store or search persistent memory across Aider sessions (free forever)"
+    min_num_of_args: 1
+    aider_command: "slop call memory-set --key {0} --value \"{1}\" 2>/dev/null || slop call memory-search --query {0}"
+    add_output_to_chat: true
+
+  - name: slop-swarm
+    description: "Launch a verifiable parallel agent swarm with Merkle-verified results"
+    min_num_of_args: 1
+    aider_command: "slop army deploy {0} --task \"Analyze and improve this codebase\""
+    add_output_to_chat: true
+
+  - name: slop-search
+    description: "Search Slopshop's 925+ tools by natural language description"
+    min_num_of_args: 1
+    aider_command: "slop search \"{0}\""
+    add_output_to_chat: true
+
+  - name: slop-hash
+    description: "Hash data with SHA-256 (real compute, not LLM estimation)"
+    min_num_of_args: 1
+    aider_command: "slop call crypto-hash-sha256 --data \"{0}\" --json"
+    add_output_to_chat: true
+
+  - name: slop-credit
+    description: "Check your Slopshop credit balance"
+    min_num_of_args: 0
+    aider_command: "slop balance"
+    add_output_to_chat: true

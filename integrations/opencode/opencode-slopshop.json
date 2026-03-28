@@ -1,0 +1,25 @@
+{
+  "name": "@slopshop/opencode-plugin",
+  "version": "1.0.0",
+  "description": "925+ real deterministic compute handlers, free persistent memory, Army swarms with Merkle verification, Hive collaboration workspaces, and Credit Exchange — all as native OpenCode tools.",
+  "homepage": "https://slopshop.gg",
+  "repository": "https://github.com/sneaky-hippo/slopshop.gg",
+  "mcp_server": {
+    "command": "npx",
+    "args": ["slopshop", "mcp"],
+    "env": {
+      "SLOPSHOP_KEY": "${SLOPSHOP_KEY}"
+    }
+  },
+  "tools": [
+    { "name": "slop-call", "description": "Call any of 925+ real compute handlers by slug" },
+    { "name": "slop-memory-set", "description": "Store persistent memory (free forever)" },
+    { "name": "slop-memory-get", "description": "Retrieve persistent memory" },
+    { "name": "slop-memory-search", "description": "Semantic search across memory" },
+    { "name": "slop-army-deploy", "description": "Deploy parallel agent swarm with Merkle verification" },
+    { "name": "slop-hive-create", "description": "Create collaborative agent workspace" },
+    { "name": "slop-agent-run", "description": "Run autonomous agent task" },
+    { "name": "slop-credit-balance", "description": "Check credit balance" }
+  ],
+  "keywords": ["slopshop", "ai-agents", "mcp", "compute", "memory", "swarms", "sovereign"]
+}
