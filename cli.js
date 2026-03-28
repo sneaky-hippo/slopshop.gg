@@ -889,8 +889,12 @@ async function cmdDoctor() {
 // ============================================================
 async function cmdHive(args) {
   requireKey();
-  const sprints = parseInt(args[0]) || 10;
+  // Parse: slop hive 30 "review slopshop.gg and suggest improvements"
+  const numArg = args.find(a => /^\d+$/.test(a));
+  const sprints = numArg ? parseInt(numArg) : 10;
   const localOnly = args.includes('--local-only');
+  // Everything that's not a number or flag is the mission
+  const mission = args.filter(a => !/^\d+$/.test(a) && !a.startsWith('--')).join(' ').trim();
 
   // Ollama helper
   const ollamaChat = (model, prompt) => new Promise(r => {
@@ -928,6 +932,7 @@ async function cmdHive(args) {
   console.log(`  ${C.red}${C.bold}║              SLOPSHOP HIVE v3                     ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}║  ${sprints} sprints · CEO + VP council · KPI tracking    ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}╚═══════════════════════════════════════════════════╝${C.reset}`);
+  if (mission) console.log(`  ${bold('Mission:')} ${green(mission)}`);
   console.log(`  ${dim('Hierarchy: Claude=CEO · GPT+Grok+DeepSeek=VPs · Local=Workers')}`);
   console.log(`  ${dim('Pipeline:  Test → Diagnose → Decide → Implement → Verify')}`);
   console.log('');
@@ -971,15 +976,17 @@ async function cmdHive(args) {
     // ── PHASE 2: VP COUNCIL (cloud models diagnose + advise) ──
     const statusReport = `Sprint ${s}. Tests: ${passed}/6 pass. Search "${searchQ}"→${searchResult}. Memory persistence: ${memValue !== '?' ? 'OK' : 'FAIL'}. Latency: ${latency}ms. KPIs: ${kpi.tests_passed}/${kpi.tests_run} lifetime pass rate (${Math.round(kpi.tests_passed/kpi.tests_run*100)}%), search accuracy ${kpi.searches_correct}/${kpi.searches_total}, avg latency ${Math.round(kpi.avg_latency)}ms.`;
 
+    const missionDirective = mission ? `\nMISSION FROM FOUNDER: "${mission}"\nAll actions must advance this mission.\n` : '';
     const vpPrompt = `You are a VP at an AI platform company. Status: ${statusReport}
-
+${missionDirective}
 Your job: identify the ONE highest-impact action for this sprint. Must be specific enough to implement in code. No vague advice.
 
 Rules:
+- If the founder gave a MISSION, your action must directly advance it
 - If tests fail, ACTION must fix the failing test
 - If search returns wrong result, ACTION must fix search ranking
 - If latency > 2000ms, ACTION must address latency
-- If all tests pass and latency is good, find the next improvement
+- If all tests pass and no mission, find the next improvement
 
 FORMAT (strict):
 DIAGNOSIS: <what's the #1 issue right now>
@@ -1016,14 +1023,14 @@ SCORE: X.X/10`;
     // ── PHASE 3: CEO DECISION (Claude makes the call) ──
     const vpSummary = vpResults.map(v => `${v.role}(${v.score}/10): ${v.action || 'no action'}`).join('\n');
     const ceoPrompt = `You are the CEO. Sprint ${s} status: ${statusReport}
-
+${missionDirective}
 VP recommendations:
 ${vpSummary}
 
-Your job: Pick ONE action to execute this sprint. Must be the highest-ROI item. If VPs disagree, break the tie. If all suggest the same thing, endorse it.
+Your job: Pick ONE action to execute this sprint. Must be the highest-ROI item that advances the mission. If VPs disagree, break the tie.
 
 FORMAT (strict — one line each):
-DECISION: <what we're doing this sprint>
+DECISION: <what we're doing this sprint — specific and implementable>
 SCORE: X.X/10
 KPI_TARGET: <specific measurable goal for next sprint>`;
 
