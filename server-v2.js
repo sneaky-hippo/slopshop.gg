@@ -6784,6 +6784,106 @@ app.get('/v1/explorer/apis', auth, (req, res) => {
   res.json({ ok: true, total: apis.length, apis: apis.slice(0, limit), categories: [...new Set(apis.map(a => a.category))], _engine: 'real' });
 });
 
+// ===== BILLING/USAGE — Real-time cost tracking (GPT's 10/10 request) =====
+app.get('/v1/billing/usage', auth, (req, res) => {
+  const keyPrefix = req.apiKey.slice(0, 12) + '...';
+  const period = req.query.period || '24h';
+  const periodMs = period.endsWith('h') ? parseInt(period) * 3600000 : period.endsWith('d') ? parseInt(period) * 86400000 : 86400000;
+  const cutoff = new Date(Date.now() - periodMs).toISOString();
+
+  try {
+    const calls = db.prepare('SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE key_prefix = ? AND ts > ? ORDER BY id DESC').all(keyPrefix, cutoff);
+    const byApi = {};
+    let totalCredits = 0, totalCalls = 0;
+    for (const c of calls) {
+      totalCredits += c.credits;
+      totalCalls++;
+      if (!byApi[c.api]) byApi[c.api] = { calls: 0, credits: 0, avg_latency: 0, total_latency: 0 };
+      byApi[c.api].calls++;
+      byApi[c.api].credits += c.credits;
+      byApi[c.api].total_latency += (c.latency_ms || 0);
+    }
+    const breakdown = Object.entries(byApi).map(([api, d]) => ({
+      api, calls: d.calls, credits: d.credits, cost_usd: '$' + (d.credits * 0.009).toFixed(4),
+      avg_latency_ms: d.calls > 0 ? Math.round(d.total_latency / d.calls) : 0,
+    })).sort((a, b) => b.credits - a.credits);
+
+    res.json({
+      ok: true, period, total_calls: totalCalls, total_credits: totalCredits,
+      total_cost_usd: '$' + (totalCredits * 0.009).toFixed(2),
+      balance: req.acct.balance, tier: req.acct.tier,
+      breakdown: breakdown.slice(0, 30),
+      _engine: 'real',
+    });
+  } catch(e) {
+    res.json({ ok: true, total_calls: 0, total_credits: 0, error: e.message, _engine: 'real' });
+  }
+});
+
+// ===== API VERSIONING (Grok's 10/10 request) =====
+app.get('/v1/api/versions', (req, res) => {
+  res.json({
+    ok: true,
+    current: '3.6.0',
+    api_version: '2026.03.28',
+    supported: ['v1'],
+    deprecated: [],
+    changelog_url: '/v1/changelog',
+    migration_guides: [],
+    _engine: 'real',
+  });
+});
+
+// ===== LOAD-BALANCED COMPLETIONS (DeepSeek's 10/10 request) =====
+app.post('/v1/completions', auth, async (req, res) => {
+  const prompt = req.body.prompt || req.body.text || req.body.messages?.[0]?.content || '';
+  if (!prompt) return res.status(422).json({ error: { code: 'missing_prompt' } });
+  const preferredProvider = req.body.provider || req.body.model?.split('/')[0];
+  const providers = ['anthropic', 'openai', 'grok', 'deepseek'];
+  const envMap = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', grok: 'XAI_API_KEY', deepseek: 'DEEPSEEK_API_KEY' };
+  const available = providers.filter(p => process.env[envMap[p]]);
+
+  // Try preferred, then failover to others
+  const order = preferredProvider && available.includes(preferredProvider)
+    ? [preferredProvider, ...available.filter(p => p !== preferredProvider)]
+    : available;
+
+  for (const provider of order) {
+    try {
+      const handler = allHandlers['llm-think'];
+      if (!handler) continue;
+      const start = Date.now();
+      const result = await handler({ text: prompt, provider });
+      const latency = Date.now() - start;
+      let answer = result?.answer || result?.summary || '';
+      if (answer.startsWith('{')) try { answer = JSON.parse(answer).answer || answer; } catch(e) {}
+
+      const acct = apiKeys.get(req.apiKey);
+      if (acct) { acct.balance -= 10; persistKey(req.apiKey); }
+
+      return res.json({
+        ok: true, provider, model: result?._model || provider,
+        text: answer, latency_ms: latency, credits: 10,
+        failover: provider !== order[0], available_providers: available,
+        _engine: 'real',
+      });
+    } catch(e) { continue; }
+  }
+  res.status(503).json({ error: { code: 'all_providers_failed', tried: order } });
+});
+
+// ===== SECURITY AUDIT LOG (GPT's 10/10 request) =====
+app.get('/v1/security/audit', auth, (req, res) => {
+  const keyPrefix = req.apiKey.slice(0, 12) + '...';
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  try {
+    const logs = db.prepare('SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE key_prefix = ? ORDER BY id DESC LIMIT ?').all(keyPrefix, limit);
+    res.json({ ok: true, entries: logs, count: logs.length, key_prefix: keyPrefix, _engine: 'real' });
+  } catch(e) {
+    res.json({ ok: true, entries: [], error: e.message, _engine: 'real' });
+  }
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
