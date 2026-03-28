@@ -6600,6 +6600,97 @@ app.post('/v1/compare', auth, async (req, res) => {
   });
 });
 
+// ===== ONBOARDING — Interactive quickstart (requested by GPT, Grok, DeepSeek, Mistral) =====
+app.get('/v1/quickstart/interactive', auth, async (req, res) => {
+  const steps = [
+    { step: 1, title: 'Generate a UUID', command: 'slop call crypto-uuid', api: 'crypto-uuid', credits: 1 },
+    { step: 2, title: 'Hash some text', command: 'slop call crypto-hash-sha256 --text "hello"', api: 'crypto-hash-sha256', credits: 1 },
+    { step: 3, title: 'Store in memory (free)', command: 'slop memory set mykey "hello world"', api: 'memory-set', credits: 0 },
+    { step: 4, title: 'Ask all 4 AI models', command: 'slop call llm-council --text "What should I build?"', api: 'llm-council', credits: 40 },
+    { step: 5, title: 'Launch an agent team', command: 'slop org launch --template dev-agency', api: 'org/launch', credits: 5 },
+  ];
+
+  // Auto-execute step 1 to show immediate value
+  const demo = await (async () => {
+    try {
+      const handler = allHandlers['crypto-uuid'];
+      if (handler) return await handler({});
+      return null;
+    } catch(e) { return null; }
+  })();
+
+  res.json({
+    ok: true,
+    welcome: 'Welcome to Slopshop! Follow these 5 steps to see the platform in action.',
+    your_balance: req.acct.balance,
+    steps,
+    demo_result: demo ? { uuid: demo.uuid, _engine: demo._engine } : null,
+    next: 'Try: curl -X POST ' + req.protocol + '://' + req.get('host') + '/v1/crypto-uuid -H "Authorization: Bearer YOUR_KEY"',
+    docs: 'https://slopshop.gg/docs',
+    _engine: 'real',
+  });
+});
+
+// ===== STATUS DASHBOARD (requested by DeepSeek, Grok) =====
+app.get('/v1/status/dashboard', (req, res) => {
+  const uptime = Math.floor((Date.now() - serverStart) / 1000);
+  const mem = process.memoryUsage();
+
+  let recentCalls = 0, recentErrors = 0;
+  try {
+    recentCalls = db.prepare("SELECT COUNT(*) as c FROM audit_log WHERE ts > datetime('now', '-1 hour')").get().c;
+    recentErrors = db.prepare("SELECT COUNT(*) as c FROM audit_log WHERE engine = 'error' AND ts > datetime('now', '-1 hour')").get().c;
+  } catch(e) {}
+
+  const providers = ['anthropic', 'openai', 'grok', 'deepseek'].filter(p => {
+    const envMap = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', grok: 'XAI_API_KEY', deepseek: 'DEEPSEEK_API_KEY' };
+    return process.env[envMap[p]];
+  });
+
+  res.json({
+    ok: true,
+    status: 'operational',
+    version: '3.5.2',
+    uptime_seconds: uptime,
+    uptime_human: Math.floor(uptime / 3600) + 'h ' + Math.floor((uptime % 3600) / 60) + 'm',
+    apis: apiCount,
+    handlers: Object.keys(allHandlers).length,
+    llm_providers: providers,
+    memory_mb: Math.round(mem.heapUsed / 1048576),
+    recent_1h: { calls: recentCalls, errors: recentErrors, error_rate: recentCalls > 0 ? (recentErrors / recentCalls * 100).toFixed(1) + '%' : '0%' },
+    sqlite_tables: db.prepare("SELECT count(*) as c FROM sqlite_master WHERE type='table'").get().c,
+    features: { workflows: true, telemetry: true, eval: true, compare: true, mesh: true, byok: true, memory_2fa: true, sybil_protection: true },
+    _engine: 'real',
+  });
+});
+
+// ===== BENCHMARK — On-demand performance test (requested by Claude, Grok) =====
+app.get('/v1/benchmark', auth, async (req, res) => {
+  const tests = ['crypto-uuid', 'crypto-hash-sha256', 'text-word-count', 'text-reverse', 'crypto-password-generate'];
+  const results = [];
+
+  for (const slug of tests) {
+    const handler = allHandlers[slug];
+    if (!handler) continue;
+    const times = [];
+    for (let i = 0; i < 3; i++) {
+      const start = process.hrtime.bigint();
+      try { await handler({ text: 'benchmark-' + Date.now(), length: 16 }); } catch(e) {}
+      times.push(Number(process.hrtime.bigint() - start) / 1e6);
+    }
+    times.sort((a, b) => a - b);
+    results.push({ api: slug, p50_ms: +times[1].toFixed(3), min_ms: +times[0].toFixed(3), max_ms: +times[2].toFixed(3) });
+  }
+
+  res.json({
+    ok: true,
+    benchmark: results,
+    total_handlers: Object.keys(allHandlers).length,
+    avg_p50_ms: +(results.reduce((s, r) => s + r.p50_ms, 0) / results.length).toFixed(3),
+    _engine: 'real',
+  });
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
