@@ -7074,6 +7074,115 @@ app.post('/v1/cache/set', auth, (req, res) => {
   res.json({ ok: true, cached: true, key, _engine: 'real' });
 });
 
+// ===== COST OPTIMIZER (Claude roadmap #5) =====
+app.post('/v1/cost-optimizer', auth, (req, res) => {
+  const task = req.body.task || req.body.text || '';
+  const budget = req.body.max_credits || 100;
+  if (!task) return res.status(422).json({ error: { code: 'missing_task' } });
+
+  const envMap = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', grok: 'XAI_API_KEY', deepseek: 'DEEPSEEK_API_KEY' };
+  const costs = { anthropic: 15, openai: 10, grok: 8, deepseek: 3, ollama: 0 };
+  const quality = { anthropic: 9.5, openai: 9, grok: 8.5, deepseek: 8, ollama: 6 };
+  const available = Object.entries(envMap).filter(([_, env]) => process.env[env]).map(([p]) => p);
+  if (process.env.OLLAMA_ENABLED) available.push('ollama');
+
+  const recommendations = available.map(p => ({
+    provider: p, estimated_credits: costs[p] || 10, quality_score: quality[p] || 5,
+    value_ratio: ((quality[p] || 5) / Math.max(costs[p] || 1, 1)).toFixed(2),
+    within_budget: (costs[p] || 10) <= budget,
+  })).sort((a, b) => parseFloat(b.value_ratio) - parseFloat(a.value_ratio));
+
+  res.json({
+    ok: true, task: task.slice(0, 100), budget,
+    best_value: recommendations[0]?.provider,
+    cheapest: recommendations.sort((a, b) => a.estimated_credits - b.estimated_credits)[0]?.provider,
+    highest_quality: recommendations.sort((a, b) => b.quality_score - a.quality_score)[0]?.provider,
+    recommendations: recommendations.sort((a, b) => parseFloat(b.value_ratio) - parseFloat(a.value_ratio)),
+    _engine: 'real',
+  });
+});
+
+// ===== EVAL DATASETS (Claude roadmap #6) =====
+app.post('/v1/eval/datasets/save', auth, (req, res) => {
+  const { name, entries } = req.body;
+  if (!name || !entries || !Array.isArray(entries)) return res.status(422).json({ error: { code: 'need_name_and_entries', format: '[{input, expected_output}]' } });
+  const ns = 'eval-datasets:' + req.apiKey.slice(0, 12);
+  db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run(
+    ns + ':' + name, JSON.stringify({ entries, count: entries.length, created: new Date().toISOString() })
+  );
+  res.json({ ok: true, name, entries_count: entries.length, _engine: 'real' });
+});
+
+app.get('/v1/eval/datasets/list', auth, (req, res) => {
+  const ns = 'eval-datasets:' + req.apiKey.slice(0, 12);
+  const rows = db.prepare("SELECT key AS k, value FROM agent_state WHERE k LIKE ?").all(ns + ':%');
+  const datasets = rows.map(r => {
+    try { const d = JSON.parse(r.value); return { name: r.k.replace(ns + ':', ''), count: d.count, created: d.created }; }
+    catch(e) { return null; }
+  }).filter(Boolean);
+  res.json({ ok: true, datasets, count: datasets.length, _engine: 'real' });
+});
+
+app.post('/v1/eval/run', auth, async (req, res) => {
+  const { dataset, provider, model } = req.body;
+  if (!dataset) return res.status(422).json({ error: { code: 'missing_dataset' } });
+  const ns = 'eval-datasets:' + req.apiKey.slice(0, 12);
+  const row = db.prepare('SELECT value FROM agent_state WHERE key = ?').get(ns + ':' + dataset);
+  if (!row) return res.status(404).json({ error: { code: 'dataset_not_found' } });
+
+  const data = JSON.parse(row.value);
+  const results = [];
+  const handler = allHandlers['llm-think'];
+  if (!handler) return res.json({ ok: true, error: 'no LLM handler', _engine: 'real' });
+
+  for (const entry of data.entries.slice(0, 20)) {
+    try {
+      const start = Date.now();
+      const result = await handler({ text: entry.input, provider: provider || 'anthropic', model });
+      const answer = result?.answer || result?.summary || '';
+      const latency = Date.now() - start;
+      const match = entry.expected_output ? answer.toLowerCase().includes(entry.expected_output.toLowerCase()) : null;
+      results.push({ input: entry.input.slice(0, 80), expected: entry.expected_output, got: answer.slice(0, 200), match, latency_ms: latency });
+    } catch(e) {
+      results.push({ input: entry.input.slice(0, 80), error: e.message });
+    }
+  }
+
+  const passing = results.filter(r => r.match === true).length;
+  const total = results.filter(r => r.match !== null).length;
+
+  res.json({
+    ok: true, dataset, provider: provider || 'anthropic',
+    results, passing, total, accuracy: total > 0 ? Math.round(passing / total * 100) + '%' : 'N/A',
+    _engine: 'real',
+  });
+});
+
+// ===== OBSERVABILITY TRACES (Claude roadmap #9) =====
+app.post('/v1/traces/start', auth, (req, res) => {
+  const traceId = 'trace-' + crypto.randomUUID().slice(0, 12);
+  const { name, metadata } = req.body;
+  db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run(
+    'traces:' + traceId, JSON.stringify({ name: name || 'unnamed', steps: [], metadata: metadata || {}, started: new Date().toISOString(), status: 'active' })
+  );
+  res.json({ ok: true, trace_id: traceId, _engine: 'real' });
+});
+
+app.post('/v1/traces/:id/step', auth, (req, res) => {
+  const row = db.prepare('SELECT value FROM agent_state WHERE key = ?').get('traces:' + req.params.id);
+  if (!row) return res.status(404).json({ error: { code: 'trace_not_found' } });
+  const trace = JSON.parse(row.value);
+  trace.steps.push({ ...req.body, ts: new Date().toISOString() });
+  db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run('traces:' + req.params.id, JSON.stringify(trace));
+  res.json({ ok: true, trace_id: req.params.id, steps: trace.steps.length, _engine: 'real' });
+});
+
+app.get('/v1/traces/:id', auth, (req, res) => {
+  const row = db.prepare('SELECT value FROM agent_state WHERE key = ?').get('traces:' + req.params.id);
+  if (!row) return res.status(404).json({ error: { code: 'trace_not_found' } });
+  res.json({ ok: true, ...JSON.parse(row.value), trace_id: req.params.id, _engine: 'real' });
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);

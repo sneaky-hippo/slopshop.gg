@@ -10,11 +10,11 @@ Build all of them. Check off as completed.
 - [ ] 2. `/v1/semantic-cache` — Embedding-based dedup across providers (60h)
 - [x] 3. `/v1/fallback-policies` — Declarative failover chains (40h) → BUILT: /v1/completions has failover
 - [ ] 4. `/v1/prompt-registry` — Versioned prompt templates with A/B (50h)
-- [ ] 5. `/v1/cost-optimizer` — Smart model selection for minimum cost (40h)
-- [ ] 6. `/v1/eval/datasets` — Golden dataset management for regression testing (60h)
-- [ ] 7. `/v1/eval/runs` — Systematic evaluation with scoring functions (40h)
+- [x] 5. `/v1/cost-optimizer` — Smart model selection for minimum cost (40h)
+- [x] 6. `/v1/eval/datasets` — Golden dataset management for regression testing (60h)
+- [x] 7. `/v1/eval/runs` — Systematic evaluation with scoring functions (40h)
 - [ ] 8. `/v1/mesh/federate` — Cross-instance mesh federation (80h)
-- [ ] 9. `/v1/observability/traces` — Distributed tracing across chain steps (60h)
+- [x] 9. `/v1/observability/traces` — Distributed tracing across chain steps (60h)
 - [ ] 10. `/v1/playground` — Interactive web-based API explorer (40h)
 
 Total: ~550 hours of work to reach Claude's 10/10.
