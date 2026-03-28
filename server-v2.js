@@ -6417,6 +6417,147 @@ app.post('/v1/state/list', auth, (req, res) => {
   res.json({ ok: true, namespace: ns, entries, count: entries.length, _engine: 'real' });
 });
 
+// ===== WORKFLOWS — Declarative multi-step conditional chains =====
+app.post('/v1/workflows/run', auth, async (req, res) => {
+  const { name, steps, input } = req.body;
+  if (!steps || !Array.isArray(steps) || steps.length === 0) {
+    return res.status(422).json({ error: { code: 'missing_steps', message: 'Provide steps: [{api, input, condition?}]' } });
+  }
+
+  const results = [];
+  let context = input || {};
+  let totalCredits = 0;
+  const startTime = Date.now();
+
+  for (let i = 0; i < Math.min(steps.length, 20); i++) {
+    const step = steps[i];
+
+    // Conditional execution
+    if (step.condition) {
+      try {
+        const condFn = new Function('ctx', 'return ' + step.condition);
+        if (!condFn(context)) {
+          results.push({ step: i, api: step.api, skipped: true, reason: 'Condition false: ' + step.condition });
+          continue;
+        }
+      } catch(e) {
+        results.push({ step: i, api: step.api, skipped: true, reason: 'Condition error: ' + e.message });
+        continue;
+      }
+    }
+
+    const handler = allHandlers[step.api];
+    const def = apiMap.get(step.api);
+    if (!handler || !def) {
+      results.push({ step: i, api: step.api, error: 'Not found' });
+      continue;
+    }
+
+    // Merge context into step input
+    const stepInput = { ...context, ...(step.input || {}) };
+
+    const acct = apiKeys.get(req.apiKey);
+    if (!acct || acct.balance < def.credits) {
+      results.push({ step: i, api: step.api, error: 'Insufficient credits' });
+      break;
+    }
+    acct.balance -= def.credits;
+    totalCredits += def.credits;
+
+    try {
+      const stepStart = Date.now();
+      const result = await handler(stepInput);
+      const stepMs = Date.now() - stepStart;
+      // Pass result forward as context
+      if (result && typeof result === 'object') {
+        const { _engine, ...clean } = result;
+        context = { ...context, ...clean, _prev: clean };
+      }
+      results.push({ step: i, api: step.api, credits: def.credits, time_ms: stepMs, result: result || {} });
+    } catch(e) {
+      acct.balance += def.credits;
+      totalCredits -= def.credits;
+      results.push({ step: i, api: step.api, error: e.message });
+      if (!step.continue_on_error) break;
+    }
+  }
+
+  persistKey(req.apiKey);
+  res.json({
+    ok: true, name: name || 'unnamed',
+    steps_total: steps.length, steps_executed: results.length,
+    results, context, total_credits: totalCredits,
+    time_ms: Date.now() - startTime, _engine: 'real',
+  });
+});
+
+// ===== TELEMETRY — Observability, tracing, cost tracking =====
+app.get('/v1/telemetry', auth, (req, res) => {
+  const keyPrefix = req.apiKey.slice(0, 12) + '...';
+  const since = req.query.since || '24h';
+  const sinceMs = since.endsWith('h') ? parseInt(since) * 3600000 : since.endsWith('d') ? parseInt(since) * 86400000 : 86400000;
+  const cutoff = new Date(Date.now() - sinceMs).toISOString();
+
+  try {
+    const calls = db.prepare('SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE key_prefix = ? AND ts > ? ORDER BY id DESC LIMIT 100').all(keyPrefix, cutoff);
+    const totalCredits = calls.reduce((s, c) => s + c.credits, 0);
+    const totalCalls = calls.length;
+    const avgLatency = totalCalls > 0 ? Math.round(calls.reduce((s, c) => s + (c.latency_ms || 0), 0) / totalCalls) : 0;
+    const byApi = {};
+    calls.forEach(c => { byApi[c.api] = (byApi[c.api] || 0) + 1; });
+    const topApis = Object.entries(byApi).sort((a, b) => b[1] - a[1]).slice(0, 10).map(([api, count]) => ({ api, count }));
+    const byEngine = {};
+    calls.forEach(c => { byEngine[c.engine || 'unknown'] = (byEngine[c.engine || 'unknown'] || 0) + 1; });
+
+    res.json({
+      ok: true, since, period_ms: sinceMs,
+      total_calls: totalCalls, total_credits: totalCredits, avg_latency_ms: avgLatency,
+      top_apis: topApis, by_engine: byEngine,
+      recent: calls.slice(0, 20).map(c => ({ api: c.api, credits: c.credits, latency_ms: c.latency_ms, engine: c.engine, time: c.ts })),
+      _engine: 'real',
+    });
+  } catch(e) {
+    res.json({ ok: true, total_calls: 0, total_credits: 0, error: e.message, _engine: 'real' });
+  }
+});
+
+// ===== EVAL — Evaluate and score agent outputs =====
+app.post('/v1/mesh/eval', auth, async (req, res) => {
+  const { run_id, output, criteria, task } = req.body;
+  if (!output && !run_id) return res.status(422).json({ error: { code: 'missing_output', message: 'Provide output text or run_id' } });
+
+  // Use LLM to evaluate
+  const llmHandler = allHandlers['llm-think'] || allHandlers['llm-summarize'];
+  if (!llmHandler) return res.json({ ok: true, score: null, message: 'No LLM available for evaluation', _engine: 'real' });
+
+  const evalPrompt = 'Evaluate this AI output on a scale of 1-10. ' +
+    (criteria ? 'Criteria: ' + criteria + '. ' : 'Criteria: accuracy, completeness, actionability. ') +
+    (task ? 'Original task: ' + task + '. ' : '') +
+    'Output to evaluate: ' + String(output || run_id).slice(0, 2000) +
+    '. Respond with JSON: {"score": number, "reasoning": string, "improvements": string[]}';
+
+  try {
+    const result = await llmHandler({ text: evalPrompt });
+    let score = null, reasoning = '', improvements = [];
+    const answer = result?.answer || result?.summary || '';
+    try {
+      const parsed = JSON.parse(answer.replace(/```json\s*/g, '').replace(/```/g, '').trim());
+      score = parsed.score;
+      reasoning = parsed.reasoning;
+      improvements = parsed.improvements;
+    } catch(e) {
+      // Extract score from text
+      const scoreMatch = answer.match(/(\d+)\s*\/\s*10/);
+      score = scoreMatch ? parseInt(scoreMatch[1]) : null;
+      reasoning = answer.slice(0, 300);
+    }
+
+    res.json({ ok: true, score, reasoning, improvements, _engine: 'real' });
+  } catch(e) {
+    res.json({ ok: true, score: null, error: e.message, _engine: 'real' });
+  }
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
