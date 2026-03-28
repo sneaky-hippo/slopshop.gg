@@ -803,7 +803,7 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'version', 'upgrade', 'completions', 'help'],
+      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'version', 'upgrade', 'completions', 'help'],
       flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N', '--model M', '--dry-run', '--limit N', '--offset N'],
       version: PKG_VERSION
     }, null, 2));
@@ -837,6 +837,7 @@ ${C.reset}`;
   console.log(`    ${cyan('slop buy')} <amount>                      Buy credits (1k/10k/100k/1M)`);
   console.log(`    ${cyan('slop stats')}                             Platform statistics & usage`);
   console.log(`    ${cyan('slop health')}                            Server health check`);
+  console.log(`    ${cyan('slop benchmark')}                         Benchmark API latency (8 endpoints)`);
   console.log(`    ${cyan('slop mcp')}                               Set up MCP for Claude Code`);
   console.log(`    ${cyan('slop mcp serve')}                         Start MCP server (Goose/Cursor/Cline)`);
   console.log(`    ${cyan('slop mcp config')}                        Show MCP config for all clients`);
@@ -2033,6 +2034,85 @@ async function cmdStats(args) {
 }
 
 // ============================================================
+// BENCHMARK — Measure API latency across endpoints
+// ============================================================
+async function cmdBenchmark() {
+  requireKey();
+
+  const timestamp = Date.now();
+  const tests = [
+    { name: 'crypto-uuid',       method: 'POST', path: '/v1/crypto-uuid',         body: null,                                    category: 'compute' },
+    { name: 'crypto-hash-sha256', method: 'POST', path: '/v1/crypto-hash-sha256', body: { text: 'benchmark' },                   category: 'compute' },
+    { name: 'text-word-count',   method: 'POST', path: '/v1/text-word-count',     body: { text: 'one two three' },               category: 'compute' },
+    { name: 'memory-set',        method: 'POST', path: '/v1/memory-set',          body: { key: 'bench-' + timestamp, value: 'ok' }, category: 'memory' },
+    { name: 'memory-search',     method: 'POST', path: '/v1/memory-search',       body: { query: 'bench' },                      category: 'memory' },
+    { name: 'health',            method: 'GET',  path: '/v1/health',              body: null,                                    category: 'health' },
+    { name: 'route',             method: 'POST', path: '/v1/route',               body: { task: 'generate uuid' },               category: 'routing' },
+    { name: 'introspect',        method: 'GET',  path: '/v1/introspect?slug=crypto-uuid', body: null,                            category: 'discovery' },
+  ];
+
+  if (!quiet && !jsonMode) {
+    console.log(`\n  ${bold('Benchmark')} — ${dim('measuring latency across ' + tests.length + ' endpoints')}`);
+    console.log(`  ${dim('Target:')} ${BASE_URL}\n`);
+  }
+
+  const results = [];
+
+  for (const t of tests) {
+    const start = Date.now();
+    let ok = false;
+    let status = '';
+    try {
+      const authNeeded = t.name !== 'health';
+      await request(t.method, t.path, t.body, authNeeded);
+      ok = true;
+      status = 'ok';
+    } catch (err) {
+      status = err.message ? err.message.slice(0, 40) : 'error';
+    }
+    const elapsed = Date.now() - start;
+    results.push({ name: t.name, category: t.category, ok, elapsed, status });
+
+    if (!quiet && !jsonMode) {
+      const icon = ok ? green('PASS') : red('FAIL');
+      const ms = ok ? green(String(elapsed) + 'ms') : red(String(elapsed) + 'ms');
+      const pad = t.name.padEnd(22);
+      console.log(`  ${icon}  ${cyan(pad)} ${ms}  ${dim(t.category)}`);
+    }
+  }
+
+  // Calculate stats
+  const passed = results.filter(r => r.ok);
+  const latencies = passed.map(r => r.elapsed).sort((a, b) => a - b);
+  const avg = latencies.length ? Math.round(latencies.reduce((s, v) => s + v, 0) / latencies.length) : 0;
+  const p50 = latencies.length ? latencies[Math.floor(latencies.length * 0.5)] : 0;
+  const p95 = latencies.length ? latencies[Math.floor(latencies.length * 0.95)] : 0;
+  const successRate = results.length ? Math.round((passed.length / results.length) * 100) : 0;
+
+  if (jsonMode) {
+    console.log(JSON.stringify({
+      results: results.map(r => ({ name: r.name, category: r.category, ok: r.ok, elapsed_ms: r.elapsed, status: r.status })),
+      summary: { total: results.length, passed: passed.length, success_rate: successRate, avg_ms: avg, p50_ms: p50, p95_ms: p95 }
+    }, null, 2));
+    return;
+  }
+
+  if (quiet) {
+    console.log(`${passed.length}/${results.length} passed, avg ${avg}ms, p95 ${p95}ms`);
+    return;
+  }
+
+  console.log(`\n  ${dim('\u2500'.repeat(50))}`);
+  console.log(`  ${bold('Summary')}`);
+  console.log(`  ${dim('\u2500'.repeat(50))}`);
+  console.log(`  ${bold('Passed:')}       ${passed.length === results.length ? green(passed.length + '/' + results.length) : red(passed.length + '/' + results.length)} ${dim('(' + successRate + '%)')}`);
+  console.log(`  ${bold('Avg latency:')}  ${cyan(avg + 'ms')}`);
+  console.log(`  ${bold('P50 latency:')}  ${cyan(p50 + 'ms')}`);
+  console.log(`  ${bold('P95 latency:')}  ${cyan(p95 + 'ms')}`);
+  console.log(`\n  ${passed.length}/${results.length} passed, avg ${avg}ms, p95 ${p95}ms\n`);
+}
+
+// ============================================================
 // BATCH — Execute multiple commands from a file or inline
 // ============================================================
 async function cmdBatch(args) {
@@ -2358,7 +2438,7 @@ async function cmdAgents(args) {
 function cmdCompletions(args) {
   const shell = args[0] || 'bash';
 
-  const commands = ['call','pipe','run','search','list','discover','org','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui','agents'];
+  const commands = ['call','pipe','run','search','list','discover','org','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','benchmark','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui','agents'];
 
   if (shell === 'bash') {
     console.log(`# Add to ~/.bashrc:`);
@@ -3469,6 +3549,7 @@ async function cmdInteractive() {
           case 'balance': await cmdBalance(); break;
           case 'health': await cmdHealth(); break;
           case 'stats': await cmdStats(args); break;
+          case 'benchmark': await cmdBenchmark(); break;
           case 'whoami': await cmdWhoami(); break;
           case 'models': await cmdModels(args); break;
           case 'cost': await cmdCost(args); break;
@@ -3733,6 +3814,7 @@ async function main() {
     case 'run':     await cmdRun(args);    break;
     case 'discover': await cmdDiscover(args); break;
     case 'stats':   await cmdStats(args);  break;
+    case 'benchmark': await cmdBenchmark(); break;
     case 'batch':   await cmdBatch(args);  break;
     case 'watch':   await cmdWatch(args);  break;
     case 'alias':   cmdAlias(args);        break;

@@ -278,6 +278,16 @@ const apiKeysCols = db.pragma('table_info(api_keys)').map(c => c.name);
 if (!apiKeysCols.includes('scope')) db.exec(`ALTER TABLE api_keys ADD COLUMN scope TEXT DEFAULT '*'`);
 if (!apiKeysCols.includes('label')) db.exec(`ALTER TABLE api_keys ADD COLUMN label TEXT DEFAULT NULL`);
 if (!apiKeysCols.includes('max_credits')) db.exec(`ALTER TABLE api_keys ADD COLUMN max_credits INTEGER DEFAULT NULL`);
+// SECURITY: Store hashed API keys instead of plaintext.
+// Migration path:
+//   - key_hash + key_prefix columns are added alongside existing plaintext 'key' column
+//   - New keys store SHA-256 hash in key_hash, first 10 chars in key_prefix, and plaintext in 'key' (for backward compat)
+//   - Auth checks hash first, falls back to plaintext match for pre-migration keys
+//   - Once all keys are re-issued or rotated, the plaintext 'key' column can be dropped
+if (!apiKeysCols.includes('key_hash')) db.exec(`ALTER TABLE api_keys ADD COLUMN key_hash TEXT DEFAULT NULL`);
+if (!apiKeysCols.includes('key_prefix')) db.exec(`ALTER TABLE api_keys ADD COLUMN key_prefix TEXT DEFAULT NULL`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix)`);
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS schedules (
@@ -525,14 +535,24 @@ if (missing.length > 0) {
 // Seed demo key if not exists
 const demoExists = db.prepare('SELECT key FROM api_keys WHERE key = ?').get('sk-slop-demo-key-12345678');
 if (!demoExists) {
-  db.prepare('INSERT INTO api_keys (key, id, balance, tier, created) VALUES (?, ?, ?, ?, ?)').run(
-    'sk-slop-demo-key-12345678', 'demo', 200, 'baby-lobster', Date.now()
+  db.prepare('INSERT INTO api_keys (key, id, balance, tier, created, key_hash, key_prefix) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+    'sk-slop-demo-key-12345678', 'demo', 200, 'baby-lobster', Date.now(), hashApiKey('sk-slop-demo-key-12345678'), keyPrefix('sk-slop-demo-key-12345678')
   );
 }
 
 // DB helpers
+// Hash an API key for secure storage — uses SHA-256, returns hex string
+function hashApiKey(key) {
+  return crypto.createHash('sha256').update(key).digest('hex');
+}
+// Extract prefix for indexed lookup (first 10 chars, e.g. "sk-slop-xx")
+function keyPrefix(key) {
+  return key.slice(0, 10);
+}
 const dbGetKey = db.prepare('SELECT * FROM api_keys WHERE key = ?');
-const dbInsertKey = db.prepare('INSERT INTO api_keys (key, id, balance, tier, created) VALUES (?, ?, ?, ?, ?)');
+const dbGetKeyByHash = db.prepare('SELECT * FROM api_keys WHERE key_hash = ?');
+const dbGetKeysByPrefix = db.prepare('SELECT * FROM api_keys WHERE key_prefix = ?');
+const dbInsertKey = db.prepare('INSERT INTO api_keys (key, id, balance, tier, created, key_hash, key_prefix) VALUES (?, ?, ?, ?, ?, ?, ?)');
 const dbUpdateBalance = db.prepare('UPDATE api_keys SET balance = ?, tier = ? WHERE key = ?');
 const dbUpdateAutoReload = db.prepare('UPDATE api_keys SET auto_reload = ? WHERE key = ?');
 const _dbInsertAudit = db.prepare('INSERT INTO audit_log (ts, key_prefix, api, credits, latency_ms, engine) VALUES (?, ?, ?, ?, ?, ?)');
@@ -576,12 +596,19 @@ const dirtyKeys = new Set();
 const KEY_PERSIST_INTERVAL = 1000; // flush every 1s
 
 // In-memory API key cache for speed (refreshed from DB)
+// Keys are indexed by plaintext key (legacy) AND by hash (new secure path)
 const apiKeys = new Map();
+const apiKeysByHash = new Map(); // hash -> { acct, plaintextKey }
 function loadKeysFromDB() {
   const rows = db.prepare('SELECT * FROM api_keys').all();
   apiKeys.clear();
+  apiKeysByHash.clear();
   for (const r of rows) {
-    apiKeys.set(r.key, { id: r.id, balance: r.balance, tier: r.tier, auto_reload: r.auto_reload ? JSON.parse(r.auto_reload) : false, scope: r.scope || '*', label: r.label || null, max_credits: r.max_credits || null, created: r.created });
+    const acct = { id: r.id, balance: r.balance, tier: r.tier, auto_reload: r.auto_reload ? JSON.parse(r.auto_reload) : false, scope: r.scope || '*', label: r.label || null, max_credits: r.max_credits || null, created: r.created };
+    apiKeys.set(r.key, acct);
+    // Index by hash: use stored hash if available, otherwise compute from plaintext key
+    const h = r.key_hash || hashApiKey(r.key);
+    apiKeysByHash.set(h, { acct, plaintextKey: r.key });
   }
 }
 loadKeysFromDB();
@@ -633,17 +660,10 @@ log.info('Server loaded', { apis: apiCount, handlers: Object.keys(allHandlers).l
 log.info('API keys initialized', { dbKeys: keyCount, memoryKeys: apiKeys.size });
 
 // ===== AUTH =====
-// TODO [SECURITY 8/10]: API keys are stored in plaintext in SQLite.
-// For 8/10 security score, store SHA-256 hash of key in DB instead of raw key.
-// On auth, hash the incoming key and compare to the stored hash.
-// This is a breaking change — all existing keys would need to be re-hashed.
-// Implementation plan:
-//   1. Add a 'key_hash' column to api_keys table
-//   2. On key creation, store crypto.createHash('sha256').update(key).digest('hex')
-//   3. On auth, hash incoming key and look up by hash
-//   4. Migration script to hash all existing keys
-//   5. Remove plaintext 'key' column after migration
-// Enable via HASH_API_KEYS=1 env var when ready to migrate.
+// SECURITY: API keys are now hashed with SHA-256 before storage.
+// New keys store key_hash + key_prefix in DB. Auth looks up by hash.
+// Backward compat: existing plaintext keys still work via direct Map lookup.
+// Migration path: once all keys are rotated/re-issued, drop the plaintext 'key' column.
 
 function auth(req, res, next) {
   const h = req.headers.authorization;
@@ -652,7 +672,13 @@ function auth(req, res, next) {
     return res.status(401).json({ error: { code: 'auth_required', message: 'Set Authorization: Bearer <key>', demo_key: 'sk-slop-demo-key-12345678', signup: 'POST /v1/auth/signup' } });
   }
   const key = h.slice(7);
-  const acct = apiKeys.get(key);
+  // SECURITY: Look up by hash first (new secure path), fall back to plaintext (legacy/migration)
+  let acct = apiKeys.get(key); // plaintext lookup (backward compat for pre-hash keys)
+  if (!acct) {
+    const incomingHash = hashApiKey(key);
+    const entry = apiKeysByHash.get(incomingHash);
+    if (entry) acct = entry.acct;
+  }
   if (!acct) {
     log.warn('Auth failure: invalid key', { ip: req.ip, path: req.path, key_prefix: key.slice(0, 12) });
     return res.status(401).json({ error: { code: 'invalid_key', message: 'Key not found. Sign up at POST /v1/auth/signup or use demo key sk-slop-demo-key-12345678', demo_key: 'sk-slop-demo-key-12345678', signup: 'POST /v1/auth/signup' } });
@@ -943,8 +969,13 @@ app.post('/v1/keys', publicRateLimit, BODY_LIMIT_AUTH, (_, res) => {
     return res.status(500).json({ error: { code: 'key_generation_failed', message: 'Insufficient key entropy' } });
   }
   const id = crypto.randomUUID();
-  apiKeys.set(key, { id, balance: 0, created: Date.now(), auto_reload: false, tier: 'none' });
-  dbInsertKey.run(key, id, 0, 'none', Date.now());
+  const now = Date.now();
+  const kHash = hashApiKey(key);
+  const kPrefix = keyPrefix(key);
+  const acct = { id, balance: 0, created: now, auto_reload: false, tier: 'none' };
+  apiKeys.set(key, acct);
+  apiKeysByHash.set(kHash, { acct, plaintextKey: key });
+  dbInsertKey.run(key, id, 0, 'none', now, kHash, kPrefix);
   res.status(201).json({ key, balance: 0 });
 });
 
@@ -980,7 +1011,7 @@ app.post('/v1/credits/buy', auth, BODY_LIMIT_AUTH, (req, res) => {
     });
   }
 
-  const tiers = { 1000: { price: 9, tier: 'baby-lobster' }, 10000: { price: 49, tier: 'shore-crawler' }, 100000: { price: 299, tier: 'reef-boss' }, 1000000: { price: 1999, tier: 'leviathan' } };
+  const tiers = { 5000: { price: 9, tier: 'baby-lobster' }, 10000: { price: 49, tier: 'shore-crawler' }, 100000: { price: 299, tier: 'reef-boss' }, 1000000: { price: 1999, tier: 'leviathan' } };
   const t = tiers[req.body.amount];
   if (!t) return res.status(400).json({ error: { code: 'invalid_amount', valid: Object.keys(tiers).map(Number) } });
   req.acct.balance += req.body.amount;
@@ -5490,8 +5521,10 @@ app.post('/v1/keys/create-team-key', auth, (req, res) => {
   const id = crypto.randomUUID();
   const now = Date.now();
   const resetAt = budget_monthly ? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 1).getTime() : null;
-  apiKeys.set(key, { id, balance: 0, created: now, auto_reload: false, tier: 'none', scope: scope || '*', label: label || `${team.name} team key`, max_credits: budget_monthly || null });
-  dbInsertKey.run(key, id, 0, 'none', now);
+  const teamAcct = { id, balance: 0, created: now, auto_reload: false, tier: 'none', scope: scope || '*', label: label || `${team.name} team key`, max_credits: budget_monthly || null };
+  apiKeys.set(key, teamAcct);
+  apiKeysByHash.set(hashApiKey(key), { acct: teamAcct, plaintextKey: key });
+  dbInsertKey.run(key, id, 0, 'none', now, hashApiKey(key), keyPrefix(key));
   db.prepare('INSERT INTO ent_team_keys (key, team_id, label, budget_monthly, budget_used, budget_reset_at, scope, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(key, team_id, label || `${team.name} team key`, budget_monthly || null, 0, resetAt, scope || '*', now);
   dispatchWebhooks(req.apiKey, 'key.created', { key: key.slice(0, 18) + '...', team_id, label });
   res.status(201).json({

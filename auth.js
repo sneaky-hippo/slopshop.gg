@@ -25,9 +25,27 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     CREATE INDEX IF NOT EXISTS idx_users_key ON users(api_key);
   `);
 
+  // SECURITY: Add key_hash column for hash-based user lookups.
+  // Migration: existing rows have NULL key_hash and are found via plaintext api_key fallback.
+  // New rows store SHA-256 hash. Once all users rotate keys, plaintext api_key column can be dropped.
+  const usersCols = db.pragma('table_info(users)').map(c => c.name);
+  if (!usersCols.includes('key_hash')) db.exec(`ALTER TABLE users ADD COLUMN key_hash TEXT DEFAULT NULL`);
+  db.exec(`CREATE INDEX IF NOT EXISTS idx_users_key_hash ON users(key_hash)`);
+
+  function hashApiKey(key) {
+    return crypto.createHash('sha256').update(key).digest('hex');
+  }
+
   const dbGetUser = db.prepare('SELECT * FROM users WHERE email = ?');
   const dbGetUserByKey = db.prepare('SELECT * FROM users WHERE api_key = ?');
-  const dbInsertUser = db.prepare('INSERT INTO users (id, email, password_hash, salt, api_key, created) VALUES (?, ?, ?, ?, ?, ?)');
+  const dbGetUserByKeyHash = db.prepare('SELECT * FROM users WHERE key_hash = ?');
+  const dbInsertUser = db.prepare('INSERT INTO users (id, email, password_hash, salt, api_key, key_hash, created) VALUES (?, ?, ?, ?, ?, ?, ?)');
+
+  // Look up user by API key: try hash first (secure path), fall back to plaintext (migration compat)
+  function findUserByKey(key) {
+    const h = hashApiKey(key);
+    return dbGetUserByKeyHash.get(h) || dbGetUserByKey.get(key);
+  }
 
   function hashPassword(password, salt) {
     return crypto.pbkdf2Sync(password, salt, 100000, 64, 'sha512').toString('hex');
@@ -73,13 +91,18 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = hashPassword(password, salt);
     const key = 'sk-slop-' + crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+    const kHash = hashApiKey(key);
+    const kPrefix = key.slice(0, 10);
 
-    dbInsertUser.run(id, email, hash, salt, key, Date.now());
+    dbInsertUser.run(id, email, hash, salt, key, kHash, Date.now());
 
     // Create API key with 500 free credits (memory APIs are free / 0 credits)
-    const dbInsertKey = db.prepare('INSERT OR REPLACE INTO api_keys (key, id, balance, tier, scope, label, max_credits, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
-    dbInsertKey.run(key, id, 500, 'free', '*', null, null, Date.now());
-    apiKeys.set(key, { id, balance: 500, tier: 'free', auto_reload: false, scope: '*', label: null, max_credits: null, created: Date.now() });
+    // Store SHA-256 hash + prefix for secure lookup; plaintext kept for backward compat during migration
+    const dbInsertKeyFull = db.prepare('INSERT OR REPLACE INTO api_keys (key, id, balance, tier, scope, label, max_credits, created, key_hash, key_prefix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+    const now = Date.now();
+    dbInsertKeyFull.run(key, id, 500, 'free', '*', null, null, now, kHash, kPrefix);
+    const acct = { id, balance: 500, tier: 'free', auto_reload: false, scope: '*', label: null, max_credits: null, created: now };
+    apiKeys.set(key, acct);
 
     // Referral bonus
     if (req.body.referral_code) {
@@ -137,19 +160,21 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: { code: 'auth_required' } });
     const oldKey = auth.slice(7);
 
-    const user = dbGetUserByKey.get(oldKey);
+    const user = findUserByKey(oldKey);
     if (!user) return res.status(401).json({ error: { code: 'invalid_key' } });
 
     const newKey = 'sk-slop-' + crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+    const newHash = hashApiKey(newKey);
+    const newPrefix = newKey.slice(0, 10);
 
-    // Transfer balance to new key
+    // Transfer balance to new key (update hash + prefix in DB)
     const acct = apiKeys.get(oldKey);
     if (acct) {
       apiKeys.delete(oldKey);
       apiKeys.set(newKey, acct);
-      db.prepare('UPDATE api_keys SET key = ? WHERE key = ?').run(newKey, oldKey);
+      db.prepare('UPDATE api_keys SET key = ?, key_hash = ?, key_prefix = ? WHERE key = ?').run(newKey, newHash, newPrefix, oldKey);
     }
-    db.prepare('UPDATE users SET api_key = ? WHERE api_key = ?').run(newKey, oldKey);
+    db.prepare('UPDATE users SET api_key = ?, key_hash = ? WHERE api_key = ?').run(newKey, newHash, oldKey);
 
     res.json({ new_key: newKey, old_key_revoked: true });
   });
@@ -160,7 +185,7 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: { code: 'auth_required' } });
     const key = auth.slice(7);
 
-    const user = dbGetUserByKey.get(key);
+    const user = findUserByKey(key);
     const acct = apiKeys.get(key);
 
     res.json({
@@ -177,7 +202,7 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: { code: 'auth_required' } });
     const parentKey = auth.slice(7);
 
-    const user = dbGetUserByKey.get(parentKey);
+    const user = findUserByKey(parentKey);
     if (!user) return res.status(401).json({ error: { code: 'invalid_key' } });
 
     const parentAcct = apiKeys.get(parentKey);
@@ -203,9 +228,11 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     }
 
     const newKey = 'sk-slop-' + crypto.randomUUID().replace(/-/g, '').slice(0, 24);
+    const newHash = hashApiKey(newKey);
+    const newPrefix = newKey.slice(0, 10);
     const now = Date.now();
-    db.prepare('INSERT INTO api_keys (key, id, balance, tier, scope, label, max_credits, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
-      .run(newKey, user.id, parentAcct.balance, parentAcct.tier, scope, label || null, max_credits, now);
+    db.prepare('INSERT INTO api_keys (key, id, balance, tier, scope, label, max_credits, created, key_hash, key_prefix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(newKey, user.id, parentAcct.balance, parentAcct.tier, scope, label || null, max_credits, now, newHash, newPrefix);
     apiKeys.set(newKey, { id: user.id, balance: parentAcct.balance, tier: parentAcct.tier, auto_reload: false, scope, label: label || null, max_credits, created: now });
 
     res.status(201).json({ api_key: newKey, scope, label: label || null, max_credits, created: now, message: 'Scoped key created. Shares balance with parent account.' });
@@ -217,7 +244,7 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: { code: 'auth_required' } });
     const key = auth.slice(7);
 
-    const user = dbGetUserByKey.get(key);
+    const user = findUserByKey(key);
     if (!user) return res.status(401).json({ error: { code: 'invalid_key' } });
 
     const rows = db.prepare('SELECT key, id, balance, tier, scope, label, max_credits, created FROM api_keys WHERE id = ? ORDER BY created ASC').all(user.id);
@@ -230,7 +257,7 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: { code: 'auth_required' } });
     const callerKey = auth.slice(7);
 
-    const user = dbGetUserByKey.get(callerKey);
+    const user = findUserByKey(callerKey);
     if (!user) return res.status(401).json({ error: { code: 'invalid_key' } });
 
     const targetKey = req.params.key;
