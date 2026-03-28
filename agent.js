@@ -428,14 +428,18 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     // Step 2: Execute
     const execution = await executePlan(plan.steps, req.apiKey);
 
-    // Step 3: Summarize
-    const answer = await summarize(task, execution.results);
+    // Step 3: Summarize (skip for smart-routed — result IS the answer)
+    const skipSummarize = plan.model === 'smart-route' && execution.results.length <= 2;
+    const answer = skipSummarize
+      ? 'Result: ' + JSON.stringify(execution.results[0]?.data || {}).slice(0, 500)
+      : await summarize(task, execution.results);
 
     const totalTime = Date.now() - startTime;
 
-    // Charge for the agent overhead (planning + summarizing = ~20 credits)
+    // Charge for agent overhead: 0 for smart routes, 20 for LLM-planned
+    const overhead = plan.model === 'smart-route' ? 0 : 20;
     const acct = apiKeys.get(req.apiKey);
-    if (acct) { if (acct.balance < 20) return res.status(402).json({ error: { code: 'insufficient_credits', need: 20, have: acct.balance, message: 'Buy credits: POST /v1/credits/buy' } }); acct.balance -= 20; }
+    if (acct && overhead > 0) { if (acct.balance < overhead) return res.status(402).json({ error: { code: 'insufficient_credits', need: overhead, have: acct.balance } }); acct.balance -= overhead; }
 
     // Step 4: Auto-store in memory (free - 0 credits for memory-set)
     const runId = `run-${Date.now().toString(36)}`;
