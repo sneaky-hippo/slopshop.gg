@@ -665,8 +665,8 @@ async function cmdBalance() {
       return;
     }
 
-    // Credit bar: scale to 16 chars, assume 2000 max for free tier
-    const maxCredits = tier === 'free' ? 2000 : (tier === 'pro' ? 100000 : 1000000);
+    // Credit bar: scale to 16 chars, assume 500 max for free tier
+    const maxCredits = tier === 'free' ? 500 : (tier === 'pro' ? 100000 : 1000000);
     const filled = Math.round((balance / maxCredits) * 16);
     const bar = '\u2588'.repeat(Math.min(filled, 16)) + '\u2591'.repeat(Math.max(16 - filled, 0));
 
@@ -1215,7 +1215,7 @@ async function cmdSignup() {
     const res = await request('POST', '/v1/auth/signup', { email, password }, false);
     const d = res.data;
     const apiKey = d.api_key || d.key || d.token;
-    const credits = d.credits || d.balance || 2000;
+    const credits = d.credits || d.balance || 500;
 
     if (jsonMode) {
       console.log(JSON.stringify(d, null, 2));
