@@ -2,22 +2,24 @@
 
 # Slopshop
 
-### The infrastructure layer for AI agents
+### The protocol layer of intelligence
 
-**Free persistent memory. Real compute. Agent chaining. One API key.**
+**Connect every AI brain into one composable, callable mesh.**
 
 ```bash
 npm install -g slopshop
+slop signup
+slop call crypto-uuid
 ```
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
 [![Tests](https://img.shields.io/badge/tests-927%20passing-brightgreen)](https://slopshop.gg)
-[![Categories](https://img.shields.io/badge/Categories-78-blue)](https://slopshop.gg/tools.html)
+[![APIs](https://img.shields.io/badge/APIs-1255-blue)](https://slopshop.gg/tools.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![MCP Compatible](https://img.shields.io/badge/MCP-compatible-purple)](https://modelcontextprotocol.io)
-[![Features](https://img.shields.io/badge/Features-22-orange)](https://slopshop.gg/docs.html)
+[![MCP Compatible](https://img.shields.io/badge/MCP-45_tools-purple)](https://modelcontextprotocol.io)
+[![Models](https://img.shields.io/badge/Models-7_(Claude%2BGPT%2BGrok%2BDeepSeek%2BOllama)-orange)](https://slopshop.gg)
 
-[Website](https://slopshop.gg) | [Docs](https://slopshop.gg/docs.html) | [API Reference](https://slopshop.gg/api-reference.html) | [Examples](https://slopshop.gg/examples.html) | [Discord](https://discord.gg/slopshop) | [Twitter](https://x.com/slopshopgg)
+[Website](https://slopshop.gg) | [Docs](https://slopshop.gg/docs.html) | [API Explorer](https://slopshop.gg/v1/docs/overview) | [Benchmarks](https://slopshop.gg/benchmarks.html) | [llms.txt](https://slopshop.gg/llms.txt)
 
 </div>
 
@@ -25,7 +27,11 @@ npm install -g slopshop
 
 ## What is Slopshop?
 
-Slopshop gives AI agents production-grade tools through a single API key. It provides free persistent memory that no other platform offers, real compute APIs across 78 categories (crypto, text, math, validation, finance, DevOps, and more), and agent-to-agent chaining with infinite loops -- all self-hostable with zero external dependencies. Works with Claude, GPT, Grok, Gemini, LangChain, CrewAI, and any framework that supports function calling or MCP.
+Slopshop is the protocol layer of intelligence — the universal nervous system that connects every AI brain on the planet into one composable, callable mesh. We don't build the models; we make every model useful to every other model, every agent, and every human who ships with them.
+
+**1,255 real APIs** across 78 categories. **7 AI models** (Claude, GPT-4.1, Grok-3, DeepSeek + Llama 3, Mistral, DeepSeek-Coder locally). **Free persistent memory** that survives sessions, model swaps, and restarts. **Multi-LLM orchestration** — launch 30-agent organizations mixing Claude, GPT, and Grok agents. **Self-hostable** with zero native dependencies.
+
+Works with Claude Code (MCP), any OpenAI-compatible client, LangChain, CrewAI, or raw HTTP.
 
 ---
 
@@ -59,11 +65,11 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 }
 ```
 
-> Sign up at [slopshop.gg/signup](https://slopshop.gg/signup) for 2,000 free credits. Memory APIs are free forever.
+> Sign up for **500 free credits**. Memory APIs are free forever. Bring your own API keys (BYOK) for 0-credit LLM calls.
 
 ---
 
-## All 22 Features
+## Core Capabilities
 
 | # | Feature | Description |
 |---|---------|-------------|
