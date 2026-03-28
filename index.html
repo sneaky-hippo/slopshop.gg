@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="dns-prefetch" href="https://slopshop-production.up.railway.app">
-<title>Slopshop — The Missing Backend for AI Agents</title>
+<title>Slopshop — Standalone CLI + API Platform for AI Agents</title>
 <meta name="description" content="Standalone CLI for AI agents. Free persistent memory. Real compute APIs (18ms, 99.7% uptime). Works inside Claude Code, Cursor, Goose, Cline, OpenCode, Aider. npm install -g slopshop.">
 <meta name="keywords" content="AI agent tools, agent API, MCP tools, agent memory, agent templates, tool server, developer tools, slopshop, credit-based API, self-hostable, Claude tools, LLM tools, autonomous agent, function calling, AI agent platform">
 <link rel="canonical" href="https://slopshop.gg/">
@@ -1037,7 +1037,23 @@ slop mcp serve</div>
 <!-- INTEGRATE WITH YOUR STACK -->
 <div class="sec">
   <h2>Works with every AI provider</h2>
-  <p class="desc">14 provider-specific integration guides. Native code examples. Each page speaks your agent's language.</p>
+  <p class="desc">14 provider-specific integration guides. Native code examples. Works inside any MCP-compatible tool.</p>
+
+  <!-- MCP universal entry point -->
+  <div style="max-width:520px;margin:0 auto 24px;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.78rem;line-height:2">
+    <div style="font-weight:700;color:var(--c);margin-bottom:8px;font-size:0.82rem">MCP-compatible tools:</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;font-size:0.72rem">
+      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Claude Desktop</span>
+      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Claude Code</span>
+      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Cursor</span>
+      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">VS Code Copilot</span>
+      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Goose</span>
+      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">OpenCode</span>
+      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Cline</span>
+      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Aider</span>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px" onclick="cc(this,'npx slopshop mcp serve')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">npx slopshop mcp serve</span><span style="color:var(--t4);font-size:0.6rem">copy</span></div>
+  </div>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
     <a href="/integrate-claude" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #da7756">
@@ -1150,7 +1166,7 @@ slop mcp serve</div>
   <h2>Credits</h2>
   <p class="desc">Simple credit-based pricing. 1 credit = 1 compute call. Memory is always free.</p>
   <div class="tiers">
-    <div class="tier"><div class="amt">2K</div><div class="price">Free</div><div class="unit">on signup</div><div class="label">Free</div></div>
+    <div class="tier"><div class="amt">500</div><div class="price">Free</div><div class="unit">on signup</div><div class="label">Free</div></div>
     <div class="tier" onclick="buyCredits(1000)" style="cursor:pointer"><div class="amt">1K</div><div class="price">$9</div><div class="unit">$0.009/cr</div><div class="label">Baby Lobster</div></div>
     <div class="tier" onclick="buyCredits(5000)" style="cursor:pointer"><div class="amt">5K</div><div class="price">$39</div><div class="unit">$0.0078/cr</div><div class="label">Lobster</div></div>
     <div class="tier hot" onclick="buyCredits(20000)" style="cursor:pointer"><div class="amt">20K</div><div class="price">$129</div><div class="unit">$0.0065/cr</div><div class="label">Big Lobster</div></div>
@@ -1170,6 +1186,10 @@ slop mcp serve</div>
     <div><span style="color:var(--green)">$</span> <span style="color:var(--t)">slop call sense-url-tech-stack --url https://stripe.com</span></div>
     <div style="color:var(--green);font-size:0.72rem;margin-left:16px">→ {"tech":["React","Next.js","Cloudflare"],"_engine":"real"}</div>
   </div>
+  <div style="text-align:center;margin:16px auto;max-width:420px;background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:14px 20px;font-family:var(--mono);font-size:0.9rem;cursor:pointer" onclick="cc(this,'npm install -g slopshop')">
+    <span style="color:var(--green)">$</span> <span style="color:var(--t);font-weight:700">npm install -g slopshop</span> <span style="color:var(--t4);font-size:0.6rem;margin-left:8px">copy</span>
+  </div>
+  <div style="text-align:center;font-size:0.68rem;color:var(--t4);margin-bottom:12px">Standalone CLI &middot; MCP server &middot; Local agent pool &middot; 44+ commands</div>
   <div style="margin-top:12px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
     <a href="/getting-started" style="display:inline-block;background:var(--r);color:#fff;padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.8rem;font-weight:700;text-decoration:none">Get Started Free</a>
     <a href="#pricing" style="display:inline-block;background:var(--s2);color:var(--t2);padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.8rem;font-weight:600;text-decoration:none;border:1px solid var(--b)">Buy Credits</a>
@@ -1223,7 +1243,10 @@ slop mcp serve</div>
         <a href="https://x.com/slopshopgg">@slopshopgg</a>
       </div>
     </div>
-    <div class="footer-copy">The backend your agent is missing &middot; Free memory &middot; Real compute &middot; Agent orchestration &middot; 78 tool categories &middot; Self-hostable &middot; slopshop.gg<br><span style="color:var(--t4);font-size:0.58rem">SLOP: Stateless Lightweight Operational Primitives</span></div>
+    <div style="text-align:center;margin:20px auto 16px;max-width:360px;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:0.78rem;cursor:pointer" onclick="cc(this,'npm install -g slopshop')">
+      <span style="color:var(--green)">$</span> <span style="color:var(--t);font-weight:600">npm install -g slopshop</span> <span style="color:var(--t4);font-size:0.55rem;margin-left:6px">copy</span>
+    </div>
+    <div class="footer-copy">Standalone CLI + API platform &middot; 44+ commands &middot; MCP server &middot; Local agent pool &middot; Free memory &middot; Self-hostable &middot; slopshop.gg<br><span style="color:var(--t4);font-size:0.58rem">SLOP: Stateless Lightweight Operational Primitives</span></div>
   </div>
 </footer>
 
