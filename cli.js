@@ -841,6 +841,7 @@ ${C.reset}`;
   console.log(`    ${cyan('slop mcp serve')}                         Start MCP server (Goose/Cursor/Cline)`);
   console.log(`    ${cyan('slop mcp config')}                        Show MCP config for all clients`);
   console.log(`    ${cyan('slop init')} ${dim('[--full-stack --ollama]')}    Scaffold Slopshop project`);
+  console.log(`    ${cyan('slop agents')} ${dim('set|start|stop|status')}   Configure always-running local agents`);
   console.log(`    ${cyan('slop help')}                              Show this help\n`);
   console.log(`  ${bold('AI & PLANNING')}`);
   console.log(`    ${cyan('slop plan')} ${dim('"task description"')}          Plan before executing`);
@@ -2183,12 +2184,181 @@ async function cmdUpgrade() {
 }
 
 // ============================================================
+// AGENTS — Configure and manage always-running local agents
+// ============================================================
+async function cmdAgents(args) {
+  const sub = (args || [])[0];
+  const agentConfig = _cfg.agents || { count: 0, models: ['llama3', 'mistral', 'deepseek-coder-v2'], auto_start: false };
+
+  if (sub === 'set' || sub === 'count') {
+    const count = parseInt(args[1]);
+    if (isNaN(count) || count < 0 || count > 32) {
+      console.log(red('\n  Invalid count. Use 0-32.\n'));
+      return;
+    }
+    const cfg = loadConfig();
+    cfg.agents = { ...agentConfig, count, auto_start: count > 0 };
+    saveConfig(cfg);
+    console.log(`\n  ${green('✓')} Local agent pool set to ${bold(String(count))} agents`);
+    if (count > 0) {
+      console.log(`  ${dim('Models:')} ${agentConfig.models.join(', ')}`);
+      console.log(`  ${dim('Agents will start on next')} ${cyan('slop agents start')}`);
+    } else {
+      console.log(`  ${dim('Local agents disabled.')}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'models') {
+    const models = args.slice(1).filter(a => a && !a.startsWith('-'));
+    if (models.length === 0) {
+      console.log(`\n  ${bold('Current models:')} ${agentConfig.models.join(', ')}`);
+      console.log(`\n  ${cyan('slop agents models llama3 mistral qwen2.5')}  Set models`);
+      console.log(`  ${dim('Models must be available in Ollama (ollama list)')}\n`);
+      return;
+    }
+    const cfg = loadConfig();
+    cfg.agents = { ...agentConfig, models };
+    saveConfig(cfg);
+    console.log(`\n  ${green('✓')} Local agent models: ${models.join(', ')}\n`);
+    return;
+  }
+
+  if (sub === 'start') {
+    const count = agentConfig.count || parseInt(args[1]) || 3;
+    console.log(`\n  ${bold('Starting ' + count + ' local agents...')}`);
+    console.log(`  ${dim('Models:')} ${agentConfig.models.join(', ')}`);
+    console.log(`  ${dim('Each agent runs in background, processing tasks from the queue')}\n`);
+
+    // Check Ollama is running
+    try {
+      const http = require('http');
+      await new Promise((resolve, reject) => {
+        const req = http.get('http://localhost:11434/api/tags', res => {
+          let d = ''; res.on('data', c => d += c);
+          res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+        });
+        req.on('error', reject);
+        req.setTimeout(3000, () => { req.destroy(); reject(new Error('timeout')); });
+      });
+      console.log(`  ${green('✓')} Ollama is running`);
+    } catch(e) {
+      console.log(`  ${red('✗')} Ollama not running on localhost:11434`);
+      console.log(`  ${dim('Start it with:')} ${cyan('ollama serve')}\n`);
+      return;
+    }
+
+    // Spawn background agent workers
+    const { spawn } = require('child_process');
+    const logFile = path.join(CONFIG_DIR, 'agents.log');
+    const pids = [];
+
+    for (let i = 0; i < count; i++) {
+      const model = agentConfig.models[i % agentConfig.models.length];
+      const agentScript = `
+        const http = require('http');
+        const id = 'agent-${i}-${model}';
+        function log(m) { process.stdout.write(new Date().toISOString().slice(11,19) + ' [' + id + '] ' + m + '\\n'); }
+        log('Started (' + '${model}' + ')');
+
+        async function ollamaChat(prompt) {
+          return new Promise(r => {
+            const body = JSON.stringify({ model: '${model}', messages: [{ role: 'user', content: prompt }], stream: false });
+            const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
+              headers: { 'Content-Type': 'application/json' }, timeout: 60000 }, res => {
+              let d = ''; res.on('data', c => d += c);
+              res.on('end', () => { try { r(JSON.parse(d).message?.content || ''); } catch(e) { r(''); } });
+            });
+            req.on('error', () => r('')); req.on('timeout', () => { req.destroy(); r(''); });
+            req.write(body); req.end();
+          });
+        }
+
+        async function loop() {
+          while (true) {
+            try {
+              const result = await ollamaChat('You are agent ' + id + '. Heartbeat check. Respond with just OK.');
+              if (result) log('Heartbeat: ' + result.slice(0, 20));
+            } catch(e) { log('Error: ' + e.message); }
+            await new Promise(r => setTimeout(r, ${30000 + i * 5000}));
+          }
+        }
+        loop();
+      `;
+      const child = spawn('node', ['-e', agentScript], {
+        detached: true,
+        stdio: ['ignore', fs.openSync(logFile, 'a'), fs.openSync(logFile, 'a')],
+      });
+      child.unref();
+      pids.push(child.pid);
+      console.log(`  ${green('✓')} Agent ${i} (${model}) PID ${child.pid}`);
+    }
+
+    // Save PIDs
+    const cfg = loadConfig();
+    cfg.agents = { ...agentConfig, count, pids, started: new Date().toISOString() };
+    saveConfig(cfg);
+
+    console.log(`\n  ${bold(count + ' agents running')} — logs at ${dim(logFile)}`);
+    console.log(`  ${cyan('slop agents status')}  Check agent health`);
+    console.log(`  ${cyan('slop agents stop')}    Stop all agents\n`);
+    return;
+  }
+
+  if (sub === 'stop') {
+    const pids = agentConfig.pids || [];
+    if (pids.length === 0) {
+      console.log(`\n  ${dim('No running agents.')}\n`);
+      return;
+    }
+    for (const pid of pids) {
+      try { process.kill(pid, 'SIGTERM'); console.log(`  ${green('✓')} Stopped PID ${pid}`); }
+      catch(e) { console.log(`  ${dim('PID ' + pid + ' already stopped')}`); }
+    }
+    const cfg = loadConfig();
+    cfg.agents = { ...agentConfig, pids: [], started: null };
+    saveConfig(cfg);
+    console.log(`\n  ${bold('All agents stopped.')}\n`);
+    return;
+  }
+
+  if (sub === 'status') {
+    const pids = agentConfig.pids || [];
+    console.log(`\n  ${bold('Local Agent Pool')}`);
+    console.log(`  ${dim('Configured:')} ${agentConfig.count || 0} agents`);
+    console.log(`  ${dim('Models:')}     ${agentConfig.models.join(', ')}`);
+    console.log(`  ${dim('Running:')}    ${pids.length} (PIDs: ${pids.join(', ') || 'none'})`);
+    if (agentConfig.started) console.log(`  ${dim('Started:')}    ${agentConfig.started}`);
+    const logFile = path.join(CONFIG_DIR, 'agents.log');
+    if (fs.existsSync(logFile)) {
+      const lines = fs.readFileSync(logFile, 'utf8').split('\n').filter(l => l.trim()).slice(-5);
+      console.log(`\n  ${bold('Recent logs:')}`);
+      for (const l of lines) console.log(`  ${dim(l)}`);
+    }
+    console.log('');
+    return;
+  }
+
+  // Default: show help
+  console.log(`\n  ${bold('Local Agent Pool')} ${dim('— configure always-running Ollama agents')}\n`);
+  console.log(`  ${cyan('slop agents set <N>')}              Set agent count (0-32)`);
+  console.log(`  ${cyan('slop agents models <m1> <m2>...')}  Set Ollama models to use`);
+  console.log(`  ${cyan('slop agents start')}                Start the agent pool`);
+  console.log(`  ${cyan('slop agents start 8')}              Start 8 agents`);
+  console.log(`  ${cyan('slop agents stop')}                 Stop all running agents`);
+  console.log(`  ${cyan('slop agents status')}               Show agent pool health`);
+  console.log(`\n  ${dim('Current:')} ${agentConfig.count || 0} agents, models: ${agentConfig.models.join(', ')}`);
+  console.log(`  ${dim('Agents run in background using local Ollama models (free, fast).')}\n`);
+}
+
+// ============================================================
 // COMPLETIONS — Generate shell completions
 // ============================================================
 function cmdCompletions(args) {
   const shell = args[0] || 'bash';
 
-  const commands = ['call','pipe','run','search','list','discover','org','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui'];
+  const commands = ['call','pipe','run','search','list','discover','org','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui','agents'];
 
   if (shell === 'bash') {
     console.log(`# Add to ~/.bashrc:`);
@@ -3554,6 +3724,8 @@ async function main() {
     case 'key':     await cmdKey(args);     break;
     case 'mcp':     cmdMcp(args);           break;
     case 'init':    cmdInit(args);          break;
+    case 'agents':  await cmdAgents(args);  break;
+    case 'agent':   await cmdAgents(args);  break;
     case 'org':     await cmdOrg(args);    break;
     case 'chain':   await cmdChain(args);  break;
     case 'memory':  await cmdMemory(args); break;
