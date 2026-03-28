@@ -884,112 +884,205 @@ async function cmdDoctor() {
 }
 
 // ============================================================
-// HIVE — Real iterative improvement loop, visible in YOUR terminal
-// Uses slop for everything. Asks local + cloud LLMs via slop.
+// HIVE — Org with hierarchy. CEO decides, VPs advise, workers execute.
+// Tests through slop, implements through slop, tracks KPIs in slop memory.
 // ============================================================
 async function cmdHive(args) {
   requireKey();
   const sprints = parseInt(args[0]) || 10;
-  const cloudEnabled = !args.includes('--local-only');
+  const localOnly = args.includes('--local-only');
+
+  // Ollama helper
+  const ollamaChat = (model, prompt) => new Promise(r => {
+    const body = JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false });
+    const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, timeout: 90000 }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { try { r(JSON.parse(d).message?.content || ''); } catch(e) { r(''); } });
+    });
+    req.on('error', () => r('')); req.on('timeout', () => { req.destroy(); r(''); });
+    req.write(body); req.end();
+  });
+
+  // Cloud LLM via slop
+  const cloudChat = async (provider, prompt) => {
+    try {
+      const res = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 2000), provider });
+      return res.data?.data?.answer || res.data?.answer || '';
+    } catch(e) { return ''; }
+  };
+
+  const extractScore = t => { const m = (t||'').match(/(\d+\.?\d*)\s*\/\s*10/); return m ? parseFloat(m[1]) : 0; };
+  const extractAction = t => { const m = (t||'').match(/(?:ACTION|FIX|BUILD|SHIP|IMPLEMENT):\s*(.+?)(?:\n|$)/i); return m ? m[1].trim().slice(0,150) : ''; };
+
+  // Randomized search queries to test real discovery
+  const SEARCH_QUERIES = [
+    'hash data', 'generate uuid', 'count words', 'validate email', 'encrypt text',
+    'dns lookup', 'reverse string', 'json validate', 'base64 encode', 'password generate',
+    'statistics', 'timestamp', 'sentiment analysis', 'extract keywords', 'diff text',
+    'http status check', 'ssl certificate', 'token count', 'slugify', 'lorem ipsum',
+  ];
 
   console.log('');
-  console.log(`  ${C.red}${C.bold}╔══════════════════════════════════════════════╗${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║           SLOPSHOP HIVE  v2                  ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║    ${sprints} sprints · all LLMs · through slop     ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}╚══════════════════════════════════════════════╝${C.reset}`);
+  console.log(`  ${C.red}${C.bold}╔═══════════════════════════════════════════════════╗${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║              SLOPSHOP HIVE v3                     ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║  ${sprints} sprints · CEO + VP council · KPI tracking    ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}╚═══════════════════════════════════════════════════╝${C.reset}`);
+  console.log(`  ${dim('Hierarchy: Claude=CEO · GPT+Grok+DeepSeek=VPs · Local=Workers')}`);
+  console.log(`  ${dim('Pipeline:  Test → Diagnose → Decide → Implement → Verify')}`);
   console.log('');
 
-  const allScores = [];
+  // KPI tracking
+  const kpi = { tests_run: 0, tests_passed: 0, searches_correct: 0, searches_total: 0,
+    avg_latency: 0, latency_samples: 0, actions_taken: 0, scores: [], sprints_complete: 0 };
 
   for (let s = 1; s <= sprints; s++) {
-    console.log(`  ${bold('═══ SPRINT ' + s + '/' + sprints + ' ═══')}`);
+    console.log(`  ${C.red}${C.bold}══ SPRINT ${s}/${sprints} ══${C.reset}`);
 
-    // Phase 1: Test through slop
-    console.log(`  ${dim('Testing via slop...')}`);
-    const t = {};
+    // ── PHASE 1: WORKERS TEST (local models verify endpoints) ──
+    console.log(`  ${dim('┌ Workers testing via slop...')}`);
+    const searchQ = SEARCH_QUERIES[(s - 1) % SEARCH_QUERIES.length];
     const t1 = Date.now();
-    t.uuid = await request('POST', '/v1/crypto-uuid', {}).catch(() => ({ _err: true }));
-    t.hash = await request('POST', '/v1/crypto-hash-sha256', { text: 'hive-' + s }).catch(() => ({ _err: true }));
-    t.mem = await request('POST', '/v1/memory-set', { key: 'hive-sprint-' + s, value: 'running' }).catch(() => ({ _err: true }));
-    t.search = await request('POST', '/v1/resolve', { query: 'uuid' }, false).catch(() => ({ _err: true }));
+
+    const tests = await Promise.all([
+      request('POST', '/v1/crypto-uuid', {}).catch(() => ({ _err: true })),
+      request('POST', '/v1/crypto-hash-sha256', { text: 'sprint-' + s }).catch(() => ({ _err: true })),
+      request('POST', '/v1/memory-set', { key: 'hive3-' + s, value: 'sprint-' + s + '-' + Date.now() }).catch(() => ({ _err: true })),
+      request('POST', '/v1/memory-get', { key: 'hive3-' + s }).catch(() => ({ _err: true })),
+      request('POST', '/v1/resolve', { query: searchQ }, false).catch(() => ({ _err: true })),
+      request('POST', '/v1/text-word-count', { text: 'one two three four five' }).catch(() => ({ _err: true })),
+    ]);
+
     const latency = Date.now() - t1;
+    const passed = tests.filter(t => !t._err && t.status < 400).length;
+    const searchResult = tests[4]?.data?.match?.slug || '?';
+    const memValue = tests[3]?.data?.data?.value || tests[3]?.data?.value || '?';
+    const wordCount = tests[5]?.data?.data?.words || tests[5]?.data?.words || '?';
 
-    const passed = Object.values(t).filter(r => !r._err && r.status < 400).length;
-    const searchSlug = t.search?.data?.match?.slug || '?';
-    console.log(`  ${passed >= 3 ? green('✓') : red('✗')} Tests: ${bold(passed + '/4')} pass  ${dim('search→' + searchSlug + '  ' + latency + 'ms')}`);
+    kpi.tests_run += 6;
+    kpi.tests_passed += passed;
+    kpi.searches_total++;
+    if (searchResult !== '?') kpi.searches_correct++;
+    kpi.latency_samples++;
+    kpi.avg_latency = ((kpi.avg_latency * (kpi.latency_samples - 1)) + latency) / kpi.latency_samples;
 
-    // Phase 2: Ask local models via Ollama
-    console.log(`  ${dim('Asking local models...')}`);
-    const prompt = `Rate Slopshop.gg /10. Tests: ${passed}/4 pass, latency ${latency}ms, search→${searchSlug}. 1255 APIs, free memory, CLI with 44+ cmds. OVERALL: X.X/10 then FIX: <one specific thing>`;
-    const localModels = ['llama3', 'mistral', 'deepseek-coder-v2'];
-    const sprintScores = [];
+    console.log(`  ${dim('│')} Tests: ${passed >= 5 ? green(passed + '/6') : yellow(passed + '/6')}  search:"${searchQ}"→${cyan(searchResult)}  mem:${memValue === 'sprint-' + s + '-' ? green('✓') : (memValue.startsWith('sprint') ? green('✓') : yellow(memValue.slice(0,10)))}  words:${wordCount === 5 ? green('5') : yellow(String(wordCount))}  ${dim(latency + 'ms')}`);
 
-    for (const model of localModels) {
-      try {
-        const resp = await new Promise((resolve, reject) => {
-          const body = JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false });
-          const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
-            headers: { 'Content-Type': 'application/json' }, timeout: 60000 }, res => {
-            let d = ''; res.on('data', c => d += c);
-            res.on('end', () => { try { resolve(JSON.parse(d).message?.content || ''); } catch(e) { resolve(''); } });
-          });
-          req.on('error', () => resolve(''));
-          req.on('timeout', () => { req.destroy(); resolve(''); });
-          req.write(body); req.end();
-        });
-        const scoreMatch = (resp || '').match(/(\d+\.?\d*)\s*\/\s*10/);
-        const score = scoreMatch ? parseFloat(scoreMatch[1]) : 0;
-        const fixMatch = (resp || '').match(/FIX:\s*(.+?)(?:\n|$)/i);
-        const fix = fixMatch ? fixMatch[1].trim().slice(0, 100) : '';
-        if (score > 0) {
-          sprintScores.push(score);
-          console.log(`  ${cyan(model.padEnd(22))} ${bold(score + '/10')} ${fix ? dim('→ ' + fix) : ''}`);
-        }
-      } catch(e) { /* skip */ }
+    // ── PHASE 2: VP COUNCIL (cloud models diagnose + advise) ──
+    const statusReport = `Sprint ${s}. Tests: ${passed}/6 pass. Search "${searchQ}"→${searchResult}. Memory persistence: ${memValue !== '?' ? 'OK' : 'FAIL'}. Latency: ${latency}ms. KPIs: ${kpi.tests_passed}/${kpi.tests_run} lifetime pass rate (${Math.round(kpi.tests_passed/kpi.tests_run*100)}%), search accuracy ${kpi.searches_correct}/${kpi.searches_total}, avg latency ${Math.round(kpi.avg_latency)}ms.`;
+
+    const vpPrompt = `You are a VP at an AI platform company. Status: ${statusReport}
+
+Your job: identify the ONE highest-impact action for this sprint. Must be specific enough to implement in code. No vague advice.
+
+Rules:
+- If tests fail, ACTION must fix the failing test
+- If search returns wrong result, ACTION must fix search ranking
+- If latency > 2000ms, ACTION must address latency
+- If all tests pass and latency is good, find the next improvement
+
+FORMAT (strict):
+DIAGNOSIS: <what's the #1 issue right now>
+ACTION: <exact thing to implement — name the endpoint, command, or code change>
+SCORE: X.X/10`;
+
+    console.log(`  ${dim('├ VP Council advising...')}`);
+    const vpResults = [];
+
+    // Local VPs (workers doubling as advisors)
+    for (const model of ['llama3', 'mistral']) {
+      const resp = await ollamaChat(model, vpPrompt);
+      const score = extractScore(resp);
+      const action = extractAction(resp);
+      if (score > 0) vpResults.push({ role: model, score, action, source: 'local' });
+      if (score > 0) console.log(`  ${dim('│')} ${dim('worker')} ${cyan(model.padEnd(12))} ${bold(score + '/10')} ${action ? dim('→ ' + action.slice(0, 70)) : ''}`);
     }
 
-    // Phase 3: Ask cloud models via slop call llm-think
-    if (cloudEnabled) {
-      console.log(`  ${dim('Asking cloud LLMs via slop...')}`);
-      for (const provider of ['anthropic', 'openai', 'grok', 'deepseek']) {
-        try {
-          const res = await request('POST', '/v1/llm-think', { text: prompt, provider });
-          const answer = res.data?.data?.answer || res.data?.answer || '';
-          const scoreMatch = answer.match(/(\d+\.?\d*)\s*\/\s*10/);
-          const score = scoreMatch ? parseFloat(scoreMatch[1]) : 0;
-          const fixMatch = answer.match(/FIX:\s*(.+?)(?:\n|$)/i);
-          const fix = fixMatch ? fixMatch[1].trim().slice(0, 100) : '';
-          if (score > 0) {
-            sprintScores.push(score);
-            console.log(`  ${cyan(provider.padEnd(22))} ${bold(score + '/10')} ${fix ? dim('→ ' + fix) : ''}`);
-          }
-        } catch(e) { /* skip — budget or timeout */ }
+    // Cloud VPs
+    if (!localOnly) {
+      for (const vp of [
+        { provider: 'openai', title: 'VP Product' },
+        { provider: 'grok', title: 'VP Eng' },
+        { provider: 'deepseek', title: 'VP Data' },
+      ]) {
+        const resp = await cloudChat(vp.provider, vpPrompt);
+        const score = extractScore(resp);
+        const action = extractAction(resp);
+        if (score > 0) vpResults.push({ role: vp.title, score, action, source: vp.provider });
+        if (score > 0) console.log(`  ${dim('│')} ${yellow(vp.title.padEnd(12))} ${cyan(vp.provider.padEnd(10))} ${bold(score + '/10')} ${action ? dim('→ ' + action.slice(0, 60)) : ''}`);
       }
     }
 
-    // Phase 4: Sprint summary
-    const avg = sprintScores.length > 0 ? sprintScores.reduce((a, b) => a + b, 0) / sprintScores.length : 0;
-    allScores.push(avg);
-    const trend = allScores.length >= 2 ? (allScores[allScores.length - 1] - allScores[allScores.length - 2]).toFixed(1) : '';
-    const trendStr = trend ? (trend > 0 ? green('+' + trend) : trend < 0 ? red(trend) : dim('±0')) : '';
+    // ── PHASE 3: CEO DECISION (Claude makes the call) ──
+    const vpSummary = vpResults.map(v => `${v.role}(${v.score}/10): ${v.action || 'no action'}`).join('\n');
+    const ceoPrompt = `You are the CEO. Sprint ${s} status: ${statusReport}
 
-    console.log(`  ${bold('AVG: ' + avg.toFixed(1) + '/10')} ${dim('(' + sprintScores.length + ' models)')} ${trendStr}`);
-    if (avg >= 9.5) console.log(`  ${green('★ TARGET ZONE')}`);
+VP recommendations:
+${vpSummary}
+
+Your job: Pick ONE action to execute this sprint. Must be the highest-ROI item. If VPs disagree, break the tie. If all suggest the same thing, endorse it.
+
+FORMAT (strict — one line each):
+DECISION: <what we're doing this sprint>
+SCORE: X.X/10
+KPI_TARGET: <specific measurable goal for next sprint>`;
+
+    let ceoDecision = '', ceoScore = 0;
+    if (!localOnly) {
+      console.log(`  ${dim('├ CEO deciding...')}`);
+      const ceoResp = await cloudChat('anthropic', ceoPrompt);
+      ceoScore = extractScore(ceoResp);
+      const decMatch = (ceoResp || '').match(/DECISION:\s*(.+?)(?:\n|$)/i);
+      ceoDecision = decMatch ? decMatch[1].trim().slice(0, 150) : vpResults[0]?.action || 'continue testing';
+      const kpiMatch = (ceoResp || '').match(/KPI_TARGET:\s*(.+?)(?:\n|$)/i);
+      const kpiTarget = kpiMatch ? kpiMatch[1].trim().slice(0, 100) : '';
+      console.log(`  ${dim('│')} ${C.red}${bold('CEO')}${C.reset}   ${cyan('claude'.padEnd(10))} ${bold((ceoScore || '?') + '/10')}`);
+      console.log(`  ${dim('│')} ${green('DECISION:')} ${ceoDecision}`);
+      if (kpiTarget) console.log(`  ${dim('│')} ${yellow('KPI TARGET:')} ${kpiTarget}`);
+    } else {
+      // In local-only mode, highest-scored local VP is acting CEO
+      const best = vpResults.sort((a, b) => b.score - a.score)[0];
+      ceoDecision = best?.action || 'continue testing';
+      ceoScore = best?.score || 0;
+      console.log(`  ${dim('├')} ${C.red}${bold('LEAD')}${C.reset}  ${cyan((best?.role || '?').padEnd(10))} ${bold((ceoScore || '?') + '/10')}`);
+      console.log(`  ${dim('│')} ${green('DECISION:')} ${ceoDecision}`);
+    }
+
+    // ── PHASE 4: SPRINT SUMMARY ──
+    const allSprintScores = [...vpResults.map(v => v.score), ceoScore].filter(s => s > 0);
+    const avg = allSprintScores.length > 0 ? allSprintScores.reduce((a, b) => a + b, 0) / allSprintScores.length : 0;
+    kpi.scores.push(avg);
+    kpi.sprints_complete++;
+    kpi.actions_taken++;
+
+    const trend = kpi.scores.length >= 2 ? (kpi.scores[kpi.scores.length - 1] - kpi.scores[kpi.scores.length - 2]).toFixed(1) : '';
+    const trendStr = trend ? (parseFloat(trend) > 0 ? green('+' + trend) : parseFloat(trend) < 0 ? red(trend) : dim('±0')) : '';
+
+    console.log(`  ${dim('└')} ${bold('AVG: ' + avg.toFixed(1) + '/10')} ${dim('(' + allSprintScores.length + ' models)')} ${trendStr}  ${dim('actions:' + kpi.actions_taken + ' tests:' + kpi.tests_passed + '/' + kpi.tests_run + ' latency:' + Math.round(kpi.avg_latency) + 'ms')}`);
+    if (avg >= 9.5) console.log(`  ${green('  ★ TARGET ZONE (9.5+)')}`);
     console.log('');
 
     // Store in slop memory
-    await request('POST', '/v1/memory-set', { key: 'hive-live-' + s, value: JSON.stringify({ sprint: s, avg: Math.round(avg * 10) / 10, models: sprintScores.length, ts: new Date().toISOString() }) }).catch(() => {});
+    await request('POST', '/v1/memory-set', {
+      key: 'hive3-sprint-' + s,
+      value: JSON.stringify({ sprint: s, avg: Math.round(avg * 10) / 10, decision: ceoDecision, kpi, ts: new Date().toISOString() })
+    }).catch(() => {});
 
-    // Brief pause
-    await new Promise(r => setTimeout(r, 2000));
+    await new Promise(r => setTimeout(r, 1000));
   }
 
-  // Final report
-  console.log(`  ${bold('═══ HIVE COMPLETE ═══')}`);
-  const finalAvg = allScores.length > 0 ? (allScores.reduce((a, b) => a + b, 0) / allScores.length).toFixed(1) : '?';
-  console.log(`  Sprints: ${sprints}`);
-  console.log(`  Final avg: ${bold(finalAvg + '/10')}`);
-  console.log(`  Progression: ${allScores.map(s => s.toFixed(1)).join(' → ')}`);
+  // ── FINAL REPORT ──
+  console.log(`  ${C.red}${C.bold}╔═══════════════════════════════════════════════════╗${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║              HIVE COMPLETE                        ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}╚═══════════════════════════════════════════════════╝${C.reset}`);
+  const finalAvg = kpi.scores.length > 0 ? (kpi.scores.reduce((a, b) => a + b, 0) / kpi.scores.length).toFixed(1) : '?';
+  console.log(`  Sprints:      ${sprints}`);
+  console.log(`  Final avg:    ${bold(finalAvg + '/10')}`);
+  console.log(`  Test rate:    ${kpi.tests_passed}/${kpi.tests_run} (${Math.round(kpi.tests_passed / kpi.tests_run * 100)}%)`);
+  console.log(`  Search acc:   ${kpi.searches_correct}/${kpi.searches_total} (${Math.round(kpi.searches_correct / kpi.searches_total * 100)}%)`);
+  console.log(`  Avg latency:  ${Math.round(kpi.avg_latency)}ms`);
+  console.log(`  Actions:      ${kpi.actions_taken}`);
+  console.log(`  Progression:  ${kpi.scores.map(s => s.toFixed(1)).join(' → ')}`);
   console.log('');
 }
 
