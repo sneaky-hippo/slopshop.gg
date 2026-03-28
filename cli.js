@@ -3645,7 +3645,7 @@ async function cmdInteractive() {
 
   console.log('');
   console.log(`  ${C.red}${C.bold}SLOPSHOP${C.reset} ${dim('v' + PKG_VERSION + ' — interactive mode')}`);
-  console.log(`  ${dim('1,248 APIs | 44 commands | Type anything | Ctrl+C to exit')}`);
+  console.log(`  ${dim('925 handlers | 44+ commands | Type anything | Ctrl+C to exit')}`);
   if (API_KEY) console.log(`  ${dim('Key:')} ${cyan(API_KEY.slice(0, 12) + '...')}`);
   else console.log(`  ${yellow('No key set.')} Run: ${cyan('signup')} or ${cyan('key set sk-slop-...')}`);
   if (totalAgents > 0) {
@@ -3708,9 +3708,81 @@ async function cmdInteractive() {
           case 'login': await cmdLogin(); break;
           case 'key': await cmdKey(args); break;
           case 'config': cmdConfig(args); break;
+          case 'mcp': cmdMcp(args); break;
+          case 'init': cmdInit(args); break;
+          case 'agents': case 'agent': await cmdAgents(args); break;
+          case 'doctor': await cmdDoctor(); break;
+          case 'quickstart': case 'start': case 'tutorial': await cmdQuickstart(); break;
+          case 'live': await cmdLive(args); break;
+          case 'batch': await cmdBatch(args); break;
+          case 'watch': await cmdWatch(args); break;
+          case 'alias': cmdAlias(args); break;
+          case 'profile': case 'profiles': cmdProfile(args); break;
+          case 'session': await cmdSession(args); break;
+          case 'upgrade': await cmdUpgrade(); break;
+          case 'completions': cmdCompletions(args); break;
           default:
-            // Natural language routing
-            await cmdNatural(cmd, args);
+            // Smart LOCAL routing before burning cloud credits
+            const lowerLine = line.toLowerCase();
+
+            // Catch common natural language patterns and route to local commands
+            if (lowerLine.includes('agent') && (lowerLine.includes('start') || lowerLine.includes('launch') || lowerLine.includes('run'))) {
+              const numMatch = lowerLine.match(/(\d+)/);
+              const count = numMatch ? numMatch[1] : '8';
+              console.log(dim(`\n  → Routing to: slop agents start ${count}\n`));
+              await cmdAgents(['start', count]);
+            } else if (lowerLine.includes('agent') && (lowerLine.includes('stop') || lowerLine.includes('kill'))) {
+              console.log(dim('\n  → Routing to: slop agents stop\n'));
+              await cmdAgents(['stop']);
+            } else if (lowerLine.includes('agent') && (lowerLine.includes('status') || lowerLine.includes('how many'))) {
+              console.log(dim('\n  → Routing to: slop agents status\n'));
+              await cmdAgents(['status']);
+            } else if (lowerLine.includes('hive') && (lowerLine.includes('launch') || lowerLine.includes('create') || lowerLine.includes('start'))) {
+              console.log(dim('\n  → Routing to: slop org launch\n'));
+              await cmdOrg(['launch', '--template', 'startup-team', '--name', 'Hive-' + Date.now()]);
+            } else if (lowerLine.includes('doctor') || lowerLine.includes('diagnos') || lowerLine.includes('check setup')) {
+              console.log(dim('\n  → Routing to: slop doctor\n'));
+              await cmdDoctor();
+            } else if (lowerLine.includes('benchmark') || lowerLine.includes('latency') || lowerLine.includes('speed test')) {
+              console.log(dim('\n  → Routing to: slop benchmark\n'));
+              await cmdBenchmark();
+            } else if (lowerLine.includes('balance') || lowerLine.includes('credits') || lowerLine.includes('how much')) {
+              console.log(dim('\n  → Routing to: slop balance\n'));
+              await cmdBalance();
+            } else if (lowerLine.includes('mcp') && lowerLine.includes('serve')) {
+              console.log(dim('\n  → Routing to: slop mcp serve\n'));
+              cmdMcp(['serve']);
+            } else if (lowerLine.includes('mcp') && lowerLine.includes('config')) {
+              console.log(dim('\n  → Routing to: slop mcp config\n'));
+              cmdMcp(['config']);
+            } else if (lowerLine.includes('install') || lowerLine.includes('setup') || lowerLine.includes('init')) {
+              console.log(dim('\n  → Routing to: slop quickstart\n'));
+              await cmdQuickstart();
+            } else if (lowerLine.includes('hash') || lowerLine.includes('uuid') || lowerLine.includes('encrypt')) {
+              // Route compute keywords to search
+              console.log(dim('\n  → Routing to: slop search "' + line + '"\n'));
+              await cmdSearch([line]);
+            } else if (lowerLine.includes('memory') || lowerLine.includes('remember') || lowerLine.includes('store')) {
+              console.log(dim('\n  → Routing to: slop memory\n'));
+              await cmdMemory(args);
+            } else if (lowerLine.startsWith('do ') || lowerLine.startsWith('run ')) {
+              // Explicit natural language execution
+              await cmdNatural(args[0] || '', args.slice(1));
+            } else {
+              // Show helpful suggestion instead of burning credits
+              console.log(`\n  ${yellow('Not sure what you mean.')} Try one of these:\n`);
+              console.log(`  ${cyan('agents start 8')}     Launch 8 local Ollama agents`);
+              console.log(`  ${cyan('agents stop')}        Stop all running agents`);
+              console.log(`  ${cyan('org launch')}         Launch an agent organization`);
+              console.log(`  ${cyan('call <slug>')}        Call any of 925+ APIs`);
+              console.log(`  ${cyan('search <query>')}     Find the right tool`);
+              console.log(`  ${cyan('memory set <k> <v>')} Store persistent memory`);
+              console.log(`  ${cyan('doctor')}             Diagnose your setup`);
+              console.log(`  ${cyan('benchmark')}          Test API latency`);
+              console.log(`  ${cyan('mcp serve')}          Start MCP server`);
+              console.log(`  ${cyan('do <anything>')}      Natural language (uses credits)`);
+              console.log(`  ${cyan('help')}               See all commands\n`);
+            }
             break;
         }
       } catch (e) {
@@ -4428,7 +4500,26 @@ async function cmdNatural(cmd, args) {
     }
     return;
   }
-  if (!quiet && !jsonMode) console.log(dim(`\n  No built-in match. Running server-side (uses credits)...`));
+  // Warn user and confirm before spending credits
+  if (!quiet && !jsonMode) {
+    console.log(`\n  ${yellow('No local command match.')} This will use the cloud agent (costs ~20 credits).`);
+    console.log(`  ${dim('Input:')} "${fullInput}"`);
+    console.log(`  ${dim('Tip: Try')} ${cyan('slop search "' + fullInput.split(' ').slice(0, 3).join(' ') + '"')} ${dim('first (1 credit)')}\n`);
+
+    // In interactive mode, ask for confirmation
+    if (typeof process.stdin.isTTY !== 'undefined' && process.stdin.isTTY) {
+      const answer = await new Promise(r => {
+        const rlConfirm = readline.createInterface({ input: process.stdin, output: process.stdout });
+        rlConfirm.question(`  ${bold('Spend credits?')} [y/N] `, a => { rlConfirm.close(); r(a.trim().toLowerCase()); });
+      });
+      if (answer !== 'y' && answer !== 'yes') {
+        console.log(dim('  Cancelled. Try a specific command instead.\n'));
+        return;
+      }
+    }
+  }
+
+  if (!quiet && !jsonMode) console.log(dim('  Running server-side agent...'));
 
   try {
     // First try discover to suggest features
