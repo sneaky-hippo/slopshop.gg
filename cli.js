@@ -1966,9 +1966,19 @@ async function cmdMemory(args) {
     if (!key || !value) die('Usage: slop memory set <key> <value>');
     const res = await request('POST', '/v1/memory-set', { key, value });
     const d = res.data || res;
+
+    // LOCAL CACHE: Always keep a local copy of memory (your data, your machine)
+    const localDir = path.join(CONFIG_DIR, 'memory');
+    if (!fs.existsSync(localDir)) fs.mkdirSync(localDir, { recursive: true });
+    const cacheFile = path.join(localDir, 'cache.json');
+    let cache = {};
+    try { cache = JSON.parse(fs.readFileSync(cacheFile, 'utf8')); } catch(e) {}
+    cache[key] = { value, updated: new Date().toISOString() };
+    fs.writeFileSync(cacheFile, JSON.stringify(cache, null, 2));
+
     if (jsonMode) { console.log(JSON.stringify(d, null, 2)); return; }
     if (quiet) { console.log(d.key || key || 'stored'); return; }
-    console.log(`\n  ${green('\u2713 Stored:')} ${cyan(key)}\n`);
+    console.log(`\n  ${green('\u2713 Stored:')} ${cyan(key)} ${dim('(cloud + local cache)')}\n`);
     return;
   }
 

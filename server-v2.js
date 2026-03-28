@@ -5955,6 +5955,70 @@ app.post('/v1/chain/queue', auth, (req, res) => {
   res.json({ ok: true, queue_id: id, prompt_count: (prompts || []).length, schedule: schedule || 'now', frequency: frequency || 'once' });
 });
 
+// 3b. Execute chain — actually runs each step's LLM call and advances automatically
+app.post('/v1/chain/run', auth, async (req, res) => {
+  const { chain_id, max_steps } = req.body;
+  const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(chain_id);
+  if (!chain) return res.status(404).json({ error: { code: 'chain_not_found' } });
+
+  const steps = JSON.parse(chain.steps);
+  let ctx = JSON.parse(chain.context);
+  let currentStep = chain.current_step;
+  const maxExec = Math.min(max_steps || steps.length, 10); // Safety cap
+  const results = [];
+
+  const llmHandler = allHandlers['llm-think'];
+  if (!llmHandler) return res.status(501).json({ error: { code: 'llm_handler_missing', message: 'llm-think handler not available' } });
+
+  // Check credits (each LLM step costs ~10cr)
+  const estimatedCost = maxExec * 10;
+  if (req.acct.balance < estimatedCost) {
+    return res.status(402).json({ error: { code: 'insufficient_credits', need: estimatedCost, have: req.acct.balance } });
+  }
+
+  for (let exec = 0; exec < maxExec && currentStep < steps.length; exec++) {
+    const step = steps[currentStep];
+    const previousResult = results.length > 0 ? results[results.length - 1].answer : '';
+    const prompt = step.prompt + (previousResult ? '\n\nPrevious step output:\n' + previousResult.slice(0, 1000) : '');
+
+    try {
+      const llmResult = await llmHandler({
+        text: prompt,
+        provider: step.provider || 'anthropic',
+        model: step.model || 'claude-sonnet-4-6',
+      });
+      const answer = llmResult?.answer || llmResult?.summary || llmResult?.text || JSON.stringify(llmResult).slice(0, 500);
+      ctx['step_' + currentStep + '_result'] = answer;
+      results.push({ step: currentStep, role: step.role, model: step.model || 'claude-sonnet-4-6', answer: answer.slice(0, 500) });
+      req.acct.balance -= 10;
+    } catch(e) {
+      results.push({ step: currentStep, role: step.role, error: e.message });
+      break;
+    }
+
+    currentStep++;
+    if (currentStep >= steps.length && chain.loop) {
+      currentStep = 0;
+      ctx._loop_count = (ctx._loop_count || 0) + 1;
+    }
+  }
+
+  const status = currentStep >= steps.length && !chain.loop ? 'completed' : 'running';
+  db.prepare('UPDATE agent_chains SET context = ?, current_step = ?, status = ? WHERE id = ?')
+    .run(JSON.stringify(ctx), currentStep, status, chain_id);
+  persistKey(req.apiKey);
+
+  res.json({
+    ok: true, chain_id, status,
+    steps_executed: results.length,
+    current_step: currentStep,
+    loop_count: ctx._loop_count || 0,
+    results,
+    credits_used: results.filter(r => !r.error).length * 10,
+    _engine: 'real',
+  });
+});
+
 // 4. Check chain status
 app.get('/v1/chain/status/:id', auth, (req, res) => {
   const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(req.params.id);
