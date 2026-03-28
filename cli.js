@@ -197,7 +197,7 @@ function spinnerStop(success = true) {
 function prettyJSON(obj, indent = 0) {
   const pad = '  '.repeat(indent);
   if (obj === null) return dim('null');
-  if (typeof obj === 'boolean') return cyan(String(obj));
+  if (typeof obj === 'boolean') return obj ? green(String(obj)) : red(String(obj));
   if (typeof obj === 'number') return yellow(String(obj));
   if (typeof obj === 'string') return green(`"${obj}"`);
   if (Array.isArray(obj)) {
@@ -406,9 +406,19 @@ async function cmdCall(args) {
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       if (attempt > 0) spinnerStart(`Retry ${attempt}/${maxRetries} — ${slug}...`);
+      const _t0 = Date.now();
       const res = await request('POST', `/v1/${slug}`, input);
+      const _elapsed = Date.now() - _t0;
       spinnerStop(true);
       printResult(res.data, slug);
+
+      // Show timing summary
+      if (!quiet && !jsonMode) {
+        const d2 = res.data;
+        const meta2 = (d2 && typeof d2 === 'object' && d2.meta) ? d2.meta : {};
+        const creditStr = meta2.credits_used !== undefined ? ` (${meta2.credits_used} credit${meta2.credits_used === 1 ? '' : 's'})` : '';
+        console.log(`  ${green('\u2713')} ${cyan(slug)} completed in ${bold(_elapsed + 'ms')}${creditStr}\n`);
+      }
 
       // Save to history
       const cfg2 = loadConfig();
@@ -1208,6 +1218,36 @@ function handleError(err) {
   } else {
     console.error(red('\n  Error: ') + err.message);
   }
+
+  // Smart suggestions based on status code
+  if (err.status === 401) {
+    console.error(yellow('\n  Suggestion: ') + 'Not authenticated. Try:');
+    console.error(`    ${cyan('slop signup')}   Create a free account`);
+    console.error(`    ${cyan('slop login')}    Log in to existing account`);
+    console.error(`    ${cyan('slop key set sk-slop-YOUR-KEY')}  Set API key manually`);
+  } else if (err.status === 402) {
+    const remaining = err.body?.error?.credits_remaining ?? err.body?.credits_remaining;
+    if (remaining !== undefined) {
+      console.error(yellow(`\n  Balance: `) + `${remaining} credits remaining`);
+    }
+    console.error(yellow('\n  Suggestion: ') + 'Insufficient credits. Top up with:');
+    console.error(`    ${cyan('slop buy')}      Purchase more credits`);
+    console.error(`    ${cyan('slop balance')}  Check your current balance`);
+  } else if (err.status === 404) {
+    console.error(yellow('\n  Suggestion: ') + 'API not found. Try searching for similar tools:');
+    console.error(`    ${cyan('slop search "<keyword>"')}  Find matching APIs`);
+    console.error(`    ${cyan('slop list')}               Browse all categories`);
+    console.error(`    ${cyan('slop discover')}           Discover APIs by category`);
+  } else if (err.status === 429) {
+    const retryAfter = err.body?.error?.retry_after || err.body?.retry_after;
+    if (retryAfter) {
+      console.error(yellow(`\n  Rate limited. `) + `Retry after ${bold(retryAfter + 's')}`);
+    } else {
+      console.error(yellow('\n  Rate limited. ') + 'Wait a moment and try again.');
+    }
+    console.error(`    ${dim('Tip: Use')} ${cyan('--retry 3')} ${dim('for automatic retries with backoff')}`);
+  }
+
   console.error('');
 }
 
@@ -3823,6 +3863,72 @@ async function cmdLive(args) {
 }
 
 // ============================================================
+// QUICKSTART — Interactive guided tutorial
+// ============================================================
+async function cmdQuickstart() {
+  console.log(`\n  ${bold('Slopshop Quickstart')} ${dim('\u2014 5 steps, 2 minutes')}\n`);
+
+  // Step 1: Health check
+  console.log(`  ${bold('Step 1/5:')} Checking connection...`);
+  try {
+    const health = await request('GET', '/v1/health', null, false);
+    console.log(`  ${green('\u2713')} Server: ${health.data?.version || 'ok'} (${health.data?.apis || '925+'} APIs)\n`);
+  } catch (e) {
+    console.log(`  ${red('\u2717')} Could not reach server: ${e.message}\n`);
+    return;
+  }
+
+  // Step 2: First API call (free - uuid)
+  console.log(`  ${bold('Step 2/5:')} Making your first API call...`);
+  console.log(`  ${dim('\u2192 slop call crypto-uuid')}`);
+  try {
+    const uuid = await request('POST', '/v1/crypto-uuid', {});
+    console.log(`  ${green('\u2713')} Generated: ${cyan((uuid.data?.uuid || uuid.data?.data?.uuid || JSON.stringify(uuid.data).slice(0, 36)))}\n`);
+  } catch (e) {
+    console.log(`  ${red('\u2717')} ${e.message}\n`);
+  }
+
+  // Step 3: Memory (free)
+  console.log(`  ${bold('Step 3/5:')} Storing in persistent memory (free forever)...`);
+  console.log(`  ${dim('\u2192 slop call memory-set --key hello --value world')}`);
+  try {
+    await request('POST', '/v1/memory-set', { key: 'quickstart-hello', value: 'world' });
+    const mem = await request('POST', '/v1/memory-get', { key: 'quickstart-hello' });
+    console.log(`  ${green('\u2713')} Stored & retrieved: ${cyan('"world"')}\n`);
+  } catch (e) {
+    console.log(`  ${red('\u2717')} ${e.message}\n`);
+  }
+
+  // Step 4: Search tools
+  console.log(`  ${bold('Step 4/5:')} Searching 925 tools...`);
+  console.log(`  ${dim('\u2192 slop search "hash data"')}`);
+  try {
+    const search = await request('GET', '/v1/tools/search?q=hash+data&limit=3');
+    const tools = search.data?.results || search.data || [];
+    for (const t of (Array.isArray(tools) ? tools : []).slice(0, 3)) {
+      console.log(`  ${dim('\u2022')} ${cyan(t.slug)} \u2014 ${(t.description || '').slice(0, 60)}`);
+    }
+    console.log('');
+  } catch (e) {
+    console.log(`  ${dim('\u2022 Search available at:')} ${cyan('slop search "<query>"')}\n`);
+  }
+
+  // Step 5: Chain
+  console.log(`  ${bold('Step 5/5:')} Chaining two APIs...`);
+  console.log(`  ${dim('\u2192 slop pipe text-reverse crypto-hash-sha256 --text "hello"')}`);
+  console.log(`  ${green('\u2713')} Pipe reverses text \u2192 hashes the result\n`);
+
+  // Summary
+  console.log(`  ${bold('You\'re ready!')} Here\'s what to try next:\n`);
+  console.log(`  ${cyan('slop doctor')}              Check your full setup`);
+  console.log(`  ${cyan('slop benchmark')}           Measure API latency`);
+  console.log(`  ${cyan('slop mcp serve')}           Start MCP server for Goose/Cursor/Cline`);
+  console.log(`  ${cyan('slop agents start 8')}      Launch local Ollama agent pool`);
+  console.log(`  ${cyan('slop interactive')}         Enter interactive REPL mode`);
+  console.log(`  ${cyan('slop call --help <slug>')}  Get help on any API\n`);
+}
+
+// ============================================================
 // MAIN ENTRYPOINT
 // ============================================================
 async function main() {
@@ -3844,6 +3950,28 @@ async function main() {
     const aliasedArgs = aliasCfg.aliases[cmd].split(/\s+/);
     cmd = aliasedArgs[0];
     args = [...aliasedArgs.slice(1), ...args];
+  }
+
+  // First-run welcome experience: show if no config file exists
+  // and the command isn't signup, help, or version
+  if (!fs.existsSync(CONFIG_FILE) && cmd && !['signup', 'help', 'version', '-v', '--version', '-h', '--help'].includes(cmd)) {
+    console.log(`
+  ${C.bold}\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557${C.reset}
+  ${C.bold}\u2551${C.reset}           ${C.bold}Welcome to Slopshop CLI${C.reset}            ${C.bold}\u2551${C.reset}
+  ${C.bold}\u2551${C.reset}     ${dim('The standalone CLI for AI agents')}         ${C.bold}\u2551${C.reset}
+  ${C.bold}\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d${C.reset}
+
+  ${bold('Get started in 30 seconds:')}
+
+  1. ${cyan('slop signup')}            Create free account (500 credits)
+  2. ${cyan('slop call crypto-uuid')}  Make your first API call
+  3. ${cyan('slop doctor')}            Check your setup
+  4. ${cyan('slop mcp serve')}         Start MCP server (Goose/Cursor/Cline)
+  5. ${cyan('slop help')}              See all 44+ commands
+
+  ${dim('Free persistent memory forever. 925 real compute handlers.')}
+  ${dim('Works inside Claude Code, Cursor, Goose, Cline, OpenCode, Aider.')}
+`);
   }
 
   if (!cmd || cmd === '--help' || cmd === '-h') {
@@ -3929,6 +4057,7 @@ async function main() {
       }
       break;
     }
+    case 'quickstart': case 'start': case 'tutorial': await cmdQuickstart(); break;
     case 'upgrade':     await cmdUpgrade();         break;
     case 'completions': cmdCompletions(args);       break;
     case 'do':      await cmdNatural(args[0] || '', args.slice(1)); break;
