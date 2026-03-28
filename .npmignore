@@ -52,3 +52,20 @@ docker-compose.yml
 brand/
 api/
 sdk/python/
+
+# Internal
+hive-*.js
+run-*.js
+audit-*.js
+sentinel.js
+watchdog.js
+*.log
+council-responses.txt
+iteration-log.json
+hive-iterate-results.json
+CLAUDE-ROADMAP.md
+NORTH-STAR-SYNTHESIZED.md
+BENCHMARK-ANALYSIS.md
+CLI-PARITY-AUDIT.md
+V4-ARCHITECTURE.md
+brand/
