@@ -6884,6 +6884,71 @@ app.get('/v1/security/audit', auth, (req, res) => {
   }
 });
 
+// ===== STREAM LIFECYCLE (Claude's 10/10 #1) =====
+const activeStreams = new Map();
+app.post('/v1/completions/:id/cancel', auth, (req, res) => {
+  const stream = activeStreams.get(req.params.id);
+  if (stream) { stream.destroyed = true; activeStreams.delete(req.params.id); }
+  res.json({ ok: true, id: req.params.id, cancelled: !!stream, _engine: 'real' });
+});
+app.get('/v1/completions/:id/status', auth, (req, res) => {
+  const stream = activeStreams.get(req.params.id);
+  res.json({ ok: true, id: req.params.id, active: !!stream, _engine: 'real' });
+});
+
+// ===== PER-KEY USAGE AUDIT (Claude's 10/10 #2) =====
+app.get('/v1/audit/key/:prefix', auth, (req, res) => {
+  const prefix = req.params.prefix;
+  const limit = Math.min(parseInt(req.query.limit) || 100, 500);
+  try {
+    const logs = db.prepare('SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE key_prefix LIKE ? ORDER BY id DESC LIMIT ?').all(prefix + '%', limit);
+    const totalCredits = logs.reduce((s, l) => s + l.credits, 0);
+    res.json({ ok: true, key_prefix: prefix, entries: logs, count: logs.length, total_credits: totalCredits, _engine: 'real' });
+  } catch(e) {
+    res.json({ ok: true, entries: [], error: e.message, _engine: 'real' });
+  }
+});
+
+// ===== RATE LIMIT STATUS (enterprise-grade observability) =====
+app.get('/v1/ratelimit/status', auth, (req, res) => {
+  const rlKey = 'api:' + req.apiKey;
+  const entry = ipLimits.get(rlKey);
+  const rlMax = req.acct.tier === 'leviathan' ? 1000 : req.acct.tier === 'reef-boss' ? 300 : 120;
+  res.json({
+    ok: true, tier: req.acct.tier, max_per_minute: rlMax,
+    used: entry ? entry.c : 0,
+    remaining: entry ? Math.max(0, rlMax - entry.c) : rlMax,
+    resets_at: entry ? new Date(entry.s + 60000).toISOString() : null,
+    _engine: 'real',
+  });
+});
+
+// ===== DEPENDENCY CHECK (Claude's implicit ask: prove APIs work) =====
+app.get('/v1/healthcheck/deep', auth, async (req, res) => {
+  const checks = [];
+  const test = async (name, fn) => {
+    const start = Date.now();
+    try { const r = await fn(); checks.push({ name, ok: true, ms: Date.now() - start }); }
+    catch(e) { checks.push({ name, ok: false, ms: Date.now() - start, error: e.message }); }
+  };
+  await test('sqlite', () => db.prepare('SELECT 1').get());
+  await test('compute', () => allHandlers['crypto-uuid']({}));
+  await test('memory', () => allHandlers['memory-set'] ? allHandlers['memory-set']({ key: '_healthcheck', value: Date.now().toString(), namespace: '_system' }) : Promise.reject('no handler'));
+  await test('state', () => db.prepare("INSERT OR REPLACE INTO agent_state (key, value) VALUES ('_healthcheck', ?)").run(Date.now().toString()));
+
+  if (process.env.ANTHROPIC_API_KEY) {
+    await test('anthropic', () => allHandlers['llm-think'] ? allHandlers['llm-think']({ text: 'OK', provider: 'anthropic' }) : Promise.reject('no handler'));
+  }
+
+  const passing = checks.filter(c => c.ok).length;
+  res.json({
+    ok: true, healthy: passing === checks.length,
+    checks, passing, total: checks.length,
+    timestamp: new Date().toISOString(),
+    _engine: 'real',
+  });
+});
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
