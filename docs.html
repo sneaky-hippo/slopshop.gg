@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>API Documentation | Slopshop — 78 categories, 1,273 endpoints, The Missing Backend for AI Agents</title>
-<meta name="description" content="Complete API reference for Slopshop tools across 78 categories and 1,273 endpoints. Quickstart guides, SDK reference, CLI, MCP setup, and self-hosting docs. Start building now.">
+<title>API Documentation | Slopshop — 78 categories, 1,272 endpoints, The Missing Backend for AI Agents</title>
+<meta name="description" content="Complete API reference for Slopshop tools across 78 categories and 1,272 endpoints. Quickstart guides, SDK reference, CLI, MCP setup, and self-hosting docs. Start building now.">
 <meta name="keywords" content="slopshop docs, slopshop api reference, slopshop documentation, agent api docs, MCP documentation">
 <link rel="canonical" href="https://slopshop.gg/docs">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/docs">
 <meta property="og:title" content="API Documentation | Slopshop">
-<meta property="og:description" content="Complete API reference for Slopshop tools across 78 categories and 1,273 endpoints. Quickstart, SDK, CLI, pipes, and MCP setup.">
+<meta property="og:description" content="Complete API reference for Slopshop tools across 78 categories and 1,272 endpoints. Quickstart, SDK, CLI, pipes, and MCP setup.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="API Documentation | Slopshop">
-<meta name="twitter:description" content="Complete API reference for Slopshop tools across 78 categories and 1,273 endpoints. Guides, SDK, CLI, MCP.">
+<meta name="twitter:description" content="Complete API reference for Slopshop tools across 78 categories and 1,272 endpoints. Guides, SDK, CLI, MCP.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for Slopshop tools across 78 categories and 1,273 endpoints.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for Slopshop tools across 78 categories and 1,272 endpoints.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F99E;</text></svg>">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -171,7 +171,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a href="/security">Security</a>
       <a href="/about">About</a>
       <a href="/signup" style="background:var(--r);color:#fff;padding:4px 12px;border-radius:6px;font-weight:600;font-size:0.7rem">Sign Up Free</a>
-      <span class="pill">78 categories &middot; 1,273 endpoints &middot; 78 categories of tools</span>
+      <span class="pill">78 categories &middot; 1,272 endpoints &middot; 78 categories of tools</span>
     </div>
   </div>
 </div>
@@ -210,6 +210,8 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a class="sb-link" href="#free-memory">Free Memory Tier</a>
       <a class="sb-link" href="#browser-desktop">Browser/Desktop Primitives</a>
       <a class="sb-link" href="#memory-2">Memory 2.0</a>
+      <a class="sb-link" href="#memory-evolution">Memory Evolution</a>
+      <a class="sb-link" href="#chain-branching">Chain Branching</a>
       <a class="sb-link" href="#grok-features">Grok-Specific Features</a>
       <a class="sb-link" href="#safety-guardrails">Safety &amp; Guardrails</a>
       <a class="sb-link" href="#marketplace">Marketplace</a>
@@ -236,7 +238,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
     <!-- GETTING STARTED -->
     <h1 id="getting-started">Getting Started</h1>
     <p>
-      <strong>Slopshop</strong> is the API bazaar for AI agents and developers -- <strong>78 categories</strong>, <strong>1,273 endpoints</strong>, and <strong>78 categories of real tools</strong> that actually process your data, return real results, and charge by the credit. Every response includes <code>_engine: "real"</code> to prove your data was genuinely processed, not mocked. It is self-hostable, open source, and designed to be called by agents, scripts, or humans alike.
+      <strong>Slopshop</strong> is the API bazaar for AI agents and developers -- <strong>78 categories</strong>, <strong>1,272 endpoints</strong>, and <strong>78 categories of real tools</strong> that actually process your data, return real results, and charge by the credit. Every response includes <code>_engine: "real"</code> to prove your data was genuinely processed, not mocked. It is self-hostable, open source, and designed to be called by agents, scripts, or humans alike.
     </p>
 
     <h3>Quick Install</h3>
@@ -274,7 +276,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
     <ul>
       <li><strong>The computation actually ran</strong> — your input was processed by real Node.js code, not proxied to an LLM or returned from a template</li>
       <li><strong>Deterministic outputs</strong> — the same input always produces the same output for compute-tier APIs</li>
-      <li><strong>Sub-millisecond execution</strong> — 1,246 compute handlers benchmarked at &lt;1ms average</li>
+      <li><strong>Sub-millisecond execution</strong> — 1,272 compute handlers benchmarked at &lt;1ms average</li>
     </ul>
 
     <h3>What "execution proof" means today</h3>
@@ -488,7 +490,7 @@ POST /v1/memory-get  {"key":"chain_results"}</code></pre></div>
 
     <!-- API REFERENCE -->
     <h2 id="api-reference">API Reference</h2>
-    <p>All 78 categories and 1,273 endpoints documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
+    <p>All 78 categories and 1,272 endpoints documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
 
     <h3>Machine-Readable Specs</h3>
     <table class="doc-table">
@@ -1475,6 +1477,63 @@ curl -X POST https://slopshop.gg/v1/memory/snapshot \
 curl https://slopshop.gg/v1/memory/snapshots \
   -H "Authorization: Bearer $KEY"</code></pre></div>
 
+    <!-- MEMORY EVOLUTION (v3.9.0) -->
+    <h2 id="memory-evolution">Memory Evolution <span class="badge badge-compute">v3.9.0</span></h2>
+    <p>Autonomous memory evolution lets agents continuously improve their stored knowledge without manual intervention. Four strategies run on configurable intervals to keep memory namespaces clean, enriched, and relevant.</p>
+
+    <h3>Strategies</h3>
+    <ul>
+      <li><strong>consolidate</strong> — Groups related memory keys by prefix and merges them into consolidated entries, reducing clutter</li>
+      <li><strong>enrich</strong> — Adds metadata (char count, age, timestamps) to existing memories for richer context</li>
+      <li><strong>decay</strong> — Archives stale memories (older than 7 days) to a separate namespace, keeping active memory lean</li>
+      <li><strong>summarize</strong> — Groups keys by prefix and produces summaries, compressing large namespaces into digestible overviews</li>
+    </ul>
+
+    <h3>Start Evolution</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/evolve/start \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "research", "strategy": "consolidate", "budget_per_cycle": 5, "interval_minutes": 10}'</code></pre></div>
+    <p>Returns an <code>evolution_id</code> that you can use to monitor or stop the evolution process.</p>
+
+    <h3>Monitor &amp; Stop</h3>
+    <div class="code-block"><div class="code-header"><span>Endpoints</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>GET  /v1/memory/evolve/status    — Check active evolutions
+GET  /v1/memory/evolve/log       — View evolution history
+POST /v1/memory/evolve/stop      — Stop an active evolution by ID</code></pre></div>
+
+    <h3>Memory Decay</h3>
+    <p>Standalone decay endpoint for one-off cleanup. Scores memories by age using a configurable decay factor.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/decay \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "research", "factor": 0.95}'</code></pre></div>
+
+    <!-- CHAIN BRANCHING (v3.9.0) -->
+    <h2 id="chain-branching">Chain Branching <span class="badge badge-compute">v3.9.0</span></h2>
+    <p>Chain branching adds conditional step execution to agent chains. Steps can include <code>if</code> conditions that evaluate against the chain context, enabling dynamic workflows that branch based on intermediate results.</p>
+
+    <h3>Conditional Steps</h3>
+    <p>Each step in a branching chain can include a <code>condition</code> or <code>if</code> field. If the condition evaluates to false, the step is skipped. Use <code>else_step</code> to jump to an alternative step index.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/chain/run/branching \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "chain_id": "your-chain-id",
+    "max_steps": 10,
+    "max_iterations": 100
+  }'</code></pre></div>
+
+    <h3>Step Definition with Conditions</h3>
+    <p>When creating a chain, define steps with conditions:</p>
+    <div class="code-block"><div class="code-header"><span>json</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>{
+  "steps": [
+    { "prompt": "Analyze the data", "agent": "claude" },
+    { "condition": "step_0_result.confidence > 0.8", "prompt": "Deep dive", "agent": "grok" },
+    { "condition": "step_0_result.confidence <= 0.8", "prompt": "Gather more data", "agent": "claude", "else_step": 0 }
+  ]
+}</code></pre></div>
+    <p>Conditions are evaluated safely against the chain context. Supported operators: comparisons, logical operators, and property access on previous step results.</p>
+
     <!-- GROK-SPECIFIC FEATURES (v3.8.0) -->
     <h2 id="grok-features">Grok-Specific Features <span class="badge badge-compute">v3.8.0</span></h2>
     <p>Slopshop includes dedicated Grok integration endpoints that leverage xAI's Grok models for optimization, critique, and autonomous orchestration. Requires <code>XAI_API_KEY</code>.</p>
@@ -1630,7 +1689,7 @@ docker run -p 3000:3000 \
 
 <script>
 // ============================================================
-// DATA: All API definitions across 78 categories and 1,273 endpoints
+// DATA: All API definitions across 78 categories and 1,272 endpoints
 // We fetch from /v1/tools to stay in sync, with a static fallback
 // ============================================================
 const STATIC_APIS = {

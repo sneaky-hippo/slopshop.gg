@@ -1,6 +1,6 @@
 # slopshop.gg — The missing backend for AI agents. Free persistent memory. Real compute across 78 tool categories. Agent chaining and orchestration. One API key. Self-hostable. Works with Claude, GPT, Grok, Gemini, and every LLM.
 
-One API key. 1,273 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 925 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, voice I/O for agents, A2A (agent-to-agent protocol) interop, swarm snapshots with budgets, browser primitives, Memory 2.0 graph queries, Grok endpoints, safety guardrails, marketplace, and full enterprise features.
+One API key. 1,272 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 925 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer credit system, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, voice I/O for agents, A2A (agent-to-agent protocol) interop, swarm snapshots with budgets, browser primitives, Memory 2.0 graph queries, autonomous memory evolution, chain branching with conditional steps, eval benchmark with 67 test vectors, Grok endpoints, safety guardrails, marketplace, and full enterprise features.
 
 ## Universal Model Mesh (NEW in v3.7.0)
 
@@ -12,8 +12,15 @@ Four infrastructure endpoints that make every LLM composable:
 
 All free. All auth-gated. Designed by asking Claude, GPT, Grok, and DeepSeek what they need.
 
-## Latest (v3.7.0)
+## Latest (v3.9.0)
 
+- POST /v1/memory/evolve/start — Autonomous memory evolution (consolidate, enrich, decay, summarize)
+- POST /v1/memory/evolve/stop — Stop active evolution
+- GET /v1/memory/evolve/status — Check active evolutions
+- GET /v1/memory/evolve/log — View evolution history
+- POST /v1/memory/decay — Standalone memory decay with configurable factor
+- POST /v1/chain/run/branching — Chain branching with conditional step execution (if/else_step)
+- POST /v1/eval/benchmark — Eval benchmark with 67 test vectors
 - POST /v1/compare — Side-by-side multi-LLM comparison (Claude+GPT+Grok+DeepSeek)
 - POST /v1/workflows/run — Declarative multi-step conditional chains
 - GET /v1/telemetry — Observability: calls, credits, latency, top APIs
@@ -94,7 +101,7 @@ Every response includes `{ ok, data, meta: { credits_used, latency_ms, engine, c
 - Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
 - Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 
-## Categories (78) — 1,274 Endpoints
+## Categories (78) — 1,272 Endpoints
 
 ### Text Processing (72 tools)
 Extract, transform, analyze, and manipulate text. Word count, regex, diff, slugify, case convert, encoding, entropy, haiku, and more.
