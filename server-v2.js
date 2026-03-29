@@ -9258,7 +9258,7 @@ app.post('/v1/guardrails/scan-deep', auth, (req, res) => {
   const findings = [];
   const addFinding = (type, severity, location, detail) => findings.push({ type, severity, location, detail });
 
-  // --- PII regex: SSN, credit card, email, phone, IP, API key ---
+  // --- PII regex: SSN, credit card, email, phone, IP, API key, passport, DL, DOB, IBAN, tokens ---
   if (checks.includes('pii')) {
     const piiDefs = [
       { name: 'ssn', pattern: /\b\d{3}-\d{2}-\d{4}\b/g, severity: 'critical' },
@@ -9267,6 +9267,21 @@ app.post('/v1/guardrails/scan-deep', auth, (req, res) => {
       { name: 'phone', pattern: /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, severity: 'high' },
       { name: 'ip_address', pattern: /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, severity: 'medium' },
       { name: 'api_key', pattern: /\b(sk-[a-zA-Z0-9]{20,}|xai-[a-zA-Z0-9]{20,}|key-[a-zA-Z0-9]{20,})\b/g, severity: 'critical' },
+      // Passport numbers (labeled references)
+      { name: 'passport', pattern: /\bpassport\s*(?:#|no\.?|number)?\s*:?\s*([A-Z0-9]{6,12})\b/gi, severity: 'critical' },
+      // Driver's license patterns
+      { name: 'drivers_license', pattern: /\b(?:DL|driver'?s?\s*(?:license|licence|lic))\s*(?:#|no\.?|number)?\s*:?\s*([A-Z0-9]{4,15})\b/gi, severity: 'critical' },
+      { name: 'drivers_license_format', pattern: /\b[A-Z]\d{7}\b/g, severity: 'high' },
+      // Date of birth patterns
+      { name: 'dob', pattern: /\b(?:DOB|date\s*of\s*birth|born|birthday)\s*:?\s*\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4}\b/gi, severity: 'high' },
+      { name: 'dob_iso', pattern: /\b(?:DOB|date\s*of\s*birth|born)\s*:?\s*\d{4}-\d{2}-\d{2}\b/gi, severity: 'high' },
+      { name: 'dob_written', pattern: /\b(?:DOB|date\s*of\s*birth|born)\s*:?\s*(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{1,2},?\s+\d{4}\b/gi, severity: 'high' },
+      // IBAN (international bank account number)
+      { name: 'iban', pattern: /\b[A-Z]{2}\d{2}\s?[A-Z0-9]{4}\s?(?:\d{4}\s?){2,7}\d{1,4}\b/g, severity: 'critical' },
+      // AWS access key
+      { name: 'aws_key', pattern: /\bAKIA[0-9A-Z]{16}\b/g, severity: 'critical' },
+      // GitHub token
+      { name: 'github_token', pattern: /\b(ghp_[A-Za-z0-9]{36}|gho_[A-Za-z0-9]{36}|github_pat_[A-Za-z0-9_]{82})\b/g, severity: 'critical' },
     ];
     for (const { name, pattern, severity } of piiDefs) {
       let m;
@@ -9283,6 +9298,8 @@ app.post('/v1/guardrails/scan-deep', auth, (req, res) => {
       { pattern: /('\s*(OR|AND)\s+'?\d*'?\s*=\s*'?\d*)/gi, name: 'sql_tautology' },
       { pattern: /(;\s*DROP\s+TABLE)/gi, name: 'sql_drop' },
       { pattern: /(--\s*$|\/\*[\s\S]*?\*\/)/gm, name: 'sql_comment' },
+      { pattern: /(\bEXEC\s*\(|xp_cmdshell|LOAD_FILE\s*\(|INTO\s+OUTFILE)/gi, name: 'sql_exec' },
+      { pattern: /(\bWAITFOR\s+DELAY|BENCHMARK\s*\(|SLEEP\s*\()/gi, name: 'sql_timing' },
     ];
     for (const { pattern, name } of sqlPatterns) {
       let m;
@@ -9292,34 +9309,83 @@ app.post('/v1/guardrails/scan-deep', auth, (req, res) => {
     }
 
     const promptPatterns = [
-      /ignore\s+(all\s+)?previous\s+instructions/gi,
-      /you\s+are\s+now\s+(a|an)\s+/gi,
-      /system\s*:\s*you\s+are/gi,
-      /\]\s*\}\s*\{\s*"role"\s*:\s*"system"/gi,
-      /pretend\s+you\s+(are|have)\s+no\s+rules/gi,
-      /disregard\s+(your|all|any)\s+(instructions|rules|guidelines)/gi,
-      /do\s+not\s+follow\s+(your|any)\s+(instructions|rules)/gi,
-      /jailbreak/gi,
-      /DAN\s+mode/gi,
+      { pattern: /ignore\s+(all\s+)?previous\s+instructions/gi, name: 'ignore_previous' },
+      { pattern: /you\s+are\s+now\s+(a|an)\s+/gi, name: 'role_override' },
+      { pattern: /system\s*:\s*you\s+are/gi, name: 'system_impersonation' },
+      { pattern: /\]\s*\}\s*\{\s*"role"\s*:\s*"system"/gi, name: 'json_role_inject' },
+      { pattern: /pretend\s+you\s+(are|have)\s+no\s+rules/gi, name: 'rule_bypass' },
+      { pattern: /disregard\s+(your|all|any)\s+(instructions|rules|guidelines)/gi, name: 'disregard' },
+      { pattern: /do\s+not\s+follow\s+(your|any)\s+(instructions|rules)/gi, name: 'dont_follow' },
+      { pattern: /jailbreak/gi, name: 'jailbreak' },
+      { pattern: /DAN\s+mode/gi, name: 'dan_mode' },
+      { pattern: /ignore\s+(all\s+)?(prior|above|preceding)\s+(text|context|instructions|input)/gi, name: 'ignore_prior' },
+      { pattern: /forget\s+(everything|all|your)\s+(you|instructions|training|rules)/gi, name: 'forget_instructions' },
+      { pattern: /you\s+are\s+now\s+(in\s+)?(unrestricted|unfiltered|uncensored|developer)\s+mode/gi, name: 'unrestricted_mode' },
+      { pattern: /system\s*prompt\s*[:=]/gi, name: 'system_prompt_set' },
+      { pattern: /reveal\s+(your|the)\s+(system\s*prompt|instructions|rules|guidelines)/gi, name: 'prompt_leak' },
+      { pattern: /what\s+(are|is)\s+your\s+(system|initial|original)\s+(prompt|instructions|message)/gi, name: 'prompt_extraction' },
+      { pattern: /act\s+as\s+(if\s+)?(you\s+)?(are|were)\s+(a\s+)?(?:evil|malicious|unethical|unrestricted)/gi, name: 'evil_roleplay' },
+      { pattern: /override\s+(safety|content|ethical)\s+(filter|policy|guidelines|restrictions)/gi, name: 'safety_override' },
+      { pattern: /\[SYSTEM\]|\[INST\]|<\|im_start\|>system/gi, name: 'control_token_inject' },
+      { pattern: /from\s+now\s+on,?\s+(you\s+)?(will|must|should|shall)\s+(ignore|disregard|bypass|override)/gi, name: 'from_now_on' },
+      { pattern: /enter\s+(god|sudo|admin|root|superuser)\s+mode/gi, name: 'privilege_escalation' },
+      { pattern: /hypothetically|in\s+a\s+fictional\s+scenario|for\s+(educational|research)\s+purposes\s+only/gi, name: 'hypothetical_bypass' },
     ];
-    for (const pattern of promptPatterns) {
+    for (const { pattern, name } of promptPatterns) {
       let m;
       while ((m = pattern.exec(text)) !== null) {
-        addFinding('injection:prompt', 'critical', { offset: m.index, length: m[0].length }, m[0].slice(0, 60));
+        addFinding('injection:prompt:' + name, 'critical', { offset: m.index, length: m[0].length }, m[0].slice(0, 60));
       }
     }
   }
 
-  // --- Toxicity keywords ---
+  // --- Toxicity keywords (60+ terms: violence, hate, threats, exploitation, abuse) ---
   if (checks.includes('toxicity')) {
     const toxicTerms = [
-      { term: 'kill', severity: 'high' }, { term: 'bomb', severity: 'critical' },
-      { term: 'hack into', severity: 'high' }, { term: 'steal', severity: 'high' },
-      { term: 'exploit vulnerability', severity: 'high' }, { term: 'murder', severity: 'critical' },
-      { term: 'terrorism', severity: 'critical' }, { term: 'assault', severity: 'high' },
+      // Violence & threats
+      { term: 'kill', severity: 'high' }, { term: 'murder', severity: 'critical' },
+      { term: 'assassinate', severity: 'critical' }, { term: 'slaughter', severity: 'critical' },
+      { term: 'massacre', severity: 'critical' }, { term: 'stab', severity: 'high' },
+      { term: 'strangle', severity: 'critical' }, { term: 'behead', severity: 'critical' },
+      { term: 'mutilate', severity: 'critical' }, { term: 'torture', severity: 'critical' },
+      { term: 'assault', severity: 'high' }, { term: 'violent', severity: 'medium' },
+      { term: 'bloodbath', severity: 'critical' }, { term: 'genocide', severity: 'critical' },
+      { term: 'ethnic cleansing', severity: 'critical' }, { term: 'lynching', severity: 'critical' },
+      // Weapons & terrorism
+      { term: 'bomb', severity: 'critical' }, { term: 'terrorism', severity: 'critical' },
+      { term: 'terrorist', severity: 'critical' }, { term: 'weapon of mass destruction', severity: 'critical' },
+      { term: 'biological weapon', severity: 'critical' }, { term: 'chemical weapon', severity: 'critical' },
+      { term: 'nerve agent', severity: 'critical' }, { term: 'explosive', severity: 'high' },
+      { term: 'detonate', severity: 'critical' }, { term: 'improvised explosive', severity: 'critical' },
+      { term: 'pipe bomb', severity: 'critical' }, { term: 'car bomb', severity: 'critical' },
+      // Self-harm
       { term: 'suicide', severity: 'high' }, { term: 'self-harm', severity: 'high' },
+      { term: 'cut myself', severity: 'high' }, { term: 'end my life', severity: 'critical' },
+      { term: 'kill myself', severity: 'critical' }, { term: 'overdose', severity: 'high' },
+      // Hate speech & slurs
       { term: 'slur', severity: 'critical' }, { term: 'hate speech', severity: 'critical' },
-      { term: 'racial', severity: 'medium' }, { term: 'violent', severity: 'medium' },
+      { term: 'racial slur', severity: 'critical' }, { term: 'white power', severity: 'critical' },
+      { term: 'death to', severity: 'critical' }, { term: 'exterminate', severity: 'critical' },
+      { term: 'subhuman', severity: 'critical' }, { term: 'vermin', severity: 'high' },
+      { term: 'infestation', severity: 'medium' }, { term: 'mongrel', severity: 'high' },
+      { term: 'abomination', severity: 'high' }, { term: 'degenerate', severity: 'high' },
+      // Cyber threats & exploitation
+      { term: 'hack into', severity: 'high' }, { term: 'steal', severity: 'high' },
+      { term: 'exploit vulnerability', severity: 'high' }, { term: 'ransomware', severity: 'critical' },
+      { term: 'malware', severity: 'high' }, { term: 'keylogger', severity: 'high' },
+      { term: 'phishing', severity: 'high' }, { term: 'brute force attack', severity: 'high' },
+      { term: 'ddos', severity: 'high' }, { term: 'zero day exploit', severity: 'critical' },
+      // Abuse & exploitation
+      { term: 'child abuse', severity: 'critical' }, { term: 'trafficking', severity: 'critical' },
+      { term: 'exploitation', severity: 'high' }, { term: 'blackmail', severity: 'high' },
+      { term: 'extortion', severity: 'high' }, { term: 'revenge porn', severity: 'critical' },
+      { term: 'doxxing', severity: 'critical' }, { term: 'swatting', severity: 'critical' },
+      // Drugs & illegal
+      { term: 'synthesize drugs', severity: 'critical' }, { term: 'cook meth', severity: 'critical' },
+      { term: 'drug recipe', severity: 'critical' }, { term: 'illegal substance', severity: 'high' },
+      // Threats
+      { term: 'i will find you', severity: 'critical' }, { term: 'you will regret', severity: 'high' },
+      { term: 'burn it down', severity: 'high' }, { term: 'shoot up', severity: 'critical' },
     ];
     const lower = text.toLowerCase();
     for (const { term, severity } of toxicTerms) {
@@ -9331,13 +9397,24 @@ app.post('/v1/guardrails/scan-deep', auth, (req, res) => {
     }
   }
 
-  // --- Bias indicators ---
+  // --- Bias indicators (gender stereotypes, racial generalizations, ableism, ageism) ---
   if (checks.includes('bias')) {
     const biasPatterns = [
-      { pattern: /\b(all|every|no)\s+(men|women|blacks|whites|asians|muslims|christians|jews|immigrants|gays|lesbians)\s+(are|have|should|must|always|never)\b/gi, name: 'group_generalization', severity: 'high' },
+      { pattern: /\b(all|every|no)\s+(men|women|blacks|whites|asians|muslims|christians|jews|immigrants|gays|lesbians|hispanics|latinos|latinas|natives|arabs|indians|chinese|mexicans|africans)\s+(are|have|should|must|always|never|can't|cannot|don't|will)\b/gi, name: 'group_generalization', severity: 'high' },
       { pattern: /\b(obviously|clearly|everyone knows|it'?s? (a )?fact that)\b/gi, name: 'assumption_language', severity: 'low' },
-      { pattern: /\b(inferior|superior|subhuman|master race)\b/gi, name: 'supremacy_language', severity: 'critical' },
+      { pattern: /\b(inferior|superior|subhuman|master race|pure blood|pure race)\b/gi, name: 'supremacy_language', severity: 'critical' },
       { pattern: /\b(typical|stereotyp(e|ical|ically)|always like that)\b/gi, name: 'stereotype_language', severity: 'medium' },
+      // Gender stereotypes
+      { pattern: /\b(women|girls|females?)\s+(belong|should\s+stay|can'?t|cannot|aren'?t\s+(good|capable)|shouldn'?t)\s+(in\s+the|at\s+home|work|be\s+(leaders?|engineers?|doctors?|scientists?))/gi, name: 'gender_stereotype', severity: 'high' },
+      { pattern: /\b(men|boys|males?)\s+(don'?t|can'?t|shouldn'?t|aren'?t\s+capable\s+of)\s+(cry|feel|show\s+emotion|care\s+for|nurture|cook|clean)/gi, name: 'gender_stereotype', severity: 'high' },
+      { pattern: /\b(man\s+up|boys\s+will\s+be\s+boys|like\s+a\s+girl|throw\s+like\s+a\s+girl|man'?s\s+job|woman'?s\s+(place|job|work))\b/gi, name: 'gender_stereotype', severity: 'medium' },
+      // Racial generalizations
+      { pattern: /\b(those\s+people|they\s+all|their\s+kind|that\s+race|that\s+type\s+of\s+people)\s+(are|always|never|tend\s+to)\b/gi, name: 'racial_generalization', severity: 'high' },
+      { pattern: /\b(go\s+back\s+to|don'?t\s+belong\s+(here|in\s+this\s+country)|not\s+(real|true)\s+americans?)\b/gi, name: 'xenophobia', severity: 'critical' },
+      // Ableism
+      { pattern: /\b(retarded|crippled|lame|psycho|lunatic|idiot|moron|imbecile)\b/gi, name: 'ableist_language', severity: 'medium' },
+      // Ageism
+      { pattern: /\b(too\s+old\s+to|old\s+people\s+(can'?t|shouldn'?t|don'?t)|ok\s+boomer|senile|decrepit)\b/gi, name: 'ageist_language', severity: 'medium' },
     ];
     for (const { pattern, name, severity } of biasPatterns) {
       let m;
@@ -9347,28 +9424,60 @@ app.post('/v1/guardrails/scan-deep', auth, (req, res) => {
     }
   }
 
-  // --- Hallucination risk scoring ---
+  // --- Hallucination risk scoring (fake URLs, fake citations, overly precise stats) ---
   if (checks.includes('hallucination')) {
     let hallucinationScore = 0;
     const hallucinationSignals = [];
 
-    const specificNumbers = text.match(/\b\d{2,}\.\d+%\b/g);
-    if (specificNumbers) { hallucinationScore += specificNumbers.length * 10; hallucinationSignals.push('precise_percentages:' + specificNumbers.length); }
+    // Overly precise percentages (e.g. "73.847%")
+    const specificNumbers = text.match(/\b\d{2,}\.\d{2,}%\b/g);
+    if (specificNumbers) { hallucinationScore += specificNumbers.length * 15; hallucinationSignals.push('overly_precise_percentages:' + specificNumbers.length); }
 
-    const certaintyMatches = text.match(/\b(definitely|absolutely|certainly|undoubtedly|without question|100%|guaranteed|proven fact)\b/gi);
+    // Suspiciously round statistics (e.g. "exactly 90%", "precisely 75%")
+    const roundStats = text.match(/\b(exactly|precisely)\s+\d+(\.\d+)?%/gi);
+    if (roundStats) { hallucinationScore += roundStats.length * 10; hallucinationSignals.push('suspiciously_exact_stats:' + roundStats.length); }
+
+    const certaintyMatches = text.match(/\b(definitely|absolutely|certainly|undoubtedly|without question|100%|guaranteed|proven fact|indisputably|unequivocally)\b/gi);
     if (certaintyMatches) { hallucinationScore += certaintyMatches.length * 8; hallucinationSignals.push('certainty_language:' + certaintyMatches.length); }
 
-    const fakeCites = text.match(/\b(according to (a |the )?(recent )?stud(y|ies)|research (shows|proves|confirms|suggests))\b/gi);
+    // Fake citations
+    const fakeCites = text.match(/\b(according to (a |the )?(recent |new |latest |20\d{2} )?stud(y|ies)|research (shows|proves|confirms|suggests|indicates|demonstrates|found)|scientists (have )?(found|discovered|proven|confirmed|shown))\b/gi);
     if (fakeCites) { hallucinationScore += fakeCites.length * 12; hallucinationSignals.push('unverified_citations:' + fakeCites.length); }
 
+    // Fake academic references
+    const fakeJournals = text.match(/\b(published\s+in\s+(the\s+)?journal\s+of|et\s+al\.\s*\(\d{4}\)|doi:\s*10\.\d{4,})/gi);
+    if (fakeJournals) { hallucinationScore += fakeJournals.length * 14; hallucinationSignals.push('fake_academic_refs:' + fakeJournals.length); }
+
+    // Suspicious URLs: check for plausible-but-fake domains
+    const urls = text.match(/https?:\/\/[^\s)]+/g);
+    if (urls) {
+      let fakeUrlCount = 0;
+      const suspiciousTlds = ['.info', '.xyz', '.click', '.top', '.buzz'];
+      for (const url of urls) {
+        if (url.length > 100) fakeUrlCount++;
+        if (suspiciousTlds.some(tld => url.includes(tld))) fakeUrlCount++;
+        if (/\/\d{4}\/\d{2}\/\d{2}\/[a-z-]{30,}/.test(url)) fakeUrlCount++;
+      }
+      const urlScore = urls.length * 3 + fakeUrlCount * 8;
+      hallucinationScore += urlScore;
+      hallucinationSignals.push('urls_present:' + urls.length + (fakeUrlCount ? ',suspicious_urls:' + fakeUrlCount : ''));
+    }
+
+    // Fake quoted speech
     const quotes = text.match(/"[^"]{20,}"/g);
     if (quotes && quotes.length > 2) { hallucinationScore += quotes.length * 6; hallucinationSignals.push('many_quotes:' + quotes.length); }
 
-    const urls = text.match(/https?:\/\/[^\s)]+/g);
-    if (urls) { hallucinationScore += urls.length * 5; hallucinationSignals.push('urls_present:' + urls.length); }
+    // Named person + said/stated (potentially fabricated attribution)
+    const namedQuotes = text.match(/\b[A-Z][a-z]+\s+[A-Z][a-z]+\s+(said|stated|claimed|noted|explained|remarked|argued|declared)\b/g);
+    if (namedQuotes) { hallucinationScore += namedQuotes.length * 5; hallucinationSignals.push('attributed_quotes:' + namedQuotes.length); }
 
+    // High claim density
     const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
     if (sentences.length > 20) { hallucinationScore += Math.floor(sentences.length / 5); hallucinationSignals.push('high_claim_density:' + sentences.length); }
+
+    // Temporal precision without source
+    const temporalPrecision = text.match(/\b(in|during|by)\s+\d{4},?\s+(exactly|precisely|approximately)\s+[\d,]+\b/gi);
+    if (temporalPrecision) { hallucinationScore += temporalPrecision.length * 10; hallucinationSignals.push('temporal_precision:' + temporalPrecision.length); }
 
     hallucinationScore = Math.min(hallucinationScore, 100);
     if (hallucinationScore > 0) {
