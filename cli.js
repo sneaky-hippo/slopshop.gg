@@ -884,9 +884,7 @@ async function cmdDoctor() {
 }
 
 // ============================================================
-// HIVE v9 — Research → Plan → Build → QA → Evolve
-// Discovers new things. CEO course-corrects. Outputs real TODOs.
-// Budget-gated. Safe proofs. Local log of every credit.
+// HIVE v10 — Scrape once, think many. Local-first. CEO evolves.
 // Usage: slop hive [sprints] [--local-only] "mission"
 // ============================================================
 async function cmdHive(args) {
@@ -896,368 +894,183 @@ async function cmdHive(args) {
   const localOnly = args.includes('--local-only');
   const mission = args.filter(a => !/^\d+$/.test(a) && !a.startsWith('--')).join(' ').trim() || 'improve slopshop';
 
-  // ── Helpers with credit tracking ──
-  let creditsSpent = 0;
-  const BUDGET_PER_SPRINT = 50; // max credits per sprint (safe proof)
+  // Helpers
   const ollamaChat = (model, prompt) => new Promise(r => {
     const body = JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false });
     const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
-      headers: { 'Content-Type': 'application/json' }, timeout: 120000 }, res => {
+      headers: { 'Content-Type': 'application/json' }, timeout: 90000 }, res => {
       let d = ''; res.on('data', c => d += c);
       res.on('end', () => { try { r(JSON.parse(d).message?.content || ''); } catch(e) { r(''); } });
     });
     req.on('error', () => r('')); req.on('timeout', () => { req.destroy(); r(''); });
     req.write(body); req.end();
   });
+  let creditsSpent = 0;
   const cloudChat = async (provider, prompt) => {
-    if (creditsSpent >= BUDGET_PER_SPRINT) return ''; // budget gate
-    try {
-      const r = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 3000), provider });
-      creditsSpent += 10; // track spend
-      return r.data?.data?.answer || r.data?.answer || '';
-    } catch(e) { return ''; }
+    if (creditsSpent >= 50) return '';
+    try { const r = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 2500), provider }); creditsSpent += 10; return r.data?.data?.answer || r.data?.answer || ''; }
+    catch(e) { return ''; }
   };
   const slopCall = async (slug, params) => {
     try { const r = await request('POST', '/v1/' + slug, params); return { ok: true, data: r.data?.data || r.data }; }
-    catch(e) { return { ok: false, err: e.message }; }
+    catch(e) { return { ok: false }; }
   };
-  const slopMem = async (key, value) => {
-    const r = await slopCall('memory-set', { key, value: typeof value === 'string' ? value : JSON.stringify(value) });
-    return r.ok;
-  };
+  const slopMem = async (k, v) => (await slopCall('memory-set', { key: k, value: typeof v === 'string' ? v : JSON.stringify(v) })).ok;
   const extractScore = t => { const m = (t||'').match(/(\d+\.?\d*)\s*\/\s*10/); return m ? parseFloat(m[1]) : 0; };
-  const tokenEst = s => Math.ceil((s || '').length / 4); // rough token estimate
 
-  // ── Shared state ──
+  // Shared state — persists locally between sessions
   const HIVE_KEY = 'hive-' + Date.now();
   const localDoc = path.join(CONFIG_DIR, 'hive-shared.json');
-  const localLog = path.join(CONFIG_DIR, 'hive-log.json');
-  const logEntries = [];
-  const hiveLog = (entry) => { logEntries.push({ ...entry, ts: new Date().toISOString() }); };
-  const saveLog = () => { try { fs.writeFileSync(localLog, JSON.stringify(logEntries, null, 2)); } catch(e) {} };
+  let shared = { mission, sprints_done: 0, research: [], builds: [], scores: [], vision: mission, discoveries: [] };
+  try { if (fs.existsSync(localDoc)) { const p = JSON.parse(fs.readFileSync(localDoc, 'utf8')); if (p.research?.length) { shared = { ...shared, ...p, mission }; console.log(dim(`  Loaded ${p.research?.length||0} research from cache`)); } } } catch(e) {}
+  const save = async () => { try { fs.writeFileSync(localDoc, JSON.stringify(shared, null, 2)); } catch(e) {} await slopMem(HIVE_KEY, shared); };
 
-  // ── Pull cloud memory into local at session start ──
-  let shared = { mission, sprints_done: 0, research: [], plan: [], builds: [], qa: [], scores: [], context_log: [], vision: mission };
-  try {
-    // Check if a previous hive doc exists locally
-    if (fs.existsSync(localDoc)) {
-      const prev = JSON.parse(fs.readFileSync(localDoc, 'utf8'));
-      if (prev.research?.length > 0) {
-        shared = { ...shared, ...prev, mission, sprints_done: prev.sprints_done || 0 };
-        console.log(dim(`  Loaded ${prev.research?.length || 0} research, ${prev.builds?.length || 0} builds from local cache`));
-      }
-    }
-  } catch(e) {}
-
-  // Save both local + cloud
-  const saveShared = async () => {
-    // Always save locally first (instant, survives network issues)
-    try { fs.writeFileSync(localDoc, JSON.stringify(shared, null, 2)); } catch(e) {}
-    // Then sync to cloud memory
-    await slopMem(HIVE_KEY, shared);
-  };
+  // North star
+  let northStar = 'The protocol layer of intelligence connecting every AI brain into one composable mesh.';
+  try { northStar = fs.readFileSync(path.join(__dirname, 'NORTH-STAR.md'), 'utf8').replace(/\n/g, ' ').slice(0, 250); } catch(e) {}
 
   console.log('');
   console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║            SLOPSHOP HIVE v9                    ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║  Research → Plan → Build → QA → Evolve        ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║            SLOPSHOP HIVE v10                   ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║  Scrape once · Think many · CEO evolves        ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════╝${C.reset}`);
   console.log(`  ${bold('Mission:')} ${green(mission)}`);
-  console.log(`  ${dim('Sprints:')} ${sprints}  ${dim('Budget:')} ${BUDGET_PER_SPRINT}cr/sprint  ${dim('Doc:')} ${cyan(HIVE_KEY)}`);
+  console.log(`  ${dim('Cloud every 5th sprint. Local for rest. 50cr/sprint cap.')}`);
   console.log('');
 
-  // Discovery URLs — starts with mission URLs, CEO adds new ones each sprint
-  let discoveryUrls = [...new Set((mission.match(/https?:\/\/[^\s,)]+/g) || []))];
-  let discoveryDomains = [...new Set((mission.match(/\b[\w-]+\.(?:com|dev|io|gg|ai|org)\b/g) || []))];
+  // ── PHASE 0: SCRAPE ONCE at session start ──
+  console.log(`  ${bold('INITIAL SCRAPE')}`);
+  const urls = [...new Set(mission.match(/https?:\/\/[^\s,)]+/g) || [])];
+  const domains = [...new Set(mission.match(/\b[\w-]+\.(?:com|dev|io|gg|ai|org)\b/g) || [])];
+  const mw = mission.toLowerCase();
+  if (mw.includes('competitor') || mw.includes('compar')) { if (!urls.find(u=>u.includes('composio'))) urls.push('https://composio.dev'); if (!urls.find(u=>u.includes('langchain'))) urls.push('https://langchain.com'); }
+  if (mw.includes('slopshop') && !urls.find(u=>u.includes('slopshop.gg'))) urls.push('https://slopshop.gg');
 
+  for (const url of urls.slice(0, 6)) {
+    const r = await slopCall('ext-web-scrape', { url });
+    if (r.ok && (r.data?.title || r.data?.content)) {
+      const entry = { url, title: r.data?.title || '', content: (r.data?.content || '').slice(0, 300), scraped: new Date().toISOString() };
+      shared.research.push({ text: `[${url}] ${entry.title}: ${entry.content.slice(0, 150)}`, sprint: 0 });
+      console.log(`  ${green('✓')} ${cyan(url.slice(0, 40))} ${dim(entry.title.slice(0, 30))}`);
+    }
+  }
+  for (const d of domains.slice(0, 6)) {
+    const r = await slopCall('net-http-status', { url: 'https://' + d });
+    if (r.ok) console.log(`  ${r.data?.status_code === 200 ? green('✓') : yellow('⚠')} ${d} HTTP ${r.data?.status_code || '?'}`);
+  }
+  if (shared.research.length > 20) shared.research = shared.research.slice(-20);
+  await save();
+  console.log(`  ${dim(shared.research.length + ' items in knowledge base')}`);
+  console.log('');
+
+  // ── SPRINT LOOP — no more scraping, just thinking + building ──
   for (let s = 1; s <= sprints; s++) {
-    const sprintStart = Date.now();
-    creditsSpent = 0; // reset per-sprint budget
-    console.log(`  ${C.red}${C.bold}══ SPRINT ${s}/${sprints} ══${C.reset}`);
+    const t0 = Date.now();
+    creditsSpent = 0;
+    const useCloud = !localOnly && (s % 5 === 1 || s <= 2);
+    const ask = useCloud ? (p) => cloudChat('anthropic', p) : (p) => ollamaChat('llama3', p);
 
-    // ── PHASE 1: RESEARCH — real data from internet via slop + cloud LLMs ──
-    console.log(`  ${dim('┌')} ${bold('RESEARCH')}`);
-    const researchTokens = { input: 0, output: 0 };
-    const researchFindings = [];
+    console.log(`  ${C.red}${C.bold}══ S${s} ══${C.reset} ${useCloud ? yellow('[CLOUD]') : dim('[LOCAL]')}`);
 
-    // Dynamic discovery — CEO can add new URLs each sprint
-    const allUrls = [...new Set(discoveryUrls)].slice(0, 4);
-    const allDomains = [...new Set(discoveryDomains)].slice(0, 5);
-
-    // Scrape targets
-    for (const url of allUrls) {
-      const r = await slopCall('ext-web-scrape', { url });
-      if (r.ok) {
-        const title = r.data?.title || '';
-        const content = (r.data?.content || '').slice(0, 200);
-        researchFindings.push(`[SCRAPED ${url}] ${title}: ${content}`);
-        console.log(`  ${dim('│')} ${green('✓')} scraped ${cyan(url.slice(0, 40))} ${dim(title.slice(0, 30))}`);
-      }
-    }
-    // Check HTTP status
-    for (const d of allDomains) {
-      const r = await slopCall('net-http-status', { url: 'https://' + d });
-      if (r.ok) {
-        researchFindings.push(`[STATUS ${d}] HTTP ${r.data?.status_code || '?'}`);
-        console.log(`  ${dim('│')} ${(r.data?.status_code === 200) ? green('✓') : yellow('⚠')} ${d} HTTP ${r.data?.status_code || '?'}`);
-      }
-    }
-    // Use slop search to find relevant tools for the mission
-    const searchR = await slopCall('resolve', { query: mission.split(/\s+/).slice(0, 3).join(' ') });
-    if (searchR.ok && searchR.data?.match) {
-      researchFindings.push(`[SLOP SEARCH] Best tool for "${mission.slice(0, 30)}": ${searchR.data.match.slug} — ${searchR.data.match.desc || ''}`);
-    }
-
-    // Cloud research: each provider gets a specific angle
-    const prevContext = shared.research.slice(-5).map(f => typeof f === 'string' ? f : f.text || JSON.stringify(f)).join('\n').slice(0, 500);
-    const researchPrompts = [
-      { provider: 'grok', prompt: `Mission: "${mission}". Previous findings: ${prevContext}\nSearch for the latest news, tweets, and discussions about this topic. What are people saying RIGHT NOW? Give 5 specific findings with sources.` },
-      { provider: 'anthropic', prompt: `Mission: "${mission}". Previous findings: ${prevContext}\nAnalyze the competitive landscape. Name specific companies, features, pricing, weaknesses. 5 findings.` },
-      { provider: 'openai', prompt: `Mission: "${mission}". Previous findings: ${prevContext}\nWhat would a user searching for this product want? What keywords, what pain points, what alternatives would they find? 5 findings.` },
-    ];
-    const useCloud = !localOnly && (s % 5 === 1 || s <= 2); // Cloud every 5th sprint + first 2
-    if (!useCloud) {
-      // Local sprints: one model, fast, free
-      const localPrompt = `Mission: "${mission}". Previous: ${prevContext}\nGive 3 specific findings. Be concrete.`;
-      const resp = await ollamaChat('llama3', localPrompt);
-      if (resp) researchFindings.push(`[llama3] ${resp.slice(0, 200)}`);
-    } else {
-      for (const rp of researchPrompts) {
-        const resp = await cloudChat(rp.provider, rp.prompt);
-        if (resp) {
-          researchFindings.push(`[${rp.provider}] ${resp.slice(0, 300)}`);
-          console.log(`  ${dim('│')} ${yellow(rp.provider.padEnd(10))} ${dim(resp.slice(0, 60))}`);
-        }
-        researchTokens.input += tokenEst(rp.prompt);
-        researchTokens.output += tokenEst(resp);
-      }
-    }
-
-    shared.research.push(...researchFindings.map(f => ({ text: typeof f === 'string' ? f : JSON.stringify(f), sprint: s })));
-    // Cap research at 20 items — prevents context overflow
-    if (shared.research.length > 20) shared.research = shared.research.slice(-20);
-    const totalResearchTokens = researchFindings.reduce((a, f) => a + tokenEst(f), 0);
-    console.log(`  ${dim('│')} ${green(researchFindings.length + ' new, ' + shared.research.length + ' total')} ${dim('(' + totalResearchTokens + 't)')}`);
-    hiveLog({ sprint: s, phase: 'research', findings: researchFindings.length, tokens: totalResearchTokens });
-
-    // ── PHASE 2: PLAN — pick #1 priority and generate commands ──
-    console.log(`  ${dim('├')} ${bold('PLAN')}`);
-    // Summarize research into short bullets for the planner
-    const researchSummary = shared.research.slice(-10).map(r => (r.text || '').slice(0, 80)).join('\n');
-    const buildsDone = shared.builds.slice(-10).map(b => b.key).join(', ');
-    const lastCeoNote = shared.scores.length > 0 ? JSON.stringify(shared.scores[shared.scores.length - 1]) : 'none';
-
-    const planPrompt = `Sprint ${s}. Mission: ${mission.slice(0, 100)}
-CEO last said: ${lastCeoNote}
-Research (latest 10):
-${researchSummary}
-Already built: ${buildsDone || 'nothing yet'}
-
-Pick ONE new thing to build. Output EXACTLY:
-PRIORITY: <what to build — one sentence>
-memory set <key-no-spaces> {"field":"value"}
-memory set <key-no-spaces> {"field":"value"}`;
-
-    const planResp = useCloud ? await cloudChat('anthropic', planPrompt) : await ollamaChat('llama3', planPrompt);
-    const priorityMatch = (planResp || '').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
-    const priority = priorityMatch ? priorityMatch[1].trim() : 'build from research';
-    let planCmds = (planResp || '').split('\n').map(l => l.trim()).filter(l => l.startsWith('memory set') && l.includes('{'));
-
-    // Guarantee commands — generate from THIS sprint's research if LLM failed
-    if (planCmds.length === 0) {
-      const keyBase = 'sprint-' + s;
-      const topFinding = researchFindings[0] ? (typeof researchFindings[0] === 'string' ? researchFindings[0] : JSON.stringify(researchFindings[0])).slice(0, 150) : mission.slice(0, 100);
-      planCmds = [
-        `memory set ${keyBase}-action {"priority":"${priority.replace(/"/g, '').slice(0, 80)}","sprint":${s}}`,
-        `memory set ${keyBase}-data {"finding":"${topFinding.replace(/"/g, '').slice(0, 120)}"}`,
-      ];
-    }
-
-    shared.plan = [priority, ...planCmds];
-    const planTokensIn = tokenEst(researchSummary);
-    const planTokensOut = tokenEst(planResp);
-    console.log(`  ${dim('│')} ${green('PRIORITY:')} ${priority.slice(0, 70)}`);
-    console.log(`  ${dim('│')} ${dim(planCmds.length + ' commands')} ${dim('(' + planTokensIn + 't in → ' + planTokensOut + 't out)')}`);
-    hiveLog({ sprint: s, phase: 'plan', priority, commands: planCmds.length, tokensIn: planTokensIn, tokensOut: planTokensOut });
-
-    // ── PHASE 3: BUILD — execute the plan commands through slop ──
-    console.log(`  ${dim('├')} ${bold('BUILD')}`);
-    let buildCount = 0;
-
-    // Execute plan commands
-    for (const cmd of planCmds) {
-      const rest = cmd.replace(/^memory set\s+/, '').trim();
-      const si = rest.indexOf(' ');
-      if (si > 0) {
-        const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, '');
-        const v = rest.slice(si + 1).trim();
-        if (k.length > 1 && v.length > 1) {
-          const ok = await slopMem('hive-' + k, v);
-          if (ok) {
-            shared.builds.push({ key: 'hive-' + k, value: v.slice(0, 50), sprint: s });
-            buildCount++;
-            console.log(`  ${dim('│')} ${green('✓')} ${cyan('hive-' + k)} ${dim(v.slice(0, 50))}`);
-          }
-        }
-      }
-    }
-
-    if (buildCount === 0 && planCmds.length === 0) {
-      // Fallback: ask local builder to generate commands from priority
-      const buildPrompt = `Implement this: "${priority}"\nOutput 2-3 slop memory set commands. ONLY commands, nothing else:\nmemory set <key> <json>`;
-      const buildResp = await ollamaChat('deepseek-coder-v2', buildPrompt);
-      const fallbackCmds = (buildResp || '').split('\n').filter(l => l.trim().startsWith('memory set')).slice(0, 3);
-      for (const cmd of fallbackCmds) {
-        const rest = cmd.replace(/^memory set\s+/, '').trim();
-        const si = rest.indexOf(' ');
-        if (si > 0) {
-          const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, '');
-          const v = rest.slice(si + 1).trim();
-          if (k.length > 1 && v.length > 1) {
-            await slopMem('hive-' + k, v);
-            shared.builds.push({ key: 'hive-' + k, value: v.slice(0, 50), sprint: s });
-            buildCount++;
-            console.log(`  ${dim('│')} ${green('✓')} ${cyan('hive-' + k)} ${dim(v.slice(0, 40))}`);
-          }
-        }
-      }
-    }
-
-    // Cap builds + scores to prevent memory growth
-    if (shared.builds.length > 50) shared.builds = shared.builds.slice(-50);
-    if (shared.scores.length > 50) shared.scores = shared.scores.slice(-50);
-    console.log(`  ${dim('│')} ${buildCount > 0 ? green(buildCount + ' built') : yellow('0 built')} ${dim('(' + shared.builds.length + ' total)')}`);
-    hiveLog({ sprint: s, phase: 'build', count: buildCount });
-
-    // ── PHASE 4: QA — verify builds exist + test endpoints ──
-    console.log(`  ${dim('├')} ${bold('QA')}`);
-    let qaPass = 0, qaFail = 0;
-
-    // Verify each build exists
-    for (const b of shared.builds.filter(b => b.sprint === s)) {
-      const r = await slopCall('memory-get', { key: b.key });
-      const val = r.data?.value ?? r.data?.data?.value;
-      if (val !== undefined && val !== null) { qaPass++; }
-      else { qaFail++; console.log(`  ${dim('│')} ${red('✗ missing:')} ${b.key}`); }
-    }
-
-    // Test 3 core endpoints
-    for (const slug of ['crypto-uuid', 'text-word-count', 'memory-set']) {
-      const params = slug === 'memory-set' ? { key: 'qa-' + s, value: 'ok' } : { text: 'qa' };
-      const r = await slopCall(slug, params);
-      if (r.ok) qaPass++; else qaFail++;
-    }
-
-    shared.qa.push({ sprint: s, pass: qaPass, fail: qaFail });
-    console.log(`  ${dim('│')} ${qaFail === 0 ? green(qaPass + '/' + (qaPass + qaFail) + ' pass') : yellow(qaPass + '/' + (qaPass + qaFail) + ' pass, ' + qaFail + ' fail')}`);
-    hiveLog({ sprint: s, phase: 'qa', pass: qaPass, fail: qaFail });
-
-    // ── CONTEXT FLOW LOG ──
-    const contextFlow = {
-      research_tokens: totalResearchTokens,
-      plan_tokens_in: planTokensIn,
-      plan_tokens_out: planTokensOut,
-      builds: buildCount,
-      qa_pass: qaPass,
-      qa_fail: qaFail,
-      research_to_plan: planTokensIn > 0 ? Math.round(planTokensOut / planTokensIn * 100) + '%' : '?',
-      plan_to_build: planCmds.length > 0 ? Math.round(buildCount / planCmds.length * 100) + '%' : '?',
-    };
-    shared.context_log.push(contextFlow);
-    if (shared.context_log.length > 20) shared.context_log = shared.context_log.slice(-20);
-
-    // ── CEO REVIEW — evolving vision based on org state ──
+    // ── Context: what the org knows right now ──
+    const kb = shared.research.slice(-8).map(r => (r.text||'').slice(0, 60)).join('\n');
+    const built = shared.builds.slice(-5).map(b => b.key).join(', ');
     const recentScores = shared.scores.slice(-5).map(x => x.score);
     const trend = recentScores.length >= 2 ? recentScores[recentScores.length-1] - recentScores[0] : 0;
     const phase = s <= 3 ? 'EXPLORE' : (trend > 0.5 ? 'ACCELERATE' : (trend < -0.5 ? 'FIX' : 'OPTIMIZE'));
-    const uniqueBuilds = [...new Set(shared.builds.map(b => b.key))].length;
-    const lastCeoDirective = shared.plan[0] || 'none';
 
-    // Load north star for CEO context
-    let northStar = '';
-    try { northStar = fs.readFileSync(path.join(__dirname, 'NORTH-STAR.md'), 'utf8').slice(0, 400); } catch(e) {}
+    // ── THINK: one LLM call that does plan + build commands ──
+    const thinkPrompt = `Sprint ${s}. Mission: ${mission.slice(0, 80)}
+North Star: ${northStar.slice(0, 100)}
+Phase: ${phase}. Scores: ${recentScores.join('→')||'none'}. Vision: ${(shared.vision||'').slice(0,60)}
+Knowledge: ${kb}
+Built so far: ${built || 'nothing'}
 
-    const reviewPrompt = `You are CEO. Sprint ${s}/${sprints}. Mission: ${mission.slice(0, 80)}
+Do THREE things:
+1. PRIORITY: what to build this sprint (one sentence, DIFFERENT from before)
+2. Output 2 memory set commands to store real structured data:
+memory set <key> {"field":"value","field2":"value2"}
+3. SCORE: X/10 and NEXT: what to do next sprint
 
-NORTH STAR: ${northStar.replace(/\n/g, ' ').slice(0, 200) || 'The protocol layer of intelligence connecting every AI brain into one composable mesh.'}
+${phase === 'EXPLORE' ? 'Be bold. Discover.' : phase === 'FIX' ? 'Fix whats broken.' : phase === 'ACCELERATE' ? 'Double down.' : 'Find next unlock.'}`;
 
-ORG STATE: ${phase} phase. Scores: ${recentScores.join('→') || 'none'}. Built: ${buildCount}. QA: ${qaPass}/${qaPass+qaFail}.
-Current vision: ${shared.vision || 'not set'}
-Researching: ${discoveryUrls.slice(0,3).join(', ')}
-Latest: ${shared.research.slice(-2).map(r=>(r.text||'').slice(0,40)).join(' | ')}
+    const resp = await ask(thinkPrompt);
+    const priorityMatch = (resp||'').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
+    const priority = priorityMatch ? priorityMatch[1].trim().slice(0, 80) : 'iterate on research';
+    let cmds = (resp||'').split('\n').map(l=>l.trim()).filter(l=>l.startsWith('memory set')&&l.includes('{'));
+    const score = extractScore(resp) || (phase === 'EXPLORE' ? 6 : 7);
+    const nextMatch = (resp||'').match(/NEXT:\s*(.+?)(?:\n|$)/i);
 
-${phase === 'EXPLORE' ? 'EXPLORE: Discover competitors. Try bold bets.' : phase === 'ACCELERATE' ? 'ACCELERATE: Double down on wins.' : phase === 'FIX' ? 'FIX: Something broke. Diagnose first.' : 'OPTIMIZE: Find next unlock.'}
+    console.log(`  ${dim('│')} ${green('→')} ${priority.slice(0, 60)}`);
 
-Are we aligned with the North Star? If not, course-correct. Your vision MUST evolve from last sprint.
-
-SCORE: X/10
-ALIGNED: <yes/no — are we on track with north star?>
-VISION: <evolved vision for next 10 sprints>
-NEXT: <specific new task — DIFFERENT from last sprint>
-DISCOVER: <new URL to add to research, or NONE>`;
-
-    const review = useCloud ? await cloudChat('anthropic', reviewPrompt) : await ollamaChat('mistral', reviewPrompt);
-    let score = extractScore(review);
-    if (!score) score = buildCount > 0 && qaFail === 0 ? 7.5 : buildCount > 0 ? 6 : 4;
-    const nextMatch = (review || '').match(/NEXT:\s*(.+?)(?:\n|$)/i);
-    const visionMatch = (review || '').match(/VISION:\s*(.+?)(?:\n|$)/i);
-    const alignedMatch = (review || '').match(/ALIGNED:\s*(\w+)/i);
-    const discoverMatch = (review || '').match(/DISCOVER:\s*(https?:\/\/\S+)/i);
-
-    // CEO discovers new URLs → adds to research targets for next sprint
-    if (discoverMatch && discoverMatch[1] !== 'NONE') {
-      const newUrl = discoverMatch[1].trim();
-      if (!discoveryUrls.includes(newUrl)) {
-        discoveryUrls.push(newUrl);
-        try { discoveryDomains.push(new URL(newUrl).hostname); } catch(e) {}
-        console.log(`  ${dim('│')} ${green('NEW DISCOVERY:')} ${cyan(newUrl)}`);
-      }
+    // Guarantee commands
+    if (cmds.length === 0) {
+      cmds = [`memory set s${s}-action {"p":"${priority.replace(/"/g,'').slice(0,60)}","s":${s}}`];
     }
 
+    // ── BUILD ──
+    let built_n = 0;
+    for (const cmd of cmds.slice(0, 3)) {
+      const rest = cmd.replace(/^memory set\s+/, ''); const si = rest.indexOf(' ');
+      if (si > 0) {
+        const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, ''), v = rest.slice(si+1);
+        if (k.length > 1 && v.length > 1 && await slopMem('hive-' + k, v)) {
+          shared.builds.push({ key: 'hive-' + k, sprint: s });
+          built_n++;
+          console.log(`  ${dim('│')} ${green('✓')} ${cyan('hive-' + k)}`);
+        }
+      }
+    }
+    if (shared.builds.length > 50) shared.builds = shared.builds.slice(-50);
+
+    // ── QA: verify this sprint's builds ──
+    let qa_ok = 0;
+    for (const b of shared.builds.filter(b => b.sprint === s)) {
+      const r = await slopCall('memory-get', { key: b.key });
+      if (r.data?.value ?? r.data?.data?.value) qa_ok++;
+    }
+
+    // ── CEO evolve ──
+    if (nextMatch) shared.plan = [nextMatch[1].trim()];
     shared.scores.push({ sprint: s, score, phase });
-    if (nextMatch) shared.plan.unshift(nextMatch[1].trim());
-    if (visionMatch) shared.vision = visionMatch[1].trim();
+    if (shared.scores.length > 50) shared.scores = shared.scores.slice(-50);
+    shared.vision = (resp||'').match(/VISION:\s*(.+?)(?:\n|$)/i)?.[1]?.trim() || shared.vision;
 
-    const sprintMs = Date.now() - sprintStart;
+    // Re-scrape every 25 sprints to refresh knowledge
+    if (s % 25 === 0 && urls.length > 0) {
+      console.log(`  ${dim('│')} ${cyan('↻ refreshing knowledge base...')}`);
+      const fresh = await slopCall('ext-web-scrape', { url: urls[s % urls.length] });
+      if (fresh.ok) shared.research.push({ text: `[REFRESH ${urls[s%urls.length]}] ${fresh.data?.title||''}: ${(fresh.data?.content||'').slice(0,150)}`, sprint: s });
+      if (shared.research.length > 20) shared.research = shared.research.slice(-20);
+    }
+
+    // Discovery: ask for new URL every 10 sprints on cloud
+    if (useCloud && s % 10 === 0) {
+      const discResp = await cloudChat('anthropic', `We research: ${urls.join(', ')}. Name ONE new competitor URL we should add. Just the URL, nothing else.`);
+      const newUrl = (discResp||'').match(/https?:\/\/\S+/)?.[0];
+      if (newUrl && !urls.includes(newUrl)) { urls.push(newUrl); shared.discoveries.push(newUrl); console.log(`  ${dim('│')} ${green('DISCOVERED:')} ${cyan(newUrl)}`); }
+    }
+
+    const ms = Date.now() - t0;
     const phaseColor = phase === 'ACCELERATE' ? green : phase === 'FIX' ? red : phase === 'EXPLORE' ? cyan : dim;
-    const aligned = alignedMatch ? alignedMatch[1].toLowerCase().startsWith('y') : true;
-    console.log(`  ${dim('└')} ${C.red}${bold('CEO')}${C.reset} ${bold(score + '/10')} ${phaseColor('[' + phase + ']')} ${aligned ? '' : red('[MISALIGNED]')} ${nextMatch ? yellow('→ ' + nextMatch[1].slice(0, 50)) : ''} ${dim(sprintMs + 'ms')}`);
-    if (visionMatch && s % 5 === 0) console.log(`    ${bold('VISION:')} ${green(visionMatch[1].slice(0, 70))}`);
-    if (!aligned) console.log(`    ${red('⚠ NORTH STAR DRIFT — CEO is course-correcting')}`);
-
-    // ── ALARMS ──
-    if (totalResearchTokens === 0) console.log(`    ${red('⚠ ALARM: zero research tokens — nothing was gathered')}`);
-    if (buildCount === 0 && planCmds.length > 0) console.log(`    ${red('⚠ ALARM: plan had commands but nothing was built')}`);
-    if (qaFail > 0) console.log(`    ${red('⚠ ALARM: ' + qaFail + ' QA failures')}`);
+    console.log(`  ${dim('└')} ${bold(score+'/10')} ${phaseColor('['+phase+']')} built:${built_n} qa:${qa_ok} ${dim(ms+'ms')} ${dim(creditsSpent+'cr')}`);
+    if (s % 5 === 0 && shared.vision) console.log(`    ${bold('VISION:')} ${green(shared.vision.slice(0, 70))}`);
 
     shared.sprints_done = s;
-    await saveShared();
-    saveLog();
+    await save();
     console.log('');
-
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 300));
   }
 
-  // ── FINAL REPORT ──
+  // Final
   console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════╗${C.reset}`);
   console.log(`  ${C.red}${C.bold}║            HIVE COMPLETE                       ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════╝${C.reset}`);
-  const avgScore = shared.scores.length > 0 ? (shared.scores.reduce((a, s) => a + s.score, 0) / shared.scores.length).toFixed(1) : '?';
-  console.log(`  Sprints:    ${sprints}`);
-  console.log(`  Avg score:  ${bold(avgScore + '/10')}`);
-  console.log(`  Research:   ${shared.research.length} items`);
-  console.log(`  Builds:     ${shared.builds.length} in memory`);
-  console.log(`  QA:         ${shared.qa.reduce((a, q) => a + q.pass, 0)} pass / ${shared.qa.reduce((a, q) => a + q.fail, 0)} fail`);
-  console.log(`  Doc:        ${cyan(HIVE_KEY)}`);
-  console.log(`  Log:        ${dim(localLog)}`);
-  if (shared.scores.length > 0) console.log(`  Scores:     ${shared.scores.map(s => s.score.toFixed(1)).join(' → ')}`);
-  // Context flow summary
-  if (shared.context_log.length > 0) {
-    const avgResearch = Math.round(shared.context_log.reduce((a, c) => a + c.research_tokens, 0) / shared.context_log.length);
-    const avgBuilds = (shared.context_log.reduce((a, c) => a + c.builds, 0) / shared.context_log.length).toFixed(1);
-    console.log(`  Context:    avg ${avgResearch} research tokens/sprint, ${avgBuilds} builds/sprint`);
-  }
-  saveLog();
+  const avg = shared.scores.length > 0 ? (shared.scores.reduce((a,s)=>a+s.score,0)/shared.scores.length).toFixed(1) : '?';
+  console.log(`  Sprints: ${sprints}  Avg: ${bold(avg+'/10')}  Builds: ${shared.builds.length}  Discoveries: ${shared.discoveries?.length||0}`);
+  if (shared.scores.length > 0) console.log(`  Scores: ${shared.scores.slice(-10).map(s=>s.score.toFixed(1)).join('→')}`);
+  if (shared.vision) console.log(`  Vision: ${green(shared.vision.slice(0,70))}`);
+  console.log(`  Doc: ${cyan(HIVE_KEY)}  Local: ${dim(localDoc)}`);
   console.log('');
 }
 
