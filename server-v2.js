@@ -1562,7 +1562,7 @@ setInterval(async () => {
   const due = dbGetDueSchedules.all(Date.now());
   for (const sched of due) {
     const acct = apiKeys.get(sched.api_key);
-    if (!acct) { dbDisableSchedule.run(sched.id); continue; }
+    if (!acct) { dbDisableSchedule.run(sched.id); return; }
     // Check max_runs
     if (sched.max_runs > 0 && sched.runs >= sched.max_runs) { dbDisableSchedule.run(sched.id); continue; }
     try {
