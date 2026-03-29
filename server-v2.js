@@ -5574,7 +5574,16 @@ app.get('/v1/exchange/poll/:supplier_id', auth, (req, res) => {
   const supplier = dbGetSupplier.get(supplierId);
   if (!supplier) return res.status(404).json({ error: { code: 'not_found', message: 'Supplier not found' } });
   if (supplier.user_id !== req.acct.id) return res.status(403).json({ error: { code: 'forbidden', message: 'This supplier does not belong to your account' } });
-  const task = dbGetPendingTaskForSupplier.get(supplierId);
+  // First check if there's a task already assigned to this supplier
+  let task = dbGetPendingTaskForSupplier.get(supplierId);
+  // If not, find any unassigned pending task and assign it to this supplier
+  if (!task) {
+    const unassigned = db.prepare("SELECT * FROM compute_tasks WHERE status = 'pending' ORDER BY created_at ASC LIMIT 1").get();
+    if (unassigned) {
+      db.prepare("UPDATE compute_tasks SET supplier_id = ?, status = 'assigned' WHERE id = ?").run(supplierId, unassigned.id);
+      task = db.prepare("SELECT * FROM compute_tasks WHERE id = ?").get(unassigned.id);
+    }
+  }
   if (!task) return res.json({ ok: true, task: null, message: 'No pending tasks' });
   // Mark as in_progress
   db.prepare("UPDATE compute_tasks SET status = 'in_progress' WHERE id = ?").run(task.id);
@@ -6856,31 +6865,53 @@ app.post('/v1/chain/run', auth, async (req, res) => {
   const results = [];
 
   const llmHandler = allHandlers['llm-think'];
-  if (!llmHandler) return res.status(501).json({ error: { code: 'llm_handler_missing', message: 'llm-think handler not available' } });
 
-  // Check credits (each LLM step costs ~10cr)
-  const estimatedCost = maxExec * 10;
+  // Estimate credits: compute steps cost their API credit, LLM steps cost 10
+  let estimatedCost = 0;
+  for (const s of steps) {
+    if (s.slug && API_DEFS[s.slug]) estimatedCost += API_DEFS[s.slug].credits;
+    else estimatedCost += 10; // LLM step
+  }
+  estimatedCost = Math.min(estimatedCost * (max_steps ? Math.ceil(max_steps / steps.length) : 1), 500);
   if (req.acct.balance < estimatedCost) {
     return res.status(402).json({ error: { code: 'insufficient_credits', need: estimatedCost, have: req.acct.balance } });
   }
 
   for (let exec = 0; exec < maxExec && currentStep < steps.length; exec++) {
     const step = steps[currentStep];
-    const previousResult = results.length > 0 ? results[results.length - 1].answer : '';
-    const prompt = step.prompt + (previousResult ? '\n\nPrevious step output:\n' + previousResult.slice(0, 1000) : '');
+    const previousResult = results.length > 0 ? (results[results.length - 1].answer || results[results.length - 1].result || '') : '';
 
     try {
-      const llmResult = await llmHandler({
-        text: prompt,
-        provider: step.provider || 'anthropic',
-        model: step.model || 'claude-sonnet-4-6',
-      });
-      const answer = llmResult?.answer || llmResult?.summary || llmResult?.text || JSON.stringify(llmResult).slice(0, 500);
-      ctx['step_' + currentStep + '_result'] = answer;
-      results.push({ step: currentStep, role: step.role, model: step.model || 'claude-sonnet-4-6', answer: answer.slice(0, 500) });
-      req.acct.balance -= 10;
+      // COMPUTE TOOL STEP: if step has a slug, call the handler directly
+      if (step.slug && allHandlers[step.slug]) {
+        const handler = allHandlers[step.slug];
+        const stepInput = { ...(step.input || {}), ...(step.input_map || {}) };
+        // Map previous result into input
+        if (previousResult && typeof previousResult === 'object') Object.assign(stepInput, previousResult);
+        else if (previousResult) stepInput.text = String(previousResult);
+        const handlerResult = await handler(stepInput);
+        ctx['step_' + currentStep + '_result'] = handlerResult;
+        results.push({ step: currentStep, slug: step.slug, result: handlerResult, _engine: handlerResult?._engine || 'real' });
+        const cost = API_DEFS[step.slug]?.credits || 1;
+        req.acct.balance -= cost;
+      }
+      // LLM STEP: if step has a prompt/role, use LLM
+      else if (step.prompt || step.role) {
+        if (!llmHandler) { results.push({ step: currentStep, error: 'No LLM key configured. Set ANTHROPIC_API_KEY.' }); break; }
+        const prompt = (step.prompt || step.role || '') + (previousResult ? '\n\nPrevious step output:\n' + (typeof previousResult === 'string' ? previousResult : JSON.stringify(previousResult)).slice(0, 1000) : '');
+        const llmResult = await llmHandler({ text: prompt, provider: step.provider || undefined, model: step.model || undefined });
+        const answer = llmResult?.answer || llmResult?.summary || llmResult?.text || JSON.stringify(llmResult).slice(0, 500);
+        ctx['step_' + currentStep + '_result'] = answer;
+        results.push({ step: currentStep, role: step.role, model: step.model, answer: answer.slice(0, 500), _engine: 'llm' });
+        req.acct.balance -= 10;
+      }
+      // UNKNOWN STEP
+      else {
+        results.push({ step: currentStep, error: 'Step must have either slug (compute tool) or prompt (LLM)', step_data: step });
+        break;
+      }
     } catch(e) {
-      results.push({ step: currentStep, role: step.role, error: e.message });
+      results.push({ step: currentStep, error: e.message });
       break;
     }
 
