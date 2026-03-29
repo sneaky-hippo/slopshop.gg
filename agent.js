@@ -98,8 +98,6 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     return { steps: topTools.map(t => ({ api: t.slug, input: { text: task }, reason: `Keyword (score ${t.score})` })), model: 'keyword' };
   }
 
-  javascript
-
   async function planTools(task, options = {}) {
     // 1. Try smart direct routing first (instant, no LLM, no credits)
     const direct = smartRoute(task);

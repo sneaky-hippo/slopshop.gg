@@ -1575,7 +1575,6 @@ ${C.reset}`;
   console.log(`    ${cyan('slop bounty')} ${dim('post|list|claim')}            Post and claim bounties`);
   console.log(`    ${cyan('slop knowledge')} ${dim('add|query')}               Knowledge graph operations\n`);
   console.log(`  ${bold('ACCOUNT & CONFIG')}`);
-  javascript
   console.log(`    ${cyan('slop login')}                             Log in`);
   console.log(`    ${cyan('slop whoami')}                            Show current user info`);
   console.log(`    ${cyan('slop key')} ${dim('[set|remove|rotate]')}          Manage your API key`);
@@ -1600,7 +1599,6 @@ ${C.reset}`;
   console.log(`    ${cyan('slop models')}                            List/set AI models`);
   console.log(`    ${cyan('slop cost')} ${dim('<slug>')}                     Estimate credit cost\n`);
   console.log(`  ${bold('LOCAL TOOLS')}`);
-  javascript
   console.log(`    ${cyan('slop git')} ${dim('status|diff|log|commit|push')} Git integration`);
   console.log(`    ${cyan('slop session')} ${dim('save|resume|list')}         Save/resume CLI sessions\n`);
   console.log(`  ${bold('CLOUD & INFRA')}`);
