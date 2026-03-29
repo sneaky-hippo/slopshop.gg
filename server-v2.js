@@ -547,7 +547,6 @@ function hashApiKey(key) {
 }
 // Extract prefix for indexed lookup (first 10 chars, e.g. "sk-slop-xx")
 function keyPrefix(key) {
-  javascript
 }
 const dbGetKey = db.prepare('SELECT * FROM api_keys WHERE key = ?');
 const dbGetKeyByHash = db.prepare('SELECT * FROM api_keys WHERE key_hash = ?');
@@ -1286,7 +1285,6 @@ app.post('/v1/credits/redeem', auth, BODY_LIMIT_AUTH, (req, res) => {
     redeemed_by TEXT DEFAULT NULL, created INTEGER NOT NULL, redeemed_at INTEGER DEFAULT NULL
   )`);
   const row = db.prepare('SELECT * FROM credit_codes WHERE code = ?').get(code);
-  javascript
   if (row.redeemed_by) return res.status(409).json({ error: { code: 'already_redeemed', message: 'This code has already been used' } });
   // Redeem
   db.prepare('UPDATE credit_codes SET redeemed_by = ?, redeemed_at = ? WHERE code = ?').run(req.apiKey, Date.now(), code);
@@ -2677,7 +2675,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS standups (id TEXT PRIMARY KEY, date TEXT, ap
 
 app.post('/v1/standup/submit', auth, (req, res) => {
   const { did, doing, blockers, mood } = req.body;
-  const date = new Date().toISOString().slice(0, 10);
+  javascript
   const id = req.apiKey.slice(0, 12) + '-' + date;
   db.prepare('INSERT OR REPLACE INTO standups (id, date, api_key, did, doing, blockers, mood, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, date, req.apiKey.slice(0, 12), did || '', doing || '', blockers || '', mood || 'neutral', Date.now());
   res.json({ ok: true, date, submitted: true });
