@@ -1035,27 +1035,42 @@ async function cmdHive(args) {
     }
 
     shared.research.push(...researchFindings.map(f => ({ text: typeof f === 'string' ? f : JSON.stringify(f), sprint: s })));
+    // Cap research at 20 items — prevents context overflow
+    if (shared.research.length > 20) shared.research = shared.research.slice(-20);
     const totalResearchTokens = researchFindings.reduce((a, f) => a + tokenEst(f), 0);
-    console.log(`  ${dim('│')} ${green(researchFindings.length + ' findings')} ${dim('(' + totalResearchTokens + ' tokens)')}`);
+    console.log(`  ${dim('│')} ${green(researchFindings.length + ' new, ' + shared.research.length + ' total')} ${dim('(' + totalResearchTokens + 't)')}`);
     hiveLog({ sprint: s, phase: 'research', findings: researchFindings.length, tokens: totalResearchTokens });
 
-    // ── PHASE 2: PLAN — PM Claude synthesizes ALL research into priorities ──
+    // ── PHASE 2: PLAN — pick #1 priority and generate commands ──
     console.log(`  ${dim('├')} ${bold('PLAN')}`);
-    const allResearchText = shared.research.map(r => r.text || JSON.stringify(r)).join('\n').slice(0, 2000);
-    const planPrompt = `You are PM. Mission: "${mission}"\n\nALL RESEARCH (${shared.research.length} items across ${s} sprints):\n${allResearchText}\n\nPrevious builds: ${shared.builds.map(b => b.key).join(', ') || 'none'}\nPrevious QA: ${shared.qa.length} checks\n\nFrom ALL research, pick the #1 HIGHEST IMPACT thing to implement THIS sprint. Must be implementable via slop memory commands.\n\nPRIORITY: <one sentence — the #1 thing>\nCOMMANDS:\nmemory set <key> <json-value>\nmemory set <key> <json-value>`;
+    // Summarize research into short bullets for the planner
+    const researchSummary = shared.research.slice(-10).map(r => (r.text || '').slice(0, 80)).join('\n');
+    const buildsDone = shared.builds.slice(-10).map(b => b.key).join(', ');
+    const lastCeoNote = shared.scores.length > 0 ? JSON.stringify(shared.scores[shared.scores.length - 1]) : 'none';
+
+    const planPrompt = `Sprint ${s}. Mission: ${mission.slice(0, 100)}
+CEO last said: ${lastCeoNote}
+Research (latest 10):
+${researchSummary}
+Already built: ${buildsDone || 'nothing yet'}
+
+Pick ONE new thing to build. Output EXACTLY:
+PRIORITY: <what to build — one sentence>
+memory set <key-no-spaces> {"field":"value"}
+memory set <key-no-spaces> {"field":"value"}`;
 
     const planResp = localOnly ? await ollamaChat('llama3', planPrompt) : await cloudChat('anthropic', planPrompt);
     const priorityMatch = (planResp || '').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
-    const priority = priorityMatch ? priorityMatch[1].trim() : mission.slice(0, 100);
-    let planCmds = (planResp || '').split('\n').map(l => l.trim()).filter(l => l.startsWith('memory set')).slice(0, 5);
+    const priority = priorityMatch ? priorityMatch[1].trim() : 'build from research';
+    let planCmds = (planResp || '').split('\n').map(l => l.trim()).filter(l => l.startsWith('memory set') && l.includes('{'));
 
-    // Fix 2: GUARANTEE commands exist — if LLM didn't produce them, generate from priority
+    // Guarantee commands — generate from THIS sprint's research if LLM failed
     if (planCmds.length === 0) {
-      const safeKey = (priority || mission).replace(/[^a-zA-Z0-9]/g, '-').slice(0, 30).toLowerCase();
-      const safeResearch = JSON.stringify(researchFindings.slice(0, 3).map(f => typeof f === 'string' ? f.slice(0, 100) : f)).replace(/"/g, '\\"');
+      const keyBase = 'sprint-' + s;
+      const topFinding = researchFindings[0] ? (typeof researchFindings[0] === 'string' ? researchFindings[0] : JSON.stringify(researchFindings[0])).slice(0, 150) : mission.slice(0, 100);
       planCmds = [
-        `memory set sprint-${s}-priority {"task":"${priority.slice(0, 80).replace(/"/g, '')}","sprint":${s}}`,
-        `memory set sprint-${s}-research ${safeResearch.slice(0, 200)}`,
+        `memory set ${keyBase}-action {"priority":"${priority.replace(/"/g, '').slice(0, 80)}","sprint":${s}}`,
+        `memory set ${keyBase}-data {"finding":"${topFinding.replace(/"/g, '').slice(0, 120)}"}`,
       ];
     }
 
@@ -1109,7 +1124,10 @@ async function cmdHive(args) {
       }
     }
 
-    console.log(`  ${dim('│')} ${buildCount > 0 ? green(buildCount + ' built') : yellow('0 built')} ${dim('via slop memory')}`);
+    // Cap builds + scores to prevent memory growth
+    if (shared.builds.length > 50) shared.builds = shared.builds.slice(-50);
+    if (shared.scores.length > 50) shared.scores = shared.scores.slice(-50);
+    console.log(`  ${dim('│')} ${buildCount > 0 ? green(buildCount + ' built') : yellow('0 built')} ${dim('(' + shared.builds.length + ' total)')}`);
     hiveLog({ sprint: s, phase: 'build', count: buildCount });
 
     // ── PHASE 4: QA — verify builds exist + test endpoints ──
@@ -1149,13 +1167,16 @@ async function cmdHive(args) {
     shared.context_log.push(contextFlow);
 
     // ── CEO REVIEW ──
-    const reviewPrompt = `Sprint ${s}/${sprints}. Mission: "${mission}"\nResearch: ${shared.research.length} items. Priority: "${priority}". Built: ${buildCount}. QA: ${qaPass}/${qaPass + qaFail}.\nContext flow: ${JSON.stringify(contextFlow)}\n\nRate /10. What worked? What next?\nSCORE: X.X/10\nNEXT: <specific directive for next sprint>`;
+    const reviewPrompt = `Sprint ${s}. Built: ${buildCount} items (${shared.builds.slice(-3).map(b=>b.key).join(', ')}). QA: ${qaPass}/${qaPass+qaFail}. Priority was: ${priority.slice(0,60)}.
+Rate 1-10 and give next sprint's #1 task. SCORE: X/10 NEXT: <one sentence>`;
     const review = localOnly ? await ollamaChat('mistral', reviewPrompt) : await cloudChat('anthropic', reviewPrompt);
-    const score = extractScore(review);
+    let score = extractScore(review);
+    // Fallback score based on actual results
+    if (!score) score = buildCount > 0 && qaFail === 0 ? 7.5 : buildCount > 0 ? 6 : 4;
     const nextMatch = (review || '').match(/NEXT:\s*(.+?)(?:\n|$)/i);
 
-    if (score > 0) shared.scores.push({ sprint: s, score });
-    if (nextMatch) shared.plan.unshift(nextMatch[1].trim()); // CEO's next directive feeds into next sprint
+    shared.scores.push({ sprint: s, score });
+    if (nextMatch) shared.plan.unshift(nextMatch[1].trim());
 
     const sprintMs = Date.now() - sprintStart;
     console.log(`  ${dim('└')} ${C.red}${bold('CEO')}${C.reset} ${bold((score || '?') + '/10')} ${nextMatch ? yellow('→ ' + nextMatch[1].slice(0, 60)) : ''} ${dim(sprintMs + 'ms')}`);
