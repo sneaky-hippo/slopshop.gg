@@ -985,26 +985,43 @@ async function cmdHive(args) {
     const phase = s <= 3 ? 'EXPLORE' : (trend > 0.5 ? 'ACCELERATE' : (trend < -0.5 ? 'FIX' : 'OPTIMIZE'));
 
     // ── THINK: one LLM call with real file context ──
-    // Rotate which file we show the LLM each sprint so it can make valid edits
-    const editableFiles = ['cli.js', 'server-v2.js', 'index.html', 'README.md', 'mcp-server.js', 'docs.html', 'about.html', 'compare.html', 'pricing.html'];
+    // Only edit JS files (syntax-checkable). Show FUNCTIONAL code, not CSS/HTML/ASCII
+    const editableFiles = ['server-v2.js', 'cli.js', 'mcp-server.js', 'agent.js'];
     const targetFile = editableFiles[s % editableFiles.length];
     let fileSample = '';
-    try { const content = fs.readFileSync(path.join(__dirname, targetFile), 'utf8'); const lines = content.split('\n'); const start = Math.max(0, Math.floor(Math.random() * (lines.length - 20))); fileSample = lines.slice(start, start + 15).join('\n'); } catch(e) {}
+    let sampleStart = 0;
+    try {
+      const content = fs.readFileSync(path.join(__dirname, targetFile), 'utf8');
+      const lines = content.split('\n');
+      // Find a section with actual logic (skip comments, blank lines, CSS)
+      const goodStarts = [];
+      for (let i = 0; i < lines.length - 15; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('if ') || line.startsWith('const ') || line.startsWith('app.') || line.startsWith('function ') || line.startsWith('async ')) {
+          goodStarts.push(i);
+        }
+      }
+      sampleStart = goodStarts.length > 0 ? goodStarts[s % goodStarts.length] : Math.floor(lines.length / 2);
+      fileSample = lines.slice(sampleStart, sampleStart + 12).join('\n');
+    } catch(e) {}
 
-    const thinkPrompt = `Sprint ${s}. Mission: ${mission.slice(0, 80)}
-Phase: ${phase}. Scores: ${recentScores.join('→')||'none'}.
-Knowledge: ${kb}
+    const thinkPrompt = `Sprint ${s}. Mission: ${mission.slice(0, 100)}
+Phase: ${phase}. Last scores: ${recentScores.join('→')||'none'}.
 Built so far: ${built || 'nothing'}
-Target file this sprint: ${targetFile}
-ACTUAL CODE FROM ${targetFile} (lines ~${Math.floor(Math.random()*500)}):
-${fileSample.slice(0, 400)}
 
-Look at the code above from ${targetFile}. Find ONE specific improvement.
+${targetFile} lines ${sampleStart}-${sampleStart+12}:
+\`\`\`
+${fileSample.slice(0, 500)}
+\`\`\`
 
-Output EXACTLY:
-PRIORITY: <what you're improving and why>
-FIND: <copy EXACT text from the code above to replace — must match character for character>
-REPLACE: <your improved version>
+Find ONE bug, optimization, or improvement in this code that advances the mission.
+The FIND text must be EXACTLY copied from the code above — character for character.
+Do NOT change variable names, formatting, or comments unless they are wrong.
+Focus on: logic bugs, missing error handling, performance, or feature gaps.
+
+PRIORITY: <what and why — one sentence>
+FIND: <exact text copied from above>
+REPLACE: <your fix>
 SCORE: X/10`;
 
     const resp = await ask(thinkPrompt);
@@ -1026,15 +1043,32 @@ SCORE: X/10`;
       const replaceText = replaceMatch[1].trim();
       const filePath = path.resolve(__dirname, targetFile);
 
-      if (findText.length > 3 && replaceText.length > 3 && fs.existsSync(filePath)) {
+      if (findText.length > 5 && replaceText.length > 3 && fs.existsSync(filePath)) {
         const content = fs.readFileSync(filePath, 'utf8');
         if (content.includes(findText)) {
-          fs.writeFileSync(filePath, content.replace(findText, replaceText));
-          shared.builds.push({ key: targetFile, type: 'file-edit', find: findText.slice(0, 50), replace: replaceText.slice(0, 50), sprint: s });
-          built_n++;
-          console.log(`  ${dim('│')} ${green('✓ EDITED')} ${cyan(targetFile)}`);
-          console.log(`  ${dim('│')} ${dim(findText.slice(0, 50))}`);
-          console.log(`  ${dim('│')} ${green('→')} ${dim(replaceText.slice(0, 50))}`);
+          // Safety: save backup, edit, validate syntax, revert if broken
+          const backup = content;
+          const newContent = content.replace(findText, replaceText);
+          fs.writeFileSync(filePath, newContent);
+
+          // Syntax check for JS files
+          let valid = true;
+          if (targetFile.endsWith('.js')) {
+            try { require('child_process').execSync('node -c "' + filePath + '"', { stdio: 'pipe', timeout: 5000 }); }
+            catch(e) { valid = false; }
+          }
+
+          if (valid) {
+            shared.builds.push({ key: targetFile, type: 'file-edit', find: findText.slice(0, 50), replace: replaceText.slice(0, 50), sprint: s });
+            built_n++;
+            console.log(`  ${dim('│')} ${green('✓ EDITED')} ${cyan(targetFile)} ${dim('(syntax OK)')}`);
+            console.log(`  ${dim('│')} ${dim(findText.slice(0, 50))}`);
+            console.log(`  ${dim('│')} ${green('→')} ${dim(replaceText.slice(0, 50))}`);
+          } else {
+            // REVERT — edit broke syntax
+            fs.writeFileSync(filePath, backup);
+            console.log(`  ${dim('│')} ${red('✗ REVERTED')} ${cyan(targetFile)} ${dim('(syntax error after edit)')}`);
+          }
         } else {
           console.log(`  ${dim('│')} ${yellow('⚠ text not found in')} ${targetFile}`);
         }
