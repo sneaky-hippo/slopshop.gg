@@ -1539,7 +1539,7 @@ app.post('/v1/schedules', auth, (req, res) => {
   const ms = intervals[interval] || parseInt(interval);
   if (!ms || ms < 60000) return res.status(400).json({ error: { code: 'invalid_interval', message: 'Min interval: 1m. Options: 1m, 5m, 15m, 30m, 1h, 6h, 12h, 1d, 7d' } });
   const id = 'sched-' + crypto.randomUUID().slice(0, 12);
-  const inputWithWebhook = { ...(input || {}), _webhook_url: webhook_url || null };
+  const inputWithWebhook = { ...input || {}, _webhook_url: webhook_url !== null && webhook_url !== undefined ? webhook_url : null };
   dbInsertSchedule.run(id, req.apiKey, type, slug, JSON.stringify(inputWithWebhook), ms, Date.now() + ms, max_runs || 0, Date.now());
   res.status(201).json({ id, type, slug, interval: interval || ms + 'ms', next_run: new Date(Date.now() + ms).toISOString(), max_runs: max_runs || 'unlimited', webhook_url: webhook_url || null });
 });
