@@ -15184,6 +15184,148 @@ app.get('/v1/agent/templates', auth, (req, res) => {
 });
 
 // POST /v1/agent/template/run — Deploy a swarm from a template
+// Helper: safely call a handler, return { status, output } or { status, error }
+async function _tplCall(slug, input, req) {
+  const handler = allHandlers[slug];
+  if (!handler || typeof handler !== 'function') return { status: 'unavailable', error: slug + ' handler not loaded' };
+  try {
+    const result = await handler(input, req);
+    return { status: 'ok', output: result };
+  } catch (err) {
+    return { status: 'error', error: err.message };
+  }
+}
+
+// Template-specific execution pipelines that ACTUALLY chain real handler calls
+const TEMPLATE_RUNNERS = {
+  // ---------- TRUTH-SEEKER ----------
+  'truth-seeker': async (task, params, req) => {
+    const steps = [];
+    let phase1Result = null;
+
+    // Phase 1: Research — use llm-think if available, else fallback to keyword-extract + memory-search
+    const p1Start = Date.now();
+    if (allHandlers['llm-think']) {
+      const res1 = await _tplCall('llm-think', { prompt: 'Research the following topic thoroughly. Identify key claims, evidence, and counter-arguments:\n\n' + task, ...(params || {}) }, req);
+      phase1Result = res1.output;
+      steps.push({ phase: 'research', description: 'Primary research via llm-think', duration_ms: Date.now() - p1Start, tools_called: [{ tool: 'llm-think', ...res1 }] });
+    } else {
+      // Fallback: extract keywords then search memory
+      const kwRes = await _tplCall('text-keyword-extract', { text: task }, req);
+      const keywords = (kwRes.output && kwRes.output.keywords) ? kwRes.output.keywords.join(' ') : task;
+      const memRes = await _tplCall('memory-search', { query: keywords, ...(params || {}) }, req);
+      phase1Result = { keywords: kwRes.output, memory_results: memRes.output };
+      steps.push({ phase: 'research', description: 'Fallback research via text-keyword-extract + memory-search (no LLM available)', duration_ms: Date.now() - p1Start, tools_called: [{ tool: 'text-keyword-extract', ...kwRes }, { tool: 'memory-search', ...memRes }] });
+    }
+
+    // Phase 2: Critique — call llm-think with critique prompt including phase 1 results
+    const p2Start = Date.now();
+    let phase2Result = null;
+    if (allHandlers['llm-think']) {
+      const critiquePrompt = 'You are a rigorous fact-checker and critic. Below are research findings on the topic: "' + task + '".\n\n' +
+        'FINDINGS:\n' + JSON.stringify(phase1Result, null, 2).slice(0, 6000) + '\n\n' +
+        'Please:\n1. Identify any unsupported claims or logical fallacies\n2. Note what evidence is missing\n3. Provide a balanced synthesis of what is well-supported vs. uncertain';
+      const res2 = await _tplCall('llm-think', { prompt: critiquePrompt, ...(params || {}) }, req);
+      phase2Result = res2.output;
+      steps.push({ phase: 'critique', description: 'Critical analysis of research findings via llm-think', duration_ms: Date.now() - p2Start, tools_called: [{ tool: 'llm-think', ...res2 }] });
+    } else {
+      phase2Result = { synthesis: 'LLM unavailable — raw research returned as-is', research: phase1Result };
+      steps.push({ phase: 'critique', description: 'Critique skipped (no LLM available)', duration_ms: Date.now() - p2Start, tools_called: [] });
+    }
+
+    // Phase 3: Store final synthesis in memory
+    const p3Start = Date.now();
+    const synthesis = typeof phase2Result === 'string' ? phase2Result : JSON.stringify(phase2Result);
+    const memRes = await _tplCall('memory-set', { key: 'truth-seeker-' + Date.now(), value: synthesis.slice(0, 2000), namespace: 'truth-seeker' }, req);
+    steps.push({ phase: 'store', description: 'Store final synthesis in memory', duration_ms: Date.now() - p3Start, tools_called: [{ tool: 'memory-set', ...memRes }] });
+
+    return { steps, final_output: phase2Result };
+  },
+
+  // ---------- DEBUGGER ----------
+  'debugger': async (task, params, req) => {
+    const steps = [];
+    const code = (params && params.code) || task;
+
+    // Phase 1: Code complexity scoring
+    const p1Start = Date.now();
+    const complexRes = await _tplCall('code-complexity-score', { code }, req);
+    steps.push({ phase: 'analyze', description: 'Static complexity analysis via code-complexity-score', duration_ms: Date.now() - p1Start, tools_called: [{ tool: 'code-complexity-score', ...complexRes }] });
+
+    // Phase 2: Execute the code to test it
+    const p2Start = Date.now();
+    const execRes = await _tplCall('exec-javascript', { code }, req);
+    steps.push({ phase: 'test', description: 'Runtime test via exec-javascript', duration_ms: Date.now() - p2Start, tools_called: [{ tool: 'exec-javascript', ...execRes }] });
+
+    // Phase 3: Summarize findings — use llm-think if available, else build a structured summary
+    const p3Start = Date.now();
+    let summary;
+    if (allHandlers['llm-think']) {
+      const summaryPrompt = 'Summarize debugging findings for this code:\n\nCOMPLEXITY ANALYSIS:\n' +
+        JSON.stringify(complexRes.output, null, 2).slice(0, 3000) + '\n\nEXECUTION RESULT:\n' +
+        JSON.stringify(execRes.output, null, 2).slice(0, 3000) + '\n\nProvide: 1) Key issues found 2) Risk assessment 3) Suggested fixes';
+      const sumRes = await _tplCall('llm-think', { prompt: summaryPrompt, ...(params || {}) }, req);
+      summary = sumRes.output;
+      steps.push({ phase: 'summarize', description: 'AI-powered summary of findings via llm-think', duration_ms: Date.now() - p3Start, tools_called: [{ tool: 'llm-think', ...sumRes }] });
+    } else {
+      summary = {
+        complexity: complexRes.output,
+        execution: execRes.output,
+        verdict: complexRes.status === 'ok' && execRes.status === 'ok' ? 'Code analyzed and executed successfully' : 'Issues detected — see details above'
+      };
+      steps.push({ phase: 'summarize', description: 'Structured summary (no LLM)', duration_ms: Date.now() - p3Start, tools_called: [] });
+    }
+
+    return { steps, final_output: summary };
+  },
+
+  // ---------- DATA-PIPELINE ----------
+  'data-pipeline': async (task, params, req) => {
+    const steps = [];
+    const inputData = (params && params.data) || task;
+
+    // Phase 1: Parse input — detect CSV vs JSON and use appropriate handler
+    const p1Start = Date.now();
+    let parsed = null;
+    let parseToolUsed = null;
+
+    const looksLikeCsv = typeof inputData === 'string' && inputData.includes(',') && inputData.includes('\n');
+    if (looksLikeCsv) {
+      const csvRes = await _tplCall('text-csv-to-json', { csv: inputData, ...(params || {}) }, req);
+      parsed = csvRes.output;
+      parseToolUsed = { tool: 'text-csv-to-json', ...csvRes };
+    } else {
+      const jsonInput = typeof inputData === 'string' ? inputData : JSON.stringify(inputData);
+      const jsonRes = await _tplCall('text-json-to-csv', { json: jsonInput, ...(params || {}) }, req);
+      parsed = jsonRes.output;
+      parseToolUsed = { tool: 'text-json-to-csv', ...jsonRes };
+    }
+    steps.push({ phase: 'parse', description: 'Parse input data (' + (looksLikeCsv ? 'CSV->JSON' : 'JSON->CSV') + ')', duration_ms: Date.now() - p1Start, tools_called: [parseToolUsed] });
+
+    // Phase 2: Transform data — use llm-think if available for intelligent transform, else passthrough
+    const p2Start = Date.now();
+    let transformed = parsed;
+    if (allHandlers['llm-think']) {
+      const transformPrompt = 'You are a data transformation engine. Given this parsed data, clean it, remove nulls/duplicates, normalize field names, and return the improved data as JSON.\n\nDATA:\n' +
+        JSON.stringify(parsed, null, 2).slice(0, 6000) + '\n\nReturn only the cleaned JSON.';
+      const tRes = await _tplCall('llm-think', { prompt: transformPrompt, ...(params || {}) }, req);
+      transformed = tRes.output;
+      steps.push({ phase: 'transform', description: 'AI-powered data transformation via llm-think', duration_ms: Date.now() - p2Start, tools_called: [{ tool: 'llm-think', ...tRes }] });
+    } else {
+      transformed = { data: parsed, _transformed: true, _note: 'passthrough (no LLM available)' };
+      steps.push({ phase: 'transform', description: 'Passthrough transform (no LLM)', duration_ms: Date.now() - p2Start, tools_called: [] });
+    }
+
+    // Phase 3: Store in memory
+    const p3Start = Date.now();
+    const storable = typeof transformed === 'string' ? transformed : JSON.stringify(transformed);
+    const memRes = await _tplCall('memory-set', { key: 'data-pipeline-' + Date.now(), value: storable.slice(0, 2000), namespace: 'data-pipeline' }, req);
+    steps.push({ phase: 'store', description: 'Store transformed data in memory', duration_ms: Date.now() - p3Start, tools_called: [{ tool: 'memory-set', ...memRes }] });
+
+    return { steps, final_output: transformed };
+  },
+};
+
 app.post('/v1/agent/template/run', auth, async (req, res) => {
   const start = Date.now();
   try {
@@ -15200,78 +15342,77 @@ app.post('/v1/agent/template/run', auth, async (req, res) => {
     }
 
     const runId = 'tpl_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
-    const stepResults = [];
-    let previousOutput = null;
 
-    // Execute each step in the template
-    for (const step of template.steps) {
-      const agentDefs = step.agents.map(role => template.agents.find(a => a.role === role)).filter(Boolean);
-      const phaseStart = Date.now();
+    // Use template-specific runner if available, otherwise fall back to generic execution
+    const runner = TEMPLATE_RUNNERS[template_id];
+    let stepResults, finalOutput;
 
-      if (step.parallel && agentDefs.length > 1) {
-        // Run agents in parallel
-        const agentResults = await Promise.all(agentDefs.map(async (agent) => {
-          const toolChain = [];
-          for (const toolSlug of agent.tools) {
-            const def = apiMap.get(toolSlug);
-            const handler = allHandlers[toolSlug];
-            if (def && handler) {
-              try {
-                if (req.acct.balance < (def.credits || 1)) {
-                  toolChain.push({ tool: toolSlug, status: 'skipped', reason: 'insufficient_credits' });
-                  continue;
+    if (runner) {
+      // ---- REAL execution: template-specific pipeline with actual handler calls ----
+      const result = await runner(task, params, req);
+      stepResults = result.steps;
+      finalOutput = result.final_output;
+    } else {
+      // ---- Generic fallback for templates without a dedicated runner ----
+      stepResults = [];
+      let previousOutput = null;
+
+      for (const step of template.steps) {
+        const agentDefs = step.agents.map(role => template.agents.find(a => a.role === role)).filter(Boolean);
+        const phaseStart = Date.now();
+
+        if (step.parallel && agentDefs.length > 1) {
+          const agentResults = await Promise.all(agentDefs.map(async (agent) => {
+            const toolChain = [];
+            for (const toolSlug of agent.tools) {
+              const handler = allHandlers[toolSlug];
+              if (handler && typeof handler === 'function') {
+                try {
+                  const input = { task, _previous: previousOutput, ...(params || {}) };
+                  const result = await handler(input, req);
+                  toolChain.push({ tool: toolSlug, status: 'ok', output: result });
+                } catch (err) {
+                  toolChain.push({ tool: toolSlug, status: 'error', error: err.message });
                 }
-                req.acct.balance -= (def.credits || 1);
-                const input = { task, _previous: previousOutput, ...(params || {}) };
-                const result = typeof handler === 'function' ? await handler(input, req) : null;
-                toolChain.push({ tool: toolSlug, status: 'ok', output: result });
-              } catch (err) {
-                toolChain.push({ tool: toolSlug, status: 'error', error: err.message });
+              } else {
+                toolChain.push({ tool: toolSlug, status: 'unavailable', output: '[' + agent.role + '] ' + toolSlug + ' handler not loaded' });
               }
-            } else {
-              toolChain.push({ tool: toolSlug, status: 'simulated', output: '[' + agent.role + '] processed "' + task + '" via ' + toolSlug });
             }
-          }
-          return { agent: agent.role, purpose: agent.purpose, tools_executed: toolChain };
-        }));
-        stepResults.push({ phase: step.phase, description: step.description, parallel: true, duration_ms: Date.now() - phaseStart, agents: agentResults });
-        previousOutput = agentResults;
-      } else {
-        // Run agents sequentially
-        const agentResults = [];
-        for (const agent of agentDefs) {
-          const toolChain = [];
-          for (const toolSlug of agent.tools) {
-            const def = apiMap.get(toolSlug);
-            const handler = allHandlers[toolSlug];
-            if (def && handler) {
-              try {
-                if (req.acct.balance < (def.credits || 1)) {
-                  toolChain.push({ tool: toolSlug, status: 'skipped', reason: 'insufficient_credits' });
-                  continue;
+            return { agent: agent.role, purpose: agent.purpose, tools_executed: toolChain };
+          }));
+          stepResults.push({ phase: step.phase, description: step.description, parallel: true, duration_ms: Date.now() - phaseStart, agents: agentResults });
+          previousOutput = agentResults;
+        } else {
+          const agentResults = [];
+          for (const agent of agentDefs) {
+            const toolChain = [];
+            for (const toolSlug of agent.tools) {
+              const handler = allHandlers[toolSlug];
+              if (handler && typeof handler === 'function') {
+                try {
+                  const input = { task, _previous: previousOutput, ...(params || {}) };
+                  const result = await handler(input, req);
+                  toolChain.push({ tool: toolSlug, status: 'ok', output: result });
+                } catch (err) {
+                  toolChain.push({ tool: toolSlug, status: 'error', error: err.message });
                 }
-                req.acct.balance -= (def.credits || 1);
-                const input = { task, _previous: previousOutput, ...(params || {}) };
-                const result = typeof handler === 'function' ? await handler(input, req) : null;
-                toolChain.push({ tool: toolSlug, status: 'ok', output: result });
-              } catch (err) {
-                toolChain.push({ tool: toolSlug, status: 'error', error: err.message });
+              } else {
+                toolChain.push({ tool: toolSlug, status: 'unavailable', output: '[' + agent.role + '] ' + toolSlug + ' handler not loaded' });
               }
-            } else {
-              toolChain.push({ tool: toolSlug, status: 'simulated', output: '[' + agent.role + '] processed "' + task + '" via ' + toolSlug });
             }
+            const agentResult = { agent: agent.role, purpose: agent.purpose, tools_executed: toolChain };
+            agentResults.push(agentResult);
+            previousOutput = agentResult;
           }
-          const agentResult = { agent: agent.role, purpose: agent.purpose, tools_executed: toolChain };
-          agentResults.push(agentResult);
-          previousOutput = agentResult;
+          stepResults.push({ phase: step.phase, description: step.description, parallel: false, duration_ms: Date.now() - phaseStart, agents: agentResults });
         }
-        stepResults.push({ phase: step.phase, description: step.description, parallel: false, duration_ms: Date.now() - phaseStart, agents: agentResults });
       }
+      finalOutput = previousOutput;
     }
 
     // Deduct estimated credits as baseline
     const spent = template.estimated_credits;
-    req.acct.balance = Math.max(0, req.acct.balance);
+    req.acct.balance = Math.max(0, req.acct.balance - spent);
     db.prepare('UPDATE api_keys SET balance = ? WHERE key = ?').run(req.acct.balance, req.apiKey);
 
     const latency = Date.now() - start;
@@ -15285,6 +15426,7 @@ app.post('/v1/agent/template/run', auth, async (req, res) => {
         task,
         steps: stepResults,
         total_steps: stepResults.length,
+        final_output: finalOutput,
         credits_spent: spent,
         remaining_balance: req.acct.balance,
       },
