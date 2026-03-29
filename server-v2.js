@@ -12866,7 +12866,7 @@ app.post('/v1/federated/contribute', auth, (req, res) => {
 // ===== STRAT 4: BROWSER / COMPUTER-USE PRIMITIVES =====
 const { execSync } = require('child_process');
 
-// POST /v1/browser/act — Execute browser action (fetch + parse)
+// POST /v1/browser/act — Execute browser action (fetch + parse structured page data)
 app.post('/v1/browser/act', auth, async (req, res) => {
   const start = Date.now();
   try {
@@ -12878,7 +12878,15 @@ app.post('/v1/browser/act', auth, async (req, res) => {
     const mod = parsedUrl.protocol === 'https:' ? require('https') : require('http');
 
     const pageData = await new Promise((resolve, reject) => {
-      const r = mod.get(url, { timeout: 15000, headers: { 'User-Agent': 'SlopshopBot/2.0' } }, (resp) => {
+      const r = mod.get(url, {
+        timeout: 15000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; SlopshopBot/2.0; +https://slopshop.gg/bot)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'identity'
+        }
+      }, (resp) => {
         if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
           return resolve({ redirect: resp.headers.location, status: resp.statusCode });
         }
@@ -12898,19 +12906,94 @@ app.post('/v1/browser/act', auth, async (req, res) => {
     }
 
     const html = pageData.html || '';
+
     // Extract title
     const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
     const title = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : '';
-    // Extract links
-    const linkMatches = [...html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
-    const links = linkMatches.slice(0, 50).map(m => ({ href: m[1], text: m[2].replace(/<[^>]+>/g, '').trim() }));
-    // Extract text content (strip tags)
-    const textContent = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 5000);
-    // Extract forms
-    const formMatches = [...html.matchAll(/<form[^>]*action=["']?([^"'\s>]*)["']?[^>]*>/gi)];
-    const forms = formMatches.slice(0, 10).map(m => m[1]);
 
-    const result = { action: task, title, text_snippet: textContent.slice(0, 1000), links_found: links.length, forms_found: forms.length, links: links.slice(0, 20), forms, status: pageData.status };
+    // Extract meta description
+    const metaDescMatch = html.match(/<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["']/i)
+      || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["']/i);
+    const metaDescription = metaDescMatch ? metaDescMatch[1].trim() : '';
+
+    // Extract OG tags
+    const ogTags = {};
+    const ogMatches = [...html.matchAll(/<meta[^>]+property=["'](og:[^"']+)["'][^>]+content=["']([^"']+)["'][^>]*>/gi)];
+    const ogMatchesAlt = [...html.matchAll(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["'](og:[^"']+)["'][^>]*>/gi)];
+    for (const m of ogMatches) { ogTags[m[1]] = m[2]; }
+    for (const m of ogMatchesAlt) { ogTags[m[2]] = m[1]; }
+
+    // Extract all headings (h1-h6) with hierarchy
+    const headings = [];
+    for (let level = 1; level <= 6; level++) {
+      const hMatches = [...html.matchAll(new RegExp(`<h${level}[^>]*>([\\s\\S]*?)<\\/h${level}>`, 'gi'))];
+      for (const m of hMatches) {
+        headings.push({ level, text: m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() });
+      }
+    }
+
+    // Extract all links with text
+    const linkMatches = [...html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
+    const links = linkMatches.slice(0, 100).map(m => {
+      const text = m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+      return { href: m[1], text: text || '[no text]' };
+    }).filter(l => l.href && !l.href.startsWith('javascript:'));
+
+    // Extract forms with their fields
+    const formBlocks = [...html.matchAll(/<form([^>]*)>([\s\S]*?)<\/form>/gi)];
+    const forms = formBlocks.slice(0, 20).map(fb => {
+      const attribs = fb[1];
+      const actionMatch = attribs.match(/action=["']([^"']+)["']/i);
+      const methodMatch = attribs.match(/method=["']([^"']+)["']/i);
+      const formHtml = fb[2];
+      const inputMatches = [...formHtml.matchAll(/<input[^>]*>/gi)];
+      const fields = inputMatches.map(inp => {
+        const nameM = inp[0].match(/name=["']([^"']+)["']/i);
+        const typeM = inp[0].match(/type=["']([^"']+)["']/i);
+        const placeholderM = inp[0].match(/placeholder=["']([^"']+)["']/i);
+        return { name: nameM ? nameM[1] : null, type: typeM ? typeM[1] : 'text', placeholder: placeholderM ? placeholderM[1] : null };
+      }).filter(f => f.name);
+      const textareaMatches = [...formHtml.matchAll(/<textarea[^>]*name=["']([^"']+)["'][^>]*>/gi)];
+      for (const ta of textareaMatches) { fields.push({ name: ta[1], type: 'textarea', placeholder: null }); }
+      const selectMatches = [...formHtml.matchAll(/<select[^>]*name=["']([^"']+)["'][^>]*>/gi)];
+      for (const sel of selectMatches) { fields.push({ name: sel[1], type: 'select', placeholder: null }); }
+      const buttonMatches = [...formHtml.matchAll(/<button[^>]*>([\s\S]*?)<\/button>/gi)];
+      const buttons = buttonMatches.map(b => b[1].replace(/<[^>]+>/g, '').trim()).filter(Boolean);
+      return {
+        action: actionMatch ? actionMatch[1] : null,
+        method: methodMatch ? methodMatch[1].toUpperCase() : 'GET',
+        fields,
+        buttons
+      };
+    });
+
+    // Extract images with alt text
+    const imgMatches = [...html.matchAll(/<img[^>]+>/gi)];
+    const images = imgMatches.slice(0, 50).map(m => {
+      const srcM = m[0].match(/src=["']([^"']+)["']/i);
+      const altM = m[0].match(/alt=["']([^"']*?)["']/i);
+      return { src: srcM ? srcM[1] : null, alt: altM ? altM[1] : null };
+    }).filter(img => img.src);
+
+    // Extract text content (strip tags, decode entities)
+    const textContent = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim().slice(0, 5000);
+
+    const result = {
+      action: task,
+      url,
+      status: pageData.status,
+      title,
+      meta_description: metaDescription,
+      og_tags: ogTags,
+      headings,
+      links: links.slice(0, 50),
+      links_found: links.length,
+      forms,
+      forms_found: forms.length,
+      images: images.slice(0, 30),
+      images_found: images.length,
+      text_snippet: textContent.slice(0, 2000)
+    };
 
     const latency = Date.now() - start;
     dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'browser/act', 2, latency, 'real');
@@ -12933,7 +13016,15 @@ app.post('/v1/browser/extract', auth, async (req, res) => {
     const mod = parsedUrl.protocol === 'https:' ? require('https') : require('http');
 
     const html = await new Promise((resolve, reject) => {
-      const r = mod.get(url, { timeout: 15000, headers: { 'User-Agent': 'SlopshopBot/2.0' } }, (resp) => {
+      const r = mod.get(url, {
+        timeout: 15000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; SlopshopBot/2.0; +https://slopshop.gg/bot)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'identity'
+        }
+      }, (resp) => {
         let body = '';
         resp.on('data', chunk => { body += chunk; if (body.length > 2 * 1024 * 1024) resp.destroy(); });
         resp.on('end', () => resolve(body));
@@ -12942,32 +13033,69 @@ app.post('/v1/browser/extract', auth, async (req, res) => {
       r.on('timeout', () => { r.destroy(); reject(new Error('Request timed out')); });
     });
 
-    // Parse selectors (CSS-like: tag, .class, #id)
+    // Parse selectors: tag, .class, #id, [attribute]
     const selectorList = selectors ? (Array.isArray(selectors) ? selectors : selectors.split(',').map(s => s.trim())) : ['h1', 'h2', 'h3', 'p', 'title'];
     const data = {};
 
     for (const sel of selectorList) {
-      let pattern;
+      let matches = [];
       if (sel.startsWith('#')) {
-        // ID selector
-        const id = sel.slice(1);
-        pattern = new RegExp(`<[^>]+id=["']${id}["'][^>]*>([\\s\\S]*?)<\\/[^>]+>`, 'gi');
+        // ID selector: #idname
+        const id = sel.slice(1).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const pattern = new RegExp(`<(\\w+)[^>]+id=["']${id}["'][^>]*>([\\s\\S]*?)<\\/\\1>`, 'gi');
+        matches = [...html.matchAll(pattern)].map(m => ({ raw: m[2], tag: m[1] }));
       } else if (sel.startsWith('.')) {
-        // Class selector
-        const cls = sel.slice(1);
-        pattern = new RegExp(`<[^>]+class=["'][^"']*\\b${cls}\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/[^>]+>`, 'gi');
+        // Class selector: .classname
+        const cls = sel.slice(1).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        const pattern = new RegExp(`<(\\w+)[^>]+class=["'][^"']*\\b${cls}\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/\\1>`, 'gi');
+        matches = [...html.matchAll(pattern)].map(m => ({ raw: m[2], tag: m[1] }));
+      } else if (sel.startsWith('[') && sel.endsWith(']')) {
+        // Attribute selector: [href], [src], [data-x]
+        const attr = sel.slice(1, -1).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        if (attr === 'href') {
+          const pattern = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+          matches = [...html.matchAll(pattern)].map(m => ({ raw: m[2], href: m[1], tag: 'a' }));
+        } else if (attr === 'src') {
+          const pattern = new RegExp(`<(\\w+)[^>]+src=["']([^"']+)["'][^>]*(?:>([\\s\\S]*?)<\\/\\1>|\\s*\\/?>)`, 'gi');
+          matches = [...html.matchAll(pattern)].map(m => ({ raw: m[3] || '', src: m[2], tag: m[1] }));
+        } else {
+          const pattern = new RegExp(`<(\\w+)[^>]+${attr}=["']([^"']+)["'][^>]*>([\\s\\S]*?)<\\/\\1>`, 'gi');
+          matches = [...html.matchAll(pattern)].map(m => ({ raw: m[3], attrValue: m[2], tag: m[1] }));
+        }
       } else {
-        // Tag selector
-        pattern = new RegExp(`<${sel}[^>]*>([\\s\\S]*?)<\\/${sel}>`, 'gi');
+        // Tag selector: h1, p, a, img, etc.
+        if (sel === 'img') {
+          const pattern = /<img[^>]+>/gi;
+          matches = [...html.matchAll(pattern)].map(m => {
+            const srcM = m[0].match(/src=["']([^"']+)["']/i);
+            const altM = m[0].match(/alt=["']([^"']*?)["']/i);
+            return { raw: altM ? altM[1] : '', src: srcM ? srcM[1] : null, tag: 'img' };
+          });
+        } else if (sel === 'a') {
+          const pattern = /<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi;
+          matches = [...html.matchAll(pattern)].map(m => ({ raw: m[2], href: m[1], tag: 'a' }));
+        } else {
+          const escapedSel = sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const pattern = new RegExp(`<${escapedSel}[^>]*>([\\s\\S]*?)<\\/${escapedSel}>`, 'gi');
+          matches = [...html.matchAll(pattern)].map(m => ({ raw: m[1], tag: sel }));
+        }
       }
-      const matches = [...html.matchAll(pattern)];
-      data[sel] = matches.map(m => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()).filter(t => t.length > 0).slice(0, 50);
+
+      // Build structured output per selector
+      data[sel] = matches.slice(0, 50).map(m => {
+        const text = m.raw.replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim();
+        const entry = { text };
+        if (m.href) entry.href = m.href;
+        if (m.src) entry.src = m.src;
+        if (m.attrValue) entry.attr_value = m.attrValue;
+        return entry;
+      }).filter(e => e.text.length > 0 || e.href || e.src);
     }
 
     const outputFormat = format || 'json';
     let formattedData = data;
     if (outputFormat === 'text') {
-      formattedData = Object.entries(data).map(([k, v]) => `${k}: ${v.join('; ')}`).join('\n');
+      formattedData = Object.entries(data).map(([k, v]) => `${k}: ${v.map(e => e.href ? `${e.text} (${e.href})` : e.text).join('; ')}`).join('\n');
     } else if (outputFormat === 'flat') {
       formattedData = Object.values(data).flat();
     }
@@ -12975,14 +13103,14 @@ app.post('/v1/browser/extract', auth, async (req, res) => {
     const latency = Date.now() - start;
     dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'browser/extract', 2, latency, 'real');
     req.acct.balance = Math.max(0, req.acct.balance - 2); persistKey(req.apiKey);
-    res.json({ ok: true, data: formattedData, url, selectors_used: selectorList, _engine: 'real' });
+    res.json({ ok: true, data: formattedData, url, selectors_used: selectorList, element_counts: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, v.length])), _engine: 'real' });
   } catch (e) {
     log.error('browser/extract failed', { error: e.message });
     res.status(500).json({ error: { code: 'extract_error', message: e.message } });
   }
 });
 
-// POST /v1/browser/screenshot — Get page info (text representation)
+// POST /v1/browser/screenshot — Full page structure analysis (text representation)
 app.post('/v1/browser/screenshot', auth, async (req, res) => {
   const start = Date.now();
   try {
@@ -12993,7 +13121,15 @@ app.post('/v1/browser/screenshot', auth, async (req, res) => {
     const mod = parsedUrl.protocol === 'https:' ? require('https') : require('http');
 
     const html = await new Promise((resolve, reject) => {
-      const r = mod.get(url, { timeout: 15000, headers: { 'User-Agent': 'SlopshopBot/2.0' } }, (resp) => {
+      const r = mod.get(url, {
+        timeout: 15000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (compatible; SlopshopBot/2.0; +https://slopshop.gg/bot)',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.5',
+          'Accept-Encoding': 'identity'
+        }
+      }, (resp) => {
         let body = '';
         resp.on('data', chunk => { body += chunk; if (body.length > 2 * 1024 * 1024) resp.destroy(); });
         resp.on('end', () => resolve(body));
@@ -13006,22 +13142,111 @@ app.post('/v1/browser/screenshot', auth, async (req, res) => {
     const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
     const title = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : '';
 
-    // Meta tags
+    // Meta tags (both orderings: name/content and content/name)
     const metaMatches = [...html.matchAll(/<meta[^>]+(?:name|property)=["']([^"']+)["'][^>]+content=["']([^"']+)["'][^>]*>/gi)];
+    const metaMatchesAlt = [...html.matchAll(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:name|property)=["']([^"']+)["'][^>]*>/gi)];
     const meta = {};
-    for (const m of metaMatches.slice(0, 20)) { meta[m[1]] = m[2]; }
+    for (const m of metaMatches.slice(0, 30)) { meta[m[1]] = m[2]; }
+    for (const m of metaMatchesAlt.slice(0, 30)) { if (!meta[m[2]]) meta[m[2]] = m[1]; }
 
-    // Text content
-    const textContent = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim().slice(0, 8000);
+    // Headings hierarchy
+    const headings = [];
+    for (let level = 1; level <= 6; level++) {
+      const hMatches = [...html.matchAll(new RegExp(`<h${level}[^>]*>([\\s\\S]*?)<\\/h${level}>`, 'gi'))];
+      for (const m of hMatches) {
+        headings.push({ level, text: m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim() });
+      }
+    }
 
-    // Links
+    // Navigation links (from nav and header elements)
+    const navBlocks = [...html.matchAll(/<nav[^>]*>([\s\S]*?)<\/nav>/gi)];
+    const headerBlocks = [...html.matchAll(/<header[^>]*>([\s\S]*?)<\/header>/gi)];
+    const navHtml = navBlocks.map(m => m[1]).join(' ') + ' ' + headerBlocks.map(m => m[1]).join(' ');
+    const navLinkMatches = [...navHtml.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
+    const navLinks = navLinkMatches.slice(0, 50).map(m => ({
+      href: m[1],
+      text: m[2].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()
+    })).filter(l => l.text.length > 0);
+
+    // All links
     const linkMatches = [...html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
     const links = linkMatches.slice(0, 100).map(m => ({ href: m[1], text: m[2].replace(/<[^>]+>/g, '').trim() })).filter(l => l.text.length > 0);
+
+    // Content sections (main, article, section elements)
+    const sections = [];
+    const sectionMatches = [...html.matchAll(/<(main|article|section)([^>]*)>([\s\S]*?)<\/\1>/gi)];
+    for (const sm of sectionMatches.slice(0, 20)) {
+      const idM = sm[2].match(/id=["']([^"']+)["']/i);
+      const classM = sm[2].match(/class=["']([^"']+)["']/i);
+      const innerText = sm[3].replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      sections.push({
+        tag: sm[1].toLowerCase(),
+        id: idM ? idM[1] : null,
+        class: classM ? classM[1] : null,
+        text_preview: innerText.slice(0, 300),
+        word_count: innerText.split(/\s+/).filter(Boolean).length
+      });
+    }
+
+    // Text content (full stripped text)
+    const textContent = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim();
+
+    // Word count and reading time
+    const words = textContent.split(/\s+/).filter(Boolean);
+    const wordCount = words.length;
+    const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 238));
+
+    // Technology detection from script tags and HTML patterns
+    const detectedTech = [];
+    const scriptSrcs = [...html.matchAll(/<script[^>]+src=["']([^"']+)["'][^>]*>/gi)].map(m => m[1]);
+    const scriptInline = [...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)].map(m => m[1]).join(' ');
+    const allScriptContent = scriptSrcs.join(' ') + ' ' + scriptInline;
+
+    const techSignatures = [
+      { name: 'React', patterns: ['react', 'react-dom', 'reactDOM', '__NEXT_DATA__', '_next/', 'createElement'] },
+      { name: 'Next.js', patterns: ['__NEXT_DATA__', '_next/', 'next/dist'] },
+      { name: 'Vue.js', patterns: ['vue.js', 'vue.min.js', 'vue@', 'Vue.', '__vue__', 'v-cloak', 'v-if', 'v-for'] },
+      { name: 'Nuxt.js', patterns: ['__NUXT__', 'nuxt/', '_nuxt/'] },
+      { name: 'Angular', patterns: ['angular', 'ng-version', 'ng-app', 'ng-controller'] },
+      { name: 'jQuery', patterns: ['jquery', 'jQuery', '$.ajax', '$(document)'] },
+      { name: 'Bootstrap', patterns: ['bootstrap.min', 'bootstrap.css', 'bootstrap.js'] },
+      { name: 'Tailwind CSS', patterns: ['tailwindcss', 'tailwind.'] },
+      { name: 'WordPress', patterns: ['wp-content', 'wp-includes', 'wp-json'] },
+      { name: 'Gatsby', patterns: ['gatsby', '__gatsby'] },
+      { name: 'Svelte', patterns: ['svelte', '__svelte'] },
+      { name: 'Alpine.js', patterns: ['alpine', 'x-data', 'x-bind', 'x-on'] },
+      { name: 'HTMX', patterns: ['htmx.org', 'hx-get', 'hx-post', 'hx-trigger'] },
+      { name: 'Google Analytics', patterns: ['google-analytics.com', 'googletagmanager', 'gtag('] },
+      { name: 'Google Tag Manager', patterns: ['googletagmanager.com/gtm'] },
+      { name: 'Cloudflare', patterns: ['cloudflare', 'cf-ray', 'challenges.cloudflare.com'] },
+      { name: 'Shopify', patterns: ['shopify', 'cdn.shopify.com'] },
+      { name: 'Vercel', patterns: ['vercel', '_vercel'] },
+    ];
+
+    const htmlLower = html.toLowerCase();
+    for (const tech of techSignatures) {
+      const found = tech.patterns.some(p => allScriptContent.toLowerCase().includes(p.toLowerCase()) || htmlLower.includes(p.toLowerCase()));
+      if (found) detectedTech.push(tech.name);
+    }
 
     const latency = Date.now() - start;
     dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'browser/screenshot', 1, latency, 'real');
     req.acct.balance = Math.max(0, req.acct.balance - 1); persistKey(req.apiKey);
-    res.json({ ok: true, title, meta, text_content: textContent, links, link_count: links.length, _engine: 'real' });
+    res.json({
+      ok: true,
+      title,
+      meta,
+      headings,
+      navigation: navLinks,
+      sections,
+      text_content: textContent.slice(0, 8000),
+      word_count: wordCount,
+      reading_time_minutes: readingTimeMinutes,
+      links,
+      link_count: links.length,
+      technologies_detected: detectedTech,
+      _engine: 'real'
+    });
   } catch (e) {
     log.error('browser/screenshot failed', { error: e.message });
     res.status(500).json({ error: { code: 'screenshot_error', message: e.message } });
@@ -13899,41 +14124,152 @@ function evolveMemory(apiKey) {
   }
 }
 
-app.post('/v1/memory/evolve/start', auth, (req, res) => {
-  const { interval_minutes } = req.body;
-  const mins = Math.max(1, Math.min(interval_minutes || 30, 1440));
-  const key = req.apiKey;
+// ===== FEATURE: Autonomous Memory Evolution =====
+const activeEvolutions = new Map();
 
-  if (memoryEvolutionTimers.has(key)) {
-    clearInterval(memoryEvolutionTimers.get(key));
+app.post('/v1/memory/evolve/start', auth, (req, res) => {
+  const { namespace, strategy, budget_per_cycle, interval_minutes } = req.body;
+  const ns = namespace || 'default';
+  const strat = strategy || 'consolidate';
+  const validStrategies = ['consolidate', 'enrich', 'decay', 'summarize'];
+  if (!validStrategies.includes(strat)) {
+    return res.status(400).json({ error: { code: 'invalid_strategy', message: `strategy must be one of: ${validStrategies.join(', ')}` } });
+  }
+  const budget = budget_per_cycle || 5;
+  const interval = Math.max(1, interval_minutes || 10);
+  const evoId = crypto.randomUUID();
+  const keyPrefix = req.apiKey ? req.apiKey.slice(0, 12) : 'anon';
+
+  function runCycle() {
+    try {
+      const rows = db.prepare('SELECT key, value, namespace, updated FROM memory WHERE namespace = ?').all(ns);
+      if (rows.length === 0) return;
+      const now = Date.now();
+      let processed = 0;
+
+      if (strat === 'consolidate') {
+        const groups = {};
+        for (const r of rows) {
+          const prefix = r.key.split(/[-_:.]/)[0] || r.key;
+          if (!groups[prefix]) groups[prefix] = [];
+          groups[prefix].push(r);
+        }
+        for (const [prefix, items] of Object.entries(groups)) {
+          if (items.length > 1 && processed < budget) {
+            const merged = items.map(i => `${i.key}: ${(i.value || '').slice(0, 200)}`).join(' | ');
+            db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
+              .run(ns, `_consolidated:${prefix}`, merged.slice(0, 4000), '["evolved","consolidate"]', now, now, 0);
+            processed++;
+          }
+        }
+      } else if (strat === 'enrich') {
+        for (const r of rows.slice(0, budget)) {
+          const enriched = JSON.stringify({
+            original: r.value,
+            enriched_at: new Date().toISOString(),
+            char_count: (r.value || '').length,
+            age_days: Math.round((now - r.updated) / 86400000 * 10) / 10,
+            namespace: r.namespace,
+          });
+          db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            .run(ns, `_enriched:${r.key}`, enriched, '["evolved","enrich"]', now, now, 0);
+          processed++;
+        }
+      } else if (strat === 'decay') {
+        const staleThreshold = now - 7 * 86400000;
+        for (const r of rows) {
+          if (r.updated < staleThreshold && processed < budget) {
+            db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
+              .run(ns + ':archived', r.key, r.value, '["evolved","decay","archived"]', r.updated, now, 0);
+            db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?').run(ns, r.key);
+            processed++;
+          }
+        }
+      } else if (strat === 'summarize') {
+        const groups = {};
+        for (const r of rows) {
+          const prefix = r.key.split(/[-_:.]/)[0] || r.key;
+          if (!groups[prefix]) groups[prefix] = [];
+          groups[prefix].push(r);
+        }
+        for (const [prefix, items] of Object.entries(groups)) {
+          if (processed < budget) {
+            const summary = `[${items.length} keys] ` + items.map(i => (i.value || '').slice(0, 100)).join('; ').slice(0, 2000);
+            db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
+              .run(ns, `_summary:${prefix}`, summary, '["evolved","summarize"]', now, now, 0);
+            processed++;
+          }
+        }
+      }
+
+      // Log evolution cycle
+      try {
+        db.prepare('INSERT INTO memory_evolution_log (api_key, action, detail, merged_keys, ts) VALUES (?, ?, ?, ?, ?)').run(
+          keyPrefix, strat, `Processed ${processed} keys in namespace ${ns}`, JSON.stringify([]), now
+        );
+      } catch (e) { /* log table may not exist */ }
+
+      const evo = activeEvolutions.get(evoId);
+      if (evo) {
+        evo.cycles_completed = (evo.cycles_completed || 0) + 1;
+        evo.last_cycle = new Date().toISOString();
+        evo.total_processed = (evo.total_processed || 0) + processed;
+      }
+    } catch (e) {
+      log.error('Memory evolution cycle failed', { evoId, error: e.message });
+    }
   }
 
-  const timerId = setInterval(() => {
-    evolveMemory(key);
-  }, mins * 60 * 1000);
-  memoryEvolutionTimers.set(key, timerId);
+  runCycle();
+  const timer = setInterval(runCycle, interval * 60 * 1000);
 
-  // Run one immediate pass
-  const immediate = evolveMemory(key);
+  activeEvolutions.set(evoId, {
+    id: evoId,
+    namespace: ns,
+    strategy: strat,
+    budget_per_cycle: budget,
+    interval_minutes: interval,
+    key_prefix: keyPrefix,
+    started: new Date().toISOString(),
+    cycles_completed: 1,
+    total_processed: 0,
+    last_cycle: new Date().toISOString(),
+    _timer: timer,
+  });
 
   res.json({
     ok: true,
-    status: 'evolution_started',
-    interval_minutes: mins,
-    immediate_result: immediate,
-    stop: 'POST /v1/memory/evolve/stop',
+    evolution_id: evoId,
+    namespace: ns,
+    strategy: strat,
+    budget_per_cycle: budget,
+    interval_minutes: interval,
+    message: `Evolution started. First cycle complete. Next cycle in ${interval} minutes.`,
+    stop_endpoint: `POST /v1/memory/evolve/stop { evolution_id: "${evoId}" }`,
     _engine: 'real',
   });
 });
 
 app.post('/v1/memory/evolve/stop', auth, (req, res) => {
-  const key = req.apiKey;
-  if (memoryEvolutionTimers.has(key)) {
-    clearInterval(memoryEvolutionTimers.get(key));
-    memoryEvolutionTimers.delete(key);
-    return res.json({ ok: true, status: 'evolution_stopped', _engine: 'real' });
+  const { evolution_id } = req.body;
+  if (!evolution_id) return res.status(400).json({ error: { code: 'missing_param', message: 'evolution_id is required' } });
+  const evo = activeEvolutions.get(evolution_id);
+  if (!evo) return res.status(404).json({ error: { code: 'not_found', message: 'No active evolution with that ID' } });
+  clearInterval(evo._timer);
+  const result = { ...evo };
+  delete result._timer;
+  activeEvolutions.delete(evolution_id);
+  res.json({ ok: true, stopped: true, evolution: result, _engine: 'real' });
+});
+
+app.get('/v1/memory/evolve/status', auth, (req, res) => {
+  const evolutions = [];
+  for (const [id, evo] of activeEvolutions) {
+    const e = { ...evo };
+    delete e._timer;
+    evolutions.push(e);
   }
-  res.json({ ok: true, status: 'no_evolution_running', _engine: 'real' });
+  res.json({ ok: true, active_evolutions: evolutions.length, evolutions, _engine: 'real' });
 });
 
 app.get('/v1/memory/evolve/log', auth, (req, res) => {
@@ -13942,7 +14278,7 @@ app.get('/v1/memory/evolve/log', auth, (req, res) => {
   res.json({ ok: true, logs, count: logs.length, _engine: 'real' });
 });
 
-// --- 2. Swarm Visualizer SSE ---
+// ===== FEATURE: Swarm Live SSE Stream =====
 app.get('/v1/swarm/live', auth, (req, res) => {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
@@ -13950,50 +14286,74 @@ app.get('/v1/swarm/live', auth, (req, res) => {
     'Connection': 'keep-alive',
     'X-Accel-Buffering': 'no',
   });
-  res.write('data: ' + JSON.stringify({ type: 'connected', ts: Date.now() }) + '\n\n');
+  res.write(':\n\n');
 
-  const apiKey = req.apiKey;
-  const userId = req.acct?.email || apiKey.slice(0, 12);
+  const MAX_DURATION = 5 * 60 * 1000; // 5 minutes max
+  const INTERVAL = 2000;
+  const startTime = Date.now();
+  let closed = false;
 
-  const intervalId = setInterval(() => {
-    try {
-      // Army runs
-      let armyRuns = [];
-      try { armyRuns = db.prepare("SELECT id, status, created_at FROM army_runs WHERE user_id = ? ORDER BY created_at DESC LIMIT 10").all(userId); } catch {}
+  function pushEvent(event, data) {
+    if (closed) return;
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  }
 
-      // Hive messages (recent)
-      let hiveMessages = [];
-      try { hiveMessages = db.prepare("SELECT hive_id, sender, channel, message, ts FROM hive_messages WHERE ts > ? ORDER BY ts DESC LIMIT 20").all(Date.now() - 120000); } catch {}
-
-      // Memory count
-      let memoryCount = 0;
-      try { memoryCount = db.prepare("SELECT COUNT(*) as c FROM memory WHERE namespace = ?").get(apiKey.slice(0, 12))?.c || 0; } catch {}
-
-      // Recent API calls
-      let recentCalls = [];
-      try { recentCalls = db.prepare("SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE key_prefix = ? ORDER BY ts DESC LIMIT 10").all(apiKey.slice(0, 12) + '...'); } catch {}
-
-      // Active stakes
-      let activeStakes = 0;
-      try { activeStakes = db.prepare("SELECT COUNT(*) as c FROM staking WHERE api_key = ? AND withdrawn = 0").get(apiKey)?.c || 0; } catch {}
-
-      const payload = {
-        type: 'tick',
-        ts: Date.now(),
-        army_runs: armyRuns,
-        hive_messages: hiveMessages,
-        memory_count: memoryCount,
-        recent_calls: recentCalls,
-        active_stakes: activeStakes,
-      };
-      res.write('data: ' + JSON.stringify(payload) + '\n\n');
-    } catch (e) {
-      res.write('data: ' + JSON.stringify({ type: 'error', message: e.message }) + '\n\n');
+  function poll() {
+    if (closed) return;
+    if (Date.now() - startTime > MAX_DURATION) {
+      pushEvent('close', { reason: 'max_duration_reached', duration_seconds: 300 });
+      res.end();
+      closed = true;
+      return;
     }
-  }, 2000);
+    try {
+      // Active compute runs
+      const activeRuns = db.prepare("SELECT id, agent_count, status, ts FROM compute_runs WHERE status = 'running' ORDER BY ts DESC LIMIT 20").all();
+      pushEvent('compute_runs', { active: activeRuns.length, runs: activeRuns });
 
+      // Recent hive messages (last 30 seconds)
+      const recentTs = new Date(Date.now() - 30000).toISOString();
+      let recentMessages = [];
+      try {
+        recentMessages = db.prepare('SELECT hive_id, channel, sender, message, ts FROM hive_messages WHERE ts > ? ORDER BY ts DESC LIMIT 20').all(recentTs);
+      } catch (e) { /* table may not exist yet */ }
+      pushEvent('hive_messages', { count: recentMessages.length, messages: recentMessages });
+
+      // Memory key count from agent_state
+      const memCount = db.prepare('SELECT COUNT(*) as cnt FROM agent_state').get();
+      pushEvent('agent_state', { memory_key_count: memCount?.cnt || 0 });
+
+      // Recent audit log entries (last 30 seconds)
+      const recentAuditTs = new Date(Date.now() - 30000).toISOString();
+      const recentAudit = db.prepare('SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE ts > ? ORDER BY id DESC LIMIT 20').all(recentAuditTs);
+      pushEvent('audit_log', { count: recentAudit.length, entries: recentAudit });
+
+      // Heartbeat
+      pushEvent('heartbeat', { ts: new Date().toISOString(), uptime_seconds: Math.round((Date.now() - startTime) / 1000) });
+    } catch (e) {
+      pushEvent('error', { message: e.message });
+    }
+  }
+
+  // Send initial data immediately
+  poll();
+  const timer = setInterval(poll, INTERVAL);
+
+  // Auto-close after 5 minutes
+  const timeout = setTimeout(() => {
+    if (!closed) {
+      pushEvent('close', { reason: 'max_duration_reached', duration_seconds: 300 });
+      res.end();
+      closed = true;
+    }
+    clearInterval(timer);
+  }, MAX_DURATION);
+
+  // Cleanup on client disconnect
   req.on('close', () => {
-    clearInterval(intervalId);
+    closed = true;
+    clearInterval(timer);
+    clearTimeout(timeout);
   });
 });
 
@@ -14701,218 +15061,6 @@ app.get('/v1/knowledge/subgraph', auth, (req, res) => {
   }
 });
 
-
-// ===== FEATURE: Autonomous Memory Evolution =====
-const activeEvolutions = new Map();
-
-app.post('/v1/memory/evolve/start', auth, (req, res) => {
-  const { namespace, strategy, budget_per_cycle, interval_minutes } = req.body;
-  const ns = namespace || 'default';
-  const strat = strategy || 'consolidate';
-  const validStrategies = ['consolidate', 'enrich', 'decay', 'summarize'];
-  if (!validStrategies.includes(strat)) {
-    return res.status(400).json({ error: { code: 'invalid_strategy', message: `strategy must be one of: ${validStrategies.join(', ')}` } });
-  }
-  const budget = budget_per_cycle || 5;
-  const interval = Math.max(1, interval_minutes || 10);
-  const evoId = crypto.randomUUID();
-  const keyPrefix = req.apiKey ? req.apiKey.slice(0, 12) : 'anon';
-
-  function runCycle() {
-    try {
-      const rows = db.prepare('SELECT key, value, namespace, updated FROM memory WHERE namespace = ?').all(ns);
-      if (rows.length === 0) return;
-      const now = Date.now();
-      let processed = 0;
-
-      if (strat === 'consolidate') {
-        const groups = {};
-        for (const r of rows) {
-          const prefix = r.key.split(/[-_:.]/)[0] || r.key;
-          if (!groups[prefix]) groups[prefix] = [];
-          groups[prefix].push(r);
-        }
-        for (const [prefix, items] of Object.entries(groups)) {
-          if (items.length > 1 && processed < budget) {
-            const merged = items.map(i => `${i.key}: ${(i.value || '').slice(0, 200)}`).join(' | ');
-            db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
-              .run(ns, `_consolidated:${prefix}`, merged.slice(0, 4000), '["evolved","consolidate"]', now, now, 0);
-            processed++;
-          }
-        }
-      } else if (strat === 'enrich') {
-        for (const r of rows.slice(0, budget)) {
-          const enriched = JSON.stringify({
-            original: r.value,
-            enriched_at: new Date().toISOString(),
-            char_count: (r.value || '').length,
-            age_days: Math.round((now - r.updated) / 86400000 * 10) / 10,
-            namespace: r.namespace,
-          });
-          db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
-            .run(ns, `_enriched:${r.key}`, enriched, '["evolved","enrich"]', now, now, 0);
-          processed++;
-        }
-      } else if (strat === 'decay') {
-        const staleThreshold = now - 7 * 86400000;
-        for (const r of rows) {
-          if (r.updated < staleThreshold && processed < budget) {
-            db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
-              .run(ns + ':archived', r.key, r.value, '["evolved","decay","archived"]', r.updated, now, 0);
-            db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?').run(ns, r.key);
-            processed++;
-          }
-        }
-      } else if (strat === 'summarize') {
-        const groups = {};
-        for (const r of rows) {
-          const prefix = r.key.split(/[-_:.]/)[0] || r.key;
-          if (!groups[prefix]) groups[prefix] = [];
-          groups[prefix].push(r);
-        }
-        for (const [prefix, items] of Object.entries(groups)) {
-          if (processed < budget) {
-            const summary = `[${items.length} keys] ` + items.map(i => (i.value || '').slice(0, 100)).join('; ').slice(0, 2000);
-            db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
-              .run(ns, `_summary:${prefix}`, summary, '["evolved","summarize"]', now, now, 0);
-            processed++;
-          }
-        }
-      }
-
-      const evo = activeEvolutions.get(evoId);
-      if (evo) {
-        evo.cycles_completed = (evo.cycles_completed || 0) + 1;
-        evo.last_cycle = new Date().toISOString();
-        evo.total_processed = (evo.total_processed || 0) + processed;
-      }
-    } catch (e) {
-      log.error('Memory evolution cycle failed', { evoId, error: e.message });
-    }
-  }
-
-  runCycle();
-  const timer = setInterval(runCycle, interval * 60 * 1000);
-
-  activeEvolutions.set(evoId, {
-    id: evoId,
-    namespace: ns,
-    strategy: strat,
-    budget_per_cycle: budget,
-    interval_minutes: interval,
-    key_prefix: keyPrefix,
-    started: new Date().toISOString(),
-    cycles_completed: 1,
-    total_processed: 0,
-    last_cycle: new Date().toISOString(),
-    _timer: timer,
-  });
-
-  res.json({
-    ok: true,
-    evolution_id: evoId,
-    namespace: ns,
-    strategy: strat,
-    budget_per_cycle: budget,
-    interval_minutes: interval,
-    message: `Evolution started. First cycle complete. Next cycle in ${interval} minutes.`,
-    stop_endpoint: `POST /v1/memory/evolve/stop { evolution_id: "${evoId}" }`,
-    _engine: 'real',
-  });
-});
-
-app.post('/v1/memory/evolve/stop', auth, (req, res) => {
-  const { evolution_id } = req.body;
-  if (!evolution_id) return res.status(400).json({ error: { code: 'missing_param', message: 'evolution_id is required' } });
-  const evo = activeEvolutions.get(evolution_id);
-  if (!evo) return res.status(404).json({ error: { code: 'not_found', message: 'No active evolution with that ID' } });
-  clearInterval(evo._timer);
-  const result = { ...evo };
-  delete result._timer;
-  activeEvolutions.delete(evolution_id);
-  res.json({ ok: true, stopped: true, evolution: result, _engine: 'real' });
-});
-
-app.get('/v1/memory/evolve/status', auth, (req, res) => {
-  const evolutions = [];
-  for (const [id, evo] of activeEvolutions) {
-    const e = { ...evo };
-    delete e._timer;
-    evolutions.push(e);
-  }
-  res.json({ ok: true, active_evolutions: evolutions.length, evolutions, _engine: 'real' });
-});
-
-// ===== FEATURE: Swarm Live SSE Stream =====
-app.get('/v1/swarm/live', auth, (req, res) => {
-  res.writeHead(200, {
-    'Content-Type': 'text/event-stream',
-    'Cache-Control': 'no-cache',
-    'Connection': 'keep-alive',
-    'X-Accel-Buffering': 'no',
-  });
-  res.write(':\n\n');
-
-  const MAX_DURATION = 5 * 60 * 1000;
-  const INTERVAL = 2000;
-  const startTime = Date.now();
-  let closed = false;
-
-  function pushEvent(event, data) {
-    if (closed) return;
-    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
-  }
-
-  function poll() {
-    if (closed) return;
-    if (Date.now() - startTime > MAX_DURATION) {
-      pushEvent('close', { reason: 'max_duration_reached', duration_seconds: 300 });
-      res.end();
-      closed = true;
-      return;
-    }
-    try {
-      const activeRuns = db.prepare("SELECT id, agent_count, status, ts FROM compute_runs WHERE status = 'running' ORDER BY ts DESC LIMIT 20").all();
-      pushEvent('compute_runs', { active: activeRuns.length, runs: activeRuns });
-
-      const recentTs = new Date(Date.now() - 30000).toISOString();
-      let recentMessages = [];
-      try {
-        recentMessages = db.prepare('SELECT hive_id, channel, sender, message, ts FROM hive_messages WHERE ts > ? ORDER BY ts DESC LIMIT 20').all(recentTs);
-      } catch (e) { /* table may not exist yet */ }
-      pushEvent('hive_messages', { count: recentMessages.length, messages: recentMessages });
-
-      const memCount = db.prepare('SELECT COUNT(*) as cnt FROM agent_state').get();
-      pushEvent('agent_state', { memory_key_count: memCount?.cnt || 0 });
-
-      const recentAuditTs = new Date(Date.now() - 30000).toISOString();
-      const recentAudit = db.prepare('SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE ts > ? ORDER BY id DESC LIMIT 20').all(recentAuditTs);
-      pushEvent('audit_log', { count: recentAudit.length, entries: recentAudit });
-
-      pushEvent('heartbeat', { ts: new Date().toISOString(), uptime_seconds: Math.round((Date.now() - startTime) / 1000) });
-    } catch (e) {
-      pushEvent('error', { message: e.message });
-    }
-  }
-
-  poll();
-  const timer = setInterval(poll, INTERVAL);
-
-  const timeout = setTimeout(() => {
-    if (!closed) {
-      pushEvent('close', { reason: 'max_duration_reached', duration_seconds: 300 });
-      res.end();
-      closed = true;
-    }
-    clearInterval(timer);
-  }, MAX_DURATION);
-
-  req.on('close', () => {
-    closed = true;
-    clearInterval(timer);
-    clearTimeout(timeout);
-  });
-});
 
 // ===== START =====
 
