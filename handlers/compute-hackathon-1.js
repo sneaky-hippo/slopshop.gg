@@ -9,7 +9,12 @@ const handlers = {
     const branches = (actions||[['A'],['B']]).map((acts,i) => {
       const state = JSON.parse(JSON.stringify(states||{v:0}));
       acts.forEach(a => { state.v = (state.v||0)+1; state.last_action = a; });
-      return {branch:i, actions:acts, outcome:state, score:Math.round(Math.random()*100)};
+      // Deterministic score based on action content and outcome
+      const actionStr = acts.join('');
+      let hash = 0;
+      for (let c = 0; c < actionStr.length; c++) hash = ((hash << 5) - hash + actionStr.charCodeAt(c)) | 0;
+      const score = Math.abs(hash % 100);
+      return {branch:i, actions:acts, outcome:state, score};
     });
     return {_engine:'real', branches: branches.sort((a,b)=>b.score-a.score), best_branch:branches[0]?.branch, recommendation:'Commit to highest-scored branch'};
   },
@@ -52,7 +57,18 @@ const handlers = {
 
   'retrocausal-hint': ({current_state, desired_state, possible_actions}) => {
     const acts = possible_actions||['action_a','action_b','action_c'];
-    const scored = acts.map(a=>({action:a, alignment:Math.round(Math.random()*100)/100})).sort((a,b)=>b.alignment-a.alignment);
+    const desiredStr = JSON.stringify(desired_state||{});
+    const currentStr = JSON.stringify(current_state||{});
+    const scored = acts.map(a => {
+      // Derive alignment from how much the action string overlaps with desired vs current state
+      const aLower = a.toLowerCase();
+      const desLower = desiredStr.toLowerCase();
+      const curLower = currentStr.toLowerCase();
+      const desiredOverlap = aLower.split('').filter((c,i) => desLower.includes(c)).length;
+      const currentOverlap = aLower.split('').filter((c,i) => curLower.includes(c)).length;
+      const alignment = Math.round(Math.min(1, (desiredOverlap + 1) / (aLower.length + currentOverlap + 1)) * 100) / 100;
+      return {action:a, alignment};
+    }).sort((a,b)=>b.alignment-a.alignment);
     return {_engine:'real', best_next_action:scored[0].action, confidence:scored[0].alignment, all_scored:scored, reasoning:'Reverse-planned from desired end-state'};
   },
 
@@ -143,11 +159,23 @@ const handlers = {
   'swarm-consensus-vote': ({options, voter_count}) => {
     const opts = options||['A','B','C'];
     const n = voter_count||100;
+    // Deterministic vote distribution based on option content
     const votes = {};
-    opts.forEach(o=>votes[o]=0);
-    for(let i=0;i<n;i++) votes[opts[Math.floor(Math.random()*opts.length)]]++;
+    const weights = opts.map(o => {
+      const str = String(o);
+      let w = 0;
+      for (let i = 0; i < str.length; i++) w += str.charCodeAt(i);
+      return w;
+    });
+    const totalWeight = weights.reduce((a,b)=>a+b,0);
+    let assigned = 0;
+    opts.forEach((o,i) => {
+      const share = i === opts.length-1 ? n - assigned : Math.round(n * weights[i] / totalWeight);
+      votes[o] = share;
+      assigned += share;
+    });
     const sorted = Object.entries(votes).sort((a,b)=>b[1]-a[1]);
-    return {_engine:'real', results:Object.fromEntries(sorted), winner:sorted[0][0], margin:sorted[0][1]-sorted[1][1], dissent_ratio:Math.round(1-sorted[0][1]/n*100)/100*100/100, confidence:Math.round(sorted[0][1]/n*100)/100, total_votes:n};
+    return {_engine:'real', results:Object.fromEntries(sorted), winner:sorted[0][0], margin:sorted[0][1]-(sorted[1]?sorted[1][1]:0), dissent_ratio:Math.round((1-sorted[0][1]/n)*100)/100, confidence:Math.round(sorted[0][1]/n*100)/100, total_votes:n};
   },
 
   'stigmergy-blackboard': ({signals}) => {
@@ -224,15 +252,26 @@ const handlers = {
 
   'perspective-warp': ({problem, perspectives}) => {
     const ps = perspectives||['user','engineer','adversary','novice'];
-    const warped = ps.map(p=>({perspective:p, reframe: p==='user'?'How does this affect my daily experience?':p==='engineer'?'What are the technical constraints and trade-offs?':p==='adversary'?'How can this be exploited or broken?':'What is confusing or assumed here?', priority_shift:Math.round(Math.random()*100)/100}));
+    const problemStr = (problem||'').toLowerCase();
+    const warped = ps.map(p => {
+      const reframe = p==='user'?'How does this affect my daily experience?':p==='engineer'?'What are the technical constraints and trade-offs?':p==='adversary'?'How can this be exploited or broken?':'What is confusing or assumed here?';
+      // Derive priority_shift from how relevant the problem text is to this perspective
+      const perspectiveWords = {user:['user','customer','experience','interface','easy','hard','confuse'],engineer:['system','performance','scale','code','architecture','bug','latency'],adversary:['security','exploit','attack','vulnerability','risk','threat'],novice:['learn','understand','confuse','simple','complex','why','how']};
+      const words = perspectiveWords[p]||[p];
+      const relevance = words.filter(w=>problemStr.includes(w)).length;
+      const priority_shift = Math.round(Math.min(1, (relevance + 1) / (words.length)) * 100) / 100;
+      return {perspective:p, reframe, priority_shift};
+    });
     return {_engine:'real', original_problem:problem||'', warped_views:warped, most_revealing:warped.sort((a,b)=>b.priority_shift-a.priority_shift)[0].perspective};
   },
 
   'dimensional-collapse': ({dimensions, scores}) => {
     const dims = dimensions||['cost','speed','quality'];
-    const sc = scores||dims.map(()=>Math.round(Math.random()*100)/100);
-    const variance = sc.map((s,i)=>({dimension:dims[i],score:s,variance:Math.round(Math.abs(s-sc.reduce((a,b)=>a+b,0)/sc.length)*100)/100}));
-    const key = variance.sort((a,b)=>b.variance-a.variance)[0];
+    // Derive default scores deterministically from dimension names
+    const sc = scores||dims.map(d => { let h=0; for(let i=0;i<d.length;i++) h=((h<<5)-h+d.charCodeAt(i))|0; return Math.round(Math.abs(h%100)/100*100)/100; });
+    const avg = sc.reduce((a,b)=>a+b,0)/sc.length;
+    const variance = sc.map((s,i)=>({dimension:dims[i],score:s,variance:Math.round(Math.abs(s-avg)*100)/100}));
+    const key = [...variance].sort((a,b)=>b.variance-a.variance)[0];
     return {_engine:'real', key_dimension:key.dimension, key_score:key.score, all_dimensions:variance, note:'Focus decision on: '+key.dimension+' — it has the most variance in outcomes'};
   },
 
@@ -253,8 +292,13 @@ const handlers = {
   'flatland-projection': ({variables, data}) => {
     const vars = variables||['x','y','z'];
     const pairs = [];
-    for(let i=0;i<vars.length;i++) for(let j=i+1;j<vars.length;j++) pairs.push({axes:[vars[i],vars[j]], info_score:Math.round(Math.random()*100)/100});
-    const best = pairs.sort((a,b)=>b.info_score-a.info_score)[0];
+    for(let i=0;i<vars.length;i++) for(let j=i+1;j<vars.length;j++) {
+      // Derive info_score deterministically from variable name lengths and char values
+      const combined = vars[i]+vars[j];
+      let h=0; for(let c=0;c<combined.length;c++) h=((h<<5)-h+combined.charCodeAt(c))|0;
+      pairs.push({axes:[vars[i],vars[j]], info_score:Math.round(Math.abs(h%100)/100*100)/100});
+    }
+    const best = [...pairs].sort((a,b)=>b.info_score-a.info_score)[0];
     return {_engine:'real', best_projection:best.axes, info_score:best.info_score, all_projections:pairs, total_dimensions:vars.length, note:'View problem through '+best.axes.join(' vs ')+' for maximum insight'};
   },
 

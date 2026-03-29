@@ -468,8 +468,18 @@ db.exec(`CREATE TABLE IF NOT EXISTS agent_reputation (
   tasks_completed INTEGER DEFAULT 0,
   upvotes INTEGER DEFAULT 0,
   downvotes INTEGER DEFAULT 0,
-  updated_at TEXT DEFAULT (datetime('now'))
+  updated_at TEXT DEFAULT (datetime('now')),
+  last_activity INTEGER DEFAULT 0
 )`);
+// Migrate: add last_activity column if missing (existing DBs)
+try { db.exec(`ALTER TABLE agent_reputation ADD COLUMN last_activity INTEGER DEFAULT 0`); } catch(e) { /* column already exists */ }
+
+// Helper: compute time-decayed reputation score
+function decayedScore(rawScore, lastActivity) {
+  if (!lastActivity || lastActivity <= 0) return rawScore;
+  const daysSince = (Date.now() - lastActivity) / (1000 * 60 * 60 * 24);
+  return rawScore * Math.pow(0.99, Math.max(0, daysSince));
+}
 db.exec(`CREATE TABLE IF NOT EXISTS agent_wallets (
   id TEXT PRIMARY KEY,
   owner_id TEXT,
@@ -2752,28 +2762,39 @@ app.post('/v1/reputation/rate', auth, (req, res) => {
   const { agent_key, score, context } = req.body;
   if (!agent_key || score === undefined) return res.status(400).json({ error: { code: 'missing_fields' } });
   const clampedScore = Math.max(-1, Math.min(1, score));
-  db.prepare('INSERT INTO reputation (rater, rated, score, context, ts) VALUES (?, ?, ?, ?, ?)').run(req.apiKey.slice(0,12), agent_key.slice(0,12), clampedScore, context||null, Date.now());
+  const now = Date.now();
+  db.prepare('INSERT INTO reputation (rater, rated, score, context, ts) VALUES (?, ?, ?, ?, ?)').run(req.apiKey.slice(0,12), agent_key.slice(0,12), clampedScore, context||null, now);
+  // Update last_activity on the rated agent's reputation record
+  db.prepare('UPDATE agent_reputation SET last_activity = ? WHERE agent_id = ?').run(now, agent_key.slice(0,12));
   res.json({ ok: true, rated: agent_key.slice(0,12), score: clampedScore });
 });
 
 // Phase 4-5: Reputation leaderboard & my (must be before parameterized :key_prefix route)
 app.get('/v1/reputation/leaderboard', publicRateLimit, (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-  const agents = db.prepare('SELECT * FROM agent_reputation ORDER BY score DESC LIMIT ?').all(limit);
-  res.json({ ok: true, leaderboard: agents, count: agents.length });
+  // Fetch more than needed so we can re-sort by decayed score and still return enough
+  const agents = db.prepare('SELECT * FROM agent_reputation ORDER BY score DESC LIMIT ?').all(limit * 3);
+  const decayed = agents.map(a => ({
+    ...a,
+    raw_score: a.score,
+    score: Math.round(decayedScore(a.score, a.last_activity) * 100) / 100,
+  }));
+  decayed.sort((a, b) => b.score - a.score);
+  const result = decayed.slice(0, limit);
+  res.json({ ok: true, leaderboard: result, count: result.length });
 });
 app.get('/v1/reputation/my', auth, (req, res) => {
   const agentId = req.acct?.email || req.apiKey;
   const rep = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(agentId);
-  if (!rep) return res.json({ agent_id: agentId, score: 0, tasks_completed: 0, upvotes: 0, downvotes: 0 });
-  res.json(rep);
+  if (!rep) return res.json({ agent_id: agentId, score: 0, raw_score: 0, tasks_completed: 0, upvotes: 0, downvotes: 0 });
+  res.json({ ...rep, raw_score: rep.score, score: Math.round(decayedScore(rep.score, rep.last_activity) * 100) / 100 });
 });
 
 app.get('/v1/reputation/:key_prefix', publicRateLimit, (req, res) => {
   // Phase 4-5: Check agent_reputation table first
   try {
     const rep = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(req.params.key_prefix);
-    if (rep) return res.json(rep);
+    if (rep) return res.json({ ...rep, raw_score: rep.score, score: Math.round(decayedScore(rep.score, rep.last_activity) * 100) / 100 });
   } catch(e) { /* fall through to legacy */ }
   // Legacy reputation lookup
   const stats = db.prepare('SELECT AVG(score) as avg_score, COUNT(*) as total_ratings FROM reputation WHERE rated = ?').get(req.params.key_prefix);
@@ -6951,14 +6972,21 @@ app.post('/v1/chain/queue', auth, (req, res) => {
 
 // 3b. Execute chain — actually runs each step's LLM call and advances automatically
 app.post('/v1/chain/run', auth, async (req, res) => {
-  const { chain_id, max_steps } = req.body;
+  const { chain_id, max_steps, max_iterations } = req.body;
   const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(chain_id);
   if (!chain) return res.status(404).json({ error: { code: 'chain_not_found' } });
 
   const steps = JSON.parse(chain.steps);
   let ctx = JSON.parse(chain.context);
   let currentStep = chain.current_step;
-  const maxExec = Math.min(max_steps || steps.length, 10); // Safety cap
+  const maxExec = Math.min(max_steps || steps.length, 10); // Safety cap per call
+  const maxLoopIterations = Math.min(max_iterations || 100, 100); // Max total loop iterations
+
+  // Enforce max_iterations safety cap across calls
+  if (chain.loop && (ctx._loop_count || 0) >= maxLoopIterations) {
+    db.prepare('UPDATE agent_chains SET status = ? WHERE id = ?').run('completed', chain_id);
+    return res.json({ ok: true, chain_id, status: 'completed', reason: 'max_iterations_reached', loop_count: ctx._loop_count, max_iterations: maxLoopIterations });
+  }
   const results = [];
 
   const llmHandler = allHandlers['llm-think'];
@@ -7014,12 +7042,17 @@ app.post('/v1/chain/run', auth, async (req, res) => {
 
     currentStep++;
     if (currentStep >= steps.length && chain.loop) {
-      currentStep = 0;
       ctx._loop_count = (ctx._loop_count || 0) + 1;
+      if (ctx._loop_count >= maxLoopIterations) {
+        // Hit max iterations safety cap — stop looping
+        break;
+      }
+      currentStep = 0;
     }
   }
 
-  const status = currentStep >= steps.length && !chain.loop ? 'completed' : 'running';
+  const hitMaxLoop = chain.loop && (ctx._loop_count || 0) >= maxLoopIterations;
+  const status = (currentStep >= steps.length && !chain.loop) || hitMaxLoop ? 'completed' : 'running';
   db.prepare('UPDATE agent_chains SET context = ?, current_step = ?, status = ? WHERE id = ?')
     .run(JSON.stringify(ctx), currentStep, status, chain_id);
   persistKey(req.apiKey);
@@ -7236,16 +7269,17 @@ app.post('/v1/reputation/vote', auth, (req, res) => {
   if (!agent_id) return res.status(400).json({ error: { code: 'agent_id_required' } });
   if (!['up', 'down'].includes(vote)) return res.status(400).json({ error: { code: 'vote_must_be_up_or_down' } });
 
+  const now = Date.now();
   const existing = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(agent_id);
   if (!existing) {
-    db.prepare('INSERT INTO agent_reputation (agent_id, score, tasks_completed, upvotes, downvotes, updated_at) VALUES (?, ?, 0, ?, ?, CURRENT_TIMESTAMP)').run(
-      agent_id, vote === 'up' ? 1 : -1, vote === 'up' ? 1 : 0, vote === 'down' ? 1 : 0
+    db.prepare('INSERT INTO agent_reputation (agent_id, score, tasks_completed, upvotes, downvotes, updated_at, last_activity) VALUES (?, ?, 0, ?, ?, CURRENT_TIMESTAMP, ?)').run(
+      agent_id, vote === 'up' ? 1 : -1, vote === 'up' ? 1 : 0, vote === 'down' ? 1 : 0, now
     );
   } else {
     if (vote === 'up') {
-      db.prepare('UPDATE agent_reputation SET upvotes = upvotes + 1, score = score + 1, updated_at = CURRENT_TIMESTAMP WHERE agent_id = ?').run(agent_id);
+      db.prepare('UPDATE agent_reputation SET upvotes = upvotes + 1, score = score + 1, updated_at = CURRENT_TIMESTAMP, last_activity = ? WHERE agent_id = ?').run(now, agent_id);
     } else {
-      db.prepare('UPDATE agent_reputation SET downvotes = downvotes + 1, score = score - 1, updated_at = CURRENT_TIMESTAMP WHERE agent_id = ?').run(agent_id);
+      db.prepare('UPDATE agent_reputation SET downvotes = downvotes + 1, score = score - 1, updated_at = CURRENT_TIMESTAMP, last_activity = ? WHERE agent_id = ?').run(now, agent_id);
     }
   }
 
@@ -10284,8 +10318,8 @@ app.post('/v1/reputation/slash', auth, (req, res) => {
     db.prepare('INSERT INTO agent_reputation (agent_id, score, tasks_completed, upvotes, downvotes, updated_at) VALUES (?, 0, 0, 0, 0, datetime("now"))').run(agent_id);
   }
 
-  // Decrement score and increment downvotes
-  db.prepare('UPDATE agent_reputation SET score = score - ?, downvotes = downvotes + 1, updated_at = datetime("now") WHERE agent_id = ?').run(slashAmount, agent_id);
+  // Decrement score and increment downvotes, update last_activity
+  db.prepare('UPDATE agent_reputation SET score = score - ?, downvotes = downvotes + 1, updated_at = datetime("now"), last_activity = ? WHERE agent_id = ?').run(slashAmount, Date.now(), agent_id);
 
   // Record the slash event
   db.prepare('INSERT INTO reputation_slashes (id, agent_id, slashed_by, reason, evidence, amount, ts) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
