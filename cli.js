@@ -1005,76 +1005,62 @@ async function cmdHive(args) {
     const trend = recentScores.length >= 2 ? recentScores[recentScores.length-1] - recentScores[0] : 0;
     const phase = s <= 3 ? 'EXPLORE' : (trend > 0.5 ? 'ACCELERATE' : (trend < -0.5 ? 'FIX' : 'OPTIMIZE'));
 
-    // ── THINK: one LLM call with real file context ──
-    // Only JS files. Pick ONE specific line to improve — less hallucination room.
+    // ── LOCAL: analyze → TODO. CLOUD: implement TODO → edit. ──
     const editableFiles = ['server-v2.js', 'cli.js', 'mcp-server.js', 'agent.js'];
     const targetFile = editableFiles[s % editableFiles.length];
-    let targetLine = '', targetLineNum = 0, contextLines = '';
+    let targetLine = '', targetLineNum = 0;
     try {
-      const content = fs.readFileSync(path.join(__dirname, targetFile), 'utf8');
-      const lines = content.split('\n');
-      // Find lines with improvable patterns
-      const candidates = [];
+      const lines = fs.readFileSync(path.join(__dirname, targetFile), 'utf8').split('\n');
+      const cands = [];
       for (let i = 0; i < lines.length; i++) {
         const l = lines[i].trim();
-        if (l.length > 20 && l.length < 200 && !l.startsWith('//') && !l.startsWith('*') && !l.startsWith('/*') &&
-            (l.includes('||') || l.includes('catch') || l.includes('.slice') || l.includes('TODO') ||
-             l.includes('console.') || l.includes('.replace') || l.includes('if (') || l.includes('return '))) {
-          candidates.push(i);
-        }
+        if (l.length > 20 && l.length < 200 && !l.startsWith('//') && !l.startsWith('*') &&
+            (l.includes('||') || l.includes('catch') || l.includes('if (') || l.includes('return '))) cands.push(i);
       }
-      if (candidates.length > 0) {
-        targetLineNum = candidates[s % candidates.length];
-        targetLine = lines[targetLineNum];
-        // Show 3 lines of context (line before, target, line after)
-        contextLines = lines.slice(Math.max(0, targetLineNum - 1), Math.min(lines.length, targetLineNum + 2)).join('\n');
-      }
+      if (cands.length > 0) { targetLineNum = cands[s % cands.length]; targetLine = lines[targetLineNum]; }
     } catch(e) {}
 
-    const thinkPrompt = targetLine ? `Sprint ${s}. Mission: ${mission.slice(0, 80)}
-Phase: ${phase}. Scores: ${recentScores.join('→')||'none'}.
+    let priority = '', score = 0, resp = '';
 
-Improve THIS line from ${targetFile} (line ${targetLineNum + 1}):
-${contextLines}
+    if (!sprintCloud) {
+      // LOCAL: analyze only — NEVER edit files
+      resp = await ask(`Sprint ${s}. ${mission.slice(0,60)}. ${targetFile}:${targetLineNum+1}: ${(targetLine||'').slice(0,80)}
+Is this line buggy/unsafe/improvable? VERDICT: BUG/UNSAFE/IMPROVE/FINE ISSUE: <one sentence> SCORE: X/10`);
+      const verdict = ((resp||'').match(/VERDICT:\s*(\w+)/i)||[])[1] || 'FINE';
+      const issue = ((resp||'').match(/ISSUE:\s*(.+?)(?:\n|$)/i)||[])[1] || '';
+      priority = issue; score = extractScore(resp) || 7;
+      if (verdict !== 'FINE' && issue && issue !== 'none') {
+        todos.push({ sprint: s, file: targetFile, line: targetLineNum+1, verdict, issue, phase });
+        console.log(`  ${dim('│')} ${verdict==='BUG'?red('BUG'):verdict==='UNSAFE'?yellow('UNSAFE'):cyan('IMPROVE')} ${dim(targetFile+':'+(targetLineNum+1))} ${issue.slice(0,50)}`);
+      } else {
+        console.log(`  ${dim('│')} ${dim('FINE')} ${dim(targetFile+':'+(targetLineNum+1))}`);
+      }
+    } else {
+      // CLOUD: implement top TODO with real file edit
+      const todo = todos.length > 0 ? todos[todos.length-1] : null;
+      if (todo) {
+        console.log(`  ${dim('│')} ${bold('IMPLEMENTING:')} ${(todo.issue||'').slice(0,50)}`);
+        const fp = path.resolve(__dirname, todo.file || targetFile);
+        const lines = fs.readFileSync(fp, 'utf8').split('\n');
+        const ln = (todo.line||1)-1;
+        const ctx = lines.slice(Math.max(0,ln-2), ln+3).join('\n');
+        resp = await cloudAsk(`Fix: ${todo.issue}\n${todo.file}:${todo.line}:\n${ctx}\nLine: ${lines[ln]||''}\nOutput ONLY the fixed line. Same indent. No backticks.\nREPLACE: <fixed line>`);
+        priority = todo.issue || ''; score = extractScore(resp) || 8;
+      } else {
+        console.log(`  ${dim('│')} ${dim('No TODOs yet')}`);
+        resp = ''; priority = 'analyzing'; score = 7;
+      }
+    }
 
-THE LINE TO IMPROVE:
-${targetLine}
-
-Rewrite this one line to fix a REAL bug or add MISSING error handling.
-
-RULES:
-- Do NOT use yoda conditions (bad: "production" === x)
-- Do NOT rewrite working patterns into "clever" alternatives
-- Do NOT change .slice to .splice (splice mutates!)
-- Do NOT add typeof checks for things that are always defined
-- Do NOT change console.warn to console.error
-- ONLY fix actual bugs, null safety, or missing try/catch
-- If the line is already fine, output SKIP
-
-PRIORITY: <what bug you are fixing — be specific>
-REPLACE: <your fixed version — same indent, valid JS>
-SCORE: X/10` : `Sprint ${s}. Mission: ${mission.slice(0, 80)}. PRIORITY: skip. SCORE: 5/10`;
-
-    const resp = await ask(thinkPrompt);
-    const priorityMatch = (resp||'').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
-    const priority = priorityMatch ? priorityMatch[1].trim().slice(0, 100) : 'skip';
-    const isSkip = priority.toLowerCase().includes('skip') || (resp||'').toLowerCase().includes('skip');
-    if (priority && !isSkip && priority !== 'iterate') todos.push({ sprint: s, priority, phase });
-    const score = extractScore(resp) || (phase === 'EXPLORE' ? 6 : 7);
-    const nextMatch = (resp||'').match(/NEXT:\s*(.+?)(?:\n|$)/i);
-
-    console.log(`  ${dim('│')} ${green('→')} ${priority.slice(0, 70)}`);
-
-    // ── BUILD ──
+    // ── BUILD (cloud sprints only — local sprints skip this entirely) ──
     let built_n = 0;
-    if (isSkip) console.log(`  ${dim('│')} ${dim('SKIP — line is fine')}`);
-    const replaceMatch = !isSkip ? (resp||'').match(/REPLACE:\s*([\s\S]*?)(?=\nSCORE:|$)/i) : null;
-    const findText = targetLine ? targetLine.trimEnd() : '';
-    // Clean REPLACE: strip backticks, preserve indentation from original
+    const replaceMatch = sprintCloud ? (resp||'').match(/REPLACE:\s*([\s\S]*?)(?=\nSCORE:|$)/i) : null;
+    const todo = sprintCloud && todos.length > 0 ? todos[todos.length-1] : null;
+    const findText = todo ? (() => { try { const ls = fs.readFileSync(path.resolve(__dirname, todo.file), 'utf8').split('\n'); return (ls[(todo.line||1)-1]||'').trimEnd(); } catch(e) { return ''; } })() : '';
     const indent = findText.match(/^(\s*)/)?.[1] || '';
     let replaceText = replaceMatch ? replaceMatch[1].trim().split('\n')[0] : '';
-    replaceText = replaceText.replace(/^`+|`+$/g, '').trim(); // strip backticks
-    if (replaceText && !replaceText.startsWith(indent)) replaceText = indent + replaceText; // preserve indent
+    replaceText = replaceText.replace(/^`+|`+$/g, '').trim();
+    if (replaceText && !replaceText.startsWith(indent)) replaceText = indent + replaceText;
 
     if (findText && replaceText && findText !== replaceText) {
       const filePath = path.resolve(__dirname, targetFile);
