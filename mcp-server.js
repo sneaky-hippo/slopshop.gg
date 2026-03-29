@@ -440,7 +440,7 @@ process.stdin.on('data', (chunk) => {
 
 // Also handle raw line-delimited JSON (simpler clients)
 rl.on('line', (line) => {
-  if (!line.trim().length) return;
+  if (line !== undefined && !line.trim().length) return;
   try {
     const msg = JSON.parse(line);
     handleMessage(msg).then(response => {
