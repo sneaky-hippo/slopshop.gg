@@ -1513,6 +1513,146 @@ require('./agent')(app, allHandlers, API_DEFS, db, apiKeys, auth);
 require('./zapier')(app, allHandlers, API_DEFS, apiKeys, auth);
 require('./pipes')(app, allHandlers, API_DEFS, auth);
 
+// ===== PIPE ENDPOINTS (run / create / gallery) =====
+const _PREBUILT_PIPES = (() => {
+  const _fs = require('fs');
+  const _src = _fs.readFileSync(require.resolve('./pipes'), 'utf8');
+  const _m = _src.match(/const PIPES\s*=\s*(\{[\s\S]*?\n\};)/);
+  if (!_m) return {};
+  try { return eval('(' + _m[1].replace(/\};$/, '}') + ')'); } catch { return {}; }
+})();
+
+db.exec(`CREATE TABLE IF NOT EXISTS custom_pipes (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  name TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  owner_key TEXT NOT NULL,
+  steps TEXT NOT NULL,
+  created INTEGER NOT NULL,
+  UNIQUE(slug, owner_key)
+)`);
+
+// POST /v1/pipe/run — run a named pipe (prebuilt or custom)
+app.post('/v1/pipe/run', auth, async (req, res) => {
+  const { pipe, input } = req.body || {};
+  if (!pipe) return res.status(400).json({ error: { code: 'missing_field', field: 'pipe' } });
+
+  // Check prebuilt pipes first
+  const prebuilt = _PREBUILT_PIPES[pipe];
+  if (prebuilt) {
+    let totalCredits = 0;
+    for (const step of prebuilt.steps) {
+      const def = API_DEFS[step];
+      if (!def) return res.status(500).json({ error: { code: 'broken_pipe', step } });
+      totalCredits += def.credits;
+    }
+    if (req.acct.balance < totalCredits) {
+      return res.status(402).json({ error: { code: 'insufficient_credits', need: totalCredits, have: req.acct.balance } });
+    }
+    req.acct.balance -= totalCredits;
+
+    let lastResult = null;
+    const results = [];
+    for (const step of prebuilt.steps) {
+      const handler = allHandlers[step];
+      if (!handler) { results.push({ step, error: 'no_handler' }); continue; }
+      const stepInput = { ...(input || {}), ...(lastResult && typeof lastResult === 'object' ? { _previous: lastResult } : {}) };
+      if (lastResult) {
+        if (lastResult.text) stepInput.text = stepInput.text || lastResult.text;
+        if (lastResult.result) stepInput.input = stepInput.input || (typeof lastResult.result === 'string' ? lastResult.result : JSON.stringify(lastResult.result));
+      }
+      try {
+        lastResult = await handler(stepInput);
+        results.push({ step, data: lastResult, credits: API_DEFS[step].credits });
+      } catch (e) {
+        lastResult = { error: e.message };
+        results.push({ step, error: e.message });
+      }
+    }
+    return res.json({ pipe, result: lastResult, steps: results, total_credits: totalCredits, balance: req.acct.balance });
+  }
+
+  // Check custom pipes
+  const row = db.prepare('SELECT * FROM custom_pipes WHERE slug = ? AND owner_key = ?').get(pipe, req.acct.key);
+  if (!row) return res.status(404).json({ error: { code: 'pipe_not_found', pipe } });
+
+  const steps = JSON.parse(row.steps);
+  let totalCredits = 0;
+  for (const s of steps) {
+    const def = API_DEFS[s.slug];
+    if (!def) return res.status(500).json({ error: { code: 'broken_pipe', step: s.slug } });
+    totalCredits += def.credits;
+  }
+  if (req.acct.balance < totalCredits) {
+    return res.status(402).json({ error: { code: 'insufficient_credits', need: totalCredits, have: req.acct.balance } });
+  }
+  req.acct.balance -= totalCredits;
+
+  let lastResult = null;
+  const results = [];
+  for (const s of steps) {
+    const handler = allHandlers[s.slug];
+    if (!handler) { results.push({ step: s.slug, error: 'no_handler' }); continue; }
+    const stepInput = { ...(input || {}), ...(s.input_map || {}), ...(lastResult && typeof lastResult === 'object' ? { _previous: lastResult } : {}) };
+    try {
+      lastResult = await handler(stepInput);
+      results.push({ step: s.slug, data: lastResult, credits: API_DEFS[s.slug].credits });
+    } catch (e) {
+      lastResult = { error: e.message };
+      results.push({ step: s.slug, error: e.message });
+    }
+  }
+  return res.json({ pipe, result: lastResult, steps: results, total_credits: totalCredits, balance: req.acct.balance });
+});
+
+// POST /v1/pipe/create — save a custom pipe
+app.post('/v1/pipe/create', auth, (req, res) => {
+  const { name, steps } = req.body || {};
+  if (!name || !steps || !Array.isArray(steps) || steps.length === 0) {
+    return res.status(400).json({ error: { code: 'missing_fields', required: ['name', 'steps'] } });
+  }
+  for (const s of steps) {
+    if (!s.slug) return res.status(400).json({ error: { code: 'invalid_step', message: 'Each step needs a slug' } });
+    if (!API_DEFS[s.slug] && !allHandlers[s.slug]) {
+      return res.status(400).json({ error: { code: 'unknown_step', slug: s.slug } });
+    }
+  }
+  const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+  const totalCredits = steps.reduce((sum, s) => sum + (API_DEFS[s.slug]?.credits || 0), 0);
+  try {
+    db.prepare('INSERT OR REPLACE INTO custom_pipes (slug, name, owner_key, steps, created) VALUES (?, ?, ?, ?, ?)').run(
+      slug, name, req.acct.key, JSON.stringify(steps), Date.now()
+    );
+  } catch (e) {
+    return res.status(500).json({ error: { code: 'save_failed', message: e.message } });
+  }
+  res.json({ slug, name, steps: steps.length, credits: totalCredits, created: true });
+});
+
+// GET /v1/pipe/gallery — list all available pipes (prebuilt + custom)
+app.get('/v1/pipe/gallery', (req, res) => {
+  const prebuiltList = Object.entries(_PREBUILT_PIPES).map(([slug, p]) => ({
+    slug, name: p.name, desc: p.desc, steps: p.steps,
+    credits: p.credits, category: p.category, type: 'prebuilt',
+  }));
+
+  let custom = [];
+  const key = (req.headers.authorization || '').replace('Bearer ', '');
+  if (key) {
+    const rows = db.prepare('SELECT * FROM custom_pipes WHERE owner_key = ? ORDER BY created DESC').all(key);
+    custom = rows.map(r => {
+      const st = JSON.parse(r.steps);
+      return {
+        slug: r.slug, name: r.name, steps: st.map(s => s.slug),
+        credits: st.reduce((sum, s) => sum + (API_DEFS[s.slug]?.credits || 0), 0),
+        category: 'Custom', type: 'custom',
+      };
+    });
+  }
+
+  res.json({ total: prebuiltList.length + custom.length, prebuilt: prebuiltList, custom });
+});
+
 // ===== MARKETPLACE =====
 app.post('/v1/marketplace/submit', auth, (req, res) => {
   const { name, slug, description, credits, handler_url, category } = req.body;
@@ -3732,6 +3872,21 @@ app.get('/v1/tournament/:id', auth, (req, res) => {
   matches.forEach(m => { wins[m.winner] = (wins[m.winner] || 0) + 1; });
   const standings = Object.entries(wins).sort((a, b) => b[1] - a[1]).map(([agent, w]) => ({ agent, wins: w }));
   res.json({ ok: true, tournament: trn, matches, standings });
+});
+
+// Public tournament leaderboard (Strat 2 requirement)
+app.get('/v1/tournament/leaderboard', publicRateLimit, (req, res) => {
+  try {
+    const tournaments = db.prepare('SELECT * FROM sp_tournaments ORDER BY created DESC LIMIT 10').all();
+    const leaderboard = [];
+    for (const t of tournaments) {
+      const matches = db.prepare('SELECT winner FROM sp_tournament_matches WHERE tournament_id = ?').all(t.id);
+      const wins = {};
+      matches.forEach(m => { if (m.winner) wins[m.winner] = (wins[m.winner] || 0) + 1; });
+      leaderboard.push({ tournament: t.name || t.id, standings: Object.entries(wins).sort((a, b) => b[1] - a[1]).map(([agent, w]) => ({ agent, wins: w })) });
+    }
+    res.json({ ok: true, leaderboard, count: leaderboard.length, _engine: 'real' });
+  } catch(e) { res.json({ ok: true, leaderboard: [], count: 0, _engine: 'real' }); }
 });
 
 app.get('/v1/leaderboard', auth, (req, res) => {

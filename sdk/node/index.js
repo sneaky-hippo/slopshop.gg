@@ -144,6 +144,52 @@ class Slopshop {
     const res = await this._request('GET', '/v1/stats');
     return res.data;
   }
+
+  // Ollama (local LLM — 0 credits)
+  async ollamaModels() {
+    const res = await this._request('GET', '/v1/models/ollama');
+    return res.data;
+  }
+  async ollamaGenerate(model, prompt, options = {}) {
+    return this.call('models/ollama/generate', { model, prompt, ...options });
+  }
+  async ollamaEmbed(model, prompt, options = {}) {
+    return this.call('models/ollama/embeddings', { model, prompt, ...options });
+  }
+
+  // vLLM (local inference — 0 credits)
+  async vllmGenerate(model, prompt, options = {}) {
+    return this.call('models/vllm/generate', { model, prompt, ...options });
+  }
+
+  // Wallet + Economy
+  async walletCreate(name, options = {}) {
+    return this.call('wallet/create', { name, ...options });
+  }
+  async walletTransfer(fromWallet, toWallet, amount) {
+    return this.call('wallet/transfer', { from_wallet: fromWallet, to_wallet: toWallet, amount });
+  }
+
+  // Knowledge Graph
+  async knowledgeAdd(subject, predicate, object, options = {}) {
+    return this.call('knowledge/add', { subject, predicate, object, ...options });
+  }
+  async knowledgeQuery(query, options = {}) {
+    return this.call('knowledge/query', { query, ...options });
+  }
+
+  // Army (parallel agents)
+  async armyDeploy(task, agents = 10, options = {}) {
+    return this.call('army/deploy', { task, agents, ...options });
+  }
+
+  // Chain
+  async chainCreate(name, steps, options = {}) {
+    return this.call('chain/create', { name, steps, ...options });
+  }
+  async chainRun(chainId, options = {}) {
+    return this.call('chain/run', { chain_id: chainId, ...options });
+  }
 }
 
 class SlopshopError extends Error {
