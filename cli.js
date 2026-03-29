@@ -1058,16 +1058,17 @@ SCORE: X/10`;
             catch(e) { valid = false; }
           }
 
-          if (valid) {
+          // Check: edit must be meaningful (not just whitespace/trivial) and syntax must pass
+          const meaningful = findText.replace(/\s/g,'') !== replaceText.replace(/\s/g,'') && replaceText.length < findText.length * 3;
+          if (valid && meaningful) {
             shared.builds.push({ key: targetFile, type: 'file-edit', find: findText.slice(0, 50), replace: replaceText.slice(0, 50), sprint: s });
             built_n++;
-            console.log(`  ${dim('│')} ${green('✓ EDITED')} ${cyan(targetFile)} ${dim('(syntax OK)')}`);
+            console.log(`  ${dim('│')} ${green('✓ EDITED')} ${cyan(targetFile)} ${dim('(verified)')}`);
             console.log(`  ${dim('│')} ${dim(findText.slice(0, 50))}`);
             console.log(`  ${dim('│')} ${green('→')} ${dim(replaceText.slice(0, 50))}`);
           } else {
-            // REVERT — edit broke syntax
             fs.writeFileSync(filePath, backup);
-            console.log(`  ${dim('│')} ${red('✗ REVERTED')} ${cyan(targetFile)} ${dim('(syntax error after edit)')}`);
+            console.log(`  ${dim('│')} ${valid ? yellow('⚠ trivial/risky change reverted') : red('✗ syntax error, reverted')} ${cyan(targetFile)}`);
           }
         } else {
           console.log(`  ${dim('│')} ${yellow('⚠ text not found in')} ${targetFile}`);
