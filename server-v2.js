@@ -8396,32 +8396,89 @@ app.post('/v1/state/list', auth, (req, res) => {
   res.json({ ok: true, namespace: ns, entries, count: entries.length, _engine: 'real' });
 });
 
-// Safe condition evaluator — no arbitrary JS execution
-// Supports: ctx.field op value  (op: ==, !=, >, <, >=, <=, ===, !==)
+// Safe condition evaluator — no arbitrary JS execution (no eval)
+// Supports paths: result.field, ctx.field, step_N_result.field
+// Operators: ==, !=, >, <, >=, <=, ===, !==, includes, startsWith, endsWith
+// Truthy check: "result.field" / negation: "!result.field"
+// "result" resolves to the most recent step_N_result in ctx
 function evalSafeCondition(condStr, ctx) {
-  const m = String(condStr).trim().match(/^ctx\.(\w+(?:\.\w+)*)\s*(===|!==|==|!=|>=|<=|>|<)\s*(.+)$/);
-  if (!m) return false;
-  const [, path, op, rawVal] = m;
-  let lhs = ctx;
-  for (const part of path.split('.')) { lhs = lhs != null ? lhs[part] : undefined; }
-  let rhs = rawVal.trim();
-  if (rhs === 'true') rhs = true;
-  else if (rhs === 'false') rhs = false;
-  else if (rhs === 'null') rhs = null;
-  else if (rhs === 'undefined') rhs = undefined;
-  else if (/^['"](.*)['"]$/.test(rhs)) rhs = rhs.slice(1, -1);
-  else if (!isNaN(Number(rhs))) rhs = Number(rhs);
-  switch (op) {
-    case '==':  return lhs == rhs;
-    case '!=':  return lhs != rhs;
-    case '===': return lhs === rhs;
-    case '!==': return lhs !== rhs;
-    case '>':   return lhs > rhs;
-    case '<':   return lhs < rhs;
-    case '>=':  return lhs >= rhs;
-    case '<=':  return lhs <= rhs;
-    default:    return false;
+  const str = String(condStr).trim();
+
+  // Resolve root object from prefix name
+  function resolveRoot(prefix) {
+    if (prefix === 'ctx') return ctx;
+    if (prefix === 'result') {
+      // Find most recent step result stored in context
+      let maxStep = -1;
+      for (const k of Object.keys(ctx || {})) {
+        const sm = k.match(/^step_(\d+)_result$/);
+        if (sm) { const n = parseInt(sm[1]); if (n > maxStep) maxStep = n; }
+      }
+      return maxStep >= 0 ? ctx['step_' + maxStep + '_result'] : undefined;
+    }
+    // Direct step_N_result reference
+    if (/^step_\d+_result$/.test(prefix) && ctx[prefix] !== undefined) return ctx[prefix];
+    return undefined;
   }
+
+  // Resolve a dotted path like "result.score" or "ctx.step_0_result.hash"
+  function resolvePath(fullPath) {
+    const parts = fullPath.split('.');
+    let root = resolveRoot(parts[0]);
+    let val = root;
+    for (let i = 1; i < parts.length; i++) {
+      if (val == null) return undefined;
+      val = val[parts[i]];
+    }
+    return val;
+  }
+
+  // Parse RHS literal value
+  function parseValue(raw) {
+    const v = raw.trim();
+    if (v === 'true') return true;
+    if (v === 'false') return false;
+    if (v === 'null') return null;
+    if (v === 'undefined') return undefined;
+    if (/^['"](.*)['"]$/.test(v)) return v.slice(1, -1);
+    if (v !== '' && !isNaN(Number(v))) return Number(v);
+    return v;
+  }
+
+  // Compare helper
+  function compare(lhs, op, rhs) {
+    switch (op) {
+      case '==':  return lhs == rhs;
+      case '!=':  return lhs != rhs;
+      case '===': return lhs === rhs;
+      case '!==': return lhs !== rhs;
+      case '>':   return Number(lhs) > Number(rhs);
+      case '<':   return Number(lhs) < Number(rhs);
+      case '>=':  return Number(lhs) >= Number(rhs);
+      case '<=':  return Number(lhs) <= Number(rhs);
+      case 'includes':   return typeof lhs === 'string' ? lhs.includes(String(rhs)) : Array.isArray(lhs) ? lhs.includes(rhs) : false;
+      case 'startsWith': return typeof lhs === 'string' && lhs.startsWith(String(rhs));
+      case 'endsWith':   return typeof lhs === 'string' && lhs.endsWith(String(rhs));
+      default: return false;
+    }
+  }
+
+  // Negation: !result.field
+  const negMatch = str.match(/^!(\w+(?:\.\w+)*)$/);
+  if (negMatch) return !resolvePath(negMatch[1]);
+
+  // Comparison: path op value
+  const cmpMatch = str.match(/^(\w+(?:\.\w+)*)\s*(===|!==|==|!=|>=|<=|>|<|includes|startsWith|endsWith)\s*(.+)$/);
+  if (cmpMatch) {
+    const [, path, op, rawVal] = cmpMatch;
+    return compare(resolvePath(path), op, parseValue(rawVal));
+  }
+
+  // Truthy check: result.field
+  const truthyMatch = str.match(/^(\w+(?:\.\w+)*)$/);
+  if (truthyMatch) return !!resolvePath(truthyMatch[1]);
+
+  return false;
 }
 
 // ===== WORKFLOWS — Declarative multi-step conditional chains =====
