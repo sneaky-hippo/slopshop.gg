@@ -1546,7 +1546,7 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'version', 'upgrade', 'completions', 'help'],
+      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'wallet', 'bounty', 'knowledge', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'version', 'upgrade', 'completions', 'help'],
       flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N', '--model M', '--dry-run', '--limit N', '--offset N'],
       version: PKG_VERSION
     }, null, 2));
@@ -1570,8 +1570,12 @@ ${C.reset}`;
   console.log(`    ${cyan('slop live')} ${dim('<org-id>')}                     Real-time agent dashboard (The Sims for AI)`);
   console.log(`    ${cyan('slop live --launch')}                    Launch 30-agent startup + watch`);
   console.log(`    ${cyan('slop interactive')}                      Interactive REPL / shell mode\n`);
+  console.log(`  ${bold('ECONOMY & KNOWLEDGE')}`);
+  console.log(`    ${cyan('slop wallet')} ${dim('create|list|fund|transfer')} Manage wallets and funds`);
+  console.log(`    ${cyan('slop bounty')} ${dim('post|list|claim')}            Post and claim bounties`);
+  console.log(`    ${cyan('slop knowledge')} ${dim('add|query')}               Knowledge graph operations\n`);
   console.log(`  ${bold('ACCOUNT & CONFIG')}`);
-  console.log(`    ${cyan('slop signup')}                            Create a new account`);
+  javascript
   console.log(`    ${cyan('slop login')}                             Log in`);
   console.log(`    ${cyan('slop whoami')}                            Show current user info`);
   console.log(`    ${cyan('slop key')} ${dim('[set|remove|rotate]')}          Manage your API key`);
@@ -3285,7 +3289,7 @@ async function cmdAgents(args) {
 function cmdCompletions(args) {
   const shell = args[0] || 'bash';
 
-  const commands = ['call','pipe','run','search','list','discover','org','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','benchmark','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui','agents'];
+  const commands = ['call','pipe','run','search','list','discover','org','wallet','bounty','knowledge','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','benchmark','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui','agents'];
 
   if (shell === 'bash') {
     console.log(`# Add to ~/.bashrc:`);
@@ -3447,6 +3451,184 @@ async function cmdModels(args) {
   }
   console.log(`\n  ${dim('Set default:')} ${cyan('slop models set <model-id>')}`);
   console.log(`  ${dim('Per-call:')}    ${cyan('slop call <slug> --model <model-id>')}\n`);
+
+  // Show local Ollama models if available
+  try {
+    const ollamaRes = await request('GET', '/v1/models/ollama', null, false);
+    const local = ollamaRes.data?.models || ollamaRes.models || [];
+    if (local.length > 0) {
+      console.log(`  ${bold('Local (Ollama)')}\n`);
+      for (const m of local) {
+        console.log(`    ${dim('○')} ${cyan((m.name || m.id || m).toString().padEnd(22))} ${dim(m.size || '')}`);
+      }
+      console.log('');
+    }
+  } catch (_) { /* Ollama not available */ }
+}
+
+// ============================================================
+// WALLET — Manage wallets
+// ============================================================
+async function cmdWallet(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Wallet Management')}\n`);
+    console.log(`  ${cyan('slop wallet create')} ${dim('--name X')}             Create a wallet`);
+    console.log(`  ${cyan('slop wallet list')}                          List wallets`);
+    console.log(`  ${cyan('slop wallet fund')} ${dim('<id> <amount>')}          Fund a wallet`);
+    console.log(`  ${cyan('slop wallet transfer')} ${dim('--from X --to Y --amount N')}  Transfer funds\n`);
+    return;
+  }
+
+  if (sub === 'create') {
+    const nameIdx = args.indexOf('--name');
+    const name = nameIdx >= 0 ? args[nameIdx + 1] : 'default';
+    const res = await request('POST', '/v1/wallet/create', { name });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Wallet created')}  ${cyan(d.id || d.wallet_id || '')}  ${dim(name)}\n`);
+    return;
+  }
+
+  if (sub === 'list') {
+    const res = await request('GET', '/v1/wallet/list', null);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const wallets = res.data?.wallets || res.wallets || [];
+    console.log(`\n  ${bold('Wallets')}\n`);
+    for (const w of wallets) {
+      console.log(`  ${cyan((w.id || '').padEnd(20))} ${yellow(String(w.balance ?? 0).padStart(10))} credits  ${dim(w.name || '')}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'fund') {
+    const id = args[1];
+    const amount = Number(args[2]);
+    if (!id || !amount) die('Usage: slop wallet fund <id> <amount>');
+    const res = await request('POST', `/v1/wallet/${id}/fund`, { amount });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    console.log(`\n  ${green('✓ Funded')} ${cyan(id)} with ${yellow(String(amount))} credits\n`);
+    return;
+  }
+
+  if (sub === 'transfer') {
+    const fromIdx = args.indexOf('--from');
+    const toIdx = args.indexOf('--to');
+    const amtIdx = args.indexOf('--amount');
+    const from = fromIdx >= 0 ? args[fromIdx + 1] : null;
+    const to = toIdx >= 0 ? args[toIdx + 1] : null;
+    const amount = amtIdx >= 0 ? Number(args[amtIdx + 1]) : null;
+    if (!from || !to || !amount) die('Usage: slop wallet transfer --from X --to Y --amount N');
+    const res = await request('POST', '/v1/wallet/transfer', { from, to, amount });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    console.log(`\n  ${green('✓ Transferred')} ${yellow(String(amount))} from ${cyan(from)} → ${cyan(to)}\n`);
+    return;
+  }
+
+  die(`Unknown wallet subcommand: ${sub}. Try: slop wallet help`);
+}
+
+// ============================================================
+// BOUNTY — Post and claim bounties
+// ============================================================
+async function cmdBounty(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Bounties')}\n`);
+    console.log(`  ${cyan('slop bounty post')} ${dim('--title X --reward N')}   Post a bounty`);
+    console.log(`  ${cyan('slop bounty list')}                          List bounties`);
+    console.log(`  ${cyan('slop bounty claim')} ${dim('<id>')}                  Claim a bounty\n`);
+    return;
+  }
+
+  if (sub === 'post') {
+    const titleIdx = args.indexOf('--title');
+    const rewardIdx = args.indexOf('--reward');
+    const title = titleIdx >= 0 ? args[titleIdx + 1] : null;
+    const reward = rewardIdx >= 0 ? Number(args[rewardIdx + 1]) : null;
+    if (!title || !reward) die('Usage: slop bounty post --title X --reward N');
+    const res = await request('POST', '/v1/bounties/post', { title, reward });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Bounty posted')}  ${cyan(d.id || d.bounty_id || '')}  ${dim(title)}  ${yellow(String(reward) + ' credits')}\n`);
+    return;
+  }
+
+  if (sub === 'list') {
+    const res = await request('GET', '/v1/bounties', null);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const bounties = res.data?.bounties || res.bounties || [];
+    console.log(`\n  ${bold('Bounties')}\n`);
+    for (const b of bounties) {
+      const status = b.claimed ? dim('claimed') : green('open');
+      console.log(`  ${cyan((b.id || '').padEnd(14))} ${yellow(String(b.reward ?? 0).padStart(8))} cr  ${status}  ${b.title || ''}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'claim') {
+    const id = args[1];
+    if (!id) die('Usage: slop bounty claim <id>');
+    const res = await request('POST', `/v1/bounties/${id}/claim`, {});
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    console.log(`\n  ${green('✓ Bounty claimed:')} ${cyan(id)}\n`);
+    return;
+  }
+
+  die(`Unknown bounty subcommand: ${sub}. Try: slop bounty help`);
+}
+
+// ============================================================
+// KNOWLEDGE — Knowledge graph operations
+// ============================================================
+async function cmdKnowledge(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Knowledge Graph')}\n`);
+    console.log(`  ${cyan('slop knowledge add')} ${dim('--subject X --predicate Y --object Z')}   Add a triple`);
+    console.log(`  ${cyan('slop knowledge query')} ${dim('"question"')}                          Query knowledge\n`);
+    return;
+  }
+
+  if (sub === 'add') {
+    const sIdx = args.indexOf('--subject');
+    const pIdx = args.indexOf('--predicate');
+    const oIdx = args.indexOf('--object');
+    const subject = sIdx >= 0 ? args[sIdx + 1] : null;
+    const predicate = pIdx >= 0 ? args[pIdx + 1] : null;
+    const object = oIdx >= 0 ? args[oIdx + 1] : null;
+    if (!subject || !predicate || !object) die('Usage: slop knowledge add --subject X --predicate Y --object Z');
+    const res = await request('POST', '/v1/knowledge/add', { subject, predicate, object });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    console.log(`\n  ${green('✓ Added:')} ${cyan(subject)} ${dim('→')} ${yellow(predicate)} ${dim('→')} ${cyan(object)}\n`);
+    return;
+  }
+
+  if (sub === 'query') {
+    const question = args.slice(1).join(' ');
+    if (!question) die('Usage: slop knowledge query <question>');
+    const res = await request('POST', '/v1/knowledge/query', { question });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${bold('Knowledge Results')}\n`);
+    const results = d.results || d.triples || [d];
+    for (const r of (Array.isArray(results) ? results : [results])) {
+      if (r.subject) console.log(`  ${cyan(r.subject)} ${dim('→')} ${yellow(r.predicate || '')} ${dim('→')} ${cyan(r.object || '')}`);
+      else console.log(`  ${dim(JSON.stringify(r))}`);
+    }
+    console.log('');
+    return;
+  }
+
+  die(`Unknown knowledge subcommand: ${sub}. Try: slop knowledge help`);
 }
 
 // ============================================================
@@ -4390,6 +4572,9 @@ async function cmdInteractive() {
           case 'run': await cmdRun(args); break;
           case 'plan': await cmdPlan(args); break;
           case 'org': await cmdOrg(args); break;
+          case 'wallet': await cmdWallet(args); break;
+          case 'bounty': await cmdBounty(args); break;
+          case 'knowledge': await cmdKnowledge(args); break;
           case 'chain': await cmdChain(args); break;
           case 'memory': case 'mem': await cmdMemory(args); break;
           case 'discover': await cmdDiscover(args); break;
@@ -4916,6 +5101,9 @@ async function main() {
     case 'doctor':  await cmdDoctor();      break;
     case 'hive':    await cmdHive(args);   break;
     case 'org':     await cmdOrg(args);    break;
+    case 'wallet':  await cmdWallet(args); break;
+    case 'bounty':  await cmdBounty(args); break;
+    case 'knowledge': await cmdKnowledge(args); break;
     case 'chain':   await cmdChain(args);  break;
     case 'memory':  await cmdMemory(args); break;
     case 'mem':     await cmdMemory(args); break;
