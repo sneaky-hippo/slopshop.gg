@@ -494,8 +494,8 @@ const DISPOSABLE_DOMAINS = new Set([
 // 1. enrich-url-to-title
 // ---------------------------------------------------------------------------
 function enrichUrlToTitle(input) {
-  const { url: rawUrl } = input;
-  if (!rawUrl) throw new Error('url is required');
+  const { url: rawUrl } = input || {};
+  if (!rawUrl) return { _engine: 'real', error: 'missing_param', required: 'url', hint: 'Provide a URL to extract a title from' };
   let domain = rawUrl;
   try {
     const parsed = new URL(rawUrl.startsWith('http') ? rawUrl : 'https://' + rawUrl);
@@ -513,8 +513,9 @@ function enrichUrlToTitle(input) {
 // 2. enrich-domain-to-company
 // ---------------------------------------------------------------------------
 function enrichDomainToCompany(input) {
+  input = input || {};
   const { domain } = input;
-  if (!domain) throw new Error('domain is required');
+  if (!domain) return { _engine: 'real', error: 'missing_required_field', required: 'domain' };
   const clean = domain.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0];
   const name = clean.split('.')[0] || clean;
   const company = name.charAt(0).toUpperCase() + name.slice(1);
@@ -552,8 +553,8 @@ function enrichEmailToName(input) {
 // 5. enrich-phone-to-country
 // ---------------------------------------------------------------------------
 function enrichPhoneToCountry(input) {
-  const { phone } = input;
-  if (!phone) throw new Error('phone is required');
+  const { phone } = input || {};
+  if (!phone) return { _engine: 'real', error: 'missing_param', required: 'phone', hint: 'Provide a phone number with country prefix (e.g. +1555...)' };
   const normalized = phone.trim();
   // Sort by prefix length descending to match longest first
   const sorted = PHONE_PREFIXES.slice().sort((a, b) => b.prefix.length - a.prefix.length);
@@ -569,8 +570,8 @@ function enrichPhoneToCountry(input) {
 // 6. enrich-ip-to-asn
 // ---------------------------------------------------------------------------
 function enrichIpToAsn(input) {
-  const { ip } = input;
-  if (!ip) throw new Error('ip is required');
+  const { ip } = input || {};
+  if (!ip) return { _engine: 'real', error: 'missing_param', required: 'ip', hint: 'Provide an IP address (IPv4 or IPv6)' };
   const parts = ip.split('.').map(Number);
   const isIPv6 = ip.includes(':');
   if (isIPv6) {
@@ -629,7 +630,8 @@ function enrichLanguageCode(input) {
 // 9. enrich-mime-type
 // ---------------------------------------------------------------------------
 function enrichMimeType(input) {
-  const { extension, mime } = input;
+  const { extension, mime } = input || {};
+  if (!extension && !mime) return { _engine: 'real', error: 'missing_param', required: 'extension or mime', hint: 'Provide a file extension (e.g. .json) or a MIME type (e.g. application/json)' };
   if (extension) {
     const ext = extension.startsWith('.') ? extension.toLowerCase() : '.' + extension.toLowerCase();
     const info = MIME_TYPES[ext];
@@ -642,15 +644,14 @@ function enrichMimeType(input) {
     if (entry) return { _engine: 'real', extension: entry[0], mime: entry[1].mime, category: entry[1].category };
     return { _engine: 'real', extension: null, mime, category: 'unknown' };
   }
-  throw new Error('extension or mime is required');
 }
 
 // ---------------------------------------------------------------------------
 // 10. enrich-http-status-explain
 // ---------------------------------------------------------------------------
 function enrichHttpStatusExplain(input) {
-  const { code } = input;
-  if (code == null) throw new Error('code is required');
+  const { code } = input || {};
+  if (code == null) return { _engine: 'real', error: 'missing_param', required: 'code', hint: 'Provide an HTTP status code (e.g. 200, 404)' };
   const c = Number(code);
   const info = HTTP_STATUSES[c];
   if (info) return { _engine: 'real', code: c, status: info.status, description: info.description, category: info.category };
@@ -721,8 +722,8 @@ function enrichUseragentParse(input) {
 // 13. enrich-accept-language-parse
 // ---------------------------------------------------------------------------
 function enrichAcceptLanguageParse(input) {
-  const { header } = input;
-  if (!header) throw new Error('header is required');
+  const { header } = input || {};
+  if (!header) return { _engine: 'real', error: 'missing_param', required: 'header', hint: 'Provide an Accept-Language header string (e.g. en-US,en;q=0.9)' };
   const languages = header.split(',').map(part => {
     const [lang, q] = part.trim().split(';q=');
     return { code: lang.trim(), quality: q ? parseFloat(q) : 1.0 };
@@ -759,8 +760,8 @@ function enrichCrontabExplain(input) {
 // 15. enrich-semver-explain
 // ---------------------------------------------------------------------------
 function enrichSemverExplain(input) {
-  const { range } = input;
-  if (!range) throw new Error('range is required');
+  const { range } = input || {};
+  if (!range) return { _engine: 'real', error: 'missing_param', required: 'range', hint: 'Provide a semver range string (e.g. ^1.2.3, ~2.0.0)' };
   const r = range.trim();
 
   let explanation = '';
@@ -815,8 +816,8 @@ function enrichSemverExplain(input) {
 // 16. enrich-license-explain
 // ---------------------------------------------------------------------------
 function enrichLicenseExplain(input) {
-  const { license } = input;
-  if (!license) throw new Error('license is required');
+  const { license } = input || {};
+  if (!license) return { _engine: 'real', error: 'missing_param', required: 'license', hint: 'Provide an SPDX license identifier (e.g. MIT, GPL-3.0)' };
   const key = Object.keys(LICENSES).find(k => k.toLowerCase() === license.trim().toLowerCase());
   if (!key) return { _engine: 'real', license, type: 'Unknown', can_commercial: null, must_disclose_source: null, must_include_license: null, description: 'License not found in built-in table.' };
   const info = LICENSES[key];
@@ -827,8 +828,8 @@ function enrichLicenseExplain(input) {
 // 17. enrich-timezone-info
 // ---------------------------------------------------------------------------
 function enrichTimezoneInfo(input) {
-  const { timezone } = input;
-  if (!timezone) throw new Error('timezone is required');
+  const { timezone } = input || {};
+  if (!timezone) return { _engine: 'real', error: 'missing_param', required: 'timezone', hint: 'Provide an IANA timezone name (e.g. America/New_York, UTC)' };
   const q = timezone.trim();
   // Exact match
   const exact = TIMEZONES[q];
@@ -852,8 +853,8 @@ function enrichTimezoneInfo(input) {
 // 18. enrich-emoji-info
 // ---------------------------------------------------------------------------
 function enrichEmojiInfo(input) {
-  const { emoji } = input;
-  if (!emoji) throw new Error('emoji is required');
+  const { emoji } = input || {};
+  if (!emoji) return { _engine: 'real', error: 'missing_param', required: 'emoji', hint: 'Provide an emoji character or name to look up' };
   const info = EMOJIS[emoji];
   if (info) return { _engine: 'real', emoji, name: info.name, category: info.category, unicode: info.unicode };
   // Try searching by name
@@ -867,8 +868,8 @@ function enrichEmojiInfo(input) {
 // 19. enrich-color-name
 // ---------------------------------------------------------------------------
 function enrichColorName(input) {
-  let { hex } = input;
-  if (!hex) throw new Error('hex is required');
+  let { hex } = input || {};
+  if (!hex) return { _engine: 'real', error: 'missing_param', required: 'hex', hint: 'Provide a hex color code (e.g. #FF0000 or FF0000)' };
   hex = hex.replace('#', '').trim();
   if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
   if (hex.length !== 6) throw new Error('Invalid hex color');
@@ -890,8 +891,8 @@ function enrichColorName(input) {
 // 20. enrich-file-extension-info
 // ---------------------------------------------------------------------------
 function enrichFileExtensionInfo(input) {
-  const { extension } = input;
-  if (!extension) throw new Error('extension is required');
+  const { extension } = input || {};
+  if (!extension) return { _engine: 'real', error: 'missing_param', required: 'extension', hint: 'Provide a file extension (e.g. .js, .py, .json)' };
   const ext = (extension.startsWith('.') ? extension : '.' + extension).toLowerCase();
   const info = FILE_EXTENSIONS[ext];
   if (info) return { _engine: 'real', extension: ext, name: info.name, category: info.category, description: info.description };
@@ -902,8 +903,10 @@ function enrichFileExtensionInfo(input) {
 // 21. comm-qr-url  (SVG grid approximation, hash-based)
 // ---------------------------------------------------------------------------
 function commQrUrl(input) {
-  const { url: rawUrl } = input;
-  if (!rawUrl) throw new Error('url is required');
+  const rawUrl = input.url || input.text || null;
+  if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.trim()) {
+    return { _engine: 'error', error: 'Missing required parameter: url (string). Pass { "url": "https://example.com" }' };
+  }
 
   const hash = crypto.createHash('sha256').update(rawUrl).digest('hex');
   const SIZE = 21;

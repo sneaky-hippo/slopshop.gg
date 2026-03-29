@@ -269,8 +269,9 @@ async function senseTimeNow(input) {
 // 7. sense-github-repo
 // ---------------------------------------------------------------------------
 async function senseGithubRepo(input) {
+  input = input || {};
   const repo = input.repo;
-  if (!repo) throw new Error('repo is required (owner/repo)');
+  if (!repo) return { _engine: 'real', error: 'missing_param', required: 'repo', hint: 'owner/repo format' };
   const apiUrl = `https://api.github.com/repos/${repo}`;
   const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
   if (statusCode !== 200) throw new Error(`GitHub API returned ${statusCode}`);
@@ -292,8 +293,9 @@ async function senseGithubRepo(input) {
 // 8. sense-npm-package
 // ---------------------------------------------------------------------------
 async function senseNpmPackage(input) {
+  input = input || {};
   const pkg = input.package;
-  if (!pkg) throw new Error('package is required');
+  if (!pkg) return { _engine: 'real', error: 'missing_param', required: 'package' };
   const encoded = encodeURIComponent(pkg).replace('%40', '@');
   const infoUrl = `https://registry.npmjs.org/${encoded}`;
   const { body, statusCode } = await fetchUrl(infoUrl, { timeoutMs: 8000 });
@@ -330,9 +332,11 @@ async function senseNpmPackage(input) {
 // 9. sense-port-open
 // ---------------------------------------------------------------------------
 async function sensePortOpen(input) {
+  input = input || {};
   const host = input.host;
   const port = parseInt(input.port, 10);
-  if (!host || !port) throw new Error('host and port are required');
+  if (!host) return { _engine: 'real', error: 'missing_param', required: 'host' };
+  if (!port) return { _engine: 'real', error: 'missing_param', required: 'port' };
   const start = Date.now();
   return new Promise((resolve) => {
     const sock = net.createConnection({ host, port, timeout: 3000 });
@@ -357,8 +361,9 @@ async function sensePortOpen(input) {
 // 10. sense-uptime-check
 // ---------------------------------------------------------------------------
 async function senseUptimeCheck(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_param', required: 'url' };
   const start = Date.now();
   try {
     const { statusCode, timingMs } = await fetchUrl(url, { timeoutMs: 8000, method: 'HEAD' });
@@ -803,8 +808,9 @@ async function senseUrlSitemap(input) {
 // 24. sense-rss-latest
 // ---------------------------------------------------------------------------
 async function senseRssLatest(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_param', required: 'url' };
   const count = input.count || 5;
   const { body } = await fetchUrl(url, { timeoutMs: 10000 });
 
@@ -880,8 +886,9 @@ async function senseUrlAccessibility(input) {
 // 26. sense-whois
 // ---------------------------------------------------------------------------
 async function senseWhois(input) {
+  input = input || {};
   const domain = input.domain;
-  if (!domain) throw new Error('domain is required');
+  if (!domain) return { _engine: 'real', error: 'missing_param', required: 'domain' };
   const dns = require('dns').promises;
   let nameservers = [];
   try {
@@ -899,8 +906,9 @@ async function senseWhois(input) {
 // 27. sense-ip-geo
 // ---------------------------------------------------------------------------
 function senseIpGeo(input) {
+  input = input || {};
   const ip = input.ip;
-  if (!ip) throw new Error('ip is required');
+  if (!ip) return { _engine: 'real', error: 'missing_param', required: 'ip' };
   const firstOctet = parseInt(ip.split('.')[0], 10);
   let region;
   if (firstOctet >= 1 && firstOctet <= 50) region = 'North America';
@@ -974,8 +982,9 @@ async function senseCryptoPrice(input) {
 // 30. sense-github-releases
 // ---------------------------------------------------------------------------
 async function senseGithubReleases(input) {
+  input = input || {};
   const repo = input.repo;
-  if (!repo) throw new Error('repo is required (owner/repo)');
+  if (!repo) return { _engine: 'real', error: 'missing_param', required: 'repo', hint: 'owner/repo format' };
   const apiUrl = `https://api.github.com/repos/${repo}/releases?per_page=5`;
   const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
   if (statusCode !== 200) throw new Error(`GitHub API returned ${statusCode}`);
@@ -988,8 +997,9 @@ async function senseGithubReleases(input) {
 // 31. sense-pypi-package
 // ---------------------------------------------------------------------------
 async function sensePypiPackage(input) {
+  input = input || {};
   const pkg = input.package;
-  if (!pkg) throw new Error('package is required');
+  if (!pkg) return { _engine: 'real', error: 'missing_param', required: 'package' };
   const apiUrl = `https://pypi.org/pypi/${encodeURIComponent(pkg)}/json`;
   const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
   if (statusCode !== 200) throw new Error(`PyPI returned ${statusCode}`);
@@ -1008,8 +1018,9 @@ async function sensePypiPackage(input) {
 // 32. sense-domain-expiry
 // ---------------------------------------------------------------------------
 async function senseDomainExpiry(input) {
+  input = input || {};
   const domain = input.domain;
-  if (!domain) throw new Error('domain is required');
+  if (!domain) return { _engine: 'real', error: 'missing_param', required: 'domain' };
   const dns = require('dns').promises;
   let nameservers = [];
   let soa_serial = null;
@@ -1033,8 +1044,9 @@ async function senseDomainExpiry(input) {
 // 33. sense-http-headers-security
 // ---------------------------------------------------------------------------
 async function senseHttpHeadersSecurity(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_param', required: 'url' };
   const { headers } = await fetchUrl(url, { timeoutMs: 10000, method: 'HEAD' });
   const securityHeaders = [
     'strict-transport-security',
@@ -1093,8 +1105,9 @@ async function senseUrlBrokenLinks(input) {
 // 35. sense-dns-propagation
 // ---------------------------------------------------------------------------
 async function senseDnsPropagation(input) {
+  input = input || {};
   const domain = input.domain;
-  if (!domain) throw new Error('domain is required');
+  if (!domain) return { _engine: 'real', error: 'missing_param', required: 'domain' };
   const resolvers = ['8.8.8.8', '1.1.1.1', '208.67.222.222'];
   const dns = require('dns');
   const results = await Promise.all(resolvers.map(resolver => new Promise(resolve => {
@@ -1163,9 +1176,11 @@ async function senseUrlWordCount(input) {
 // 38. sense-url-diff
 // ---------------------------------------------------------------------------
 async function senseUrlDiff(input) {
+  input = input || {};
   const url_a = input.url_a;
   const url_b = input.url_b;
-  if (!url_a || !url_b) throw new Error('url_a and url_b are required');
+  if (!url_a) return { _engine: 'real', error: 'missing_param', required: 'url_a' };
+  if (!url_b) return { _engine: 'real', error: 'missing_param', required: 'url_b' };
   const [resA, resB] = await Promise.all([
     fetchUrl(url_a, { timeoutMs: 10000 }),
     fetchUrl(url_b, { timeoutMs: 10000 }),
@@ -1186,8 +1201,9 @@ async function senseUrlDiff(input) {
 // 39. sense-github-user
 // ---------------------------------------------------------------------------
 async function senseGithubUser(input) {
-  const username = input.username;
-  if (!username) throw new Error('username is required');
+  input = input || {};
+  const username = input.username || input.user;
+  if (!username) return { _engine: 'real', error: 'missing_param', required: 'username' };
   const apiUrl = `https://api.github.com/users/${encodeURIComponent(username)}`;
   const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
   if (statusCode !== 200) throw new Error(`GitHub API returned ${statusCode}`);

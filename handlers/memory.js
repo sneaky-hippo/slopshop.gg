@@ -272,9 +272,10 @@ module.exports = function (db) {
   // 6. memory-expire
   // -------------------------------------------------------------------------
   function memoryExpire(input) {
+    input = input || {};
     const { key, ttl_seconds, namespace = 'default' } = input;
-    if (!key) throw new Error('key is required');
-    if (ttl_seconds == null) throw new Error('ttl_seconds is required');
+    if (!key) return { _engine: 'real', error: 'missing_required_field', required: 'key' };
+    if (ttl_seconds == null) return { _engine: 'real', error: 'missing_required_field', required: 'ttl_seconds' };
     const now = Date.now();
     const row = stmts.memGet.get(namespace, key);
     if (!row || isExpiredRow(row, now)) throw new Error(`Key "${key}" not found`);
@@ -448,10 +449,11 @@ module.exports = function (db) {
   // 14. memory-namespace-clear
   // -------------------------------------------------------------------------
   function memoryNamespaceClear(input) {
+    input = input || {};
     const { namespace, confirm } = input;
-    if (!namespace) throw new Error('namespace is required');
+    if (!namespace) return { _engine: 'real', error: 'missing_required_field', required: 'namespace' };
     if (confirm !== `clear:${namespace}`) {
-      throw new Error(`To clear namespace "${namespace}", pass confirm: "clear:${namespace}"`);
+      return { _engine: 'real', error: 'missing_required_field', required: 'confirm', hint: `pass confirm: "clear:${namespace}"` };
     }
     const doDelete = db.transaction(() => {
       stmts.memNsClear.run(namespace);
@@ -465,6 +467,7 @@ module.exports = function (db) {
   // 15. queue-push
   // -------------------------------------------------------------------------
   function queuePush(input) {
+    input = input || {};
     const { queue = 'default', item } = input;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     stmts.queueInsert.run(queue, id, JSON.stringify(item), Date.now());
@@ -476,6 +479,7 @@ module.exports = function (db) {
   // 16. queue-pop
   // -------------------------------------------------------------------------
   function queuePop(input) {
+    input = input || {};
     const { queue = 'default' } = input;
 
     const doPop = db.transaction(() => {
@@ -494,6 +498,7 @@ module.exports = function (db) {
   // 17. queue-peek
   // -------------------------------------------------------------------------
   function queuePeek(input) {
+    input = input || {};
     const { queue = 'default' } = input;
     const row = stmts.queuePeek.get(queue);
     const { cnt } = stmts.queueSize.get(queue);
@@ -508,6 +513,7 @@ module.exports = function (db) {
   // 18. queue-size
   // -------------------------------------------------------------------------
   function queueSize(input) {
+    input = input || {};
     const { queue = 'default' } = input;
     const { cnt } = stmts.queueSize.get(queue);
     return { _engine: 'real', size: cnt };
@@ -517,8 +523,9 @@ module.exports = function (db) {
   // 19. counter-increment
   // -------------------------------------------------------------------------
   function counterIncrement(input) {
+    input = input || {};
     const { name, by = 1 } = input;
-    if (!name) throw new Error('name is required');
+    if (!name) return { _engine: 'real', error: 'missing_required_field', required: 'name' };
     const delta = Number(by);
     const now = Date.now();
     stmts.counterUpsert.run({ name, value: delta, delta, now });
@@ -530,8 +537,9 @@ module.exports = function (db) {
   // 20. counter-get
   // -------------------------------------------------------------------------
   function counterGet(input) {
+    input = input || {};
     const { name } = input;
-    if (!name) throw new Error('name is required');
+    if (!name) return { _engine: 'real', error: 'missing_required_field', required: 'name' };
     const row = stmts.counterGet.get(name);
     return { _engine: 'real', name, value: row ? row.value : 0 };
   }
