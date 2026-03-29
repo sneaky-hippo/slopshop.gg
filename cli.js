@@ -3668,6 +3668,333 @@ async function cmdMarket(args) {
 }
 
 // ============================================================
+// ARMY — Deploy agent swarms
+// ============================================================
+async function cmdArmy(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Army — Agent Swarm Deploy')}\n`);
+    console.log(`  ${cyan('slop army deploy')} ${dim('--task "..." --agents 10 --tool <slug>')}  Deploy a swarm`);
+    console.log(`  ${cyan('slop army runs')}                                       List all runs`);
+    console.log(`  ${cyan('slop army status')} ${dim('<id>')}                                 Check run status\n`);
+    return;
+  }
+
+  if (sub === 'deploy') {
+    const taskIdx = args.indexOf('--task');
+    const agentsIdx = args.indexOf('--agents');
+    const toolIdx = args.indexOf('--tool');
+    const task = taskIdx >= 0 ? args[taskIdx + 1] : null;
+    const agents = agentsIdx >= 0 ? Number(args[agentsIdx + 1]) : 5;
+    const tool = toolIdx >= 0 ? args[toolIdx + 1] : null;
+    if (!task) die('Usage: slop army deploy --task "..." --agents 10 --tool <slug>');
+    spinnerStart('Deploying agent swarm...');
+    const res = await request('POST', '/v1/army/deploy', { task, agents, tool });
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Swarm deployed')}  ${cyan(d.id || d.run_id || '')}  ${dim(String(agents) + ' agents')}  ${dim(task.slice(0, 60))}\n`);
+    return;
+  }
+
+  if (sub === 'runs') {
+    spinnerStart('Fetching army runs...');
+    const res = await request('GET', '/v1/army/runs', null);
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const runs = res.data?.runs || res.runs || [];
+    console.log(`\n  ${bold('Army Runs')}\n`);
+    for (const r of runs) {
+      const status = r.status === 'complete' ? green(r.status) : yellow(r.status || 'unknown');
+      console.log(`  ${cyan((r.id || '').padEnd(20))} ${status.padEnd(20)}  ${dim((r.task || '').slice(0, 50))}`);
+    }
+    if (runs.length === 0) console.log(dim('  No runs found.'));
+    console.log('');
+    return;
+  }
+
+  if (sub === 'status') {
+    const id = args[1];
+    if (!id) die('Usage: slop army status <id>');
+    spinnerStart('Fetching run status...');
+    const res = await request('GET', `/v1/army/run/${id}`, null);
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${bold('Army Run')} ${cyan(id)}\n`);
+    console.log(`  ${dim('Status:')}  ${d.status === 'complete' ? green(d.status) : yellow(d.status || 'unknown')}`);
+    console.log(`  ${dim('Agents:')}  ${d.agent_count || d.agents || '?'}`);
+    console.log(`  ${dim('Task:')}    ${d.task || 'N/A'}`);
+    if (d.merkle_root) console.log(`  ${dim('Merkle:')}  ${d.merkle_root}`);
+    console.log('');
+    return;
+  }
+
+  die(`Unknown army subcommand: ${sub}. Try: slop army help`);
+}
+
+// ============================================================
+// SCHEDULE — Cron-based scheduled jobs
+// ============================================================
+async function cmdSchedule(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Schedules — Cron Jobs')}\n`);
+    console.log(`  ${cyan('slop schedule create')} ${dim('--cron "0 * * * *" --slug <slug>')}  Create a schedule`);
+    console.log(`  ${cyan('slop schedule list')}                                     List schedules`);
+    console.log(`  ${cyan('slop schedule delete')} ${dim('<id>')}                              Delete a schedule\n`);
+    return;
+  }
+
+  if (sub === 'create') {
+    const cronIdx = args.indexOf('--cron');
+    const slugIdx = args.indexOf('--slug');
+    const cron = cronIdx >= 0 ? args[cronIdx + 1] : null;
+    const slug = slugIdx >= 0 ? args[slugIdx + 1] : null;
+    if (!cron || !slug) die('Usage: slop schedule create --cron "0 * * * *" --slug <slug>');
+    spinnerStart('Creating schedule...');
+    const res = await request('POST', '/v1/schedules', { cron, slug });
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Schedule created')}  ${cyan(d.id || d.schedule_id || '')}  ${dim(cron)}  ${dim(slug)}\n`);
+    return;
+  }
+
+  if (sub === 'list') {
+    spinnerStart('Fetching schedules...');
+    const res = await request('GET', '/v1/schedules', null);
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const schedules = res.data?.schedules || res.schedules || [];
+    console.log(`\n  ${bold('Schedules')}\n`);
+    for (const s of schedules) {
+      console.log(`  ${cyan((s.id || '').padEnd(20))} ${dim((s.cron || '').padEnd(15))}  ${s.slug || ''}`);
+    }
+    if (schedules.length === 0) console.log(dim('  No schedules found.'));
+    console.log('');
+    return;
+  }
+
+  if (sub === 'delete') {
+    const id = args[1];
+    if (!id) die('Usage: slop schedule delete <id>');
+    spinnerStart('Deleting schedule...');
+    const res = await request('DELETE', `/v1/schedules/${id}`, null);
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    console.log(`\n  ${green('✓ Schedule deleted:')} ${cyan(id)}\n`);
+    return;
+  }
+
+  die(`Unknown schedule subcommand: ${sub}. Try: slop schedule help`);
+}
+
+// ============================================================
+// COPILOT — Persistent AI copilot sessions
+// ============================================================
+async function cmdCopilot(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Copilot — AI Assistant')}\n`);
+    console.log(`  ${cyan('slop copilot spawn')}                 Spawn a new copilot session`);
+    console.log(`  ${cyan('slop copilot chat')} ${dim('<message>')}      Send a message to copilot`);
+    console.log(`  ${cyan('slop copilot inbox')}                 View copilot inbox\n`);
+    return;
+  }
+
+  if (sub === 'spawn') {
+    spinnerStart('Spawning copilot...');
+    const res = await request('POST', '/v1/copilot/spawn', {});
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Copilot spawned')}  ${cyan(d.id || d.session_id || '')}  ${dim(d.status || 'ready')}\n`);
+    return;
+  }
+
+  if (sub === 'chat') {
+    const message = args.slice(1).join(' ');
+    if (!message) die('Usage: slop copilot chat <message>');
+    spinnerStart('Sending to copilot...');
+    const res = await request('POST', '/v1/copilot/chat', { message });
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${cyan('Copilot:')} ${d.reply || d.message || d.response || JSON.stringify(d)}\n`);
+    return;
+  }
+
+  if (sub === 'inbox') {
+    spinnerStart('Fetching copilot inbox...');
+    const res = await request('GET', '/v1/copilot/inbox', null);
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const messages = res.data?.messages || res.messages || res.data?.inbox || [];
+    console.log(`\n  ${bold('Copilot Inbox')}\n`);
+    for (const m of messages) {
+      const from = m.from || m.role || 'copilot';
+      console.log(`  ${cyan(from.padEnd(12))} ${m.message || m.content || m.text || ''}`);
+    }
+    if (messages.length === 0) console.log(dim('  Inbox empty.'));
+    console.log('');
+    return;
+  }
+
+  die(`Unknown copilot subcommand: ${sub}. Try: slop copilot help`);
+}
+
+// ============================================================
+// TOURNAMENT — Competitive agent tournaments
+// ============================================================
+async function cmdTournament(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Tournaments')}\n`);
+    console.log(`  ${cyan('slop tournament create')} ${dim('--name "test"')}    Create a tournament`);
+    console.log(`  ${cyan('slop tournament leaderboard')}             View leaderboard\n`);
+    return;
+  }
+
+  if (sub === 'create') {
+    const nameIdx = args.indexOf('--name');
+    const name = nameIdx >= 0 ? args[nameIdx + 1] : null;
+    if (!name) die('Usage: slop tournament create --name "test"');
+    spinnerStart('Creating tournament...');
+    const res = await request('POST', '/v1/tournament/create', { name });
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Tournament created')}  ${cyan(d.id || d.tournament_id || '')}  ${dim(name)}\n`);
+    return;
+  }
+
+  if (sub === 'leaderboard') {
+    spinnerStart('Fetching leaderboard...');
+    const res = await request('GET', '/v1/tournament/leaderboard', null);
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const entries = res.data?.leaderboard || res.leaderboard || res.data?.entries || [];
+    console.log(`\n  ${bold('Tournament Leaderboard')}\n`);
+    entries.forEach((e, i) => {
+      const rank = String(i + 1).padStart(3);
+      console.log(`  ${dim(rank)}  ${cyan((e.name || e.agent || e.id || '').padEnd(24))} ${yellow(String(e.score ?? e.points ?? 0).padStart(8))} pts`);
+    });
+    if (entries.length === 0) console.log(dim('  No entries yet.'));
+    console.log('');
+    return;
+  }
+
+  die(`Unknown tournament subcommand: ${sub}. Try: slop tournament help`);
+}
+
+// ============================================================
+// REPUTATION — Agent reputation & ratings
+// ============================================================
+async function cmdReputation(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Reputation')}\n`);
+    console.log(`  ${cyan('slop reputation leaderboard')}              View reputation leaderboard`);
+    console.log(`  ${cyan('slop reputation rate')} ${dim('<agent> <score>')}    Rate an agent (1-5)\n`);
+    return;
+  }
+
+  if (sub === 'leaderboard') {
+    spinnerStart('Fetching reputation leaderboard...');
+    const res = await request('GET', '/v1/reputation/leaderboard', null);
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const entries = res.data?.leaderboard || res.leaderboard || res.data?.agents || [];
+    console.log(`\n  ${bold('Reputation Leaderboard')}\n`);
+    entries.forEach((e, i) => {
+      const rank = String(i + 1).padStart(3);
+      const stars = '★'.repeat(Math.round(e.rating || e.score || 0));
+      console.log(`  ${dim(rank)}  ${cyan((e.agent || e.name || e.id || '').padEnd(24))} ${yellow(stars)}  ${dim(String(e.rating || e.score || 0))}`);
+    });
+    if (entries.length === 0) console.log(dim('  No ratings yet.'));
+    console.log('');
+    return;
+  }
+
+  if (sub === 'rate') {
+    const agent = args[1];
+    const score = Number(args[2]);
+    if (!agent || !score) die('Usage: slop reputation rate <agent> <score>');
+    spinnerStart('Submitting rating...');
+    const res = await request('POST', '/v1/reputation/rate', { agent, score });
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    console.log(`\n  ${green('✓ Rated')} ${cyan(agent)} → ${yellow(String(score) + '/5')} ${'★'.repeat(score)}\n`);
+    return;
+  }
+
+  die(`Unknown reputation subcommand: ${sub}. Try: slop reputation help`);
+}
+
+// ============================================================
+// PROOF — Merkle proof generation & verification
+// ============================================================
+async function cmdProof(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Proof — Merkle Trees')}\n`);
+    console.log(`  ${cyan('slop proof merkle')} ${dim('<item1> <item2> ...')}  Generate a Merkle tree`);
+    console.log(`  ${cyan('slop proof verify')} ${dim('--leaf <hash> --root <hash>')}  Verify a Merkle proof\n`);
+    return;
+  }
+
+  if (sub === 'merkle') {
+    const items = args.slice(1);
+    if (items.length === 0) die('Usage: slop proof merkle <item1> <item2> ...');
+    spinnerStart('Generating Merkle tree...');
+    const res = await request('POST', '/v1/proof/merkle', { items });
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Merkle tree generated')}\n`);
+    console.log(`  ${dim('Root:')}   ${cyan(d.root || d.merkle_root || '')}`);
+    console.log(`  ${dim('Leaves:')} ${d.leaf_count || d.leaves || items.length}`);
+    if (d.tree) console.log(`  ${dim('Tree:')}   ${JSON.stringify(d.tree).slice(0, 100)}`);
+    console.log('');
+    return;
+  }
+
+  if (sub === 'verify') {
+    const leafIdx = args.indexOf('--leaf');
+    const rootIdx = args.indexOf('--root');
+    const leaf = leafIdx >= 0 ? args[leafIdx + 1] : null;
+    const root = rootIdx >= 0 ? args[rootIdx + 1] : null;
+    if (!leaf || !root) die('Usage: slop proof verify --leaf <hash> --root <hash>');
+    spinnerStart('Verifying Merkle proof...');
+    const res = await request('POST', '/v1/proof/verify', { leaf, root });
+    spinnerStop();
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    const valid = d.valid || d.verified;
+    console.log(`\n  ${valid ? green('✓ Proof valid') : red('✗ Proof invalid')}\n`);
+    console.log(`  ${dim('Leaf:')} ${leaf}`);
+    console.log(`  ${dim('Root:')} ${root}`);
+    console.log('');
+    return;
+  }
+
+  die(`Unknown proof subcommand: ${sub}. Try: slop proof help`);
+}
+
+// ============================================================
 // EVAL — Run evaluation test sets
 // ============================================================
 async function cmdEval(args) {
@@ -5293,6 +5620,12 @@ async function cmdInteractive() {
           case 'wallet': await cmdWallet(args); break;
           case 'bounty': await cmdBounty(args); break;
           case 'market': await cmdMarket(args); break;
+          case 'army': await cmdArmy(args); break;
+          case 'schedule': await cmdSchedule(args); break;
+          case 'copilot': await cmdCopilot(args); break;
+          case 'tournament': await cmdTournament(args); break;
+          case 'reputation': await cmdReputation(args); break;
+          case 'proof': await cmdProof(args); break;
           case 'eval': await cmdEval(args); break;
           case 'replay': await cmdReplay(args); break;
           case 'queue': await cmdQueue(args); break;
@@ -5838,6 +6171,12 @@ async function main() {
     case 'wallet':  await cmdWallet(args); break;
     case 'bounty':  await cmdBounty(args); break;
     case 'market':  await cmdMarket(args); break;
+    case 'army':    await cmdArmy(args);   break;
+    case 'schedule': await cmdSchedule(args); break;
+    case 'copilot': await cmdCopilot(args); break;
+    case 'tournament': await cmdTournament(args); break;
+    case 'reputation': await cmdReputation(args); break;
+    case 'proof':   await cmdProof(args);  break;
     case 'eval':    await cmdEval(args);   break;
     case 'replay':  await cmdReplay(args); break;
     case 'queue':   await cmdQueue(args);  break;
