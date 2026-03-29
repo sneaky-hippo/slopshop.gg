@@ -490,7 +490,7 @@ JSON array only:`;
 
     // Plan with high creativity
     const plan = await planTools(dreamPrompt, { model: req.body.model });
-    if (plan.error) return res.status(500).json({ error: { code: 'dream_failed', message: plan.error } });
+    if (!plan || plan.error) return res.status(500).json({ error: { code: 'dream_failed', message: plan?.error ?? 'Unknown error' } });
 
     const execution = await executePlan(plan.steps, req.apiKey);
     const answer = await summarize('Creative exploration of: ' + prompt, execution.results);
