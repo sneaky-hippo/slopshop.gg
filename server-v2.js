@@ -2960,7 +2960,7 @@ app.post('/v1/knowledge/path', auth, (req, res) => {
 // 13. Void echo
 app.post('/v1/void/echo', (req, res) => {
   const msg = req.body.message || req.body.thought || '';
-  if (!msg) return res.status(400).json({ error: { code: 'missing_message' } });
+  if (!msg.trim()) return res.status(400).json({ error: { code: 'missing_message' } });
   const willEcho = crypto.randomInt(3) === 0; // ~33% chance
   const echoDelayMs = willEcho ? (1000 + crypto.randomInt(30000)) : null;
   const msgId = 'void-echo-' + crypto.randomUUID().slice(0, 12);
