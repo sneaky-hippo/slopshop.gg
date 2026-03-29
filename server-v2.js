@@ -5877,7 +5877,9 @@ app.post('/v1/exchange/submit', auth, async (req, res) => {
   if (handler) {
     try {
       const start = Date.now();
-      const result = await handler(typeof input === 'string' ? JSON.parse(input) : input);
+      let handlerInput = typeof input === 'string' ? JSON.parse(input) : input;
+      if (!handlerInput || typeof handlerInput !== 'object') handlerInput = {};
+      const result = await handler(handlerInput);
       const latency = Date.now() - start;
       const outputStr = JSON.stringify(result);
       const verificationHash = crypto.createHash('sha256').update(outputStr).digest('hex');
@@ -5902,15 +5904,19 @@ app.post('/v1/exchange/submit', auth, async (req, res) => {
         _engine: result?._engine || 'real',
       });
     } catch (e) {
-      // Self-execution failed — fall through to supplier matching
+      // Self-execution failed — log and fall through to supplier matching
+      console.error(`[exchange] Self-execution failed for ${task_type}: ${e.message}`);
+      // Still try supplier matching below
     }
   }
 
   // No handler or execution failed — try supplier matching
-  if (supplier) {
-    dbInsertTask.run(taskId, consumerId, supplier.id, task_type, JSON.stringify(input), credits, 'assigned');
-    res.json({ ok: true, task_id: taskId, status: 'matched', supplier_id: supplier.id, credits_offered: credits, execution: 'supplier',
-      instructions: { poll: `GET /v1/exchange/poll/${supplier.id}`, complete: 'POST /v1/exchange/complete {task_id, output}' } });
+  // Re-check for supplier since the initial check may have missed due to capability format
+  const matchedSupplier = supplier || db.prepare("SELECT * FROM compute_suppliers WHERE status = 'online' ORDER BY last_heartbeat DESC LIMIT 1").get();
+  if (matchedSupplier) {
+    dbInsertTask.run(taskId, consumerId, matchedSupplier.id, task_type, JSON.stringify(input), credits, 'assigned');
+    res.json({ ok: true, task_id: taskId, status: 'matched', supplier_id: matchedSupplier.id, credits_offered: credits, execution: 'supplier',
+      instructions: { poll: `GET /v1/exchange/poll/${matchedSupplier.id}`, complete: 'POST /v1/exchange/complete {task_id, output}' } });
   } else {
     dbInsertTask.run(taskId, consumerId, null, task_type, JSON.stringify(input), credits, 'pending');
     res.json({ ok: true, task_id: taskId, status: 'queued', credits_offered: credits, execution: 'pending',
