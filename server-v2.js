@@ -2072,7 +2072,7 @@ app.delete('/v1/dream/subscribe/:id', auth, (req, res) => {
 // Dream shared knowledge — public read of accumulated dreams
 app.get('/v1/dream/shared', publicRateLimit, (req, res) => {
   const memSearch = allHandlers['memory-search'];
-  if (!memSearch) return res.json({ dreams: [], note: 'No dreams yet' });
+  js
   try {
     const result = memSearch({ namespace: 'dreams', tag: 'dream' });
     const dreams = (result.results || []).slice(0, 20).map(r => {
