@@ -214,7 +214,7 @@ function prettyJSON(obj, indent = 0) {
   if (Array.isArray(obj)) {
     if (obj.length === 0) return '[]';
     const items = obj.map(v => `${pad}  ${prettyJSON(v, indent + 1)}`);
-    return `[\n${items.join(',\n')}\n${pad}]`;
+    return `[ ${items.join(',\n')} ]`;
   }
   if (typeof obj === 'object') {
     const keys = Object.keys(obj);
@@ -229,7 +229,7 @@ function extractMeta(data) {
   let result = {};
   let metaParts = [];
 
-  if (!data || typeof data !== 'object') {
+  if (!data || !Object.prototype.toString.call(data) === '[object Object]') {
     return { result: { value: data }, metaParts: [] };
   }
 
@@ -249,7 +249,7 @@ function extractMeta(data) {
     for (const [k, v] of Object.entries(data)) {
       if (['_credits_used', '_credits_remaining', '_latency_ms', '_engine', '_request_id'].includes(k)) {
         if (k === '_credits_used')      metaParts.push(`${v}cr`);
-        if (k === '_credits_remaining') metaParts.push(`remaining: ${v}`);
+        metaParts.push(`remaining: ${v.toString()}`);
         if (k === '_latency_ms')        metaParts.push(`${v}ms`);
         if (k === '_engine')            metaParts.push(`engine: ${v}`);
       } else {
@@ -1056,24 +1056,33 @@ SCORE: X/10` : `Sprint ${s}. Mission: ${mission.slice(0, 80)}. PRIORITY: researc
           const newContent = content.replace(findText, replaceText);
           fs.writeFileSync(filePath, newContent);
 
-          // Syntax check for JS files
-          let valid = true;
+          // Gate 1: Syntax check
+          let syntaxOk = true;
           if (targetFile.endsWith('.js')) {
             try { require('child_process').execSync('node -c "' + filePath + '"', { stdio: 'pipe', timeout: 5000 }); }
-            catch(e) { valid = false; }
+            catch(e) { syntaxOk = false; }
           }
 
-          // Check: edit must be meaningful (not just whitespace/trivial) and syntax must pass
+          // Gate 2: Functional test — actually run a quick command to verify no runtime crash
+          let runtimeOk = true;
+          if (syntaxOk && targetFile === 'cli.js') {
+            try { require('child_process').execSync('node "' + filePath + '" version --json --quiet', { stdio: 'pipe', timeout: 10000 }); }
+            catch(e) { runtimeOk = false; }
+          }
+
+          // Gate 3: Meaningful change (not whitespace-only or bloating)
           const meaningful = findText.replace(/\s/g,'') !== replaceText.replace(/\s/g,'') && replaceText.length < findText.length * 3;
-          if (valid && meaningful) {
+
+          if (syntaxOk && runtimeOk && meaningful) {
             shared.builds.push({ key: targetFile, type: 'file-edit', find: findText.slice(0, 50), replace: replaceText.slice(0, 50), sprint: s });
             built_n++;
-            console.log(`  ${dim('│')} ${green('✓ EDITED')} ${cyan(targetFile)} ${dim('(verified)')}`);
+            console.log(`  ${dim('│')} ${green('✓ EDITED')} ${cyan(targetFile)} ${dim('(syntax+runtime+semantic OK)')}`);
             console.log(`  ${dim('│')} ${dim(findText.slice(0, 50))}`);
             console.log(`  ${dim('│')} ${green('→')} ${dim(replaceText.slice(0, 50))}`);
           } else {
             fs.writeFileSync(filePath, backup);
-            console.log(`  ${dim('│')} ${valid ? yellow('⚠ trivial/risky change reverted') : red('✗ syntax error, reverted')} ${cyan(targetFile)}`);
+            const reason = !syntaxOk ? 'syntax error' : !runtimeOk ? 'runtime crash' : 'trivial/risky';
+            console.log(`  ${dim('│')} ${red('✗ REVERTED')} ${cyan(targetFile)} ${dim('(' + reason + ')')}`);
           }
         } else {
           console.log(`  ${dim('│')} ${yellow('⚠ text not found in')} ${targetFile}`);
