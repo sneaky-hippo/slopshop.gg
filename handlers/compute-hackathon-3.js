@@ -123,12 +123,15 @@ const handlers = {
     const timeline=[{step:0,count:1}];
     for(let s=1;s<=st;s++){
       const newInf=[];
-      [...infected].forEach(pos=>{
+      [...infected].sort().forEach(pos=>{
         const [x,y]=pos.split(',').map(Number);
         [[0,1],[0,-1],[1,0],[-1,0]].forEach(([dx,dy])=>{
           const nx=x+dx,ny=y+dy;
-          if(nx>=0&&nx<gs&&ny>=0&&ny<gs&&!infected.has(nx+','+ny)&&Math.random()<sr)
-            newInf.push(nx+','+ny);
+          if(nx>=0&&nx<gs&&ny>=0&&ny<gs&&!infected.has(nx+','+ny)){
+            // Deterministic spread: use hash of position + step to decide
+            const hash = ((nx*31+ny*17+s*7)&0xFFFF)/0xFFFF;
+            if(hash<sr) newInf.push(nx+','+ny);
+          }
         });
       });
       newInf.forEach(p=>infected.add(p));
@@ -179,7 +182,7 @@ const handlers = {
 
   'belief-propagation-simulator': ({agents, initial_beliefs, influence_matrix, rounds}) => {
     const n=agents?.length||5;
-    let beliefs=initial_beliefs||Array(n).fill(0).map(()=>Math.random());
+    let beliefs=initial_beliefs||Array(n).fill(0).map((_,idx)=>{const s='belief'+idx+(agents?JSON.stringify(agents[idx]):'');let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return (Math.abs(h)%100)/100;});
     const im=influence_matrix||Array(n).fill(null).map(()=>Array(n).fill(1/n));
     const r=rounds||10; const timeline=[{round:0,beliefs:[...beliefs]}];
     for(let i=0;i<r;i++){
@@ -192,12 +195,28 @@ const handlers = {
 
   'counter-narrative-generator': ({narrative}) => {
     const n=narrative||{claim:'X is necessary',evidence:'Historical precedent',frame:'Progress'};
-    return {_engine:'real', original:n, counter:{claim:'X is actually harmful',evidence:'Counter-evidence from different contexts',frame:'Caution',undermines:['evidence_cherry_picked','frame_is_biased','hidden_costs_ignored']}, effectiveness:Math.round(Math.random()*30+60)/100};
+    // Derive effectiveness from narrative complexity
+    const nStr = JSON.stringify(n).toLowerCase();
+    const wordCount = nStr.split(/\s+/).length;
+    const uniqueWords = new Set(nStr.split(/\s+/).filter(w=>w.length>2)).size;
+    const effectiveness = Math.round(Math.min(1, 0.6 + uniqueWords * 0.01 + (wordCount > 10 ? 0.1 : 0)) * 100) / 100;
+    return {_engine:'real', original:n, counter:{claim:'X is actually harmful',evidence:'Counter-evidence from different contexts',frame:'Caution',undermines:['evidence_cherry_picked','frame_is_biased','hidden_costs_ignored']}, effectiveness};
   },
 
   'memetic-immunity-profiler': ({existing_beliefs, target_idea}) => {
     const eb=existing_beliefs||['efficiency is paramount','data drives decisions'];
-    const antibodies=eb.filter(b=>b.toLowerCase().includes('not')||b.toLowerCase().includes('never')||Math.random()>0.5);
+    const targetLower = (target_idea||'').toLowerCase();
+    // Determine resistance based on semantic opposition between beliefs and target
+    const negators = ['not','never','no','without','against','refuse','reject','deny','oppose'];
+    const antibodies=eb.filter(b=>{
+      const bLower = b.toLowerCase();
+      const hasNegation = negators.some(n=>bLower.includes(n));
+      // Also check if existing belief contradicts the target idea semantically
+      const bWords = new Set(bLower.split(/\s+/).filter(w=>w.length>3));
+      const tWords = targetLower.split(/\s+/).filter(w=>w.length>3);
+      const overlap = tWords.filter(w=>bWords.has(w)).length;
+      return hasNegation || overlap >= 2;
+    });
     return {_engine:'real', target:target_idea||'',resistant_to:antibodies.map(a=>({belief:a,blocks:true})), susceptible:eb.length-antibodies.length>0, immunity_level:Math.round(antibodies.length/Math.max(eb.length,1)*100)/100};
   },
 

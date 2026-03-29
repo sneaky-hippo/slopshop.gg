@@ -281,7 +281,7 @@ const handlers = {
     const scores = rb.map(c => ({
       criterion: c.criterion,
       weight: c.weight,
-      score: Math.round(Math.min(1, r.length > 0 ? 0.5 + Math.random()*0.5 : 0)*100)/100,
+      score: Math.round(Math.min(1, r.length > 0 ? 0.5 + Math.min(0.5, r.length/500) : 0)*100)/100,
       note: r.length > 100 ? 'Detailed response' : r.length > 0 ? 'Brief response' : 'Empty response'
     }));
     const weighted = Math.round(scores.reduce((s,c)=>s+c.score*c.weight,0)*100)/100;

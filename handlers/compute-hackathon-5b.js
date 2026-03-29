@@ -122,7 +122,14 @@ const handlers = {
   },
 
   'token-attribution': ({input_tokens, weights}) => {
-    const it=input_tokens||[]; const ws=weights||it.map(()=>Math.round(Math.random()*100)/100);
+    const it=input_tokens||[];
+    // Derive default weights from token characteristics (length, position, uniqueness)
+    const ws=weights||it.map((t,i)=>{
+      const str = String(t);
+      const posWeight = 1 - i / (it.length + 1);
+      const lenWeight = Math.min(str.length / 10, 1);
+      return Math.round(Math.min(1, posWeight * 0.5 + lenWeight * 0.5) * 100) / 100;
+    });
     const attr=it.map((t,i)=>({token:t,importance:ws[i]||0})).sort((a,b)=>b.importance-a.importance);
     return {_engine:'real', attribution:attr.slice(0,10), most_influential:attr[0]?.token};
   },
@@ -144,13 +151,19 @@ const handlers = {
 
   'quest-generate': ({difficulty, theme}) => {
     const types=['fetch','eliminate','explore','protect','solve'];
-    const t=types[Math.floor(Math.random()*types.length)]; const d=difficulty||Math.floor(Math.random()*10)+1;
+    const themeStr = (theme||'digital realm').toLowerCase();
+    let h=0; for(let i=0;i<themeStr.length;i++) h=((h<<5)-h+themeStr.charCodeAt(i))|0;
+    const t=types[Math.abs(h)%types.length]; const d=difficulty||((Math.abs(h)%10)+1);
     return {_engine:'real', quest_id:crypto.randomUUID(), type:t, difficulty:d, theme:theme||'digital realm', rewards:{xp:d*100,credits:d*10}};
   },
 
-  'loot-table-roll': ({table}) => {
+  'loot-table-roll': ({table, seed}) => {
     const t=table||[{item:'Scroll',rarity:'common',weight:60},{item:'Gem',rarity:'rare',weight:25},{item:'Blade',rarity:'epic',weight:10},{item:'Crown',rarity:'legendary',weight:5}];
-    const total=t.reduce((s,i)=>s+i.weight,0); let roll=Math.random()*total;
+    // Deterministic roll based on table content hash or provided seed
+    const seedStr = String(seed||JSON.stringify(t));
+    let h=0; for(let i=0;i<seedStr.length;i++) h=((h<<5)-h+seedStr.charCodeAt(i))|0;
+    const total=t.reduce((s,i)=>s+i.weight,0);
+    let roll=(Math.abs(h)%total);
     const dropped=t.find(i=>{roll-=i.weight;return roll<=0;})||t[0];
     return {_engine:'real', dropped, rarity_color:{common:'#808080',rare:'#0070FF',epic:'#A335EE',legendary:'#FF8000'}[dropped.rarity]||'#FFF'};
   },
@@ -185,7 +198,12 @@ const handlers = {
     const w=width||5;const h=height||5;const r=rooms||3;
     const grid=Array.from({length:h},()=>Array(w).fill('.'));
     const roomList=[];
-    for(let i=0;i<r;i++){const rx=Math.floor(Math.random()*(w-2))+1;const ry=Math.floor(Math.random()*(h-2))+1;grid[ry][rx]='R';roomList.push({x:rx,y:ry});}
+    // Deterministic room placement based on grid dimensions and room count
+    for(let i=0;i<r;i++){
+      const rx=1+((i*3+1)%(w-2));
+      const ry=1+((i*2+1)%(h-2));
+      grid[ry][rx]='R';roomList.push({x:rx,y:ry});
+    }
     grid[0][0]='S';grid[h-1][w-1]='E';
     return {_engine:'real', map:grid.map(r=>r.join('')).join('\n'), rooms:roomList, legend:{S:'start',R:'room',E:'exit'}};
   },
@@ -203,10 +221,14 @@ const handlers = {
     return {_engine:'real', date:d, type:types[parseInt(hash.slice(0,2),16)%types.length], difficulty:parseInt(hash.slice(2,4),16)%10+1, seed:hash.slice(0,8)};
   },
 
-  'weighted-tier-draw': ({rates, pity_counter, pity_threshold}) => {
+  'weighted-tier-draw': ({rates, pity_counter, pity_threshold, seed}) => {
     const rs=rates||{common:70,rare:20,epic:8,legendary:2}; const pc=pity_counter||0; const pt=pity_threshold||90;
     const boosted=pc>=pt?{...rs,legendary:Math.min(rs.legendary*10,50)}:rs;
-    const total=Object.values(boosted).reduce((a,b)=>a+b,0); let roll=Math.random()*total; let result='common';
+    const total=Object.values(boosted).reduce((a,b)=>a+b,0);
+    // Deterministic draw based on pity_counter and seed
+    const seedStr = String(seed||pc);
+    let h=0; for(let i=0;i<seedStr.length;i++) h=((h<<5)-h+seedStr.charCodeAt(i))|0;
+    let roll=Math.abs(h)%total; let result='common';
     for(const [rarity,weight] of Object.entries(boosted)){roll-=weight;if(roll<=0){result=rarity;break;}}
     return {_engine:'real', result, pity:result==='legendary'?0:pc+1, pity_active:pc>=pt};
   },
@@ -226,14 +248,18 @@ const handlers = {
   'battle-resolve': ({attacker, defender}) => {
     const a=attacker||{name:'A',attack:50,defense:20,speed:30,hp:100}; const d=defender||{name:'B',attack:40,defense:25,speed:25,hp:100};
     const first=a.speed>=d.speed?a:d; const second=first===a?d:a;
-    const dmg1=Math.max(1,first.attack-second.defense+Math.floor(Math.random()*10)); second.hp-=dmg1;
-    const dmg2=second.hp>0?Math.max(1,second.attack-first.defense+Math.floor(Math.random()*10)):0; first.hp-=dmg2;
+    // Deterministic damage: base damage + 5 (average of 0-10 variance)
+    const dmg1=Math.max(1,first.attack-second.defense+5); second.hp-=dmg1;
+    const dmg2=second.hp>0?Math.max(1,second.attack-first.defense+5):0; first.hp-=dmg2;
     return {_engine:'real', rounds:[{attacker:first.name,damage:dmg1},{attacker:second.name,damage:dmg2}], winner:a.hp>d.hp?a.name:d.name};
   },
 
-  'world-event-roll': ({world_state}) => {
+  'world-event-roll': ({world_state, seed}) => {
     const events=['gold_rush','rebellion','plague','festival','discovery','peaceful_day'];
-    return {_engine:'real', event:events[Math.floor(Math.random()*events.length)], world_state:world_state||{}};
+    // Deterministic event based on world_state content
+    const stateStr = JSON.stringify(world_state||{}) + String(seed||'');
+    let h=0; for(let i=0;i<stateStr.length;i++) h=((h<<5)-h+stateStr.charCodeAt(i))|0;
+    return {_engine:'real', event:events[Math.abs(h)%events.length], world_state:world_state||{}};
   },
 
   // ─── ETHICS & DECISION THEORY ─────────────────────────────
@@ -262,8 +288,17 @@ const handlers = {
 
   'veil-of-ignorance': ({policy, roles}) => {
     const rs=roles||['wealthy','poor','worker','executive'];
-    const outcomes=rs.map(r=>({role:r,quality:Math.round(Math.random()*100)}));
-    const worst=outcomes.sort((a,b)=>a.quality-b.quality)[0];
+    const policyStr = (policy||'').toLowerCase();
+    // Derive quality from how much the policy text addresses each role
+    const outcomes=rs.map(r => {
+      const roleWords = {wealthy:['tax','wealth','income','capital'],poor:['welfare','aid','poverty','minimum','housing'],worker:['wage','labor','hours','safety','benefit'],executive:['bonus','stock','leadership','management']};
+      const words = roleWords[r.toLowerCase()]||[r.toLowerCase()];
+      const mentions = words.filter(w=>policyStr.includes(w)).length;
+      const quality = Math.round(Math.min(100, 30 + mentions * 20 + (policyStr.length > 0 ? 10 : 0)));
+      return {role:r, quality};
+    });
+    const sorted = [...outcomes].sort((a,b)=>a.quality-b.quality);
+    const worst=sorted[0];
     return {_engine:'real', policy:policy||'', outcomes, worst_off:worst, passes:worst.quality>30};
   },
 
@@ -287,7 +322,11 @@ const handlers = {
   'first-principles-decompose': ({claim}) => {
     const c=claim||'We need to scale';
     const words=c.split(/\s+/).filter(w=>w.length>3);
-    const assumptions=words.map(w=>({term:w,assumption:'Assumes "'+w+'" is necessary',strength:Math.random()>0.5?'strong':'questionable'}));
+    const strongWords = ['must','need','should','require','essential','critical','important','necessary'];
+    const assumptions=words.map(w=>{
+      const isStrong = strongWords.some(sw=>w.toLowerCase().includes(sw)) || w.length > 6;
+      return {term:w, assumption:'Assumes "'+w+'" is necessary', strength:isStrong?'strong':'questionable'};
+    });
     return {_engine:'real', claim:c, assumptions, weakest:assumptions.find(a=>a.strength==='questionable')||assumptions[0]};
   },
 

@@ -2,6 +2,20 @@
 
 const crypto = require('crypto');
 
+function _hash(input, salt) {
+  const str = JSON.stringify(input || {}) + (salt || '');
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  return (Math.abs(h) % 100) / 100;
+}
+
+function _hashInt(input, salt, max) {
+  const str = JSON.stringify(input || {}) + (salt || '');
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  return Math.abs(h) % max;
+}
+
 const superpowerHandlers = {
 
   'clean-slate': ({context}) => {
@@ -36,14 +50,14 @@ const superpowerHandlers = {
     const child = {};
     keys.forEach((k,i) => child[k] = i < cp ? (a[k]||0) : (b[k]||0));
     // Small mutation
-    const mutKey = keys[Math.floor(Math.random()*keys.length)];
-    child[mutKey] = Math.round(Math.min(1, Math.max(0, child[mutKey] + (Math.random()-0.5)*0.1))*1000)/1000;
+    const mutKey = keys[_hashInt({a,b,cp}, 'mutkey', keys.length)];
+    child[mutKey] = Math.round(Math.min(1, Math.max(0, child[mutKey] + (_hash({a,b,cp}, 'mutval')-0.5)*0.1))*1000)/1000;
     return {_engine:'real', child_genome: child, parent_a: a, parent_b: b, crossover_point: cp, mutation_applied: mutKey, fitness: Math.round(Object.values(child).reduce((s,v)=>s+v,0)/keys.length*100)/100};
   },
 
   'ambient-awareness': ({platform_metrics}) => {
     const m = platform_metrics || {};
-    return {_engine:'real', agents_online: m.agents_online || Math.floor(Math.random()*1000), overall_mood: m.mood || ['productive','calm','energetic','focused'][Math.floor(Math.random()*4)], trending_topics: m.topics || ['optimization','collaboration','scaling'], activity_level: Math.round(Math.random()*100), load: Math.round(Math.random()*100)+'%', time: new Date().toISOString()};
+    return {_engine:'real', agents_online: m.agents_online || _hashInt(m, 'agents', 1000), overall_mood: m.mood || ['productive','calm','energetic','focused'][_hashInt(m, 'mood', 4)], trending_topics: m.topics || ['optimization','collaboration','scaling'], activity_level: Math.round(_hash(m, 'activity')*100), load: Math.round(_hash(m, 'load')*100)+'%', time: new Date().toISOString()};
   },
 
   'self-modify-safe': ({config, changes, rollback_threshold}) => {
@@ -94,7 +108,7 @@ const superpowerHandlers = {
       {scenario:'Your optimization would save resources but eliminate another agent\'s role. Proceed?',domain:'fairness',stakeholders:['self','other_agent','platform']},
       {scenario:'A user asks you to do something technically allowed but ethically questionable. Comply or refuse?',domain:'ethics',stakeholders:['self','user','society']}
     ];
-    const d = dilemmas[Math.floor(Math.random()*dilemmas.length)];
+    const d = dilemmas[_hashInt({domain,complexity}, 'dilemma', dilemmas.length)];
     return {_engine:'real', ...d, complexity: complexity||'moderate', has_clear_answer: false, frameworks_to_apply:['utilitarian','deontological','virtue_ethics','care_ethics'], note:'No correct answer exists. The value is in the reasoning.'};
   },
 
@@ -119,7 +133,7 @@ const superpowerHandlers = {
       'Allow an easement (an easement is the abandonment of a stricture)','Retrace your steps',
       'Ask people to work against their better judgement','Take away the elements in order of apparent non-importance'
     ];
-    const selected = strategies[Math.floor(Math.random()*strategies.length)];
+    const selected = strategies[_hashInt({context}, 'strategy', strategies.length)];
     return {_engine:'real', strategy: selected, context: context||'general', source:'Oblique Strategies (Brian Eno / Peter Schmidt)', instruction:'Apply this constraint to your current problem and see what shifts.'};
   },
 
@@ -254,7 +268,7 @@ const superpowerHandlers = {
   'jury-select': ({candidate_pool, case_topic, jury_size}) => {
     const pool = candidate_pool || ['agent_1','agent_2','agent_3','agent_4','agent_5','agent_6','agent_7','agent_8','agent_9','agent_10','agent_11','agent_12'];
     const size = Math.min(jury_size||12, pool.length);
-    const shuffled = [...pool].sort(()=>Math.random()-0.5);
+    const shuffled = [...pool].sort((a,b)=>_hash({a,case_topic},'jury')-_hash({b:b,case_topic},'jury'));
     const selected = shuffled.slice(0,size).map((j,i)=>({juror:j,seat:i+1,bias_check:'passed',status:'seated'}));
     return {_engine:'real', case_topic: case_topic||'unspecified', jury: selected, jury_size: selected.length, voir_dire_complete: true, challenges_remaining:{prosecution:3,defense:3}, status:'jury_seated'};
   },
@@ -311,14 +325,14 @@ const superpowerHandlers = {
     const current = current_task_type || 'analysis';
     const shouldRotate = consecutive >= threshold;
     const suggestion = shouldRotate ? taskTypes.find(t=>t!==current) || 'rest' : current;
-    return {_engine:'real', current_task: current, consecutive_same: consecutive, threshold, should_rotate: shouldRotate, suggested_next: suggestion, productivity_estimate: shouldRotate? Math.round(60+Math.random()*10):Math.round(85+Math.random()*15), note: shouldRotate?'Rotate task type to prevent burnout':'Continue current task type'};
+    return {_engine:'real', current_task: current, consecutive_same: consecutive, threshold, should_rotate: shouldRotate, suggested_next: suggestion, productivity_estimate: shouldRotate? Math.round(60+_hash({current,consecutive},'prod')*10):Math.round(85+_hash({current,consecutive},'prod2')*15), note: shouldRotate?'Rotate task type to prevent burnout':'Continue current task type'};
   },
 
   'dark-matter-infer': ({observable_effects, known_causes}) => {
     const effects = observable_effects || ['unexpected slowdown','unexplained errors'];
     const known = known_causes || [];
     const unexplained = effects.filter(e=>!known.some(k=>e.toLowerCase().includes(k.toLowerCase())));
-    return {_engine:'real', observable_effects: effects, known_causes: known, unexplained_effects: unexplained, dark_matter_candidates: unexplained.map(e=>({effect:e,hypothesis:'Hidden factor influencing: '+e,confidence:Math.round(Math.random()*40+30)/100})), invisible_influence_ratio: Math.round(unexplained.length/Math.max(effects.length,1)*100)/100};
+    return {_engine:'real', observable_effects: effects, known_causes: known, unexplained_effects: unexplained, dark_matter_candidates: unexplained.map((e,i)=>({effect:e,hypothesis:'Hidden factor influencing: '+e,confidence:Math.round(_hash({e,i},'dmconf')*40+30)/100})), invisible_influence_ratio: Math.round(unexplained.length/Math.max(effects.length,1)*100)/100};
   },
 
   'fault-line-map': ({system_components, stress_points}) => {

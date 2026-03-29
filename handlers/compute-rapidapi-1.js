@@ -138,7 +138,7 @@ const handlers = {
     const fs=fields||[{name:'id',type:'integer'},{name:'name',type:'string'},{name:'email',type:'email'}];
     const names=['Alice','Bob','Charlie','Diana','Eve','Frank','Grace','Hank','Iris','Jack'];
     const domains=['example.com','test.org','demo.net'];
-    const gen={integer:(i)=>i+1,string:()=>names[Math.floor(Math.random()*names.length)],email:(i)=>names[i%names.length].toLowerCase()+'@'+domains[i%domains.length],boolean:()=>Math.random()>0.5,float:()=>Math.round(Math.random()*1000)/100,date:()=>new Date(Date.now()-Math.random()*365*86400000).toISOString().slice(0,10)};
+    const gen={integer:(i)=>i+1,string:(i)=>names[i%names.length],email:(i)=>names[i%names.length].toLowerCase()+'@'+domains[i%domains.length],boolean:(i)=>i%2===0,float:(i)=>Math.round(((i*73+17)%1000))/100,date:(i)=>new Date(1700000000000-((i*73+17)%365)*86400000).toISOString().slice(0,10)};
     const rows=Array.from({length:n},(_,i)=>Object.fromEntries(fs.map(f=>[f.name,(gen[f.type]||gen.string)(i)])));
     return {_engine:'real', data:rows, count:n, fields:fs.map(f=>f.name)};
   },

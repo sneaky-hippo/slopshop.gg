@@ -146,7 +146,7 @@ const handlers = {
     if(!f.enabled)return {_engine:'real', flag:f.name, enabled:false, reason:'flag_disabled'};
     if(f.rules?.length){
       for(const rule of f.rules){
-        if(rule.type==='percentage'&&Math.random()*100<rule.value)return {_engine:'real', flag:f.name, enabled:true, reason:'percentage_match'};
+        if(rule.type==='percentage'){const ps=f.name+(ctx[Object.keys(ctx)[0]]||'');let ph=0;for(let i=0;i<ps.length;i++)ph=((ph<<5)-ph+ps.charCodeAt(i))|0;if((Math.abs(ph)%100)<rule.value)return {_engine:'real', flag:f.name, enabled:true, reason:'percentage_match'};}
         if(rule.type==='allowlist'&&rule.values?.includes(ctx[rule.field]))return {_engine:'real', flag:f.name, enabled:true, reason:'allowlist_match'};
         if(rule.type==='attribute'&&ctx[rule.field]===rule.value)return {_engine:'real', flag:f.name, enabled:true, reason:'attribute_match'};
       }

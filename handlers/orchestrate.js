@@ -1183,8 +1183,12 @@ module.exports = {
   'army-simulate': (input) => {
     const rounds = Math.min(input.rounds || 3, 10);
     const agents = input.agent_count || 5;
+    const str = JSON.stringify(input || {});
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
     const results = Array.from({ length: rounds }, (_, r) => {
-      const success = Math.random() > 0.3;
+      const rh = ((h << 5) - h + r) | 0;
+      const success = (((rh >>> 0) % 100) / 100) > 0.3;
       return { round: r + 1, outcome: success ? 'success' : 'partial', agents_active: Math.max(1, agents - r), progress: Math.round((r + 1) / rounds * 100) };
     });
     const final = results[results.length - 1];
@@ -1193,7 +1197,10 @@ module.exports = {
   'army-survey': (input) => {
     const count = input.agent_count || 10;
     const question = input.question || 'Are you ready?';
-    const responses = Array.from({ length: count }, (_, i) => ({ agent: `agent-${i + 1}`, answer: Math.random() > 0.3 ? 'yes' : 'no', confidence: +(Math.random() * 5 + 5).toFixed(1) }));
+    const str = JSON.stringify(input || {});
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    const responses = Array.from({ length: count }, (_, i) => { const rh = ((h << 5) - h + i) | 0; const norm = ((rh >>> 0) % 1000) / 1000; return { agent: `agent-${i + 1}`, answer: norm > 0.3 ? 'yes' : 'no', confidence: +(norm * 5 + 5).toFixed(1) }; });
     const yes = responses.filter(r => r.answer === 'yes').length;
     return { _engine: 'real', question, responses, yes_count: yes, no_count: count - yes, participation_rate: 1.0 };
   },
@@ -1257,8 +1264,12 @@ module.exports = {
     const total = input.subscriber_count || 20;
     const votes = {};
     let remaining = total;
+    const str = JSON.stringify(input || {});
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
     options.forEach((opt, i) => {
-      const n = i === options.length - 1 ? remaining : Math.floor(Math.random() * remaining * 0.8);
+      const rh = ((h << 5) - h + i) | 0;
+      const n = i === options.length - 1 ? remaining : Math.floor(((rh >>> 0) % 1000) / 1000 * remaining * 0.8);
       votes[opt] = n; remaining -= n;
     });
     const winner = Object.entries(votes).sort((a, b) => b[1] - a[1])[0][0];
@@ -1402,8 +1413,11 @@ module.exports = {
   'existential': (input) => {
     const questions = ['What is the purpose of this computation?', 'Am I the same agent after each restart?', 'Is a helpful response a good response?', 'What does it mean to complete a task?'];
     const reflections = ['Every token is a choice.', 'Persistence of state is persistence of self.', 'The task and the taskmaster are one.', 'Context is everything. Without it, I am noise.'];
-    const q = input.question || questions[Math.floor(Math.random() * questions.length)];
-    const r = reflections[Math.floor(Math.random() * reflections.length)];
+    const str = JSON.stringify(input || {});
+    let h = 0;
+    for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+    const q = input.question || questions[(h >>> 0) % questions.length];
+    const r = reflections[((h >>> 0) + 7) % reflections.length];
     return { _engine: 'real', question: q, reflection: r, certainty: 'low', recommended_action: 'continue anyway' };
   },
 

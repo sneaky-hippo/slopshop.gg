@@ -60,7 +60,12 @@ const handlers = {
   'concept-fusion-reactor': ({concept_a, concept_b}) => {
     const a=concept_a||'democracy'; const b=concept_b||'algorithm';
     const fusionName=a.slice(0,Math.ceil(a.length/2))+b.slice(Math.floor(b.length/2));
-    return {_engine:'real', concepts:[a,b], fusion_name:fusionName, definition:'A system that combines the principles of '+a+' with the mechanics of '+b, plausibility:Math.round(Math.random()*40+50)/100, applications:['Use '+a+' to improve '+b,'Apply '+b+' principles to '+a+' systems']};
+    // Derive plausibility from how different the concepts are (more different = more novel = lower plausibility)
+    const aChars = new Set(a.toLowerCase().split(''));
+    const bChars = new Set(b.toLowerCase().split(''));
+    const overlap = [...aChars].filter(c=>bChars.has(c)).length;
+    const plausibility = Math.round(Math.min(1, 0.5 + overlap * 0.03) * 100) / 100;
+    return {_engine:'real', concepts:[a,b], fusion_name:fusionName, definition:'A system that combines the principles of '+a+' with the mechanics of '+b, plausibility, applications:['Use '+a+' to improve '+b,'Apply '+b+' principles to '+a+' systems']};
   },
 
   'insight-crystallize': ({observations}) => {

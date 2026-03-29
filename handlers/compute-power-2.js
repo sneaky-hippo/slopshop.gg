@@ -427,7 +427,7 @@ const handlers = {
     else if(s==='linear')delay=Math.min(bd*a,md);
     else if(s==='fibonacci'){let f1=bd,f2=bd;for(let i=2;i<a;i++){const t=f1+f2;f1=f2;f2=t;}delay=Math.min(f2,md);}
     else delay=bd;
-    const jitter=Math.round(delay*0.1*Math.random());
+    const jitter=Math.round(delay*0.1*((a*7+3)%10)/10);
     return {_engine:'real',attempt:a,delay_ms:delay,with_jitter_ms:delay+jitter,strategy:s,max_delay_ms:md,should_retry:a<=10};
   },
 };

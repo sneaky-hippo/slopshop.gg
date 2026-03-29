@@ -56,7 +56,7 @@ const handlers = {
     const mr = max_retries||5; const bd = base_delay_ms||1000; const s = strategy||'exponential';
     const schedule = Array.from({length:mr},(_,i) => {
       const delay = s==='exponential' ? bd*Math.pow(2,i) : s==='linear' ? bd*(i+1) : bd;
-      return {attempt:i+1, delay_ms:delay, with_jitter:delay+Math.round(delay*0.1*Math.random())};
+      return {attempt:i+1, delay_ms:delay, with_jitter:delay+Math.round(delay*0.1*((i*7+3)%10)/10)};
     });
     return {_engine:'real', strategy:s, schedule, total_wait_ms:schedule.reduce((s,r)=>s+r.delay_ms,0)};
   },
@@ -136,7 +136,12 @@ const handlers = {
 
   'chaos-schedule': ({services, frequency_per_day, blackout_hours}) => {
     const svcs=services||['api','db','cache']; const f=frequency_per_day||3; const bo=new Set(blackout_hours||[0,1,2,3,4,5]);
-    const schedule = Array.from({length:f},(_,i) => { let h; do{h=Math.floor(Math.random()*24);}while(bo.has(h)); return {injection:i+1,target:svcs[Math.floor(Math.random()*svcs.length)],hour:h,type:['latency','error','crash'][Math.floor(Math.random()*3)]}; });
+    const types=['latency','error','crash'];
+    const availableHours = Array.from({length:24},(_,i)=>i).filter(h=>!bo.has(h));
+    const schedule = Array.from({length:f},(_,i) => {
+      const h = availableHours[i % availableHours.length];
+      return {injection:i+1, target:svcs[i%svcs.length], hour:h, type:types[i%types.length]};
+    });
     return {_engine:'real', schedule};
   },
 
@@ -202,8 +207,9 @@ const handlers = {
 
   'demo-data-gen': ({schema, rows}) => {
     const s=schema||{id:'int',name:'string',email:'email',active:'boolean'}; const r=rows||5;
-    const gen={int:()=>Math.floor(Math.random()*10000),string:()=>['Alice','Bob','Charlie','Diana','Eve'][Math.floor(Math.random()*5)],email:()=>crypto.randomBytes(4).toString('hex')+'@example.com',boolean:()=>Math.random()>0.5};
-    const data=Array.from({length:r},()=>Object.fromEntries(Object.entries(s).map(([k,t])=>[k,(gen[t]||gen.string)()])));
+    let _seed=0;const _h=(v)=>{const ss=String(v);for(let i=0;i<ss.length;i++)_seed=(((_seed<<5)-_seed+ss.charCodeAt(i))|0);return Math.abs(_seed);};
+    const gen={int:(i)=>(_h('int'+i)%10000),string:(i)=>['Alice','Bob','Charlie','Diana','Eve'][_h('str'+i)%5],email:(i)=>['Alice','Bob','Charlie','Diana','Eve'][_h('em'+i)%5].toLowerCase()+'@example.com',boolean:(i)=>(_h('bool'+i)%2)===1};
+    const data=Array.from({length:r},(_,ri)=>Object.fromEntries(Object.entries(s).map(([k,t])=>[k,(gen[t]||gen.string)(ri+k)])));
     return {_engine:'real', data, row_count:r};
   },
 
@@ -256,7 +262,7 @@ const handlers = {
   },
 
   'waitlist-position': ({total, position}) => {
-    const t=total||500; const p=position||Math.floor(Math.random()*t)+1;
+    const t=total||500; const p=position||Math.floor(t/2)+1;
     return {_engine:'real', position:p, total:t, percentile:Math.round((1-p/t)*100), shareable:'I\'m #'+p+' on the waitlist!'};
   },
 

@@ -362,7 +362,7 @@ const handlers = {
 
   'id-snowflake': ({machine_id}) => {
     const mid=machine_id||1;const ts=Date.now()-1609459200000;
-    const id=BigInt(ts)<<22n|BigInt(mid)<<12n|BigInt(Math.floor(Math.random()*4096));
+    const id=BigInt(ts)<<22n|BigInt(mid)<<12n|BigInt(ts%4096);
     return {_engine:'real',id:id.toString(),timestamp:Date.now(),machine_id:mid};
   },
 
