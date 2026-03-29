@@ -90,7 +90,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
       const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
       let score = 0;
       taskWords.forEach(w => { if (text.includes(w)) score++; if (slug.includes(w)) score += 2; });
-      if (score > 0 && def.credits <= 5) scored.push({ slug, score, credits: def.credits });
+      if (score > 0 && (def?.credits ?? 6) <= 5) scored.push({ slug, score, credits: def.credits });
     }
     // Only pick the TOP 1-2 matches, not 5
     const topTools = scored.sort((a, b) => b.score - a.score).slice(0, 2);
