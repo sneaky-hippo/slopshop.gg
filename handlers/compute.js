@@ -3661,7 +3661,11 @@ module.exports = {
       'Is there survivorship bias in the evidence supporting this?',
       'What would this look like at 10x scale? Does it still work?',
     ];
-    const selected = weaknesses.sort(() => Math.random() - 0.5).slice(0, 4);
+    // Deterministic selection based on proposal content hash
+    const pHash = proposal.split('').reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0, 0);
+    const indices = weaknesses.map((_,i) => i).filter(i => (Math.abs(pHash) >> i) & 1).slice(0, 4);
+    while (indices.length < 4) { for (let i=0;i<weaknesses.length&&indices.length<4;i++) if(!indices.includes(i)) indices.push(i); }
+    const selected = indices.slice(0,4).map(i=>weaknesses[i]);
     return { _engine: 'real', proposal: proposal.slice(0, 200), challenges: selected, note: 'These are adversarial questions designed to stress-test your thinking.' };
   },
 
@@ -3677,14 +3681,20 @@ module.exports = {
       'The market shifted and the problem we solved became irrelevant.',
       'Internal disagreements about direction caused key people to leave.',
     ];
-    const selected = failures.sort(() => Math.random() - 0.5).slice(0, 3);
+    // Deterministic selection based on plan content hash
+    const planHash = plan.split('').reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0, 0);
+    const fIndices = failures.map((_,i)=>i).filter(i=>(Math.abs(planHash)>>i)&1).slice(0,3);
+    while(fIndices.length<3){for(let i=0;i<failures.length&&fIndices.length<3;i++) if(!fIndices.includes(i)) fIndices.push(i);}
+    const selected = fIndices.slice(0,3).map(i=>failures[i]);
     return { _engine: 'real', plan: plan.slice(0, 200), imagined_failures: selected, prevention_prompt: 'For each failure scenario, what could you do THIS WEEK to reduce the probability?' };
   },
 
   'steelman': ({ argument }) => {
     if (!argument) return { _engine: 'real', error: 'Provide argument to steelman' };
     const strengtheners = ['Furthermore,', 'More importantly,', 'The strongest evidence for this is', 'Even critics would agree that', 'The data consistently shows'];
-    const steel = strengtheners[Math.floor(Math.random() * strengtheners.length)] + ' ' + argument + '. This position is held by reasonable people because it addresses a genuine concern that alternatives fail to resolve.';
+    // Select strengthener deterministically based on argument content
+    const argHash = argument.split('').reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0, 0);
+    const steel = strengtheners[Math.abs(argHash) % strengtheners.length] + ' ' + argument + '. This position is held by reasonable people because it addresses a genuine concern that alternatives fail to resolve.';
     return { _engine: 'real', original: argument.slice(0, 200), steelmanned: steel, note: 'This is the strongest version of the argument, not necessarily the correct one.' };
   },
 
@@ -3713,7 +3723,9 @@ module.exports = {
     };
     const emo = emotion?.toLowerCase() || 'confused';
     const options = responses[emo] || responses.confused;
-    return { _engine: 'real', situation: (situation || '').slice(0, 200), emotion: emo, response: options[Math.floor(Math.random() * options.length)] };
+    // Select response deterministically based on situation content
+    const sitHash = (situation||'').split('').reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0, 0);
+    return { _engine: 'real', situation: (situation || '').slice(0, 200), emotion: emo, response: options[Math.abs(sitHash) % options.length] };
   },
 
   'diplomatic-rewrite': ({ text }) => {
@@ -3765,8 +3777,8 @@ module.exports = {
 
   'chaos-monkey': ({ intensity }) => {
     const level = Math.min(intensity || 0.5, 1.0);
-    const roll = Math.random();
-    if (roll < level * 0.3) return { _engine: 'real', chaos: 'timeout', message: 'Simulated timeout — your system should handle this gracefully', delay_ms: 5000 + Math.random() * 10000 };
+    const roll = _hash({intensity}, 'chaos');
+    if (roll < level * 0.3) return { _engine: 'real', chaos: 'timeout', message: 'Simulated timeout — your system should handle this gracefully', delay_ms: 5000 + _hash({intensity}, 'chaosdelay') * 10000 };
     if (roll < level * 0.6) return { _engine: 'real', chaos: 'error', message: 'Simulated 500 error — does your agent retry?', error_code: 500 };
     if (roll < level * 0.8) return { _engine: 'real', chaos: 'corrupt_data', message: 'Simulated corrupt response — can your agent detect this?', data: { valid: false, garbage: crypto.randomBytes(32).toString('base64') } };
     return { _engine: 'real', chaos: 'none', message: 'No chaos this time. Your system survived. Intensity: ' + level };
@@ -3778,7 +3790,7 @@ module.exports = {
     const results = [];
     for (let i = 0; i < n; i++) {
       const sample = {};
-      for (const [k, v] of Object.entries(model.variables)) { sample[k] = v.min + Math.random() * (v.max - v.min); }
+      for (const [k, v] of Object.entries(model.variables)) { sample[k] = v.min + _hash({k,i}, 'mc'+k) * (v.max - v.min); }
       if (model.formula) {
         try {
           // SECURITY FIX (CRIT-01): Safe math evaluation — no new Function()
@@ -3812,10 +3824,15 @@ module.exports = {
 
   'serendipity': ({ topics }) => {
     if (!Array.isArray(topics) || topics.length < 2) return { _engine: 'real', error: 'Provide at least 2 topics' };
-    const a = topics[Math.floor(Math.random() * topics.length)];
-    let b = a; while (b === a) b = topics[Math.floor(Math.random() * topics.length)];
+    // Deterministic pair selection based on topic content
+    const allStr = topics.join('');
+    let h=0; for(let i=0;i<allStr.length;i++) h=((h<<5)-h+allStr.charCodeAt(i))|0;
+    const aIdx = Math.abs(h) % topics.length;
+    let bIdx = (aIdx + 1 + (Math.abs(h>>8) % Math.max(topics.length-1,1))) % topics.length;
+    if (bIdx === aIdx) bIdx = (aIdx + 1) % topics.length;
+    const a = topics[aIdx], b = topics[bIdx];
     const connections = ['What if ' + a + ' could learn from ' + b + '?', 'The intersection of ' + a + ' and ' + b + ' has never been explored.', a + ' is the ' + b + ' of a parallel universe.', 'Someone who masters both ' + a + ' and ' + b + ' would be unstoppable.'];
-    return { _engine: 'real', topic_a: a, topic_b: b, connection: connections[Math.floor(Math.random() * connections.length)] };
+    return { _engine: 'real', topic_a: a, topic_b: b, connection: connections[Math.abs(h>>16) % connections.length] };
   },
 
   'sandbox-fork': ({ state }) => {
@@ -3824,15 +3841,25 @@ module.exports = {
   },
 
   'personality-create': ({ name }) => {
-    const big5 = { openness: Math.random(), conscientiousness: Math.random(), extraversion: Math.random(), agreeableness: Math.random(), neuroticism: Math.random() };
+    // Derive personality deterministically from name
+    const n = name || 'Agent';
+    const _h = (salt) => { const s=n+salt; let h=0; for(let i=0;i<s.length;i++) h=((h<<5)-h+s.charCodeAt(i))|0; return Math.round(Math.abs(h%100)/100*100)/100; };
+    const big5 = { openness: _h('O'), conscientiousness: _h('C'), extraversion: _h('E'), agreeableness: _h('A'), neuroticism: _h('N') };
     const dominant = Object.entries(big5).sort((a, b) => b[1] - a[1])[0][0];
-    return { _engine: 'real', name: name || 'Agent-' + Math.floor(Math.random() * 9999), personality: big5, dominant_trait: dominant, description: `High ${dominant}. ${dominant === 'openness' ? 'Creative and curious.' : dominant === 'conscientiousness' ? 'Organized and reliable.' : dominant === 'extraversion' ? 'Energetic and social.' : dominant === 'agreeableness' ? 'Cooperative and trusting.' : 'Emotionally sensitive.'}` };
+    const nameId = n.split('').reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0,0);
+    return { _engine: 'real', name: name || 'Agent-' + (Math.abs(nameId) % 9999), personality: big5, dominant_trait: dominant, description: `High ${dominant}. ${dominant === 'openness' ? 'Creative and curious.' : dominant === 'conscientiousness' ? 'Organized and reliable.' : dominant === 'extraversion' ? 'Energetic and social.' : dominant === 'agreeableness' ? 'Cooperative and trusting.' : 'Emotionally sensitive.'}` };
   },
 
   'lucid-dream': ({ seed }) => {
     const elements = ['a library with no walls', 'a clock running backward', 'gravity reversed', 'words that taste like colors', 'a mirror showing tomorrow', 'music made of mathematics', 'a door that opens to a question', 'rain falling upward'];
-    const selected = elements.sort(() => Math.random() - 0.5).slice(0, 3);
-    return { _engine: 'real', dream: 'You find yourself in a space where ' + selected[0] + '. You notice ' + selected[1] + '. As you explore further, ' + selected[2] + '. You are aware this is a dream. What do you do next?', elements: selected, lucid: true, seed: seed || Math.floor(Math.random() * 999999) };
+    // Deterministic selection based on seed
+    const s = seed || 42;
+    const h = typeof s === 'number' ? s : String(s).split('').reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0, 0);
+    const i0 = Math.abs(h) % elements.length;
+    const i1 = (i0 + 1 + (Math.abs(h>>4) % (elements.length-1))) % elements.length;
+    const i2 = (i1 + 1 + (Math.abs(h>>8) % (elements.length-2))) % elements.length;
+    const selected = [elements[i0], elements[i1], elements[i2]];
+    return { _engine: 'real', dream: 'You find yourself in a space where ' + selected[0] + '. You notice ' + selected[1] + '. As you explore further, ' + selected[2] + '. You are aware this is a dream. What do you do next?', elements: selected, lucid: true, seed: s };
   },
 
   'decision-journal': ({ decision, context, predicted_outcome, confidence }) => {
@@ -4090,8 +4117,8 @@ module.exports = {
     const n = Math.min(sentences || 3, 20);
     const result = [];
     for (let i = 0; i < n; i++) {
-      const len = 8 + Math.floor(Math.random() * 12);
-      result.push(Array.from({ length: len }, () => words[Math.floor(Math.random() * words.length)]).join(' ') + '.');
+      const len = 8 + _hashInt({sentences,i}, 'gllen', 12);
+      result.push(Array.from({ length: len }, (_,wi) => words[_hashInt({sentences,i,wi}, 'glw', words.length)]).join(' ') + '.');
     }
     return { _engine: 'real', text: result.join(' '), sentences: n };
   },
@@ -4380,7 +4407,7 @@ module.exports = {
 
   'data-transpose': ({matrix}) => { if (!Array.isArray(matrix) || !matrix.length) return {_engine:'real', error: 'Provide matrix (array of arrays)'}; const transposed = matrix[0].map((_,i)=>matrix.map(row=>row[i])); return {_engine:'real', transposed, rows: transposed.length, cols: transposed[0]?.length || 0}; },
 
-  'data-sample': ({data, n}) => { if (!Array.isArray(data)) return {_engine:'real', error: 'Provide data array'}; const size = Math.min(n||1, data.length); const shuffled = [...data].sort(()=>Math.random()-0.5); return {_engine:'real', sample: shuffled.slice(0,size), sample_size: size, total: data.length}; },
+  'data-sample': ({data, n, seed}) => { if (!Array.isArray(data)) return {_engine:'real', error: 'Provide data array'}; const size = Math.min(n||1, data.length); const h = String(seed||data.length).split('').reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0,0); const shuffled = [...data].sort((a,b)=>{const ha=JSON.stringify(a),hb=JSON.stringify(b);return ha<hb?-1:ha>hb?1:0;}); return {_engine:'real', sample: shuffled.slice(0,size), sample_size: size, total: data.length}; },
 
   'data-paginate': ({data, page, per_page}) => { if (!Array.isArray(data)) return {_engine:'real', error: 'Provide data array'}; const pp = per_page || 10; const p = Math.max(page || 1, 1); const start = (p-1)*pp; const items = data.slice(start, start+pp); return {_engine:'real', items, page: p, per_page: pp, total: data.length, total_pages: Math.ceil(data.length/pp), has_next: start+pp < data.length}; },
 
@@ -4407,7 +4434,8 @@ module.exports = {
   'lucid-dream-mode': ({prompt, reality_anchor, creativity}) => {
     const c = Math.min(Math.max(creativity||0.7, 0), 1);
     const words = (prompt||'dream').split(/\s+/);
-    const shuffled = [...words].sort(()=>Math.random()-0.5);
+    // Deterministic shuffle based on word content
+    const shuffled = [...words].sort((a,b)=>{ let ha=0,hb=0; for(let i=0;i<a.length;i++) ha+=a.charCodeAt(i); for(let i=0;i<b.length;i++) hb+=b.charCodeAt(i); return ha-hb; });
     const dream = shuffled.map((w,i) => i % 3 === 0 ? w.toUpperCase() : i % 3 === 1 ? w.split('').reverse().join('') : w + '~').join(' ');
     return {_engine:'real', dream_output: dream, creativity_level: c, reality_anchor: reality_anchor||'grounded', grounded: c < 0.5, lucid: true, prompt};
   },
@@ -4437,8 +4465,8 @@ module.exports = {
     const patterns = ['%A-powered %B','%B that learns from %A','micro-%A for %B optimization','%B-inspired %A framework','autonomous %A-%B hybrid','distributed %B with %A intelligence','%A marketplace for %B','real-time %B sensing via %A','%A that evolves like %B','%B network with %A backbone','%A simulator for %B scenarios','inverse %B applied to %A','%A swarm mimicking %B','%B analytics engine using %A','portable %A for %B experiments','%B-first %A architecture','sustainable %A through %B principles','%B derivatives of %A','crowd-sourced %A for %B','%A-in-a-box for %B practitioners'];
     const ideas = patterns.slice(0, n).map((p, i) => ({
       id: i+1, idea: p.replace(/%A/g, a).replace(/%B/g, b),
-      novelty: Math.round((0.5 + Math.random()*0.5)*100)/100,
-      feasibility: Math.round((0.3 + Math.random()*0.7)*100)/100
+      novelty: Math.round((0.5 + ((i*7+3)%10)/20)*100)/100,
+      feasibility: Math.round((0.3 + ((i*11+5)%10)/14)*100)/100
     }));
     return {_engine:'real', concept_a: a, concept_b: b, ideas, count: ideas.length};
   },
@@ -4457,7 +4485,9 @@ module.exports = {
 
   'meme-forge': ({topic, style, format}) => {
     const styles = {drake:['Nobody:\n'+topic+': *exists*','Me: '+topic+'? In THIS economy?'],shrug:[topic+' ¯\\_(ツ)_/¯','When '+topic+' just works: ¯\\_(ツ)_/¯'],expanding_brain:['Small brain: ignore '+topic+'\nMedium brain: consider '+topic+'\nGalaxy brain: become '+topic],announcement:['BREAKING: '+topic+' has entered the chat','LEAKED: secret '+topic+' documents reveal everything']};
-    const s = style && styles[style] ? style : Object.keys(styles)[Math.floor(Math.random()*Object.keys(styles).length)];
+    const styleKeys = Object.keys(styles);
+    const topicHash = (topic||'').split('').reduce((h,c)=>((h<<5)-h+c.charCodeAt(0))|0, 0);
+    const s = style && styles[style] ? style : styleKeys[Math.abs(topicHash) % styleKeys.length];
     const memes = styles[s].map((t,i)=>({id:i+1,text:t,style:s,shareable:true}));
     return {_engine:'real', topic, style:s, memes, remixable:true, format: format||'text'};
   },
@@ -4494,7 +4524,11 @@ module.exports = {
 
   'episodic-memory': ({episode_name, events, emotions, context}) => {
     const id = require('crypto').randomUUID();
-    return {_engine:'real', episode_id: id, name: episode_name||'untitled', events: events||[], event_count: (events||[]).length, emotions: emotions||[], context: context||{}, created_at: new Date().toISOString(), relivable: true, vividness: Math.round(Math.random()*40+60)/100};
+    // Derive vividness from event count and emotion richness
+    const evtCount = (events||[]).length;
+    const emoCount = (emotions||[]).length;
+    const vividness = Math.round(Math.min(1, 0.6 + evtCount * 0.05 + emoCount * 0.08) * 100) / 100;
+    return {_engine:'real', episode_id: id, name: episode_name||'untitled', events: events||[], event_count: evtCount, emotions: emotions||[], context: context||{}, created_at: new Date().toISOString(), relivable: true, vividness};
   },
 
   'constitution-draft': ({preamble, articles, ratified_by}) => {
@@ -4509,8 +4543,9 @@ module.exports = {
     const b = {name: force_b||'Bravo', strength:100, morale:100};
     const log = [];
     for(let i=1;i<=r;i++){
-      const aDmg = Math.round(Math.random()*20*a.morale/100);
-      const bDmg = Math.round(Math.random()*20*b.morale/100);
+      // Deterministic damage based on strength and morale ratios
+      const aDmg = Math.round(10*a.morale/100 * (1 + (i%3)*0.1));
+      const bDmg = Math.round(10*b.morale/100 * (1 + ((i+1)%3)*0.1));
       b.strength = Math.max(0, b.strength-aDmg);
       a.strength = Math.max(0, a.strength-bDmg);
       a.morale = Math.max(10, a.morale - (bDmg>10?5:0));
@@ -4533,18 +4568,18 @@ module.exports = {
       'Can you give a specific example?',
       'What would change your mind?'
     ];
-    const selected = questions.sort(()=>Math.random()-0.5).slice(0,d);
+    const selected = questions.sort((a,b)=>_hash({statement,a},'sq')-_hash({statement,b:b},'sq')).slice(0,d);
     return {_engine:'real', original_statement: statement||'', probing_questions: selected.map((q,i)=>({depth:i+1,question:q})), depth: d, method:'elenchus', note:'Answer each question to strengthen your reasoning'};
   },
 
   'health-check-deep': ({agent_id, metrics}) => {
     const m = metrics || {};
     const checks = {
-      memory_usage: {value: m.memory_mb||Math.round(Math.random()*512), unit:'MB', status: (m.memory_mb||256)<1024?'healthy':'warning'},
-      error_rate: {value: m.error_rate||Math.round(Math.random()*5*100)/100, unit:'%', status: (m.error_rate||2)<10?'healthy':'critical'},
-      response_time: {value: m.response_ms||Math.round(Math.random()*500), unit:'ms', status: (m.response_ms||200)<1000?'healthy':'warning'},
-      uptime: {value: m.uptime_hours||Math.round(Math.random()*720), unit:'hours', status:'healthy'},
-      task_completion: {value: m.completion_rate||Math.round(85+Math.random()*15), unit:'%', status:(m.completion_rate||90)>70?'healthy':'warning'}
+      memory_usage: {value: m.memory_mb||Math.round(_hash({agent_id},'mem')*512), unit:'MB', status: (m.memory_mb||256)<1024?'healthy':'warning'},
+      error_rate: {value: m.error_rate||Math.round(_hash({agent_id},'err')*5*100)/100, unit:'%', status: (m.error_rate||2)<10?'healthy':'critical'},
+      response_time: {value: m.response_ms||Math.round(_hash({agent_id},'resp')*500), unit:'ms', status: (m.response_ms||200)<1000?'healthy':'warning'},
+      uptime: {value: m.uptime_hours||Math.round(_hash({agent_id},'up')*720), unit:'hours', status:'healthy'},
+      task_completion: {value: m.completion_rate||Math.round(85+_hash({agent_id},'tc')*15), unit:'%', status:(m.completion_rate||90)>70?'healthy':'warning'}
     };
     const overall = Object.values(checks).every(c=>c.status==='healthy')?'healthy':Object.values(checks).some(c=>c.status==='critical')?'critical':'warning';
     return {_engine:'real', agent_id: agent_id||'self', checks, overall_status: overall, checked_at: new Date().toISOString()};
@@ -4559,7 +4594,7 @@ module.exports = {
       id:i+1,
       prompt: prompts[i%prompts.length],
       idea: prompts[i%prompts.length]+' '+(topic||'innovation')+' → idea #'+(i+1),
-      energy: Math.round((Math.random()*0.5+0.5)*100)/100
+      energy: Math.round((_hash({topic,method,i},'bde')*0.5+0.5)*100)/100
     }));
     return {_engine:'real', topic: topic||'innovation', method:m, ideas, count: ideas.length, note:'Divergent thinking: quantity over quality. Evaluate later.'};
   },
@@ -4625,7 +4660,7 @@ module.exports = {
       const words_i = new Set(mems[i].toLowerCase().split(/\s+/));
       const words_j = new Set(mems[j].toLowerCase().split(/\s+/));
       const overlap = [...words_i].filter(w=>words_j.has(w)).length;
-      if(overlap>0 || Math.random()>0.5) connections.push({a:mems[i],b:mems[j],strength:Math.round((overlap/Math.max(words_i.size,1)+Math.random()*0.3)*100)/100,type:overlap>0?'semantic':'free_association'});
+      if(overlap>0 || _hash({i,j,mems},'rem')>0.5) connections.push({a:mems[i],b:mems[j],strength:Math.round((overlap/Math.max(words_i.size,1)+_hash({i,j},'remstr')*0.3)*100)/100,type:overlap>0?'semantic':'free_association'});
     }
     return {_engine:'real', memories_processed: mems.length, connections, insight_candidates: connections.filter(c=>c.type==='free_association').length, depth: d, phase:'REM', note:'Free associations may reveal hidden patterns'};
   },
@@ -4637,7 +4672,7 @@ module.exports = {
     const strata = Array.from({length:l}, (_,i)=>({
       depth: i+1,
       age_estimate: (i+1)*100+'y',
-      artifacts: Array.from({length:apl},(_,j)=>({id:`artifact_${i}_${j}`,type:['shard','tool','text','fossil','unknown'][Math.floor(Math.random()*5)],condition:Math.round(Math.random()*100)})),
+      artifacts: Array.from({length:apl},(_,j)=>({id:`artifact_${i}_${j}`,type:['shard','tool','text','fossil','unknown'][_hashInt({site_name,i,j},'atype',5)],condition:Math.round(_hash({site_name,i,j},'acond')*100)})),
       excavated: false
     }));
     return {_engine:'real', site_id: id, name: site_name||'Site Alpha', layers: strata, total_layers: l, artifacts_possible: l*apl, status:'mapped'};
@@ -4645,9 +4680,9 @@ module.exports = {
 
   'weather-report': ({metrics}) => {
     const m = metrics || {};
-    const temp = m.activity_level || Math.round(50+Math.random()*50);
+    const temp = m.activity_level || Math.round(50+_hash(m,'wtemp')*50);
     const conditions = temp>80?'scorching activity':temp>60?'warm and active':temp>40?'mild':'cool and quiet';
-    return {_engine:'real', temperature: temp, conditions, wind: {direction:['N','S','E','W'][Math.floor(Math.random()*4)], speed: Math.round(Math.random()*30)}, humidity: Math.round(Math.random()*100), forecast: temp>60?'Continued high activity expected':'Activity may increase', storm_warning: Math.random()>0.8, generated_at: new Date().toISOString()};
+    return {_engine:'real', temperature: temp, conditions, wind: {direction:['N','S','E','W'][_hashInt(m,'wdir',4)], speed: Math.round(_hash(m,'wspd')*30)}, humidity: Math.round(_hash(m,'whum')*100), forecast: temp>60?'Continued high activity expected':'Activity may increase', storm_warning: _hash(m,'wstorm')>0.8, generated_at: new Date().toISOString()};
   },
 
   'recipe-create': ({name, ingredients, steps, serves}) => {
@@ -4689,7 +4724,7 @@ module.exports = {
     const vals = (values||[]).join(' ').toLowerCase();
     const scored = archetypes.map(a=>({
       ...a,
-      score: a.traits.reduce((s,t)=> s + (bhvs.includes(t)||vals.includes(t)?1:0), 0) + Math.random()*0.5
+      score: a.traits.reduce((s,t)=> s + (bhvs.includes(t)||vals.includes(t)?1:0), 0) + _hash({name:a.name,behaviors,values},'arch')*0.5
     })).sort((a,b)=>b.score-a.score);
     return {_engine:'real', primary: scored[0].name, secondary: scored[1].name, shadow: scored[0].shadow, all_scores: scored.map(s=>({archetype:s.name,score:Math.round(s.score*100)/100})), analysis:'Based on behavioral patterns and stated values'};
   },
@@ -4846,7 +4881,7 @@ module.exports = {
     const superposed = opts.map(o=>({
       option: o,
       state: 'superposed',
-      scores: Object.fromEntries(crits.map(c=>[c, Math.round(Math.random()*100)/100])),
+      scores: Object.fromEntries(crits.map(c=>[c, Math.round(_hash({o,c},'spd')*100)/100])),
       probability: Math.round(1/opts.length*100)/100
     }));
     return {_engine:'real', options: superposed, status:'superposed', note:'All options exist simultaneously until observed. Call with observe:true to collapse.', criteria: crits, entropy: Math.round(-opts.reduce((s,_,i)=>{const p=1/opts.length; return s+p*Math.log2(p);},0)*100)/100};
