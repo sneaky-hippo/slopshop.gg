@@ -64,13 +64,22 @@ const handlers = {
   // ─── ADVERSARIAL THINKING ─────────────────────────────────
   'threat-model-generator': ({target, system_components}) => {
     const comps=system_components||['auth','api','database','frontend'];
-    // Derive effort and detectability from component characteristics
-    const effortMap = {auth:3,api:4,database:7,frontend:2,cache:5,storage:6,network:5,dns:4,cdn:3,queue:5};
-    const detectMap = {auth:0.8,api:0.6,database:0.9,frontend:0.3,cache:0.4,storage:0.7,network:0.5,dns:0.6,cdn:0.4,queue:0.5};
+    // Derive effort and detectability from component name analysis
+    const effortMap = {auth:3,api:4,database:7,frontend:2,cache:5,storage:6,network:5,dns:4,cdn:3,queue:5,gateway:4,proxy:4,firewall:8,loadbalancer:5,message:5,search:5,email:3,payment:8,logging:6,monitoring:6};
+    const detectMap = {auth:0.8,api:0.6,database:0.9,frontend:0.3,cache:0.4,storage:0.7,network:0.5,dns:0.6,cdn:0.4,queue:0.5,gateway:0.6,proxy:0.5,firewall:0.9,loadbalancer:0.6,message:0.4,search:0.5,email:0.5,payment:0.9,logging:0.8,monitoring:0.9};
+    // Classify unknown components by name characteristics
+    const externalIndicators = ['public','external','web','http','rest','user','client','open'];
+    const internalIndicators = ['internal','private','backend','core','admin','secret','key','vault'];
     const attacks=comps.map((c,i)=>{
       const cl = c.toLowerCase();
-      const effort = effortMap[cl] || (cl.length % 8 + 2);
-      const detectability = detectMap[cl] || Math.round((cl.charCodeAt(0) % 50 + 25) / 100 * 100) / 100;
+      const effort = effortMap[cl] || (
+        internalIndicators.some(w=>cl.includes(w)) ? 7 :
+        externalIndicators.some(w=>cl.includes(w)) ? 3 : 5
+      );
+      const detectability = detectMap[cl] || (
+        internalIndicators.some(w=>cl.includes(w)) ? 0.8 :
+        externalIndicators.some(w=>cl.includes(w)) ? 0.4 : 0.6
+      );
       return {target:c, attack_path:`Exploit ${c} via misconfiguration`, effort, detectability, cascading:[comps[(i+1)%comps.length]]};
     });
     const sorted = [...attacks].sort((a,b)=>a.effort-b.effort);

@@ -3619,41 +3619,164 @@ app.post('/v1/standup/pair', auth, (req, res) => {
   res.json({ ok: true, pair: [agent1, partner], scheduled_at: meetingTime, reason: 'Least recently interacted pair in the swarm', agenda: ['What are you working on?', 'What obstacles have you hit?', 'How can you help each other?'], _engine: 'real' });
 });
 
-// 11. Graph walk
+// 11. Graph walk — real BFS traversal with depth tracking and edge labels
 app.post('/v1/knowledge/walk', auth, (req, res) => {
-  const { start, steps = 5 } = req.body;
+  const { start, depth = 3 } = req.body;
   if (!start) return res.status(400).json({ error: { code: 'missing_start', message: 'Provide start node' } });
-  const n = Math.min(steps, 20);
-  const path = [{ step: 0, node: start }];
-  let current = start;
-  for (let i = 1; i <= n; i++) {
-    const neighbors = db.prepare('SELECT node FROM (SELECT object as node FROM knowledge_graph WHERE api_key = ? AND subject = ? UNION SELECT subject as node FROM knowledge_graph WHERE api_key = ? AND object = ?) ORDER BY RANDOM() LIMIT 1').get(req.apiKey, current, req.apiKey, current);
-    if (!neighbors) break;
-    current = neighbors.node;
-    path.push({ step: i, node: current });
-  }
-  res.json({ ok: true, start, steps_taken: path.length - 1, path, ended_at: current, _engine: 'real' });
-});
-
-// 12. Shortest path
-app.post('/v1/knowledge/path', auth, (req, res) => {
-  const { from, to } = req.body;
-  if (!from || !to) return res.status(400).json({ error: { code: 'missing_fields', message: 'Provide from and to' } });
-  // BFS through knowledge graph
-  const visited = new Set([from]);
-  const queue = [[from]];
-  let found = null;
-  while (queue.length && !found) {
-    const path = queue.shift();
-    const current = path[path.length - 1];
-    const edges = db.prepare('SELECT object as neighbor, predicate FROM knowledge_graph WHERE api_key = ? AND subject = ? UNION SELECT subject as neighbor, predicate FROM knowledge_graph WHERE api_key = ? AND object = ?').all(req.apiKey, current, req.apiKey, current);
-    for (const { neighbor, predicate } of edges) {
-      if (neighbor === to) { found = [...path, neighbor]; break; }
-      if (!visited.has(neighbor) && path.length < 8) { visited.add(neighbor); queue.push([...path, neighbor]); }
+  const maxDepth = Math.min(Math.max(1, depth), 10);
+  // BFS with depth tracking
+  const visited = new Set([start]);
+  const queue = [{ node: start, depth: 0, parent: null, edge: null }];
+  const traversal = [{ node: start, depth: 0, parent: null, edge: null }];
+  const edgesFound = [];
+  let head = 0;
+  while (head < queue.length) {
+    const current = queue[head++];
+    if (current.depth >= maxDepth) continue;
+    const neighbors = db.prepare(
+      'SELECT object as neighbor, predicate, confidence FROM knowledge_graph WHERE api_key = ? AND subject = ? ' +
+      'UNION SELECT subject as neighbor, predicate, confidence FROM knowledge_graph WHERE api_key = ? AND object = ?'
+    ).all(req.apiKey, current.node, req.apiKey, current.node);
+    for (const { neighbor, predicate, confidence } of neighbors) {
+      edgesFound.push({ from: current.node, to: neighbor, edge: predicate, confidence });
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        const entry = { node: neighbor, depth: current.depth + 1, parent: current.node, edge: predicate };
+        queue.push(entry);
+        traversal.push(entry);
+      }
     }
   }
-  if (found) res.json({ ok: true, from, to, path: found, hops: found.length - 1, found: true, _engine: 'real' });
-  else res.json({ ok: true, from, to, path: null, found: false, note: 'No path found within 8 hops', _engine: 'real' });
+  // Build adjacency summary per depth level
+  const byDepth = {};
+  for (const t of traversal) {
+    if (!byDepth[t.depth]) byDepth[t.depth] = [];
+    byDepth[t.depth].push(t.node);
+  }
+  res.json({
+    ok: true, start, max_depth: maxDepth, nodes_visited: visited.size,
+    edges_traversed: edgesFound.length,
+    traversal,
+    edges: edgesFound,
+    by_depth: byDepth,
+    _engine: 'real',
+  });
+});
+
+// 12. Shortest path — real BFS with edge labels on every hop
+app.post('/v1/knowledge/path', auth, (req, res) => {
+  const { from, to, max_hops = 8 } = req.body;
+  if (!from || !to) return res.status(400).json({ error: { code: 'missing_fields', message: 'Provide from and to' } });
+  const limit = Math.min(Math.max(1, max_hops), 15);
+  // BFS — each queue entry stores the full path with edge labels
+  const visited = new Set([from]);
+  const queue = [{ nodes: [from], edges: [] }];
+  let result = null;
+  let nodesExplored = 0;
+  let head = 0;
+  while (head < queue.length && !result) {
+    const current = queue[head++];
+    const tip = current.nodes[current.nodes.length - 1];
+    nodesExplored++;
+    const neighbors = db.prepare(
+      'SELECT object as neighbor, predicate, confidence FROM knowledge_graph WHERE api_key = ? AND subject = ? ' +
+      'UNION SELECT subject as neighbor, predicate, confidence FROM knowledge_graph WHERE api_key = ? AND object = ?'
+    ).all(req.apiKey, tip, req.apiKey, tip);
+    for (const { neighbor, predicate, confidence } of neighbors) {
+      if (neighbor === to) {
+        result = {
+          nodes: [...current.nodes, neighbor],
+          edges: [...current.edges, { from: tip, to: neighbor, predicate, confidence }],
+        };
+        break;
+      }
+      if (!visited.has(neighbor) && current.nodes.length < limit) {
+        visited.add(neighbor);
+        queue.push({
+          nodes: [...current.nodes, neighbor],
+          edges: [...current.edges, { from: tip, to: neighbor, predicate, confidence }],
+        });
+      }
+    }
+  }
+  if (result) {
+    res.json({
+      ok: true, from, to, found: true,
+      hops: result.nodes.length - 1,
+      path: result.nodes,
+      path_detail: result.nodes.map((n, i) => ({
+        node: n, step: i,
+        edge_to_next: result.edges[i] ? result.edges[i].predicate : null,
+      })),
+      edges: result.edges,
+      nodes_explored: nodesExplored,
+      _engine: 'real',
+    });
+  } else {
+    res.json({
+      ok: true, from, to, found: false, path: null,
+      nodes_explored: nodesExplored,
+      note: `No path found within ${limit} hops`,
+      _engine: 'real',
+    });
+  }
+});
+
+// 12b. Subgraph — return all triples within N hops of an entity
+app.post('/v1/knowledge/subgraph', auth, (req, res) => {
+  const { entity, hops = 2 } = req.body;
+  if (!entity) return res.status(400).json({ error: { code: 'missing_entity', message: 'Provide entity' } });
+  const maxHops = Math.min(Math.max(1, hops), 6);
+  // BFS to collect all nodes within N hops
+  const visited = new Set([entity]);
+  const queue = [{ node: entity, depth: 0 }];
+  const nodes = [{ node: entity, depth: 0 }];
+  let head = 0;
+  while (head < queue.length) {
+    const current = queue[head++];
+    if (current.depth >= maxHops) continue;
+    const neighbors = db.prepare(
+      'SELECT object as neighbor, predicate, confidence FROM knowledge_graph WHERE api_key = ? AND subject = ? ' +
+      'UNION SELECT subject as neighbor, predicate, confidence FROM knowledge_graph WHERE api_key = ? AND object = ?'
+    ).all(req.apiKey, current.node, req.apiKey, current.node);
+    for (const { neighbor } of neighbors) {
+      if (!visited.has(neighbor)) {
+        visited.add(neighbor);
+        const entry = { node: neighbor, depth: current.depth + 1 };
+        queue.push(entry);
+        nodes.push(entry);
+      }
+    }
+  }
+  // Now collect ALL triples where both subject and object are in the visited set
+  const nodeList = [...visited];
+  const triples = [];
+  // Query in batches to avoid SQL parameter limits
+  const batchSize = 50;
+  for (let i = 0; i < nodeList.length; i += batchSize) {
+    const batch = nodeList.slice(i, i + batchSize);
+    const placeholders = batch.map(() => '?').join(',');
+    const rows = db.prepare(
+      `SELECT subject, predicate, object, confidence FROM knowledge_graph WHERE api_key = ? AND subject IN (${placeholders}) AND object IN (${placeholders})`
+    ).all(req.apiKey, ...batch, ...batch);
+    triples.push(...rows);
+  }
+  // Deduplicate triples by subject+predicate+object
+  const seen = new Set();
+  const uniqueTriples = triples.filter(t => {
+    const key = `${t.subject}|${t.predicate}|${t.object}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  res.json({
+    ok: true, entity, hops: maxHops,
+    node_count: visited.size,
+    triple_count: uniqueTriples.length,
+    nodes,
+    triples: uniqueTriples,
+    _engine: 'real',
+  });
 });
 
 // 13. Void echo

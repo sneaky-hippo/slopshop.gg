@@ -182,7 +182,19 @@ const handlers = {
 
   'belief-propagation-simulator': ({agents, initial_beliefs, influence_matrix, rounds}) => {
     const n=agents?.length||5;
-    let beliefs=initial_beliefs||Array(n).fill(0).map((_,idx)=>{const s='belief'+idx+(agents?JSON.stringify(agents[idx]):'');let h=0;for(let i=0;i<s.length;i++)h=((h<<5)-h+s.charCodeAt(i))|0;return (Math.abs(h)%100)/100;});
+    // Derive initial beliefs from agent content analysis instead of hash
+    let beliefs=initial_beliefs||Array(n).fill(0).map((_,idx)=>{
+      if(agents && agents[idx]) {
+        const agentStr = JSON.stringify(agents[idx]).toLowerCase();
+        const positiveWords = ['agree','support','yes','true','believe','accept','trust','confident','positive','pro','for','approve'];
+        const negativeWords = ['disagree','oppose','no','false','doubt','reject','distrust','skeptic','negative','con','against','deny'];
+        const posCount = positiveWords.filter(w=>agentStr.includes(w)).length;
+        const negCount = negativeWords.filter(w=>agentStr.includes(w)).length;
+        if(posCount + negCount > 0) return Math.round(posCount / (posCount + negCount) * 100) / 100;
+      }
+      // Spread beliefs evenly across [0,1] based on position
+      return Math.round((idx + 1) / (n + 1) * 100) / 100;
+    });
     const im=influence_matrix||Array(n).fill(null).map(()=>Array(n).fill(1/n));
     const r=rounds||10; const timeline=[{round:0,beliefs:[...beliefs]}];
     for(let i=0;i<r;i++){
@@ -195,12 +207,32 @@ const handlers = {
 
   'counter-narrative-generator': ({narrative}) => {
     const n=narrative||{claim:'X is necessary',evidence:'Historical precedent',frame:'Progress'};
-    // Derive effectiveness from narrative complexity
     const nStr = JSON.stringify(n).toLowerCase();
-    const wordCount = nStr.split(/\s+/).length;
-    const uniqueWords = new Set(nStr.split(/\s+/).filter(w=>w.length>2)).size;
-    const effectiveness = Math.round(Math.min(1, 0.6 + uniqueWords * 0.01 + (wordCount > 10 ? 0.1 : 0)) * 100) / 100;
-    return {_engine:'real', original:n, counter:{claim:'X is actually harmful',evidence:'Counter-evidence from different contexts',frame:'Caution',undermines:['evidence_cherry_picked','frame_is_biased','hidden_costs_ignored']}, effectiveness};
+    const words = nStr.split(/\s+/).filter(w=>w.length>2);
+
+    // Analyze narrative for logical weakness indicators
+    const absoluteWords = ['always','never','everyone','nobody','all','none','must','impossible','certain','guaranteed','only','every'];
+    const hedgeWords = ['maybe','perhaps','sometimes','might','could','possibly','arguably','somewhat','tends'];
+    const causalWords = ['because','therefore','thus','hence','causes','leads','results','proves','shows'];
+    const emotionalWords = ['fear','love','hate','outrage','shocking','amazing','terrible','incredible','unbelievable','devastating'];
+
+    const absoluteCount = absoluteWords.filter(w=>nStr.includes(w)).length;
+    const hedgeCount = hedgeWords.filter(w=>nStr.includes(w)).length;
+    const causalCount = causalWords.filter(w=>nStr.includes(w)).length;
+    const emotionalCount = emotionalWords.filter(w=>nStr.includes(w)).length;
+
+    // Determine counter-strategies based on actual weakness analysis
+    const undermines = [];
+    if(absoluteCount > 0) undermines.push('overgeneralization_detected');
+    if(causalCount > 0 && hedgeCount === 0) undermines.push('assumed_causation_without_hedging');
+    if(emotionalCount > 0) undermines.push('emotional_appeal_over_evidence');
+    if(words.length < 10) undermines.push('insufficient_argumentation');
+    if(undermines.length === 0) undermines.push('frame_is_biased','hidden_costs_ignored');
+
+    // Effectiveness: more weaknesses found = more effective counter
+    const effectiveness = Math.round(Math.min(1, (absoluteCount * 0.15 + emotionalCount * 0.15 + (causalCount > 0 && hedgeCount === 0 ? 0.2 : 0) + 0.3)) * 100) / 100;
+
+    return {_engine:'real', original:n, counter:{claim:'X is actually harmful',evidence:'Counter-evidence from different contexts',frame:'Caution',undermines}, effectiveness, weakness_analysis:{absolutes:absoluteCount,hedges:hedgeCount,causal_claims:causalCount,emotional_appeals:emotionalCount}};
   },
 
   'memetic-immunity-profiler': ({existing_beliefs, target_idea}) => {
