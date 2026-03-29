@@ -1290,7 +1290,7 @@ app.post('/v1/pipe', auth, async (req, res) => {
 app.post('/v1/async/:slug', auth, async (req, res) => {
   const def = apiMap.get(req.params.slug);
   if (!def) return res.status(404).json({ error: { code: 'api_not_found' } });
-  if (req.acct.balance < def.credits) return res.status(402).json({ error: { code: 'insufficient_credits' } });
+  if (!def.credits && def.credits !== 0) return res.status(500).json({ error: { code: 'api_credits_not_configured' } });
   req.acct.balance -= def.credits;
   const jobId = `job-${uuidv4().slice(0, 12)}`;
   // SECURITY FIX (HIGH-01): Store owner key on job for access control
