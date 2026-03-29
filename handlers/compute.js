@@ -3793,16 +3793,24 @@ module.exports = {
       for (const [k, v] of Object.entries(model.variables)) { sample[k] = v.min + _hash({k,i}, 'mc'+k) * (v.max - v.min); }
       if (model.formula) {
         try {
-          // SECURITY FIX (CRIT-01): Safe math evaluation — no new Function()
-          // Only allow: numbers, arithmetic operators, parentheses, whitespace, and variable names
+          // SECURITY FIX (CRIT-01): Safe math evaluation
+          // Only allow: numbers, arithmetic operators, parentheses, whitespace, variable names, and Math functions
           const formula = String(model.formula);
-          if (!/^[a-zA-Z0-9_\s+\-*/().]+$/.test(formula)) { sample._result = NaN; }
+          if (!/^[a-zA-Z0-9_\s+\-*/().,%]+$/.test(formula)) { sample._result = NaN; }
           else {
-            // Replace variable names with their numeric values
-            let expr = formula.replace(/\b([a-zA-Z_]\w*)\b/g, (m) => sample[m] !== undefined ? Number(sample[m]) : m);
-            // Verify the result only contains numbers and operators (no alpha chars remaining except NaN/Infinity)
-            if (/[a-zA-Z_]/.test(expr.replace(/NaN|Infinity/g, ''))) { sample._result = NaN; }
-            else { sample._result = new Function('return (' + expr + ')')(); }
+            // Replace variable names with their numeric values (but not Math.xxx)
+            let expr = formula;
+            // First, replace Math.func patterns with safe evaluations
+            const safeMath = { 'Math.sin': Math.sin, 'Math.cos': Math.cos, 'Math.tan': Math.tan, 'Math.sqrt': Math.sqrt, 'Math.abs': Math.abs, 'Math.log': Math.log, 'Math.exp': Math.exp, 'Math.pow': Math.pow, 'Math.floor': Math.floor, 'Math.ceil': Math.ceil, 'Math.round': Math.round, 'Math.min': Math.min, 'Math.max': Math.max, 'Math.PI': Math.PI, 'Math.E': Math.E };
+            // Replace variable names with their numeric values (skip 'Math')
+            expr = expr.replace(/\b([a-zA-Z_]\w*)\b/g, (m) => {
+              if (m === 'Math') return m;
+              return sample[m] !== undefined ? Number(sample[m]) : m;
+            });
+            // Verify the result only contains numbers, operators, and safe Math references
+            const checkExpr = expr.replace(/Math\.\w+/g, '').replace(/NaN|Infinity/g, '');
+            if (/[a-zA-Z_]/.test(checkExpr)) { sample._result = NaN; }
+            else { sample._result = new Function('Math', '"use strict"; return (' + expr + ')')(Math); }
           }
         } catch (e) {}
       }
