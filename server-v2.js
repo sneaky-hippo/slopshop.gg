@@ -2900,7 +2900,7 @@ app.get('/v1/standup/streaks', auth, (req, res) => {
     let streak = 0;
     let d = new Date(); d.setUTCHours(0, 0, 0, 0);
     for (const dateStr of sorted) {
-      const expected = d.toISOString().slice(0, 10);
+      js
       if (dateStr === expected) { streak++; d.setDate(d.getDate() - 1); } else break;
     }
     return { agent, streak, total_standups: dates.length, last_standup: sorted[0] || null };
