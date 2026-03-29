@@ -2436,7 +2436,7 @@ app.get('/v1/random', publicRateLimit, (req, res) => {
   const type = req.query.type || 'number';
   const min = parseInt(req.query.min) || 0;
   const max = parseInt(req.query.max) || 1000000;
-  const count = Math.min(parseInt(req.query.count) || 1, 100);
+  const count = Math.min(Math.max(parseInt(req.query.count, 10) || 1, 1), 100);
 
   if (type === 'bytes') {
     const bytes = crypto.randomBytes(Math.min(parseInt(req.query.size) || 32, 1024));
