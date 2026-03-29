@@ -109,17 +109,26 @@ const handlers = {
   },
 
   'pre-mortem-autopsy': ({plan, team_size}) => {
-    const risks=['Scope creep exceeded estimates by 3x','Key dependency failed silently','Team burned out in week 3','Stakeholder changed requirements after launch','Integration testing was skipped due to time pressure'];
+    const riskTemplates = [
+      {risk:'Scope creep exceeded estimates by 3x', keywords:['scope','feature','requirement','big','large','complex','ambitious','expand','add','new','many']},
+      {risk:'Key dependency failed silently', keywords:['depend','integration','external','api','library','service','vendor','third','partner','upstream']},
+      {risk:'Team burned out in week 3', keywords:['team','people','deadline','tight','fast','rush','overtime','crunch','sprint','pressure','small']},
+      {risk:'Stakeholder changed requirements after launch', keywords:['stakeholder','client','customer','approval','review','feedback','change','pivot','uncertain','unclear']},
+      {risk:'Integration testing was skipped due to time pressure', keywords:['test','quality','deploy','release','ship','launch','rush','timeline','schedule','deadline']}
+    ];
     const planStr = (plan||'unnamed').toLowerCase();
-    // Deterministically select risks based on plan content
-    const scored = risks.map(r => {
-      const rWords = r.toLowerCase().split(/\s+/);
-      const relevance = rWords.filter(w => planStr.includes(w)).length;
-      let h=0; for(let i=0;i<r.length;i++) h=((h<<5)-h+r.charCodeAt(i)+planStr.length)|0;
-      return {risk:r, score: relevance * 10 + Math.abs(h % 20)};
+    const ts = team_size || 5;
+    // Score risks by actual keyword relevance to the plan text
+    const scored = riskTemplates.map(rt => {
+      let score = rt.keywords.filter(k => planStr.includes(k)).length * 10;
+      // Boost team burnout risk for small teams
+      if(rt.risk.includes('burned out') && ts <= 3) score += 10;
+      // Boost scope creep for longer plan descriptions
+      if(rt.risk.includes('Scope creep') && planStr.split(/\s+/).length > 15) score += 8;
+      return {risk: rt.risk, score, keyword_hits: rt.keywords.filter(k=>planStr.includes(k))};
     }).sort((a,b)=>b.score-a.score);
-    const selected = scored.slice(0,3).map(s=>s.risk);
-    return {_engine:'real', plan:plan||'unnamed', failure_narrative:'The project failed because: '+selected[0], root_causes:selected.map((r,i)=>({rank:i+1,cause:r,preventable:true})), warning_signs:selected.map(r=>'Early indicator: subtle signs of '+r.toLowerCase()), recommendation:'Address top root cause before proceeding'};
+    const selected = scored.slice(0,3);
+    return {_engine:'real', plan:plan||'unnamed', failure_narrative:'The project failed because: '+selected[0].risk, root_causes:selected.map((s,i)=>({rank:i+1,cause:s.risk,relevance_score:s.score,keywords_matched:s.keyword_hits,preventable:true})), warning_signs:selected.map(s=>'Early indicator: subtle signs of '+s.risk.toLowerCase()), recommendation:'Address top root cause before proceeding'};
   },
 
   'weakest-link-finder': ({chain}) => {

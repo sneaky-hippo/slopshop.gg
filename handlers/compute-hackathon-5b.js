@@ -273,11 +273,30 @@ const handlers = {
   },
 
   'world-event-roll': ({world_state, seed}) => {
-    const events=['gold_rush','rebellion','plague','festival','discovery','peaceful_day'];
-    // Deterministic event based on world_state content
-    const stateStr = JSON.stringify(world_state||{}) + String(seed||'');
-    let h=0; for(let i=0;i<stateStr.length;i++) h=((h<<5)-h+stateStr.charCodeAt(i))|0;
-    return {_engine:'real', event:events[Math.abs(h)%events.length], world_state:world_state||{}};
+    const eventKeywords = {
+      gold_rush:['wealth','gold','treasure','mine','resource','rich','boom','trade','market','money','prosperity'],
+      rebellion:['unrest','revolt','anger','oppression','tax','corrupt','injustice','tyranny','uprising','protest','riot'],
+      plague:['sick','disease','death','famine','shortage','contaminate','poison','decay','infection','epidemic','hunger'],
+      festival:['celebrate','happy','peace','harvest','abundance','joy','feast','gather','music','art','holiday'],
+      discovery:['explore','discover','invent','research','unknown','science','technology','innovation','breakthrough','find','new'],
+      peaceful_day:['calm','quiet','stable','normal','routine','order','balance','harmony','rest','content']
+    };
+    const stateStr = JSON.stringify(world_state||{}).toLowerCase();
+    // Score each event by how well it matches the world state
+    const scored = Object.entries(eventKeywords).map(([event, keywords]) => {
+      const matches = keywords.filter(k=>stateStr.includes(k)).length;
+      return {event, relevance: matches};
+    }).sort((a,b) => b.relevance - a.relevance);
+
+    // If world state has matching keywords, pick the most relevant event; otherwise use seed
+    let selectedEvent;
+    if(scored[0].relevance > 0) {
+      selectedEvent = scored[0].event;
+    } else {
+      const numSeed = typeof seed === 'number' ? seed : (seed ? String(seed).length : stateStr.length);
+      selectedEvent = Object.keys(eventKeywords)[numSeed % Object.keys(eventKeywords).length];
+    }
+    return {_engine:'real', event:selectedEvent, world_state:world_state||{}, event_scores:scored.slice(0,3)};
   },
 
   // ─── ETHICS & DECISION THEORY ─────────────────────────────

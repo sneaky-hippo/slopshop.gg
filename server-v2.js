@@ -4684,7 +4684,46 @@ app.post('/v1/hive/:id/standup', auth, (req, res) => {
     standupId, date, req.apiKey.slice(0, 12), did || '', doing || '', blockers || '', mood || 'neutral', Date.now()
   );
 
-  res.json({ ok: true, hive_id: req.params.id, channel: 'standup', date });
+  // Track activity
+  hiveTrackActivity(req.params.id, req.apiKey.slice(0, 12), 'standup', { date, mood: mood || 'neutral' });
+
+  // Notify subscribers that a standup was posted
+  hiveNotifySubscribers(req.params.id, 'standup', req.apiKey.slice(0, 12), `Standup from ${req.apiKey.slice(0, 12)}: Did: ${did || 'n/a'}, Doing: ${doing || 'n/a'}, Blockers: ${blockers || 'none'}`);
+
+  // Aggregate daily summary: gather all standups for this hive today and store a summary in hive state + memory
+  const todayStandups = db.prepare("SELECT sender, message FROM hive_messages WHERE hive_id = ? AND channel = 'standup' AND type = 'standup' AND ts > ?")
+    .all(req.params.id, new Date(date + 'T00:00:00Z').getTime());
+  const agentSummaries = todayStandups.map(s => ({ agent: s.sender, report: s.message.slice(0, 300) }));
+  const blockersList = todayStandups.map(s => {
+    const match = s.message.match(/Blockers: (.+?)(\n|$)/);
+    return match && match[1] !== 'none' ? { agent: s.sender, blocker: match[1] } : null;
+  }).filter(Boolean);
+  const moodCounts = {};
+  todayStandups.forEach(s => {
+    const m = s.message.match(/Mood: (\w+)/);
+    if (m) moodCounts[m[1]] = (moodCounts[m[1]] || 0) + 1;
+  });
+  const dailySummary = {
+    date,
+    hive_id: req.params.id,
+    agents_reported: agentSummaries.length,
+    summaries: agentSummaries,
+    blockers: blockersList,
+    mood_distribution: moodCounts,
+    generated_at: Date.now()
+  };
+  // Store in hive state for retrieval
+  db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(
+    req.params.id, 'standup:daily:' + date, JSON.stringify(dailySummary), Date.now()
+  );
+  // Also persist to memory if handler is available
+  if (typeof allHandlers === 'object' && allHandlers['memory-set']) {
+    try {
+      allHandlers['memory-set']({ key: `hive:${req.params.id}:standup:${date}`, value: JSON.stringify(dailySummary), namespace: 'hive-standups' });
+    } catch(e) { /* best-effort */ }
+  }
+
+  res.json({ ok: true, hive_id: req.params.id, channel: 'standup', date, daily_summary: dailySummary });
 });
 
 // GET /v1/hive/:id/sync — get everything that happened since last sync
@@ -11708,10 +11747,15 @@ db.exec(`CREATE TABLE IF NOT EXISTS federated_rounds (
 )`);
 
 // --- Prepared statements for Strat 3 ---
-const dbInsertStake = db.prepare('INSERT INTO staking (id, api_key, amount, lock_days, unlock_at) VALUES (?, ?, ?, ?, ?)');
+const dbInsertStake = db.prepare('INSERT INTO staking (id, api_key, amount, lock_days, unlock_at, auto_compound) VALUES (?, ?, ?, ?, ?, ?)');
 const dbGetStakes = db.prepare('SELECT * FROM staking WHERE api_key = ? ORDER BY created_at DESC');
 const dbGetStake = db.prepare('SELECT * FROM staking WHERE id = ? AND api_key = ?');
 const dbWithdrawStake = db.prepare('UPDATE staking SET withdrawn = 1 WHERE id = ?');
+const dbGetActiveStakes = db.prepare('SELECT * FROM staking WHERE withdrawn = 0');
+const dbUpdateStakeAmount = db.prepare('UPDATE staking SET amount = ? WHERE id = ?');
+const dbInsertYield = db.prepare('INSERT INTO yield_history (id, stake_id, api_key, amount, source_revenue, pool_total, total_staked, compounded) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+const dbGetYieldHistory = db.prepare('SELECT * FROM yield_history WHERE api_key = ? ORDER BY created_at DESC LIMIT ?');
+const dbGetYieldByStake = db.prepare('SELECT * FROM yield_history WHERE stake_id = ? ORDER BY created_at DESC');
 
 const dbInsertForgePlugin = db.prepare('INSERT INTO forge_plugins (id, api_key, name, description, handler_code, input_schema, output_schema) VALUES (?, ?, ?, ?, ?, ?, ?)');
 const dbGetForgePlugin = db.prepare('SELECT * FROM forge_plugins WHERE id = ?');
