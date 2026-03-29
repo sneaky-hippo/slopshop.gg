@@ -1697,7 +1697,7 @@ function cmdMcp(args) {
     return;
   }
 
-  if (sub === 'config') {
+  if (sub !== null && sub !== undefined && sub === 'config') {
     // Show MCP config for various clients
     const mcpConfig = {
       slopshop: {
