@@ -367,7 +367,7 @@ async function handleMessage(msg) {
         }
       } else {
         // Standard tool — strip slop- prefix
-        const toolName = rawName.replace(/^slop-/, '').trim().toLowerCase();
+        const toolName = (rawName || '').replace(/^slop-/, '').trim().toLowerCase();
         endpoint = `/v1/${toolName}`;
         // Map input/text for compatibility
         if (input.input && !input.text) input.text = input.input;
