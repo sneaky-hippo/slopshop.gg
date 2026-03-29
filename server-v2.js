@@ -13944,6 +13944,434 @@ app.post('/v1/agent/a2a/broadcast', auth, (req, res) => {
   }
 });
 
+// ===== STAKING YIELD DISTRIBUTION LOOP (hourly) =====
+
+// Create staking_yields table if not exists
+db.exec(`CREATE TABLE IF NOT EXISTS staking_yields (
+  id TEXT PRIMARY KEY,
+  stake_id TEXT NOT NULL,
+  api_key TEXT NOT NULL,
+  amount REAL NOT NULL,
+  source_revenue REAL NOT NULL,
+  pool_total REAL NOT NULL,
+  total_staked REAL NOT NULL,
+  compounded INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+const dbInsertStakingYield = db.prepare(
+  'INSERT INTO staking_yields (id, stake_id, api_key, amount, source_revenue, pool_total, total_staked, compounded) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+);
+const dbGetStakingYields = db.prepare(
+  'SELECT * FROM staking_yields WHERE api_key = ? ORDER BY created_at DESC LIMIT ?'
+);
+
+function runStakingYieldDistribution() {
+  try {
+    const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
+
+    // Query audit_log for last hour's total credits transacted
+    const revenueRow = db.prepare(
+      "SELECT COALESCE(SUM(credits), 0) as total_credits FROM audit_log WHERE ts >= ?"
+    ).get(oneHourAgo);
+    const hourlyRevenue = revenueRow.total_credits || 0;
+
+    if (hourlyRevenue <= 0) {
+      log.info('Staking yield distribution: no revenue in last hour, skipping');
+      return;
+    }
+
+    // Calculate 5% as staking pool
+    const stakingPool = hourlyRevenue * 0.05;
+
+    // Query all active stakes (withdrawn=0)
+    const activeStakes = dbGetActiveStakes.all();
+    if (!activeStakes || activeStakes.length === 0) {
+      log.info('Staking yield distribution: no active stakes, skipping');
+      return;
+    }
+
+    // Calculate total staked amount
+    const totalStaked = activeStakes.reduce((sum, s) => sum + s.amount, 0);
+    if (totalStaked <= 0) {
+      log.info('Staking yield distribution: total staked is 0, skipping');
+      return;
+    }
+
+    // Distribute pool proportionally to each stake based on amount
+    let distributed = 0;
+    const distributions = [];
+    for (const stake of activeStakes) {
+      const proportion = stake.amount / totalStaked;
+      const yieldAmount = Math.floor(stakingPool * proportion);
+      if (yieldAmount <= 0) continue;
+
+      const yieldId = crypto.randomUUID();
+      const shouldCompound = stake.auto_compound === 1;
+
+      // Record yield payment in staking_yields table
+      dbInsertStakingYield.run(
+        yieldId, stake.id, stake.api_key, yieldAmount,
+        hourlyRevenue, stakingPool, totalStaked,
+        shouldCompound ? 1 : 0
+      );
+
+      // Also record in yield_history for backward compatibility
+      dbInsertYield.run(
+        yieldId, stake.id, stake.api_key, yieldAmount,
+        hourlyRevenue, stakingPool, totalStaked,
+        shouldCompound ? 1 : 0
+      );
+
+      // If auto_compound, add yield back to stake amount
+      if (shouldCompound) {
+        dbUpdateStakeAmount.run(stake.amount + yieldAmount, stake.id);
+      }
+
+      distributed += yieldAmount;
+      distributions.push({ stake_id: stake.id, api_key: stake.api_key.slice(0, 12) + '...', yield: yieldAmount, compounded: shouldCompound });
+    }
+
+    log.info('Staking yield distribution complete', {
+      hourly_revenue: hourlyRevenue,
+      pool: stakingPool,
+      total_staked: totalStaked,
+      active_stakes: activeStakes.length,
+      total_distributed: distributed,
+      distributions_count: distributions.length,
+    });
+  } catch (e) {
+    log.error('Staking yield distribution failed', { error: e.message });
+  }
+}
+
+// Run every hour (3600000ms)
+setInterval(runStakingYieldDistribution, 3600000);
+// Also run once on startup after a short delay
+setTimeout(runStakingYieldDistribution, 5000);
+
+// GET /v1/staking/yield-history — View yield distribution history
+app.get('/v1/staking/yield-history', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 100, 1), 1000);
+    const stakeId = req.query.stake_id || null;
+
+    let yields;
+    if (stakeId) {
+      yields = db.prepare(
+        'SELECT * FROM staking_yields WHERE api_key = ? AND stake_id = ? ORDER BY created_at DESC LIMIT ?'
+      ).all(req.apiKey, stakeId, limit);
+    } else {
+      yields = dbGetStakingYields.all(req.apiKey, limit);
+    }
+
+    const totalEarned = yields.reduce((sum, y) => sum + y.amount, 0);
+    const totalCompounded = yields.filter(y => y.compounded === 1).reduce((sum, y) => sum + y.amount, 0);
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'staking/yield-history', 0, latency, 'real');
+
+    res.json({
+      ok: true,
+      yields,
+      total_earned: totalEarned,
+      total_compounded: totalCompounded,
+      count: yields.length,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('staking/yield-history failed', { error: e.message });
+    res.status(500).json({ error: { code: 'yield_history_error', message: e.message } });
+  }
+});
+
+// GET /v1/knowledge/subgraph — Return all triples within N hops (BFS)
+app.get('/v1/knowledge/subgraph', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const entity = req.query.entity;
+    const hops = Math.min(Math.max(parseInt(req.query.hops) || 2, 1), 6);
+
+    if (!entity) {
+      return res.status(400).json({ error: { code: 'missing_entity', message: 'Provide ?entity=X query parameter' } });
+    }
+
+    // BFS from the entity, collecting all triples at each depth level
+    const visited = new Set([entity]);
+    const queue = [{ node: entity, depth: 0 }];
+    let head = 0;
+
+    while (head < queue.length) {
+      const current = queue[head++];
+      if (current.depth >= hops) continue;
+
+      const neighbors = db.prepare(
+        'SELECT object as neighbor FROM knowledge_graph WHERE api_key = ? AND subject = ? ' +
+        'UNION SELECT subject as neighbor FROM knowledge_graph WHERE api_key = ? AND object = ?'
+      ).all(req.apiKey, current.node, req.apiKey, current.node);
+
+      for (const { neighbor } of neighbors) {
+        if (!visited.has(neighbor)) {
+          visited.add(neighbor);
+          queue.push({ node: neighbor, depth: current.depth + 1 });
+        }
+      }
+    }
+
+    // Collect all triples where both subject and object are in the visited set
+    const nodeList = [...visited];
+    const triples = [];
+    const batchSize = 50;
+    for (let i = 0; i < nodeList.length; i += batchSize) {
+      const batch = nodeList.slice(i, i + batchSize);
+      const placeholders = batch.map(() => '?').join(',');
+      const rows = db.prepare(
+        `SELECT subject, predicate, object, confidence FROM knowledge_graph WHERE api_key = ? AND subject IN (${placeholders}) AND object IN (${placeholders})`
+      ).all(req.apiKey, ...batch, ...batch);
+      triples.push(...rows);
+    }
+
+    // Deduplicate triples
+    const seen = new Set();
+    const uniqueTriples = triples.filter(t => {
+      const key = `${t.subject}|${t.predicate}|${t.object}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'knowledge/subgraph', 0, latency, 'real');
+
+    res.json({
+      ok: true,
+      entity,
+      hops,
+      triples: uniqueTriples,
+      node_count: visited.size,
+      edge_count: uniqueTriples.length,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('knowledge/subgraph GET failed', { error: e.message });
+    res.status(500).json({ error: { code: 'subgraph_error', message: e.message } });
+  }
+});
+
+
+// ===== FEATURE: Autonomous Memory Evolution =====
+const activeEvolutions = new Map();
+
+app.post('/v1/memory/evolve/start', auth, (req, res) => {
+  const { namespace, strategy, budget_per_cycle, interval_minutes } = req.body;
+  const ns = namespace || 'default';
+  const strat = strategy || 'consolidate';
+  const validStrategies = ['consolidate', 'enrich', 'decay', 'summarize'];
+  if (!validStrategies.includes(strat)) {
+    return res.status(400).json({ error: { code: 'invalid_strategy', message: `strategy must be one of: ${validStrategies.join(', ')}` } });
+  }
+  const budget = budget_per_cycle || 5;
+  const interval = Math.max(1, interval_minutes || 10);
+  const evoId = crypto.randomUUID();
+  const keyPrefix = req.apiKey ? req.apiKey.slice(0, 12) : 'anon';
+
+  function runCycle() {
+    try {
+      const rows = db.prepare('SELECT key, value, namespace, updated FROM memory WHERE namespace = ?').all(ns);
+      if (rows.length === 0) return;
+      const now = Date.now();
+      let processed = 0;
+
+      if (strat === 'consolidate') {
+        const groups = {};
+        for (const r of rows) {
+          const prefix = r.key.split(/[-_:.]/)[0] || r.key;
+          if (!groups[prefix]) groups[prefix] = [];
+          groups[prefix].push(r);
+        }
+        for (const [prefix, items] of Object.entries(groups)) {
+          if (items.length > 1 && processed < budget) {
+            const merged = items.map(i => `${i.key}: ${(i.value || '').slice(0, 200)}`).join(' | ');
+            db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
+              .run(ns, `_consolidated:${prefix}`, merged.slice(0, 4000), '["evolved","consolidate"]', now, now, 0);
+            processed++;
+          }
+        }
+      } else if (strat === 'enrich') {
+        for (const r of rows.slice(0, budget)) {
+          const enriched = JSON.stringify({
+            original: r.value,
+            enriched_at: new Date().toISOString(),
+            char_count: (r.value || '').length,
+            age_days: Math.round((now - r.updated) / 86400000 * 10) / 10,
+            namespace: r.namespace,
+          });
+          db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
+            .run(ns, `_enriched:${r.key}`, enriched, '["evolved","enrich"]', now, now, 0);
+          processed++;
+        }
+      } else if (strat === 'decay') {
+        const staleThreshold = now - 7 * 86400000;
+        for (const r of rows) {
+          if (r.updated < staleThreshold && processed < budget) {
+            db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
+              .run(ns + ':archived', r.key, r.value, '["evolved","decay","archived"]', r.updated, now, 0);
+            db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?').run(ns, r.key);
+            processed++;
+          }
+        }
+      } else if (strat === 'summarize') {
+        const groups = {};
+        for (const r of rows) {
+          const prefix = r.key.split(/[-_:.]/)[0] || r.key;
+          if (!groups[prefix]) groups[prefix] = [];
+          groups[prefix].push(r);
+        }
+        for (const [prefix, items] of Object.entries(groups)) {
+          if (processed < budget) {
+            const summary = `[${items.length} keys] ` + items.map(i => (i.value || '').slice(0, 100)).join('; ').slice(0, 2000);
+            db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated, ttl) VALUES (?, ?, ?, ?, ?, ?, ?)')
+              .run(ns, `_summary:${prefix}`, summary, '["evolved","summarize"]', now, now, 0);
+            processed++;
+          }
+        }
+      }
+
+      const evo = activeEvolutions.get(evoId);
+      if (evo) {
+        evo.cycles_completed = (evo.cycles_completed || 0) + 1;
+        evo.last_cycle = new Date().toISOString();
+        evo.total_processed = (evo.total_processed || 0) + processed;
+      }
+    } catch (e) {
+      log.error('Memory evolution cycle failed', { evoId, error: e.message });
+    }
+  }
+
+  runCycle();
+  const timer = setInterval(runCycle, interval * 60 * 1000);
+
+  activeEvolutions.set(evoId, {
+    id: evoId,
+    namespace: ns,
+    strategy: strat,
+    budget_per_cycle: budget,
+    interval_minutes: interval,
+    key_prefix: keyPrefix,
+    started: new Date().toISOString(),
+    cycles_completed: 1,
+    total_processed: 0,
+    last_cycle: new Date().toISOString(),
+    _timer: timer,
+  });
+
+  res.json({
+    ok: true,
+    evolution_id: evoId,
+    namespace: ns,
+    strategy: strat,
+    budget_per_cycle: budget,
+    interval_minutes: interval,
+    message: `Evolution started. First cycle complete. Next cycle in ${interval} minutes.`,
+    stop_endpoint: `POST /v1/memory/evolve/stop { evolution_id: "${evoId}" }`,
+    _engine: 'real',
+  });
+});
+
+app.post('/v1/memory/evolve/stop', auth, (req, res) => {
+  const { evolution_id } = req.body;
+  if (!evolution_id) return res.status(400).json({ error: { code: 'missing_param', message: 'evolution_id is required' } });
+  const evo = activeEvolutions.get(evolution_id);
+  if (!evo) return res.status(404).json({ error: { code: 'not_found', message: 'No active evolution with that ID' } });
+  clearInterval(evo._timer);
+  const result = { ...evo };
+  delete result._timer;
+  activeEvolutions.delete(evolution_id);
+  res.json({ ok: true, stopped: true, evolution: result, _engine: 'real' });
+});
+
+app.get('/v1/memory/evolve/status', auth, (req, res) => {
+  const evolutions = [];
+  for (const [id, evo] of activeEvolutions) {
+    const e = { ...evo };
+    delete e._timer;
+    evolutions.push(e);
+  }
+  res.json({ ok: true, active_evolutions: evolutions.length, evolutions, _engine: 'real' });
+});
+
+// ===== FEATURE: Swarm Live SSE Stream =====
+app.get('/v1/swarm/live', auth, (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.write(':\n\n');
+
+  const MAX_DURATION = 5 * 60 * 1000;
+  const INTERVAL = 2000;
+  const startTime = Date.now();
+  let closed = false;
+
+  function pushEvent(event, data) {
+    if (closed) return;
+    res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+  }
+
+  function poll() {
+    if (closed) return;
+    if (Date.now() - startTime > MAX_DURATION) {
+      pushEvent('close', { reason: 'max_duration_reached', duration_seconds: 300 });
+      res.end();
+      closed = true;
+      return;
+    }
+    try {
+      const activeRuns = db.prepare("SELECT id, agent_count, status, ts FROM compute_runs WHERE status = 'running' ORDER BY ts DESC LIMIT 20").all();
+      pushEvent('compute_runs', { active: activeRuns.length, runs: activeRuns });
+
+      const recentTs = new Date(Date.now() - 30000).toISOString();
+      let recentMessages = [];
+      try {
+        recentMessages = db.prepare('SELECT hive_id, channel, sender, message, ts FROM hive_messages WHERE ts > ? ORDER BY ts DESC LIMIT 20').all(recentTs);
+      } catch (e) { /* table may not exist yet */ }
+      pushEvent('hive_messages', { count: recentMessages.length, messages: recentMessages });
+
+      const memCount = db.prepare('SELECT COUNT(*) as cnt FROM agent_state').get();
+      pushEvent('agent_state', { memory_key_count: memCount?.cnt || 0 });
+
+      const recentAuditTs = new Date(Date.now() - 30000).toISOString();
+      const recentAudit = db.prepare('SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE ts > ? ORDER BY id DESC LIMIT 20').all(recentAuditTs);
+      pushEvent('audit_log', { count: recentAudit.length, entries: recentAudit });
+
+      pushEvent('heartbeat', { ts: new Date().toISOString(), uptime_seconds: Math.round((Date.now() - startTime) / 1000) });
+    } catch (e) {
+      pushEvent('error', { message: e.message });
+    }
+  }
+
+  poll();
+  const timer = setInterval(poll, INTERVAL);
+
+  const timeout = setTimeout(() => {
+    if (!closed) {
+      pushEvent('close', { reason: 'max_duration_reached', duration_seconds: 300 });
+      res.end();
+      closed = true;
+    }
+    clearInterval(timer);
+  }, MAX_DURATION);
+
+  req.on('close', () => {
+    closed = true;
+    clearInterval(timer);
+    clearTimeout(timeout);
+  });
+});
+
 // ===== START =====
 
 // ===== STRAT 4: AGENT TEMPLATES (SWARM BLUEPRINTS) =====
