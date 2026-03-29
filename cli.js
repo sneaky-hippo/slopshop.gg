@@ -991,41 +991,73 @@ Phase: ${phase}. Scores: ${recentScores.join('→')||'none'}. Vision: ${(shared.
 Knowledge: ${kb}
 Built so far: ${built || 'nothing'}
 
-Do THREE things:
-1. PRIORITY: what to build this sprint (one sentence, DIFFERENT from before)
-2. Output 2 memory set commands to store real structured data:
-memory set <key> {"field":"value","field2":"value2"}
-3. SCORE: X/10 and NEXT: what to do next sprint
+Do TWO things:
+1. PRIORITY: what ONE code change to make (specific file + what to change)
+2. Output the change as ONE of these commands:
+   file edit <path> --find "old text" --replace "new text"
+   memory set <key> {"data":"value"}
 
-${phase === 'EXPLORE' ? 'Be bold. Discover.' : phase === 'FIX' ? 'Fix whats broken.' : phase === 'ACCELERATE' ? 'Double down.' : 'Find next unlock.'}`;
+SCORE: X/10 and NEXT: what to do next sprint
+
+${phase === 'EXPLORE' ? 'Be bold. Discover.' : phase === 'FIX' ? 'Fix whats broken.' : phase === 'ACCELERATE' ? 'Double down.' : 'Find next unlock.'}
+
+Available files: server-v2.js, cli.js, index.html, docs.html, pricing.html, about.html, compare.html, README.md, mcp-server.js, agent.js, auth.js`;
 
     const resp = await ask(thinkPrompt);
     const priorityMatch = (resp||'').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
-    const priority = priorityMatch ? priorityMatch[1].trim().slice(0, 80) : 'iterate on research';
-    if (priority && priority !== 'iterate on research') todos.push({ sprint: s, priority, phase });
-    let cmds = (resp||'').split('\n').map(l=>l.trim()).filter(l=>l.startsWith('memory set')&&l.includes('{'));
+    const priority = priorityMatch ? priorityMatch[1].trim().slice(0, 100) : 'iterate';
+    if (priority && priority !== 'iterate') todos.push({ sprint: s, priority, phase });
     const score = extractScore(resp) || (phase === 'EXPLORE' ? 6 : 7);
     const nextMatch = (resp||'').match(/NEXT:\s*(.+?)(?:\n|$)/i);
 
-    console.log(`  ${dim('│')} ${green('→')} ${priority.slice(0, 60)}`);
+    console.log(`  ${dim('│')} ${green('→')} ${priority.slice(0, 70)}`);
 
-    // Guarantee commands
-    if (cmds.length === 0) {
-      cmds = [`memory set s${s}-action {"p":"${priority.replace(/"/g,'').slice(0,60)}","s":${s}}`];
+    // ── BUILD — execute file edits + memory commands ──
+    let built_n = 0;
+    const allCmds = (resp||'').split('\n').map(l => l.trim()).filter(l =>
+      l.startsWith('file edit') || l.startsWith('memory set')
+    );
+
+    for (const cmd of allCmds.slice(0, 3)) {
+      try {
+        if (cmd.startsWith('file edit ')) {
+          // Parse: file edit <path> --find "X" --replace "Y"
+          const findMatch = cmd.match(/--find\s+"([^"]+)"/);
+          const replaceMatch = cmd.match(/--replace\s+"([^"]+)"/);
+          const pathMatch = cmd.match(/^file edit\s+(\S+)/);
+          if (pathMatch && findMatch && replaceMatch) {
+            const filePath = path.resolve(__dirname, pathMatch[1]);
+            if (fs.existsSync(filePath)) {
+              const content = fs.readFileSync(filePath, 'utf8');
+              if (content.includes(findMatch[1])) {
+                fs.writeFileSync(filePath, content.replace(findMatch[1], replaceMatch[1]));
+                shared.builds.push({ key: pathMatch[1], type: 'file-edit', sprint: s });
+                built_n++;
+                console.log(`  ${dim('│')} ${green('✓ EDITED')} ${cyan(pathMatch[1])} ${dim(findMatch[1].slice(0,30) + ' → ' + replaceMatch[1].slice(0,30))}`);
+              } else {
+                console.log(`  ${dim('│')} ${yellow('⚠ find text not in')} ${pathMatch[1]}`);
+              }
+            }
+          }
+        } else if (cmd.startsWith('memory set ')) {
+          const rest = cmd.slice(11); const si = rest.indexOf(' ');
+          if (si > 0) {
+            const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, ''), v = rest.slice(si+1);
+            if (k.length > 1 && v.length > 1 && await slopMem('hive-' + k, v)) {
+              shared.builds.push({ key: 'hive-' + k, type: 'memory', sprint: s });
+              built_n++;
+              console.log(`  ${dim('│')} ${green('✓ STORED')} ${cyan('hive-' + k)}`);
+            }
+          }
+        }
+      } catch(e) { console.log(`  ${dim('│')} ${yellow('⚠')} ${e.message?.slice(0,40)}`); }
     }
 
-    // ── BUILD ──
-    let built_n = 0;
-    for (const cmd of cmds.slice(0, 3)) {
-      const rest = cmd.replace(/^memory set\s+/, ''); const si = rest.indexOf(' ');
-      if (si > 0) {
-        const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, ''), v = rest.slice(si+1);
-        if (k.length > 1 && v.length > 1 && await slopMem('hive-' + k, v)) {
-          shared.builds.push({ key: 'hive-' + k, sprint: s });
-          built_n++;
-          console.log(`  ${dim('│')} ${green('✓')} ${cyan('hive-' + k)}`);
-        }
-      }
+    // Fallback: at minimum store the priority
+    if (built_n === 0) {
+      await slopMem('hive-s' + s, JSON.stringify({ priority, sprint: s }));
+      shared.builds.push({ key: 'hive-s' + s, type: 'memory', sprint: s });
+      built_n = 1;
     }
     if (shared.builds.length > 50) shared.builds = shared.builds.slice(-50);
 
