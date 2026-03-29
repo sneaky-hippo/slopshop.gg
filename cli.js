@@ -949,7 +949,7 @@ async function cmdHive(args) {
   const domains = [...new Set(mission.match(/\b[\w-]+\.(?:com|dev|io|gg|ai|org)\b/g) || [])];
   const mw = mission.toLowerCase();
   if (mw.includes('competitor') || mw.includes('compar')) { if (!urls.find(u=>u.includes('composio'))) urls.push('https://composio.dev'); if (!urls.find(u=>u.includes('langchain'))) urls.push('https://langchain.com'); }
-  if (mw.includes('slopshop') && !urls.find(u=>u.includes('slopshop.gg'))) urls.push('https://slopshop.gg');
+  if (!urls.includes('https://slopshop.gg') && mw.includes('slopshop')) urls.push('https://slopshop.gg');
 
   for (const url of urls.slice(0, 6)) {
     const r = await slopCall('ext-web-scrape', { url });
