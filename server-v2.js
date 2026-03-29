@@ -3710,7 +3710,7 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
   const { task, tool, input, agents, verify } = req.body;
   if (!task && !tool) return res.status(400).json({ error: { code: 'missing_task', message: 'Provide task (natural language) or tool (slug) + input' } });
 
-  const n = Math.min(agents || 10, 100); // Cap at 100 (realistic, not marketing)
+  const n = Math.min(agents || 10, 1000); // Cap at 1000 agents per deploy
   const id = 'army-' + crypto.randomUUID().slice(0, 12);
   const creditsPerAgent = tool ? (API_DEFS[tool]?.credits || 1) : 1;
   const totalCredits = n * creditsPerAgent;
@@ -3782,9 +3782,23 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
   const successCount = results.filter(r => r.verified).length;
   const failCount = results.filter(r => r.error).length;
 
-  // Aggregate results
+  // Build proper SHA-256 binary Merkle tree (matches /v1/proof/merkle algorithm)
   const hashes = results.filter(r => r.hash).map(r => r.hash);
-  const merkleRoot = crypto.createHash('sha256').update(hashes.join('')).digest('hex');
+  function buildMerkleRoot(leaves) {
+    if (leaves.length === 0) return crypto.createHash('sha256').update('empty').digest('hex');
+    let level = [...leaves];
+    while (level.length > 1) {
+      const next = [];
+      for (let i = 0; i < level.length; i += 2) {
+        const left = level[i];
+        const right = level[i + 1] || left; // duplicate last if odd
+        next.push(crypto.createHash('sha256').update(left + right).digest('hex'));
+      }
+      level = next;
+    }
+    return level[0];
+  }
+  const merkleRoot = buildMerkleRoot(hashes);
 
   // Store run
   db.prepare('INSERT INTO compute_runs (id, api_key, config, results, agent_count, status, verified, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
@@ -3794,6 +3808,26 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
   );
 
   dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'army-deploy', totalCredits, latency, 'army');
+
+  // Army-Memory integration: auto-store results in memory namespace
+  if (allHandlers['memory-set']) {
+    try {
+      allHandlers['memory-set']({ key: `army:${id}:summary`, value: JSON.stringify({ task, agents: n, succeeded: successCount, failed: failCount, merkle_root: merkleRoot }), namespace: 'army' });
+      allHandlers['memory-set']({ key: `army:${id}:results`, value: JSON.stringify(results.slice(0, 20)), namespace: 'army' });
+    } catch {}
+  }
+
+  // Army-Hive integration: auto-post standup on completion
+  try {
+    const hiveRow = db.prepare('SELECT id FROM hives WHERE api_key = ? ORDER BY created DESC LIMIT 1').get(req.apiKey);
+    if (hiveRow) {
+      db.prepare('INSERT INTO hive_messages (hive_id, sender, channel, message, ts) VALUES (?, ?, ?, ?, ?)').run(
+        hiveRow.id, 'army-orchestrator', 'general',
+        `Army ${id} completed: ${successCount}/${n} agents succeeded. Merkle root: ${merkleRoot.slice(0, 16)}... Task: "${(task || '').slice(0, 100)}"`,
+        Date.now()
+      );
+    }
+  } catch {}
 
   res.json({
     run_id: id,
@@ -9113,6 +9147,29 @@ app.post('/v1/proof/merkle', auth, (req, res) => {
     leaves: leaves.slice(0, 20),
     proof_for_first_item: proof,
     verify_tip: 'Hash each item, then combine with proof siblings to reconstruct the root',
+  });
+});
+
+// POST /v1/proof/verify — Verify a Merkle proof against a root
+app.post('/v1/proof/verify', auth, (req, res) => {
+  const { leaf_hash, proof, expected_root } = req.body;
+  if (!leaf_hash || !Array.isArray(proof) || !expected_root) {
+    return res.status(400).json({ error: { code: 'missing_fields', message: 'Provide {leaf_hash, proof: [{hash, position}], expected_root}' } });
+  }
+  let current = leaf_hash;
+  for (const sibling of proof) {
+    const left = sibling.position === 'left' ? sibling.hash : current;
+    const right = sibling.position === 'left' ? current : sibling.hash;
+    current = crypto.createHash('sha256').update(left + right).digest('hex');
+  }
+  const verified = current === expected_root;
+  res.json({
+    ok: true,
+    verified,
+    computed_root: current,
+    expected_root,
+    proof_length: proof.length,
+    _engine: 'real',
   });
 });
 

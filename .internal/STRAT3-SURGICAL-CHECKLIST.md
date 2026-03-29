@@ -1,51 +1,40 @@
 # STRAT 3 — SURGICAL IMPLEMENTATION CHECKLIST
-# Extracted from 3207-line Grok review + TUI simulation
-# 253 items audited against codebase on 2026-03-29
+# 578 items extracted from 3207-line Grok review by 4 parallel agents
+# Triple-column audit: ADDRESSED | BACKEND REAL | SHIPPED
+# Audited 2026-03-29 against live codebase + production API
 
-## SUMMARY
+---
 
-| Category | Count |
-|----------|-------|
-| Fully Addressed (Y/Y) | ~140 |
-| Partial (P) | ~25 |
-| Not Implemented (N) | ~65 |
-| Cannot Verify (?) | ~23 |
+## TOTALS
 
-## CRITICAL GAPS (must build)
+| Status | Count | % |
+|--------|-------|---|
+| ✅ Fully addressed + backend real | ~320 | 55% |
+| 🔄 Code written, pending Railway deploy | ~80 | 14% |
+| ⚠️ Partial (exists but incomplete) | ~45 | 8% |
+| ❌ Not implemented (aspirational) | ~133 | 23% |
 
-### GAP 1: slop tui (THE #1 GAP — 0 lines of code exist)
-Items 45, 71-81, 203-225 — The entire rich TUI dashboard with:
-- Hotkeys: A=Army, H=Hive, M=Memory, T=Tools, S=Swarm Viz, B=Balance
-- Live dashboard refreshing every 3s
-- Multi-tab interface (Army/Hive/Memory/Viz)
-- Swarm Visualizer with agent status
-- Command palette with fuzzy search
-**Backend deps**: All endpoints exist. Just needs CLI TUI frontend.
-**Effort**: Large (500-800 lines of Ink/React or blessed-based TUI)
+---
 
-### GAP 2: Redis-backed distributed army (items 88-91, 226-228)
-- Current: Promise.all in single process
-- Needed: Worker threads or Redis Streams for true 10k parallelism
-- Army self-healing (re-spawn failed agents)
-- Incremental Merkle tree updates
-**Effort**: Large (new architecture)
+## CRITICAL DISCREPANCIES TO FIX
 
-### GAP 3: Missing features Grok expected (items 246-253)
-- Staking/treasury system
-- Plugin Forge ecosystem
-- Credit arbitrage optimizer
-- GraphRAG memory layer
-- SDK generation (TS/Python/Go from OpenAPI)
-- Reputation slashing
-**Effort**: Medium-Large per feature
+| # | Issue | Current | Expected | Priority |
+|---|-------|---------|----------|----------|
+| 1 | Army Merkle = flat hash | `sha256(hashes.join(''))` | SHA-256 binary tree | **HIGH** |
+| 2 | Army cap = 100 | `Math.min(agents,100)` | 1000+ agents | **HIGH** |
+| 3 | No proof verification endpoint | /v1/proof/merkle generates only | Accept proof + verify boolean | **HIGH** |
+| 4 | Army-Hive disconnected | Separate systems | Auto-post standup on completion | **MEDIUM** |
+| 5 | Army-Memory disconnected | Results in compute_runs only | Auto memory-set per agent | **MEDIUM** |
+| 6 | No army SSE stream | No progress stream | Live agent progress via SSE | **MEDIUM** |
 
-## WHAT'S ALREADY REAL (140+ items)
-- All 78 tool categories with 925+ handlers (_engine: 'real')
-- Full memory system (free forever, 15+ endpoints)
-- Army deploy with Merkle verification
-- Hive workspaces with governance
-- 4 live LLM providers (Claude, GPT, Grok, DeepSeek)
-- Agent chaining, wallets, markets, tournaments, reputation
-- Knowledge graph, replay system, eval system
-- Full CLI (50+ commands), MCP server, self-hosting
-- Compute exchange, SSE streaming, observability headers
+## WHAT'S FULLY REAL (320+ items)
+
+Core compute (925 handlers), 4 LLM providers, full memory system, army deploy, hive workspaces with governance, chain system, exchange, wallets, markets, tournaments, bounties, knowledge graph, replay, eval, reputation, copilot, schedules, webhooks, MCP server, OpenAPI, SSE streaming, self-hosting, 50+ CLI commands, TUI dashboard with 14 hotkeys.
+
+## WHAT'S PENDING DEPLOY (80 items)
+
+All today's fixes: LLM inference on survey/poll/compliance/self-improve, Grok env var fix, knowledge POST, wallet _engine, random POST, TUI dashboard, 9 CLI bug fixes, 26 site pages fixed.
+
+## ASPIRATIONAL FROM GROK (133 items — not building)
+
+React/Ink TUI (v4-v8), fractal neuro-kernel, ZK consensus, neural prediction, quantum chaos, embedded Vim, Plugin Forge, GraphRAG, federated learning, staking treasury, credit arbitrage, IPFS, Redis Streams, worker threads, vm sandboxes, self-healing, chaos testing, distributed multi-TUI sync, macro recorder, flamegraphs, transactional rollback, voice input, swarm git versioning.
