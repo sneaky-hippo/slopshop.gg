@@ -679,7 +679,7 @@ async function cmdBalance() {
     const auto_reload = d.auto_reload;
 
     if (jsonMode) {
-      console.log(JSON.stringify(d, null, 2));
+      SCORE: X/10
       return;
     }
 
