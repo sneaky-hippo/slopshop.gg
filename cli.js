@@ -311,7 +311,7 @@ function readStdin() {
     let data = '';
     process.stdin.setEncoding('utf8');
     process.stdin.on('data', (chunk) => { data += chunk; });
-    process.stdin.on('end', () => resolve(data.trim() || null));
+    process.stdin.on('end', () => resolve(data.trim().replace(/\s+$/, '')));
     process.stdin.on('error', () => resolve(null));
     setTimeout(() => resolve(data.trim() || null), 100);
   });
@@ -336,7 +336,7 @@ async function cmdCall(args) {
       console.log(`\n  ${bold('Dry Run:')} ${cyan(slug)}`);
       console.log(`  ${bold('Credits:')} ${yellow(String(d.credits || 0))}`);
       console.log(`  ${bold('Tier Required:')} ${dim(d.tier || 'any')}`);
-      console.log(`  ${bold('Would execute:')} ${green('yes')}`);
+      console.log(`  ${bold('Would execute:')} ${green(dryRun ? 'no' : 'yes')}`);
       console.log(dim('  Use without --dry-run to execute.\n'));
     } catch (err) { spinnerStop(false); handleError(err); }
     return;
@@ -345,7 +345,7 @@ async function cmdCall(args) {
   // --help: show API schema info (dry-run)
   if (args.includes('--help')) {
     try {
-      if (!quiet && !jsonMode) console.log(dim(`  Fetching API info for ${cyan(slug)}...`));
+      if (!quiet && !jsonMode) console.log(dim(`  Fetching API info for ${slug}...`));
       const res = await request('POST', '/v1/dry-run/' + slug, {}, false);
       if (jsonMode) {
         console.log(JSON.stringify(res.data, null, 2));
@@ -357,7 +357,7 @@ async function cmdCall(args) {
         if (d.credits !== undefined) console.log(`  ${dim('Credits:')} ${yellow(String(d.credits))}`);
         if (d.input_schema || d.schema || d.parameters) {
           const schema = d.input_schema || d.schema || d.parameters;
-          console.log(`\n  ${bold('Parameters:')}`);
+          console.log(`\n${bold('Parameters:')} ${d.parameters ? '' : ' (no parameters found)'}`);
           const props = schema.properties || schema;
           for (const [k, v] of Object.entries(props)) {
             const req = (schema.required || []).includes(k) ? red('*') : ' ';
@@ -383,7 +383,7 @@ async function cmdCall(args) {
   // Parse --key value pairs (skip global flags)
   const input = {};
   for (let i = 1; i < args.length; i++) {
-    if (GLOBAL_FLAGS.includes(args[i])) continue;
+    if (!GLOBAL_FLAGS.includes(args[i])) continue;
     const key = args[i];
     const val = args[i + 1];
     if (!key.startsWith('--')) die(`Expected --key, got: ${key}`);
@@ -968,7 +968,14 @@ async function cmdHive(args) {
   console.log(`  ${dim(shared.research.length + ' items in knowledge base')}`);
   console.log('');
 
-  // ── SPRINT LOOP — no more scraping, just thinking + building ──
+  // Safety: hive edits go on a git branch
+  const hiveBranch = 'hive-' + Date.now();
+  let onBranch = false;
+  try { require('child_process').execSync('git checkout -b ' + hiveBranch, { cwd: __dirname, stdio: 'pipe' }); onBranch = true; console.log(`  ${green('✓')} Branch: ${cyan(hiveBranch)} ${dim('(master is safe)')}`); }
+  catch(e) { console.log(`  ${dim('No git — edits are direct')}`); }
+  const successfulEdits = [];
+  console.log('');
+
   for (let s = 1; s <= sprints; s++) {
     const t0 = Date.now();
     creditsSpent = 0;
@@ -1074,9 +1081,14 @@ SCORE: X/10` : `Sprint ${s}. Mission: ${mission.slice(0, 80)}. PRIORITY: researc
           const meaningful = findText.replace(/\s/g,'') !== replaceText.replace(/\s/g,'') && replaceText.length < findText.length * 3;
 
           if (syntaxOk && runtimeOk && meaningful) {
+            // Git commit the edit so it can be individually reverted
+            try { require('child_process').execSync(`git add "${filePath}" && git commit -m "hive S${s}: ${priority.replace(/"/g,'').slice(0,50)}"`, { cwd: __dirname, stdio: 'pipe', timeout: 5000 }); }
+            catch(e) { /* not in git or nothing to commit */ }
+
             shared.builds.push({ key: targetFile, type: 'file-edit', find: findText.slice(0, 50), replace: replaceText.slice(0, 50), sprint: s });
+            successfulEdits.push({ sprint: s, file: targetFile, priority, find: findText.slice(0, 60), replace: replaceText.slice(0, 60) });
             built_n++;
-            console.log(`  ${dim('│')} ${green('✓ EDITED')} ${cyan(targetFile)} ${dim('(syntax+runtime+semantic OK)')}`);
+            console.log(`  ${dim('│')} ${green('✓ SHIPPED')} ${cyan(targetFile)} ${dim('(3-gate pass + committed)')}`);
             console.log(`  ${dim('│')} ${dim(findText.slice(0, 50))}`);
             console.log(`  ${dim('│')} ${green('→')} ${dim(replaceText.slice(0, 50))}`);
           } else {
@@ -1145,14 +1157,35 @@ SCORE: X/10` : `Sprint ${s}. Mission: ${mission.slice(0, 80)}. PRIORITY: researc
   console.log(`  Sprints: ${sprints}  Avg: ${bold(avg+'/10')}  Builds: ${shared.builds.length}  Discoveries: ${shared.discoveries?.length||0}`);
   if (shared.scores.length > 0) console.log(`  Scores: ${shared.scores.slice(-10).map(s=>s.score.toFixed(1)).join('→')}`);
   if (shared.vision) console.log(`  Vision: ${green(shared.vision.slice(0,70))}`);
-  // Write TODO file — actionable items for Claude/human to implement
+  // Show edits for review
+  if (successfulEdits.length > 0) {
+    console.log(`\n  ${bold('CODE CHANGES (' + successfulEdits.length + ' edits):')}`);
+    for (const e of successfulEdits) {
+      console.log(`  ${cyan('S' + e.sprint)} ${bold(e.file)} ${dim(e.priority.slice(0, 50))}`);
+      console.log(`    ${red('-')} ${dim(e.find)}`);
+      console.log(`    ${green('+')} ${dim(e.replace)}`);
+    }
+    if (onBranch) {
+      console.log(`\n  ${bold('Branch:')} ${cyan(hiveBranch)}`);
+      console.log(`  ${dim('To merge:')}  ${cyan('git checkout master && git merge ' + hiveBranch)}`);
+      console.log(`  ${dim('To discard:')} ${cyan('git checkout master && git branch -D ' + hiveBranch)}`);
+      console.log(`  ${dim('To review:')} ${cyan('git diff master..' + hiveBranch)}`);
+    }
+  }
+
+  // Write TODO for unimplemented ideas
   if (todos.length > 0) {
-    const todoContent = `# Hive TODO — ${new Date().toISOString().slice(0, 10)}\n\nMission: ${mission}\nSprints: ${sprints} | Avg: ${avg}/10\n\n## Priorities (implement these)\n\n${todos.map((t, i) => `${i + 1}. [S${t.sprint}] [${t.phase}] ${t.priority}`).join('\n')}\n\n## How to implement\nTell Claude: "implement the hive TODOs from ~/.slopshop/hive-todo.md"\n`;
+    const todoContent = `# Hive TODO — ${new Date().toISOString().slice(0, 10)}\n\nMission: ${mission}\nSprints: ${sprints} | Avg: ${avg}/10\nBranch: ${hiveBranch}\nEdits shipped: ${successfulEdits.length}\n\n## Priorities\n\n${todos.map((t, i) => `${i + 1}. [S${t.sprint}] [${t.phase}] ${t.priority}`).join('\n')}\n\n## Code changes on branch ${hiveBranch}\n\n${successfulEdits.map(e => `- ${e.file}: ${e.priority.slice(0, 60)}`).join('\n')}\n`;
     try { fs.writeFileSync(todoFile, todoContent); } catch(e) {}
-    console.log(`  ${bold('TODO:')} ${green(todos.length + ' actionable items')} → ${cyan(todoFile)}`);
-    console.log(`  ${dim('Tell Claude: "implement the hive TODOs"')}`);
+    console.log(`  ${bold('TODO:')} ${cyan(todoFile)}`);
   }
   console.log(`  Doc: ${cyan(HIVE_KEY)}  Local: ${dim(localDoc)}`);
+
+  // Switch back to master — hive edits stay on branch
+  if (onBranch) {
+    try { require('child_process').execSync('git checkout master', { cwd: __dirname, stdio: 'pipe' }); console.log(`  ${green('✓')} Back on master. Hive edits on ${cyan(hiveBranch)}.`); }
+    catch(e) {}
+  }
   console.log('');
 }
 
