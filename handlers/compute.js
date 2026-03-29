@@ -998,7 +998,7 @@ function dateCronParse(input) {
 }
 
 function dateCronNext(input) {
-  const {cron='* * * * *',n=5}=input;
+  const {cron='* * * * *'}=input; const n=input.n||input.count||5;
   const parts=cron.trim().split(/\s+/);
   if (parts.length<5) return { _engine: 'real',error:'Cron must have 5 fields'};
   const [mF,hF,dF,moF,dwF]=parts;
@@ -4140,13 +4140,20 @@ module.exports = {
 
   // ─── GENERATE (NEW 100) ──────────────────────────────────────────────────────
 
-  'gen-lorem': ({sentences}) => {
-    const words = ['lorem','ipsum','dolor','sit','amet','consectetur','adipiscing','elit','sed','do','eiusmod','tempor','incididunt','ut','labore','et','dolore','magna','aliqua','enim','ad','minim','veniam','quis','nostrud','exercitation','ullamco','laboris','nisi','aliquip'];
-    const n = Math.min(sentences || 3, 20);
+  'gen-lorem': (input) => {
+    input=input||{};
+    const wordList = ['lorem','ipsum','dolor','sit','amet','consectetur','adipiscing','elit','sed','do','eiusmod','tempor','incididunt','ut','labore','et','dolore','magna','aliqua','enim','ad','minim','veniam','quis','nostrud','exercitation','ullamco','laboris','nisi','aliquip'];
+    // Support both words count and sentences count
+    if (input.words) {
+      const wc = Math.min(input.words || 10, 500);
+      const result = Array.from({length:wc},(_,i)=>wordList[_hashInt({w:wc,i},'glw',wordList.length)]).join(' ');
+      return { _engine: 'real', text: result, word_count: wc };
+    }
+    const n = Math.min(input.sentences || 3, 20);
     const result = [];
     for (let i = 0; i < n; i++) {
-      const len = 8 + _hashInt({sentences,i}, 'gllen', 12);
-      result.push(Array.from({ length: len }, (_,wi) => words[_hashInt({sentences,i,wi}, 'glw', words.length)]).join(' ') + '.');
+      const len = 8 + _hashInt({s:n,i}, 'gllen', 12);
+      result.push(Array.from({ length: len }, (_,wi) => wordList[_hashInt({s:n,i,wi}, 'glw', wordList.length)]).join(' ') + '.');
     }
     return { _engine: 'real', text: result.join(' '), sentences: n };
   },
