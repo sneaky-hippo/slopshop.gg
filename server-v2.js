@@ -997,6 +997,211 @@ app.post('/v1/models/llama-cpp/generate', auth, async (req, res) => {
   } catch(e) { res.status(502).json({ error: { code: 'llamacpp_error', message: e.message, hint: 'Is llama.cpp server running? ./server -m model.gguf --port 8080' } }); }
 });
 
+// ===== CLOUD MODEL PROXIES (Grok / DeepSeek / Auto-Router) =====
+
+function cloudRequest(hostname, path, apiKey, body, timeoutMs = 120000) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const req = require('https').request({ hostname, port: 443, path, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data), 'Authorization': 'Bearer ' + apiKey }, timeout: timeoutMs }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(new Error('Invalid JSON from cloud API')); } });
+    });
+    req.on('error', e => reject(e));
+    req.on('timeout', () => { req.destroy(); reject(new Error('Cloud API timeout')); });
+    req.write(data); req.end();
+  });
+}
+
+// --- Grok (xAI) ---
+app.post('/v1/models/grok/generate', auth, async (req, res) => {
+  const grokKey = process.env.GROK_API_KEY || process.env.X_API_KEY;
+  if (!grokKey) return res.status(503).json({ error: { code: 'grok_not_configured', message: 'GROK_API_KEY or X_API_KEY env var not set' } });
+  const { model, prompt, messages, namespace, ...extra } = req.body;
+  if (!prompt && !messages) return res.status(400).json({ error: { code: 'missing_fields', message: 'prompt or messages required' } });
+  const creditCost = 10;
+  if (req.acct.balance < creditCost) return res.status(402).json({ error: { code: 'insufficient_credits', need: creditCost, have: req.acct.balance } });
+  req.acct.balance -= creditCost;
+  const chatMessages = messages || [{ role: 'user', content: prompt }];
+  const start = Date.now();
+  try {
+    const resp = await cloudRequest('api.x.ai', '/v1/chat/completions', grokKey, { model: model || 'grok-3', messages: chatMessages, ...extra });
+    if (resp.error) { req.acct.balance += creditCost; return res.status(502).json({ error: { code: 'grok_api_error', message: resp.error.message || JSON.stringify(resp.error) } }); }
+    const answer = resp.choices?.[0]?.message?.content || '';
+    const latency = Date.now() - start;
+    const outputHash = crypto.createHash('sha256').update(answer).digest('hex').slice(0, 16);
+    if (namespace && allHandlers['memory-set']) { try { allHandlers['memory-set']({ key: namespace + '-' + Date.now(), value: answer.slice(0, 1000), namespace }); } catch(e) {} }
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'grok-generate', creditCost, latency, 'grok');
+    persistKey(req.apiKey);
+    emitUsageEvent(req.apiKey.slice(0, 12) + '...', 'grok-generate', creditCost, 'ok');
+    res.json({ ok: true, data: { answer, model: resp.model || model || 'grok-3', _engine: 'grok', output_hash: outputHash, usage: resp.usage || null }, meta: { credits_used: creditCost, latency_ms: latency, engine: 'grok' } });
+  } catch(e) {
+    req.acct.balance += creditCost;
+    res.status(502).json({ error: { code: 'grok_error', message: e.message } });
+  }
+});
+
+// --- DeepSeek ---
+app.post('/v1/models/deepseek/generate', auth, async (req, res) => {
+  const dsKey = process.env.DEEPSEEK_API_KEY;
+  if (!dsKey) return res.status(503).json({ error: { code: 'deepseek_not_configured', message: 'DEEPSEEK_API_KEY env var not set' } });
+  const { model, prompt, messages, namespace, ...extra } = req.body;
+  if (!prompt && !messages) return res.status(400).json({ error: { code: 'missing_fields', message: 'prompt or messages required' } });
+  const creditCost = 5;
+  if (req.acct.balance < creditCost) return res.status(402).json({ error: { code: 'insufficient_credits', need: creditCost, have: req.acct.balance } });
+  req.acct.balance -= creditCost;
+  const chatMessages = messages || [{ role: 'user', content: prompt }];
+  const start = Date.now();
+  try {
+    const resp = await cloudRequest('api.deepseek.com', '/v1/chat/completions', dsKey, { model: model || 'deepseek-chat', messages: chatMessages, ...extra });
+    if (resp.error) { req.acct.balance += creditCost; return res.status(502).json({ error: { code: 'deepseek_api_error', message: resp.error.message || JSON.stringify(resp.error) } }); }
+    const answer = resp.choices?.[0]?.message?.content || '';
+    const latency = Date.now() - start;
+    const outputHash = crypto.createHash('sha256').update(answer).digest('hex').slice(0, 16);
+    if (namespace && allHandlers['memory-set']) { try { allHandlers['memory-set']({ key: namespace + '-' + Date.now(), value: answer.slice(0, 1000), namespace }); } catch(e) {} }
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'deepseek-generate', creditCost, latency, 'deepseek');
+    persistKey(req.apiKey);
+    emitUsageEvent(req.apiKey.slice(0, 12) + '...', 'deepseek-generate', creditCost, 'ok');
+    res.json({ ok: true, data: { answer, model: resp.model || model || 'deepseek-chat', _engine: 'deepseek', output_hash: outputHash, usage: resp.usage || null }, meta: { credits_used: creditCost, latency_ms: latency, engine: 'deepseek' } });
+  } catch(e) {
+    req.acct.balance += creditCost;
+    res.status(502).json({ error: { code: 'deepseek_error', message: e.message } });
+  }
+});
+
+// --- Smart Auto-Router ---
+app.post('/v1/models/auto', auth, async (req, res) => {
+  const { prompt, messages, prefer, model, namespace, ...extra } = req.body;
+  if (!prompt && !messages) return res.status(400).json({ error: { code: 'missing_fields', message: 'prompt or messages required' } });
+  const strategy = prefer || 'best';
+
+  const providerOrder = {
+    local: ['ollama', 'deepseek', 'grok', 'anthropic'],
+    fast:  ['grok', 'anthropic', 'deepseek', 'ollama'],
+    cheap: ['deepseek', 'ollama', 'grok', 'anthropic'],
+    best:  ['anthropic', 'grok', 'deepseek', 'ollama'],
+  };
+  const order = providerOrder[strategy] || providerOrder.best;
+
+  function isAvailable(provider) {
+    if (provider === 'ollama') return true;
+    if (provider === 'grok') return !!(process.env.GROK_API_KEY || process.env.X_API_KEY);
+    if (provider === 'deepseek') return !!process.env.DEEPSEEK_API_KEY;
+    if (provider === 'anthropic') return !!process.env.ANTHROPIC_API_KEY;
+    return false;
+  }
+
+  const creditCosts = { ollama: 0, grok: 10, deepseek: 5, anthropic: 15 };
+  const chatMessages = messages || [{ role: 'user', content: prompt }];
+
+  for (const provider of order) {
+    if (!isAvailable(provider)) continue;
+    const cost = creditCosts[provider];
+    if (cost > 0 && req.acct.balance < cost) continue;
+
+    const start = Date.now();
+    try {
+      let answer, respModel, usage;
+      if (provider === 'ollama') {
+        const ollamaModel = model || 'llama3';
+        const resp = await ollamaRequest('/api/chat', { model: ollamaModel, messages: [{ role: 'user', content: prompt || chatMessages[chatMessages.length - 1].content }], stream: false });
+        answer = resp.message?.content || '';
+        respModel = ollamaModel;
+      } else if (provider === 'grok') {
+        const grokKey = process.env.GROK_API_KEY || process.env.X_API_KEY;
+        const resp = await cloudRequest('api.x.ai', '/v1/chat/completions', grokKey, { model: model || 'grok-3', messages: chatMessages, ...extra });
+        if (resp.error) continue;
+        answer = resp.choices?.[0]?.message?.content || '';
+        respModel = resp.model || model || 'grok-3';
+        usage = resp.usage;
+      } else if (provider === 'deepseek') {
+        const dsKey = process.env.DEEPSEEK_API_KEY;
+        const resp = await cloudRequest('api.deepseek.com', '/v1/chat/completions', dsKey, { model: model || 'deepseek-chat', messages: chatMessages, ...extra });
+        if (resp.error) continue;
+        answer = resp.choices?.[0]?.message?.content || '';
+        respModel = resp.model || model || 'deepseek-chat';
+        usage = resp.usage;
+      } else if (provider === 'anthropic') {
+        const antKey = process.env.ANTHROPIC_API_KEY;
+        const resp = await cloudRequest('api.anthropic.com', '/v1/messages', antKey, { model: model || 'claude-sonnet-4-20250514', max_tokens: 4096, messages: chatMessages, ...extra });
+        if (resp.error) continue;
+        answer = resp.content?.[0]?.text || '';
+        respModel = resp.model || model || 'claude-sonnet-4-20250514';
+        usage = resp.usage;
+      }
+
+      if (!answer) continue;
+
+      const latency = Date.now() - start;
+      if (cost > 0) {
+        req.acct.balance -= cost;
+        dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'auto-' + provider, cost, latency, provider);
+        persistKey(req.apiKey);
+        emitUsageEvent(req.apiKey.slice(0, 12) + '...', 'auto-' + provider, cost, 'ok');
+      }
+      const outputHash = crypto.createHash('sha256').update(answer).digest('hex').slice(0, 16);
+      if (namespace && allHandlers['memory-set']) { try { allHandlers['memory-set']({ key: namespace + '-' + Date.now(), value: answer.slice(0, 1000), namespace }); } catch(e) {} }
+      return res.json({ ok: true, data: { answer, model: respModel, _engine: provider, output_hash: outputHash, usage: usage || null }, meta: { credits_used: cost, latency_ms: latency, engine: provider, strategy, providers_tried: order.slice(0, order.indexOf(provider) + 1) } });
+    } catch(e) {
+      continue;
+    }
+  }
+
+  res.status(503).json({ error: { code: 'no_provider_available', message: 'All providers failed or unavailable', strategy, tried: order.filter(p => isAvailable(p)) } });
+});
+
+// --- Unified Model List ---
+app.get('/v1/models', publicRateLimit, async (req, res) => {
+  const models = [];
+
+  // Check Ollama
+  try {
+    const resp = await new Promise((resolve, reject) => {
+      const r = require('http').get('http://127.0.0.1:11434/api/tags', rr => {
+        let d = ''; rr.on('data', c => d += c); rr.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      });
+      r.on('error', reject);
+      r.setTimeout(3000, () => { r.destroy(); reject(new Error('timeout')); });
+    });
+    for (const m of (resp.models || [])) {
+      models.push({ id: m.name, provider: 'ollama', type: 'local', credits_per_call: 0, details: { size: m.size, parameter_size: m.details?.parameter_size, family: m.details?.family } });
+    }
+  } catch(e) { /* Ollama not running */ }
+
+  // Cloud providers
+  if (process.env.GROK_API_KEY || process.env.X_API_KEY) {
+    models.push({ id: 'grok-3', provider: 'grok', type: 'cloud', credits_per_call: 10 });
+    models.push({ id: 'grok-3-mini', provider: 'grok', type: 'cloud', credits_per_call: 10 });
+  }
+  if (process.env.DEEPSEEK_API_KEY) {
+    models.push({ id: 'deepseek-chat', provider: 'deepseek', type: 'cloud', credits_per_call: 5 });
+    models.push({ id: 'deepseek-reasoner', provider: 'deepseek', type: 'cloud', credits_per_call: 5 });
+  }
+  if (process.env.ANTHROPIC_API_KEY) {
+    models.push({ id: 'claude-sonnet-4-20250514', provider: 'anthropic', type: 'cloud', credits_per_call: 15 });
+    models.push({ id: 'claude-opus-4-20250514', provider: 'anthropic', type: 'cloud', credits_per_call: 15 });
+  }
+
+  // Check vLLM
+  try {
+    const url = new URL('/v1/models', VLLM_HOST);
+    const mod = url.protocol === 'https:' ? require('https') : require('http');
+    const resp = await new Promise((resolve, reject) => {
+      const r = mod.get(url, rr => {
+        let d = ''; rr.on('data', c => d += c); rr.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      });
+      r.on('error', reject);
+      r.setTimeout(3000, () => { r.destroy(); reject(new Error('timeout')); });
+    });
+    for (const m of (resp.data || [])) {
+      models.push({ id: m.id, provider: 'vllm', type: 'local', credits_per_call: 0 });
+    }
+  } catch(e) { /* vLLM not running */ }
+
+  const providers = [...new Set(models.map(m => m.provider))];
+  res.json({ ok: true, models, count: models.length, providers, _note: 'Local models are free (0 credits). Cloud models require auth and credits.' });
+});
+
 // robots.txt pointing agents to the tool manifest
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send(`User-agent: *

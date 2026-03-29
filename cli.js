@@ -1557,7 +1557,7 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'wallet', 'bounty', 'queue', 'webhooks', 'teams', 'knowledge', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'version', 'upgrade', 'completions', 'help'],
+      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'wallet', 'bounty', 'market', 'eval', 'replay', 'queue', 'webhooks', 'teams', 'knowledge', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'version', 'upgrade', 'completions', 'help'],
       flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N', '--model M', '--dry-run', '--limit N', '--offset N'],
       version: PKG_VERSION
     }, null, 2));
@@ -1584,6 +1584,9 @@ ${C.reset}`;
   console.log(`  ${bold('ECONOMY & KNOWLEDGE')}`);
   console.log(`    ${cyan('slop wallet')} ${dim('create|list|fund|transfer')} Manage wallets and funds`);
   console.log(`    ${cyan('slop bounty')} ${dim('post|list|claim')}            Post and claim bounties`);
+  console.log(`    ${cyan('slop market')} ${dim('create|list|bet|resolve')}  Prediction markets`);
+  console.log(`    ${cyan('slop eval')} ${dim('run')}                        Run evaluation test sets`);
+  console.log(`    ${cyan('slop replay')} ${dim('list|load')}                List/load saved replays`);
   console.log(`    ${cyan('slop knowledge')} ${dim('add|query')}               Knowledge graph operations\n`);
   console.log(`  ${bold('ACCOUNT & CONFIG')}`);
   console.log(`    ${cyan('slop login')}                             Log in`);
@@ -3300,7 +3303,7 @@ async function cmdAgents(args) {
 function cmdCompletions(args) {
   const shell = args[0] || 'bash';
 
-  const commands = ['call','pipe','run','search','list','discover','org','wallet','bounty','queue','webhooks','teams','knowledge','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','benchmark','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui','agents'];
+  const commands = ['call','pipe','run','search','list','discover','org','wallet','bounty','market','eval','replay','queue','webhooks','teams','knowledge','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','benchmark','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui','agents'];
 
   if (shell === 'bash') {
     console.log(`# Add to ~/.bashrc:`);
@@ -3593,6 +3596,153 @@ async function cmdBounty(args) {
   }
 
   die(`Unknown bounty subcommand: ${sub}. Try: slop bounty help`);
+}
+
+// ============================================================
+// MARKET — Prediction markets
+// ============================================================
+async function cmdMarket(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Prediction Markets')}\n`);
+    console.log(`  ${cyan('slop market create')} ${dim('--question X --options "yes,no"')}  Create a market`);
+    console.log(`  ${cyan('slop market list')}                                  List markets`);
+    console.log(`  ${cyan('slop market bet')} ${dim('<id> --position yes --amount 10')}  Place a bet`);
+    console.log(`  ${cyan('slop market resolve')} ${dim('<id> --outcome yes')}           Resolve a market\n`);
+    return;
+  }
+
+  if (sub === 'create') {
+    const qIdx = args.indexOf('--question');
+    const oIdx = args.indexOf('--options');
+    const question = qIdx >= 0 ? args[qIdx + 1] : null;
+    const options = oIdx >= 0 ? args[oIdx + 1] : 'yes,no';
+    if (!question) die('Usage: slop market create --question X --options "yes,no"');
+    const res = await request('POST', '/v1/market/create', { question, options: options.split(',') });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Market created')}  ${cyan(d.id || d.market_id || '')}  ${dim(question)}\n`);
+    return;
+  }
+
+  if (sub === 'list') {
+    const res = await request('GET', '/v1/market/list', null);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const markets = res.data?.markets || res.markets || [];
+    console.log(`\n  ${bold('Markets')}\n`);
+    for (const m of markets) {
+      const status = m.resolved ? dim('resolved') : green('open');
+      console.log(`  ${cyan((m.id || '').padEnd(14))} ${status}  ${m.question || ''}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'bet') {
+    const id = args[1];
+    const posIdx = args.indexOf('--position');
+    const amtIdx = args.indexOf('--amount');
+    const position = posIdx >= 0 ? args[posIdx + 1] : null;
+    const amount = amtIdx >= 0 ? Number(args[amtIdx + 1]) : null;
+    if (!id || !position || !amount) die('Usage: slop market bet <id> --position yes --amount 10');
+    const res = await request('POST', `/v1/market/${id}/bet`, { position, amount });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    console.log(`\n  ${green('✓ Bet placed')} ${yellow(String(amount))} on ${cyan(position)} in market ${cyan(id)}\n`);
+    return;
+  }
+
+  if (sub === 'resolve') {
+    const id = args[1];
+    const outcomeIdx = args.indexOf('--outcome');
+    const outcome = outcomeIdx >= 0 ? args[outcomeIdx + 1] : null;
+    if (!id || !outcome) die('Usage: slop market resolve <id> --outcome yes');
+    const res = await request('POST', `/v1/market/${id}/resolve`, { outcome });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    console.log(`\n  ${green('✓ Market resolved:')} ${cyan(id)} → ${yellow(outcome)}\n`);
+    return;
+  }
+
+  die(`Unknown market subcommand: ${sub}. Try: slop market help`);
+}
+
+// ============================================================
+// EVAL — Run evaluation test sets
+// ============================================================
+async function cmdEval(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Evaluations')}\n`);
+    console.log(`  ${cyan('slop eval run')} ${dim('--test-set X')}   Run an evaluation test set\n`);
+    return;
+  }
+
+  if (sub === 'run') {
+    const tsIdx = args.indexOf('--test-set');
+    const testSet = tsIdx >= 0 ? args[tsIdx + 1] : null;
+    if (!testSet) die('Usage: slop eval run --test-set X');
+    const res = await request('POST', '/v1/eval/run', { test_set: testSet });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Eval started')}  ${cyan(d.id || d.eval_id || '')}  ${dim(testSet)}\n`);
+    if (d.results) {
+      for (const r of Array.isArray(d.results) ? d.results : []) {
+        console.log(`  ${r.passed ? green('PASS') : red('FAIL')}  ${r.name || r.test || ''}`);
+      }
+      console.log('');
+    }
+    return;
+  }
+
+  die(`Unknown eval subcommand: ${sub}. Try: slop eval help`);
+}
+
+// ============================================================
+// REPLAY — List and load saved replays
+// ============================================================
+async function cmdReplay(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Replays')}\n`);
+    console.log(`  ${cyan('slop replay list')}             List saved replays`);
+    console.log(`  ${cyan('slop replay load')} ${dim('<id>')}       Load a replay\n`);
+    return;
+  }
+
+  if (sub === 'list') {
+    const res = await request('GET', '/v1/replay/list', null);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const replays = res.data?.replays || res.replays || [];
+    console.log(`\n  ${bold('Replays')}\n`);
+    for (const r of replays) {
+      console.log(`  ${cyan((r.id || '').padEnd(14))} ${dim(r.created_at || '')}  ${r.name || r.title || ''}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'load') {
+    const id = args[1];
+    if (!id) die('Usage: slop replay load <id>');
+    const res = await request('GET', `/v1/replay/${id}`, null);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Replay loaded:')} ${cyan(id)}\n`);
+    if (d.events) {
+      for (const e of Array.isArray(d.events) ? d.events : []) {
+        console.log(`  ${dim(e.timestamp || '')} ${e.type || ''} ${e.data || ''}`);
+      }
+      console.log('');
+    }
+    return;
+  }
+
+  die(`Unknown replay subcommand: ${sub}. Try: slop replay help`);
 }
 
 // ============================================================
@@ -4671,6 +4821,9 @@ async function cmdInteractive() {
           case 'org': await cmdOrg(args); break;
           case 'wallet': await cmdWallet(args); break;
           case 'bounty': await cmdBounty(args); break;
+          case 'market': await cmdMarket(args); break;
+          case 'eval': await cmdEval(args); break;
+          case 'replay': await cmdReplay(args); break;
           case 'queue': await cmdQueue(args); break;
           case 'webhooks': await cmdWebhooks(args); break;
           case 'teams': await cmdTeams(args); break;
@@ -5203,6 +5356,9 @@ async function main() {
     case 'org':     await cmdOrg(args);    break;
     case 'wallet':  await cmdWallet(args); break;
     case 'bounty':  await cmdBounty(args); break;
+    case 'market':  await cmdMarket(args); break;
+    case 'eval':    await cmdEval(args);   break;
+    case 'replay':  await cmdReplay(args); break;
     case 'queue':   await cmdQueue(args);  break;
     case 'webhooks': await cmdWebhooks(args); break;
     case 'teams':   await cmdTeams(args);  break;

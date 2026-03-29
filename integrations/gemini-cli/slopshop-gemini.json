@@ -1,0 +1,8 @@
+{
+  "name": "slopshop",
+  "description": "AI agent backend with 925+ tools, free memory, MCP server",
+  "mcp_server": {
+    "command": "npx slopshop mcp serve",
+    "env": ["SLOPSHOP_KEY"]
+  }
+}
