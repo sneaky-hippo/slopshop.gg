@@ -1421,32 +1421,53 @@ app.get('/v1/tools', publicRateLimit, (req, res) => {
 
 // ===== MCP MANIFEST (public, no auth) =====
 app.get('/v1/mcp/manifest', publicRateLimit, (req, res) => {
-  function getInputSchema(slug) {
-    const s = SCHEMAS[slug];
-    if (!s || !s.input) return { type: 'object', properties: { input: { type: 'string', description: 'Input data' } } };
-    const props = {};
-    const required = [];
-    for (const [k, v] of Object.entries(s.input)) {
-      props[k] = { type: v.type || 'string', description: v.description || k };
-      if (v.required) required.push(k);
+  const start = Date.now();
+  try {
+    function getInputSchema(slug) {
+      const s = SCHEMAS[slug];
+      if (!s || !s.input) return { type: 'object', properties: { input: { type: 'string', description: 'Input data' } } };
+      const props = {};
+      const required = [];
+      for (const [k, v] of Object.entries(s.input)) {
+        const prop = { type: v.type || 'string', description: v.description || k };
+        if (v.enum) prop.enum = v.enum;
+        if (v.default !== undefined) prop.default = v.default;
+        if (v.minimum !== undefined) prop.minimum = v.minimum;
+        if (v.maximum !== undefined) prop.maximum = v.maximum;
+        if (v.items) prop.items = v.items;
+        if (v.minLength) prop.minLength = v.minLength;
+        if (v.maxLength) prop.maxLength = v.maxLength;
+        if (v.pattern) prop.pattern = v.pattern;
+        props[k] = prop;
+        if (v.required) required.push(k);
+      }
+      return { type: 'object', properties: props, ...(required.length ? { required } : {}) };
     }
-    return { type: 'object', properties: props, ...(required.length ? { required } : {}) };
+
+    const tools = Object.entries(API_DEFS).map(([slug, d]) => ({
+      name: slug,
+      description: `[${d.credits || 1}cr] ${d.desc || d.name || slug}`,
+      inputSchema: getInputSchema(slug),
+    }));
+
+    const latency = Date.now() - start;
+    res.json({
+      protocolVersion: '2024-11-05',
+      capabilities: { tools: {} },
+      serverInfo: {
+        name: 'slopshop',
+        version: '2.0.0',
+        description: 'Real tools for AI agents. Credit-based. Zero mocks.',
+      },
+      tools,
+      tool_count: tools.length,
+      _latency_ms: latency,
+    });
+  } catch (e) {
+    log.error('mcp/manifest failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
   }
-
-  const tools = Object.entries(API_DEFS).map(([slug, d]) => ({
-    name: slug,
-    description: `[${d.credits}cr] ${d.desc}`,
-    inputSchema: getInputSchema(slug),
-  }));
-
-  res.json({
-    protocolVersion: '2024-11-05',
-    capabilities: { tools: {} },
-    serverInfo: { name: 'slopshop', version: '2.0.0', description: 'Real tools for AI agents. Credit-based. Zero mocks.' },
-    tools,
-  });
 });
-
 app.post('/v1/resolve', (req, res) => {
   const q = (req.body.query || '').toLowerCase();
   // Synonym expansion (discovered via hive-v2 dogfood testing)
@@ -13869,43 +13890,6 @@ app.post('/v1/swarm/restore', auth, (req, res) => {
     });
   } catch (e) {
     log.error('swarm/restore failed', { error: e.message });
-    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
-  }
-});
-
-// ===== STRAT 4: MCP MANIFEST =====
-// GET /v1/mcp/manifest — Full MCP manifest for all tools
-app.get('/v1/mcp/manifest', publicRateLimit, (req, res) => {
-  const start = Date.now();
-  try {
-    const tools = [];
-    for (const [slug, def] of Object.entries(API_DEFS)) {
-      tools.push({
-        name: slug,
-        description: def.desc || def.name || slug,
-        inputSchema: {
-          type: 'object',
-          properties: {},
-        },
-        category: def.cat || 'general',
-        credits: def.credits || 1,
-        tier: def.tier || 'free',
-      });
-    }
-
-    const latency = Date.now() - start;
-    res.json({
-      ok: true,
-      schema_version: '2024-11-05',
-      name: 'slopshop',
-      description: 'SlopShop universal API platform — auto-discoverable MCP manifest',
-      tools,
-      tool_count: tools.length,
-      _engine: 'real',
-      _latency_ms: latency,
-    });
-  } catch (e) {
-    log.error('mcp/manifest failed', { error: e.message });
     res.status(500).json({ error: { code: 'internal_error', message: e.message } });
   }
 });
