@@ -3808,7 +3808,7 @@ module.exports = {
       }
       results.push(sample);
     }
-    const resultValues = results.map(r => r._result).filter(v => typeof v === 'number');
+    const resultValues = results.map(r => r._result).filter(v => typeof v === 'number' && !isNaN(v) && isFinite(v));
     const mean = resultValues.length ? resultValues.reduce((a, b) => a + b, 0) / resultValues.length : 0;
     const sorted = [...resultValues].sort((a, b) => a - b);
     return { _engine: 'real', iterations: n, mean: Math.round(mean * 100) / 100, median: sorted[Math.floor(sorted.length / 2)], p5: sorted[Math.floor(sorted.length * 0.05)], p95: sorted[Math.floor(sorted.length * 0.95)], min: sorted[0], max: sorted[sorted.length - 1] };
@@ -4369,7 +4369,7 @@ module.exports = {
 
   'text-split-sentences': ({text}) => { const sentences = (text||'').match(/[^.!?]+[.!?]+/g) || [(text||'')]; return {_engine:'real', sentences: sentences.map(s=>s.trim()), count: sentences.length}; },
 
-  'text-split-paragraphs': ({text}) => { const paras = (text||'').split(/\n\s*\n/).filter(p=>p.trim()); return {_engine:'real', paragraphs: paras, count: paras.length}; },
+  'text-split-paragraphs': (input) => { try { input = input || {}; const text = String(input.text || ''); const paras = text.split(/\n\s*\n/).filter(p=>p.trim()); return {_engine:'real', paragraphs: paras, count: paras.length}; } catch(e) { return {_engine:'real', paragraphs: [], count: 0, error: e.message}; } },
 
   'text-to-markdown-table': ({headers, rows}) => { if (!Array.isArray(headers) || !Array.isArray(rows)) return {_engine:'real', error: 'Provide headers array and rows array of arrays'}; const header = '| ' + headers.join(' | ') + ' |'; const sep = '| ' + headers.map(()=>'---').join(' | ') + ' |'; const body = rows.map(r => '| ' + r.join(' | ') + ' |').join('\n'); return {_engine:'real', markdown: header+'\n'+sep+'\n'+body}; },
 
