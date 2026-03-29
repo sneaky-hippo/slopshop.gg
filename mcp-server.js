@@ -401,7 +401,7 @@ process.stdin.on('data', (chunk) => {
   // MCP uses Content-Length framing
   while (true) {
     const headerEnd = buffer.indexOf('\r\n\r\n');
-    if (headerEnd === -1) break;
+    if (headerEnd === -1) return;
 
     const header = buffer.slice(0, Math.min(buffer.length, headerEnd));
     const match = header.match(/Content-Length: (\d+)/i);
