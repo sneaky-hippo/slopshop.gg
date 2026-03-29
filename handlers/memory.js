@@ -167,8 +167,9 @@ module.exports = function (db) {
   // 1. memory-set
   // -------------------------------------------------------------------------
   function memorySet(input) {
+    input = input || {};
     const { key, value, tags = [], namespace = 'default', ttl_seconds } = input;
-    if (!key) throw new Error('key is required');
+    if (!key) return { _engine: 'real', error: 'missing_required_field', required: 'key' };
     const now = Date.now();
     const existing = stmts.memGet.get(namespace, key);
 
@@ -203,8 +204,9 @@ module.exports = function (db) {
   // 2. memory-get
   // -------------------------------------------------------------------------
   function memoryGet(input) {
+    input = input || {};
     const { key, namespace = 'default' } = input;
-    if (!key) throw new Error('key is required');
+    if (!key) return { _engine: 'real', error: 'missing_required_field', required: 'key' };
     const now = Date.now();
     const row = stmts.memGet.get(namespace, key);
     if (!row || isExpiredRow(row, now)) {
@@ -224,6 +226,7 @@ module.exports = function (db) {
   // 3. memory-search
   // -------------------------------------------------------------------------
   function memorySearch(input) {
+    input = input || {};
     const { query = '', namespace = 'default' } = input;
     const now = Date.now();
     const pat = likePattern(query);
@@ -240,6 +243,7 @@ module.exports = function (db) {
   // 4. memory-list
   // -------------------------------------------------------------------------
   function memoryList(input) {
+    input = input || {};
     const { namespace = 'default', tag } = input;
     const now = Date.now();
     let rows;
@@ -260,8 +264,9 @@ module.exports = function (db) {
   // 5. memory-delete
   // -------------------------------------------------------------------------
   function memoryDelete(input) {
+    input = input || {};
     const { key, namespace = 'default' } = input;
-    if (!key) throw new Error('key is required');
+    if (!key) return { _engine: 'real', error: 'missing_required_field', required: 'key' };
     const existing = stmts.memGet.get(namespace, key);
     const existed = !!existing;
     if (existed) stmts.memDelete.run(namespace, key);
@@ -278,7 +283,7 @@ module.exports = function (db) {
     if (ttl_seconds == null) return { _engine: 'real', error: 'missing_required_field', required: 'ttl_seconds' };
     const now = Date.now();
     const row = stmts.memGet.get(namespace, key);
-    if (!row || isExpiredRow(row, now)) throw new Error(`Key "${key}" not found`);
+    if (!row || isExpiredRow(row, now)) return { _engine: 'real', error: 'key_not_found', key };
     const ttl = Number(ttl_seconds);
     stmts.memUpdateTtl.run({ ttl, updated: now, namespace, key });
     const expires_at = row.created + ttl * 1000;
@@ -289,8 +294,9 @@ module.exports = function (db) {
   // 7. memory-increment
   // -------------------------------------------------------------------------
   function memoryIncrement(input) {
+    input = input || {};
     const { key, by = 1, namespace = 'default' } = input;
-    if (!key) throw new Error('key is required');
+    if (!key) return { _engine: 'real', error: 'missing_required_field', required: 'key' };
     const now = Date.now();
 
     const doIncrement = db.transaction(() => {
@@ -326,8 +332,9 @@ module.exports = function (db) {
   // 8. memory-append
   // -------------------------------------------------------------------------
   function memoryAppend(input) {
+    input = input || {};
     const { key, item, namespace = 'default' } = input;
-    if (!key) throw new Error('key is required');
+    if (!key) return { _engine: 'real', error: 'missing_required_field', required: 'key' };
     const now = Date.now();
 
     const doAppend = db.transaction(() => {
@@ -363,8 +370,9 @@ module.exports = function (db) {
   // 9. memory-history
   // -------------------------------------------------------------------------
   function memoryHistory(input) {
+    input = input || {};
     const { key, limit = 10, namespace = 'default' } = input;
-    if (!key) throw new Error('key is required');
+    if (!key) return { _engine: 'real', error: 'missing_required_field', required: 'key' };
     const rows = stmts.histSelect.all(namespace, key, Number(limit));
     const versions = rows.map(r => ({
       value: JSON.parse(r.value),
@@ -377,6 +385,7 @@ module.exports = function (db) {
   // 10. memory-export
   // -------------------------------------------------------------------------
   function memoryExport(input) {
+    input = input || {};
     const { namespace = 'default' } = input;
     const now = Date.now();
     const rows = stmts.memAll.all(namespace, now);
@@ -391,6 +400,7 @@ module.exports = function (db) {
   // 11. memory-import
   // -------------------------------------------------------------------------
   function memoryImport(input) {
+    input = input || {};
     const { data = {}, namespace = 'default' } = input;
     const now = Date.now();
 
@@ -424,6 +434,7 @@ module.exports = function (db) {
   // 12. memory-stats
   // -------------------------------------------------------------------------
   function memoryStats(input) {
+    input = input || {};
     const { namespace = 'default' } = input;
     const now = Date.now();
     const row = stmts.memStats.get(namespace, now);

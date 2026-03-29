@@ -99,8 +99,9 @@ function extractOgMeta(html, prop) {
 // 1. sense-url-content
 // ---------------------------------------------------------------------------
 async function senseUrlContent(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const start = Date.now();
   const { body } = await fetchUrl(url, { timeoutMs: 10000 });
   const fetch_time_ms = Date.now() - start;
@@ -114,8 +115,9 @@ async function senseUrlContent(input) {
 // 2. sense-url-meta
 // ---------------------------------------------------------------------------
 async function senseUrlMeta(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const { body } = await fetchUrl(url, { timeoutMs: 10000 });
   const title = extractTitle(body);
   const description = extractMeta(body, 'description');
@@ -142,8 +144,9 @@ async function senseUrlMeta(input) {
 // 3. sense-url-links
 // ---------------------------------------------------------------------------
 async function senseUrlLinks(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const { body } = await fetchUrl(url, { timeoutMs: 10000 });
   const base = new URL(url);
   const hrefs = [];
@@ -165,8 +168,9 @@ async function senseUrlLinks(input) {
 // 4. sense-url-feed
 // ---------------------------------------------------------------------------
 async function senseUrlFeed(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const { body } = await fetchUrl(url, { timeoutMs: 10000 });
 
   const isAtom = /<feed[\s>]/i.test(body);
@@ -195,8 +199,9 @@ async function senseUrlFeed(input) {
 // 5. sense-url-robots
 // ---------------------------------------------------------------------------
 async function senseUrlRobots(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const base = new URL(url);
   const robotsUrl = `${base.protocol}//${base.host}/robots.txt`;
   const { body } = await fetchUrl(robotsUrl, { timeoutMs: 8000 });
@@ -229,6 +234,7 @@ async function senseUrlRobots(input) {
 // 6. sense-time-now
 // ---------------------------------------------------------------------------
 async function senseTimeNow(input) {
+  input = input || {};
   const timezone = input.timezone || 'UTC';
   const now = new Date();
 
@@ -274,7 +280,7 @@ async function senseGithubRepo(input) {
   if (!repo) return { _engine: 'real', error: 'missing_param', required: 'repo', hint: 'owner/repo format' };
   const apiUrl = `https://api.github.com/repos/${repo}`;
   const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
-  if (statusCode !== 200) throw new Error(`GitHub API returned ${statusCode}`);
+  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "GitHub API returned " + statusCode };
   const d = JSON.parse(body);
   return {
     _engine: 'real',
@@ -299,7 +305,7 @@ async function senseNpmPackage(input) {
   const encoded = encodeURIComponent(pkg).replace('%40', '@');
   const infoUrl = `https://registry.npmjs.org/${encoded}`;
   const { body, statusCode } = await fetchUrl(infoUrl, { timeoutMs: 8000 });
-  if (statusCode !== 200) throw new Error(`npm registry returned ${statusCode}`);
+  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "npm registry returned " + statusCode };
   const d = JSON.parse(body);
   const latest = d['dist-tags'] && d['dist-tags'].latest ? d['dist-tags'].latest : Object.keys(d.versions || {}).pop() || '';
   const ver = d.versions && d.versions[latest] ? d.versions[latest] : {};
@@ -391,6 +397,7 @@ async function senseUptimeCheck(input) {
 // 11. analyze-log-parse
 // ---------------------------------------------------------------------------
 async function analyzeLogParse(input) {
+  input = input || {};
   const text = input.text || '';
   const lines = text.split('\n').filter(l => l.trim());
   const total_lines = lines.length;
@@ -439,6 +446,7 @@ async function analyzeLogParse(input) {
 // 12. analyze-error-fingerprint
 // ---------------------------------------------------------------------------
 async function analyzeErrorFingerprint(input) {
+  input = input || {};
   const original = input.error || '';
   let normalized = original;
   // Strip line numbers: line 42, :42:, at line 42
@@ -461,6 +469,7 @@ async function analyzeErrorFingerprint(input) {
 // 13. analyze-csv-summary
 // ---------------------------------------------------------------------------
 async function analyzeCsvSummary(input) {
+  input = input || {};
   const data = input.data || '';
   const lines = data.split('\n').filter(l => l.trim());
   if (lines.length < 2) return { _engine: 'real', columns: [], rows: 0, columns_count: 0 };
@@ -510,6 +519,7 @@ async function analyzeCsvSummary(input) {
 // 14. analyze-time-series-trend
 // ---------------------------------------------------------------------------
 async function analyzeTimeSeriesTrend(input) {
+  input = input || {};
   const values = input.values || [];
   if (values.length < 2) return { _engine: 'real', trend: 'flat', slope: 0, confidence: 0, change_pct: 0 };
 
@@ -542,6 +552,7 @@ async function analyzeTimeSeriesTrend(input) {
 // 15. analyze-time-series-anomaly
 // ---------------------------------------------------------------------------
 async function analyzeTimeSeriesAnomaly(input) {
+  input = input || {};
   const values = input.values || [];
   if (values.length < 4) return { _engine: 'real', anomalies: [], q1: 0, q3: 0, iqr: 0, lower_bound: 0, upper_bound: 0 };
 
@@ -567,6 +578,7 @@ async function analyzeTimeSeriesAnomaly(input) {
 // 16. analyze-ab-test
 // ---------------------------------------------------------------------------
 async function analyzeAbTest(input) {
+  input = input || {};
   const ctrl = input.control || {};
   const trt = input.treatment || {};
   const cv = ctrl.visitors || 1, cc = ctrl.conversions || 0;
@@ -610,6 +622,7 @@ async function analyzeAbTest(input) {
 // 17. analyze-distribution-fit
 // ---------------------------------------------------------------------------
 async function analyzeDistributionFit(input) {
+  input = input || {};
   const values = input.values || [];
   if (values.length < 3) return { _engine: 'real', mean: 0, stddev: 0, skewness: 0, kurtosis: 0, likely_distribution: 'unknown', shapiro_like_score: 0 };
 
@@ -669,6 +682,7 @@ async function analyzeDistributionFit(input) {
 // 18. analyze-text-ngrams
 // ---------------------------------------------------------------------------
 async function analyzeTextNgrams(input) {
+  input = input || {};
   const text = input.text || '';
   const n = parseInt(input.n, 10) || 2;
   const words = text.toLowerCase().replace(/[^a-z0-9\s]/g, '').trim().split(/\s+/).filter(Boolean);
@@ -687,6 +701,7 @@ async function analyzeTextNgrams(input) {
 // 19. analyze-text-tfidf
 // ---------------------------------------------------------------------------
 async function analyzeTextTfidf(input) {
+  input = input || {};
   const text = input.text || '';
   // Treat each sentence as a document
   const docs = text.split(/[.!?\n]+/).map(s => s.trim()).filter(s => s.length > 5);
@@ -731,6 +746,7 @@ async function analyzeTextTfidf(input) {
 // 20. analyze-funnel
 // ---------------------------------------------------------------------------
 async function analyzeFunnel(input) {
+  input = input || {};
   const steps = input.steps || [];
   if (steps.length === 0) return { _engine: 'real', steps: [], overall_conversion: 0 };
 
@@ -753,8 +769,9 @@ async function analyzeFunnel(input) {
 // 21. sense-url-tech-stack
 // ---------------------------------------------------------------------------
 async function senseUrlTechStack(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const { body } = await fetchUrl(url, { timeoutMs: 10000 });
   const technologies = [];
   if (/react/i.test(body)) technologies.push('React');
@@ -772,8 +789,9 @@ async function senseUrlTechStack(input) {
 // 22. sense-url-response-time
 // ---------------------------------------------------------------------------
 async function senseUrlResponseTime(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const times_ms = [];
   for (let i = 0; i < 3; i++) {
     const start = Date.now();
@@ -790,8 +808,9 @@ async function senseUrlResponseTime(input) {
 // 23. sense-url-sitemap
 // ---------------------------------------------------------------------------
 async function senseUrlSitemap(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const base = new URL(url);
   const sitemapUrl = `${base.protocol}//${base.host}/sitemap.xml`;
   const { body } = await fetchUrl(sitemapUrl, { timeoutMs: 10000 });
@@ -838,8 +857,9 @@ async function senseRssLatest(input) {
 // 25. sense-url-accessibility
 // ---------------------------------------------------------------------------
 async function senseUrlAccessibility(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const { body } = await fetchUrl(url, { timeoutMs: 10000 });
   const issues = [];
   let checks_passed = 0;
@@ -970,10 +990,11 @@ function senseTimeZones() {
 // 29. sense-crypto-price
 // ---------------------------------------------------------------------------
 async function senseCryptoPrice(input) {
+  input = input || {};
   const coins = (input.coins || ['bitcoin', 'ethereum']).join(',');
   const apiUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coins)}&vs_currencies=usd`;
   const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 10000 });
-  if (statusCode !== 200) throw new Error(`CoinGecko API returned ${statusCode}`);
+  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "CoinGecko API returned " + statusCode };
   const prices = JSON.parse(body);
   return { _engine: 'real', prices };
 }
@@ -987,7 +1008,7 @@ async function senseGithubReleases(input) {
   if (!repo) return { _engine: 'real', error: 'missing_param', required: 'repo', hint: 'owner/repo format' };
   const apiUrl = `https://api.github.com/repos/${repo}/releases?per_page=5`;
   const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
-  if (statusCode !== 200) throw new Error(`GitHub API returned ${statusCode}`);
+  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "GitHub API returned " + statusCode };
   const data = JSON.parse(body);
   const releases = data.map(r => ({ tag: r.tag_name, name: r.name, date: r.published_at }));
   return { _engine: 'real', releases };
@@ -1002,7 +1023,7 @@ async function sensePypiPackage(input) {
   if (!pkg) return { _engine: 'real', error: 'missing_param', required: 'package' };
   const apiUrl = `https://pypi.org/pypi/${encodeURIComponent(pkg)}/json`;
   const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
-  if (statusCode !== 200) throw new Error(`PyPI returned ${statusCode}`);
+  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "PyPI returned " + statusCode };
   const data = JSON.parse(body);
   const info = data.info || {};
   return {
@@ -1077,8 +1098,9 @@ async function senseHttpHeadersSecurity(input) {
 // 34. sense-url-broken-links
 // ---------------------------------------------------------------------------
 async function senseUrlBrokenLinks(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const { body } = await fetchUrl(url, { timeoutMs: 10000 });
   const re = /<a[^>]+href=["']([^"'#][^"']*)["']/gi;
   const links = [];
@@ -1127,8 +1149,9 @@ async function senseDnsPropagation(input) {
 // 36. sense-url-performance
 // ---------------------------------------------------------------------------
 async function senseUrlPerformance(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const start = Date.now();
   let ttfb_ms = 0;
 
@@ -1164,8 +1187,9 @@ async function senseUrlPerformance(input) {
 // 37. sense-url-word-count
 // ---------------------------------------------------------------------------
 async function senseUrlWordCount(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const { body } = await fetchUrl(url, { timeoutMs: 10000 });
   const text = stripHtml(body);
   const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
@@ -1206,7 +1230,7 @@ async function senseGithubUser(input) {
   if (!username) return { _engine: 'real', error: 'missing_param', required: 'username' };
   const apiUrl = `https://api.github.com/users/${encodeURIComponent(username)}`;
   const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
-  if (statusCode !== 200) throw new Error(`GitHub API returned ${statusCode}`);
+  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "GitHub API returned " + statusCode };
   const d = JSON.parse(body);
   return {
     _engine: 'real',
@@ -1222,8 +1246,9 @@ async function senseGithubUser(input) {
 // 40. sense-url-screenshot-text
 // ---------------------------------------------------------------------------
 async function senseUrlScreenshotText(input) {
+  input = input || {};
   const url = input.url;
-  if (!url) throw new Error('url is required');
+  if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const { body } = await fetchUrl(url, { timeoutMs: 10000 });
   const text = stripHtml(body).slice(0, 5000);
   const word_count = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;

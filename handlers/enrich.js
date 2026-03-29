@@ -971,8 +971,12 @@ function commQrUrl(input) {
 function commIcalCreate(input) {
   input = input || {};
   const { title = 'Event', start, end, location = '', description = '' } = input;
-  if (!start) return { _engine: 'real', error: 'missing_required_field', required: 'start' };
-  if (!end) return { _engine: 'real', error: 'missing_required_field', required: 'end' };
+  if (!start) {
+    return { _engine: 'error', error: 'Missing required parameter: start (ISO 8601 datetime). Pass { "start": "2025-06-01T10:00:00Z", "end": "2025-06-01T11:00:00Z" }' };
+  }
+  if (!end) {
+    return { _engine: 'error', error: 'Missing required parameter: end (ISO 8601 datetime). Pass { "start": "2025-06-01T10:00:00Z", "end": "2025-06-01T11:00:00Z" }' };
+  }
 
   function toIcalDate(d) {
     const dt = new Date(d);
@@ -1142,8 +1146,11 @@ function commMailtoLink(input) {
 // ---------------------------------------------------------------------------
 function commPhoneValidate(input) {
   input = input || {};
-  const { phone, country } = input;
-  if (!phone) return { _engine: 'real', error: 'missing_required_field', required: 'phone' };
+  const phone = input.phone || input.number || input.tel || null;
+  const country = input.country || null;
+  if (!phone || typeof phone !== 'string' || !phone.trim()) {
+    return { _engine: 'error', error: 'Missing required parameter: phone (string). Pass { "phone": "+15551234567" }' };
+  }
   const stripped = phone.replace(/[\s\-().+]/g, '');
   const hasLetters = /[a-zA-Z]/.test(stripped);
   if (hasLetters) return { _engine: 'real', valid: false, formatted: null, country: country || null };
@@ -1179,8 +1186,10 @@ function commPhoneValidate(input) {
 // ---------------------------------------------------------------------------
 function commEmailValidateDeep(input) {
   input = input || {};
-  const { email } = input;
-  if (!email) return { _engine: 'real', error: 'missing_required_field', required: 'email' };
+  const email = input.email || input.address || null;
+  if (!email || typeof email !== 'string' || !email.trim()) {
+    return { _engine: 'error', error: 'Missing required parameter: email (string). Pass { "email": "user@example.com" }' };
+  }
   const trimmed = email.trim().toLowerCase();
   const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
   const valid_format = emailRegex.test(trimmed);

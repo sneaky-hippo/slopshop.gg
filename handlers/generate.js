@@ -413,8 +413,17 @@ async function execPython(input) {
   const path = require('path');
   const os = require('os');
 
-  const { code, timeout } = input;
-  if (!code) return { _engine: 'real', error: 'No code provided' };
+  input = input || {};
+  const code = input.code || input.script || null;
+  const timeout = input.timeout;
+  if (!code || typeof code !== 'string' || !code.trim()) {
+    return { _engine: 'error', error: 'Missing required parameter: code (string). Pass { "code": "print(1+1)" }' };
+  }
+  // Guard against excessively large inputs that would cause timeouts
+  const MAX_CODE_SIZE = 50000; // 50KB
+  if (code.length > MAX_CODE_SIZE) {
+    return { _engine: 'error', error: `Code too large (${code.length} chars). Maximum allowed: ${MAX_CODE_SIZE} characters.` };
+  }
 
   // Block dangerous operations
   const blocked = ['os.environ', 'subprocess', 'socket', '__import__', 'eval(', 'exec(', 'open(', 'os.system', 'os.popen', 'shutil', 'pathlib', 'importlib', 'sys.modules', 'ctypes', 'compile(', 'breakpoint', 'os.walk', 'os.listdir', 'os.remove', 'os.rename', 'os.mkdir', 'signal', 'multiprocessing', 'threading'];
@@ -469,7 +478,7 @@ function parseSqlSelect(query) {
   const q = query.trim();
 
   const selectMatch = q.match(/^SELECT\s+([\s\S]+?)\s+FROM\s+\w+/i);
-  if (!selectMatch) throw new Error('Invalid SELECT query');
+  if (!selectMatch) return { error: 'Invalid SELECT query' };
 
   const fieldsRaw = selectMatch[1];
 
@@ -551,11 +560,29 @@ function parseAggField(expr) {
 // 12. exec-sql-on-json
 // ---------------------------------------------------------------------------
 async function execSqlOnJson(input) {
-  const data = input.data || [];
-  const query = input.query || '';
-  if (!Array.isArray(data)) throw new Error('data must be an array');
+  input = input || {};
+  const data = input.data || input.rows || [];
+  const query = input.query || input.sql || '';
+  if (!query || typeof query !== 'string' || !query.trim()) {
+    return { _engine: 'error', error: 'Missing required parameter: query (SQL string). Pass { "query": "SELECT * FROM data", "data": [...] }' };
+  }
+  if (!Array.isArray(data)) {
+    return { _engine: 'error', error: 'Invalid parameter: data must be an array of objects. Pass { "query": "SELECT * FROM data", "data": [{"col": "val"}] }' };
+  }
+  if (data.length === 0) {
+    return { _engine: 'real', results: [], row_count: 0, note: 'Empty data set provided' };
+  }
 
-  const { fieldsRaw, whereClause, groupBy, orderBy, limit } = parseSqlSelect(query);
+  let fieldsRaw, whereClause, groupBy, orderBy, limit;
+  try {
+    const parsed = parseSqlSelect(query);
+    if (parsed && parsed.error) {
+      return { _engine: 'real', error: 'invalid_sql', message: parsed.error };
+    }
+    ({ fieldsRaw, whereClause, groupBy, orderBy, limit } = parsed);
+  } catch (e) {
+    return { _engine: 'real', error: 'invalid_sql', message: e.message };
+  }
 
   // Parse field list
   const fieldDefs = fieldsRaw.split(',').map(f => parseAggField(f.trim()));
