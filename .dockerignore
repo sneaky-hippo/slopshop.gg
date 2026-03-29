@@ -1,0 +1,15 @@
+.git
+.env
+.data
+.internal
+.hive-budget.json
+node_modules
+sdk/python/__pycache__
+*.md
+!README.md
+!CLAUDE.md
+strat*.txt
+council-responses.txt
+slopshop_full_test_results.txt
+ENDPOINT-SPEC*.md
+SLOPSHOP_ENDPOINT_DOCUMENTATION.md
