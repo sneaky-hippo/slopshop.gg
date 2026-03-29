@@ -101,7 +101,15 @@ const handlers = {
 
   'pre-mortem-autopsy': ({plan, team_size}) => {
     const risks=['Scope creep exceeded estimates by 3x','Key dependency failed silently','Team burned out in week 3','Stakeholder changed requirements after launch','Integration testing was skipped due to time pressure'];
-    const selected=risks.sort(()=>Math.random()-0.5).slice(0,3);
+    const planStr = (plan||'unnamed').toLowerCase();
+    // Deterministically select risks based on plan content
+    const scored = risks.map(r => {
+      const rWords = r.toLowerCase().split(/\s+/);
+      const relevance = rWords.filter(w => planStr.includes(w)).length;
+      let h=0; for(let i=0;i<r.length;i++) h=((h<<5)-h+r.charCodeAt(i)+planStr.length)|0;
+      return {risk:r, score: relevance * 10 + Math.abs(h % 20)};
+    }).sort((a,b)=>b.score-a.score);
+    const selected = scored.slice(0,3).map(s=>s.risk);
     return {_engine:'real', plan:plan||'unnamed', failure_narrative:'The project failed because: '+selected[0], root_causes:selected.map((r,i)=>({rank:i+1,cause:r,preventable:true})), warning_signs:selected.map(r=>'Early indicator: subtle signs of '+r.toLowerCase()), recommendation:'Address top root cause before proceeding'};
   },
 
@@ -113,7 +121,11 @@ const handlers = {
 
   'security-persona-model': ({attack_surface}) => {
     const personas=[{name:'Script Kiddie',skill:'low',motivation:'notoriety',resources:'minimal',tactics:['automated_scanning','known_exploits']},{name:'Insider Threat',skill:'medium',motivation:'financial',resources:'internal_access',tactics:['privilege_escalation','data_exfil']},{name:'APT Group',skill:'high',motivation:'strategic',resources:'state_backed',tactics:['zero_day','supply_chain','persistence']}];
-    const selected=personas[Math.floor(Math.random()*personas.length)];
+    // Select persona based on attack surface content
+    const surface = (attack_surface||'web_application').toLowerCase();
+    const selected = surface.includes('internal')||surface.includes('employee')||surface.includes('vpn') ? personas[1]
+      : surface.includes('critical')||surface.includes('infrastructure')||surface.includes('government') ? personas[2]
+      : personas[0];
     return {_engine:'real', persona:selected, attack_surface:attack_surface||'web_application', likely_approach:selected.tactics[0], defense_priority:selected.skill==='high'?'critical':'moderate'};
   },
 
