@@ -4492,6 +4492,63 @@ db.exec(`CREATE TABLE IF NOT EXISTS hive_messages (
 db.exec(`CREATE TABLE IF NOT EXISTS hive_state (
   hive_id TEXT, key TEXT, value TEXT, ts INTEGER, PRIMARY KEY(hive_id, key)
 )`);
+db.exec(`CREATE TABLE IF NOT EXISTS hive_subscriptions (
+  hive_id TEXT, agent_id TEXT, channel TEXT DEFAULT '*', subscribed_at INTEGER,
+  PRIMARY KEY(hive_id, agent_id, channel)
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS hive_activity (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, hive_id TEXT, agent_id TEXT,
+  action TEXT, detail TEXT, ts INTEGER
+)`);
+
+// Helper: record hive activity event
+function hiveTrackActivity(hiveId, agentId, action, detail) {
+  try {
+    db.prepare('INSERT INTO hive_activity (hive_id, agent_id, action, detail, ts) VALUES (?, ?, ?, ?, ?)').run(
+      hiveId, agentId, action, typeof detail === 'string' ? detail : JSON.stringify(detail), Date.now()
+    );
+  } catch(e) { /* best-effort */ }
+}
+
+// Helper: notify all agents subscribed to a hive channel via A2A inbox
+function hiveNotifySubscribers(hiveId, channel, senderAgent, messageText) {
+  try {
+    const subs = db.prepare(
+      'SELECT agent_id FROM hive_subscriptions WHERE hive_id = ? AND (channel = ? OR channel = ?) AND agent_id != ?'
+    ).all(hiveId, channel, '*', senderAgent);
+    let notified = 0;
+    for (const sub of subs) {
+      const msgId = 'a2a_hive_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+      db.prepare('INSERT INTO a2a_messages (id, sender, target_agent_id, channel, message) VALUES (?, ?, ?, ?, ?)').run(
+        msgId, senderAgent, sub.agent_id, 'hive:' + hiveId,
+        JSON.stringify({ type: 'hive_notification', hive_id: hiveId, channel, from: senderAgent, message: messageText.slice(0, 500) })
+      );
+      notified++;
+    }
+    return notified;
+  } catch(e) { return 0; }
+}
+
+// POST /v1/hive/:id/subscribe — subscribe to hive channel notifications via A2A inbox
+app.post('/v1/hive/:id/subscribe', auth, (req, res) => {
+  const { channel } = req.body;
+  const ch = channel || '*';
+  const agentId = req.apiKey.slice(0, 12);
+  db.prepare('INSERT OR REPLACE INTO hive_subscriptions (hive_id, agent_id, channel, subscribed_at) VALUES (?, ?, ?, ?)').run(
+    req.params.id, agentId, ch, Date.now()
+  );
+  hiveTrackActivity(req.params.id, agentId, 'subscribe', { channel: ch });
+  res.json({ ok: true, hive_id: req.params.id, agent: agentId, channel: ch, note: 'You will receive A2A inbox notifications for messages in this channel. Poll GET /v1/agent/a2a/inbox to receive them.' });
+});
+
+// DELETE /v1/hive/:id/subscribe — unsubscribe from hive channel
+app.delete('/v1/hive/:id/subscribe', auth, (req, res) => {
+  const { channel } = req.body;
+  const ch = channel || '*';
+  const agentId = req.apiKey.slice(0, 12);
+  db.prepare('DELETE FROM hive_subscriptions WHERE hive_id = ? AND agent_id = ? AND channel = ?').run(req.params.id, agentId, ch);
+  res.json({ ok: true, hive_id: req.params.id, unsubscribed: ch });
+});
 
 // POST /v1/hive/create — launch a new always-on agent workspace
 app.post('/v1/hive/create', auth, (req, res) => {
@@ -4534,8 +4591,11 @@ app.post('/v1/hive/create', auth, (req, res) => {
       sync: `GET /v1/hive/${id}/sync`,
       state: `GET /v1/hive/${id}/state`,
       members: `GET /v1/hive/${id}/members`,
+      subscribe: `POST /v1/hive/${id}/subscribe`,
+      activity: `GET /v1/hive/${id}/activity`,
+      governance: `POST /v1/hive/${id}/governance/propose`,
     },
-    note: 'Your hive is live. Agents can post, read, standup, dream, and sync. Always on.',
+    note: 'Your hive is live. Agents can post, read, standup, dream, subscribe for A2A notifications, and sync. Always on.',
   });
 });
 
@@ -4592,7 +4652,12 @@ app.post('/v1/hive/:id/send', auth, (req, res) => {
     }
   }
 
-  res.json({ ok: true, hive_id: req.params.id, channel: ch });
+  // Notify all subscribed agents via A2A inbox
+  const notified = hiveNotifySubscribers(req.params.id, ch, sender, msgText);
+  // Track activity
+  hiveTrackActivity(req.params.id, sender, 'message', { channel: ch, length: msgText.length });
+
+  res.json({ ok: true, hive_id: req.params.id, channel: ch, subscribers_notified: notified });
 });
 
 // GET /v1/hive/:id/channel/:name — read messages from a channel
@@ -11600,7 +11665,24 @@ db.exec(`CREATE TABLE IF NOT EXISTS staking (
   lock_days INTEGER NOT NULL,
   created_at TEXT DEFAULT (datetime('now')),
   unlock_at TEXT NOT NULL,
-  withdrawn INTEGER DEFAULT 0
+  withdrawn INTEGER DEFAULT 0,
+  auto_compound INTEGER DEFAULT 0
+)`);
+
+// Migrate: add auto_compound column if missing (existing DBs)
+try { db.exec("ALTER TABLE staking ADD COLUMN auto_compound INTEGER DEFAULT 0"); } catch {}
+
+// Yield history — tracks every real hourly distribution payment
+db.exec(`CREATE TABLE IF NOT EXISTS yield_history (
+  id TEXT PRIMARY KEY,
+  stake_id TEXT NOT NULL,
+  api_key TEXT NOT NULL,
+  amount INTEGER NOT NULL,
+  source_revenue INTEGER NOT NULL,
+  pool_total INTEGER NOT NULL,
+  total_staked INTEGER NOT NULL,
+  compounded INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
 )`);
 
 db.exec(`CREATE TABLE IF NOT EXISTS forge_plugins (

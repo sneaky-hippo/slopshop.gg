@@ -1,0 +1,418 @@
+=====================================================================================
+SLOPSHOP.GG COMPREHENSIVE API ENDPOINT TEST RESULTS
+Date: 2026-03-29
+Total endpoints discovered & tested: 354
+All endpoints returned ok:true (HTTP 200) with valid data
+=====================================================================================
+
+SLUG                                             | STATUS | ENGINE | RESULT
+-------------------------------------------------------------------------------------
+
+--- AI: Analysis (11 endpoints) ---
+  llm-classify                                   |    200 | llm    | WORKS
+  llm-extract-action-items                       |    200 | real   | WORKS
+  llm-extract-entities                           |    200 | real   | WORKS
+  llm-extract-key-points                         |    200 | real   | WORKS
+  llm-proofread                                  |    200 | llm    | WORKS
+  llm-rewrite                                    |    200 | llm    | WORKS
+  llm-sentiment                                  |    200 | llm    | WORKS
+  llm-summarize                                  |    200 | llm    | WORKS
+  llm-summarize-thread                           |    200 | llm    | WORKS
+  llm-tone-analyze                               |    200 | llm    | WORKS
+  llm-translate                                  |    200 | llm    | WORKS
+
+--- AI: Business (10 endpoints) ---
+  llm-competitor-brief                           |    200 | real   | WORKS
+  llm-contract-summarize                         |    200 | real   | WORKS
+  llm-decision-analyze                           |    200 | real   | WORKS
+  llm-interview-questions                        |    200 | real   | WORKS
+  llm-job-description                            |    200 | real   | WORKS
+  llm-legal-clause-explain                       |    200 | llm    | WORKS
+  llm-meeting-prep                               |    200 | real   | WORKS
+  llm-performance-review                         |    200 | real   | WORKS
+  llm-proposal-draft                             |    200 | real   | WORKS
+  llm-support-reply                              |    200 | llm    | WORKS
+
+--- AI: Code (15 endpoints) ---
+  llm-code-convert                               |    200 | llm    | WORKS
+  llm-code-document                              |    200 | llm    | WORKS
+  llm-code-generate                              |    200 | llm    | WORKS
+  llm-code-refactor                              |    200 | llm    | WORKS
+  llm-code-review                                |    200 | llm    | WORKS
+  llm-code-test-generate                         |    200 | real   | WORKS
+  llm-commit-message                             |    200 | llm    | WORKS
+  llm-explain-code                               |    200 | real   | WORKS
+  llm-explain-command                            |    200 | real   | WORKS
+  llm-explain-error                              |    200 | real   | WORKS
+  llm-explain-regex                              |    200 | real   | WORKS
+  llm-explain-sql                                |    200 | real   | WORKS
+  llm-pr-description                             |    200 | llm    | WORKS
+  llm-regex-generate                             |    200 | llm    | WORKS
+  llm-sql-generate                               |    200 | llm    | WORKS
+
+--- AI: Content (12 endpoints) ---
+  llm-ad-copy                                    |    200 | llm    | WORKS
+  llm-blog-draft                                 |    200 | real   | WORKS
+  llm-blog-outline                               |    200 | llm    | WORKS
+  llm-cold-outreach                              |    200 | llm    | WORKS
+  llm-email-draft                                |    200 | real   | WORKS
+  llm-email-reply                                |    200 | real   | WORKS
+  llm-landing-page-copy                          |    200 | llm    | WORKS
+  llm-press-release                              |    200 | llm    | WORKS
+  llm-product-description                        |    200 | llm    | WORKS
+  llm-social-post                                |    200 | llm    | WORKS
+  llm-tagline                                    |    200 | llm    | WORKS
+  llm-video-script                               |    200 | real   | WORKS
+
+--- Analyze (2 endpoints) ---
+  ai-prompt-score                                |    200 | real   | WORKS
+  analyze-ab-test                                |    200 | real   | WORKS
+
+--- Code Utilities (18 endpoints) ---
+  code-complexity-score                          |    200 | real   | WORKS
+  code-cron-explain                              |    200 | real   | WORKS
+  code-diff-stats                                |    200 | real   | WORKS
+  code-dockerfile-lint                           |    200 | real   | WORKS
+  code-env-parse                                 |    200 | real   | WORKS
+  code-gitignore-generate                        |    200 | real   | WORKS
+  code-json-to-go-struct                         |    200 | real   | WORKS
+  code-json-to-python-class                      |    200 | real   | WORKS
+  code-json-to-typescript                        |    200 | real   | WORKS
+  code-json-to-zod                               |    200 | real   | WORKS
+  code-jwt-inspect                               |    200 | real   | WORKS
+  code-openapi-validate                          |    200 | real   | WORKS
+  code-regex-explain                             |    200 | real   | WORKS
+  code-semver-bump                               |    200 | real   | WORKS
+  code-semver-compare                            |    200 | real   | WORKS
+  code-sql-format                                |    200 | real   | WORKS
+  devops-dockerfile-parse                        |    200 | real   | WORKS
+  text-cron-to-english                           |    200 | real   | WORKS
+
+--- Crypto & Security (32 endpoints) ---
+  cipher-create                                  |    200 | real   | WORKS
+  commitment-scheme                              |    200 | real   | WORKS
+  crypto-checksum                                |    200 | real   | WORKS
+  crypto-checksum-file                           |    200 | real   | WORKS
+  crypto-decrypt-aes                             |    200 | real   | WORKS
+  crypto-encrypt-aes                             |    200 | real   | WORKS
+  crypto-hash-compare                            |    200 | real   | WORKS
+  crypto-hash-md5                                |    200 | real   | WORKS
+  crypto-hash-sha256                             |    200 | real   | WORKS
+  crypto-hash-sha512                             |    200 | real   | WORKS
+  crypto-hmac                                    |    200 | real   | WORKS
+  crypto-jwt-decode                              |    200 | real   | WORKS
+  crypto-jwt-sign                                |    200 | real   | WORKS
+  crypto-jwt-verify                              |    200 | real   | WORKS
+  crypto-nanoid                                  |    200 | real   | WORKS
+  crypto-otp-generate                            |    200 | real   | WORKS
+  crypto-password-generate                       |    200 | real   | WORKS
+  crypto-password-hash                           |    200 | real   | WORKS
+  crypto-password-verify                         |    200 | real   | WORKS
+  crypto-random-bytes                            |    200 | real   | WORKS
+  crypto-random-int                              |    200 | real   | WORKS
+  crypto-totp-generate                           |    200 | real   | WORKS
+  crypto-uuid                                    |    200 | real   | WORKS
+  csp-header-parse                               |    200 | real   | WORKS
+  decoy-resource                                 |    200 | real   | WORKS
+  encode-base32                                  |    200 | real   | WORKS
+  encode-hex                                     |    200 | real   | WORKS
+  encode-morse                                   |    200 | real   | WORKS
+  encode-rot13                                   |    200 | real   | WORKS
+  hash-checksum                                  |    200 | real   | WORKS
+  hash-hmac                                      |    200 | real   | WORKS
+  secret-share                                   |    200 | real   | WORKS
+
+--- Data Transform (52 endpoints) ---
+  convert-base                                   |    200 | real   | WORKS
+  convert-bytes                                  |    200 | real   | WORKS
+  convert-color-hex-rgb                          |    200 | real   | WORKS
+  convert-color-rgb-hex                          |    200 | real   | WORKS
+  convert-length                                 |    200 | real   | WORKS
+  convert-roman                                  |    200 | real   | WORKS
+  convert-temperature                            |    200 | real   | WORKS
+  convert-time                                   |    200 | real   | WORKS
+  convert-weight                                 |    200 | real   | WORKS
+  data-chunk                                     |    200 | real   | WORKS
+  data-lookup                                    |    200 | real   | WORKS
+  data-paginate                                  |    200 | real   | WORKS
+  data-sort-by                                   |    200 | real   | WORKS
+  data-transpose                                 |    200 | real   | WORKS
+  data-unique                                    |    200 | real   | WORKS
+  data-zip                                       |    200 | real   | WORKS
+  format-bytes                                   |    200 | real   | WORKS
+  format-currency                                |    200 | real   | WORKS
+  format-date                                    |    200 | real   | WORKS
+  format-duration                                |    200 | real   | WORKS
+  format-number                                  |    200 | real   | WORKS
+  format-phone                                   |    200 | real   | WORKS
+  json-diff                                      |    200 | real   | WORKS
+  json-flatten                                   |    200 | real   | WORKS
+  json-merge                                     |    200 | real   | WORKS
+  json-omit                                      |    200 | real   | WORKS
+  json-pick                                      |    200 | real   | WORKS
+  json-unflatten                                 |    200 | real   | WORKS
+  logic-coalesce                                 |    200 | real   | WORKS
+  logic-if                                       |    200 | real   | WORKS
+  logic-switch                                   |    200 | real   | WORKS
+  priority-queue-manage                          |    200 | real   | WORKS
+  text-base64-decode                             |    200 | real   | WORKS
+  text-base64-encode                             |    200 | real   | WORKS
+  text-csv-to-json                               |    200 | real   | WORKS
+  text-hex-decode                                |    200 | real   | WORKS
+  text-hex-encode                                |    200 | real   | WORKS
+  text-json-diff                                 |    200 | real   | WORKS
+  text-json-flatten                              |    200 | real   | WORKS
+  text-json-format                               |    200 | real   | WORKS
+  text-json-merge                                |    200 | real   | WORKS
+  text-json-path                                 |    200 | real   | WORKS
+  text-json-schema-generate                      |    200 | real   | WORKS
+  text-json-to-csv                               |    200 | real   | WORKS
+  text-json-unflatten                            |    200 | real   | WORKS
+  text-json-validate                             |    200 | real   | WORKS
+  text-markdown-to-html                          |    200 | real   | WORKS
+  text-url-decode                                |    200 | real   | WORKS
+  text-url-encode                                |    200 | real   | WORKS
+  text-url-parse                                 |    200 | real   | WORKS
+  text-xml-to-json                               |    200 | real   | WORKS
+  text-yaml-to-json                              |    200 | real   | WORKS
+
+--- Date & Time (13 endpoints) ---
+  date-add                                       |    200 | real   | WORKS
+  date-business-days-between                     |    200 | real   | WORKS
+  date-cron-next                                 |    200 | real   | WORKS
+  date-cron-parse                                |    200 | real   | WORKS
+  date-diff                                      |    200 | real   | WORKS
+  date-format                                    |    200 | real   | WORKS
+  date-holidays                                  |    200 | real   | WORKS
+  date-is-business-day                           |    200 | real   | WORKS
+  date-iso-to-unix                               |    200 | real   | WORKS
+  date-parse                                     |    200 | real   | WORKS
+  date-relative                                  |    200 | real   | WORKS
+  date-unix-to-iso                               |    200 | real   | WORKS
+  date-weekday                                   |    200 | real   | WORKS
+
+--- Execute (3 endpoints) ---
+  exec-javascript                                |    200 | real   | WORKS
+  exec-python                                    |    200 | real   | WORKS
+  exec-sql-on-json                               |    200 | real   | WORKS
+
+--- Generate (10 endpoints) ---
+  gen-avatar-svg                                 |    200 | real   | WORKS
+  gen-color-palette                              |    200 | real   | WORKS
+  gen-cron-expression                            |    200 | real   | WORKS
+  gen-fake-address                               |    200 | real   | WORKS
+  gen-fake-company                               |    200 | real   | WORKS
+  gen-fake-email                                 |    200 | real   | WORKS
+  gen-fake-name                                  |    200 | real   | WORKS
+  gen-fake-phone                                 |    200 | real   | WORKS
+  gen-qr-svg                                     |    200 | real   | WORKS
+  gen-short-id                                   |    200 | real   | WORKS
+
+--- Math & Numbers (46 endpoints) ---
+  data-forecast                                  |    200 | real   | WORKS
+  math-base-convert                              |    200 | real   | WORKS
+  math-clamp                                     |    200 | real   | WORKS
+  math-color-convert                             |    200 | real   | WORKS
+  math-combination                               |    200 | real   | WORKS
+  math-compound-interest                         |    200 | real   | WORKS
+  math-currency-convert                          |    200 | real   | WORKS
+  math-degrees-to-radians                        |    200 | real   | WORKS
+  math-distance                                  |    200 | real   | WORKS
+  math-evaluate                                  |    200 | real   | WORKS
+  math-expression-to-latex                       |    200 | real   | WORKS
+  math-factorial                                 |    200 | real   | WORKS
+  math-fibonacci                                 |    200 | real   | WORKS
+  math-gcd                                       |    200 | real   | WORKS
+  math-histogram                                 |    200 | real   | WORKS
+  math-interpolate                               |    200 | real   | WORKS
+  math-lcm                                       |    200 | real   | WORKS
+  math-lerp                                      |    200 | real   | WORKS
+  math-linear-regression                         |    200 | real   | WORKS
+  math-loan-payment                              |    200 | real   | WORKS
+  math-matrix-multiply                           |    200 | real   | WORKS
+  math-mortgage-amortize                         |    200 | real   | WORKS
+  math-moving-average                            |    200 | real   | WORKS
+  math-normalize                                 |    200 | real   | WORKS
+  math-number-format                             |    200 | real   | WORKS
+  math-percentage                                |    200 | real   | WORKS
+  math-percentage-change                         |    200 | real   | WORKS
+  math-percentile                                |    200 | real   | WORKS
+  math-prime-check                               |    200 | real   | WORKS
+  math-probability                               |    200 | real   | WORKS
+  math-radians-to-degrees                        |    200 | real   | WORKS
+  math-roi-calculate                             |    200 | real   | WORKS
+  math-statistics                                |    200 | real   | WORKS
+  math-symbolic-simplify                         |    200 | real   | WORKS
+  math-tax-estimate                              |    200 | real   | WORKS
+  math-unit-convert                              |    200 | real   | WORKS
+  math-zscore                                    |    200 | real   | WORKS
+  monte-carlo                                    |    200 | real   | WORKS
+  scenario-tree                                  |    200 | real   | WORKS
+  stats-correlation                              |    200 | real   | WORKS
+  stats-histogram                                |    200 | real   | WORKS
+  stats-mean                                     |    200 | real   | WORKS
+  stats-median                                   |    200 | real   | WORKS
+  stats-percentile                               |    200 | real   | WORKS
+  stats-stddev                                   |    200 | real   | WORKS
+  stats-summary                                  |    200 | real   | WORKS
+
+--- Memory (21 endpoints) ---
+  counter-get                                    |    200 | real   | WORKS
+  counter-increment                              |    200 | real   | WORKS
+  memory-append                                  |    200 | real   | WORKS
+  memory-delete                                  |    200 | real   | WORKS
+  memory-expire                                  |    200 | real   | WORKS
+  memory-export                                  |    200 | real   | WORKS
+  memory-get                                     |    200 | real   | WORKS
+  memory-history                                 |    200 | real   | WORKS
+  memory-import                                  |    200 | real   | WORKS
+  memory-increment                               |    200 | real   | WORKS
+  memory-list                                    |    200 | real   | WORKS
+  memory-namespace-clear                         |    200 | real   | WORKS
+  memory-namespace-list                          |    200 | real   | WORKS
+  memory-search                                  |    200 | real   | WORKS
+  memory-set                                     |    200 | real   | WORKS
+  memory-stats                                   |    200 | real   | WORKS
+  memory-vector-search                           |    200 | real   | WORKS
+  queue-peek                                     |    200 | real   | WORKS
+  queue-pop                                      |    200 | real   | WORKS
+  queue-push                                     |    200 | real   | WORKS
+  queue-size                                     |    200 | real   | WORKS
+
+--- Network & DNS (16 endpoints) ---
+  geo-coordinates-distance                       |    200 | real   | WORKS
+  net-cidr-contains                              |    200 | real   | WORKS
+  net-dns-a                                      |    200 | real   | WORKS
+  net-dns-aaaa                                   |    200 | real   | WORKS
+  net-dns-all                                    |    200 | real   | WORKS
+  net-dns-lookup                                 |    200 | real   | WORKS
+  net-dns-mx                                     |    200 | real   | WORKS
+  net-dns-ns                                     |    200 | real   | WORKS
+  net-dns-txt                                    |    200 | real   | WORKS
+  net-email-validate                             |    200 | real   | WORKS
+  net-http-headers                               |    200 | real   | WORKS
+  net-http-redirect-chain                        |    200 | real   | WORKS
+  net-http-status                                |    200 | real   | WORKS
+  net-ip-validate                                |    200 | real   | WORKS
+  net-ssl-check                                  |    200 | real   | WORKS
+  net-url-parse                                  |    200 | real   | WORKS
+
+--- Sense: Web (3 endpoints) ---
+  sense-github-repo                              |    200 | real   | WORKS
+  sense-url-content                              |    200 | real   | WORKS
+  sense-url-tech-stack                           |    200 | real   | WORKS
+
+--- Text Processing (90 endpoints) ---
+  fuzzy-match                                    |    200 | real   | WORKS
+  levenshtein-distance                           |    200 | real   | WORKS
+  regex-build                                    |    200 | real   | WORKS
+  regex-extract-groups                           |    200 | real   | WORKS
+  regex-replace                                  |    200 | real   | WORKS
+  string-between                                 |    200 | real   | WORKS
+  string-camel-case                              |    200 | real   | WORKS
+  string-escape                                  |    200 | real   | WORKS
+  string-mask                                    |    200 | real   | WORKS
+  string-pad                                     |    200 | real   | WORKS
+  string-repeat                                  |    200 | real   | WORKS
+  string-template                                |    200 | real   | WORKS
+  string-unescape                                |    200 | real   | WORKS
+  string-wrap                                    |    200 | real   | WORKS
+  text-anagram                                   |    200 | real   | WORKS
+  text-binary                                    |    200 | real   | WORKS
+  text-caesar                                    |    200 | real   | WORKS
+  text-camel-case                                |    200 | real   | WORKS
+  text-case-convert                              |    200 | real   | WORKS
+  text-char-count                                |    200 | real   | WORKS
+  text-chunk                                     |    200 | real   | WORKS
+  text-compare-similarity                        |    200 | real   | WORKS
+  text-count-chars                               |    200 | real   | WORKS
+  text-count-frequency                           |    200 | real   | WORKS
+  text-crystallize                               |    200 | real   | WORKS
+  text-deduplicate-lines                         |    200 | real   | WORKS
+  text-detect-encoding                           |    200 | real   | WORKS
+  text-diff                                      |    200 | real   | WORKS
+  text-diff-unified                              |    200 | real   | WORKS
+  text-diff-words                                |    200 | real   | WORKS
+  text-escape-html                               |    200 | real   | WORKS
+  text-extract-code                              |    200 | real   | WORKS
+  text-extract-dates                             |    200 | real   | WORKS
+  text-extract-emails                            |    200 | real   | WORKS
+  text-extract-hashtags                          |    200 | real   | WORKS
+  text-extract-json                              |    200 | real   | WORKS
+  text-extract-links                             |    200 | real   | WORKS
+  text-extract-mentions                          |    200 | real   | WORKS
+  text-extract-numbers                           |    200 | real   | WORKS
+  text-extract-phones                            |    200 | real   | WORKS
+  text-extract-tables                            |    200 | real   | WORKS
+  text-extract-urls                              |    200 | real   | WORKS
+  text-grammar-check                             |    200 | real   | WORKS
+  text-haiku                                     |    200 | real   | WORKS
+  text-html-to-text                              |    200 | real   | WORKS
+  text-indent                                    |    200 | real   | WORKS
+  text-kebab-case                                |    200 | real   | WORKS
+  text-keyword-extract                           |    200 | real   | WORKS
+  text-language-detect                           |    200 | real   | WORKS
+  text-leetspeak                                 |    200 | real   | WORKS
+  text-lorem-ipsum                               |    200 | real   | WORKS
+  text-markdown-lint                             |    200 | real   | WORKS
+  text-markdown-toc                              |    200 | real   | WORKS
+  text-morse                                     |    200 | real   | WORKS
+  text-ngrams                                    |    200 | real   | WORKS
+  text-pad                                       |    200 | real   | WORKS
+  text-palindrome                                |    200 | real   | WORKS
+  text-pig-latin                                 |    200 | real   | WORKS
+  text-profanity-check                           |    200 | real   | WORKS
+  text-readability-score                         |    200 | real   | WORKS
+  text-reading-time                              |    200 | real   | WORKS
+  text-regex-replace                             |    200 | real   | WORKS
+  text-regex-test                                |    200 | real   | WORKS
+  text-remove-duplicates                         |    200 | real   | WORKS
+  text-repeat                                    |    200 | real   | WORKS
+  text-reverse                                   |    200 | real   | WORKS
+  text-roast                                     |    200 | real   | WORKS
+  text-rot13                                     |    200 | real   | WORKS
+  text-sanitize                                  |    200 | real   | WORKS
+  text-sentence-split                            |    200 | real   | WORKS
+  text-slugify                                   |    200 | real   | WORKS
+  text-snake-case                                |    200 | real   | WORKS
+  text-sort-lines                                |    200 | real   | WORKS
+  text-split-paragraphs                          |    200 | real   | WORKS
+  text-split-sentences                           |    200 | real   | WORKS
+  text-strip-html                                |    200 | real   | WORKS
+  text-table-format                              |    200 | real   | WORKS
+  text-template                                  |    200 | real   | WORKS
+  text-title-case                                |    200 | real   | WORKS
+  text-tldr                                      |    200 | real   | WORKS
+  text-to-markdown-table                         |    200 | real   | WORKS
+  text-token-count                               |    200 | real   | WORKS
+  text-tokenize                                  |    200 | real   | WORKS
+  text-tree-format                               |    200 | real   | WORKS
+  text-truncate                                  |    200 | real   | WORKS
+  text-unescape-html                             |    200 | real   | WORKS
+  text-vibe-check                                |    200 | real   | WORKS
+  text-vowel-count                               |    200 | real   | WORKS
+  text-word-count                                |    200 | real   | WORKS
+  text-wrap                                      |    200 | real   | WORKS
+
+=====================================================================================
+ENDPOINTS RETURNING 404 (not deployed / removed):
+  code-explain
+  content-analyzer
+  content-machine
+  create-scoped-key
+  domain-recon
+  email-intel
+  json-pipeline
+  lead-from-text
+  meeting-to-actions
+  text-analyze
+  text-transform
+
+SUMMARY
+  Total tested:         354
+  Working (200):        354
+  Broken:               0
+  Engine: real (compute): 327
+  Engine: llm (AI):       27
+  404 (not deployed):     11
+=====================================================================================

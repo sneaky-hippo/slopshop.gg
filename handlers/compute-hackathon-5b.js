@@ -150,22 +150,33 @@ const handlers = {
   },
 
   'quest-generate': ({difficulty, theme}) => {
-    const types=['fetch','eliminate','explore','protect','solve'];
+    const typeKeywords = {
+      fetch:['find','retrieve','collect','gather','bring','deliver','acquire','obtain','search','locate'],
+      eliminate:['destroy','fight','battle','kill','defeat','remove','clear','purge','slay','vanquish','combat','war','enemy'],
+      explore:['explore','discover','map','uncover','journey','travel','venture','unknown','mystery','hidden','secret'],
+      protect:['protect','defend','guard','shield','save','escort','secure','watch','keep','preserve','safe'],
+      solve:['solve','puzzle','riddle','decode','unlock','decipher','figure','mystery','clue','investigate','analyze']
+    };
     const themeStr = (theme||'digital realm').toLowerCase();
-    let h=0; for(let i=0;i<themeStr.length;i++) h=((h<<5)-h+themeStr.charCodeAt(i))|0;
-    const t=types[Math.abs(h)%types.length]; const d=difficulty||((Math.abs(h)%10)+1);
-    return {_engine:'real', quest_id:crypto.randomUUID(), type:t, difficulty:d, theme:theme||'digital realm', rewards:{xp:d*100,credits:d*10}};
+    // Select quest type by analyzing which keywords match the theme
+    const scored = Object.entries(typeKeywords).map(([type, keywords]) => {
+      const matches = keywords.filter(k=>themeStr.includes(k)).length;
+      return {type, matches};
+    }).sort((a,b) => b.matches - a.matches);
+    const t = scored[0].matches > 0 ? scored[0].type : ['fetch','eliminate','explore','protect','solve'][themeStr.length % 5];
+    const d = difficulty || Math.min(10, Math.max(1, themeStr.split(/\s+/).length));
+    return {_engine:'real', quest_id:crypto.randomUUID(), type:t, difficulty:d, theme:theme||'digital realm', type_confidence:scored[0].matches, rewards:{xp:d*100,credits:d*10}};
   },
 
   'loot-table-roll': ({table, seed}) => {
     const t=table||[{item:'Scroll',rarity:'common',weight:60},{item:'Gem',rarity:'rare',weight:25},{item:'Blade',rarity:'epic',weight:10},{item:'Crown',rarity:'legendary',weight:5}];
-    // Deterministic roll based on table content hash or provided seed
-    const seedStr = String(seed||JSON.stringify(t));
-    let h=0; for(let i=0;i<seedStr.length;i++) h=((h<<5)-h+seedStr.charCodeAt(i))|0;
+    // Use numeric seed directly for deterministic roll, or use timestamp-based position
+    const numericSeed = typeof seed === 'number' ? seed : (seed ? String(seed).length * 7 + String(seed).split('').reduce((s,c)=>s+c.charCodeAt(0),0) : Date.now());
     const total=t.reduce((s,i)=>s+i.weight,0);
-    let roll=(Math.abs(h)%total);
+    // Use modular arithmetic on the seed for fair weighted selection
+    let roll = numericSeed % total;
     const dropped=t.find(i=>{roll-=i.weight;return roll<=0;})||t[0];
-    return {_engine:'real', dropped, rarity_color:{common:'#808080',rare:'#0070FF',epic:'#A335EE',legendary:'#FF8000'}[dropped.rarity]||'#FFF'};
+    return {_engine:'real', dropped, roll_value:numericSeed%total, total_weight:total, probabilities:t.map(i=>({item:i.item,chance:Math.round(i.weight/total*10000)/100+'%'})), rarity_color:{common:'#808080',rare:'#0070FF',epic:'#A335EE',legendary:'#FF8000'}[dropped.rarity]||'#FFF'};
   },
 
   'boss-encounter': ({boss, party_size}) => {
@@ -216,21 +227,28 @@ const handlers = {
 
   'daily-challenge': ({date}) => {
     const d=date||new Date().toISOString().slice(0,10);
-    const hash=crypto.createHash('md5').update(d).digest('hex');
+    // Derive challenge type and difficulty from the actual date components
+    const parts = d.split('-').map(Number);
+    const year = parts[0]||2026; const month = parts[1]||1; const day = parts[2]||1;
     const types=['speed_run','puzzle','endurance','creativity','precision'];
-    return {_engine:'real', date:d, type:types[parseInt(hash.slice(0,2),16)%types.length], difficulty:parseInt(hash.slice(2,4),16)%10+1, seed:hash.slice(0,8)};
+    // Day of year determines type, day of month determines difficulty
+    const dayOfYear = (month - 1) * 30 + day;
+    const type = types[dayOfYear % types.length];
+    const difficulty = (day % 10) + 1;
+    // Seed based on date components for reproducibility
+    const seed = String(year * 10000 + month * 100 + day);
+    return {_engine:'real', date:d, type, difficulty, seed, rotation_note:'Challenge type rotates daily through the cycle'};
   },
 
   'weighted-tier-draw': ({rates, pity_counter, pity_threshold, seed}) => {
     const rs=rates||{common:70,rare:20,epic:8,legendary:2}; const pc=pity_counter||0; const pt=pity_threshold||90;
     const boosted=pc>=pt?{...rs,legendary:Math.min(rs.legendary*10,50)}:rs;
     const total=Object.values(boosted).reduce((a,b)=>a+b,0);
-    // Deterministic draw based on pity_counter and seed
-    const seedStr = String(seed||pc);
-    let h=0; for(let i=0;i<seedStr.length;i++) h=((h<<5)-h+seedStr.charCodeAt(i))|0;
-    let roll=Math.abs(h)%total; let result='common';
+    // Use numeric seed directly, or derive from pity counter for deterministic draw
+    const numericSeed = typeof seed === 'number' ? seed : (seed ? String(seed).split('').reduce((s,c,i)=>s+c.charCodeAt(0)*(i+1),0) : pc * 37 + 13);
+    let roll = numericSeed % total; let result='common';
     for(const [rarity,weight] of Object.entries(boosted)){roll-=weight;if(roll<=0){result=rarity;break;}}
-    return {_engine:'real', result, pity:result==='legendary'?0:pc+1, pity_active:pc>=pt};
+    return {_engine:'real', result, pity:result==='legendary'?0:pc+1, pity_active:pc>=pt, probabilities:Object.entries(boosted).map(([r,w])=>({rarity:r,chance:Math.round(w/total*10000)/100+'%'}))};
   },
 
   'pvp-matchmake': ({rating_a, rating_b}) => {
