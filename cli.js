@@ -1013,7 +1013,7 @@ async function cmdHive(args) {
         targetLineNum = candidates[s % candidates.length];
         targetLine = lines[targetLineNum];
         // Show 3 lines of context (line before, target, line after)
-        contextLines = lines.slice(Math.max(0, targetLineNum - 1), targetLineNum + 2).join('\n');
+        contextLines = lines.slice(Math.max(0, targetLineNum - 1), Math.min(lines.length, targetLineNum + 2)).join('\n');
       }
     } catch(e) {}
 
