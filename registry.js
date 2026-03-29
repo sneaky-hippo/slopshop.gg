@@ -205,10 +205,10 @@ const API_DEFS = {
   'stats-mean': { cat: 'Math & Numbers', name: 'Mean', desc: 'Calculate arithmetic mean of a number array.', credits: 1, tier: 'compute' },
   'stats-median': { cat: 'Math & Numbers', name: 'Median', desc: 'Calculate median of a number array.', credits: 1, tier: 'compute' },
   'stats-stddev': { cat: 'Math & Numbers', name: 'Standard Deviation', desc: 'Calculate standard deviation, variance, and mean of a number array.', credits: 1, tier: 'compute' },
-  'stats-percentile': { cat: 'Math & Numbers', name: 'Percentile', desc: 'Calculate any percentile (default p50) of a number array.', credits: 1, tier: 'compute' },
+  'stats-percentile': { cat: 'Math & Numbers', name: 'Percentile', desc: 'Calculate any percentile (default p50) of a number array.', credits: 1, tier: 'compute', _aliasOf: 'math-percentile' },
   'stats-correlation': { cat: 'Math & Numbers', name: 'Correlation', desc: 'Calculate Pearson correlation coefficient between two number arrays.', credits: 1, tier: 'compute' },
-  'stats-histogram': { cat: 'Math & Numbers', name: 'Histogram', desc: 'Generate histogram bins from a number array.', credits: 1, tier: 'compute' },
-  'stats-summary': { cat: 'Math & Numbers', name: 'Statistical Summary', desc: 'Full summary: count, min, max, mean, median, stddev, variance, p25, p75.', credits: 1, tier: 'compute' },
+  'stats-histogram': { cat: 'Math & Numbers', name: 'Histogram', desc: 'Generate histogram bins from a number array.', credits: 1, tier: 'compute', _aliasOf: 'math-histogram' },
+  'stats-summary': { cat: 'Math & Numbers', name: 'Statistical Summary', desc: 'Full summary: count, min, max, mean, median, stddev, variance, p25, p75.', credits: 1, tier: 'compute', _aliasOf: 'math-statistics' },
 
   // ====== DATE & TIME ======
   'date-parse': { cat: 'Date & Time', name: 'Date Parse', desc: 'Parse any date string to structured output (ISO, unix, components).', credits: CREDIT_COSTS.trivial, tier: 'compute' },
@@ -628,8 +628,8 @@ const API_DEFS = {
   'text-extract-json': { cat: 'Text Processing', name: 'Extract JSON Blocks', desc: 'Extract and parse all JSON objects embedded in text. Returns parsed objects and count.', credits: 0, tier: 'compute' },
   'text-extract-code': { cat: 'Text Processing', name: 'Extract Code Blocks', desc: 'Extract fenced code blocks from Markdown text with language detection.', credits: 0, tier: 'compute' },
   'text-extract-tables': { cat: 'Text Processing', name: 'Extract Markdown Tables', desc: 'Extract pipe-delimited Markdown tables from text into structured arrays.', credits: 0, tier: 'compute' },
-  'text-extract-links': { cat: 'Text Processing', name: 'Extract Links', desc: 'Extract all unique HTTP/HTTPS URLs from text.', credits: 0, tier: 'compute' },
-  'text-split-sentences': { cat: 'Text Processing', name: 'Split Sentences', desc: 'Split text into individual sentences on .!? boundaries.', credits: 0, tier: 'compute' },
+  'text-extract-links': { cat: 'Text Processing', name: 'Extract Links', desc: 'Extract all unique HTTP/HTTPS URLs from text.', credits: 0, tier: 'compute', _aliasOf: 'text-extract-urls' },
+  'text-split-sentences': { cat: 'Text Processing', name: 'Split Sentences', desc: 'Split text into individual sentences on .!? boundaries.', credits: 0, tier: 'compute', _aliasOf: 'text-sentence-split' },
   'text-split-paragraphs': { cat: 'Text Processing', name: 'Split Paragraphs', desc: 'Split text into paragraphs on blank line boundaries.', credits: 0, tier: 'compute' },
   'text-to-markdown-table': { cat: 'Text Processing', name: 'Build Markdown Table', desc: 'Generate a Markdown table from a headers array and rows array of arrays.', credits: 0, tier: 'compute' },
 

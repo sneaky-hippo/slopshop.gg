@@ -312,24 +312,97 @@ const handlers = {
   // ─── MATH ─────────────────────────────────────────────────
   'math-symbolic-simplify': ({expression}) => {
     const e = expression||'';
-    // Basic simplification rules
     let simplified = e;
-    simplified = simplified.replace(/\+\s*0\b/g, '').replace(/\b0\s*\+/g, '');
-    simplified = simplified.replace(/\*\s*1\b/g, '').replace(/\b1\s*\*/g, '');
-    simplified = simplified.replace(/\*\s*0\b/g, '0').replace(/\b0\s*\*/g, '0');
-    simplified = simplified.replace(/(\w)\s*-\s*\1\b/g, '0');
-    simplified = simplified.replace(/(\w)\s*\/\s*\1\b/g, '1');
+    const rulesUsed = [];
+
+    // Rule 1: Identity rules
+    const before1 = simplified;
+    simplified = simplified.replace(/\+\s*0\b/g, '').replace(/\b0\s*\+\s*/g, '');
+    simplified = simplified.replace(/\*\s*1\b/g, '').replace(/\b1\s*\*\s*/g, '');
+    simplified = simplified.replace(/\*\s*0\b/g, '0').replace(/\b0\s*\*[^+\-]*/g, '0');
+    if (simplified !== before1) rulesUsed.push('identity');
+
+    // Rule 2: Self-cancellation
+    const before2 = simplified;
+    simplified = simplified.replace(/\b(\w+)\s*-\s*\1\b/g, '0');
+    simplified = simplified.replace(/\b(\w+)\s*\/\s*\1\b/g, '1');
+    if (simplified !== before2) rulesUsed.push('self_cancel');
+
+    // Rule 3: Combine like terms (2*x + 3*x -> 5*x, 2x + 3x -> 5x)
+    const before3 = simplified;
+    if (/^[a-zA-Z0-9_\s+\-*.^]+$/.test(simplified) && !simplified.includes('(')) {
+      let norm = simplified.replace(/\s+/g, '').replace(/-/g, '+-');
+      const terms = norm.split('+').filter(Boolean);
+      const grouped = {};
+      const constants = [];
+      for (const term of terms) {
+        const m = term.match(/^([+-]?\d*\.?\d*)\*?([a-zA-Z]\w*(?:\^\d+)?)$/);
+        if (m) {
+          let coeff = m[1];
+          const varName = m[2];
+          if (coeff === '' || coeff === '+') coeff = 1;
+          else if (coeff === '-') coeff = -1;
+          else coeff = parseFloat(coeff);
+          if (isNaN(coeff)) { constants.push(term); continue; }
+          grouped[varName] = (grouped[varName] || 0) + coeff;
+        } else if (/^[+-]?\d+\.?\d*$/.test(term)) {
+          constants.push(parseFloat(term));
+        } else {
+          constants.push(term);
+        }
+      }
+      const parts = [];
+      for (const [v, c] of Object.entries(grouped)) {
+        if (c === 0) continue;
+        if (c === 1) parts.push(v);
+        else if (c === -1) parts.push('-' + v);
+        else parts.push(c + '*' + v);
+      }
+      const numConsts = constants.filter(c => typeof c === 'number');
+      const strConsts = constants.filter(c => typeof c !== 'number');
+      if (numConsts.length > 0) {
+        const sum = numConsts.reduce((a, b) => a + b, 0);
+        if (sum !== 0 || parts.length === 0) parts.push(String(sum));
+      }
+      parts.push(...strConsts);
+      if (parts.length === 0) simplified = '0';
+      else {
+        let result = String(parts[0]);
+        for (let i = 1; i < parts.length; i++) {
+          const p = String(parts[i]);
+          if (p.startsWith('-')) result += ' - ' + p.slice(1);
+          else result += ' + ' + p;
+        }
+        simplified = result;
+      }
+    }
+    if (simplified !== before3) rulesUsed.push('combine_like_terms');
+
+    // Rule 4: Distribution — a*(b+c) = a*b + a*c
+    const before4 = simplified;
+    simplified = simplified.replace(/(\d+)\s*\*\s*\(([^)]+)\)/g, (_, coeff, inner) => {
+      const c = parseFloat(coeff);
+      const innerTerms = inner.replace(/\s+/g, '').replace(/-/g, '+-').split('+').filter(Boolean);
+      return innerTerms.map(t => {
+        const numMatch = t.match(/^([+-]?\d*\.?\d*)\*?(.+)$/);
+        if (numMatch && numMatch[2] && !/^\d+\.?\d*$/.test(numMatch[2])) {
+          const val = (parseFloat(numMatch[1]) || 1) * c;
+          return val + '*' + numMatch[2];
+        }
+        return c * parseFloat(t);
+      }).join(' + ').replace(/\+\s*-/g, '- ');
+    });
+    if (simplified !== before4) rulesUsed.push('distribute');
+
     simplified = simplified.trim().replace(/^\+\s*/, '').replace(/\s+/g, ' ');
     let evaluated = null;
-    // SECURITY FIX (CRIT-03): Stricter sanitization for expression evaluation
     try {
       const sanitized = simplified.replace(/[^0-9+\-*/(). ]/g, '').trim();
-      // Additional check: must not contain consecutive dots, empty parens, or other suspicious patterns
       if (sanitized && /^[0-9+\-*/().\s]+$/.test(sanitized) && !sanitized.includes('..') && sanitized.length < 200) {
         evaluated = Function('"use strict"; return (' + sanitized + ')')();
       }
-    } catch(e) {}
-    return {_engine:'real', original:expression, simplified:simplified||expression, evaluated, rules_applied:simplified!==expression?'constant_folding':'none'};
+    } catch(ex) {}
+    return {_engine:'real', original:expression, simplified:simplified||expression, evaluated, rules_applied:rulesUsed.length>0?rulesUsed.join(','):'none'};
   },
 
   // ─── BLOCKCHAIN/WEB3 ──────────────────────────────────────

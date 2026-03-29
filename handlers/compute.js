@@ -3914,10 +3914,10 @@ module.exports = {
     result: (text || '').replace(/([A-Z])/g, '_$1').replace(/[\s-]+/g, '_').replace(/^_/, '').toLowerCase(),
   }),
 
-  'text-camel-case': ({text}) => ({
-    _engine: 'real',
-    result: (text || '').replace(/[-_\s]+(.)?/g, (_, c) => (c || '').toUpperCase()),
-  }),
+  'text-camel-case': ({text}) => {
+    const r = (text || '').replace(/[-_\s]+(.)?/g, (_, c) => (c || '').toUpperCase());
+    return { _engine: 'real', result: r.charAt(0).toLowerCase() + r.slice(1) };
+  },
 
   'text-kebab-case': ({text}) => ({
     _engine: 'real',

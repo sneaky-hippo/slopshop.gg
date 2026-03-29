@@ -1417,7 +1417,7 @@ module.exports = {
     // =========================================================================
 
     // Crypto & Security
-    'crypto-checksum-file': { cat: 'Crypto & Security', name: 'File Checksum', desc: 'Calculate checksum of file content.', credits: 1, tier: 'compute' },
+    'crypto-checksum-file': { cat: 'Crypto & Security', name: 'File Checksum', desc: 'Calculate checksum of file content.', credits: 1, tier: 'compute', _aliasOf: 'crypto-checksum' },
 
     // Date & Time
     'date-subtract': { cat: 'Date & Time', name: 'Date Subtract', desc: 'Subtract duration from a date.', credits: 1, tier: 'compute' },
@@ -1447,6 +1447,23 @@ module.exports = {
     'gen-fake-sentence': { cat: 'Generate', name: 'Sample Sentence', desc: 'Generate a random sample sentence.', credits: 0, tier: 'compute' },
     'gen-fake-paragraph': { cat: 'Generate', name: 'Sample Paragraph', desc: 'Generate a random sample paragraph.', credits: 0, tier: 'compute' },
     'gen-slug': { cat: 'Generate', name: 'URL Slug', desc: 'Generate a URL-safe slug from any text.', credits: 0, tier: 'compute' },
+
+    // =========================================================================
+    // Duplicate endpoint aliases (QA audit - 15 pairs)
+    // These are aliases that redirect to canonical endpoints.
+    // Both slugs work, but these are the LESS common forms.
+    // =========================================================================
+
+    'hash-hmac': { cat: 'Crypto & Security', name: 'HMAC-SHA256 (alias)', desc: 'Alias for crypto-hmac. Compute HMAC-SHA256 with secret key.', credits: 1, tier: 'compute', _aliasOf: 'crypto-hmac' },
+    'hash-checksum': { cat: 'Crypto & Security', name: 'Checksum (alias)', desc: 'Alias for crypto-checksum. MD5-only checksum.', credits: 1, tier: 'compute', _aliasOf: 'crypto-checksum' },
+    'regex-replace': { cat: 'Text Processing', name: 'Regex Replace (alias)', desc: 'Alias for text-regex-replace. Find and replace using regex.', credits: 1, tier: 'compute', _aliasOf: 'text-regex-replace' },
+    'encode-rot13': { cat: 'Text Processing', name: 'ROT13 (alias)', desc: 'Alias for text-rot13. ROT13 encode/decode text.', credits: 0, tier: 'compute', _aliasOf: 'text-rot13' },
+    'encode-morse': { cat: 'Text Processing', name: 'Morse Code (alias)', desc: 'Alias for text-morse. Convert text to Morse code.', credits: 0, tier: 'compute', _aliasOf: 'text-morse' },
+    'string-repeat': { cat: 'Text Processing', name: 'Repeat Text (alias)', desc: 'Alias for text-repeat. Repeat a string N times.', credits: 0, tier: 'compute', _aliasOf: 'text-repeat' },
+    'string-pad': { cat: 'Text Processing', name: 'Pad Text (alias)', desc: 'Alias for text-pad. Pad text to target width.', credits: 0, tier: 'compute', _aliasOf: 'text-pad' },
+    'string-wrap': { cat: 'Text Processing', name: 'Word Wrap (alias)', desc: 'Alias for text-wrap. Word-wrap text at column width.', credits: 0, tier: 'compute', _aliasOf: 'text-wrap' },
+    'string-template': { cat: 'Text Processing', name: 'Template Render (alias)', desc: 'Alias for text-template. Render templates with data.', credits: 1, tier: 'compute', _aliasOf: 'text-template' },
+    'string-camel-case': { cat: 'Text Processing', name: 'Camel Case (alias)', desc: 'Alias for text-camel-case. Convert text to camelCase.', credits: 0, tier: 'compute', _aliasOf: 'text-camel-case' },
 
   }
 };
