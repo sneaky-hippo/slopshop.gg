@@ -1495,7 +1495,7 @@ app.get('/v1/tools/:slug/related', publicRateLimit, (req, res) => {
   const def = apiMap.get(req.params.slug);
   if (!def) return res.status(404).json({ error: { code: 'not_found' } });
   // Find tools in same category + same prefix
-  const prefix = req.params.slug.split('-').slice(0,2).join('-');
+  const prefix = req.params.slug.split('-').slice(0).splice(-2).join('-');
   const related = Object.entries(API_DEFS)
     .filter(([s, d]) => s !== req.params.slug && (d.cat === def.cat || s.startsWith(prefix)))
     .slice(0, 10)
