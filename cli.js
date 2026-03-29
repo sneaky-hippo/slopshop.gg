@@ -884,17 +884,18 @@ async function cmdDoctor() {
 }
 
 // ============================================================
-// HIVE v10 — Scrape once, think many. Local-first. CEO evolves.
-// Usage: slop hive [sprints] [--local-only] "mission"
+// HIVE — Local-only by default. Zero cloud cost. Outputs TODO.
+// Cloud only with --cloud flag. Scrapes once. Thinks locally.
+// Usage: slop hive [sprints] [--cloud] "mission"
 // ============================================================
 async function cmdHive(args) {
   requireKey();
   const numArg = args.find(a => /^\d+$/.test(a));
   const sprints = numArg ? parseInt(numArg) : 10;
-  const localOnly = args.includes('--local-only');
+  const useCloud = args.includes('--cloud'); // OFF by default — zero cost
   const mission = args.filter(a => !/^\d+$/.test(a) && !a.startsWith('--')).join(' ').trim() || 'improve slopshop';
 
-  // Helpers
+  // Helpers — local LLM only (free)
   const ollamaChat = (model, prompt) => new Promise(r => {
     const body = JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false });
     const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
@@ -907,8 +908,8 @@ async function cmdHive(args) {
   });
   let creditsSpent = 0;
   const cloudChat = async (provider, prompt) => {
-    if (creditsSpent >= 50) return '';
-    try { const r = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 2500), provider }); creditsSpent += 10; return r.data?.data?.answer || r.data?.answer || ''; }
+    if (!useCloud || creditsSpent >= 30) return '';
+    try { const r = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 2000), provider }); creditsSpent += 10; return r.data?.data?.answer || r.data?.answer || ''; }
     catch(e) { return ''; }
   };
   const slopCall = async (slug, params) => {
@@ -917,6 +918,8 @@ async function cmdHive(args) {
   };
   const slopMem = async (k, v) => (await slopCall('memory-set', { key: k, value: typeof v === 'string' ? v : JSON.stringify(v) })).ok;
   const extractScore = t => { const m = (t||'').match(/(\d+\.?\d*)\s*\/\s*10/); return m ? parseFloat(m[1]) : 0; };
+  const todoFile = path.join(CONFIG_DIR, 'hive-todo.md');
+  const todos = [];
 
   // Shared state — persists locally between sessions
   const HIVE_KEY = 'hive-' + Date.now();
@@ -930,12 +933,14 @@ async function cmdHive(args) {
   try { northStar = fs.readFileSync(path.join(__dirname, 'NORTH-STAR.md'), 'utf8').replace(/\n/g, ' ').slice(0, 250); } catch(e) {}
 
   console.log('');
+  console.log('');
   console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║            SLOPSHOP HIVE v10                   ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║  Scrape once · Think many · CEO evolves        ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║            SLOPSHOP HIVE                       ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║  Scrape once · Think local · Output TODO       ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════╝${C.reset}`);
   console.log(`  ${bold('Mission:')} ${green(mission)}`);
-  console.log(`  ${dim('Cloud every 5th sprint. Local for rest. 50cr/sprint cap.')}`);
+  console.log(`  ${dim(useCloud ? 'Cloud enabled (costs credits)' : 'Local only (free). Add --cloud for cloud LLMs.')}`);
+  console.log(`  ${dim('TODO output:')} ${cyan(todoFile)}`);
   console.log('');
 
   // ── PHASE 0: SCRAPE ONCE at session start ──
@@ -967,10 +972,10 @@ async function cmdHive(args) {
   for (let s = 1; s <= sprints; s++) {
     const t0 = Date.now();
     creditsSpent = 0;
-    const useCloud = !localOnly && (s % 5 === 1 || s <= 2);
-    const ask = useCloud ? (p) => cloudChat('anthropic', p) : (p) => ollamaChat('llama3', p);
+    const sprintCloud = useCloud && (s % 10 === 1 || s === 1); // Cloud only sprint 1, 11, 21...
+    const ask = sprintCloud ? (p) => cloudChat('anthropic', p) : (p) => ollamaChat('llama3', p);
 
-    console.log(`  ${C.red}${C.bold}══ S${s} ══${C.reset} ${useCloud ? yellow('[CLOUD]') : dim('[LOCAL]')}`);
+    console.log(`  ${C.red}${C.bold}══ S${s} ══${C.reset} ${sprintCloud ? yellow('[CLOUD]') : dim('[LOCAL]')}`);
 
     // ── Context: what the org knows right now ──
     const kb = shared.research.slice(-8).map(r => (r.text||'').slice(0, 60)).join('\n');
@@ -997,6 +1002,7 @@ ${phase === 'EXPLORE' ? 'Be bold. Discover.' : phase === 'FIX' ? 'Fix whats brok
     const resp = await ask(thinkPrompt);
     const priorityMatch = (resp||'').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
     const priority = priorityMatch ? priorityMatch[1].trim().slice(0, 80) : 'iterate on research';
+    if (priority && priority !== 'iterate on research') todos.push({ sprint: s, priority, phase });
     let cmds = (resp||'').split('\n').map(l=>l.trim()).filter(l=>l.startsWith('memory set')&&l.includes('{'));
     const score = extractScore(resp) || (phase === 'EXPLORE' ? 6 : 7);
     const nextMatch = (resp||'').match(/NEXT:\s*(.+?)(?:\n|$)/i);
@@ -1045,7 +1051,7 @@ ${phase === 'EXPLORE' ? 'Be bold. Discover.' : phase === 'FIX' ? 'Fix whats brok
     }
 
     // Discovery: ask for new URL every 10 sprints on cloud
-    if (useCloud && s % 10 === 0) {
+    if (sprintCloud && s % 10 === 0) {
       const discResp = await cloudChat('anthropic', `We research: ${urls.join(', ')}. Name ONE new competitor URL we should add. Just the URL, nothing else.`);
       const newUrl = (discResp||'').match(/https?:\/\/\S+/)?.[0];
       if (newUrl && !urls.includes(newUrl)) { urls.push(newUrl); shared.discoveries.push(newUrl); console.log(`  ${dim('│')} ${green('DISCOVERED:')} ${cyan(newUrl)}`); }
@@ -1070,6 +1076,13 @@ ${phase === 'EXPLORE' ? 'Be bold. Discover.' : phase === 'FIX' ? 'Fix whats brok
   console.log(`  Sprints: ${sprints}  Avg: ${bold(avg+'/10')}  Builds: ${shared.builds.length}  Discoveries: ${shared.discoveries?.length||0}`);
   if (shared.scores.length > 0) console.log(`  Scores: ${shared.scores.slice(-10).map(s=>s.score.toFixed(1)).join('→')}`);
   if (shared.vision) console.log(`  Vision: ${green(shared.vision.slice(0,70))}`);
+  // Write TODO file — actionable items for Claude/human to implement
+  if (todos.length > 0) {
+    const todoContent = `# Hive TODO — ${new Date().toISOString().slice(0, 10)}\n\nMission: ${mission}\nSprints: ${sprints} | Avg: ${avg}/10\n\n## Priorities (implement these)\n\n${todos.map((t, i) => `${i + 1}. [S${t.sprint}] [${t.phase}] ${t.priority}`).join('\n')}\n\n## How to implement\nTell Claude: "implement the hive TODOs from ~/.slopshop/hive-todo.md"\n`;
+    try { fs.writeFileSync(todoFile, todoContent); } catch(e) {}
+    console.log(`  ${bold('TODO:')} ${green(todos.length + ' actionable items')} → ${cyan(todoFile)}`);
+    console.log(`  ${dim('Tell Claude: "implement the hive TODOs"')}`);
+  }
   console.log(`  Doc: ${cyan(HIVE_KEY)}  Local: ${dim(localDoc)}`);
   console.log('');
 }
