@@ -1638,7 +1638,7 @@ app.get('/v1/mcp/recommended', publicRateLimit, (req, res) => {
     if (!def) continue;
     const schema = SCHEMAS?.[slug];
     tools.push({
-      name: `slop_${slug.replace(/-/g, '_')}`,
+      name: `slop_${slug.replace(/[-_]/g, '_')}`,
       slug,
       description: def.desc,
       category: def.cat,
