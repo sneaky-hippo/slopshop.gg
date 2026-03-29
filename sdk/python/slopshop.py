@@ -88,3 +88,42 @@ class Slopshop:
 
     def dry_run(self, slug, input_data=None):
         return self._request('POST', f'/v1/dry-run/{slug}', input_data or {})
+
+    # Ollama (local LLM — 0 credits)
+    def ollama_models(self):
+        return self._request('GET', '/v1/models/ollama')
+
+    def ollama_generate(self, model, prompt, **kwargs):
+        return self.call('models/ollama/generate', {'model': model, 'prompt': prompt, **kwargs})
+
+    def ollama_embed(self, model, prompt, **kwargs):
+        return self.call('models/ollama/embeddings', {'model': model, 'prompt': prompt, **kwargs})
+
+    # vLLM (local inference — 0 credits)
+    def vllm_generate(self, model, prompt, **kwargs):
+        return self.call('models/vllm/generate', {'model': model, 'prompt': prompt, **kwargs})
+
+    # Wallet + Economy
+    def wallet_create(self, name, **kwargs):
+        return self.call('wallet/create', {'name': name, **kwargs})
+
+    def wallet_transfer(self, from_wallet, to_wallet, amount):
+        return self.call('wallet/transfer', {'from_wallet': from_wallet, 'to_wallet': to_wallet, 'amount': amount})
+
+    # Knowledge Graph
+    def knowledge_add(self, subject, predicate, obj, **kwargs):
+        return self.call('knowledge/add', {'subject': subject, 'predicate': predicate, 'object': obj, **kwargs})
+
+    def knowledge_query(self, query, **kwargs):
+        return self.call('knowledge/query', {'query': query, **kwargs})
+
+    # Army (parallel agents)
+    def army_deploy(self, task, agents=10, **kwargs):
+        return self.call('army/deploy', {'task': task, 'agents': agents, **kwargs})
+
+    # Chain
+    def chain_create(self, name, steps, **kwargs):
+        return self.call('chain/create', {'name': name, 'steps': steps, **kwargs})
+
+    def chain_run(self, chain_id, **kwargs):
+        return self.call('chain/run', {'chain_id': chain_id, **kwargs})
