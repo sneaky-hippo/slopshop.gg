@@ -235,7 +235,8 @@ const handlers = {
   },
 
   'ai-chain-of-thought': ({problem, steps}) => {
-    const stps=steps||['Understand the problem','Identify key information','Consider approaches','Choose best approach','Execute step by step','Verify answer'];
+    const defaultSteps=['Understand the problem','Identify key information','Consider approaches','Choose best approach','Execute step by step','Verify answer'];
+    const stps=Array.isArray(steps)?steps:defaultSteps.slice(0,typeof steps==='number'?steps:6);
     return {_engine:'real',problem:problem||'',chain:stps.map((s,i)=>({step:i+1,instruction:s,status:'pending'})),total_steps:stps.length,note:'Execute each step sequentially, updating status to completed'};
   },
 
