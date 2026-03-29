@@ -3836,6 +3836,72 @@ app.get('/v1/hive/:id/vision', auth, (req, res) => {
   res.json(JSON.parse(row.value));
 });
 
+// --- Hive Governance ---
+
+// POST /v1/hive/:id/governance/propose — create a governance proposal
+app.post('/v1/hive/:id/governance/propose', auth, (req, res) => {
+  const { title, description, type } = req.body;
+  if (!title) return res.status(400).json({ error: { code: 'missing_title' } });
+  const proposalId = 'prop-' + crypto.randomUUID().slice(0, 12);
+  const now = Date.now();
+  const proposal = {
+    id: proposalId,
+    title,
+    description: description || '',
+    type: type || 'general',
+    proposer: req.apiKey.slice(0, 12),
+    votes_yes: 0,
+    votes_no: 0,
+    total_stake: 0,
+    status: 'open',
+    created_at: now,
+  };
+  db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(
+    req.params.id, 'governance:proposal:' + proposalId, JSON.stringify(proposal), now
+  );
+  res.json({ ok: true, hive_id: req.params.id, proposal });
+});
+
+// POST /v1/hive/:id/governance/vote — vote on a governance proposal
+app.post('/v1/hive/:id/governance/vote', auth, (req, res) => {
+  const { proposal_id, vote, stake } = req.body;
+  if (!proposal_id) return res.status(400).json({ error: { code: 'missing_proposal_id' } });
+  if (!vote || !['yes', 'no'].includes(vote)) return res.status(400).json({ error: { code: 'invalid_vote', message: 'vote must be "yes" or "no"' } });
+
+  const row = db.prepare('SELECT value FROM hive_state WHERE hive_id = ? AND key = ?').get(req.params.id, 'governance:proposal:' + proposal_id);
+  if (!row) return res.status(404).json({ error: { code: 'proposal_not_found' } });
+
+  const proposal = JSON.parse(row.value);
+  if (proposal.status !== 'open') return res.status(409).json({ error: { code: 'proposal_closed' } });
+
+  const voteStake = Math.max(stake || 1, 1);
+  if (vote === 'yes') proposal.votes_yes += voteStake;
+  else proposal.votes_no += voteStake;
+  proposal.total_stake += voteStake;
+
+  const now = Date.now();
+  db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(
+    req.params.id, 'governance:proposal:' + proposal_id, JSON.stringify(proposal), now
+  );
+
+  // Store individual vote record
+  const voter = req.apiKey.slice(0, 12);
+  const voteRecord = { voter, proposal_id, vote, stake: voteStake, ts: now };
+  db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(
+    req.params.id, 'governance:vote:' + proposal_id + ':' + voter, JSON.stringify(voteRecord), now
+  );
+
+  res.json({ ok: true, hive_id: req.params.id, proposal_id, vote, stake: voteStake, proposal });
+});
+
+// GET /v1/hive/:id/governance — list governance proposals for this hive
+app.get('/v1/hive/:id/governance', auth, (req, res) => {
+  const rows = db.prepare("SELECT key, value, ts FROM hive_state WHERE hive_id = ? AND key LIKE 'governance:proposal:%'").all(req.params.id);
+  const proposals = rows.map(r => { try { return JSON.parse(r.value); } catch(e) { return null; } }).filter(Boolean);
+  proposals.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+  res.json({ ok: true, hive_id: req.params.id, proposals, count: proposals.length });
+});
+
 // ===== WORKFORCE UTILIZATION =====
 
 // GET /v1/workforce/utilization — track agent activity and idle time
@@ -3951,6 +4017,7 @@ app.post('/v1/local/execute', auth, async (req, res) => {
 // ===== FEATURE: Agent Eval Framework =====
 db.exec('CREATE TABLE IF NOT EXISTS evals (id TEXT PRIMARY KEY, api_key TEXT, agent_config TEXT, test_cases TEXT, results TEXT, score REAL, ts INTEGER)');
 
+// NOTE: Duplicate registration of /v1/eval/run — also registered at lines ~7389 and ~7795. TODO: deduplicate in future cleanup.
 app.post('/v1/eval/run', auth, async (req, res) => {
   const { test_cases, tool } = req.body;
   if (!Array.isArray(test_cases)) return res.status(400).json({ error: { code: 'missing_test_cases', message: 'Provide test_cases array of {input, expected_output}' } });
@@ -4106,6 +4173,7 @@ app.post('/v1/templates/star/:id', auth, (req, res) => {
   res.json({ ok: true, starred: req.params.id });
 });
 
+// NOTE: Duplicate registration of /v1/templates/browse — also registered at line ~7908. TODO: deduplicate in future cleanup.
 app.get('/v1/templates/browse', publicRateLimit, (req, res) => {
   // Sanitized: whitelist sort columns to prevent SQL injection
   const sortMap = { stars: 'stars', forks: 'forks', ts: 'ts' };
@@ -6382,6 +6450,23 @@ app.post('/v1/wallet/transfer', auth, (req, res) => {
   res.json({ ok: true, from: from_wallet_id, to: to_wallet_id, amount, transferred: true });
 });
 
+// POST /v1/wallet/:id/fund — Add credits from main account to wallet
+app.post('/v1/wallet/:id/fund', auth, (req, res) => {
+  const { amount } = req.body;
+  if (!amount || amount <= 0) return res.status(400).json({ error: { code: 'invalid_amount' } });
+
+  const ownerId = req.acct?.email || req.apiKey;
+  const wallet = db.prepare('SELECT * FROM agent_wallets WHERE id = ? AND owner_id = ?').get(req.params.id, ownerId);
+  if (!wallet) return res.status(404).json({ error: { code: 'wallet_not_found' } });
+  if (req.acct.balance < amount) return res.status(402).json({ error: { code: 'insufficient_credits' } });
+
+  req.acct.balance -= amount;
+  persistKey(req.apiKey);
+  db.prepare('UPDATE agent_wallets SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?').run(amount, amount, req.params.id);
+
+  res.json({ ok: true, wallet_id: req.params.id, amount_funded: amount, new_wallet_balance: wallet.balance + amount, main_balance: req.acct.balance });
+});
+
 // ===== USER LLM KEY MANAGEMENT (BYOK — Bring Your Own Key) =====
 // Users store their own API keys. When set, LLM calls use USER keys = 0 slopshop credits.
 app.post('/v1/keys/llm/set', auth, (req, res) => {
@@ -7303,6 +7388,7 @@ app.get('/v1/eval/datasets/list', auth, (req, res) => {
   res.json({ ok: true, datasets, count: datasets.length, _engine: 'real' });
 });
 
+// NOTE: Duplicate registration of /v1/eval/run — also registered at lines ~4021 and ~7797. TODO: deduplicate in future cleanup.
 app.post('/v1/eval/run', auth, async (req, res) => {
   const { dataset, provider, model } = req.body;
   if (!dataset) return res.status(422).json({ error: { code: 'missing_dataset' } });
@@ -7709,6 +7795,7 @@ app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => 
 // ===== PHASE 2-3: AGENT EVALUATION SYSTEM =====
 
 // POST /v1/eval/run — Run an agent evaluation
+// NOTE: Duplicate registration of /v1/eval/run — also registered at lines ~4021 and ~7392. TODO: deduplicate in future cleanup.
 app.post('/v1/eval/run', auth, async (req, res) => {
   const { agent_slug, test_cases, criteria } = req.body;
   const id = uuidv4();
@@ -7822,6 +7909,7 @@ app.post('/v1/templates/publish', auth, (req, res) => {
 });
 
 // GET /v1/templates/browse — Browse marketplace templates
+// NOTE: Duplicate registration of /v1/templates/browse — also registered at line ~4177. TODO: deduplicate in future cleanup.
 app.get('/v1/templates/browse', publicRateLimit, (req, res) => {
   try {
     const category = req.query.category;
@@ -7897,6 +7985,12 @@ app.get('/v1/replay/list', auth, (req, res) => {
     const rows = db.prepare('SELECT id, name, total_credits, duration_ms, created_at FROM replays WHERE user_id = ? ORDER BY created_at DESC LIMIT ? OFFSET ?').all(userId, limit, offset);
     res.json({ ok: true, replays: rows, limit, offset });
   } catch(e) { res.json({ ok: false, replays: [], error: e.message }); }
+});
+
+// GET /v1/replay/load — Alias for /v1/replay/:id using query param ?id=
+app.get('/v1/replay/load', auth, (req, res) => {
+  if (!req.query.id) return res.status(400).json({ error: { code: 'missing_id', message: 'Provide ?id=<replay_id>' } });
+  res.redirect(307, '/v1/replay/' + encodeURIComponent(req.query.id));
 });
 
 // GET /v1/replay/:id — Get replay data
