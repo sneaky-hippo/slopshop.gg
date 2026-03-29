@@ -1594,7 +1594,7 @@ setInterval(async () => {
         if (!acct || acct.balance < dream.credits_per_dream) continue;
         acct.balance -= dream.credits_per_dream;
         // Store dream result in shared memory
-        if (allHandlers['memory-set']) {
+        if ('memory-set' in allHandlers) {
           try {
             allHandlers['memory-set']({
               namespace: 'dreams',
