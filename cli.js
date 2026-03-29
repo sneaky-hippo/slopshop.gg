@@ -903,7 +903,7 @@ async function cmdHive(args) {
     const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
       headers: { 'Content-Type': 'application/json' }, timeout: 90000 }, res => {
       let d = ''; res.on('data', c => d += c);
-      res.on('end', () => { try { r(JSON.parse(d).message?.content || ''); } catch(e) { r(''); } });
+      res.on('end', () => { try { const content = JSON.parse(d).message?.content; r(content || ''); } catch(e) { r(''); } });
     });
     req.on('error', () => r('')); req.on('timeout', () => { req.destroy(); r(''); });
     req.write(body); req.end();
