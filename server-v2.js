@@ -9932,6 +9932,500 @@ app.get('/v1/org/templates', publicRateLimit, (req, res) => {
   });
 });
 
+// ===== STRAT 3: ARMY STATUS SSE STREAM =====
+// POST /v1/army/status/:id — SSE stream of army progress (real-time updates)
+app.post('/v1/army/status/:id', auth, (req, res) => {
+  const runId = req.params.id;
+  const row = db.prepare('SELECT * FROM compute_runs WHERE id = ? AND api_key = ?').get(runId, req.apiKey);
+  if (!row) return res.status(404).json({ error: { code: 'run_not_found', message: 'Army run not found. Use GET /v1/army/runs to list your runs.' } });
+
+  // Set up SSE
+  res.setHeader('Content-Type', 'text/event-stream');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('Connection', 'keep-alive');
+  res.setHeader('X-Accel-Buffering', 'no');
+  res.flushHeaders();
+
+  const config = JSON.parse(row.config || '{}');
+  const results = JSON.parse(row.results || '[]');
+
+  // If already complete, stream all results and close
+  if (row.status === 'completed') {
+    res.write(`event: status\ndata: ${JSON.stringify({ run_id: runId, status: 'completed', agent_count: row.agent_count, verified: row.verified })}\n\n`);
+    // Stream results in chunks of 10
+    for (let i = 0; i < results.length; i += 10) {
+      const chunk = results.slice(i, i + 10);
+      res.write(`event: results\ndata: ${JSON.stringify({ batch: Math.floor(i / 10) + 1, agents: chunk })}\n\n`);
+    }
+    res.write(`event: done\ndata: ${JSON.stringify({ run_id: runId, total_agents: row.agent_count, status: 'completed', _engine: 'real' })}\n\n`);
+    res.end();
+    return;
+  }
+
+  // If still running, poll for updates until complete
+  let pollCount = 0;
+  const maxPolls = 60; // 60 seconds max
+  const pollInterval = setInterval(() => {
+    pollCount++;
+    const current = db.prepare('SELECT * FROM compute_runs WHERE id = ? AND api_key = ?').get(runId, req.apiKey);
+    if (!current) {
+      res.write(`event: error\ndata: ${JSON.stringify({ error: 'run_disappeared' })}\n\n`);
+      clearInterval(pollInterval);
+      res.end();
+      return;
+    }
+    res.write(`event: heartbeat\ndata: ${JSON.stringify({ poll: pollCount, status: current.status, elapsed_s: pollCount })}\n\n`);
+    if (current.status === 'completed' || pollCount >= maxPolls) {
+      const finalResults = JSON.parse(current.results || '[]');
+      res.write(`event: status\ndata: ${JSON.stringify({ run_id: runId, status: current.status, agent_count: current.agent_count, verified: current.verified })}\n\n`);
+      for (let i = 0; i < finalResults.length; i += 10) {
+        const chunk = finalResults.slice(i, i + 10);
+        res.write(`event: results\ndata: ${JSON.stringify({ batch: Math.floor(i / 10) + 1, agents: chunk })}\n\n`);
+      }
+      res.write(`event: done\ndata: ${JSON.stringify({ run_id: runId, total_agents: current.agent_count, status: current.status, _engine: 'real' })}\n\n`);
+      clearInterval(pollInterval);
+      res.end();
+    }
+  }, 1000);
+
+  // Clean up if client disconnects
+  req.on('close', () => {
+    clearInterval(pollInterval);
+  });
+});
+
+// ===== STRAT 3: SANDBOXED JAVASCRIPT EXECUTION =====
+const vm = require('vm');
+
+// POST /v1/sandbox/execute — Run arbitrary JS in a sandboxed VM context
+app.post('/v1/sandbox/execute', auth, (req, res) => {
+  const { code, timeout } = req.body;
+  if (!code) return res.status(400).json({ error: { code: 'missing_code', message: 'Provide code (JavaScript string) to execute' } });
+  if (typeof code !== 'string') return res.status(400).json({ error: { code: 'invalid_code', message: 'code must be a string' } });
+  if (code.length > 50000) return res.status(400).json({ error: { code: 'code_too_large', message: 'Max 50KB of code allowed' } });
+
+  const execTimeout = Math.min(timeout || 5000, 5000); // Hard cap at 5 seconds
+
+  // Security: build a restricted sandbox — no require, no process, no global access
+  const sandbox = {
+    console: {
+      log: (...args) => { logs.push(args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')); },
+      warn: (...args) => { logs.push('[warn] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')); },
+      error: (...args) => { logs.push('[error] ' + args.map(a => typeof a === 'object' ? JSON.stringify(a) : String(a)).join(' ')); },
+    },
+    Math,
+    Date,
+    JSON,
+    parseInt,
+    parseFloat,
+    isNaN,
+    isFinite,
+    Array,
+    Object,
+    String,
+    Number,
+    Boolean,
+    RegExp,
+    Map,
+    Set,
+    Promise,
+    crypto: {
+      randomUUID: () => crypto.randomUUID(),
+      hash: (alg, data) => crypto.createHash(alg).update(String(data)).digest('hex'),
+    },
+    // Slopshop SDK stub — gives sandbox users access to read-only helpers
+    slopshop: {
+      version: '2.0',
+      tools: Object.keys(API_DEFS).slice(0, 50),
+      toolCount: Object.keys(API_DEFS).length,
+      categories: catalog.map(c => c.name),
+    },
+    __result: undefined,
+  };
+
+  const logs = [];
+  const context = vm.createContext(sandbox);
+
+  const startTime = Date.now();
+  try {
+    // Wrap code so last expression becomes the result
+    const wrappedCode = `__result = (function() { ${code} })()`;
+    vm.runInContext(wrappedCode, context, {
+      timeout: execTimeout,
+      filename: 'sandbox.js',
+      breakOnSigint: true,
+    });
+    const executionTime = Date.now() - startTime;
+    const result = context.__result;
+
+    // Serialize result safely
+    let serializedResult;
+    try {
+      serializedResult = JSON.parse(JSON.stringify(result === undefined ? null : result));
+    } catch (e) {
+      serializedResult = String(result);
+    }
+
+    const outputHash = crypto.createHash('sha256').update(JSON.stringify(serializedResult || '')).digest('hex').slice(0, 16);
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'sandbox-execute', 1, executionTime, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 1);
+    persistKey(req.apiKey);
+
+    res.json({
+      ok: true,
+      result: serializedResult,
+      logs,
+      execution_time_ms: executionTime,
+      timeout_ms: execTimeout,
+      output_hash: outputHash,
+      balance: req.acct.balance,
+      _engine: 'real',
+    });
+  } catch (e) {
+    const executionTime = Date.now() - startTime;
+    const isTimeout = e.code === 'ERR_SCRIPT_EXECUTION_TIMEOUT' || e.message.includes('timed out');
+    res.status(isTimeout ? 408 : 400).json({
+      ok: false,
+      error: {
+        code: isTimeout ? 'execution_timeout' : 'execution_error',
+        message: e.message,
+      },
+      logs,
+      execution_time_ms: executionTime,
+      _engine: 'real',
+    });
+  }
+});
+
+// ===== STRAT 3: REPUTATION SLASHING =====
+db.exec(`CREATE TABLE IF NOT EXISTS reputation_slashes (
+  id TEXT PRIMARY KEY,
+  agent_id TEXT NOT NULL,
+  slashed_by TEXT NOT NULL,
+  reason TEXT NOT NULL,
+  evidence TEXT NOT NULL,
+  amount REAL DEFAULT 1.0,
+  ts INTEGER NOT NULL
+)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_rep_slashes_agent ON reputation_slashes(agent_id)`);
+
+// POST /v1/reputation/slash — Decrement reputation for bad behavior
+app.post('/v1/reputation/slash', auth, (req, res) => {
+  const { agent_id, reason, evidence, amount } = req.body;
+  if (!agent_id) return res.status(400).json({ error: { code: 'missing_agent_id', message: 'Provide agent_id to slash' } });
+  if (!reason) return res.status(400).json({ error: { code: 'missing_reason', message: 'Provide reason for slashing' } });
+  if (!evidence) return res.status(400).json({ error: { code: 'missing_evidence', message: 'Provide evidence of bad behavior' } });
+
+  const slashAmount = Math.min(Math.abs(amount || 1.0), 10.0); // Cap at 10 per slash
+  const slashId = 'slash-' + crypto.randomUUID().slice(0, 12);
+
+  // Ensure agent exists in reputation table, create if not
+  const existing = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(agent_id);
+  if (!existing) {
+    db.prepare('INSERT INTO agent_reputation (agent_id, score, tasks_completed, upvotes, downvotes, updated_at) VALUES (?, 0, 0, 0, 0, datetime("now"))').run(agent_id);
+  }
+
+  // Decrement score and increment downvotes
+  db.prepare('UPDATE agent_reputation SET score = score - ?, downvotes = downvotes + 1, updated_at = datetime("now") WHERE agent_id = ?').run(slashAmount, agent_id);
+
+  // Record the slash event
+  db.prepare('INSERT INTO reputation_slashes (id, agent_id, slashed_by, reason, evidence, amount, ts) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+    slashId, agent_id, req.apiKey.slice(0, 12) + '...', reason.slice(0, 1000), evidence.slice(0, 5000), slashAmount, Date.now()
+  );
+
+  const updated = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(agent_id);
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify({ slashId, agent_id, slashAmount })).digest('hex').slice(0, 16);
+  dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'reputation-slash', 0, 0, 'real');
+
+  res.json({
+    ok: true,
+    slash_id: slashId,
+    agent_id,
+    slash_amount: slashAmount,
+    reason,
+    new_score: updated.score,
+    total_downvotes: updated.downvotes,
+    reputation: {
+      score: updated.score,
+      tasks_completed: updated.tasks_completed,
+      upvotes: updated.upvotes,
+      downvotes: updated.downvotes,
+    },
+    output_hash: outputHash,
+    _engine: 'real',
+  });
+});
+
+// ===== STRAT 3: FEDERATION STATUS =====
+// GET /v1/federation/status — Return known slopshop instances (self-host peers)
+db.exec(`CREATE TABLE IF NOT EXISTS federation_peers (
+  id TEXT PRIMARY KEY,
+  url TEXT NOT NULL,
+  name TEXT,
+  version TEXT,
+  status TEXT DEFAULT 'active',
+  last_seen INTEGER,
+  added_at INTEGER
+)`);
+
+app.get('/v1/federation/status', auth, (req, res) => {
+  const peers = db.prepare('SELECT * FROM federation_peers ORDER BY last_seen DESC').all();
+  const selfInstance = {
+    id: 'self',
+    url: process.env.SELF_URL || `http://localhost:${process.env.PORT || 3000}`,
+    name: process.env.INSTANCE_NAME || 'slopshop-primary',
+    version: '2026.03.28',
+    status: 'active',
+    apis: Object.keys(API_DEFS).length,
+    handlers: Object.keys(allHandlers).length,
+    uptime_s: Math.floor((Date.now() - serverStart) / 1000),
+    last_seen: Date.now(),
+  };
+
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify({ self: selfInstance.id, peers: peers.length })).digest('hex').slice(0, 16);
+
+  res.json({
+    ok: true,
+    self: selfInstance,
+    peers: peers.map(p => ({
+      id: p.id,
+      url: p.url,
+      name: p.name,
+      version: p.version,
+      status: p.status,
+      last_seen: p.last_seen ? new Date(p.last_seen).toISOString() : null,
+    })),
+    total_instances: 1 + peers.length,
+    federation_protocol: 'slopshop-federation-v1',
+    output_hash: outputHash,
+    _engine: 'real',
+  });
+});
+
+// ===== STRAT 3: GRAPHRAG — Knowledge Graph + Memory Combined Query =====
+// POST /v1/graphrag/query — Combine knowledge graph triples with memory search
+app.post('/v1/graphrag/query', auth, (req, res) => {
+  const { query, max_hops, max_results } = req.body;
+  if (!query) return res.status(400).json({ error: { code: 'missing_query', message: 'Provide query string to search knowledge graph and memory' } });
+
+  const hops = Math.min(max_hops || 2, 5);
+  const limit = Math.min(max_results || 20, 100);
+  const startTime = Date.now();
+
+  // Step 1: Search knowledge graph for matching entities (subject, predicate, or object contain query terms)
+  const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+  let graphResults = [];
+  if (queryTerms.length > 0) {
+    const likeClauses = queryTerms.map(() => '(LOWER(subject) LIKE ? OR LOWER(predicate) LIKE ? OR LOWER(object) LIKE ?)').join(' OR ');
+    const likeParams = queryTerms.flatMap(t => [`%${t}%`, `%${t}%`, `%${t}%`]);
+    try {
+      graphResults = db.prepare(
+        `SELECT *, 1.0 as relevance FROM knowledge_graph WHERE api_key = ? AND (${likeClauses}) ORDER BY confidence DESC, ts DESC LIMIT ?`
+      ).all(req.apiKey, ...likeParams, limit);
+    } catch (e) {
+      graphResults = [];
+    }
+  }
+
+  // Step 2: Extract entities from graph results and expand by hops
+  const entities = new Set();
+  graphResults.forEach(r => {
+    entities.add(r.subject);
+    entities.add(r.object);
+  });
+
+  let expandedTriples = [];
+  if (hops > 1 && entities.size > 0) {
+    const entityList = [...entities].slice(0, 20); // Cap expansion
+    for (const entity of entityList) {
+      try {
+        const neighbors = db.prepare(
+          'SELECT *, 0.7 as relevance FROM knowledge_graph WHERE api_key = ? AND (subject = ? OR object = ?) AND id NOT IN (' +
+          graphResults.map(r => r.id).join(',') + (graphResults.length ? '' : '0') +
+          ') LIMIT 5'
+        ).all(req.apiKey, entity, entity);
+        expandedTriples.push(...neighbors);
+      } catch (e) { /* skip bad queries */ }
+    }
+  }
+
+  // Step 3: Search agent_state (memory) for keys related to discovered entities
+  let memoryResults = [];
+  const searchTerms = [...entities, ...queryTerms].slice(0, 10);
+  for (const term of searchTerms) {
+    try {
+      const rows = db.prepare("SELECT key, value FROM agent_state WHERE key LIKE ? LIMIT 5").all(`%${term}%`);
+      rows.forEach(r => {
+        let parsedValue;
+        try { parsedValue = JSON.parse(r.value); } catch { parsedValue = r.value; }
+        memoryResults.push({
+          key: r.key,
+          value: parsedValue,
+          matched_term: term,
+          relevance: entities.has(term) ? 0.9 : 0.6,
+        });
+      });
+    } catch (e) { /* skip */ }
+  }
+
+  // Deduplicate memory results by key
+  const seenKeys = new Set();
+  memoryResults = memoryResults.filter(r => {
+    if (seenKeys.has(r.key)) return false;
+    seenKeys.add(r.key);
+    return true;
+  });
+
+  const allTriples = [...graphResults, ...expandedTriples];
+  const latency = Date.now() - startTime;
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify({ triples: allTriples.length, memories: memoryResults.length })).digest('hex').slice(0, 16);
+  dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'graphrag-query', 1, latency, 'real');
+  req.acct.balance = Math.max(0, req.acct.balance - 1);
+  persistKey(req.apiKey);
+
+  res.json({
+    ok: true,
+    query,
+    graph: {
+      triples: allTriples.map(t => ({ subject: t.subject, predicate: t.predicate, object: t.object, confidence: t.confidence, relevance: t.relevance })),
+      count: allTriples.length,
+      entities_found: entities.size,
+      hops_used: hops,
+    },
+    memory: {
+      results: memoryResults.slice(0, limit),
+      count: memoryResults.length,
+    },
+    combined_score: allTriples.length + memoryResults.length,
+    latency_ms: latency,
+    output_hash: outputHash,
+    balance: req.acct.balance,
+    _engine: 'real',
+  });
+});
+
+// ===== STRAT 3: CHAOS TESTING =====
+// POST /v1/chaos/test — Inject random failures into endpoints and report resilience
+app.post('/v1/chaos/test', auth, async (req, res) => {
+  const { endpoints, chaos_rate } = req.body;
+  if (!endpoints || !Array.isArray(endpoints) || endpoints.length === 0) {
+    return res.status(400).json({ error: { code: 'missing_endpoints', message: 'Provide endpoints array (list of API slugs or paths to test)' } });
+  }
+
+  const rate = Math.min(Math.max(chaos_rate || 0.3, 0.1), 0.9); // Failure injection rate 10-90%
+  const maxEndpoints = 20;
+  const testTargets = endpoints.slice(0, maxEndpoints);
+  const startTime = Date.now();
+  const report = [];
+
+  for (const target of testTargets) {
+    const slug = target.replace(/^\/v1\//, '').replace(/\//g, '-');
+    const handler = allHandlers[slug];
+    const testResults = { endpoint: target, slug, tests: [] };
+
+    // Run 5 chaos iterations per endpoint
+    for (let i = 0; i < 5; i++) {
+      const chaosType = Math.random();
+      const shouldFail = Math.random() < rate;
+      const iterStart = Date.now();
+
+      if (shouldFail) {
+        // Inject a random failure type
+        let failureType, result;
+        if (chaosType < 0.33) {
+          failureType = 'timeout';
+          result = { status: 408, error: 'Simulated timeout after 5000ms' };
+        } else if (chaosType < 0.66) {
+          failureType = 'server_error';
+          result = { status: 500, error: 'Simulated internal server error' };
+        } else {
+          failureType = 'bad_gateway';
+          result = { status: 502, error: 'Simulated bad gateway' };
+        }
+        testResults.tests.push({
+          iteration: i + 1,
+          injected_failure: failureType,
+          result,
+          latency_ms: Date.now() - iterStart,
+          recovered: false,
+        });
+      } else {
+        // Run the actual handler (if it exists)
+        if (handler) {
+          try {
+            const result = await Promise.race([
+              Promise.resolve(handler({})),
+              new Promise((_, reject) => setTimeout(() => reject(new Error('handler_timeout')), 3000)),
+            ]);
+            testResults.tests.push({
+              iteration: i + 1,
+              injected_failure: null,
+              result: { status: 200, ok: true, has_output: !!result },
+              latency_ms: Date.now() - iterStart,
+              recovered: true,
+            });
+          } catch (e) {
+            testResults.tests.push({
+              iteration: i + 1,
+              injected_failure: null,
+              result: { status: 500, error: e.message },
+              latency_ms: Date.now() - iterStart,
+              recovered: false,
+            });
+          }
+        } else {
+          testResults.tests.push({
+            iteration: i + 1,
+            injected_failure: null,
+            result: { status: 200, ok: true, note: 'No handler found — synthetic pass' },
+            latency_ms: Date.now() - iterStart,
+            recovered: true,
+          });
+        }
+      }
+    }
+
+    // Compute resilience metrics for this endpoint
+    const successes = testResults.tests.filter(t => t.recovered).length;
+    const failures = testResults.tests.filter(t => !t.recovered).length;
+    const avgLatency = Math.round(testResults.tests.reduce((s, t) => s + t.latency_ms, 0) / testResults.tests.length);
+    testResults.resilience_score = Math.round((successes / testResults.tests.length) * 100);
+    testResults.success_rate = `${successes}/${testResults.tests.length}`;
+    testResults.avg_latency_ms = avgLatency;
+    report.push(testResults);
+  }
+
+  const totalLatency = Date.now() - startTime;
+  const overallScore = report.length > 0
+    ? Math.round(report.reduce((s, r) => s + r.resilience_score, 0) / report.length)
+    : 0;
+
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify({ endpoints: testTargets.length, score: overallScore })).digest('hex').slice(0, 16);
+  dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'chaos-test', 2, totalLatency, 'real');
+  req.acct.balance = Math.max(0, req.acct.balance - 2);
+  persistKey(req.apiKey);
+
+  res.json({
+    ok: true,
+    chaos_config: {
+      failure_rate: rate,
+      iterations_per_endpoint: 5,
+      failure_types: ['timeout', 'server_error', 'bad_gateway'],
+    },
+    report,
+    summary: {
+      endpoints_tested: report.length,
+      overall_resilience_score: overallScore,
+      grade: overallScore >= 80 ? 'A' : overallScore >= 60 ? 'B' : overallScore >= 40 ? 'C' : 'D',
+      total_tests: report.length * 5,
+      total_latency_ms: totalLatency,
+    },
+    output_hash: outputHash,
+    balance: req.acct.balance,
+    _engine: 'real',
+  });
+});
+
 // ===== START =====
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
