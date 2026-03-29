@@ -1,0 +1,41 @@
+version: "1.0.0"
+title: "Slopshop Data Transform"
+description: "Transform CSV/JSON data through multiple pipeline steps — parse, filter, reshape, aggregate, and export using Slopshop's deterministic compute handlers."
+
+instructions: |
+  Transform data from {{ input_path }} through a multi-step pipeline:
+  1. Detect input format (CSV or JSON) and parse with slop-data-extract-json or slop-data-extract-csv.
+  2. Apply slop-data-extract-structured to normalize field names and types.
+  3. Run each transform step in {{ steps }} sequentially:
+     - filter: remove rows matching condition
+     - map: reshape each record
+     - aggregate: group-by and summarize
+     - dedupe: remove duplicates via slop-crypto-hash-sha256 on key fields
+  4. Validate output schema with slop-data-validate-json.
+  5. Store results in persistent memory with slop-memory-set and export to {{ output_format }}.
+
+prompt: "Transform the data at {{ input_path }} through the specified pipeline steps and output as {{ output_format }}."
+
+parameters:
+  - key: input_path
+    input_type: string
+    requirement: required
+    description: "Path or URL to the input CSV/JSON data"
+  - key: steps
+    input_type: string
+    requirement: required
+    description: "Comma-separated transform steps: filter,map,aggregate,dedupe"
+  - key: output_format
+    input_type: string
+    requirement: optional
+    default: "json"
+    description: "Output format: json, csv, or markdown-table"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 300
+    description: "925+ real deterministic compute handlers for data parsing, transformation, and validation"
+    env_keys: [SLOPSHOP_KEY]

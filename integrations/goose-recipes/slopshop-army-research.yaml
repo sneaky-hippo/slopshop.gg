@@ -1,0 +1,44 @@
+version: "1.0.0"
+title: "Slopshop Army Research"
+description: "Deploy a research army — multiple parallel agents each tackling a different angle of a topic, then merge findings into a unified report."
+
+instructions: |
+  Deploy a research army on {{ topic }} with {{ army_size }} agents:
+  1. Decompose {{ topic }} into {{ army_size }} distinct research angles using slop-ai-generate-text.
+  2. For each angle, launch a parallel agent via slop-army-deploy with instructions to:
+     a. Use slop-network-http-get to gather sources relevant to their angle.
+     b. Use slop-data-extract-structured to pull key facts.
+     c. Use slop-text-extract-keywords to identify themes.
+     d. Store findings in persistent memory with slop-memory-set keyed as "army_{{ topic }}_agent_{{ n }}".
+  3. Wait for all agents to complete using slop-army-status.
+  4. Retrieve each agent's findings with slop-memory-get.
+  5. Merge and deduplicate findings using slop-crypto-hash-sha256 on content hashes.
+  6. Use slop-ai-generate-text to synthesize a unified report with citations.
+  7. Store final report as slop-memory-set "army_report_{{ topic }}".
+
+prompt: "Deploy {{ army_size }} research agents on {{ topic }} and synthesize a unified report."
+
+parameters:
+  - key: topic
+    input_type: string
+    requirement: required
+    description: "Research topic or question to investigate"
+  - key: army_size
+    input_type: number
+    requirement: optional
+    default: "5"
+    description: "Number of parallel research agents to deploy"
+  - key: depth
+    input_type: string
+    requirement: optional
+    default: "standard"
+    description: "Research depth: quick (surface), standard, or deep (exhaustive)"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 900
+    description: "925+ real deterministic compute handlers + Army swarm deployment for parallel research"
+    env_keys: [SLOPSHOP_KEY, ANTHROPIC_API_KEY]

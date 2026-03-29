@@ -1,0 +1,42 @@
+version: "1.0.0"
+title: "Slopshop Knowledge Build"
+description: "Build a knowledge graph from documents — extract entities, relationships, and concepts, then store as a queryable graph in persistent memory."
+
+instructions: |
+  Build a knowledge graph from {{ source_docs }}:
+  1. Parse each document using slop-data-extract-structured to identify sections and content.
+  2. Use slop-ai-generate-text to extract entities (people, orgs, concepts, tools) from each section.
+  3. Use slop-text-extract-keywords to identify key terms and topics per document.
+  4. For each entity pair, use slop-ai-generate-text to classify relationship type (uses, depends_on, created_by, related_to, etc.).
+  5. Build adjacency list: { nodes: [{id, type, mentions}], edges: [{from, to, relation, weight}] }.
+  6. Hash the graph with slop-crypto-hash-sha256 for versioning.
+  7. Store nodes and edges in persistent memory with slop-memory-set using prefix "kg_".
+  8. Generate summary statistics: node count, edge count, most connected nodes, isolated nodes.
+  9. If {{ query }} is provided, traverse the graph to answer the question.
+
+prompt: "Build a knowledge graph from {{ source_docs }} and store it for querying."
+
+parameters:
+  - key: source_docs
+    input_type: string
+    requirement: required
+    description: "Comma-separated file paths or URLs to documents"
+  - key: query
+    input_type: string
+    requirement: optional
+    default: ""
+    description: "Optional query to run against the built knowledge graph"
+  - key: entity_types
+    input_type: string
+    requirement: optional
+    default: "person,org,concept,tool,location"
+    description: "Comma-separated entity types to extract"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 600
+    description: "925+ real deterministic compute handlers + AI extraction for knowledge graph construction"
+    env_keys: [SLOPSHOP_KEY, ANTHROPIC_API_KEY]

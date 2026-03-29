@@ -1,0 +1,47 @@
+version: "1.0.0"
+title: "Slopshop Eval Suite"
+description: "Run an evaluation suite against agent outputs — compare expected vs actual, score accuracy, and track regressions across runs."
+
+instructions: |
+  Run evaluations from {{ eval_config }} against agent outputs:
+  1. Parse the eval config (JSON with test cases: {input, expected_output, criteria}).
+  2. For each test case, retrieve or generate the agent output to evaluate.
+  3. Use slop-text-similarity to compare expected vs actual output.
+  4. Use slop-ai-generate-text to score each output on {{ criteria }} (accuracy, completeness, format).
+  5. Use slop-data-validate-json to verify structured outputs match expected schema.
+  6. Hash each test result with slop-crypto-hash-sha256 for reproducibility.
+  7. Store results in persistent memory with slop-memory-set keyed as "eval_{{ run_id }}".
+  8. Compare against previous run (slop-memory-get "eval_previous") to detect regressions.
+  9. Generate summary: pass/fail counts, average scores, regressions, and improvement areas.
+
+prompt: "Run evaluation suite {{ eval_config }} and report pass rates with regression detection."
+
+parameters:
+  - key: eval_config
+    input_type: string
+    requirement: required
+    description: "Path to JSON eval config with test cases and expected outputs"
+  - key: run_id
+    input_type: string
+    requirement: optional
+    default: "latest"
+    description: "Unique identifier for this eval run"
+  - key: criteria
+    input_type: string
+    requirement: optional
+    default: "accuracy,completeness,format"
+    description: "Comma-separated scoring criteria"
+  - key: threshold
+    input_type: number
+    requirement: optional
+    default: "0.8"
+    description: "Minimum pass score (0.0-1.0)"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 600
+    description: "925+ real deterministic compute handlers + AI scoring for evaluation and regression detection"
+    env_keys: [SLOPSHOP_KEY, ANTHROPIC_API_KEY]

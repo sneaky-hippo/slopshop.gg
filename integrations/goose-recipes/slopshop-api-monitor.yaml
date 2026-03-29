@@ -1,0 +1,41 @@
+version: "1.0.0"
+title: "Slopshop API Monitor"
+description: "Monitor API endpoint health, latency, and response correctness using Slopshop's network sense tools with persistent history tracking."
+
+instructions: |
+  Monitor the API endpoints listed in {{ endpoints }}:
+  1. For each endpoint, use slop-network-http-get to check status code and measure response time.
+  2. Use slop-network-ssl-check to verify TLS certificate validity if HTTPS.
+  3. Parse response bodies with slop-data-extract-json to verify expected schema.
+  4. Hash each response with slop-crypto-hash-sha256 to detect unexpected changes.
+  5. Store latency and status results in persistent memory with slop-memory-set using timestamped keys.
+  6. If any endpoint returns non-2xx or latency exceeds {{ threshold_ms }}ms, flag as degraded.
+  7. Generate a health report with uptime percentage and p50/p95 latency estimates.
+  Repeat every {{ interval_seconds }} seconds if continuous mode is enabled.
+
+prompt: "Monitor {{ endpoints }} for health and latency, flag anything over {{ threshold_ms }}ms."
+
+parameters:
+  - key: endpoints
+    input_type: string
+    requirement: required
+    description: "Comma-separated list of API endpoint URLs to monitor"
+  - key: threshold_ms
+    input_type: number
+    requirement: optional
+    default: "2000"
+    description: "Latency threshold in milliseconds to flag as degraded"
+  - key: interval_seconds
+    input_type: number
+    requirement: optional
+    default: "0"
+    description: "Polling interval in seconds (0 = single check, no loop)"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 600
+    description: "925+ real deterministic compute handlers for HTTP probing, SSL checks, and persistent storage"
+    env_keys: [SLOPSHOP_KEY]

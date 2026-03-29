@@ -1,0 +1,43 @@
+version: "1.0.0"
+title: "Slopshop Wallet Setup"
+description: "Set up an agent wallet with credit balance tracking and a bounty system for task-based payouts using Slopshop's credit and memory infrastructure."
+
+instructions: |
+  Set up an agent wallet for {{ agent_name }}:
+  1. Generate a unique wallet ID using slop-crypto-uuid.
+  2. Hash the wallet ID with slop-crypto-hash-sha256 to create a verification fingerprint.
+  3. Initialize wallet record: { wallet_id, agent_name, balance: {{ initial_credits }}, created_at, fingerprint }.
+  4. Store wallet in persistent memory with slop-memory-set keyed as "wallet_{{ agent_name }}".
+  5. If {{ bounties }} are provided, parse and register each bounty:
+     - { bounty_id, description, reward_credits, status: open, claimable_by: [] }
+     - Store each as slop-memory-set "bounty_{{ bounty_id }}".
+  6. Create a ledger entry for the initial credit deposit.
+  7. Store ledger in persistent memory as "ledger_{{ agent_name }}".
+  8. Output wallet summary with balance, registered bounties, and verification fingerprint.
+
+prompt: "Set up agent wallet for {{ agent_name }} with {{ initial_credits }} credits and register bounties."
+
+parameters:
+  - key: agent_name
+    input_type: string
+    requirement: required
+    description: "Name or identifier for the agent wallet owner"
+  - key: initial_credits
+    input_type: number
+    requirement: optional
+    default: "100"
+    description: "Starting credit balance for the wallet"
+  - key: bounties
+    input_type: string
+    requirement: optional
+    default: ""
+    description: "JSON array of bounty definitions: [{description, reward_credits}]"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 300
+    description: "925+ real deterministic compute handlers for UUID generation, hashing, and persistent wallet/bounty storage"
+    env_keys: [SLOPSHOP_KEY]

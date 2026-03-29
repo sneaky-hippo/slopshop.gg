@@ -1,0 +1,46 @@
+version: "1.0.0"
+title: "Slopshop Content Machine"
+description: "Generate a full blog post from a topic — outline, draft, SEO optimization, and final polish using Slopshop compute and AI handlers."
+
+instructions: |
+  Generate a complete blog post about {{ topic }}:
+  1. Research phase: use slop-network-http-get to pull reference material from top sources.
+  2. Use slop-data-extract-structured to extract key facts and statistics from references.
+  3. Generate outline with slop-ai-generate-text: title, H2 sections, key points per section.
+  4. Draft each section using slop-ai-generate-text with the outline as context.
+  5. SEO pass: use slop-text-count-words for length check, slop-text-extract-keywords for keyword density.
+  6. Generate meta description and title tag with slop-ai-generate-text targeting {{ target_keywords }}.
+  7. Hash the final output with slop-crypto-hash-sha256 for content verification.
+  8. Store the final post and metadata in persistent memory with slop-memory-set.
+
+prompt: "Create a complete SEO-optimized blog post about {{ topic }} targeting {{ target_keywords }}."
+
+parameters:
+  - key: topic
+    input_type: string
+    requirement: required
+    description: "Blog post topic or title"
+  - key: target_keywords
+    input_type: string
+    requirement: optional
+    default: ""
+    description: "Comma-separated target SEO keywords"
+  - key: word_count
+    input_type: number
+    requirement: optional
+    default: "1500"
+    description: "Target word count for the final post"
+  - key: tone
+    input_type: string
+    requirement: optional
+    default: "professional"
+    description: "Writing tone: professional, casual, technical, or conversational"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 600
+    description: "925+ real deterministic compute handlers + AI text generation for content creation"
+    env_keys: [SLOPSHOP_KEY, ANTHROPIC_API_KEY]

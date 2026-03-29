@@ -1,0 +1,42 @@
+version: "1.0.0"
+title: "Slopshop Competitor Analysis"
+description: "Scrape and analyze competitor websites — tech stack, performance, SEO signals, and content strategy using Slopshop's network and extraction tools."
+
+instructions: |
+  Analyze competitor sites listed in {{ competitors }}:
+  1. For each site, use slop-network-http-get to fetch the homepage and key pages.
+  2. Use slop-network-dns-lookup and slop-network-ssl-check for infrastructure intel.
+  3. Detect tech stack with slop-network-detect-tech-stack (frameworks, CDN, analytics).
+  4. Extract structured data with slop-data-extract-structured: meta tags, headings, schema markup.
+  5. Use slop-text-extract-keywords to identify their target keywords and content themes.
+  6. Use slop-text-count-words and slop-text-readability to assess content quality.
+  7. Hash snapshots with slop-crypto-hash-sha256 for change tracking over time.
+  8. Store all findings in persistent memory with slop-memory-set keyed by domain.
+  9. Generate comparative matrix: features, pricing signals, tech choices, SEO strength.
+
+prompt: "Analyze {{ competitors }} against {{ our_domain }} and produce a competitive intelligence report."
+
+parameters:
+  - key: competitors
+    input_type: string
+    requirement: required
+    description: "Comma-separated list of competitor domain URLs"
+  - key: our_domain
+    input_type: string
+    requirement: optional
+    default: "slopshop.gg"
+    description: "Your own domain for comparison baseline"
+  - key: depth
+    input_type: string
+    requirement: optional
+    default: "surface"
+    description: "Analysis depth: surface (homepage only) or deep (crawl subpages)"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 600
+    description: "925+ real deterministic compute handlers for web scraping, DNS, SSL, and structured extraction"
+    env_keys: [SLOPSHOP_KEY]

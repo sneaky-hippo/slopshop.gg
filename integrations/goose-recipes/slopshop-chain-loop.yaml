@@ -1,0 +1,48 @@
+version: "1.0.0"
+title: "Slopshop Chain Loop"
+description: "Create a multi-LLM chain loop — pass output from one agent to the next in a configurable sequence with transformation steps between each hop."
+
+instructions: |
+  Execute a chain loop with {{ chain_config }}:
+  1. Parse the chain config: array of steps [{role, prompt_template, transform}].
+  2. Initialize the chain with {{ seed_input }} as the first input payload.
+  3. For each step in the chain:
+     a. Inject the previous output into the current step's prompt template.
+     b. Execute with slop-ai-generate-text using the step's role/system prompt.
+     c. Apply transform if specified: slop-data-extract-structured, slop-text-extract-keywords, or slop-data-extract-json.
+     d. Hash the output with slop-crypto-hash-sha256 for audit trail.
+     e. Store intermediate result in persistent memory as "chain_{{ loop_id }}_step_{{ n }}".
+  4. If {{ loop_count }} > 1, feed final output back as input and repeat the chain.
+  5. Store the complete chain trace and final output in persistent memory.
+  6. Output the final result with full audit trail of intermediate hashes.
+
+prompt: "Run a {{ loop_count }}-iteration chain loop with {{ chain_config }} starting from {{ seed_input }}."
+
+parameters:
+  - key: chain_config
+    input_type: string
+    requirement: required
+    description: "JSON array of chain steps: [{role, prompt_template, transform}]"
+  - key: seed_input
+    input_type: string
+    requirement: required
+    description: "Initial input to feed into the first chain step"
+  - key: loop_count
+    input_type: number
+    requirement: optional
+    default: "1"
+    description: "Number of times to loop through the entire chain (1 = single pass)"
+  - key: loop_id
+    input_type: string
+    requirement: optional
+    default: "default"
+    description: "Unique identifier for this chain loop run"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 900
+    description: "925+ real deterministic compute handlers + AI generation for multi-agent chain orchestration"
+    env_keys: [SLOPSHOP_KEY, ANTHROPIC_API_KEY]

@@ -1,0 +1,42 @@
+version: "1.0.0"
+title: "Slopshop DNS Audit"
+description: "Perform a comprehensive DNS audit of a domain — all record types, propagation, security configuration, and misconfiguration detection."
+
+instructions: |
+  Run a full DNS audit on {{ domain }}:
+  1. Use slop-network-dns-lookup for A, AAAA, MX, TXT, CNAME, NS, SOA, and SRV records.
+  2. Check for SPF, DKIM, and DMARC records in TXT entries using slop-text-regex-match.
+  3. Use slop-network-ssl-check to verify TLS certificate chain and expiry.
+  4. Check for DNSSEC configuration presence.
+  5. Detect common misconfigurations: missing MX, open relay signals, dangling CNAMEs.
+  6. Verify CAA records for certificate authority authorization.
+  7. Hash the full DNS snapshot with slop-crypto-hash-sha256 for change tracking.
+  8. Store results in persistent memory with slop-memory-set keyed as "dns_audit_{{ domain }}".
+  9. Generate a security grade (A-F) based on findings.
+
+prompt: "Perform a comprehensive DNS audit of {{ domain }} and report security grade."
+
+parameters:
+  - key: domain
+    input_type: string
+    requirement: required
+    description: "Domain name to audit (e.g., example.com)"
+  - key: include_subdomains
+    input_type: boolean
+    requirement: optional
+    default: "false"
+    description: "Also check common subdomains (www, mail, api, cdn)"
+  - key: compare_previous
+    input_type: boolean
+    requirement: optional
+    default: "false"
+    description: "Compare against previously stored DNS audit to detect changes"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 300
+    description: "925+ real deterministic compute handlers for DNS resolution, SSL verification, and security analysis"
+    env_keys: [SLOPSHOP_KEY]

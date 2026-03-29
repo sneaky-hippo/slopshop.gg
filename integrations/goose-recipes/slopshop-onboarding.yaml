@@ -1,0 +1,50 @@
+version: "1.0.0"
+title: "Slopshop Onboarding"
+description: "New user onboarding workflow — verify API key, explore available tools, run test calls, and configure persistent preferences."
+
+instructions: |
+  Onboard a new user to Slopshop:
+  1. Verify the SLOPSHOP_KEY is valid by making a test call to slop-crypto-uuid.
+  2. Use slop-memory-set to store user profile: { username: {{ username }}, onboarded_at: timestamp, tier: detected }.
+  3. Run a quick capability demo:
+     a. slop-crypto-hash-sha256 on "hello world" — demonstrate hashing.
+     b. slop-network-dns-lookup on "slopshop.gg" — demonstrate network tools.
+     c. slop-text-count-words on a sample text — demonstrate text processing.
+     d. slop-data-extract-json on a sample payload — demonstrate data extraction.
+  4. Store user preferences in persistent memory with slop-memory-set:
+     - default_output_format: {{ output_format }}
+     - notification_level: {{ verbosity }}
+  5. Generate a personalized quick-start guide based on {{ use_case }}.
+  6. List the top 10 most relevant tools for the user's stated use case.
+
+prompt: "Onboard {{ username }} to Slopshop, verify setup, and generate a personalized quick-start guide for {{ use_case }}."
+
+parameters:
+  - key: username
+    input_type: string
+    requirement: required
+    description: "New user's name or handle"
+  - key: use_case
+    input_type: string
+    requirement: optional
+    default: "general"
+    description: "Primary use case: general, security, data, content, devops, or research"
+  - key: output_format
+    input_type: string
+    requirement: optional
+    default: "json"
+    description: "Preferred output format: json, markdown, or text"
+  - key: verbosity
+    input_type: string
+    requirement: optional
+    default: "normal"
+    description: "Notification level: quiet, normal, or verbose"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 300
+    description: "925+ real deterministic compute handlers + free persistent memory for user profile and preferences"
+    env_keys: [SLOPSHOP_KEY]

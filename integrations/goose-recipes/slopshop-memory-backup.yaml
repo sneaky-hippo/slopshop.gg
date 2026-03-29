@@ -1,0 +1,40 @@
+version: "1.0.0"
+title: "Slopshop Memory Backup"
+description: "Export all Slopshop persistent memory entries to a local JSON backup file with integrity verification."
+
+instructions: |
+  Back up all persistent memory to a local file:
+  1. Use slop-memory-list to enumerate all stored memory keys.
+  2. For each key, use slop-memory-get to retrieve the value.
+  3. Assemble all key-value pairs into a single JSON object with metadata (timestamp, key count).
+  4. Hash the complete backup with slop-crypto-hash-sha256 for integrity verification.
+  5. Store the hash as slop-memory-set key "backup_hash_{{ timestamp }}" for future verification.
+  6. Write the JSON backup to {{ output_path }}.
+  7. If {{ verify }} is true, re-read the file and compare hash to confirm write integrity.
+
+prompt: "Export all Slopshop memory entries to {{ output_path }} with integrity hash."
+
+parameters:
+  - key: output_path
+    input_type: string
+    requirement: required
+    description: "Local file path for the JSON backup output"
+  - key: verify
+    input_type: boolean
+    requirement: optional
+    default: "true"
+    description: "Re-read and verify backup integrity after writing"
+  - key: filter_prefix
+    input_type: string
+    requirement: optional
+    default: ""
+    description: "Only back up keys starting with this prefix (empty = all keys)"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 300
+    description: "925+ real deterministic compute handlers + free persistent memory for backup and verification"
+    env_keys: [SLOPSHOP_KEY]

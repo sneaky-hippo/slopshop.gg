@@ -1,0 +1,41 @@
+version: "1.0.0"
+title: "Slopshop Hash Verify"
+description: "Hash files or data payloads and store cryptographic verification proofs in persistent memory for tamper detection."
+
+instructions: |
+  Hash and create verification proofs for {{ target }}:
+  1. Read the target file(s) or data payload.
+  2. Compute SHA-256 hash using slop-crypto-hash-sha256.
+  3. Compute MD5 hash using slop-crypto-hash-md5 as secondary fingerprint.
+  4. Generate HMAC using slop-crypto-hmac if {{ secret_key }} is provided.
+  5. Build a proof record: { target, sha256, md5, hmac, timestamp, size_bytes }.
+  6. Store the proof in persistent memory with slop-memory-set keyed as "proof_{{ target_name }}".
+  7. If {{ mode }} is "verify", retrieve the stored proof and compare against current hashes.
+  8. Report match/mismatch status for each hash algorithm.
+
+prompt: "{{ mode }} hash proofs for {{ target }} and store verification records."
+
+parameters:
+  - key: target
+    input_type: string
+    requirement: required
+    description: "File path, URL, or raw data string to hash"
+  - key: mode
+    input_type: string
+    requirement: optional
+    default: "create"
+    description: "Mode: create (generate new proof) or verify (check against stored proof)"
+  - key: secret_key
+    input_type: string
+    requirement: optional
+    default: ""
+    description: "HMAC secret key for authenticated hashing (empty = skip HMAC)"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 300
+    description: "925+ real deterministic compute handlers for SHA-256, MD5, HMAC, and persistent proof storage"
+    env_keys: [SLOPSHOP_KEY]

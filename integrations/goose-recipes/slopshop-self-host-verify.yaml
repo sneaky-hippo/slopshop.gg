@@ -1,0 +1,45 @@
+version: "1.0.0"
+title: "Slopshop Self-Host Verify"
+description: "Verify a self-hosted Slopshop instance matches the cloud version — compare API responses, handler coverage, and deterministic output parity."
+
+instructions: |
+  Verify self-hosted instance at {{ self_host_url }} against cloud:
+  1. Use slop-network-http-get to hit {{ self_host_url }}/health and verify it responds.
+  2. Use slop-network-ssl-check to verify TLS if HTTPS.
+  3. Run deterministic parity tests against both cloud and self-hosted:
+     a. slop-crypto-hash-sha256("parity_test") — compare outputs must be identical.
+     b. slop-crypto-uuid — verify format matches (not value, since UUIDs are unique).
+     c. slop-text-count-words("the quick brown fox") — compare exact counts.
+     d. slop-data-validate-json('{"test":true}') — compare validation results.
+  4. Enumerate available handlers on self-hosted via {{ self_host_url }}/api/list.
+  5. Compare handler count and names against known cloud handler list.
+  6. Hash the full comparison report with slop-crypto-hash-sha256.
+  7. Store verification results in persistent memory as "selfhost_verify_{{ timestamp }}".
+  8. Generate a parity report: matched, missing, divergent handlers, and overall grade.
+
+prompt: "Verify that {{ self_host_url }} produces identical results to Slopshop cloud and report any divergence."
+
+parameters:
+  - key: self_host_url
+    input_type: string
+    requirement: required
+    description: "Base URL of the self-hosted Slopshop instance (e.g., http://localhost:3000)"
+  - key: test_depth
+    input_type: string
+    requirement: optional
+    default: "standard"
+    description: "Test depth: quick (5 handlers), standard (25 handlers), or full (all handlers)"
+  - key: fail_on_mismatch
+    input_type: boolean
+    requirement: optional
+    default: "true"
+    description: "Whether to fail the verification if any deterministic output diverges"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 600
+    description: "925+ real deterministic compute handlers for parity testing between cloud and self-hosted instances"
+    env_keys: [SLOPSHOP_KEY]

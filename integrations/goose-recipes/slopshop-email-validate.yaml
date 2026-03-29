@@ -1,0 +1,41 @@
+version: "1.0.0"
+title: "Slopshop Email Validate"
+description: "Bulk validate an email list — syntax check, DNS MX lookup, disposable domain detection, and deduplication."
+
+instructions: |
+  Validate the email list from {{ email_source }}:
+  1. Parse the input (one email per line, CSV column, or JSON array).
+  2. For each email, use slop-validate-email for syntax and format validation.
+  3. Extract domains and use slop-network-dns-lookup (MX record) to verify mail server exists.
+  4. Check domains against known disposable email providers using slop-data-extract-structured.
+  5. Deduplicate using slop-crypto-hash-sha256 on normalized (lowercased, trimmed) addresses.
+  6. Categorize results: valid, invalid_syntax, no_mx, disposable, duplicate.
+  7. Store validation results in persistent memory with slop-memory-set.
+  8. Output a cleaned list containing only valid addresses.
+
+prompt: "Validate and clean the email list from {{ email_source }}, removing invalid and disposable addresses."
+
+parameters:
+  - key: email_source
+    input_type: string
+    requirement: required
+    description: "File path or raw comma-separated list of emails to validate"
+  - key: allow_disposable
+    input_type: boolean
+    requirement: optional
+    default: "false"
+    description: "Whether to keep disposable/temporary email addresses"
+  - key: output_format
+    input_type: string
+    requirement: optional
+    default: "json"
+    description: "Output format: json, csv, or text (one per line)"
+
+extensions:
+  - type: stdio
+    name: slopshop
+    cmd: npx
+    args: [slopshop, mcp, serve]
+    timeout: 600
+    description: "925+ real deterministic compute handlers for email validation, DNS lookups, and deduplication"
+    env_keys: [SLOPSHOP_KEY]
