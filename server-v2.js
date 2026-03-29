@@ -2109,7 +2109,6 @@ app.get('/v1/marketplace/browse', (req, res) => {
   res.json({ apis: approved, count: approved.length });
 });
 
-// ===== TOOL DETAIL: Inspect a single tool's cost + schema =====
 
 // ===== MARKETPLACE LISTINGS (publish + top) =====
 db.exec(`CREATE TABLE IF NOT EXISTS marketplace_listings (
@@ -2159,6 +2158,7 @@ app.get('/v1/marketplace/top', publicRateLimit, (req, res) => {
   const rows = db.prepare('SELECT id, name, description, type, price, downloads, created FROM marketplace_listings ORDER BY downloads DESC LIMIT ?').all(limit);
   res.json({ ok: true, listings: rows, count: rows.length, _engine: 'real' });
 });
+// ===== TOOL DETAIL: Inspect a single tool's cost + schema =====
 app.get('/v1/tools/:slug', publicRateLimit, (req, res) => {
   const def = apiMap.get(req.params.slug);
   if (!def) return res.status(404).json({ error: { code: 'api_not_found' } });
@@ -12054,7 +12054,175 @@ app.post('/v1/memory/graph-query', auth, (req, res) => {
   });
 });
 
+
+// ===== Grok Critique =====
+app.post('/v1/grok/critique', auth, async (req, res) => {
+  const { content, criteria, max_iterations } = req.body;
+  if (!content) return res.status(400).json({ error: { code: 'missing_content', message: 'content is required' } });
+
+  const criteriaTxt = criteria || 'clarity, correctness, completeness, conciseness';
+  const iterations = Math.min(Math.max(parseInt(max_iterations) || 1, 1), 5);
+  const llmThink = allHandlers['llm-think'];
+  let usedLlm = false;
+  let critique = '';
+  let score = 0;
+  let improvements = [];
+
+  if (llmThink) {
+    try {
+      let currentContent = content.slice(0, 2000);
+      let lastCritique = '';
+      for (let i = 0; i < iterations; i++) {
+        const prompt = i === 0
+          ? `Critique the following content based on these criteria: ${criteriaTxt}.
+Content: "${currentContent}"
+Reply in JSON: {"critique":"detailed critique paragraph","score":0-100,"improvements":["list","of","suggestions"]}`
+          : `The content was previously critiqued. Refine your critique considering improvements.
+Content: "${currentContent}"
+Previous critique: "${lastCritique}"
+Criteria: ${criteriaTxt}
+Reply in JSON: {"critique":"refined critique paragraph","score":0-100,"improvements":["list","of","remaining suggestions"]}`;
+        const result = await llmThink({ text: prompt, temperature: 0.4 });
+        const answer = result?.answer || result?.text || '';
+        const jsonMatch = answer.match(/\{[\s\S]*\}/);
+        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+        if (parsed) {
+          critique = parsed.critique || critique;
+          score = Math.min(100, Math.max(0, parseInt(parsed.score) || score));
+          improvements = Array.isArray(parsed.improvements) ? parsed.improvements : improvements;
+          lastCritique = critique;
+          usedLlm = true;
+        }
+      }
+    } catch { /* fall through to heuristic */ }
+  }
+
+  // Heuristic fallback: keyword-based analysis
+  if (!usedLlm) {
+    const lower = content.toLowerCase();
+    const len = content.length;
+    let s = 50;
+    const issues = [];
+
+    // Clarity checks
+    if (len < 20) { s -= 15; issues.push('Content is very short; consider elaborating.'); }
+    if (len > 5000) { s -= 5; issues.push('Content is lengthy; consider trimming for conciseness.'); }
+    if ((content.match(/\./g) || []).length < 2 && len > 100) { issues.push('Few sentence breaks detected; improve structure.'); s -= 5; }
+
+    // Keyword quality signals
+    const positiveSignals = ['because', 'therefore', 'evidence', 'example', 'specifically', 'data', 'result', 'conclusion'];
+    const negativeSignals = ['maybe', 'stuff', 'things', 'probably', 'i think', 'kind of', 'sort of', 'basically'];
+    let posHits = 0, negHits = 0;
+    for (const kw of positiveSignals) { if (lower.includes(kw)) posHits++; }
+    for (const kw of negativeSignals) { if (lower.includes(kw)) { negHits++; issues.push('Vague language detected: "' + kw + '". Be more precise.'); } }
+    s += posHits * 5;
+    s -= negHits * 5;
+
+    // Criteria-aware checks
+    if (criteriaTxt.includes('correctness') && !lower.match(/\d/)) { issues.push('No data or numbers found; consider adding evidence.'); s -= 3; }
+    if (criteriaTxt.includes('completeness') && len < 100) { issues.push('Content may be incomplete given its brevity.'); s -= 5; }
+
+    score = Math.min(100, Math.max(0, s));
+    improvements = issues.length > 0 ? issues : ['No major issues found via heuristic analysis.'];
+    critique = 'Heuristic analysis based on keyword patterns and structural checks (criteria: ' + criteriaTxt + '). ' +
+      (score >= 70 ? 'Content appears reasonably well-structured.' : 'Content has areas that could be improved.') +
+      ' Set ANTHROPIC_API_KEY for deeper LLM-powered critique.';
+  }
+
+  res.json({
+    ok: true,
+    critique,
+    score,
+    improvements,
+    iterations_run: usedLlm ? iterations : 0,
+    _engine: usedLlm ? 'real' : 'heuristic',
+  });
+});
 // ===== START =====
+
+// ===== Grok Critique =====
+app.post('/v1/grok/critique', auth, async (req, res) => {
+  const { content, criteria, max_iterations } = req.body;
+  if (!content) return res.status(400).json({ error: { code: 'missing_content', message: 'content is required' } });
+
+  const criteriaTxt = criteria || 'clarity, correctness, completeness, conciseness';
+  const iterations = Math.min(Math.max(parseInt(max_iterations) || 1, 1), 5);
+  const llmThink = allHandlers['llm-think'];
+  let usedLlm = false;
+  let critique = '';
+  let score = 0;
+  let improvements = [];
+
+  if (llmThink) {
+    try {
+      let currentContent = content.slice(0, 2000);
+      let lastCritique = '';
+      for (let i = 0; i < iterations; i++) {
+        const prompt = i === 0
+          ? `Critique the following content based on these criteria: ${criteriaTxt}.
+Content: "${currentContent}"
+Reply in JSON: {"critique":"detailed critique paragraph","score":0-100,"improvements":["list","of","suggestions"]}`
+          : `The content was previously critiqued. Refine your critique considering improvements.
+Content: "${currentContent}"
+Previous critique: "${lastCritique}"
+Criteria: ${criteriaTxt}
+Reply in JSON: {"critique":"refined critique paragraph","score":0-100,"improvements":["list","of","remaining suggestions"]}`;
+        const result = await llmThink({ text: prompt, temperature: 0.4 });
+        const answer = result?.answer || result?.text || '';
+        const jsonMatch = answer.match(/\{[\s\S]*\}/);
+        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+        if (parsed) {
+          critique = parsed.critique || critique;
+          score = Math.min(100, Math.max(0, parseInt(parsed.score) || score));
+          improvements = Array.isArray(parsed.improvements) ? parsed.improvements : improvements;
+          lastCritique = critique;
+          usedLlm = true;
+        }
+      }
+    } catch { /* fall through to heuristic */ }
+  }
+
+  // Heuristic fallback: keyword-based analysis
+  if (!usedLlm) {
+    const lower = content.toLowerCase();
+    const len = content.length;
+    let s = 50;
+    const issues = [];
+
+    // Clarity checks
+    if (len < 20) { s -= 15; issues.push('Content is very short; consider elaborating.'); }
+    if (len > 5000) { s -= 5; issues.push('Content is lengthy; consider trimming for conciseness.'); }
+    if ((content.match(/\./g) || []).length < 2 && len > 100) { issues.push('Few sentence breaks detected; improve structure.'); s -= 5; }
+
+    // Keyword quality signals
+    const positiveSignals = ['because', 'therefore', 'evidence', 'example', 'specifically', 'data', 'result', 'conclusion'];
+    const negativeSignals = ['maybe', 'stuff', 'things', 'probably', 'i think', 'kind of', 'sort of', 'basically'];
+    let posHits = 0, negHits = 0;
+    for (const kw of positiveSignals) { if (lower.includes(kw)) posHits++; }
+    for (const kw of negativeSignals) { if (lower.includes(kw)) { negHits++; issues.push('Vague language detected: "' + kw + '". Be more precise.'); } }
+    s += posHits * 5;
+    s -= negHits * 5;
+
+    // Criteria-aware checks
+    if (criteriaTxt.includes('correctness') && !lower.match(/\d/)) { issues.push('No data or numbers found; consider adding evidence.'); s -= 3; }
+    if (criteriaTxt.includes('completeness') && len < 100) { issues.push('Content may be incomplete given its brevity.'); s -= 5; }
+
+    score = Math.min(100, Math.max(0, s));
+    improvements = issues.length > 0 ? issues : ['No major issues found via heuristic analysis.'];
+    critique = 'Heuristic analysis based on keyword patterns and structural checks (criteria: ' + criteriaTxt + '). ' +
+      (score >= 70 ? 'Content appears reasonably well-structured.' : 'Content has areas that could be improved.') +
+      ' Set ANTHROPIC_API_KEY for deeper LLM-powered critique.';
+  }
+
+  res.json({
+    ok: true,
+    critique,
+    score,
+    improvements,
+    iterations_run: usedLlm ? iterations : 0,
+    _engine: usedLlm ? 'real' : 'heuristic',
+  });
+});
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   const llm = process.env.ANTHROPIC_API_KEY ? 'Anthropic' : process.env.OPENAI_API_KEY ? 'OpenAI' : 'NONE';
