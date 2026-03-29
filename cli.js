@@ -940,7 +940,7 @@ async function cmdHive(args) {
   console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════╝${C.reset}`);
   console.log(`  ${bold('Mission:')} ${green(mission)}`);
   console.log(`  ${dim(useCloud ? 'Cloud enabled (costs credits)' : 'Local only (free). Add --cloud for cloud LLMs.')}`);
-  console.log(`  ${dim('TODO output:')} ${cyan(todoFile)}`);
+  console.log(`  ${dim('TODO output:')} ${cyan(todoFile || '(no todo file set)')}`);
   console.log('');
 
   // ── PHASE 0: SCRAPE ONCE at session start ──
