@@ -4366,7 +4366,7 @@ async function cmdDebug(args) {
   spinnerStart('Analyzing error...');
 
   try {
-    const res = await request('POST', '/v1/llm-analyze-text', { text: `Debug this error and explain the fix:\n\n${errorText}`, task: 'debug' });
+    const res = await request('POST', '/v1/llm-think', { text: `Debug this error and explain the fix:\n\n${errorText}`, task: 'debug' });
     spinnerStop(true);
     const d = res.data || res;
 
@@ -4404,7 +4404,7 @@ async function cmdCloud(args) {
 
     spinnerStart('Submitting task to cloud...');
     try {
-      const res = await request('POST', '/v1/prompt-queue/add', { prompt: task, priority: 'normal' });
+      const res = await request('POST', '/v1/chain/queue', { prompts: [task], schedule: 'now' });
       spinnerStop(true);
       const d = res.data || res;
 
@@ -4424,7 +4424,7 @@ async function cmdCloud(args) {
 
     spinnerStart('Checking task...');
     try {
-      const res = await request('GET', '/v1/prompt-queue/status/' + taskId);
+      const res = await request('GET', '/v1/chain/' + taskId + '/status');
       spinnerStop(true);
       const d = res.data || res;
 
@@ -4443,7 +4443,7 @@ async function cmdCloud(args) {
   if (sub === 'list') {
     spinnerStart('Loading tasks...');
     try {
-      const res = await request('GET', '/v1/prompt-queue/list');
+      const res = await request('GET', '/v1/chain/list');
       spinnerStop(true);
       const items = res.data?.items || res.data?.queue || res.items || [];
 
@@ -5040,7 +5040,7 @@ async function cmdReview(args) {
 
   try {
     const prompt = `Review this code. List issues by severity (critical, high, medium, low). For each issue, give the line context and a fix suggestion. Be concise.\n\nSource: ${source}\n\`\`\`\n${code}\n\`\`\``;
-    const res = await request('POST', '/v1/llm-analyze-text', { text: prompt, task: 'code-review' });
+    const res = await request('POST', '/v1/llm-think', { text: prompt, task: 'code-review' });
     spinnerStop(true);
     const d = res.data || res;
 
