@@ -3001,7 +3001,7 @@ function genInspiration({ topic }) {
     '{topic} but it runs on vibes. How?',
   ];
   const t = topic || 'creativity';
-  const prompt = templates[Math.floor(Math.random() * templates.length)].replace(/\{topic\}/g, t);
+  const prompt = templates[_hashInt({topic:t}, 'cprompt', templates.length)].replace(/\{topic\}/g, t);
   return { _engine: 'real', prompt, topic: t };
 }
 
@@ -3298,8 +3298,8 @@ module.exports = {
     if (!text) return { _engine: 'real', error: 'Provide text' };
     const level = Math.min(intensity || 0.3, 1.0);
     const words = text.split(/\s+/);
-    const glitched = words.map(w => {
-      if (Math.random() > level) return w;
+    const glitched = words.map((w,wi) => {
+      if (_hash({text,wi}, 'glskip') > level) return w;
       const ops = [
         () => w.split('').reverse().join(''),
         () => w.toUpperCase(),
@@ -3307,9 +3307,9 @@ module.exports = {
         () => w + w.slice(-2),
         () => w.slice(0, Math.ceil(w.length/2)),
         () => '~' + w + '~',
-        () => w.split('').sort(() => Math.random()-0.5).join(''),
+        () => w.split('').sort((a,b) => _hash({w,a,wi},'glsort') - _hash({w,b:b,wi},'glsort')).join(''),
       ];
-      return ops[Math.floor(Math.random() * ops.length)]();
+      return ops[_hashInt({text,wi}, 'glop', ops.length)]();
     }).join(' ');
     return { _engine: 'real', original_length: text.length, glitched, intensity: level, mutations: words.length - words.filter((w,i) => glitched.split(/\s+/)[i] === w).length };
   },
@@ -3634,8 +3634,8 @@ module.exports = {
     const merged = [];
     const maxLen = Math.max(wordsA.length, wordsB.length);
     for (let i = 0; i < maxLen; i++) {
-      if (i < wordsA.length && Math.random() > 0.3) merged.push(wordsA[i]);
-      if (i < wordsB.length && Math.random() > 0.3) merged.push(wordsB[i]);
+      if (i < wordsA.length && (wordsA[i].charCodeAt(0) + i) % 10 > 2) merged.push(wordsA[i]);
+      if (i < wordsB.length && (wordsB[i].charCodeAt(0) + i) % 10 > 2) merged.push(wordsB[i]);
     }
     return { _engine: 'real', merged: merged.join(' '), source_a_words: wordsA.length, source_b_words: wordsB.length, merged_words: merged.length };
   },
