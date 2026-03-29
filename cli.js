@@ -1015,13 +1015,12 @@ async function cmdHive(args) {
       { provider: 'anthropic', prompt: `Mission: "${mission}". Previous findings: ${prevContext}\nAnalyze the competitive landscape. Name specific companies, features, pricing, weaknesses. 5 findings.` },
       { provider: 'openai', prompt: `Mission: "${mission}". Previous findings: ${prevContext}\nWhat would a user searching for this product want? What keywords, what pain points, what alternatives would they find? 5 findings.` },
     ];
-    if (localOnly) {
-      // Local-only: use all 3 local models instead
-      const localPrompt = `Mission: "${mission}". Previous: ${prevContext}\nGive 5 specific research findings. Be concrete — names, numbers, URLs.`;
-      for (const m of ['llama3', 'mistral', 'deepseek-coder-v2']) {
-        const resp = await ollamaChat(m, localPrompt);
-        if (resp) researchFindings.push(`[${m}] ${resp.slice(0, 300)}`);
-      }
+    const useCloud = !localOnly && (s % 5 === 1 || s <= 2); // Cloud every 5th sprint + first 2
+    if (!useCloud) {
+      // Local sprints: one model, fast, free
+      const localPrompt = `Mission: "${mission}". Previous: ${prevContext}\nGive 3 specific findings. Be concrete.`;
+      const resp = await ollamaChat('llama3', localPrompt);
+      if (resp) researchFindings.push(`[llama3] ${resp.slice(0, 200)}`);
     } else {
       for (const rp of researchPrompts) {
         const resp = await cloudChat(rp.provider, rp.prompt);
@@ -1059,7 +1058,7 @@ PRIORITY: <what to build — one sentence>
 memory set <key-no-spaces> {"field":"value"}
 memory set <key-no-spaces> {"field":"value"}`;
 
-    const planResp = localOnly ? await ollamaChat('llama3', planPrompt) : await cloudChat('anthropic', planPrompt);
+    const planResp = useCloud ? await cloudChat('anthropic', planPrompt) : await ollamaChat('llama3', planPrompt);
     const priorityMatch = (planResp || '').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
     const priority = priorityMatch ? priorityMatch[1].trim() : 'build from research';
     let planCmds = (planResp || '').split('\n').map(l => l.trim()).filter(l => l.startsWith('memory set') && l.includes('{'));
@@ -1197,7 +1196,7 @@ VISION: <evolved vision for next 10 sprints>
 NEXT: <specific new task — DIFFERENT from last sprint>
 DISCOVER: <new URL to add to research, or NONE>`;
 
-    const review = localOnly ? await ollamaChat('mistral', reviewPrompt) : await cloudChat('anthropic', reviewPrompt);
+    const review = useCloud ? await cloudChat('anthropic', reviewPrompt) : await ollamaChat('mistral', reviewPrompt);
     let score = extractScore(review);
     if (!score) score = buildCount > 0 && qaFail === 0 ? 7.5 : buildCount > 0 ? 6 : 4;
     const nextMatch = (review || '').match(/NEXT:\s*(.+?)(?:\n|$)/i);
