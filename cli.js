@@ -984,12 +984,20 @@ async function cmdHive(args) {
     const trend = recentScores.length >= 2 ? recentScores[recentScores.length-1] - recentScores[0] : 0;
     const phase = s <= 3 ? 'EXPLORE' : (trend > 0.5 ? 'ACCELERATE' : (trend < -0.5 ? 'FIX' : 'OPTIMIZE'));
 
-    // ── THINK: one LLM call that does plan + build commands ──
+    // ── THINK: one LLM call with real file context ──
+    // Rotate which file we show the LLM each sprint so it can make valid edits
+    const editableFiles = ['cli.js', 'server-v2.js', 'index.html', 'README.md', 'mcp-server.js', 'docs.html', 'about.html', 'compare.html', 'pricing.html'];
+    const targetFile = editableFiles[s % editableFiles.length];
+    let fileSample = '';
+    try { const content = fs.readFileSync(path.join(__dirname, targetFile), 'utf8'); const lines = content.split('\n'); const start = Math.max(0, Math.floor(Math.random() * (lines.length - 20))); fileSample = lines.slice(start, start + 15).join('\n'); } catch(e) {}
+
     const thinkPrompt = `Sprint ${s}. Mission: ${mission.slice(0, 80)}
-North Star: ${northStar.slice(0, 100)}
-Phase: ${phase}. Scores: ${recentScores.join('→')||'none'}. Vision: ${(shared.vision||'').slice(0,60)}
+Phase: ${phase}. Scores: ${recentScores.join('→')||'none'}.
 Knowledge: ${kb}
 Built so far: ${built || 'nothing'}
+Target file this sprint: ${targetFile}
+ACTUAL CODE FROM ${targetFile} (lines ~${Math.floor(Math.random()*500)}):
+${fileSample.slice(0, 400)}
 
 Do TWO things:
 1. PRIORITY: what ONE code change to make (specific file + what to change)
