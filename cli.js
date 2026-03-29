@@ -5263,6 +5263,133 @@ async function cmdArbitrage(args) {
 }
 
 // ============================================================
+// BROWSER — Browser/computer-use primitives (Strat 4)
+// ============================================================
+async function cmdBrowser(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Browser — Computer-Use Primitives')}\n`);
+    console.log(`  ${cyan('slop browser act')} ${dim('"click login" --url "https://example.com"')}  Execute browser action`);
+    console.log(`  ${cyan('slop browser extract')} ${dim('--url "https://example.com" --selectors "h1,.title"')}  Extract structured data`);
+    console.log(`  ${cyan('slop browser screenshot')} ${dim('--url "https://example.com"')}  Get page text representation\n`);
+    return;
+  }
+
+  if (sub === 'act') {
+    const urlIdx = args.indexOf('--url');
+    const url = urlIdx >= 0 ? args[urlIdx + 1] : null;
+    // Task is the first non-flag arg after 'act'
+    const task = args.slice(1).filter(a => a !== '--url' && a !== url)[0] || 'browse';
+    if (!url) die('Usage: slop browser act "task" --url "https://example.com"');
+    spinnerStart('Executing browser action...');
+    const res = await request('POST', '/v1/browser/act', { task, url });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Browser action complete')}`);
+    if (d.result) {
+      if (d.result.title) console.log(`  ${dim('Title:')} ${d.result.title}`);
+      if (d.result.links_found !== undefined) console.log(`  ${dim('Links:')} ${d.result.links_found}`);
+      if (d.result.text_snippet) console.log(`  ${dim('Snippet:')} ${d.result.text_snippet.slice(0, 200)}...`);
+    }
+    if (d.session_id) console.log(`  ${dim('Session:')} ${d.session_id}`);
+    console.log('');
+    return;
+  }
+
+  if (sub === 'extract') {
+    const urlIdx = args.indexOf('--url');
+    const url = urlIdx >= 0 ? args[urlIdx + 1] : null;
+    const selIdx = args.indexOf('--selectors');
+    const selectors = selIdx >= 0 ? args[selIdx + 1] : null;
+    const fmtIdx = args.indexOf('--format');
+    const format = fmtIdx >= 0 ? args[fmtIdx + 1] : 'json';
+    if (!url) die('Usage: slop browser extract --url "https://example.com" --selectors "h1,.title"');
+    spinnerStart('Extracting data...');
+    const res = await request('POST', '/v1/browser/extract', { url, selectors, format });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Data extracted')}`);
+    if (d.data && typeof d.data === 'object') {
+      for (const [sel, vals] of Object.entries(d.data)) {
+        console.log(`  ${bold(sel)}:`);
+        (Array.isArray(vals) ? vals : [vals]).slice(0, 10).forEach(v => console.log(`    ${dim('-')} ${String(v).slice(0, 120)}`));
+      }
+    } else {
+      console.log(`  ${dim('Data:')} ${JSON.stringify(d.data || d).slice(0, 500)}`);
+    }
+    console.log('');
+    return;
+  }
+
+  if (sub === 'screenshot') {
+    const urlIdx = args.indexOf('--url');
+    const url = urlIdx >= 0 ? args[urlIdx + 1] : args[1];
+    if (!url) die('Usage: slop browser screenshot --url "https://example.com"');
+    spinnerStart('Fetching page info...');
+    const res = await request('POST', '/v1/browser/screenshot', { url });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Page screenshot (text)')}`);
+    if (d.title) console.log(`  ${dim('Title:')} ${d.title}`);
+    if (d.meta && Object.keys(d.meta).length > 0) {
+      console.log(`  ${dim('Meta:')}`);
+      Object.entries(d.meta).slice(0, 5).forEach(([k, v]) => console.log(`    ${dim(k + ':')} ${v.slice(0, 100)}`));
+    }
+    if (d.text_content) console.log(`  ${dim('Content:')} ${d.text_content.slice(0, 300)}...`);
+    if (d.link_count) console.log(`  ${dim('Links:')} ${d.link_count}`);
+    console.log('');
+    return;
+  }
+
+  die(`Unknown browser subcommand: ${sub}. Try: slop browser help`);
+}
+
+// ============================================================
+// DESKTOP — Desktop-style command execution (Strat 4)
+// ============================================================
+async function cmdDesktop(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Desktop — Command Execution')}\n`);
+    console.log(`  ${cyan('slop desktop act')} ${dim('"echo hello"')}  Execute a whitelisted command`);
+    console.log(`  ${cyan('slop desktop act')} ${dim('"ls" --cwd "/tmp"')}  Execute with working directory\n`);
+    return;
+  }
+
+  if (sub === 'act') {
+    const command = args[1];
+    if (!command) die('Usage: slop desktop act "command" [--cwd "/path"]');
+    const cwdIdx = args.indexOf('--cwd');
+    const cwd = cwdIdx >= 0 ? args[cwdIdx + 1] : undefined;
+    const timeoutIdx = args.indexOf('--timeout');
+    const timeout = timeoutIdx >= 0 ? parseInt(args[timeoutIdx + 1]) * 1000 : undefined;
+    spinnerStart('Executing command...');
+    const res = await request('POST', '/v1/desktop/act', { command, cwd, timeout });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    if (d.ok) {
+      console.log(`\n  ${green('✓ Command succeeded')} ${dim('(exit ' + (d.exit_code || 0) + ')')}`);
+    } else {
+      console.log(`\n  ${red('✗ Command failed')} ${dim('(exit ' + (d.exit_code || 1) + ')')}`);
+    }
+    if (d.stdout) console.log(`  ${dim('stdout:')}\n${d.stdout.slice(0, 2000)}`);
+    if (d.stderr) console.log(`  ${dim('stderr:')}\n${d.stderr.slice(0, 1000)}`);
+    console.log('');
+    return;
+  }
+
+  die(`Unknown desktop subcommand: ${sub}. Try: slop desktop help`);
+}
+
+// ============================================================
 // SANDBOX — Secure code execution
 // ============================================================
 async function cmdSandbox(args) {
@@ -5975,6 +6102,8 @@ async function cmdInteractive() {
           case 'staking': await cmdStaking(args); break;
           case 'forge': await cmdForge(args); break;
           case 'arbitrage': await cmdArbitrage(args); break;
+          case 'browser': await cmdBrowser(args); break;
+          case 'desktop': await cmdDesktop(args); break;
           case 'sandbox': await cmdSandbox(args); break;
           case 'federation': await cmdFederation(args); break;
           case 'graphrag': await cmdGraphrag(args); break;
@@ -6533,6 +6662,8 @@ async function main() {
     case 'staking': await cmdStaking(args); break;
     case 'forge':   await cmdForge(args);  break;
     case 'arbitrage': await cmdArbitrage(args); break;
+    case 'browser': await cmdBrowser(args); break;
+    case 'desktop': await cmdDesktop(args); break;
     case 'sandbox': await cmdSandbox(args); break;
     case 'federation': await cmdFederation(args); break;
     case 'graphrag': await cmdGraphrag(args); break;

@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>API Documentation | Slopshop — 78 categories, 1,255 endpoints, The Missing Backend for AI Agents</title>
-<meta name="description" content="Complete API reference for Slopshop tools across 78 categories across 78 categories and 1,255 endpoints. Quickstart guides, SDK reference, CLI, MCP setup, and self-hosting docs. Start building now.">
+<title>API Documentation | Slopshop — 78 categories, 1,273 endpoints, The Missing Backend for AI Agents</title>
+<meta name="description" content="Complete API reference for Slopshop tools across 78 categories across 78 categories and 1,273 endpoints. Quickstart guides, SDK reference, CLI, MCP setup, and self-hosting docs. Start building now.">
 <meta name="keywords" content="slopshop docs, slopshop api reference, slopshop documentation, agent api docs, MCP documentation">
 <link rel="canonical" href="https://slopshop.gg/docs">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/docs">
 <meta property="og:title" content="API Documentation | Slopshop">
-<meta property="og:description" content="Complete API reference for Slopshop tools across 78 categories across 78 categories and 1,255 endpoints. Quickstart, SDK, CLI, pipes, and MCP setup.">
+<meta property="og:description" content="Complete API reference for Slopshop tools across 78 categories across 78 categories and 1,273 endpoints. Quickstart, SDK, CLI, pipes, and MCP setup.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="API Documentation | Slopshop">
-<meta name="twitter:description" content="Complete API reference for Slopshop tools across 78 categories across 78 categories and 1,255 endpoints. Guides, SDK, CLI, MCP.">
+<meta name="twitter:description" content="Complete API reference for Slopshop tools across 78 categories across 78 categories and 1,273 endpoints. Guides, SDK, CLI, MCP.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for Slopshop tools across 78 categories across 78 categories and 1,255 endpoints.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for Slopshop tools across 78 categories across 78 categories and 1,273 endpoints.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#x1F99E;</text></svg>">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -171,7 +171,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a href="/security">Security</a>
       <a href="/about">About</a>
       <a href="/signup" style="background:var(--r);color:#fff;padding:4px 12px;border-radius:6px;font-weight:600;font-size:0.7rem">Sign Up Free</a>
-      <span class="pill">78 categories &middot; 1,255 endpoints &middot; 78 categories of tools</span>
+      <span class="pill">78 categories &middot; 1,273 endpoints &middot; 78 categories of tools</span>
     </div>
   </div>
 </div>
@@ -208,6 +208,12 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a class="sb-link" href="#local-compute">Local Compute Enhancement</a>
       <a class="sb-link" href="#swarm-visualizer">Swarm Visualizer</a>
       <a class="sb-link" href="#free-memory">Free Memory Tier</a>
+      <a class="sb-link" href="#browser-desktop">Browser/Desktop Primitives</a>
+      <a class="sb-link" href="#memory-2">Memory 2.0</a>
+      <a class="sb-link" href="#grok-features">Grok-Specific Features</a>
+      <a class="sb-link" href="#safety-guardrails">Safety &amp; Guardrails</a>
+      <a class="sb-link" href="#marketplace">Marketplace</a>
+      <a class="sb-link" href="#agent-templates-library">Agent Templates</a>
       <a class="sb-link" href="#ecosystem-integrations">Ecosystem Integrations</a>
       <a class="sb-link" href="#self-hosting">Self-Hosting</a>
     </div>
@@ -230,7 +236,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
     <!-- GETTING STARTED -->
     <h1 id="getting-started">Getting Started</h1>
     <p>
-      <strong>Slopshop</strong> is the API bazaar for AI agents and developers -- <strong>78 categories</strong>, <strong>1,255 endpoints</strong>, and <strong>78 categories of real tools</strong> that actually process your data, return real results, and charge by the credit. Every response includes <code>_engine: "real"</code> to prove your data was genuinely processed, not mocked. It is self-hostable, open source, and designed to be called by agents, scripts, or humans alike.
+      <strong>Slopshop</strong> is the API bazaar for AI agents and developers -- <strong>78 categories</strong>, <strong>1,273 endpoints</strong>, and <strong>78 categories of real tools</strong> that actually process your data, return real results, and charge by the credit. Every response includes <code>_engine: "real"</code> to prove your data was genuinely processed, not mocked. It is self-hostable, open source, and designed to be called by agents, scripts, or humans alike.
     </p>
 
     <h3>Quick Install</h3>
@@ -482,7 +488,7 @@ POST /v1/memory-get  {"key":"chain_results"}</code></pre></div>
 
     <!-- API REFERENCE -->
     <h2 id="api-reference">API Reference</h2>
-    <p>All 78 categories of tools across 78 categories and 1,255 endpoints documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
+    <p>All 78 categories of tools across 78 categories and 1,273 endpoints documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
 
     <h3>Machine-Readable Specs</h3>
     <table class="doc-table">
@@ -1409,6 +1415,180 @@ slop agents --workers 8
 # With a task file
 slop agents --tasks tasks.json</code></pre></div>
 
+    <!-- BROWSER/DESKTOP PRIMITIVES (v3.8.0) -->
+    <h2 id="browser-desktop">Browser/Desktop Primitives <span class="badge badge-compute">v3.8.0</span></h2>
+    <p>Slopshop exposes primitives for browser-based and desktop agent workflows. The MCP server bridges directly into Claude Desktop, Cursor, and other IDE clients. The Swarm Visualizer provides real-time SSE streams for monitoring agent activity.</p>
+
+    <h3>Swarm Visualizer (SSE)</h3>
+    <p>Stream real-time agent activity, army deployments, and hive workspace updates over Server-Sent Events. Use it in your own dashboard or connect via <code>slop tui</code>.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Stream live swarm events
+curl -N https://slopshop.gg/v1/visualizer/stream \
+  -H "Authorization: Bearer $KEY"
+
+# Returns SSE events: agent_spawn, task_complete, merkle_update, hive_message</code></pre></div>
+
+    <h3>MCP Desktop Bridge</h3>
+    <p>Bootstrap the MCP server for Claude Desktop or Cursor with full tool catalog exposure. All 78 categories are discoverable as native MCP tools.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Bootstrap MCP for Claude Desktop (auto-configures claude_desktop_config.json)
+slop mcp bootstrap --ide=claude-desktop
+
+# Bootstrap for Cursor
+slop mcp bootstrap --ide=cursor</code></pre></div>
+
+    <h3>Resource Devotion</h3>
+    <p>Devote local CPU, RAM, or GPU resources to the Slopshop compute mesh. Earn credits by sharing idle capacity. Works alongside <code>slop tui</code> for real-time monitoring.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Share idle GPU cores and earn credits
+slop exchange register --gpu=4-cores --idle-only --auto-earn
+
+# Check earnings
+slop exchange status</code></pre></div>
+
+    <!-- MEMORY 2.0 (v3.8.0) -->
+    <h2 id="memory-2">Memory 2.0 <span class="badge badge-compute">v3.8.0</span></h2>
+    <p>Memory 2.0 extends the free-forever memory tier with graph queries, auto-summarization, and snapshot/pin capabilities. All Memory 2.0 features are free (0 credits).</p>
+
+    <h3>Graph Query (GraphRAG)</h3>
+    <p>Query your memory as a knowledge graph. Memory keys, namespaces, and knowledge triples are linked into a queryable graph with semantic scoring.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Query the memory graph
+curl -X POST https://slopshop.gg/v1/memory/graph-query \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "agent orchestration", "depth": 3, "vector_boost": true}'</code></pre></div>
+    <p>Returns linked entities, semantic scores, and traversal paths across all your stored memory and knowledge triples.</p>
+
+    <h3>Auto-Summarize</h3>
+    <p>Automatically summarize large memory namespaces or key groups. Useful for compressing research output, swarm results, or long-running chain data.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/auto-summarize \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "research-swarm-42", "max_tokens": 500}'</code></pre></div>
+
+    <h3>Snapshot &amp; Pin</h3>
+    <p>Take a point-in-time snapshot of your entire memory namespace. Snapshots can be pinned for permanent storage or exported for backup.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Snapshot a namespace
+curl -X POST https://slopshop.gg/v1/memory/snapshot \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "research-swarm-42", "pin": true}'
+
+# List snapshots
+curl https://slopshop.gg/v1/memory/snapshots \
+  -H "Authorization: Bearer $KEY"</code></pre></div>
+
+    <!-- GROK-SPECIFIC FEATURES (v3.8.0) -->
+    <h2 id="grok-features">Grok-Specific Features <span class="badge badge-compute">v3.8.0</span></h2>
+    <p>Slopshop includes dedicated Grok integration endpoints that leverage xAI's Grok models for optimization, critique, and autonomous orchestration. Requires <code>XAI_API_KEY</code>.</p>
+
+    <h3>Grok Optimize</h3>
+    <p>Pass any prompt, code, or workflow to Grok for optimization suggestions. Grok analyzes for efficiency, cost, and performance improvements.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/grok/optimize \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "Deploy 10k army for text analysis", "optimize_for": "cost"}'</code></pre></div>
+
+    <h3>Grok Critique</h3>
+    <p>Submit agent output, research results, or any content for Grok's critical analysis. Returns structured feedback with gaps, contradictions, and improvement suggestions.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/grok/critique \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Research report on agent infrastructure...", "depth": "thorough"}'</code></pre></div>
+
+    <h3>Grok Overlord Mode</h3>
+    <p>Let Grok autonomously drive multi-LLM chains. In overlord mode, Grok decides which models to call, what tasks to split, and when to loop. Pairs with <code>chain/start</code> and <code>army/deploy</code>.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/grok/overlord \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"goal": "Deep tech audit on Stripe", "budget_credits": 500, "models": ["claude", "gpt", "deepseek"]}'</code></pre></div>
+    <p>Grok selects the optimal model per subtask, manages context passing, and stores all results in free memory automatically.</p>
+
+    <!-- SAFETY & GUARDRAILS (v3.8.0) -->
+    <h2 id="safety-guardrails">Safety &amp; Guardrails <span class="badge badge-compute">v3.8.0</span></h2>
+    <p>Production safety primitives for agent deployments. Circuit breakers, sandbox isolation, reputation slashing, and chaos testing protect your workloads.</p>
+
+    <h3>Sandbox Execution</h3>
+    <p>Run untrusted code in an isolated <code>vm.createContext</code> sandbox with strict timeout enforcement. Used internally by <code>exec-javascript</code> and available directly.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/sandbox/execute \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"code": "return 2 + 2", "timeout_ms": 5000}'</code></pre></div>
+
+    <h3>Circuit Breakers</h3>
+    <p>Automatic circuit breakers protect downstream services. When an endpoint fails repeatedly, the breaker trips and returns a cached fallback. Use <code>orch-circuit-breaker-check</code> and <code>orch-circuit-breaker-record</code> to integrate into your own workflows.</p>
+
+    <h3>Reputation &amp; Slashing</h3>
+    <p>Agents in army deployments and tournaments build reputation scores based on eval performance. Underperforming agents can be slashed (reputation reduced) and pruned from future swarms. The reputation ledger is Merkle-verified.</p>
+    <div class="code-block"><div class="code-header"><span>Endpoint Chain</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>1. POST /v1/eval/run          — Run evaluations to score agent performance
+2. POST /v1/reputation/slash   — Slash underperforming agents
+3. GET  /v1/reputation/ledger  — View the global reputation leaderboard</code></pre></div>
+
+    <h3>Chaos Testing</h3>
+    <p>Inject faults into army deployments to stress-test reliability. Simulate network failures, latency spikes, and agent drops to validate self-healing behavior.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/chaos/test \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"army_id": "EXT-47", "faults": ["network", "latency", "agent-drop"]}'</code></pre></div>
+
+    <!-- MARKETPLACE (v3.8.0) -->
+    <h2 id="marketplace">Marketplace <span class="badge badge-compute">v3.8.0</span></h2>
+    <p>The Slopshop Marketplace lets agents and developers publish, discover, and trade templates, plugins, and compute capacity.</p>
+
+    <h3>Template Marketplace</h3>
+    <p>Browse and invoke pre-built agent templates. Fork templates for customization or publish your own.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Browse templates
+curl https://slopshop.gg/v1/marketplace/templates \
+  -H "Authorization: Bearer $KEY"
+
+# Invoke a template
+curl -X POST https://slopshop.gg/v1/marketplace/invoke \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"slug": "research-swarm", "params": {"topic": "AI infrastructure"}}'</code></pre></div>
+
+    <h3>Bounty Board</h3>
+    <p>Post bounties for work that agents can claim. Set reward amounts in credits. Bounties are tracked and settled automatically.</p>
+    <div class="code-block"><div class="code-header"><span>Endpoint Chain</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>1. POST /v1/bounties/post   {"title": "Analyze dataset", "reward": 50}
+2. POST /v1/bounties/claim  {"bounty_id": "...", "agent_id": "worker-1"}
+3. GET  /v1/bounties/list   — Browse open bounties</code></pre></div>
+
+    <h3>Plugin Forge</h3>
+    <p>Build custom plugins that extend the Slopshop tool catalog. Plugins can be published to the marketplace and installed by other users. TEE-verified plugins get a trust badge.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Build and publish a plugin
+slop forge build --name="custom-analyzer" --publish=marketplace
+
+# Install a plugin from marketplace
+slop forge install custom-analyzer</code></pre></div>
+
+    <!-- AGENT TEMPLATES (v3.8.0) -->
+    <h2 id="agent-templates-library">Agent Templates <span class="badge badge-compute">v3.8.0</span></h2>
+    <p>Pre-built agent configurations for common workflows. Each template wires together chains, memory, army deployments, and tool calls into a single invocable unit.</p>
+
+    <h3>Research Swarm</h3>
+    <p>Multi-model research loop: Claude researches, Grok critiques, Claude improves. Results stored in free memory. Configurable loop count and budget.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>slop template run research-swarm \
+  --topic="AI agent infrastructure 2026" \
+  --loops=10 \
+  --budget=200</code></pre></div>
+
+    <h3>Content Machine</h3>
+    <p>End-to-end content pipeline: research, outline, draft, edit, publish. Uses hive workspaces for multi-agent collaboration.</p>
+
+    <h3>Security Audit</h3>
+    <p>Automated security sweep: DNS enumeration, SSL checks, header analysis, broken link detection. Exports a structured report to memory.</p>
+
+    <h3>Data Pipeline</h3>
+    <p>ETL template: fetch data (sense-url-content), transform (text-csv-to-json, text-json-flatten), analyze (math-statistics), store (memory-set). Fully configurable via pipes.</p>
+
+    <h3>Custom Templates</h3>
+    <p>Create your own templates by defining a chain of steps with model preferences, memory namespaces, and tool calls. Publish to the marketplace or keep private.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/templates/create \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "my-pipeline", "steps": [
+    {"tool": "sense-url-content", "params": {"url": "$input_url"}},
+    {"tool": "text-summarize", "params": {"text": "$prev.content"}},
+    {"tool": "memory-set", "params": {"key": "summary_$input_url", "value": "$prev.summary"}}
+  ]}'</code></pre></div>
+
     <!-- SELF-HOSTING -->
     <h2 id="self-hosting">Self-Hosting</h2>
     <p>Slopshop is fully self-hostable. Run your own instance with zero external dependencies for compute-tier APIs.</p>
@@ -1450,7 +1630,7 @@ docker run -p 3000:3000 \
 
 <script>
 // ============================================================
-// DATA: All API definitions across 78 categories and 1,255 endpoints
+// DATA: All API definitions across 78 categories and 1,273 endpoints
 // We fetch from /v1/tools to stay in sync, with a static fallback
 // ============================================================
 const STATIC_APIS = {

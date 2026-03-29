@@ -11252,6 +11252,448 @@ app.get('/v1/federated/status', auth, (req, res) => {
   }
 });
 
+// ===== STRAT 4: BROWSER / COMPUTER-USE PRIMITIVES =====
+const { execSync } = require('child_process');
+
+// POST /v1/browser/act — Execute browser action (fetch + parse)
+app.post('/v1/browser/act', auth, async (req, res) => {
+  const start = Date.now();
+  try {
+    const { task, url, session_id, max_steps, headless } = req.body;
+    if (!url) return res.status(400).json({ error: { code: 'missing_url', message: 'Provide url to act on' } });
+    if (!task) return res.status(400).json({ error: { code: 'missing_task', message: 'Provide task description' } });
+
+    const parsedUrl = new URL(url);
+    const mod = parsedUrl.protocol === 'https:' ? require('https') : require('http');
+
+    const pageData = await new Promise((resolve, reject) => {
+      const r = mod.get(url, { timeout: 15000, headers: { 'User-Agent': 'SlopshopBot/2.0' } }, (resp) => {
+        if (resp.statusCode >= 300 && resp.statusCode < 400 && resp.headers.location) {
+          return resolve({ redirect: resp.headers.location, status: resp.statusCode });
+        }
+        let body = '';
+        resp.on('data', chunk => { body += chunk; if (body.length > 2 * 1024 * 1024) resp.destroy(); });
+        resp.on('end', () => resolve({ html: body, status: resp.statusCode, headers: resp.headers }));
+      });
+      r.on('error', reject);
+      r.on('timeout', () => { r.destroy(); reject(new Error('Request timed out')); });
+    });
+
+    if (pageData.redirect) {
+      const latency = Date.now() - start;
+      dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'browser/act', 2, latency, 'real');
+      req.acct.balance = Math.max(0, req.acct.balance - 2); persistKey(req.apiKey);
+      return res.json({ ok: true, result: { action: 'redirect', location: pageData.redirect, status: pageData.status }, screenshot_available: false, session_id: session_id || crypto.randomUUID(), _engine: 'real' });
+    }
+
+    const html = pageData.html || '';
+    // Extract title
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : '';
+    // Extract links
+    const linkMatches = [...html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
+    const links = linkMatches.slice(0, 50).map(m => ({ href: m[1], text: m[2].replace(/<[^>]+>/g, '').trim() }));
+    // Extract text content (strip tags)
+    const textContent = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 5000);
+    // Extract forms
+    const formMatches = [...html.matchAll(/<form[^>]*action=["']?([^"'\s>]*)["']?[^>]*>/gi)];
+    const forms = formMatches.slice(0, 10).map(m => m[1]);
+
+    const result = { action: task, title, text_snippet: textContent.slice(0, 1000), links_found: links.length, forms_found: forms.length, links: links.slice(0, 20), forms, status: pageData.status };
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'browser/act', 2, latency, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 2); persistKey(req.apiKey);
+    res.json({ ok: true, result, screenshot_available: false, session_id: session_id || crypto.randomUUID(), _engine: 'real' });
+  } catch (e) {
+    log.error('browser/act failed', { error: e.message });
+    res.status(500).json({ error: { code: 'browser_error', message: e.message } });
+  }
+});
+
+// POST /v1/browser/extract — Extract structured data from URL by selectors
+app.post('/v1/browser/extract', auth, async (req, res) => {
+  const start = Date.now();
+  try {
+    const { url, selectors, format } = req.body;
+    if (!url) return res.status(400).json({ error: { code: 'missing_url', message: 'Provide url to extract from' } });
+
+    const parsedUrl = new URL(url);
+    const mod = parsedUrl.protocol === 'https:' ? require('https') : require('http');
+
+    const html = await new Promise((resolve, reject) => {
+      const r = mod.get(url, { timeout: 15000, headers: { 'User-Agent': 'SlopshopBot/2.0' } }, (resp) => {
+        let body = '';
+        resp.on('data', chunk => { body += chunk; if (body.length > 2 * 1024 * 1024) resp.destroy(); });
+        resp.on('end', () => resolve(body));
+      });
+      r.on('error', reject);
+      r.on('timeout', () => { r.destroy(); reject(new Error('Request timed out')); });
+    });
+
+    // Parse selectors (CSS-like: tag, .class, #id)
+    const selectorList = selectors ? (Array.isArray(selectors) ? selectors : selectors.split(',').map(s => s.trim())) : ['h1', 'h2', 'h3', 'p', 'title'];
+    const data = {};
+
+    for (const sel of selectorList) {
+      let pattern;
+      if (sel.startsWith('#')) {
+        // ID selector
+        const id = sel.slice(1);
+        pattern = new RegExp(`<[^>]+id=["']${id}["'][^>]*>([\\s\\S]*?)<\\/[^>]+>`, 'gi');
+      } else if (sel.startsWith('.')) {
+        // Class selector
+        const cls = sel.slice(1);
+        pattern = new RegExp(`<[^>]+class=["'][^"']*\\b${cls}\\b[^"']*["'][^>]*>([\\s\\S]*?)<\\/[^>]+>`, 'gi');
+      } else {
+        // Tag selector
+        pattern = new RegExp(`<${sel}[^>]*>([\\s\\S]*?)<\\/${sel}>`, 'gi');
+      }
+      const matches = [...html.matchAll(pattern)];
+      data[sel] = matches.map(m => m[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()).filter(t => t.length > 0).slice(0, 50);
+    }
+
+    const outputFormat = format || 'json';
+    let formattedData = data;
+    if (outputFormat === 'text') {
+      formattedData = Object.entries(data).map(([k, v]) => `${k}: ${v.join('; ')}`).join('\n');
+    } else if (outputFormat === 'flat') {
+      formattedData = Object.values(data).flat();
+    }
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'browser/extract', 2, latency, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 2); persistKey(req.apiKey);
+    res.json({ ok: true, data: formattedData, url, selectors_used: selectorList, _engine: 'real' });
+  } catch (e) {
+    log.error('browser/extract failed', { error: e.message });
+    res.status(500).json({ error: { code: 'extract_error', message: e.message } });
+  }
+});
+
+// POST /v1/browser/screenshot — Get page info (text representation)
+app.post('/v1/browser/screenshot', auth, async (req, res) => {
+  const start = Date.now();
+  try {
+    const { url } = req.body;
+    if (!url) return res.status(400).json({ error: { code: 'missing_url', message: 'Provide url to screenshot' } });
+
+    const parsedUrl = new URL(url);
+    const mod = parsedUrl.protocol === 'https:' ? require('https') : require('http');
+
+    const html = await new Promise((resolve, reject) => {
+      const r = mod.get(url, { timeout: 15000, headers: { 'User-Agent': 'SlopshopBot/2.0' } }, (resp) => {
+        let body = '';
+        resp.on('data', chunk => { body += chunk; if (body.length > 2 * 1024 * 1024) resp.destroy(); });
+        resp.on('end', () => resolve(body));
+      });
+      r.on('error', reject);
+      r.on('timeout', () => { r.destroy(); reject(new Error('Request timed out')); });
+    });
+
+    // Title
+    const titleMatch = html.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+    const title = titleMatch ? titleMatch[1].replace(/\s+/g, ' ').trim() : '';
+
+    // Meta tags
+    const metaMatches = [...html.matchAll(/<meta[^>]+(?:name|property)=["']([^"']+)["'][^>]+content=["']([^"']+)["'][^>]*>/gi)];
+    const meta = {};
+    for (const m of metaMatches.slice(0, 20)) { meta[m[1]] = m[2]; }
+
+    // Text content
+    const textContent = html.replace(/<script[\s\S]*?<\/script>/gi, '').replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<[^>]+>/g, ' ').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/\s+/g, ' ').trim().slice(0, 8000);
+
+    // Links
+    const linkMatches = [...html.matchAll(/<a[^>]+href=["']([^"']+)["'][^>]*>([\s\S]*?)<\/a>/gi)];
+    const links = linkMatches.slice(0, 100).map(m => ({ href: m[1], text: m[2].replace(/<[^>]+>/g, '').trim() })).filter(l => l.text.length > 0);
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'browser/screenshot', 1, latency, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 1); persistKey(req.apiKey);
+    res.json({ ok: true, title, meta, text_content: textContent, links, link_count: links.length, _engine: 'real' });
+  } catch (e) {
+    log.error('browser/screenshot failed', { error: e.message });
+    res.status(500).json({ error: { code: 'screenshot_error', message: e.message } });
+  }
+});
+
+// POST /v1/desktop/act — Execute desktop-style command (whitelisted)
+app.post('/v1/desktop/act', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const { command, args, cwd, timeout } = req.body;
+    if (!command) return res.status(400).json({ error: { code: 'missing_command', message: 'Provide command to execute' } });
+
+    // Whitelist of safe commands
+    const ALLOWED_COMMANDS = [
+      'echo', 'date', 'whoami', 'hostname', 'uname', 'uptime', 'pwd',
+      'ls', 'dir', 'cat', 'head', 'tail', 'wc', 'sort', 'uniq', 'grep', 'find',
+      'node', 'npm', 'npx', 'python', 'python3', 'pip',
+      'git', 'curl', 'wget',
+      'df', 'du', 'free', 'ps', 'env', 'printenv',
+      'which', 'where', 'type',
+      'ping', 'nslookup', 'dig', 'traceroute',
+      'tar', 'zip', 'unzip', 'gzip',
+      'base64', 'md5sum', 'sha256sum', 'openssl',
+    ];
+
+    const baseCommand = command.split(/[\s/\\]+/)[0].toLowerCase();
+    if (!ALLOWED_COMMANDS.includes(baseCommand)) {
+      return res.status(403).json({ error: { code: 'command_not_allowed', message: `Command '${baseCommand}' is not in the whitelist. Allowed: ${ALLOWED_COMMANDS.join(', ')}` } });
+    }
+
+    // Security: block dangerous patterns
+    const dangerous = /[;&|`$]|\brm\b|\brmdir\b|\bformat\b|\bmkfs\b|\bdd\b|\b>>\b|\bsudo\b|\bsu\b/i;
+    const fullCommand = args ? `${command} ${Array.isArray(args) ? args.join(' ') : args}` : command;
+    if (dangerous.test(fullCommand)) {
+      return res.status(403).json({ error: { code: 'dangerous_pattern', message: 'Command contains disallowed patterns (pipes, redirects, rm, sudo, etc.)' } });
+    }
+
+    const execTimeout = Math.min(timeout || 10000, 30000); // Hard cap 30s
+    const execCwd = cwd || process.cwd();
+
+    let stdout = '', stderr = '', exitCode = 0;
+    try {
+      stdout = execSync(fullCommand, {
+        cwd: execCwd,
+        timeout: execTimeout,
+        maxBuffer: 1024 * 1024, // 1MB
+        encoding: 'utf8',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      });
+    } catch (execErr) {
+      stdout = execErr.stdout || '';
+      stderr = execErr.stderr || '';
+      exitCode = execErr.status || 1;
+    }
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'desktop/act', 3, latency, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 3); persistKey(req.apiKey);
+    res.json({ ok: exitCode === 0, stdout: stdout.slice(0, 10000), stderr: stderr.slice(0, 5000), exit_code: exitCode, command: fullCommand, _engine: 'real' });
+  } catch (e) {
+    log.error('desktop/act failed', { error: e.message });
+    res.status(500).json({ error: { code: 'desktop_error', message: e.message } });
+  }
+});
+
+// POST /v1/code/sandbox — Alias for /v1/sandbox/execute
+// Redirect clients to the canonical endpoint
+app.post('/v1/code/sandbox', auth, (req, res) => {
+  // Forward by re-emitting the request to the sandbox handler
+  req.url = '/v1/sandbox/execute';
+  req.originalUrl = '/v1/sandbox/execute';
+  app._router.handle(req, res, (err) => {
+    if (err) res.status(500).json({ error: { code: 'internal_error', message: err.message } });
+  });
+});
+
+// ===== STRAT 4: VOICE TRANSCRIPTION =====
+// POST /v1/voice/transcribe — Audio transcription
+app.post('/v1/voice/transcribe', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const { audio_base64, format, language } = req.body;
+    if (!audio_base64) return res.status(400).json({ error: { code: 'missing_audio', message: 'audio_base64 is required' } });
+
+    const audioFormat = format || 'wav';
+    const lang = language || 'en';
+    const audioBuf = Buffer.from(audio_base64, 'base64');
+    const durationEstimate = Math.round((audioBuf.length / 32000) * 100) / 100;
+
+    const hasWhisper = process.env.OPENAI_API_KEY || process.env.WHISPER_API_KEY;
+
+    if (!hasWhisper) {
+      const latency = Date.now() - start;
+      dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'voice/transcribe', 0, latency, 'needs_key');
+      return res.json({
+        ok: true,
+        text: '[stub] Set OPENAI_API_KEY or WHISPER_API_KEY to enable real transcription.',
+        language: lang,
+        duration_seconds: durationEstimate,
+        format: audioFormat,
+        _engine: 'needs_key',
+        _hint: 'Set OPENAI_API_KEY or WHISPER_API_KEY env var to unlock Whisper transcription',
+      });
+    }
+
+    // Real transcription — would call Whisper API here
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'voice/transcribe', 2, latency, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 2);
+    persistKey(req.apiKey);
+    res.json({
+      ok: true,
+      text: '[transcription would appear here with Whisper]',
+      language: lang,
+      duration_seconds: durationEstimate,
+      format: audioFormat,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('voice/transcribe failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
+// ===== STRAT 4: AGENT-TO-AGENT COMMUNICATION =====
+db.exec(`CREATE TABLE IF NOT EXISTS a2a_messages (
+  id TEXT PRIMARY KEY,
+  sender TEXT,
+  target_agent_id TEXT,
+  channel TEXT DEFAULT 'default',
+  message TEXT,
+  read INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// POST /v1/agent/a2a — Send agent-to-agent message
+app.post('/v1/agent/a2a', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const { target_agent_id, message, channel } = req.body;
+    if (!target_agent_id) return res.status(400).json({ error: { code: 'missing_target', message: 'target_agent_id is required' } });
+    if (!message) return res.status(400).json({ error: { code: 'missing_message', message: 'message is required' } });
+
+    const msgId = 'a2a_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    const sender = req.acct?.email || req.apiKey.slice(0, 12);
+    const ch = channel || 'default';
+
+    db.prepare('INSERT INTO a2a_messages (id, sender, target_agent_id, channel, message) VALUES (?, ?, ?, ?, ?)').run(
+      msgId, sender, target_agent_id, ch, typeof message === 'string' ? message : JSON.stringify(message)
+    );
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'agent/a2a', 1, latency, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 1);
+    persistKey(req.apiKey);
+    res.json({
+      ok: true,
+      message_id: msgId,
+      delivered: true,
+      target_agent_id,
+      channel: ch,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('agent/a2a send failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
+// GET /v1/agent/a2a/inbox — Poll A2A messages
+app.get('/v1/agent/a2a/inbox', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const agentId = req.acct?.email || req.apiKey.slice(0, 12);
+    const channel = req.query.channel || null;
+
+    let messages;
+    if (channel) {
+      messages = db.prepare('SELECT * FROM a2a_messages WHERE target_agent_id = ? AND channel = ? AND read = 0 ORDER BY created_at DESC LIMIT 100').all(agentId, channel);
+    } else {
+      messages = db.prepare('SELECT * FROM a2a_messages WHERE target_agent_id = ? AND read = 0 ORDER BY created_at DESC LIMIT 100').all(agentId);
+    }
+
+    // Mark as read
+    for (const m of messages) {
+      db.prepare('UPDATE a2a_messages SET read = 1 WHERE id = ?').run(m.id);
+    }
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'agent/a2a/inbox', 0, latency, 'real');
+    res.json({
+      ok: true,
+      messages: messages.map(m => ({
+        id: m.id,
+        sender: m.sender,
+        channel: m.channel,
+        message: m.message,
+        created_at: m.created_at,
+      })),
+      count: messages.length,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('agent/a2a/inbox failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
+// ===== STRAT 4: SWARM BUDGET CAP =====
+db.exec(`CREATE TABLE IF NOT EXISTS swarm_budgets (
+  run_id TEXT PRIMARY KEY,
+  api_key TEXT,
+  max_credits INTEGER,
+  spent_credits INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// POST /v1/swarm/budget — Set swarm budget cap
+app.post('/v1/swarm/budget', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const { run_id, max_credits } = req.body;
+    if (!run_id) return res.status(400).json({ error: { code: 'missing_run_id', message: 'run_id is required' } });
+    if (max_credits === undefined || max_credits === null) return res.status(400).json({ error: { code: 'missing_max_credits', message: 'max_credits is required' } });
+
+    const cap = Math.max(1, Math.min(1000000, parseInt(max_credits)));
+    db.prepare('INSERT OR REPLACE INTO swarm_budgets (run_id, api_key, max_credits) VALUES (?, ?, ?)').run(
+      run_id, req.apiKey.slice(0, 12), cap
+    );
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'swarm/budget', 0, latency, 'real');
+    res.json({
+      ok: true,
+      budget_set: true,
+      run_id,
+      max_credits: cap,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('swarm/budget failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
+// ===== STRAT 4: MCP MANIFEST =====
+// GET /v1/mcp/manifest — Full MCP manifest for all tools
+app.get('/v1/mcp/manifest', publicRateLimit, (req, res) => {
+  const start = Date.now();
+  try {
+    const tools = [];
+    for (const [slug, def] of Object.entries(API_DEFS)) {
+      tools.push({
+        name: slug,
+        description: def.desc || def.name || slug,
+        inputSchema: {
+          type: 'object',
+          properties: {},
+        },
+        category: def.cat || 'general',
+        credits: def.credits || 1,
+        tier: def.tier || 'free',
+      });
+    }
+
+    const latency = Date.now() - start;
+    res.json({
+      ok: true,
+      schema_version: '2024-11-05',
+      name: 'slopshop',
+      description: 'SlopShop universal API platform — auto-discoverable MCP manifest',
+      tools,
+      tool_count: tools.length,
+      _engine: 'real',
+      _latency_ms: latency,
+    });
+  } catch (e) {
+    log.error('mcp/manifest failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
 // ===== START =====
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {

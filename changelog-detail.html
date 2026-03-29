@@ -142,10 +142,40 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
 <!-- CHANGELOG -->
 <section class="sec">
 
-  <!-- v3.7.0 -->
+  <!-- v3.8.0 -->
   <div class="release latest">
     <div class="release-header">
-      <div class="release-version">v3.7.0 <span class="release-tag tag-latest">Latest</span></div>
+      <div class="release-version">v3.8.0 <span class="release-tag tag-latest">Latest</span></div>
+      <div class="release-date">March 29, 2026</div>
+      <div class="release-title">Strat 4 — Browser Primitives, Memory 2.0, Marketplace, Safety Layer</div>
+    </div>
+    <div class="change-group">
+      <h4>Added</h4>
+      <ul class="change-list added">
+        <li>Browser/Desktop primitives: Swarm Visualizer SSE stream, MCP Desktop bootstrap (<code style="color:var(--o);font-family:var(--mono);font-size:0.78rem">slop mcp bootstrap --ide=claude-desktop</code>), resource devotion for GPU/CPU sharing</li>
+        <li>Memory 2.0: GraphRAG graph queries (<code style="color:var(--o);font-family:var(--mono);font-size:0.78rem">POST /v1/memory/graph-query</code>), auto-summarize namespaces, snapshot and pin for permanent storage</li>
+        <li>Grok-specific features: <code style="color:var(--o);font-family:var(--mono);font-size:0.78rem">POST /v1/grok/optimize</code>, <code style="color:var(--o);font-family:var(--mono);font-size:0.78rem">POST /v1/grok/critique</code>, and <code style="color:var(--o);font-family:var(--mono);font-size:0.78rem">POST /v1/grok/overlord</code> for autonomous multi-LLM orchestration</li>
+        <li>Safety and guardrails: sandbox execution with <code style="color:var(--o);font-family:var(--mono);font-size:0.78rem">vm.createContext</code> isolation, circuit breakers, reputation slashing for underperforming agents, chaos testing for army deployments</li>
+        <li>Marketplace: template browsing and invocation, bounty board for agent work, Plugin Forge for building and publishing custom tools</li>
+        <li>Agent templates library: research swarm, content machine, security audit, data pipeline — pre-built agent configurations with custom template creation</li>
+        <li>18 new endpoints bringing total to 1,273</li>
+      </ul>
+    </div>
+    <div class="change-group">
+      <h4>Improved</h4>
+      <ul class="change-list improved">
+        <li>Endpoint count updated across all documentation and localized files</li>
+        <li>MCP server now supports bootstrap mode for automated IDE configuration</li>
+        <li>Memory tier extended with graph, summarize, and snapshot capabilities (still free, 0 credits)</li>
+        <li>Multi-LLM orchestration now includes Grok-driven autonomous mode</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- v3.7.0 -->
+  <div class="release">
+    <div class="release-header">
+      <div class="release-version">v3.7.0</div>
       <div class="release-date">March 29, 2026</div>
       <div class="release-title">Engine: Real — Every Feature Backed by Actual Computation</div>
     </div>
