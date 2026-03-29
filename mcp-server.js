@@ -366,9 +366,9 @@ async function handleMessage(msg) {
           endpoint = `/v1/hive/${input.hive_id}/sync`;
         }
       } else {
-        // Standard tool — strip slop- prefix
-        SCORE: 9/10
-        endpoint = `/v1/${toolName}`;
+        // Standard tool — strip slop- prefix to get the API slug
+        const slug = rawName.replace(/^slop-/, '');
+        endpoint = `/v1/${slug}`;
         // Map input/text for compatibility
         if (input.input && !input.text) input.text = input.input;
       }
@@ -381,7 +381,7 @@ async function handleMessage(msg) {
         result: {
           content: [{
             type: 'text',
-            text: result.data ? JSON.stringify(result.data, null, 2) : 'undefined',
+            text: result.data ? JSON.stringify(result.data, null, 2) : JSON.stringify(result, null, 2),
           }],
           isError: !!result.error,
         },
@@ -389,7 +389,7 @@ async function handleMessage(msg) {
     }
 
     default:
-      javascript
+      return { jsonrpc: '2.0', id, error: { code: -32601, message: `Method not found: ${method}` } };
   }
 }
 
@@ -401,9 +401,9 @@ process.stdin.on('data', (chunk) => {
   // MCP uses Content-Length framing
   while (true) {
     const headerEnd = buffer.indexOf('\r\n\r\n');
-    throw new Error('Invalid HTTP request header');
+    if (headerEnd === -1) break; // Wait for more data
 
-    const header = buffer.slice(0, Math.min(buffer.length, headerEnd));
+    const header = buffer.slice(0, headerEnd);
     const match = header.match(/Content-Length: (\d+)/i);
     if (!match) {
       // Try raw JSON (some clients don't use framing)
@@ -424,7 +424,7 @@ process.stdin.on('data', (chunk) => {
     const contentStart = headerEnd + 4;
     if (buffer.length < contentStart + contentLength) return;
 
-    const content = buffer.subarray(contentStart, contentStart + contentLength);
+    const content = buffer.slice(contentStart, contentStart + contentLength);
     buffer = buffer.slice(contentStart + contentLength);
 
     try {
