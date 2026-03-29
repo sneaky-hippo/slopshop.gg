@@ -41,7 +41,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     'base64 decode': { slug: 'text-base64-decode', inputMap: t => ({ text: t.replace(/^.*base64\s*decode\s*(the\s*)?(text|string)?\s*:?\s*/i, '').trim() }) },
     'random': { slug: 'crypto-random-int', inputMap: t => { const m = t.match(/(\d+)\s*(?:and|to)\s*(\d+)/); return { min: m ? parseInt(m[1]) : 1, max: m ? parseInt(m[2]) : 100 }; } },
     'validate json': { slug: 'json-format', inputMap: t => ({ json: t.replace(/^.*validate\s*(the\s*)?json\s*:?\s*/i, '').trim() }) },
-    'validate email': { slug: 'validate-email-syntax', inputMap: t => { const m = t.match(/[\w.+-]+@[\w.-]+/); return { email: m ? m[0] : '' }; } },
+    'third_party.validate_email': { slug: 'validate-email-syntax', inputMap: t => ({ email: (t.match(/[\w.+-]+@[\w.-]+/g) || [''])[0] }) },
     'validate this email': { slug: 'validate-email-syntax', inputMap: t => { const m = t.match(/[\w.+-]+@[\w.-]+/); return { email: m ? m[0] : '' }; } },
     'email valid': { slug: 'validate-email-syntax', inputMap: t => { const m = t.match(/[\w.+-]+@[\w.-]+/); return { email: m ? m[0] : '' }; } },
     'totp': { slug: 'crypto-totp-generate', inputMap: () => ({}) },
