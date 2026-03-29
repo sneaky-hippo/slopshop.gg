@@ -526,10 +526,11 @@ function enrichDomainToCompany(input) {
 // 3. enrich-email-to-domain
 // ---------------------------------------------------------------------------
 function enrichEmailToDomain(input) {
+  input = input || {};
   const { email } = input;
-  if (!email) throw new Error('email is required');
+  if (!email) return { _engine: 'real', error: 'missing_required_field', required: 'email' };
   const parts = email.split('@');
-  if (parts.length !== 2) throw new Error('Invalid email format');
+  if (parts.length !== 2) return { _engine: 'real', error: 'invalid_format', message: 'Invalid email format' };
   return { _engine: 'real', domain: parts[1], local_part: parts[0] };
 }
 
@@ -537,8 +538,9 @@ function enrichEmailToDomain(input) {
 // 4. enrich-email-to-name
 // ---------------------------------------------------------------------------
 function enrichEmailToName(input) {
+  input = input || {};
   const { email } = input;
-  if (!email) throw new Error('email is required');
+  if (!email) return { _engine: 'real', error: 'missing_required_field', required: 'email' };
   const local = email.split('@')[0] || '';
   // Replace dots, dashes, underscores with spaces, then title-case each word
   const name = local
@@ -577,7 +579,7 @@ function enrichIpToAsn(input) {
   if (isIPv6) {
     return { _engine: 'real', ip, is_private: ip.startsWith('::1') || ip.startsWith('fc') || ip.startsWith('fd'), network_class: 'IPv6' };
   }
-  if (parts.length !== 4) throw new Error('Invalid IPv4 address');
+  if (parts.length !== 4) return { _engine: 'real', error: 'invalid_format', message: 'Invalid IPv4 address' };
   const [a, b] = parts;
   const is_private =
     (a === 10) ||
@@ -599,8 +601,9 @@ function enrichIpToAsn(input) {
 // 7. enrich-country-code
 // ---------------------------------------------------------------------------
 function enrichCountryCode(input) {
+  input = input || {};
   const { query } = input;
-  if (!query) throw new Error('query is required');
+  if (!query) return { _engine: 'real', error: 'missing_required_field', required: 'query' };
   const q = query.trim().toLowerCase();
   const found = COUNTRIES.find(c =>
     c.name.toLowerCase() === q ||
@@ -615,8 +618,9 @@ function enrichCountryCode(input) {
 // 8. enrich-language-code
 // ---------------------------------------------------------------------------
 function enrichLanguageCode(input) {
+  input = input || {};
   const { query } = input;
-  if (!query) throw new Error('query is required');
+  if (!query) return { _engine: 'real', error: 'missing_required_field', required: 'query' };
   const q = query.trim().toLowerCase();
   const found = LANGUAGES.find(l =>
     l.name.toLowerCase() === q ||
@@ -662,8 +666,9 @@ function enrichHttpStatusExplain(input) {
 // 11. enrich-port-service
 // ---------------------------------------------------------------------------
 function enrichPortService(input) {
+  input = input || {};
   const { port } = input;
-  if (port == null) throw new Error('port is required');
+  if (port == null) return { _engine: 'real', error: 'missing_required_field', required: 'port' };
   const p = Number(port);
   const info = PORT_SERVICES[p];
   if (info) return { _engine: 'real', port: p, service: info.service, protocol: info.protocol, description: info.description };
@@ -674,8 +679,9 @@ function enrichPortService(input) {
 // 12. enrich-useragent-parse
 // ---------------------------------------------------------------------------
 function enrichUseragentParse(input) {
+  input = input || {};
   const { useragent } = input;
-  if (!useragent) throw new Error('useragent is required');
+  if (!useragent) return { _engine: 'real', error: 'missing_required_field', required: 'useragent' };
   const ua = useragent;
 
   let browser = 'Unknown';
@@ -735,10 +741,11 @@ function enrichAcceptLanguageParse(input) {
 // 14. enrich-crontab-explain
 // ---------------------------------------------------------------------------
 function enrichCrontabExplain(input) {
+  input = input || {};
   const { cron } = input;
-  if (!cron) throw new Error('cron is required');
+  if (!cron) return { _engine: 'real', error: 'missing_required_field', required: 'cron' };
   const parts = cron.trim().split(/\s+/);
-  if (parts.length < 5) throw new Error('Invalid cron expression (need 5 fields)');
+  if (parts.length < 5) return { _engine: 'real', error: 'invalid_format', message: 'Invalid cron expression (need 5 fields)' };
   const [minute, hour, dom, month, dow] = parts;
 
   function explainField(val, unit, names) {
@@ -872,7 +879,7 @@ function enrichColorName(input) {
   if (!hex) return { _engine: 'real', error: 'missing_param', required: 'hex', hint: 'Provide a hex color code (e.g. #FF0000 or FF0000)' };
   hex = hex.replace('#', '').trim();
   if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-  if (hex.length !== 6) throw new Error('Invalid hex color');
+  if (hex.length !== 6) return { _engine: 'real', error: 'invalid_format', message: 'Invalid hex color' };
   const r = parseInt(hex.slice(0, 2), 16);
   const g = parseInt(hex.slice(2, 4), 16);
   const b = parseInt(hex.slice(4, 6), 16);
@@ -962,9 +969,10 @@ function commQrUrl(input) {
 // 22. comm-ical-create
 // ---------------------------------------------------------------------------
 function commIcalCreate(input) {
+  input = input || {};
   const { title = 'Event', start, end, location = '', description = '' } = input;
-  if (!start) throw new Error('start is required');
-  if (!end) throw new Error('end is required');
+  if (!start) return { _engine: 'real', error: 'missing_required_field', required: 'start' };
+  if (!end) return { _engine: 'real', error: 'missing_required_field', required: 'end' };
 
   function toIcalDate(d) {
     const dt = new Date(d);
@@ -1133,8 +1141,9 @@ function commMailtoLink(input) {
 // 29. comm-phone-validate
 // ---------------------------------------------------------------------------
 function commPhoneValidate(input) {
+  input = input || {};
   const { phone, country } = input;
-  if (!phone) throw new Error('phone is required');
+  if (!phone) return { _engine: 'real', error: 'missing_required_field', required: 'phone' };
   const stripped = phone.replace(/[\s\-().+]/g, '');
   const hasLetters = /[a-zA-Z]/.test(stripped);
   if (hasLetters) return { _engine: 'real', valid: false, formatted: null, country: country || null };
@@ -1169,8 +1178,9 @@ function commPhoneValidate(input) {
 // 30. comm-email-validate-deep
 // ---------------------------------------------------------------------------
 function commEmailValidateDeep(input) {
+  input = input || {};
   const { email } = input;
-  if (!email) throw new Error('email is required');
+  if (!email) return { _engine: 'real', error: 'missing_required_field', required: 'email' };
   const trimmed = email.trim().toLowerCase();
   const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
   const valid_format = emailRegex.test(trimmed);
