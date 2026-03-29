@@ -396,7 +396,7 @@ app.post('/v1/memory/session/create', auth, (req, res) => {
     return res.json({ ok: true, session_id: 'no-2fa', message: '2FA not enabled. Memory ops work without session.', verified: true });
   }
   const sessionId = 'memsess-' + crypto.randomUUID();
-  const code = String(Math.floor(100000 + Math.random() * 900000)); // 6-digit code
+  const code = String(crypto.randomInt(100000, 999999)); // 6-digit code (cryptographically random)
   const now = Date.now();
   const expires = now + 3600000; // 1 hour session
   const codeExpires = now + 600000; // 10 min code validity
@@ -574,6 +574,7 @@ function deterministicFloat(seed) {
 }
 // Extract prefix for indexed lookup (first 10 chars, e.g. "sk-slop-xx")
 function keyPrefix(key) {
+  return key ? key.slice(0, 12) : '';
 }
 const dbGetKey = db.prepare('SELECT * FROM api_keys WHERE key = ?');
 const dbGetKeyByHash = db.prepare('SELECT * FROM api_keys WHERE key_hash = ?');
@@ -1441,7 +1442,6 @@ app.get('/v1/mcp/manifest', publicRateLimit, (req, res) => {
 
 app.post('/v1/resolve', (req, res) => {
   const q = (req.body.query || '').toLowerCase();
-  js
   // Synonym expansion (discovered via hive-v2 dogfood testing)
   const SYN = { 'identifier': 'uuid', 'unique': 'uuid', 'id': 'uuid', 'encrypt': 'aes', 'decrypt': 'aes', 'password': 'generate', 'validate': 'check', 'secure': 'hash' };
   const words = q.split(/\s+/);
@@ -1647,6 +1647,7 @@ app.post('/v1/credits/redeem', auth, BODY_LIMIT_AUTH, (req, res) => {
     redeemed_by TEXT DEFAULT NULL, created INTEGER NOT NULL, redeemed_at INTEGER DEFAULT NULL
   )`);
   const row = db.prepare('SELECT * FROM credit_codes WHERE code = ?').get(code);
+  if (!row) return res.status(404).json({ error: { code: 'invalid_code', message: 'Credit code not found' } });
   if (row.redeemed_by) return res.status(409).json({ error: { code: 'already_redeemed', message: 'This code has already been used' } });
   // Redeem
   db.prepare('UPDATE credit_codes SET redeemed_by = ?, redeemed_at = ? WHERE code = ?').run(req.apiKey, Date.now(), code);
@@ -2783,7 +2784,6 @@ app.delete('/v1/dream/subscribe/:id', auth, (req, res) => {
 // Dream shared knowledge — public read of accumulated dreams
 app.get('/v1/dream/shared', publicRateLimit, (req, res) => {
   const memSearch = allHandlers['memory-search'];
-  js
   try {
     const result = memSearch({ namespace: 'dreams', tag: 'dream' });
     const dreams = (result.results || []).slice(0, 20).map(r => {
@@ -2817,7 +2817,7 @@ app.get('/v1/channels', auth, (req, res) => {
 // ===== INBOUND WEBHOOK LISTENER =====
 db.exec(`CREATE TABLE IF NOT EXISTS inbound_webhooks (id TEXT PRIMARY KEY, api_key TEXT, payload TEXT, source TEXT, ts INTEGER)`);
 
-app.post('/v1/webhooks/inbox/:key_prefix', (req, res) => {
+app.post('/v1/webhooks/inbox/:key_prefix', publicRateLimit, (req, res) => {
   // Public endpoint — anyone can POST to trigger a webhook for an agent
   const id = 'wh-' + crypto.randomUUID().slice(0, 12);
   db.prepare('INSERT INTO inbound_webhooks (id, api_key, payload, source, ts) VALUES (?, ?, ?, ?, ?)').run(id, req.params.key_prefix, JSON.stringify(req.body), req.headers['user-agent'] || 'unknown', Date.now());
@@ -7822,6 +7822,34 @@ app.post('/v1/state/list', auth, (req, res) => {
   res.json({ ok: true, namespace: ns, entries, count: entries.length, _engine: 'real' });
 });
 
+// Safe condition evaluator — no arbitrary JS execution
+// Supports: ctx.field op value  (op: ==, !=, >, <, >=, <=, ===, !==)
+function evalSafeCondition(condStr, ctx) {
+  const m = String(condStr).trim().match(/^ctx\.(\w+(?:\.\w+)*)\s*(===|!==|==|!=|>=|<=|>|<)\s*(.+)$/);
+  if (!m) return false;
+  const [, path, op, rawVal] = m;
+  let lhs = ctx;
+  for (const part of path.split('.')) { lhs = lhs != null ? lhs[part] : undefined; }
+  let rhs = rawVal.trim();
+  if (rhs === 'true') rhs = true;
+  else if (rhs === 'false') rhs = false;
+  else if (rhs === 'null') rhs = null;
+  else if (rhs === 'undefined') rhs = undefined;
+  else if (/^['"](.*)['"]$/.test(rhs)) rhs = rhs.slice(1, -1);
+  else if (!isNaN(Number(rhs))) rhs = Number(rhs);
+  switch (op) {
+    case '==':  return lhs == rhs;
+    case '!=':  return lhs != rhs;
+    case '===': return lhs === rhs;
+    case '!==': return lhs !== rhs;
+    case '>':   return lhs > rhs;
+    case '<':   return lhs < rhs;
+    case '>=':  return lhs >= rhs;
+    case '<=':  return lhs <= rhs;
+    default:    return false;
+  }
+}
+
 // ===== WORKFLOWS — Declarative multi-step conditional chains =====
 app.post('/v1/workflows/run', auth, async (req, res) => {
   const { name, steps, input } = req.body;
@@ -7840,8 +7868,7 @@ app.post('/v1/workflows/run', auth, async (req, res) => {
     // Conditional execution
     if (step.condition) {
       try {
-        const condFn = new Function('ctx', 'return ' + step.condition);
-        if (!condFn(context)) {
+        if (!evalSafeCondition(step.condition, context)) {
           results.push({ step: i, api: step.api, skipped: true, reason: 'Condition false: ' + step.condition });
           continue;
         }

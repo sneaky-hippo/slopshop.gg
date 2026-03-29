@@ -6171,7 +6171,13 @@ async function cmdInteractive() {
           case 'listen': await cmdListen(args); break;
           case 'types': await cmdTypes(args); break;
           case 'model': await cmdModels(args); break;
-          case 'do': await cmdNatural(args); break;
+          case 'voice': await cmdVoice(args); break;
+          case 'simulate': await cmdSimulate(args); break;
+          case 'snapshot': await cmdSnapshot(args); break;
+          case 'guardrails': await cmdGuardrails(args); break;
+          case 'template': await cmdTemplate(args); break;
+          case 'marketplace': await cmdMarketplace(args); break;
+          case 'do': await cmdNatural(args[0] || '', args.slice(1)); break;
           case 'tui': case 'dashboard': await cmdTui(); break;
           default:
             // Smart LOCAL routing before burning cloud credits
