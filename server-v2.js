@@ -4327,7 +4327,7 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
   });
 });
 
-// POST /v1/agent/simulate — Dry-run simulation of army/deploy (no credits charged)
+// POST /v1/agent/simulate — Real dry-run with actual handler execution and measured latency
 app.post('/v1/agent/simulate', auth, async (req, res) => {
   const { task, tool, input, agents, verify } = req.body;
   if (!task && !tool) return res.status(400).json({ error: { code: 'missing_task', message: 'Provide task (natural language) or tool (slug) + input' } });
@@ -4341,42 +4341,101 @@ app.post('/v1/agent/simulate', auth, async (req, res) => {
     return res.status(404).json({ error: { code: 'tool_not_found', slug: tool, hint: 'Use GET /v1/tools to browse available tools' } });
   }
 
-  // Generate a small sample (max 3 agents) to preview results without real cost
+  // Run 1-3 sample agents with REAL handler execution and measure actual latency
   const sampleSize = Math.min(n, 3);
   const sampleResults = [];
+  const sampleLatencies = [];
 
   for (let i = 0; i < sampleSize; i++) {
-    const agentId = `sim-agent-${i + 1}`;
+    const agentId = 'sim-agent-' + (i + 1);
     if (handler) {
+      const agentStart = Date.now();
       try {
         const cleanInput = input ? { ...input } : {};
-        const result = await Promise.resolve(handler(cleanInput));
-        sampleResults.push({ agent_id: agentId, result, _engine: result?._engine || 'real', simulated: true });
+        const result = await Promise.race([
+          Promise.resolve(handler(cleanInput)),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('handler_timeout')), 10000)),
+        ]);
+        const agentLatency = Date.now() - agentStart;
+        sampleLatencies.push(agentLatency);
+        const resultCredits = result?._credits || creditsPerAgent;
+        sampleResults.push({
+          agent_id: agentId,
+          result,
+          _engine: result?._engine || 'real',
+          simulated: true,
+          latency_ms: agentLatency,
+          credits_used: resultCredits,
+        });
       } catch (e) {
-        sampleResults.push({ agent_id: agentId, error: e.message, simulated: true });
+        const agentLatency = Date.now() - agentStart;
+        sampleLatencies.push(agentLatency);
+        sampleResults.push({ agent_id: agentId, error: e.message, simulated: true, latency_ms: agentLatency });
       }
     } else {
       sampleResults.push({
         agent_id: agentId,
-        perspective: `Simulated agent ${i + 1} analysis of: "${(task || '').slice(0, 200)}"`,
+        perspective: 'Simulated agent ' + (i + 1) + ' analysis of: "' + (task || '').slice(0, 200) + '"',
         simulated: true,
+        latency_ms: 0,
         note: 'For real handler execution, pass tool: "slug-name" + input: {...}',
       });
+      sampleLatencies.push(0);
     }
   }
 
-  // Estimate time based on sample or heuristics
-  const estimatedPerAgent = handler ? 50 : 5; // ms per agent estimate
-  const projectedTime = n <= 20
-    ? `~${Math.round(n * estimatedPerAgent)}ms (sync)`
-    : `~${Math.round((n / 10) * estimatedPerAgent)}ms (batched async, ${Math.ceil(n / 10)} batches)`;
+  // Calculate accurate projected cost from actual handler credits
+  const actualCreditsPerAgent = sampleResults.length > 0
+    ? sampleResults.reduce((s, r) => s + (r.credits_used || creditsPerAgent), 0) / sampleResults.length
+    : creditsPerAgent;
+  const projectedTotalCredits = Math.ceil(n * actualCreditsPerAgent);
+
+  // Estimate time from actual latency measurements
+  const avgSampleLatency = sampleLatencies.length > 0
+    ? Math.round(sampleLatencies.reduce((a, b) => a + b, 0) / sampleLatencies.length)
+    : 5;
+  const maxSampleLatency = sampleLatencies.length > 0 ? Math.max(...sampleLatencies) : 5;
+  const batchSize = 10;
+  let projectedTime;
+  if (n <= batchSize) {
+    projectedTime = '~' + (n * avgSampleLatency) + 'ms (sync, ' + avgSampleLatency + 'ms avg/agent measured)';
+  } else {
+    const batches = Math.ceil(n / batchSize);
+    const batchTime = maxSampleLatency * 1.2; // account for contention
+    projectedTime = '~' + Math.round(batches * batchTime) + 'ms (batched async, ' + batches + ' batches, ' + avgSampleLatency + 'ms avg/agent measured)';
+  }
+
+  // Verification: check consistency across sample results
+  let verificationResult = null;
+  if (verify && sampleResults.length >= 2) {
+    const hashes = sampleResults.filter(r => r.result).map(r => crypto.createHash('sha256').update(JSON.stringify(r.result)).digest('hex').slice(0, 12));
+    const allSame = hashes.length > 0 && hashes.every(h => h === hashes[0]);
+    verificationResult = {
+      sample_hashes: hashes,
+      deterministic: allSame,
+      note: allSame ? 'All sample agents returned identical results' : 'Results vary across agents (non-deterministic handler)',
+    };
+  }
 
   res.json({
     ok: true,
     simulated: true,
-    projected_cost: { total_credits: totalCredits, per_agent: creditsPerAgent, agent_count: n, current_balance: req.acct.balance, balance_after: req.acct.balance - totalCredits },
+    projected_cost: {
+      total_credits: projectedTotalCredits,
+      per_agent: Math.round(actualCreditsPerAgent * 100) / 100,
+      agent_count: n,
+      current_balance: req.acct.balance,
+      balance_after: req.acct.balance - projectedTotalCredits,
+      affordable: req.acct.balance >= projectedTotalCredits,
+    },
     projected_time: projectedTime,
+    measured_latency: {
+      avg_ms: avgSampleLatency,
+      max_ms: maxSampleLatency,
+      samples: sampleLatencies.length,
+    },
     sample_results: sampleResults,
+    verification: verificationResult,
     _engine: 'real',
   });
 });
@@ -8731,28 +8790,139 @@ app.get('/v1/status/dashboard', (req, res) => {
 });
 
 // ===== BENCHMARK — On-demand performance test (requested by Claude, Grok) =====
-app.get('/v1/benchmark', auth, async (req, res) => {
-  const tests = ['crypto-uuid', 'crypto-hash-sha256', 'text-word-count', 'text-reverse', 'crypto-password-generate'];
-  const results = [];
+// ===== BENCHMARK with REAL test vectors — known correct answers for 50+ endpoints =====
+const TEST_VECTORS = {
+  'crypto-hash-sha256': { input: { text: 'hello' }, expect: d => d.hash === '2cf24dba5fb0a30e26e83b2ac5b9e29e1b161e5c1fa7425e73043362938b9824' },
+  'crypto-hash-sha512': { input: { text: 'hello' }, expect: d => typeof d.hash === 'string' && d.hash.length === 128 },
+  'crypto-hash-md5': { input: { text: 'hello' }, expect: d => d.hash === '5d41402abc4b2a76b9719d911017c592' },
+  'crypto-uuid': { input: {}, expect: d => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(d.uuid) },
+  'crypto-nanoid': { input: { size: 10 }, expect: d => typeof d.id === 'string' && d.id.length === 10 },
+  'crypto-password-generate': { input: { length: 20 }, expect: d => typeof d.password === 'string' && d.password.length === 20 },
+  'crypto-random-bytes': { input: { size: 16 }, expect: d => typeof d.hex === 'string' && d.hex.length === 32 },
+  'crypto-random-int': { input: { min: 1, max: 10 }, expect: d => d.result >= 1 && d.result <= 10 },
+  'crypto-otp-generate': { input: { digits: 6 }, expect: d => /^\d{6}$/.test(d.otp) },
+  'crypto-hmac': { input: { text: 'hello', secret: 'key' }, expect: d => typeof d.hmac === 'string' && d.hmac.length === 64 },
+  'crypto-encrypt-aes': { input: { text: 'secret', key: 'mykey' }, expect: d => typeof d.encrypted === 'string' && typeof d.iv === 'string' && typeof d.tag === 'string' },
+  'crypto-checksum-file': { input: { content: 'test' }, expect: d => typeof d.md5 === 'string' && typeof d.sha256 === 'string' },
+  'math-evaluate': { input: { expression: '2+2' }, expect: d => d.result === 4 },
+  'math-fibonacci': { input: { n: 7 }, expect: d => Array.isArray(d.sequence) && d.sequence.length === 7 && d.sequence[6] === 8 },
+  'math-prime-check': { input: { n: 17 }, expect: d => d.isPrime === true },
+  'math-gcd': { input: { a: 12, b: 8 }, expect: d => d.gcd === 4 },
+  'math-lcm': { input: { a: 4, b: 6 }, expect: d => d.lcm === 12 },
+  'math-statistics': { input: { numbers: [1, 2, 3, 4, 5] }, expect: d => d.mean === 3 && d.median === 3 && d.min === 1 && d.max === 5 },
+  'math-percentile': { input: { numbers: [10, 20, 30, 40, 50], percentile: 50 }, expect: d => d.value === 30 },
+  'math-base-convert': { input: { value: '255', from: 10, to: 16 }, expect: d => d.result === 'ff' },
+  'math-currency-convert': { input: { amount: 100, from: 'USD', to: 'USD' }, expect: d => d.result === 100 },
+  'math-unit-convert': { input: { value: 1000, from: 'g', to: 'kg' }, expect: d => d.result === 1 },
+  'math-percentage-change': { input: { from: 50, to: 75 }, expect: d => d.change === 50 && d.direction === 'increase' },
+  'math-compound-interest': { input: { principal: 1000, rate: 0.1, years: 1, n: 1 }, expect: d => d.finalAmount === 1100 },
+  'math-color-convert': { input: { hex: '#ff0000' }, expect: d => d.rgb && d.rgb.r === 255 && d.rgb.g === 0 && d.rgb.b === 0 },
+  'math-number-format': { input: { number: 1234.5, decimals: 2 }, expect: d => typeof d.result === 'string' },
+  'math-roi-calculate': { input: { cost: 100, revenue: 150 }, expect: d => d.profit === 50 && d.roi === 50 },
+  'stats-mean': { input: { data: [2, 4, 6] }, expect: d => d.mean === 4 },
+  'stats-median': { input: { data: [1, 3, 5, 7, 9] }, expect: d => d.median === 5 },
+  'stats-stddev': { input: { data: [2, 4, 4, 4, 5, 5, 7, 9] }, expect: d => typeof d.stddev === 'number' && d.stddev > 0 },
+  'stats-summary': { input: { data: [1, 2, 3, 4, 5] }, expect: d => d.count === 5 && d.min === 1 && d.max === 5 },
+  'text-word-count': { input: { text: 'a b c' }, expect: d => d.words === 3 },
+  'text-char-count': { input: { text: 'hello' }, expect: d => d.withSpaces === 5 && d.letters === 5 },
+  'text-reverse': { input: { text: 'abc' }, expect: d => d.result === 'cba' },
+  'text-slugify': { input: { text: 'Hello World!' }, expect: d => d.slug === 'hello-world' },
+  'text-case-convert': { input: { text: 'hello world', to: 'upper' }, expect: d => d.result === 'HELLO WORLD' },
+  'text-base64-encode': { input: { text: 'hello' }, expect: d => d.result === 'aGVsbG8=' },
+  'text-base64-decode': { input: { text: 'aGVsbG8=' }, expect: d => d.result === 'hello' },
+  'text-url-encode': { input: { text: 'hello world' }, expect: d => d.result === 'hello%20world' },
+  'text-url-decode': { input: { text: 'hello%20world' }, expect: d => d.result === 'hello world' },
+  'text-hex-encode': { input: { text: 'hi' }, expect: d => d.result === '6869' },
+  'text-hex-decode': { input: { text: '6869' }, expect: d => d.result === 'hi' },
+  'text-rot13': { input: { text: 'hello' }, expect: d => d.result === 'uryyb' },
+  'text-extract-emails': { input: { text: 'mail me at test@example.com please' }, expect: d => d.count === 1 && d.emails[0] === 'test@example.com' },
+  'text-extract-urls': { input: { text: 'go to https://example.com now' }, expect: d => d.count === 1 && d.urls[0] === 'https://example.com' },
+  'text-extract-numbers': { input: { text: 'I have 3 cats and 5 dogs' }, expect: d => d.count === 2 && d.numbers.includes(3) && d.numbers.includes(5) },
+  'text-extract-hashtags': { input: { text: '#hello #world' }, expect: d => d.count === 2 },
+  'text-extract-mentions': { input: { text: 'hey @alice and @bob' }, expect: d => d.count === 2 },
+  'text-json-validate': { input: { text: '{"a":1}' }, expect: d => d.valid === true },
+  'text-strip-html': { input: { text: '<b>bold</b>' }, expect: d => d.result === 'bold' },
+  'text-escape-html': { input: { text: '<div>' }, expect: d => d.result === '&lt;div&gt;' },
+  'text-unescape-html': { input: { text: '&lt;div&gt;' }, expect: d => d.result === '<div>' },
+  'text-sentence-split': { input: { text: 'Hello. World.' }, expect: d => d.count === 2 },
+  'text-csv-to-json': { input: { text: 'a,b\n1,2' }, expect: d => Array.isArray(d.data) && d.data.length === 1 && d.data[0].a === '1' },
+  'text-regex-test': { input: { text: 'abc123', pattern: '\\d+' }, expect: d => d.matched === true && d.count >= 1 },
+  'text-profanity-check': { input: { text: 'hello friend' }, expect: d => d.clean === true && d.count === 0 },
+  'text-language-detect': { input: { text: 'the quick brown fox jumps over the lazy dog' }, expect: d => d.detected === 'english' },
+  'text-deduplicate-lines': { input: { text: 'a\nb\na\nc' }, expect: d => d.unique === 3 && d.duplicatesRemoved === 1 },
+  'text-sort-lines': { input: { text: 'c\na\nb' }, expect: d => d.result === 'a\nb\nc' },
+  'text-json-format': { input: { text: '{"a":1}', minify: true }, expect: d => d.result === '{"a":1}' && d.valid === true },
+  'text-json-flatten': { input: { data: { a: { b: 1 } } }, expect: d => d.result && d.result['a.b'] === 1 },
+  'text-yaml-to-json': { input: { text: 'name: test\nvalue: 42' }, expect: d => d.data && d.data.name === 'test' && d.data.value === 42 },
+  'text-markdown-to-html': { input: { text: '**bold**' }, expect: d => typeof d.html === 'string' && d.html.includes('<strong>bold</strong>') },
+  'text-count-frequency': { input: { text: 'the cat sat on the mat', mode: 'word' }, expect: d => d.frequency && d.frequency.the === 2 },
+  'date-weekday': { input: { date: '2024-01-01' }, expect: d => d.weekday === 'Monday' },
+  'date-diff': { input: { from: '2024-01-01', to: '2024-01-31' }, expect: d => d.days === 30 },
+  'date-unix-to-iso': { input: { timestamp: 0 }, expect: d => typeof d.iso === 'string' && d.iso.startsWith('1970') },
+  'gen-slug': { input: { text: 'My Cool API' }, expect: d => typeof d.slug === 'string' && d.slug === 'my-cool-api' },
+  'gen-short-id': { input: {}, expect: d => typeof d.id === 'string' && d.id.length > 0 },
+  'code-semver-compare': { input: { a: '1.2.3', b: '1.3.0' }, expect: d => d.result === -1 || d.comparison === -1 || d.a_less === true || (typeof d.result === 'number' && d.result < 0) },
+};
 
-  for (const slug of tests) {
+app.get('/v1/benchmark', auth, async (req, res) => {
+  const results = [];
+  let passed = 0, failed = 0, skipped = 0, errors = 0;
+
+  for (const [slug, vector] of Object.entries(TEST_VECTORS)) {
     const handler = allHandlers[slug];
-    if (!handler) continue;
+    if (!handler) { results.push({ api: slug, status: 'SKIP', reason: 'no handler' }); skipped++; continue; }
+
     const times = [];
+    let output = null;
+    let testPassed = false;
+    let testError = null;
+
     for (let i = 0; i < 3; i++) {
       const start = process.hrtime.bigint();
-      try { await handler({ text: 'benchmark-' + Date.now(), length: 16 }); } catch(e) {}
-      times.push(Number(process.hrtime.bigint() - start) / 1e6);
+      try {
+        const result = await handler(vector.input);
+        if (i === 0) output = result;
+        times.push(Number(process.hrtime.bigint() - start) / 1e6);
+      } catch (e) {
+        times.push(Number(process.hrtime.bigint() - start) / 1e6);
+        if (i === 0) testError = e.message;
+      }
     }
+
+    if (testError) {
+      results.push({ api: slug, status: 'ERROR', error: testError, p50_ms: times.length >= 2 ? +times.sort((a, b) => a - b)[1].toFixed(3) : null });
+      errors++;
+      continue;
+    }
+
+    try {
+      testPassed = vector.expect(output);
+    } catch (e) {
+      testPassed = false;
+      testError = 'Assertion threw: ' + e.message;
+    }
+
     times.sort((a, b) => a - b);
-    results.push({ api: slug, p50_ms: +times[1].toFixed(3), min_ms: +times[0].toFixed(3), max_ms: +times[2].toFixed(3) });
+    const entry = {
+      api: slug,
+      status: testPassed ? 'PASS' : 'FAIL',
+      p50_ms: times.length >= 2 ? +times[1].toFixed(3) : +times[0].toFixed(3),
+      min_ms: +times[0].toFixed(3),
+      max_ms: +times[times.length - 1].toFixed(3),
+    };
+    if (!testPassed) entry.output_sample = JSON.stringify(output).slice(0, 200);
+    if (testError) entry.error = testError;
+    results.push(entry);
+    if (testPassed) passed++; else failed++;
   }
 
   res.json({
     ok: true,
+    summary: { total: results.length, passed, failed, skipped, errors, pass_rate: results.length > 0 ? +(passed / (passed + failed + errors) * 100).toFixed(1) : 0 },
     benchmark: results,
     total_handlers: Object.keys(allHandlers).length,
-    avg_p50_ms: +(results.reduce((s, r) => s + r.p50_ms, 0) / results.length).toFixed(3),
+    total_test_vectors: Object.keys(TEST_VECTORS).length,
+    avg_p50_ms: +(results.filter(r => r.p50_ms != null).reduce((s, r) => s + r.p50_ms, 0) / Math.max(results.filter(r => r.p50_ms != null).length, 1)).toFixed(3),
     _engine: 'real',
   });
 });
@@ -11690,92 +11860,154 @@ app.post('/v1/graphrag/query', auth, (req, res) => {
 });
 
 // ===== STRAT 3: CHAOS TESTING =====
-// POST /v1/chaos/test — Inject random failures into endpoints and report resilience
+// POST /v1/chaos/test — Inject real failures into endpoints, measure recovery + data integrity
 app.post('/v1/chaos/test', auth, async (req, res) => {
-  const { endpoints, chaos_rate } = req.body;
+  const { endpoints, chaos_rate, input } = req.body;
   if (!endpoints || !Array.isArray(endpoints) || endpoints.length === 0) {
     return res.status(400).json({ error: { code: 'missing_endpoints', message: 'Provide endpoints array (list of API slugs or paths to test)' } });
   }
 
-  const rate = Math.min(Math.max(chaos_rate || 0.3, 0.1), 0.9); // Failure injection rate 10-90%
+  const rate = Math.min(Math.max(chaos_rate || 0.3, 0.1), 0.9);
   const maxEndpoints = 20;
   const testTargets = endpoints.slice(0, maxEndpoints);
   const startTime = Date.now();
   const report = [];
+  const userInput = input || {};
+
+  // Inject latency via setTimeout wrapper around a real handler call
+  function withLatency(fn, delayMs) {
+    return new Promise((resolve, reject) => {
+      setTimeout(() => { Promise.resolve(fn()).then(resolve).catch(reject); }, delayMs);
+    });
+  }
+
+  // Call a real handler with a hard timeout
+  async function callHandler(hdlr, hdlrInput, timeoutMs) {
+    return Promise.race([
+      Promise.resolve(hdlr(hdlrInput)),
+      new Promise((_, reject) => setTimeout(() => reject(new Error('handler_timeout')), timeoutMs)),
+    ]);
+  }
 
   for (const target of testTargets) {
     const slug = target.replace(/^\/v1\//, '').replace(/\//g, '-');
     const handler = allHandlers[slug];
-    const testResults = { endpoint: target, slug, tests: [] };
+    const handlerInput = userInput[slug] || userInput[target] || {};
+    const testResults = { endpoint: target, slug, handler_found: !!handler, tests: [] };
 
-    // Run 5 chaos iterations per endpoint
+    if (!handler) {
+      testResults.resilience_score = 0;
+      testResults.recovery_rate = '0/0';
+      testResults.avg_latency_ms = 0;
+      testResults.data_integrity_rate = 'skipped';
+      testResults.note = 'No handler registered for this slug. Use GET /v1/tools to browse.';
+      report.push(testResults);
+      continue;
+    }
+
+    // Phase 1: Baseline — call handler with real input, hash the known-good result
+    let baselineHash = null;
+    const baselineStart = Date.now();
+    try {
+      const baselineResult = await callHandler(handler, { ...handlerInput }, 5000);
+      baselineHash = crypto.createHash('sha256').update(JSON.stringify(baselineResult)).digest('hex').slice(0, 16);
+      testResults.baseline = { ok: true, latency_ms: Date.now() - baselineStart, output_hash: baselineHash };
+    } catch (e) {
+      testResults.baseline = { ok: false, error: e.message, latency_ms: Date.now() - baselineStart };
+    }
+
+    // Phase 2: 5 chaos iterations with real fault injection + recovery verification
     for (let i = 0; i < 5; i++) {
       const chaosType = Math.random();
       const shouldFail = Math.random() < rate;
       const iterStart = Date.now();
 
       if (shouldFail) {
-        // Inject a random failure type
-        let failureType, result;
+        let failureType, faultLatency;
+        let faultOk = false;
         if (chaosType < 0.33) {
-          failureType = 'timeout';
-          result = { status: 408, error: 'Simulated timeout after 5000ms' };
+          // Latency injection: 200-800ms delay before real handler call
+          failureType = 'latency_injection';
+          const injectedDelay = 200 + Math.floor(Math.random() * 600);
+          try { await withLatency(() => callHandler(handler, { ...handlerInput }, 3000), injectedDelay); faultOk = true; } catch (e) { /* fault */ }
+          faultLatency = Date.now() - iterStart;
         } else if (chaosType < 0.66) {
-          failureType = 'server_error';
-          result = { status: 500, error: 'Simulated internal server error' };
+          // Bad input injection: corrupt the input and call the real handler
+          failureType = 'bad_input';
+          const corruptedInput = {};
+          for (const k of Object.keys(handlerInput)) {
+            corruptedInput[k] = typeof handlerInput[k] === 'string' ? null : 'CHAOS_CORRUPT';
+          }
+          corruptedInput['__chaos_inject'] = true;
+          try { await callHandler(handler, corruptedInput, 3000); faultOk = true; } catch (e) { /* expected */ }
+          faultLatency = Date.now() - iterStart;
         } else {
-          failureType = 'bad_gateway';
-          result = { status: 502, error: 'Simulated bad gateway' };
+          // Tight timeout: give handler only 50ms to respond
+          failureType = 'tight_timeout';
+          try { await callHandler(handler, { ...handlerInput }, 50); faultOk = true; } catch (e) { /* expected timeout */ }
+          faultLatency = Date.now() - iterStart;
         }
+
+        // Recovery: call again with correct input, compare output hash to baseline
+        const recoveryStart = Date.now();
+        let recovered = false;
+        let dataIntact = false;
+        try {
+          const recoveryResult = await callHandler(handler, { ...handlerInput }, 5000);
+          recovered = true;
+          if (baselineHash) {
+            const recoveryHash = crypto.createHash('sha256').update(JSON.stringify(recoveryResult)).digest('hex').slice(0, 16);
+            dataIntact = recoveryHash === baselineHash;
+          }
+        } catch (e) { /* recovery failed */ }
+
         testResults.tests.push({
           iteration: i + 1,
           injected_failure: failureType,
-          result,
-          latency_ms: Date.now() - iterStart,
-          recovered: false,
+          fault_survived: faultOk,
+          fault_latency_ms: faultLatency,
+          recovery: { success: recovered, data_integrity_intact: dataIntact, latency_ms: Date.now() - recoveryStart },
+          recovered,
+          data_integrity_intact: dataIntact,
         });
       } else {
-        // Run the actual handler (if it exists)
-        if (handler) {
-          try {
-            const result = await Promise.race([
-              Promise.resolve(handler({})),
-              new Promise((_, reject) => setTimeout(() => reject(new Error('handler_timeout')), 3000)),
-            ]);
-            testResults.tests.push({
-              iteration: i + 1,
-              injected_failure: null,
-              result: { status: 200, ok: true, has_output: !!result },
-              latency_ms: Date.now() - iterStart,
-              recovered: true,
-            });
-          } catch (e) {
-            testResults.tests.push({
-              iteration: i + 1,
-              injected_failure: null,
-              result: { status: 500, error: e.message },
-              latency_ms: Date.now() - iterStart,
-              recovered: false,
-            });
-          }
-        } else {
+        // Clean call — verify result integrity against baseline
+        try {
+          const result = await callHandler(handler, { ...handlerInput }, 5000);
+          const resultHash = crypto.createHash('sha256').update(JSON.stringify(result)).digest('hex').slice(0, 16);
           testResults.tests.push({
             iteration: i + 1,
             injected_failure: null,
-            result: { status: 200, ok: true, note: 'No handler found — synthetic pass' },
+            result: { status: 200, ok: true, has_output: !!result, output_hash: resultHash },
             latency_ms: Date.now() - iterStart,
+            data_integrity_intact: baselineHash ? resultHash === baselineHash : null,
             recovered: true,
+          });
+        } catch (e) {
+          testResults.tests.push({
+            iteration: i + 1,
+            injected_failure: null,
+            result: { status: 500, error: e.message },
+            latency_ms: Date.now() - iterStart,
+            data_integrity_intact: false,
+            recovered: false,
           });
         }
       }
     }
 
-    // Compute resilience metrics for this endpoint
+    // Score: 60% recovery success rate + 40% data integrity after faults
     const successes = testResults.tests.filter(t => t.recovered).length;
-    const failures = testResults.tests.filter(t => !t.recovered).length;
-    const avgLatency = Math.round(testResults.tests.reduce((s, t) => s + t.latency_ms, 0) / testResults.tests.length);
-    testResults.resilience_score = Math.round((successes / testResults.tests.length) * 100);
-    testResults.success_rate = `${successes}/${testResults.tests.length}`;
+    const avgLatency = Math.round(testResults.tests.reduce((s, t) => s + (t.latency_ms || t.fault_latency_ms || 0), 0) / testResults.tests.length);
+    const integrityChecks = testResults.tests.filter(t => t.data_integrity_intact !== null && t.data_integrity_intact !== undefined);
+    const integrityPass = integrityChecks.filter(t => t.data_integrity_intact === true).length;
+    const recoveryPct = Math.round((successes / testResults.tests.length) * 100);
+    const integrityPct = integrityChecks.length > 0 ? Math.round((integrityPass / integrityChecks.length) * 100) : null;
+    testResults.resilience_score = integrityPct !== null
+      ? Math.round(recoveryPct * 0.6 + integrityPct * 0.4)
+      : recoveryPct;
+    testResults.recovery_rate = successes + '/' + testResults.tests.length;
+    testResults.data_integrity_rate = integrityChecks.length > 0 ? integrityPass + '/' + integrityChecks.length : 'n/a';
     testResults.avg_latency_ms = avgLatency;
     report.push(testResults);
   }
@@ -11795,14 +12027,15 @@ app.post('/v1/chaos/test', auth, async (req, res) => {
     chaos_config: {
       failure_rate: rate,
       iterations_per_endpoint: 5,
-      failure_types: ['timeout', 'server_error', 'bad_gateway'],
+      failure_types: ['latency_injection', 'bad_input', 'tight_timeout'],
+      scoring: '60% recovery_success + 40% data_integrity',
     },
     report,
     summary: {
       endpoints_tested: report.length,
       overall_resilience_score: overallScore,
       grade: overallScore >= 80 ? 'A' : overallScore >= 60 ? 'B' : overallScore >= 40 ? 'C' : 'D',
-      total_tests: report.length * 5,
+      total_tests: report.reduce((s, r) => s + r.tests.length, 0),
       total_latency_ms: totalLatency,
     },
     output_hash: outputHash,
@@ -12328,7 +12561,7 @@ app.post('/v1/arbitrage/optimize', auth, (req, res) => {
   }
 });
 
-// 12. POST /v1/federated/learn — Federated learning endpoint
+// 12. POST /v1/federated/learn — Federated learning endpoint (real FedAvg aggregation)
 app.post('/v1/federated/learn', auth, (req, res) => {
   const start = Date.now();
   try {
@@ -12336,57 +12569,91 @@ app.post('/v1/federated/learn', auth, (req, res) => {
     if (model_updates === undefined || round === undefined) {
       return res.status(400).json({ error: { code: 'missing_fields', message: 'model_updates and round are required' } });
     }
+    // Validate model_updates is a numeric array
+    if (!Array.isArray(model_updates) || model_updates.length === 0) {
+      return res.status(400).json({ error: { code: 'invalid_model_updates', message: 'model_updates must be a non-empty array of numbers' } });
+    }
+    for (let i = 0; i < model_updates.length; i++) {
+      if (typeof model_updates[i] !== 'number' || !isFinite(model_updates[i])) {
+        return res.status(400).json({ error: { code: 'invalid_model_updates', message: 'model_updates[' + i + '] must be a finite number, got ' + typeof model_updates[i] } });
+      }
+    }
+    if (typeof round !== 'number' || round < 0 || !Number.isInteger(round)) {
+      return res.status(400).json({ error: { code: 'invalid_round', message: 'round must be a non-negative integer' } });
+    }
+
     const roundId = 'fround_' + uuidv4();
     const aggMethod = aggregation_method || 'fedavg';
-    // Check for existing rounds at this round number for aggregation
+    // Check for existing submissions at this round number
     const existingRounds = db.prepare('SELECT * FROM federated_rounds WHERE round = ?').all(round);
     const participants = existingRounds.length + 1;
     dbInsertFederatedRound.run(roundId, req.apiKey, round, JSON.stringify(model_updates), aggMethod, participants);
-    // Update participant count on all rounds in this round number
+    // Update participant count on all rows for this round
     if (existingRounds.length > 0) {
       db.prepare('UPDATE federated_rounds SET participants = ? WHERE round = ?').run(participants, round);
     }
 
-    // REAL AGGREGATION: FedAvg — average the model updates from all participants
+    // REAL AGGREGATION: FedAvg — element-wise average when 2+ participants
     let aggregatedWeights = null;
     let convergenceScore = 0;
-    if (participants >= 2) {
-      try {
-        const allUpdates = existingRounds.map(r => {
-          try { return JSON.parse(r.model_updates); } catch { return null; }
-        }).filter(Boolean);
-        allUpdates.push(typeof model_updates === 'string' ? JSON.parse(model_updates) : model_updates);
+    let perElementVariance = null;
 
-        if (aggMethod === 'fedavg' && Array.isArray(allUpdates[0])) {
-          // FedAvg: element-wise average of weight arrays
-          const len = allUpdates[0].length;
-          aggregatedWeights = new Array(len).fill(0);
-          for (const update of allUpdates) {
-            for (let i = 0; i < Math.min(update.length, len); i++) {
-              aggregatedWeights[i] += (typeof update[i] === 'number' ? update[i] : 0) / allUpdates.length;
-            }
+    if (participants >= 2) {
+      // Collect all valid numeric arrays for this round (existing + current)
+      const allUpdates = [];
+      for (const r of existingRounds) {
+        try {
+          const parsed = JSON.parse(r.model_updates);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed.every(v => typeof v === 'number' && isFinite(v))) {
+            allUpdates.push(parsed);
           }
-          // Convergence: measure variance across participants (lower = more converged)
-          const variance = aggregatedWeights.reduce((sum, avg, i) => {
-            const diffs = allUpdates.map(u => Math.pow((u[i] || 0) - avg, 2));
-            return sum + diffs.reduce((a, b) => a + b, 0) / diffs.length;
-          }, 0) / aggregatedWeights.length;
-          convergenceScore = Math.max(0, 1 - Math.min(variance, 1)); // 1.0 = fully converged
-        } else if (typeof allUpdates[0] === 'object' && !Array.isArray(allUpdates[0])) {
-          // FedAvg for named weights: {layer1: [w1, w2], layer2: [w3, w4]}
-          aggregatedWeights = {};
-          const keys = Object.keys(allUpdates[0]);
-          for (const key of keys) {
-            const vals = allUpdates.map(u => u[key]).filter(v => typeof v === 'number');
-            if (vals.length > 0) aggregatedWeights[key] = vals.reduce((a, b) => a + b, 0) / vals.length;
+        } catch { /* skip unparseable rows */ }
+      }
+      allUpdates.push(model_updates);
+
+      if (allUpdates.length >= 2) {
+        // Use the minimum length across all participants for safety
+        const len = Math.min(...allUpdates.map(u => u.length));
+        const n = allUpdates.length;
+
+        // Element-wise average (FedAvg)
+        aggregatedWeights = new Array(len).fill(0);
+        for (const update of allUpdates) {
+          for (let i = 0; i < len; i++) {
+            aggregatedWeights[i] += update[i] / n;
           }
-          convergenceScore = 0.5 + (participants / 20); // Rough heuristic
         }
-        // Store aggregated result
-        db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run(
-          `federated:round:${round}:aggregated`, JSON.stringify({ weights: aggregatedWeights, convergence: convergenceScore, participants, method: aggMethod })
+
+        // Per-element variance across participants
+        perElementVariance = new Array(len).fill(0);
+        for (let i = 0; i < len; i++) {
+          const mean = aggregatedWeights[i];
+          let sumSqDiff = 0;
+          for (const update of allUpdates) {
+            sumSqDiff += Math.pow(update[i] - mean, 2);
+          }
+          perElementVariance[i] = sumSqDiff / n;
+        }
+
+        // Overall mean variance as convergence metric (lower variance = more converged)
+        const meanVariance = perElementVariance.reduce((a, b) => a + b, 0) / len;
+        // Convergence score: 1.0 = fully converged (zero variance), approaches 0 as variance grows
+        convergenceScore = Math.max(0, 1 - Math.min(meanVariance, 1));
+
+        // Store aggregated result in agent_state
+        dbSetState.run(
+          'federated:round:' + round + ':aggregated',
+          JSON.stringify({
+            weights: aggregatedWeights,
+            variance: perElementVariance,
+            mean_variance: meanVariance,
+            convergence: convergenceScore,
+            participants: n,
+            method: aggMethod,
+            updated_at: new Date().toISOString(),
+          })
         );
-      } catch {}
+      }
     }
 
     const latency = Date.now() - start;
@@ -12399,8 +12666,9 @@ app.post('/v1/federated/learn', auth, (req, res) => {
       round,
       participants,
       aggregation_method: aggMethod,
-      aggregated: participants >= 2,
+      aggregated: participants >= 2 && aggregatedWeights !== null,
       aggregated_weights: aggregatedWeights,
+      per_element_variance: perElementVariance,
       convergence_score: convergenceScore,
       balance: req.acct.balance,
       _engine: 'real',
@@ -12439,6 +12707,158 @@ app.get('/v1/federated/status', auth, (req, res) => {
     });
   } catch (e) {
     log.error('federated/status failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
+// 14. GET /v1/federated/global-model — Return latest aggregated model weights from highest completed round
+app.get('/v1/federated/global-model', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    // Find the highest completed round (one with an aggregated result in agent_state)
+    const rounds = db.prepare('SELECT DISTINCT round FROM federated_rounds ORDER BY round DESC LIMIT 100').all();
+    let latestAggregated = null;
+    let latestRound = null;
+    for (const r of rounds) {
+      const row = dbGetState.get('federated:round:' + r.round + ':aggregated');
+      if (row) {
+        latestAggregated = JSON.parse(row.value);
+        latestRound = r.round;
+        break;
+      }
+    }
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'federated/global-model', 0, latency, 'real');
+    if (!latestAggregated) {
+      return res.json({
+        ok: true,
+        global_model: null,
+        message: 'No aggregated model available yet. At least 2 participants must submit to the same round.',
+        _engine: 'real',
+      });
+    }
+    res.json({
+      ok: true,
+      round: latestRound,
+      weights: latestAggregated.weights,
+      convergence_score: latestAggregated.convergence,
+      mean_variance: latestAggregated.mean_variance,
+      participants: latestAggregated.participants,
+      method: latestAggregated.method,
+      updated_at: latestAggregated.updated_at,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('federated/global-model failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
+// 15. POST /v1/federated/contribute — Simplified federated contribution interface
+app.post('/v1/federated/contribute', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const { weights, round: requestedRound } = req.body;
+    if (!Array.isArray(weights) || weights.length === 0) {
+      return res.status(400).json({ error: { code: 'invalid_weights', message: 'weights must be a non-empty array of numbers' } });
+    }
+    for (let i = 0; i < weights.length; i++) {
+      if (typeof weights[i] !== 'number' || !isFinite(weights[i])) {
+        return res.status(400).json({ error: { code: 'invalid_weights', message: 'weights[' + i + '] must be a finite number' } });
+      }
+    }
+
+    // Auto-determine round: use requested round or auto-increment from the highest existing round
+    let round;
+    if (requestedRound !== undefined) {
+      if (typeof requestedRound !== 'number' || requestedRound < 0 || !Number.isInteger(requestedRound)) {
+        return res.status(400).json({ error: { code: 'invalid_round', message: 'round must be a non-negative integer' } });
+      }
+      round = requestedRound;
+    } else {
+      const latest = db.prepare('SELECT MAX(round) as max_round FROM federated_rounds').get();
+      round = (latest && latest.max_round !== null) ? latest.max_round + 1 : 0;
+    }
+
+    const roundId = 'fround_' + uuidv4();
+    const aggMethod = 'fedavg';
+    const existingRounds = db.prepare('SELECT * FROM federated_rounds WHERE round = ?').all(round);
+    const participants = existingRounds.length + 1;
+    dbInsertFederatedRound.run(roundId, req.apiKey, round, JSON.stringify(weights), aggMethod, participants);
+    if (existingRounds.length > 0) {
+      db.prepare('UPDATE federated_rounds SET participants = ? WHERE round = ?').run(participants, round);
+    }
+
+    // Aggregate if 2+ participants
+    let aggregatedWeights = null;
+    let convergenceScore = 0;
+    let perElementVariance = null;
+
+    if (participants >= 2) {
+      const allUpdates = [];
+      for (const r of existingRounds) {
+        try {
+          const parsed = JSON.parse(r.model_updates);
+          if (Array.isArray(parsed) && parsed.length > 0 && parsed.every(v => typeof v === 'number' && isFinite(v))) {
+            allUpdates.push(parsed);
+          }
+        } catch { /* skip */ }
+      }
+      allUpdates.push(weights);
+
+      if (allUpdates.length >= 2) {
+        const len = Math.min(...allUpdates.map(u => u.length));
+        const n = allUpdates.length;
+        aggregatedWeights = new Array(len).fill(0);
+        for (const update of allUpdates) {
+          for (let i = 0; i < len; i++) {
+            aggregatedWeights[i] += update[i] / n;
+          }
+        }
+        perElementVariance = new Array(len).fill(0);
+        for (let i = 0; i < len; i++) {
+          const mean = aggregatedWeights[i];
+          let sumSqDiff = 0;
+          for (const update of allUpdates) {
+            sumSqDiff += Math.pow(update[i] - mean, 2);
+          }
+          perElementVariance[i] = sumSqDiff / n;
+        }
+        const meanVariance = perElementVariance.reduce((a, b) => a + b, 0) / len;
+        convergenceScore = Math.max(0, 1 - Math.min(meanVariance, 1));
+        dbSetState.run(
+          'federated:round:' + round + ':aggregated',
+          JSON.stringify({
+            weights: aggregatedWeights,
+            variance: perElementVariance,
+            mean_variance: meanVariance,
+            convergence: convergenceScore,
+            participants: n,
+            method: aggMethod,
+            updated_at: new Date().toISOString(),
+          })
+        );
+      }
+    }
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'federated/contribute', 1, latency, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 1);
+    persistKey(req.apiKey);
+    res.json({
+      ok: true,
+      round_id: roundId,
+      round,
+      participants,
+      aggregated: participants >= 2 && aggregatedWeights !== null,
+      aggregated_weights: aggregatedWeights,
+      per_element_variance: perElementVariance,
+      convergence_score: convergenceScore,
+      balance: req.acct.balance,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('federated/contribute failed', { error: e.message });
     res.status(500).json({ error: { code: 'internal_error', message: e.message } });
   }
 });
@@ -12941,6 +13361,8 @@ db.exec(`CREATE TABLE IF NOT EXISTS swarm_snapshots (
   api_key TEXT,
   run_id TEXT,
   results TEXT,
+  memory_keys TEXT DEFAULT '[]',
+  hive_messages TEXT DEFAULT '[]',
   merkle_root TEXT,
   agent_count INTEGER,
   status TEXT,
@@ -12948,10 +13370,16 @@ db.exec(`CREATE TABLE IF NOT EXISTS swarm_snapshots (
   run_ts INTEGER,
   snapshot_ts INTEGER,
   size_bytes INTEGER DEFAULT 0,
+  restorable INTEGER DEFAULT 1,
   created_at TEXT DEFAULT (datetime('now'))
 )`);
 
-// POST /v1/swarm/snapshot — Capture full state of a compute run for replay
+// Migrate: add new columns if missing (existing DBs)
+try { db.exec("ALTER TABLE swarm_snapshots ADD COLUMN memory_keys TEXT DEFAULT '[]'"); } catch {}
+try { db.exec("ALTER TABLE swarm_snapshots ADD COLUMN hive_messages TEXT DEFAULT '[]'"); } catch {}
+try { db.exec("ALTER TABLE swarm_snapshots ADD COLUMN restorable INTEGER DEFAULT 1"); } catch {}
+
+// POST /v1/swarm/snapshot — Capture full restorable state of a compute run
 app.post('/v1/swarm/snapshot', auth, (req, res) => {
   const start = Date.now();
   try {
@@ -12967,21 +13395,71 @@ app.post('/v1/swarm/snapshot', auth, (req, res) => {
     try { results = JSON.parse(row.results || '[]'); } catch(e) {}
     try { config = JSON.parse(row.config || '{}'); } catch(e) {}
 
+    // Capture memory keys created during the run (keys matching army:<run_id>:*)
+    let memoryKeys = [];
+    try {
+      const memRows = db.prepare("SELECT key, value, namespace FROM agent_state WHERE key LIKE ?").all('army:' + run_id + ':%');
+      memoryKeys = memRows.map(r => {
+        let parsedVal;
+        try { parsedVal = JSON.parse(r.value); } catch { parsedVal = r.value; }
+        return { key: r.key, value: parsedVal, namespace: r.namespace || null };
+      });
+    } catch(e) { /* agent_state table may not exist */ }
+    // Also capture namespace-scoped keys if config has a namespace
+    if (config.namespace) {
+      try {
+        const nsRows = db.prepare("SELECT key, value, namespace FROM agent_state WHERE namespace = ?").all(config.namespace);
+        const existingKeys = new Set(memoryKeys.map(m => m.key));
+        nsRows.forEach(r => {
+          if (!existingKeys.has(r.key)) {
+            let parsedVal;
+            try { parsedVal = JSON.parse(r.value); } catch { parsedVal = r.value; }
+            memoryKeys.push({ key: r.key, value: parsedVal, namespace: r.namespace || null });
+          }
+        });
+      } catch(e) {}
+    }
+
+    // Capture hive messages posted during the run (within run timestamp window)
+    let hiveMessages = [];
+    try {
+      // Look for hive messages around the run's timestamp (run_ts to run_ts + 60s window)
+      const runTs = row.ts || 0;
+      const windowEnd = runTs + 60000;
+      const hiveRows = db.prepare("SELECT id, hive_id, channel, sender, message, type, ts FROM hive_messages WHERE ts >= ? AND ts <= ? ORDER BY ts ASC LIMIT 200").all(runTs, windowEnd);
+      hiveMessages = hiveRows;
+    } catch(e) { /* hive_messages table may not exist */ }
+    // Also check for hive messages referencing this run_id
+    try {
+      const refRows = db.prepare("SELECT id, hive_id, channel, sender, message, type, ts FROM hive_messages WHERE message LIKE ? LIMIT 100").all('%' + run_id + '%');
+      const existingIds = new Set(hiveMessages.map(m => m.id));
+      refRows.forEach(r => { if (!existingIds.has(r.id)) hiveMessages.push(r); });
+    } catch(e) {}
+
     const snapshotId = 'snap-' + crypto.randomUUID().slice(0, 12);
-    const snapshotPayload = JSON.stringify({
+    const snapshotPayload = {
+      run_id,
       results,
+      config,
       merkle_root: config.merkle_root || null,
       agent_count: row.agent_count,
       status: row.status,
       verified: row.verified,
       run_ts: row.ts,
-      config,
-    });
-    const sizeBytes = Buffer.byteLength(snapshotPayload, 'utf8');
+      memory_keys: memoryKeys,
+      hive_messages: hiveMessages,
+    };
+    const payloadStr = JSON.stringify(snapshotPayload);
+    const sizeBytes = Buffer.byteLength(payloadStr, 'utf8');
+    const snapshotHash = crypto.createHash('sha256').update(payloadStr).digest('hex').slice(0, 16);
 
-    db.prepare('INSERT INTO swarm_snapshots (id, api_key, run_id, results, merkle_root, agent_count, status, verified, run_ts, snapshot_ts, size_bytes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
-      snapshotId, req.apiKey.slice(0, 12), run_id, JSON.stringify(results), config.merkle_root || null,
-      row.agent_count, row.status, row.verified, row.ts, Date.now(), sizeBytes
+    db.prepare('INSERT INTO swarm_snapshots (id, api_key, run_id, results, memory_keys, hive_messages, merkle_root, agent_count, status, verified, run_ts, snapshot_ts, size_bytes, restorable) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      snapshotId, req.apiKey.slice(0, 12), run_id,
+      JSON.stringify(results),
+      JSON.stringify(memoryKeys),
+      JSON.stringify(hiveMessages),
+      config.merkle_root || null,
+      row.agent_count, row.status, row.verified, row.ts, Date.now(), sizeBytes, 1
     );
 
     const latency = Date.now() - start;
@@ -12989,7 +13467,16 @@ app.post('/v1/swarm/snapshot', auth, (req, res) => {
     res.json({
       ok: true,
       snapshot_id: snapshotId,
+      snapshot_hash: snapshotHash,
       size_bytes: sizeBytes,
+      captured: {
+        results_count: results.length,
+        memory_keys_count: memoryKeys.length,
+        hive_messages_count: hiveMessages.length,
+        config_keys: Object.keys(config),
+      },
+      restorable: true,
+      restore_command: 'POST /v1/swarm/restore { "snapshot_id": "' + snapshotId + '" }',
       _engine: 'real',
     });
   } catch (e) {
@@ -12997,6 +13484,61 @@ app.post('/v1/swarm/snapshot', auth, (req, res) => {
     res.status(500).json({ error: { code: 'internal_error', message: e.message } });
   }
 });
+
+// POST /v1/swarm/restore — Restore a snapshot back into live state
+app.post('/v1/swarm/restore', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const { snapshot_id } = req.body;
+    if (!snapshot_id) return res.status(400).json({ error: { code: 'missing_snapshot_id', message: 'snapshot_id is required' } });
+
+    const snap = db.prepare('SELECT * FROM swarm_snapshots WHERE id = ? AND api_key = ?').get(snapshot_id, req.apiKey.slice(0, 12));
+    if (!snap) return res.status(404).json({ error: { code: 'snapshot_not_found' } });
+
+    let restoredMemory = 0;
+    let restoredHive = 0;
+
+    // Restore memory keys
+    try {
+      const memKeys = JSON.parse(snap.memory_keys || '[]');
+      for (const mk of memKeys) {
+        if (mk.key && allHandlers['memory-set']) {
+          try {
+            allHandlers['memory-set']({ key: mk.key, value: typeof mk.value === 'string' ? mk.value : JSON.stringify(mk.value), namespace: mk.namespace || 'restored' });
+            restoredMemory++;
+          } catch(e) {}
+        }
+      }
+    } catch(e) {}
+
+    // Restore hive messages
+    try {
+      const hiveMsgs = JSON.parse(snap.hive_messages || '[]');
+      for (const msg of hiveMsgs) {
+        try {
+          db.prepare('INSERT OR IGNORE INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(
+            msg.hive_id, msg.channel, msg.sender || 'snapshot-restore', msg.message, msg.type || 'message', Date.now()
+          );
+          restoredHive++;
+        } catch(e) {}
+      }
+    } catch(e) {}
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'swarm/restore', 0, latency, 'real');
+    res.json({
+      ok: true,
+      snapshot_id,
+      restored: { memory_keys: restoredMemory, hive_messages: restoredHive },
+      latency_ms: latency,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('swarm/restore failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
 // ===== STRAT 4: MCP MANIFEST =====
 // GET /v1/mcp/manifest — Full MCP manifest for all tools
 app.get('/v1/mcp/manifest', publicRateLimit, (req, res) => {
