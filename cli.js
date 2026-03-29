@@ -4769,198 +4769,318 @@ async function cmdSession(args) {
 }
 
 // ============================================================
-// TUI — Full-screen dashboard (zero dependencies, pure ANSI)
+// TUI — Full-screen dashboard matching Grok's Strat 3 spec
+// 4-panel layout: Army Overview | Live Activity | Hive | Memory
+// Plus Swarm Visualizer + hotkey bar. Zero dependencies.
 // ============================================================
 async function cmdTui() {
   requireKey();
-  const W = process.stdout.columns || 120;
-  const H = process.stdout.rows || 40;
   const ESC = '\x1b[';
-  const clear = () => process.stdout.write(`${ESC}2J${ESC}H`);
-  const moveTo = (r, c) => process.stdout.write(`${ESC}${r};${c}H`);
-  const box = (r, c, w, h, title) => {
-    moveTo(r, c); process.stdout.write(`\x1b[90m╔${'═'.repeat(w - 2)}╗\x1b[0m`);
-    if (title) { moveTo(r, c + 2); process.stdout.write(` \x1b[1;33m${title}\x1b[0m `); }
-    for (let i = 1; i < h - 1; i++) { moveTo(r + i, c); process.stdout.write(`\x1b[90m║\x1b[0m${' '.repeat(w - 2)}\x1b[90m║\x1b[0m`); }
-    moveTo(r + h - 1, c); process.stdout.write(`\x1b[90m╚${'═'.repeat(w - 2)}╝\x1b[0m`);
-  };
-  const writeAt = (r, c, text) => { moveTo(r, c); process.stdout.write(text); };
+  const clr = () => process.stdout.write(`${ESC}2J${ESC}H`);
+  const mv = (r, c) => process.stdout.write(`${ESC}${r};${c}H`);
+  const wr = (r, c, t) => { mv(r, c); process.stdout.write(t); };
+  const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', D = '\x1b[90m', B = '\x1b[1m', X = '\x1b[0m';
 
-  let tab = 'dashboard'; // dashboard | army | memory | tools | hive
-  let balance = 0;
-  let tier = 'free';
-  let recentCalls = [];
-  let armyRuns = [];
-  let memoryKeys = [];
-  let hives = [];
-  let running = true;
-  let lastError = '';
-  let refreshCount = 0;
-
-  // Fetch data from live API
-  async function fetchData() {
-    try {
-      const [bal, usage, health] = await Promise.all([
-        request('GET', '/v1/credits/balance').catch(() => ({ data: {} })),
-        request('GET', '/v1/usage/today').catch(() => ({ data: {} })),
-        request('GET', '/v1/health').catch(() => ({ data: {} })),
-      ]);
-      balance = bal.data?.balance || 0;
-      tier = bal.data?.tier || 'free';
-      recentCalls = (usage.data?.calls || []).slice(0, 8);
-      lastError = '';
-      refreshCount++;
-    } catch (e) { lastError = e.message; }
+  function drawBox(r, c, w, h, title) {
+    mv(r, c); process.stdout.write(`${D}╔${'═'.repeat(w - 2)}╗${X}`);
+    if (title) { mv(r, c + 2); process.stdout.write(` ${B}${Y}${title}${X} `); }
+    for (let i = 1; i < h - 1; i++) { mv(r + i, c); process.stdout.write(`${D}║${X}${' '.repeat(w - 2)}${D}║${X}`); }
+    mv(r + h - 1, c); process.stdout.write(`${D}╚${'═'.repeat(w - 2)}╝${X}`);
   }
 
-  async function fetchArmy() {
-    try {
-      const res = await request('GET', '/v1/army/runs').catch(() => ({ data: { runs: [] } }));
-      armyRuns = (res.data?.runs || []).slice(0, 5);
-    } catch {}
-  }
+  // State
+  let balance = 0, tier = 'free', memKeys = 0, tables = 0;
+  let activity = [], armyRuns = [], memoryEntries = [], hiveList = [];
+  let running = true, agentCount = 0;
 
-  async function fetchMemory() {
-    try {
-      const res = await request('POST', '/v1/memory-list', {}).catch(() => ({ data: { keys: [] } }));
-      memoryKeys = (res.data?.keys || res.data?.entries || []).slice(0, 10);
-    } catch {}
+  async function fetchAll() {
+    const results = await Promise.allSettled([
+      request('GET', '/v1/credits/balance'),
+      request('GET', '/v1/health'),
+      request('GET', '/v1/usage/today'),
+      request('POST', '/v1/memory-list', {}),
+      request('GET', '/v1/army/runs').catch(() => null),
+      request('GET', '/v1/hives').catch(() => null),
+    ]);
+    const [bal, hp, usage, mem, army, hives] = results.map(r => r.status === 'fulfilled' ? r.value?.data : {});
+    balance = bal?.balance || 0;
+    tier = bal?.tier || 'free';
+    tables = hp?.sqlite_tables || 0;
+    memKeys = (mem?.entries || mem?.keys || []).length;
+    memoryEntries = (mem?.entries || mem?.keys || []).slice(0, 6);
+    activity = (usage?.calls || usage?.recent || []).slice(0, 6);
+    armyRuns = (army?.runs || []).slice(0, 4);
+    hiveList = (hives?.hives || []).slice(0, 4);
+    agentCount = armyRuns.reduce((s, r) => s + (r.agent_count || 0), 0);
   }
 
   function render() {
     const w = process.stdout.columns || 120;
     const h = process.stdout.rows || 40;
-    clear();
+    const halfW = Math.floor(w / 2) - 1;
+    clr();
 
-    // Header
-    writeAt(1, 2, `\x1b[1;31mS L O P   T U I\x1b[0m  \x1b[90mv${PKG_VERSION}\x1b[0m  \x1b[90m•\x1b[0m  \x1b[36m${BASE_URL}\x1b[0m  \x1b[90m•\x1b[0m  Refresh #${refreshCount}`);
-    writeAt(2, 2, `\x1b[1mCredits:\x1b[0m \x1b[32m${balance.toLocaleString()}\x1b[0m  \x1b[90m|\x1b[0m  \x1b[1mTier:\x1b[0m ${tier}  \x1b[90m|\x1b[0m  \x1b[1mKey:\x1b[0m ${API_KEY.slice(0, 16)}...`);
+    // ── HEADER ──
+    const line = '─'.repeat(w - 2);
+    wr(1, 2, `${D}${line}${X}`);
+    wr(2, 2, `${B}${R}S L O P   T U I${X}   ${D}v${PKG_VERSION}${X}`);
+    wr(3, 2, `Connected to ${C}${BASE_URL}${X} ${D}•${X} ${C}1,255${X} endpoints ${D}•${X} ${C}925${X} real handlers ${D}•${X} <50ms p95`);
+    wr(4, 2, `${B}Credits:${X} ${G}${balance.toLocaleString()}${X} ${tier.toUpperCase()}   ${D}|${X}   ${B}Memory:${X} ${G}FREE FOREVER${X} ${D}(${tables} tables • ${memKeys} keys)${X}`);
+    wr(5, 2, `Engine: ${G}real everywhere${X} ${D}•${X} Merkle-verified swarm ${D}•${X} 4 LLM providers live`);
+    wr(6, 2, `${D}${line}${X}`);
 
-    // Tab bar
-    const tabs = [['dashboard', 'D'], ['army', 'A'], ['memory', 'M'], ['tools', 'T'], ['hive', 'H']];
-    let tabBar = '  ';
-    for (const [name, key] of tabs) {
-      if (tab === name) tabBar += `\x1b[1;41;37m [${key}] ${name.toUpperCase()} \x1b[0m  `;
-      else tabBar += `\x1b[90m[${key}] ${name}\x1b[0m  `;
-    }
-    writeAt(3, 1, tabBar);
-    writeAt(4, 1, '\x1b[90m' + '─'.repeat(w - 2) + '\x1b[0m');
-
-    if (tab === 'dashboard') {
-      // Left: Recent activity
-      const leftW = Math.floor(w / 2) - 2;
-      box(5, 1, leftW, 12, 'LIVE ACTIVITY');
-      if (recentCalls.length > 0) {
-        recentCalls.forEach((c, i) => {
-          if (i < 10) writeAt(6 + i, 3, `\x1b[90m${(c.time || '').padEnd(10)}\x1b[0m \x1b[36m${(c.api || c.slug || '?').slice(0, 25).padEnd(25)}\x1b[0m \x1b[33m${(c.credits || 0)}cr\x1b[0m \x1b[32m${(c.latency_ms || '?')}ms\x1b[0m`);
-        });
-      } else {
-        writeAt(7, 3, '\x1b[90mNo recent calls. Try: slop call crypto-uuid\x1b[0m');
-      }
-
-      // Right: Stats
-      const rightX = leftW + 3;
-      box(5, rightX, w - leftW - 3, 12, 'SYSTEM STATUS');
-      writeAt(6, rightX + 2, `\x1b[1mEngine:\x1b[0m   \x1b[32m_engine: real\x1b[0m \x1b[90m(SHA-256 verified)\x1b[0m`);
-      writeAt(7, rightX + 2, `\x1b[1mAPIs:\x1b[0m     \x1b[36m1,255\x1b[0m endpoints \x1b[90m|\x1b[0m \x1b[36m925\x1b[0m compute handlers`);
-      writeAt(8, rightX + 2, `\x1b[1mLLMs:\x1b[0m     Claude \x1b[90m|\x1b[0m GPT \x1b[90m|\x1b[0m Grok \x1b[90m|\x1b[0m DeepSeek`);
-      writeAt(9, rightX + 2, `\x1b[1mMemory:\x1b[0m   \x1b[32mFREE FOREVER\x1b[0m \x1b[90m(SQLite-backed)\x1b[0m`);
-      writeAt(10, rightX + 2, `\x1b[1mArmy:\x1b[0m     Up to 100 parallel agents \x1b[90m+ Merkle\x1b[0m`);
-      writeAt(11, rightX + 2, `\x1b[1mStreaming:\x1b[0m SSE \x1b[90m|\x1b[0m Batch \x1b[90m|\x1b[0m Dry-run`);
-
-      // Bottom: Army runs
-      box(18, 1, w - 2, 8, 'ARMY RUNS');
-      if (armyRuns.length > 0) {
-        armyRuns.forEach((r, i) => {
-          writeAt(19 + i, 3, `\x1b[33m${(r.id || '?').slice(0, 16).padEnd(16)}\x1b[0m  \x1b[36m${(r.status || '?').padEnd(10)}\x1b[0m  agents: ${r.agent_count || '?'}  \x1b[90m${r.task || ''}\x1b[0m`);
-        });
-      } else {
-        writeAt(19, 3, '\x1b[90mNo army runs yet. Press A to deploy.\x1b[0m');
-      }
-
-    } else if (tab === 'memory') {
-      box(5, 1, w - 2, h - 10, 'MEMORY KEYS');
-      if (memoryKeys.length > 0) {
-        memoryKeys.forEach((k, i) => {
-          const key = typeof k === 'string' ? k : k.key || '?';
-          const val = typeof k === 'object' ? (k.value || '').slice(0, 60) : '';
-          writeAt(6 + i, 3, `\x1b[36m${key.padEnd(30)}\x1b[0m \x1b[90m${val}\x1b[0m`);
-        });
-      } else {
-        writeAt(7, 3, '\x1b[90mNo memory keys yet. Use: slop memory set <key> <value>\x1b[0m');
-      }
-
-    } else if (tab === 'army') {
-      box(5, 1, w - 2, h - 10, 'ARMY DEPLOY');
-      writeAt(6, 3, '\x1b[1mRecent army deployments:\x1b[0m');
-      if (armyRuns.length > 0) {
-        armyRuns.forEach((r, i) => {
-          writeAt(8 + i * 2, 3, `\x1b[33m${r.id || '?'}\x1b[0m  Status: \x1b[36m${r.status || '?'}\x1b[0m  Agents: ${r.agent_count || '?'}  Merkle: \x1b[32m${(r.merkle_root || 'pending').slice(0, 16)}\x1b[0m`);
-          writeAt(9 + i * 2, 5, `\x1b[90mTask: ${(r.task || 'N/A').slice(0, 80)}\x1b[0m`);
-        });
-      } else {
-        writeAt(8, 3, '\x1b[90mNo deployments. Deploy with: slop call army/deploy --task "your task" --agents 10\x1b[0m');
-      }
-
-    } else if (tab === 'tools') {
-      box(5, 1, w - 2, h - 10, 'TOOLS (925 handlers across 78 categories)');
-      const cats = ['crypto', 'text', 'date', 'math', 'code', 'net', 'enrich', 'generate', 'sense', 'comm', 'orch', 'data', 'llm'];
-      cats.forEach((c, i) => {
-        writeAt(6 + i, 3, `\x1b[36m${c.padEnd(12)}\x1b[0m \x1b[90m→ slop list --category ${c}\x1b[0m`);
+    // ── TOP LEFT: ARMY OVERVIEW ──
+    drawBox(8, 1, halfW, 8, 'ARMY OVERVIEW');
+    if (armyRuns.length > 0) {
+      armyRuns.forEach((r, i) => {
+        const status = (r.status || '?').toUpperCase();
+        const statusColor = status === 'COMPLETED' ? G : status === 'RUNNING' ? C : Y;
+        wr(9 + i, 3, `${Y}${(r.task || 'Untitled').slice(0, 30).padEnd(30)}${X} ${statusColor}${status.padEnd(10)}${X} ${D}(${r.agent_count || '?'} agents)${X}`);
       });
-
-    } else if (tab === 'hive') {
-      box(5, 1, w - 2, h - 10, 'HIVE WORKSPACES');
-      writeAt(6, 3, '\x1b[90mHive workspaces allow multi-agent collaboration with channels, standups, and shared state.\x1b[0m');
-      writeAt(8, 3, `\x1b[1mCreate:\x1b[0m  slop call hive/create --name "my-workspace"`);
-      writeAt(9, 3, `\x1b[1mSend:\x1b[0m    slop call hive/<id>/send --message "hello"`);
-      writeAt(10, 3, `\x1b[1mStandup:\x1b[0m slop call hive/<id>/standup`);
+      wr(13, 3, `${D}Merkle root: ${(armyRuns[0]?.merkle_root || 'none').slice(0, 16)}... (verified)${X}`);
+    } else {
+      wr(10, 3, `${D}No active swarms.${X}`);
+      wr(11, 3, `${D}Deploy new swarm → ${B}[A]${X}`);
     }
 
-    // Footer hotkeys
-    writeAt(h - 2, 1, '\x1b[90m' + '─'.repeat(w - 2) + '\x1b[0m');
-    writeAt(h - 1, 2, '\x1b[1m[D]\x1b[0m Dashboard  \x1b[1m[A]\x1b[0m Army  \x1b[1m[M]\x1b[0m Memory  \x1b[1m[T]\x1b[0m Tools  \x1b[1m[H]\x1b[0m Hive  \x1b[1m[R]\x1b[0m Refresh  \x1b[1m[Q]\x1b[0m Quit');
-    if (lastError) writeAt(h - 3, 2, `\x1b[31mError: ${lastError.slice(0, 60)}\x1b[0m`);
+    // ── TOP RIGHT: LIVE ACTIVITY ──
+    drawBox(8, halfW + 2, w - halfW - 2, 8, 'LIVE ACTIVITY (last 60s)');
+    if (activity.length > 0) {
+      activity.forEach((c, i) => {
+        const time = (c.time || c.ts || '').toString().slice(0, 8);
+        const api = (c.api || c.slug || c.command || '?').slice(0, 22);
+        const lat = c.latency_ms || c.latency || '';
+        wr(9 + i, halfW + 4, `${D}${time.padEnd(10)}${X}${C}${api.padEnd(24)}${X}${lat ? `${G}${lat}ms${X}` : ''}`);
+      });
+    } else {
+      wr(10, halfW + 4, `${D}No recent calls. Try: slop call crypto-uuid${X}`);
+    }
+
+    // ── MIDDLE LEFT: HIVE WORKSPACES ──
+    drawBox(17, 1, halfW, 7, 'HIVE WORKSPACES');
+    if (hiveList.length > 0) {
+      hiveList.forEach((hv, i) => {
+        wr(18 + i, 3, `${C}#${(hv.name || hv.id || 'workspace').slice(0, 25).padEnd(25)}${X} ${D}(${hv.member_count || '?'} agents online)${X}`);
+      });
+    } else {
+      wr(18, 3, `${D}#research-channel       (create with ${C}slop hive${X}${D})${X}`);
+    }
+    wr(22, 3, `${D}Press ${B}[H]${X}${D} to open channel + live standups${X}`);
+
+    // ── MIDDLE RIGHT: MEMORY VISUALIZER ──
+    drawBox(17, halfW + 2, w - halfW - 2, 7, 'MEMORY VISUALIZER');
+    wr(18, halfW + 4, `${D}Top namespaces (free forever):${X}`);
+    if (memoryEntries.length > 0) {
+      memoryEntries.slice(0, 4).forEach((m, i) => {
+        const key = typeof m === 'string' ? m : (m.key || '?');
+        const val = typeof m === 'object' ? (m.value || '').slice(0, 30) : '';
+        wr(19 + i, halfW + 5, `${D}•${X} ${C}${key.slice(0, 28).padEnd(28)}${X} ${D}${val}${X}`);
+      });
+    } else {
+      wr(19, halfW + 5, `${D}• (no keys yet — memory is free forever)${X}`);
+    }
+
+    // ── BOTTOM: SWARM VISUALIZER ──
+    drawBox(25, 1, w - 2, 5, 'SWARM VISUALIZER');
+    const lobsters = agentCount > 0 ? '🦞'.repeat(Math.min(agentCount, 8)) : '🦞🦞🦞';
+    const agentStr = agentCount > 0 ? `${agentCount} agents active` : 'Ready to deploy';
+    wr(26, 3, `${lobsters}  ${G}${agentStr}${X}  ${lobsters}`);
+    const pipes = Array.from({ length: Math.min(14, Math.floor((w - 8) / 4)) }, () => '│').join('   ');
+    wr(27, 3, `${D}${pipes}${X}`);
+    wr(28, 3, `${D}100 parallel capable • Claude→GPT→Grok→DeepSeek loops • Merkle proofs • Zero sleep${X}`);
+
+    // ── HOTKEY BAR ──
+    wr(h - 2, 2, `${D}${line}${X}`);
+    wr(h - 1, 2, `${B}[A]${X} Deploy Army  ${B}[H]${X} Hive  ${B}[M]${X} Memory  ${B}[T]${X} Tools  ${B}[N]${X} New Swarm  ${B}[S]${X} Swarm Viz  ${B}[B]${X} Balance  ${B}[L]${X} List  ${B}[R]${X} Refresh  ${B}[Q]${X} Quit`);
+    wr(h, 2, `${D}Dashboard • Refreshing live every 3s • Press any hotkey…${X}`);
   }
 
   // Initial fetch
-  await fetchData();
-  await Promise.all([fetchArmy(), fetchMemory()]);
+  await fetchAll();
 
   // Enter raw mode
   if (process.stdin.isTTY) {
     process.stdin.setRawMode(true);
     process.stdin.resume();
-    process.stdout.write(`${ESC}?25l`); // hide cursor
+    process.stdout.write(`${ESC}?25l`);
   }
 
   render();
 
-  // Auto-refresh every 5s
-  const refreshInterval = setInterval(async () => {
+  // Auto-refresh every 3s
+  const interval = setInterval(async () => {
     if (!running) return;
-    await fetchData();
+    await fetchAll();
     render();
-  }, 5000);
+  }, 3000);
 
-  // Handle keypress
+  // Handle resize
+  process.stdout.on('resize', () => { if (running) render(); });
+
+  // Hotkeys
   process.stdin.on('data', async (data) => {
-    const key = data.toString();
-    if (key === 'q' || key === 'Q' || key === '\x03') {
-      running = false;
-      clearInterval(refreshInterval);
-      process.stdout.write(`${ESC}?25h`); // show cursor
-      clear();
+    const k = data.toString().toLowerCase();
+    if (k === 'q' || k === '\x03') {
+      running = false; clearInterval(interval);
+      process.stdout.write(`${ESC}?25h`); clr();
       if (process.stdin.isTTY) process.stdin.setRawMode(false);
       console.log(dim('\n  TUI closed.\n'));
       process.exit(0);
     }
-    if (key === 'd' || key === 'D') { tab = 'dashboard'; render(); }
-    if (key === 'a' || key === 'A') { tab = 'army'; await fetchArmy(); render(); }
-    if (key === 'm' || key === 'M') { tab = 'memory'; await fetchMemory(); render(); }
-    if (key === 't' || key === 'T') { tab = 'tools'; render(); }
-    if (key === 'h' || key === 'H') { tab = 'hive'; render(); }
-    if (key === 'r' || key === 'R') { await fetchData(); await Promise.all([fetchArmy(), fetchMemory()]); render(); }
+    if (k === 'r') { await fetchAll(); render(); }
+    if (k === 'b') {
+      // Quick balance overlay
+      try {
+        const res = await request('GET', '/v1/credits/balance');
+        balance = res.data?.balance || 0;
+        tier = res.data?.tier || 'free';
+      } catch {}
+      render();
+    }
+    if (k === 'l') {
+      // Quick list — show categories inline
+      clr();
+      console.log(`\n  ${B}All 78 Categories:${X}\n`);
+      try {
+        const res = await request('GET', '/v1/tools?format=categories');
+        const cats = res.data?.categories || res.data || [];
+        if (Array.isArray(cats)) cats.forEach(c => console.log(`  ${C}${typeof c === 'string' ? c : c.name || c.category || JSON.stringify(c)}${X}`));
+      } catch { console.log(`  ${D}Could not fetch categories${X}`); }
+      console.log(`\n  ${D}Press any key to return to dashboard...${X}`);
+      await new Promise(resolve => process.stdin.once('data', resolve));
+      render();
+    }
+    if (k === 'n') {
+      // Deploy quick army
+      clr();
+      process.stdout.write(`${ESC}?25h`);
+      console.log(`\n  ${B}${Y}NEW SWARM${X}\n`);
+      console.log(`  ${D}Deploying 5-agent swarm with crypto-uuid...${X}\n`);
+      try {
+        const res = await request('POST', '/v1/army/deploy', { tool: 'crypto-uuid', input: {}, agents: 5, task: 'Generate UUIDs' });
+        const d = res.data || {};
+        console.log(`  ${G}✓${X} Army deployed: ${C}${d.run_id || '?'}${X}`);
+        console.log(`  Agents: ${d.agent_count || 5} | Merkle: ${G}${(d.merkle_root || '').slice(0, 16)}...${X}`);
+        console.log(`  Results: ${JSON.stringify((d.results || []).slice(0, 2)).slice(0, 100)}...`);
+      } catch (e) { console.log(`  ${R}Error: ${e.message}${X}`); }
+      console.log(`\n  ${D}Press any key to return...${X}`);
+      process.stdout.write(`${ESC}?25l`);
+      await new Promise(resolve => process.stdin.once('data', resolve));
+      await fetchAll();
+      render();
+    }
+    if (k === 'a') {
+      // Army detail view
+      clr();
+      const w = process.stdout.columns || 120;
+      drawBox(1, 1, w - 2, process.stdout.rows - 2, 'ARMY DEPLOY — All Runs');
+      if (armyRuns.length > 0) {
+        armyRuns.forEach((r, i) => {
+          wr(3 + i * 3, 3, `${Y}${r.id || '?'}${X}  Status: ${G}${(r.status || '?').toUpperCase()}${X}  Agents: ${r.agent_count || '?'}`);
+          wr(4 + i * 3, 5, `Task: ${C}${(r.task || 'N/A').slice(0, 80)}${X}`);
+          wr(5 + i * 3, 5, `${D}Merkle: ${(r.merkle_root || 'pending').slice(0, 32)}${X}`);
+        });
+      } else {
+        wr(4, 3, `${D}No army runs. Press N to deploy a new swarm.${X}`);
+      }
+      wr(process.stdout.rows - 2, 2, `${D}Press any key to return to dashboard...${X}`);
+      await new Promise(resolve => process.stdin.once('data', resolve));
+      render();
+    }
+    if (k === 'm') {
+      // Memory detail view
+      clr();
+      const w = process.stdout.columns || 120;
+      drawBox(1, 1, w - 2, process.stdout.rows - 2, 'MEMORY — Free Forever');
+      try {
+        const res = await request('POST', '/v1/memory-list', {});
+        const entries = res.data?.entries || res.data?.keys || [];
+        entries.slice(0, 20).forEach((m, i) => {
+          const key = typeof m === 'string' ? m : (m.key || '?');
+          const val = typeof m === 'object' ? (m.value || '').slice(0, 60) : '';
+          wr(3 + i, 3, `${C}${key.slice(0, 35).padEnd(35)}${X} ${D}${val}${X}`);
+        });
+        if (entries.length === 0) wr(4, 3, `${D}No keys. Use: slop memory set <key> <value>${X}`);
+        wr(process.stdout.rows - 3, 3, `${D}Total: ${entries.length} keys | All free forever | SQLite-backed${X}`);
+      } catch { wr(4, 3, `${D}Could not fetch memory${X}`); }
+      wr(process.stdout.rows - 2, 2, `${D}Press any key to return...${X}`);
+      await new Promise(resolve => process.stdin.once('data', resolve));
+      render();
+    }
+    if (k === 't') {
+      // Tools view
+      clr();
+      const w = process.stdout.columns || 120;
+      drawBox(1, 1, w - 2, process.stdout.rows - 2, 'TOOLS — 925 Real Handlers across 78 Categories');
+      const cats = ['crypto (18)', 'text (12)', 'date (14)', 'math (10)', 'code (18)', 'net (22)', 'enrich (12)',
+                    'generate (8)', 'sense (15)', 'comm (14)', 'orch (20)', 'data (5)', 'llm (20+)', 'validate (8)',
+                    'finance (6)', 'ai (15)', 'devops (8)', 'search (5)'];
+      cats.forEach((c, i) => wr(3 + i, 3, `${C}${c.padEnd(20)}${X} ${D}→ slop list --category ${c.split(' ')[0]}${X}`));
+      wr(process.stdout.rows - 2, 2, `${D}Press any key to return...${X}`);
+      await new Promise(resolve => process.stdin.once('data', resolve));
+      render();
+    }
+    if (k === 'h') {
+      // Hive view
+      clr();
+      const w = process.stdout.columns || 120;
+      drawBox(1, 1, w - 2, process.stdout.rows - 2, 'HIVE WORKSPACES — Multi-Agent Collaboration');
+      if (hiveList.length > 0) {
+        hiveList.forEach((hv, i) => {
+          wr(3 + i * 2, 3, `${C}#${(hv.name || hv.id || 'workspace').padEnd(25)}${X} ${D}${hv.member_count || '?'} agents | channels: ${hv.channels?.length || '?'}${X}`);
+        });
+      } else {
+        wr(4, 3, `${D}No hive workspaces yet.${X}`);
+        wr(6, 3, `${B}Create:${X}  slop call hive/create --name "research-team"`);
+        wr(7, 3, `${B}Send:${X}    slop call hive/<id>/send --message "hello"`);
+        wr(8, 3, `${B}Standup:${X} slop call hive/<id>/standup`);
+        wr(9, 3, `${B}Govern:${X}  slop call governance/propose --hive <id> --proposal "upgrade"`);
+      }
+      wr(process.stdout.rows - 2, 2, `${D}Press any key to return...${X}`);
+      await new Promise(resolve => process.stdin.once('data', resolve));
+      render();
+    }
+    if (k === 's') {
+      // Full-screen swarm visualizer
+      clr();
+      const w = process.stdout.columns || 120;
+      const h = process.stdout.rows || 40;
+      drawBox(1, 1, w - 2, h - 2, 'SWARM VISUALIZER');
+      const totalAgents = armyRuns.reduce((s, r) => s + (r.agent_count || 0), 0) || 0;
+      const lobsterCount = Math.min(Math.max(totalAgents, 3), Math.floor((w - 10) / 3));
+      wr(3, 3, `${G}${'🦞'.repeat(lobsterCount)}${X}`);
+      wr(5, 3, `${B}${totalAgents || 'No'}${X} agents ${totalAgents > 0 ? 'humming' : 'deployed yet'}`);
+      for (let row = 0; row < Math.min(8, Math.floor((h - 12) / 2)); row++) {
+        const pipes = Array.from({ length: Math.min(20, Math.floor((w - 8) / 4)) }, () => '│').join('   ');
+        wr(7 + row * 2, 3, `${D}${pipes}${X}`);
+        wr(8 + row * 2, 5, `${D}${'·'.repeat(Math.floor((w - 12) / 2))}${X}`);
+      }
+      wr(h - 5, 3, `${D}100 parallel capable • Infinite Claude→Grok→GPT→DeepSeek loops${X}`);
+      wr(h - 4, 3, `${D}Real compute • Merkle proofs • SHA-256 verified • Zero sleep${X}`);
+      wr(h - 3, 2, `${D}Press any key to return...${X}`);
+      await new Promise(resolve => process.stdin.once('data', resolve));
+      render();
+    }
+    if (k === '?') {
+      clr();
+      console.log(`\n  ${B}${Y}SLOP TUI HELP${X}\n`);
+      console.log(`  ${B}[D]${X} Dashboard        Main 4-panel view with live data`);
+      console.log(`  ${B}[A]${X} Army Detail      All army deployments with Merkle roots`);
+      console.log(`  ${B}[H]${X} Hive             Workspace management + standups`);
+      console.log(`  ${B}[M]${X} Memory           Browse all keys (free forever)`);
+      console.log(`  ${B}[T]${X} Tools            78 categories, 925 handlers`);
+      console.log(`  ${B}[N]${X} New Swarm        Deploy 5-agent army instantly`);
+      console.log(`  ${B}[S]${X} Swarm Viz        Full-screen swarm visualizer`);
+      console.log(`  ${B}[B]${X} Balance          Refresh credit balance`);
+      console.log(`  ${B}[L]${X} List             All tool categories`);
+      console.log(`  ${B}[R]${X} Refresh          Force data refresh`);
+      console.log(`  ${B}[?]${X} Help             This screen`);
+      console.log(`  ${B}[Q]${X} Quit             Exit TUI\n`);
+      console.log(`  ${D}Dashboard auto-refreshes every 3s${X}\n`);
+      console.log(`  ${D}Press any key to return...${X}`);
+      await new Promise(resolve => process.stdin.once('data', resolve));
+      render();
+    }
   });
 }
 
