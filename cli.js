@@ -886,16 +886,19 @@ async function cmdDoctor() {
 // ============================================================
 // HIVE v3 — Production. Context-injected. 5-gate safety. Metrics.
 // Local=research, Cloud=edits. CLAUDE.md in every prompt.
-// Usage: slop hive [sprints] [--cloud] "mission"
+// Usage: slop hive [sprints] [--cloud] [--edit] "mission"
 // ============================================================
 async function cmdHive(args) {
   requireKey();
   const numArg = args.find(a => /^\d+$/.test(a));
   const sprints = numArg ? parseInt(numArg) : 10;
   const useCloud = args.includes('--cloud');
+  const allowEdits = args.includes('--edit');
   const cloudEveryArg = args.find(a => a.startsWith('--cloud-every='));
   const cloudEvery = cloudEveryArg ? parseInt(cloudEveryArg.split('=')[1]) : 10;
   const mission = args.filter(a => !/^\d+$/.test(a) && !a.startsWith('--')).join(' ').trim() || 'improve slopshop';
+
+  const HIVE_EDIT_BLACKLIST = ['server-v2.js', 'auth.js', 'stripe.js'];
 
   // ── Helpers ──
   const ollamaChat = (model, prompt) => new Promise(r => {
@@ -1323,6 +1326,13 @@ CONFIDENCE: <1-10>`;
           priority = pickedIssue.issue;
 
           if (findText && replaceText && findText !== replaceText && confidence >= 5) {
+           if (!allowEdits) {
+              console.log(`  ${dim('|')} File editing disabled (use --edit flag to enable)`);
+              score = 5;
+           } else if (HIVE_EDIT_BLACKLIST.includes(pickedIssue.file)) {
+              console.log(`  ${dim('|')} ${red('BLOCKED:')} ${pickedIssue.file} is blacklisted from hive edits`);
+              score = 4;
+           } else {
             const filePath = path.resolve(__dirname, pickedIssue.file);
 
             if (fs.existsSync(filePath)) {
@@ -1403,6 +1413,7 @@ CONFIDENCE: <1-10>`;
                 score = 4;
               }
             }
+           } // end allowEdits else block
           } else {
             const reason = !findText ? 'no FIND block' : !replaceText ? 'no REPLACE block' : findText === replaceText ? 'no change' : 'low confidence (' + confidence + ')';
             console.log(`  ${dim('|')} ${dim('No valid patch: ' + reason)}`);
@@ -1546,7 +1557,7 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'wallet', 'bounty', 'knowledge', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'version', 'upgrade', 'completions', 'help'],
+      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'wallet', 'bounty', 'queue', 'webhooks', 'teams', 'knowledge', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'version', 'upgrade', 'completions', 'help'],
       flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N', '--model M', '--dry-run', '--limit N', '--offset N'],
       version: PKG_VERSION
     }, null, 2));
@@ -1642,7 +1653,9 @@ ${C.reset}`;
   console.log(`    ${dim('# Search 925+ tools')}`);
   console.log(`    ${cyan('slop search "validate email"')}\n`);
   console.log(`    ${dim('# Run iterative hive')}`);
-  console.log(`    ${cyan('slop hive 10 "review competitors and find gaps"')}\n`);
+  console.log(`    ${cyan('slop hive 10 "review competitors and find gaps"')}`);
+  console.log(`    ${dim('    --edit    Enable file editing (disabled by default for safety)')}`);
+  console.log(`    ${dim('    --cloud   Enable cloud LLM calls')}\n`);
   console.log(`    ${dim('# Check your setup')}`);
   console.log(`    ${cyan('slop doctor')}\n`);
   console.log(`  ${bold('ENVIRONMENT')}`);
@@ -3287,7 +3300,7 @@ async function cmdAgents(args) {
 function cmdCompletions(args) {
   const shell = args[0] || 'bash';
 
-  const commands = ['call','pipe','run','search','list','discover','org','wallet','bounty','knowledge','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','benchmark','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui','agents'];
+  const commands = ['call','pipe','run','search','list','discover','org','wallet','bounty','queue','webhooks','teams','knowledge','chain','memory','mem','signup','login','whoami','key','config','balance','buy','stats','benchmark','health','mcp','help','batch','watch','alias','history','plan','models','profile','cost','debug','cloud','logs','dev','env','listen','types','file','git','review','session','version','upgrade','completions','do','init','live','interactive','tui','agents'];
 
   if (shell === 'bash') {
     console.log(`# Add to ~/.bashrc:`);
@@ -3580,6 +3593,92 @@ async function cmdBounty(args) {
   }
 
   die(`Unknown bounty subcommand: ${sub}. Try: slop bounty help`);
+}
+
+// ============================================================
+// QUEUE — Push tasks to the prompt queue
+// ============================================================
+async function cmdQueue(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Prompt Queue')}\n`);
+    console.log(`  ${cyan('slop queue push')} ${dim('--task X --namespace Y')}   Push a task to the queue\n`);
+    return;
+  }
+
+  if (sub === 'push') {
+    const taskIdx = args.indexOf('--task');
+    const nsIdx = args.indexOf('--namespace');
+    const task = taskIdx >= 0 ? args[taskIdx + 1] : null;
+    const namespace = nsIdx >= 0 ? args[nsIdx + 1] : 'default';
+    if (!task) die('Usage: slop queue push --task X --namespace Y');
+    const res = await request('POST', '/v1/chain/queue', { task, namespace });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Task queued')}  ${cyan(d.id || d.queue_id || '')}  ${dim(namespace)}\n`);
+    return;
+  }
+
+  die(`Unknown queue subcommand: ${sub}. Try: slop queue help`);
+}
+
+// ============================================================
+// WEBHOOKS — Manage webhooks
+// ============================================================
+async function cmdWebhooks(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Webhooks')}\n`);
+    console.log(`  ${cyan('slop webhooks create')} ${dim('--url X --events Y')}   Register a webhook\n`);
+    return;
+  }
+
+  if (sub === 'create') {
+    const urlIdx = args.indexOf('--url');
+    const evIdx = args.indexOf('--events');
+    const url = urlIdx >= 0 ? args[urlIdx + 1] : null;
+    const events = evIdx >= 0 ? args[evIdx + 1] : null;
+    if (!url || !events) die('Usage: slop webhooks create --url X --events Y');
+    const eventList = events.split(',').map(e => e.trim());
+    const res = await request('POST', '/v1/webhooks/create', { url, events: eventList });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Webhook created')}  ${cyan(d.id || d.webhook_id || '')}  ${dim(url)}\n`);
+    return;
+  }
+
+  die(`Unknown webhooks subcommand: ${sub}. Try: slop webhooks help`);
+}
+
+// ============================================================
+// TEAMS — Manage teams
+// ============================================================
+async function cmdTeams(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Teams')}\n`);
+    console.log(`  ${cyan('slop teams create')} ${dim('--name X')}              Create a team\n`);
+    return;
+  }
+
+  if (sub === 'create') {
+    const nameIdx = args.indexOf('--name');
+    const name = nameIdx >= 0 ? args[nameIdx + 1] : null;
+    if (!name) die('Usage: slop teams create --name X');
+    const res = await request('POST', '/v1/teams/create', { name });
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Team created')}  ${cyan(d.id || d.team_id || '')}  ${dim(name)}\n`);
+    return;
+  }
+
+  die(`Unknown teams subcommand: ${sub}. Try: slop teams help`);
 }
 
 // ============================================================
@@ -4572,6 +4671,9 @@ async function cmdInteractive() {
           case 'org': await cmdOrg(args); break;
           case 'wallet': await cmdWallet(args); break;
           case 'bounty': await cmdBounty(args); break;
+          case 'queue': await cmdQueue(args); break;
+          case 'webhooks': await cmdWebhooks(args); break;
+          case 'teams': await cmdTeams(args); break;
           case 'knowledge': await cmdKnowledge(args); break;
           case 'chain': await cmdChain(args); break;
           case 'memory': case 'mem': await cmdMemory(args); break;
@@ -5101,6 +5203,9 @@ async function main() {
     case 'org':     await cmdOrg(args);    break;
     case 'wallet':  await cmdWallet(args); break;
     case 'bounty':  await cmdBounty(args); break;
+    case 'queue':   await cmdQueue(args);  break;
+    case 'webhooks': await cmdWebhooks(args); break;
+    case 'teams':   await cmdTeams(args);  break;
     case 'knowledge': await cmdKnowledge(args); break;
     case 'chain':   await cmdChain(args);  break;
     case 'memory':  await cmdMemory(args); break;
