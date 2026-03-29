@@ -1469,7 +1469,7 @@ app.get('/v1/tools/:slug', publicRateLimit, (req, res) => {
       try {
         const cfg = JSON.parse(r.config || '{}');
         const cfgStr = JSON.stringify(cfg);
-        if (cfgStr.includes(req.params.slug)) {
+        if (!cfgStr || !req.params.slug || !~cfgStr.indexOf(req.params.slug)) {
           used_in_templates.push({ template_id: r.id, name: r.name });
         }
       } catch {}
