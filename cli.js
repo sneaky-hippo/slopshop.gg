@@ -1143,6 +1143,19 @@ SCORE: X/10` : `Sprint ${s}. Mission: ${mission.slice(0, 80)}. PRIORITY: researc
     console.log(`  ${dim('└')} ${bold(score+'/10')} ${phaseColor('['+phase+']')} built:${built_n} qa:${qa_ok} ${dim(ms+'ms')} ${dim(creditsSpent+'cr')}`);
     if (s % 5 === 0 && shared.vision) console.log(`    ${bold('VISION:')} ${green(shared.vision.slice(0, 70))}`);
 
+    // Metrics log — local CSV for analysis
+    const metricsFile = path.join(CONFIG_DIR, 'hive-metrics.csv');
+    if (s === 1) { try { fs.writeFileSync(metricsFile, 'sprint,score,phase,built,qa,edits,reverts,credits,ms,file,priority\n'); } catch(e) {} }
+    const editResult = successfulEdits.length > 0 ? successfulEdits[successfulEdits.length - 1]?.file || '' : '';
+    try { fs.appendFileSync(metricsFile, `${s},${score},${phase},${built_n},${qa_ok},${successfulEdits.length},${successfulEdits.length - built_n < 0 ? 0 : 0},${creditsSpent},${ms},${editResult},${(priority||'').replace(/,/g,';').slice(0,60)}\n`); } catch(e) {}
+
+    // Print running stats every 25 sprints
+    if (s % 25 === 0) {
+      const totalEdits = successfulEdits.length;
+      const avgMs = Math.round(shared.scores.reduce((a, x) => a + (x.score || 0), 0) / shared.scores.length * 10) / 10;
+      console.log(`    ${bold('STATS @' + s + ':')} edits:${totalEdits} avg:${avgMs}/10 scores:${shared.scores.slice(-5).map(x=>x.score).join('→')}`);
+    }
+
     shared.sprints_done = s;
     await save();
     console.log('');
