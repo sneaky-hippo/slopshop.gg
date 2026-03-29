@@ -131,22 +131,46 @@ const handlers = {
 
   'assumption-stress-test': ({argument}) => {
     const sentences=(argument||'We should scale because growth is certain').match(/[^.!?]+[.!?]+/g)||[argument||''];
-    const assumptions=sentences.map((s,i)=>({statement:s.trim(),hidden_assumption:'Assumes: '+(i===0?'correlation implies causation':'past trends predict future'),catastrophe_if_wrong:Math.round(Math.random()*100)/100}));
+    const strongWords = ['must','always','never','certain','guaranteed','obvious','everyone','nobody','impossible','inevitable'];
+    const assumptions=sentences.map((s,i)=>{
+      const lower = s.toLowerCase();
+      const strongCount = strongWords.filter(w=>lower.includes(w)).length;
+      const wordCount = s.trim().split(/\s+/).length;
+      const catastrophe_if_wrong = Math.round(Math.min(1, strongCount * 0.25 + wordCount * 0.02 + (i === 0 ? 0.3 : 0.1)) * 100) / 100;
+      return {statement:s.trim(),hidden_assumption:'Assumes: '+(i===0?'correlation implies causation':'past trends predict future'),catastrophe_if_wrong};
+    });
     return {_engine:'real', argument:argument||'',assumptions:assumptions.sort((a,b)=>b.catastrophe_if_wrong-a.catastrophe_if_wrong),most_dangerous:assumptions[0]};
   },
 
   // ─── NARRATIVE INTELLIGENCE ────────────────────────────────
   'plot-twist-injector': ({story_state, characters}) => {
     const twists=['The ally was the antagonist all along','The goal was a decoy for the real objective','The protagonist discovers they caused the original problem','A presumed-dead character returns with crucial information','The rules of the world suddenly change'];
-    const t=twists[Math.floor(Math.random()*twists.length)];
-    return {_engine:'real', twist:t, impact_score:Math.round(Math.random()*40+60)/100, foreshadowable:true, characters_affected:characters||[], note:'Plant subtle hints 3 beats before reveal'};
+    // Select twist deterministically based on story_state and characters content
+    const stateStr = JSON.stringify(story_state||'') + JSON.stringify(characters||[]);
+    let h=0; for(let i=0;i<stateStr.length;i++) h=((h<<5)-h+stateStr.charCodeAt(i))|0;
+    const idx = Math.abs(h) % twists.length;
+    const t = twists[idx];
+    const charCount = (characters||[]).length;
+    const impact_score = Math.round(Math.min(1, 0.6 + charCount * 0.05 + stateStr.length * 0.001) * 100) / 100;
+    return {_engine:'real', twist:t, impact_score, foreshadowable:true, characters_affected:characters||[], note:'Plant subtle hints 3 beats before reveal'};
   },
 
   'dramatic-tension-curve': ({events}) => {
     const evts=events||[];
-    const curve=evts.map((e,i)=>{const pos=i/Math.max(evts.length-1,1);const tension=Math.sin(pos*Math.PI)*0.8+Math.random()*0.2;return {event:e,position:Math.round(pos*100)/100,tension:Math.round(tension*100)/100};});
+    const curve=evts.map((e,i)=>{
+      const pos=i/Math.max(evts.length-1,1);
+      // Base tension from arc position, plus content-derived modifier
+      const eStr = typeof e === 'string' ? e : JSON.stringify(e);
+      const tensionWords = ['conflict','danger','risk','crisis','battle','fight','death','fear','loss','fail'];
+      const calmWords = ['peace','rest','calm','safe','happy','win','success','love','hope'];
+      const tCount = tensionWords.filter(w=>eStr.toLowerCase().includes(w)).length;
+      const cCount = calmWords.filter(w=>eStr.toLowerCase().includes(w)).length;
+      const contentMod = (tCount - cCount) * 0.1;
+      const tension=Math.round(Math.min(1, Math.max(0, Math.sin(pos*Math.PI)*0.8 + contentMod))*100)/100;
+      return {event:e,position:Math.round(pos*100)/100,tension};
+    });
     const sags=curve.filter((c,i)=>i>0&&i<curve.length-1&&c.tension<curve[i-1].tension&&c.tension<curve[i+1]?.tension);
-    return {_engine:'real', curve, sag_points:sags.map(s=>s.event), peak:curve.sort((a,b)=>b.tension-a.tension)[0]||null};
+    return {_engine:'real', curve, sag_points:sags.map(s=>s.event), peak:[...curve].sort((a,b)=>b.tension-a.tension)[0]||null};
   },
 
   'character-arc-trajectory': ({decisions, starting_state}) => {
@@ -160,7 +184,12 @@ const handlers = {
     const planted=planted_details||[];
     const resolved=new Set(resolved_details||[]);
     const unresolved=planted.filter(p=>!resolved.has(p));
-    return {_engine:'real', planted:planted.length, resolved:resolved.size, unresolved, broken_promises:unresolved.length, audience_expectation:unresolved.map(u=>({detail:u,expectation_weight:Math.round(Math.random()*50+50)/100}))};
+    return {_engine:'real', planted:planted.length, resolved:resolved.size, unresolved, broken_promises:unresolved.length, audience_expectation:unresolved.map((u,i)=>{
+      // Derive expectation weight from position (earlier plants have higher weight) and detail length
+      const detailStr = typeof u === 'string' ? u : JSON.stringify(u);
+      const weight = Math.round(Math.min(1, 0.5 + (planted.length - planted.indexOf(u)) * 0.05 + detailStr.length * 0.005) * 100) / 100;
+      return {detail:u, expectation_weight:weight};
+    })};
   },
 
   'unreliable-narrator-score': ({account}) => {
@@ -179,8 +208,22 @@ const handlers = {
   },
 
   'emotional-resonance-calc': ({scene, audience_type}) => {
-    const emotions=['joy','sadness','fear','anger','surprise','disgust','anticipation','trust'];
-    const activated=emotions.map(e=>({emotion:e,intensity:Math.round(Math.random()*100)/100})).sort((a,b)=>b.intensity-a.intensity);
+    const sceneText = (scene||'').toLowerCase();
+    const emotionWords = {
+      joy:['happy','laugh','celebrate','win','love','delight','smile','cheer'],
+      sadness:['cry','loss','grief','sad','mourn','tear','alone','miss'],
+      fear:['afraid','scare','dread','terror','panic','danger','threat','dark'],
+      anger:['fury','rage','hate','angry','fight','betray','injustice','conflict'],
+      surprise:['shock','unexpected','sudden','reveal','twist','discover','gasp'],
+      disgust:['repulsive','vile','corrupt','rotten','foul','grotesque'],
+      anticipation:['wait','expect','hope','plan','suspense','wonder','build'],
+      trust:['faith','loyal','believe','reliable','safe','bond','protect']
+    };
+    const activated = Object.entries(emotionWords).map(([emotion, words]) => {
+      const matches = words.filter(w=>sceneText.includes(w)).length;
+      const intensity = Math.round(Math.min(1, matches * 0.2 + (sceneText.length > 0 ? 0.1 : 0)) * 100) / 100;
+      return {emotion, intensity};
+    }).sort((a,b)=>b.intensity-a.intensity);
     return {_engine:'real', scene:scene||'',audience:audience_type||'general',activated_emotions:activated.slice(0,3),dominant:activated[0],resonance_score:Math.round(activated[0].intensity*100)/100};
   },
 
