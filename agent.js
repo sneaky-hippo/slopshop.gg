@@ -33,7 +33,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     'new id': { slug: 'crypto-uuid', inputMap: () => ({}) },
     'reverse': { slug: 'text-reverse', inputMap: t => ({ text: t.replace(/^.*reverse\s*(the\s*)?(string|text)?\s*:?\s*/i, '').trim() }) },
     'count the words': { slug: 'text-word-count', inputMap: t => ({ text: t.replace(/^.*count\s*(the\s*)?words\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
-    'count words': { slug: 'text-word-count', inputMap: t => ({ text: t.replace(/^.*count\s*(the\s*)?words\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
+    'count words': { slug: 'text-word-count', inputMap: t => ({ text: t.replace(/^.*((?:the )?words(?: in|of|for)?)\s*:?\s*/i, '').trim() }) },
     'word count': { slug: 'text-word-count', inputMap: t => ({ text: t.replace(/^.*word\s*count\s*(of|in|for)?\s*:?\s*/i, '').trim() }) },
     'slugify': { slug: 'text-slugify', inputMap: t => ({ text: t.replace(/^.*slugify\s*(the\s*)?(text|string)?\s*:?\s*/i, '').trim() }) },
     'password': { slug: 'crypto-password-generate', inputMap: t => { const m = t.match(/(\d+)\s*char/); return { length: m ? parseInt(m[1]) : 20 }; } },
