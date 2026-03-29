@@ -42,12 +42,52 @@ const handlers = {
     return {_engine:'real', final_moods:mood, seed:seed_agent||'a', spread_ratio:Math.round(Object.values(mood).filter(m=>m>10).length/Object.keys(mood).length*100)/100};
   },
 
-  'sentiment-inertia': ({current_trajectory, external_force}) => {
-    const traj=current_trajectory||0.7;
-    const force=external_force||0.3;
-    const momentum=Math.abs(traj)*2;
-    const shifted=Math.round((traj*momentum+force)/(momentum+1)*100)/100;
-    return {_engine:'real', current:traj, force_applied:force, momentum, result:shifted, shift:Math.round(Math.abs(shifted-traj)*100)/100, note:'High momentum = hard to change emotional direction'};
+  'sentiment-inertia': ({current_trajectory, external_force, text}) => {
+    // Actually analyze sentiment words in the text using a real lexicon
+    const t = (text||'').toLowerCase();
+    const words = t.split(/\s+/).filter(w=>w.length>0);
+    const totalWords = words.length;
+
+    const positiveWords = ['good','great','excellent','wonderful','amazing','love','happy','joy','perfect','beautiful','best','brilliant','fantastic','awesome','pleasant','nice','glad','delighted','thrilled','excited','positive','success','win','hope','kind','generous','warm','bright','calm','peace','gentle','sweet','grateful','proud','strong','confident','inspired','cheerful','optimistic','superb','outstanding','magnificent','terrific','splendid','marvelous'];
+    const negativeWords = ['bad','terrible','horrible','awful','hate','sad','angry','fear','worst','ugly','stupid','fail','pain','loss','death','evil','cruel','violent','dark','cold','harsh','bitter','miserable','depressed','anxious','worried','frustrated','disappointed','disgusted','annoyed','furious','hostile','toxic','dreadful','appalling','atrocious','vile','wretched','dire','bleak','grim','pathetic','worthless','useless'];
+    const intensifiers = ['very','extremely','incredibly','really','absolutely','totally','utterly','completely','deeply','highly','strongly','so','such','most'];
+
+    let posCount = 0;
+    let negCount = 0;
+    let intensifierCount = 0;
+    words.forEach((w,i) => {
+      const isIntensified = i > 0 && intensifiers.includes(words[i-1]);
+      const weight = isIntensified ? 2 : 1;
+      if(positiveWords.includes(w)) posCount += weight;
+      if(negativeWords.includes(w)) negCount += weight;
+      if(intensifiers.includes(w)) intensifierCount++;
+    });
+
+    // Derive sentiment from text analysis, or fall back to provided numbers
+    const textSentiment = totalWords > 0 ? Math.round((posCount - negCount) / Math.max(totalWords, 1) * 100) / 100 : null;
+    const traj = textSentiment !== null ? textSentiment : (current_trajectory||0.7);
+    const force = external_force || (textSentiment !== null ? (posCount > negCount ? 0.3 : -0.3) : 0.3);
+
+    const momentum = Math.abs(traj) * 2;
+    const shifted = Math.round((traj * momentum + force) / (momentum + 1) * 100) / 100;
+
+    return {
+      _engine:'real',
+      current: traj,
+      force_applied: force,
+      momentum,
+      result: shifted,
+      shift: Math.round(Math.abs(shifted - traj) * 100) / 100,
+      text_analysis: {
+        positive_words: posCount,
+        negative_words: negCount,
+        intensifiers: intensifierCount,
+        total_words: totalWords,
+        raw_sentiment: textSentiment,
+        dominant: posCount > negCount ? 'positive' : negCount > posCount ? 'negative' : 'neutral'
+      },
+      note: momentum > 1 ? 'High momentum = hard to change emotional direction' : 'Low momentum = sentiment easily shifted'
+    };
   },
 
   'affective-contrast-ratio': ({state_a, state_b}) => {

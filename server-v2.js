@@ -8,6 +8,11 @@ const express = require('express');
 const cors = require('cors');
 const crypto = require('crypto');
 const path = require('path');
+const os = require('os');
+const { fork } = require('child_process');
+const http = require('http');
+const https = require('https');
+const { URL } = require('url');
 
 // Structured logging
 const log = {
@@ -3972,32 +3977,89 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
     res.json({ ok: true, run_id: id, agents_deployed: n, status: 'running', async: true,
       poll: `GET /v1/army/run/${id}`, note: `${n} agents executing in background. Poll for results.` });
 
-    // Execute in background (non-blocking)
+    // Execute in background using child_process.fork for TRUE parallel execution.
+    // Each forked process loads handlers independently and runs in a separate V8 isolate,
+    // giving real multi-core parallelism for CPU-bound handlers (crypto, math, etc).
     (async () => {
       const bgResults = [];
-      const batchSize = 10;
-      for (let batch = 0; batch < n; batch += batchSize) {
-        const batchEnd = Math.min(batch + batchSize, n);
-        const batchPromises = [];
-        for (let i = batch; i < batchEnd; i++) {
-          const agentId = `agent-${i + 1}`;
-          const cleanInput = input ? { ...input } : {};
-          if (handler) {
-            batchPromises.push((async () => {
-              try {
-                const result = await Promise.resolve(handler(cleanInput));
-                return { agent_id: agentId, result, hash: crypto.createHash('sha256').update(JSON.stringify(result || {})).digest('hex').slice(0, 16), verified: true, _engine: result?._engine || 'real' };
-              } catch(e) { return { agent_id: agentId, error: e.message, verified: false }; }
-            })());
-          } else {
-            batchPromises.push(Promise.resolve({ agent_id: agentId, perspective: `Agent ${i+1}: "${(task||'').slice(0,200)}"`, hash: crypto.createHash('sha256').update(agentId + task).digest('hex').slice(0,16), verified: true }));
-          }
-        }
-        const batchRes = await Promise.allSettled(batchPromises);
-        batchRes.forEach(r => bgResults.push(r.status === 'fulfilled' ? r.value : { error: r.reason?.message }));
-        // Update progress
-        db.prepare('UPDATE compute_runs SET results = ?, verified = ? WHERE id = ?').run(JSON.stringify(bgResults.slice(0, 100)), bgResults.filter(r => r.verified).length, id);
+      const numWorkers = Math.min(os.cpus().length, n, 16); // cap at 16 processes
+      const workerScript = path.join(__dirname, 'army-worker.js');
+
+      // Divide agent indices among workers
+      const allIndices = Array.from({ length: n }, (_, i) => i);
+      const chunks = [];
+      const chunkSize = Math.ceil(n / numWorkers);
+      for (let i = 0; i < allIndices.length; i += chunkSize) {
+        chunks.push(allIndices.slice(i, i + chunkSize));
       }
+
+      // Fork workers and collect results in parallel
+      const workerPromises = chunks.map((agentIndices) => {
+        return new Promise((resolve) => {
+          const worker = fork(workerScript, [], { silent: true });
+          let settled = false;
+          const timeout = setTimeout(() => {
+            if (!settled) {
+              settled = true;
+              worker.kill('SIGTERM');
+              // Return error results for all agents in this chunk
+              resolve(agentIndices.map(idx => ({
+                agent_id: `agent-${idx + 1}`, error: 'Worker timed out', verified: false
+              })));
+            }
+          }, 90000); // 90s timeout per worker
+
+          worker.on('message', (msg) => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeout);
+              worker.kill();
+              resolve(msg.results || []);
+            }
+          });
+
+          worker.on('error', (err) => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeout);
+              resolve(agentIndices.map(idx => ({
+                agent_id: `agent-${idx + 1}`, error: err.message, verified: false
+              })));
+            }
+          });
+
+          worker.on('exit', (code) => {
+            if (!settled) {
+              settled = true;
+              clearTimeout(timeout);
+              resolve(agentIndices.map(idx => ({
+                agent_id: `agent-${idx + 1}`, error: `Worker exited with code ${code}`, verified: false
+              })));
+            }
+          });
+
+          // Send work to the forked process
+          worker.send({ tool, input: input ? { ...input } : {}, agentIndices, task });
+        });
+      });
+
+      // Wait for all workers to finish (they run in parallel across CPU cores)
+      const workerResults = await Promise.all(workerPromises);
+      for (const batch of workerResults) {
+        bgResults.push(...batch);
+      }
+      // Sort by agent index to maintain consistent ordering
+      bgResults.sort((a, b) => {
+        const idxA = parseInt((a.agent_id || '').replace('agent-', ''), 10) || 0;
+        const idxB = parseInt((b.agent_id || '').replace('agent-', ''), 10) || 0;
+        return idxA - idxB;
+      });
+
+      // Update progress
+      db.prepare('UPDATE compute_runs SET results = ?, verified = ? WHERE id = ?').run(
+        JSON.stringify(bgResults.slice(0, 100)), bgResults.filter(r => r.verified).length, id
+      );
+
       // Build Merkle tree
       const hashes = bgResults.filter(r => r.hash).map(r => r.hash);
       function buildMR(leaves) { if (!leaves.length) return ''; let lvl = [...leaves]; while (lvl.length > 1) { const nxt = []; for (let i = 0; i < lvl.length; i += 2) { nxt.push(crypto.createHash('sha256').update(lvl[i] + (lvl[i+1]||lvl[i])).digest('hex')); } lvl = nxt; } return lvl[0]; }
@@ -4011,6 +4073,8 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
       cfg.latency_ms = Date.now() - startTime;
       cfg.success_count = bgResults.filter(r => r.verified).length;
       cfg.fail_count = bgResults.filter(r => r.error).length;
+      cfg.parallel_workers = numWorkers;
+      cfg.execution_mode = 'child_process.fork';
       db.prepare('UPDATE compute_runs SET config = ? WHERE id = ?').run(JSON.stringify(cfg), id);
     })().catch(e => {
       db.prepare("UPDATE compute_runs SET status = 'failed' WHERE id = ?").run(id);
@@ -5826,6 +5890,39 @@ db.exec(`
   );
 `);
 
+// Add webhook_url and name columns to compute_suppliers (idempotent migration)
+try { db.exec("ALTER TABLE compute_suppliers ADD COLUMN webhook_url TEXT"); } catch (_) { /* column already exists */ }
+try { db.exec("ALTER TABLE compute_suppliers ADD COLUMN name TEXT"); } catch (_) { /* column already exists */ }
+
+// Helper: POST JSON to a URL (returns a Promise). Works with http and https.
+function webhookPost(targetUrl, payload) {
+  return new Promise((resolve, reject) => {
+    const parsed = new URL(targetUrl);
+    const transport = parsed.protocol === 'https:' ? https : http;
+    const data = JSON.stringify(payload);
+    const opts = {
+      hostname: parsed.hostname,
+      port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+      path: parsed.pathname + parsed.search,
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) },
+      timeout: 30000,
+    };
+    const request = transport.request(opts, (response) => {
+      let body = '';
+      response.on('data', (chunk) => { body += chunk; });
+      response.on('end', () => {
+        try { resolve({ status: response.statusCode, body: JSON.parse(body) }); }
+        catch (_) { resolve({ status: response.statusCode, body }); }
+      });
+    });
+    request.on('error', reject);
+    request.on('timeout', () => { request.destroy(); reject(new Error('webhook request timed out')); });
+    request.write(data);
+    request.end();
+  });
+}
+
 // DB helpers for compute exchange
 const dbInsertSupplier = db.prepare('INSERT INTO compute_suppliers (id, user_id, capabilities, status, last_heartbeat) VALUES (?, ?, ?, ?, datetime(\'now\'))');
 const dbGetSupplier = db.prepare('SELECT * FROM compute_suppliers WHERE id = ?');
@@ -5838,15 +5935,36 @@ const dbCountPendingTasksForSupplier = db.prepare("SELECT COUNT(*) as cnt FROM c
 const dbInsertSettlement = db.prepare('INSERT INTO compute_settlements (id, task_id, supplier_id, consumer_id, credits) VALUES (?, ?, ?, ?, ?)');
 
 // POST /v1/exchange/register — Register as a compute supplier
+// Accepts: { capabilities: string[], webhook_url?: string, name?: string }
+// webhook_url = where the exchange POSTs tasks for this supplier to execute on THEIR machine
 app.post('/v1/exchange/register', auth, (req, res) => {
-  const { capabilities } = req.body;
+  const { capabilities, webhook_url, name } = req.body;
   if (!capabilities || !Array.isArray(capabilities) || capabilities.length === 0) {
     return res.status(400).json({ error: { code: 'missing_fields', message: 'capabilities must be a non-empty array (e.g. ["compute", "llm", "network"])' } });
+  }
+  // Validate webhook_url if provided
+  if (webhook_url) {
+    try {
+      const parsed = new URL(webhook_url);
+      if (!['http:', 'https:'].includes(parsed.protocol)) {
+        return res.status(400).json({ error: { code: 'invalid_webhook', message: 'webhook_url must use http or https protocol' } });
+      }
+    } catch (_) {
+      return res.status(400).json({ error: { code: 'invalid_webhook', message: 'webhook_url must be a valid URL' } });
+    }
   }
   const supplierId = 'sup_' + uuidv4();
   const userId = req.acct.id;
   dbInsertSupplier.run(supplierId, userId, JSON.stringify(capabilities), 'online');
-  res.json({ ok: true, supplier_id: supplierId, status: 'online', capabilities, registered_at: new Date().toISOString() });
+  // Set webhook_url and name via UPDATE (since INSERT prepared stmt doesn't include them)
+  if (webhook_url || name) {
+    db.prepare('UPDATE compute_suppliers SET webhook_url = ?, name = ? WHERE id = ?').run(webhook_url || null, name || null, supplierId);
+  }
+  res.json({ ok: true, supplier_id: supplierId, status: 'online', capabilities, webhook_url: webhook_url || null, name: name || null, registered_at: new Date().toISOString(),
+    instructions: webhook_url
+      ? 'Tasks will be POSTed to your webhook_url. Return results via POST /v1/exchange/result'
+      : 'No webhook_url provided — use GET /v1/exchange/poll/:supplier_id to receive tasks'
+  });
 });
 
 // POST /v1/exchange/heartbeat — Supplier sends heartbeat
@@ -6477,8 +6595,7 @@ db.exec(`
 `);
 
 // ── WEBHOOK DISPATCHER (fire-and-forget) ────────────────────────────────────
-const https = require('https');
-const http = require('http');
+// (https and http already required at top of file)
 function fireWebhook(webhookRow, event, payload) {
   try {
     const whUrl = new URL(webhookRow.url);

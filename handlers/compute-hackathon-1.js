@@ -384,7 +384,21 @@ const handlers = {
   'noise-signal-separator': ({data, noise_threshold}) => {
     const d = data||[];
     const nt = noise_threshold||0.3;
-    const analyzed = d.map((item,i)=>{const hash=crypto.createHash('md5').update(JSON.stringify(item)+i).digest('hex');const signalScore=parseInt(hash.slice(0,4),16)/65535;return {item,signal_score:Math.round(signalScore*100)/100,classification:signalScore>=nt?'signal':'noise'};});
+    // Derive signal score from actual content characteristics: length, uniqueness, information density
+    const analyzed = d.map((item,i) => {
+      const str = typeof item === 'string' ? item : JSON.stringify(item);
+      const uniqueChars = new Set(str).size;
+      const len = str.length;
+      // Information density: ratio of unique chars to total length
+      const density = len > 0 ? uniqueChars / len : 0;
+      // Content words (longer words carry more signal)
+      const words = str.split(/\s+/).filter(w=>w.length>0);
+      const meaningfulWords = words.filter(w=>w.length>3).length;
+      const wordRatio = words.length > 0 ? meaningfulWords / words.length : 0;
+      // Signal score: blend of density and word meaningfulness
+      const signalScore = Math.round(Math.min(1, density * 0.5 + wordRatio * 0.5) * 100) / 100;
+      return {item, signal_score:signalScore, classification:signalScore>=nt?'signal':'noise'};
+    });
     const signals = analyzed.filter(a=>a.classification==='signal');
     const noise = analyzed.filter(a=>a.classification==='noise');
     return {_engine:'real', signals:signals.map(s=>s.item), noise:noise.map(n=>n.item), snr:Math.round(signals.length/Math.max(noise.length,1)*100)/100, threshold:nt, total_items:d.length};
@@ -407,10 +421,29 @@ const handlers = {
   },
 
   'context-parallax': ({claim, context_a, context_b}) => {
-    const hashA = crypto.createHash('md5').update(JSON.stringify(context_a||'')).digest('hex');
-    const hashB = crypto.createHash('md5').update(JSON.stringify(context_b||'')).digest('hex');
-    const shift = parseInt(hashA.slice(0,4),16)/65535 - parseInt(hashB.slice(0,4),16)/65535;
-    return {_engine:'real', claim:claim||'', parallax_shift:Math.round(Math.abs(shift)*100)/100, fragile:Math.abs(shift)>0.3, note:Math.abs(shift)>0.3?'Belief is highly context-dependent — handle with care':'Belief is robust across contexts'};
+    // Actually compare contexts by analyzing vocabulary overlap and semantic divergence
+    const claimStr = (claim||'').toLowerCase();
+    const ctxA = JSON.stringify(context_a||'').toLowerCase();
+    const ctxB = JSON.stringify(context_b||'').toLowerCase();
+    const claimWords = claimStr.split(/\s+/).filter(w=>w.length>3);
+
+    // How much each context supports the claim (word overlap with claim)
+    const supportA = claimWords.filter(w=>ctxA.includes(w)).length;
+    const supportB = claimWords.filter(w=>ctxB.includes(w)).length;
+    const maxSupport = Math.max(claimWords.length, 1);
+
+    // Vocabulary divergence between contexts
+    const wordsA = new Set(ctxA.split(/\s+/).filter(w=>w.length>3));
+    const wordsB = new Set(ctxB.split(/\s+/).filter(w=>w.length>3));
+    const sharedWords = [...wordsA].filter(w=>wordsB.has(w)).length;
+    const totalUniqueWords = new Set([...wordsA, ...wordsB]).size;
+    const contextSimilarity = totalUniqueWords > 0 ? sharedWords / totalUniqueWords : 1;
+
+    // Parallax: how much the claim's support shifts between contexts
+    const shift = Math.abs(supportA - supportB) / maxSupport;
+    const parallax = Math.round(Math.min(1, shift + (1 - contextSimilarity) * 0.5) * 100) / 100;
+
+    return {_engine:'real', claim:claim||'', parallax_shift:parallax, fragile:parallax>0.3, context_similarity:Math.round(contextSimilarity*100)/100, support_in_a:Math.round(supportA/maxSupport*100)/100, support_in_b:Math.round(supportB/maxSupport*100)/100, note:parallax>0.3?'Belief is highly context-dependent — handle with care':'Belief is robust across contexts'};
   },
 };
 

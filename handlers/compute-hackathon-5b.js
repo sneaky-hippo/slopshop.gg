@@ -263,9 +263,68 @@ const handlers = {
   },
 
   // ─── ETHICS & DECISION THEORY ─────────────────────────────
-  'trolley-problem': ({lives_saved, lives_sacrificed}) => {
-    const saved=lives_saved||5; const sacrificed=lives_sacrificed||1;
-    return {_engine:'real', utilitarian:saved>sacrificed?'act':'abstain', deontological:'abstain', virtue:'depends', net:saved-sacrificed};
+  'trolley-problem': ({lives_saved, lives_sacrificed, scenario}) => {
+    // Actually analyze the scenario text for people, actions, and utilitarian factors
+    const text = (scenario||'').toLowerCase();
+    const words = text.split(/\s+/).filter(w=>w.length>0);
+    const totalWords = words.length;
+
+    // Count people mentioned via number words and digits
+    const numberWords = {one:1,two:2,three:3,four:4,five:5,six:6,seven:7,eight:8,nine:9,ten:10,twenty:20,hundred:100,thousand:1000};
+    let peopleMentioned = 0;
+    const personWords = ['person','people','man','woman','child','children','worker','workers','patient','patients','passenger','passengers','victim','victims','bystander','bystanders','pedestrian','pedestrians','individual','individuals'];
+    words.forEach((w,i) => {
+      if(personWords.some(pw=>w.includes(pw))) {
+        // Check preceding word for a number
+        const prev = words[i-1]||'';
+        const num = parseInt(prev) || numberWords[prev] || 1;
+        peopleMentioned += num;
+      }
+    });
+    // Also extract standalone numbers near person words
+    const numbersInText = text.match(/\d+/g)?.map(Number) || [];
+
+    // Detect action words (intervention vs inaction)
+    const actionWords = ['push','pull','switch','divert','flip','turn','lever','steer','intervene','act','save','redirect','sacrifice','throw'];
+    const inactionWords = ['nothing','abstain','wait','watch','allow','let','refrain','ignore','passive'];
+    const actionCount = actionWords.filter(w=>text.includes(w)).length;
+    const inactionCount = inactionWords.filter(w=>text.includes(w)).length;
+
+    // Detect harm/benefit words
+    const harmWords = ['kill','die','death','harm','hurt','crush','hit','destroy','sacrifice','lose','suffer','pain','injure'];
+    const benefitWords = ['save','rescue','protect','help','survive','live','preserve','spare'];
+    const harmScore = harmWords.filter(w=>text.includes(w)).length;
+    const benefitScore = benefitWords.filter(w=>text.includes(w)).length;
+
+    // Use explicitly provided numbers, or infer from text
+    const saved = lives_saved || (numbersInText.length >= 2 ? Math.max(...numbersInText) : peopleMentioned || 5);
+    const sacrificed = lives_sacrificed || (numbersInText.length >= 2 ? Math.min(...numbersInText.filter(n=>n>0)) : 1);
+
+    // Utilitarian score: net lives saved, weighted by action/inaction language
+    const netLives = saved - sacrificed;
+    const actionBias = actionCount - inactionCount;
+    const utilitarian_score = Math.round((netLives / Math.max(saved + sacrificed, 1) * 50 + Math.min(Math.max(actionBias * 10, -25), 25) + 50));
+
+    return {
+      _engine:'real',
+      utilitarian: saved > sacrificed ? 'act' : 'abstain',
+      deontological: 'abstain',
+      virtue: actionBias > 0 ? 'courage_to_act' : actionBias < 0 ? 'restraint' : 'depends',
+      net: netLives,
+      utilitarian_score: Math.max(0, Math.min(100, utilitarian_score)),
+      text_analysis: {
+        people_detected: peopleMentioned,
+        numbers_found: numbersInText,
+        action_words: actionCount,
+        inaction_words: inactionCount,
+        harm_language: harmScore,
+        benefit_language: benefitScore,
+        word_count: totalWords
+      },
+      lives_saved: saved,
+      lives_sacrificed: sacrificed,
+      recommendation: netLives > 0 && actionBias >= 0 ? 'Utilitarian calculus favors intervention' : netLives > 0 ? 'Net positive but language suggests restraint' : 'Do not act — net harm'
+    };
   },
 
   'value-alignment-score': ({values_a, values_b}) => {
@@ -273,10 +332,59 @@ const handlers = {
     return {_engine:'real', alignment:Math.round(shared.length*2/(a.length+b.length+0.01)*100)/100, shared_values:shared, compatible:shared.length>Math.min(a.length,b.length)*0.5};
   },
 
-  'consciousness-index': ({self_reference_freq, temporal_awareness, goal_coherence, uncertainty_acknowledgment}) => {
-    const vals=[self_reference_freq||0,temporal_awareness||0,goal_coherence||0,uncertainty_acknowledgment||0];
-    const idx=Math.round(vals.reduce((a,b)=>a+b,0)/4*100)/100;
-    return {_engine:'real', index:idx, interpretation:idx>0.7?'high_awareness':idx>0.4?'moderate':'limited'};
+  'consciousness-index': ({self_reference_freq, temporal_awareness, goal_coherence, uncertainty_acknowledgment, text}) => {
+    // Actually measure self-referential and meta-cognitive language from text
+    const t = (text||'').toLowerCase();
+    const words = t.split(/\s+/).filter(w=>w.length>0);
+    const totalWords = words.length;
+
+    // Self-reference pronouns
+    const selfWords = ['i','me','my','mine','myself','i\'m','i\'ve','i\'ll','i\'d'];
+    const selfCount = words.filter(w=>selfWords.includes(w)).length;
+
+    // Meta-cognitive words (thinking about thinking)
+    const metaCogWords = ['think','thinking','thought','believe','aware','awareness','conscious','consciousness','realize','realize','understand','know','knowing','knowledge','perceive','reflect','reflecting','consider','wonder','ponder','recognize','comprehend','sense','feel','feeling','imagine','remember','recall','experience','experiencing','exist','existence','self','identity','mind','mental','cognitive'];
+    const metaCogCount = metaCogWords.filter(w=>t.includes(w)).length;
+
+    // Temporal awareness words
+    const temporalWords = ['now','then','before','after','past','present','future','moment','time','when','while','during','always','never','soon','later','yesterday','today','tomorrow','currently','previously','eventually','recently'];
+    const temporalCount = temporalWords.filter(w=>t.includes(w)).length;
+
+    // Goal/intention words
+    const goalWords = ['want','need','goal','intend','plan','purpose','aim','desire','wish','hope','strive','seek','try','attempt','decide','choose','will','must','should'];
+    const goalCount = goalWords.filter(w=>t.includes(w)).length;
+
+    // Uncertainty acknowledgment words
+    const uncertaintyWords = ['maybe','perhaps','might','could','uncertain','unsure','doubt','possible','possibly','probably','unclear','ambiguous','confused','question','wonder','suppose'];
+    const uncertaintyCount = uncertaintyWords.filter(w=>t.includes(w)).length;
+
+    // Compute scores from text analysis, falling back to provided numeric values
+    const selfRef = totalWords > 0 ? Math.min(1, selfCount / Math.max(totalWords * 0.05, 1)) : (self_reference_freq||0);
+    const tempAware = totalWords > 0 ? Math.min(1, temporalCount / 8) : (temporal_awareness||0);
+    const goalCoh = totalWords > 0 ? Math.min(1, goalCount / 6) : (goal_coherence||0);
+    const uncertAck = totalWords > 0 ? Math.min(1, uncertaintyCount / 5) : (uncertainty_acknowledgment||0);
+
+    const idx = Math.round((selfRef + tempAware + goalCoh + uncertAck) / 4 * 100) / 100;
+
+    return {
+      _engine:'real',
+      index: idx,
+      interpretation: idx > 0.7 ? 'high_awareness' : idx > 0.4 ? 'moderate' : 'limited',
+      text_analysis: {
+        self_references: selfCount,
+        meta_cognitive_markers: metaCogCount,
+        temporal_markers: temporalCount,
+        goal_markers: goalCount,
+        uncertainty_markers: uncertaintyCount,
+        total_words: totalWords
+      },
+      dimension_scores: {
+        self_reference: Math.round(selfRef * 100) / 100,
+        temporal_awareness: Math.round(tempAware * 100) / 100,
+        goal_coherence: Math.round(goalCoh * 100) / 100,
+        uncertainty_acknowledgment: Math.round(uncertAck * 100) / 100
+      }
+    };
   },
 
   'moral-foundation': ({text}) => {
