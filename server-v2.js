@@ -547,7 +547,7 @@ function hashApiKey(key) {
 }
 // Extract prefix for indexed lookup (first 10 chars, e.g. "sk-slop-xx")
 function keyPrefix(key) {
-  return key.slice(0, 10);
+  javascript
 }
 const dbGetKey = db.prepare('SELECT * FROM api_keys WHERE key = ?');
 const dbGetKeyByHash = db.prepare('SELECT * FROM api_keys WHERE key_hash = ?');
