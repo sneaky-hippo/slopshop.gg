@@ -908,8 +908,8 @@ async function cmdHive(args) {
   });
   let creditsSpent = 0;
   const cloudChat = async (provider, prompt) => {
-    if (!useCloud || creditsSpent >= 30) return '';
-    try { const r = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 2000), provider }); creditsSpent += 10; return r.data?.data?.answer || r.data?.answer || ''; }
+    if (!useCloud || creditsSpent >= 50) return '';
+    try { const r = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 3500), provider }); creditsSpent += 10; return r.data?.data?.answer || r.data?.answer || ''; }
     catch(e) { return ''; }
   };
   const slopCall = async (slug, params) => {
@@ -999,17 +999,13 @@ Target file this sprint: ${targetFile}
 ACTUAL CODE FROM ${targetFile} (lines ~${Math.floor(Math.random()*500)}):
 ${fileSample.slice(0, 400)}
 
-Do TWO things:
-1. PRIORITY: what ONE code change to make (specific file + what to change)
-2. Output the change as ONE of these commands:
-   file edit <path> --find "old text" --replace "new text"
-   memory set <key> {"data":"value"}
+Look at the code above from ${targetFile}. Find ONE specific improvement.
 
-SCORE: X/10 and NEXT: what to do next sprint
-
-${phase === 'EXPLORE' ? 'Be bold. Discover.' : phase === 'FIX' ? 'Fix whats broken.' : phase === 'ACCELERATE' ? 'Double down.' : 'Find next unlock.'}
-
-Available files: server-v2.js, cli.js, index.html, docs.html, pricing.html, about.html, compare.html, README.md, mcp-server.js, agent.js, auth.js`;
+Output EXACTLY:
+PRIORITY: <what you're improving and why>
+FIND: <copy EXACT text from the code above to replace — must match character for character>
+REPLACE: <your improved version>
+SCORE: X/10`;
 
     const resp = await ask(thinkPrompt);
     const priorityMatch = (resp||'').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
@@ -1020,48 +1016,32 @@ Available files: server-v2.js, cli.js, index.html, docs.html, pricing.html, abou
 
     console.log(`  ${dim('│')} ${green('→')} ${priority.slice(0, 70)}`);
 
-    // ── BUILD — execute file edits + memory commands ──
+    // ── BUILD — parse FIND/REPLACE from response, edit the actual file ──
     let built_n = 0;
-    const allCmds = (resp||'').split('\n').map(l => l.trim()).filter(l =>
-      l.startsWith('file edit') || l.startsWith('memory set')
-    );
+    const findMatch = (resp||'').match(/FIND:\s*([\s\S]*?)(?=\nREPLACE:)/i);
+    const replaceMatch = (resp||'').match(/REPLACE:\s*([\s\S]*?)(?=\nSCORE:|$)/i);
 
-    for (const cmd of allCmds.slice(0, 3)) {
-      try {
-        if (cmd.startsWith('file edit ')) {
-          // Parse: file edit <path> --find "X" --replace "Y"
-          const findMatch = cmd.match(/--find\s+"([^"]+)"/);
-          const replaceMatch = cmd.match(/--replace\s+"([^"]+)"/);
-          const pathMatch = cmd.match(/^file edit\s+(\S+)/);
-          if (pathMatch && findMatch && replaceMatch) {
-            const filePath = path.resolve(__dirname, pathMatch[1]);
-            if (fs.existsSync(filePath)) {
-              const content = fs.readFileSync(filePath, 'utf8');
-              if (content.includes(findMatch[1])) {
-                fs.writeFileSync(filePath, content.replace(findMatch[1], replaceMatch[1]));
-                shared.builds.push({ key: pathMatch[1], type: 'file-edit', sprint: s });
-                built_n++;
-                console.log(`  ${dim('│')} ${green('✓ EDITED')} ${cyan(pathMatch[1])} ${dim(findMatch[1].slice(0,30) + ' → ' + replaceMatch[1].slice(0,30))}`);
-              } else {
-                console.log(`  ${dim('│')} ${yellow('⚠ find text not in')} ${pathMatch[1]}`);
-              }
-            }
-          }
-        } else if (cmd.startsWith('memory set ')) {
-          const rest = cmd.slice(11); const si = rest.indexOf(' ');
-          if (si > 0) {
-            const k = rest.slice(0, si).replace(/[^a-zA-Z0-9_-]/g, ''), v = rest.slice(si+1);
-            if (k.length > 1 && v.length > 1 && await slopMem('hive-' + k, v)) {
-              shared.builds.push({ key: 'hive-' + k, type: 'memory', sprint: s });
-              built_n++;
-              console.log(`  ${dim('│')} ${green('✓ STORED')} ${cyan('hive-' + k)}`);
-            }
-          }
+    if (findMatch && replaceMatch) {
+      const findText = findMatch[1].trim();
+      const replaceText = replaceMatch[1].trim();
+      const filePath = path.resolve(__dirname, targetFile);
+
+      if (findText.length > 3 && replaceText.length > 3 && fs.existsSync(filePath)) {
+        const content = fs.readFileSync(filePath, 'utf8');
+        if (content.includes(findText)) {
+          fs.writeFileSync(filePath, content.replace(findText, replaceText));
+          shared.builds.push({ key: targetFile, type: 'file-edit', find: findText.slice(0, 50), replace: replaceText.slice(0, 50), sprint: s });
+          built_n++;
+          console.log(`  ${dim('│')} ${green('✓ EDITED')} ${cyan(targetFile)}`);
+          console.log(`  ${dim('│')} ${dim(findText.slice(0, 50))}`);
+          console.log(`  ${dim('│')} ${green('→')} ${dim(replaceText.slice(0, 50))}`);
+        } else {
+          console.log(`  ${dim('│')} ${yellow('⚠ text not found in')} ${targetFile}`);
         }
-      } catch(e) { console.log(`  ${dim('│')} ${yellow('⚠')} ${e.message?.slice(0,40)}`); }
+      }
     }
 
-    // Fallback: at minimum store the priority
+    // Fallback: store priority in memory
     if (built_n === 0) {
       await slopMem('hive-s' + s, JSON.stringify({ priority, sprint: s }));
       shared.builds.push({ key: 'hive-s' + s, type: 'memory', sprint: s });
