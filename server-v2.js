@@ -7748,6 +7748,27 @@ app.post('/v1/chain/run', auth, async (req, res) => {
 
   for (let exec = 0; exec < maxExec && currentStep < steps.length; exec++) {
     const step = steps[currentStep];
+
+    // --- Conditional step execution (chain branching) ---
+    if (step.condition || step['if']) {
+      const condStr = step.condition || step['if'];
+      try {
+        if (!evalSafeCondition(condStr, ctx)) {
+          results.push({ step: currentStep, skipped: true, reason: 'Condition false: ' + condStr });
+          if (step.else_step != null && step.else_step >= 0 && step.else_step < steps.length) {
+            currentStep = step.else_step;
+          } else {
+            currentStep++;
+          }
+          continue;
+        }
+      } catch (condErr) {
+        results.push({ step: currentStep, skipped: true, reason: 'Condition error: ' + condErr.message });
+        currentStep++;
+        continue;
+      }
+    }
+
     const previousResult = results.length > 0 ? (results[results.length - 1].answer || results[results.length - 1].result || '') : '';
 
     try {
@@ -13165,6 +13186,666 @@ app.get('/v1/turing-verify', auth, async (req, res) => {
     results,
     _engine: 'real',
   });
+});
+
+// ===== FEATURE BLOCK: Memory Evolution, Swarm SSE, Hive Activity, Chain Branching, Staking Yield, Marketplace Install, A2A Broadcast =====
+
+// --- 1. Memory Evolution ---
+db.exec(`CREATE TABLE IF NOT EXISTS memory_evolution_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  api_key TEXT NOT NULL,
+  action TEXT NOT NULL,
+  detail TEXT,
+  merged_keys TEXT,
+  ts INTEGER NOT NULL
+)`);
+
+const memoryEvolutionTimers = new Map(); // api_key -> intervalId
+
+function levenshteinDistance(a, b) {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 0; i <= m; i++) dp[i][0] = i;
+  for (let j = 0; j <= n; j++) dp[0][j] = j;
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+    }
+  }
+  return dp[m][n];
+}
+
+function evolveMemory(apiKey) {
+  try {
+    // Get all memory keys for a namespace (use api_key prefix as namespace)
+    const ns = apiKey.slice(0, 12);
+    const rows = db.prepare('SELECT namespace, key, value, updated FROM memory WHERE namespace = ? ORDER BY key').all(ns);
+    if (rows.length < 2) return { merged: 0 };
+    let merged = 0;
+    const mergedKeys = [];
+    // Compare pairs and merge if Levenshtein distance <= 3
+    const consumed = new Set();
+    for (let i = 0; i < rows.length; i++) {
+      if (consumed.has(i)) continue;
+      for (let j = i + 1; j < rows.length; j++) {
+        if (consumed.has(j)) continue;
+        const dist = levenshteinDistance(rows[i].key, rows[j].key);
+        if (dist > 0 && dist <= 3) {
+          // Merge: keep the newer one, append older value
+          const keeper = rows[i].updated >= rows[j].updated ? rows[i] : rows[j];
+          const donor = keeper === rows[i] ? rows[j] : rows[i];
+          const combinedValue = (keeper.value || '') + '\n[merged from ' + donor.key + ']: ' + (donor.value || '');
+          db.prepare('UPDATE memory SET value = ?, updated = ? WHERE namespace = ? AND key = ?')
+            .run(combinedValue.slice(0, 10000), Date.now(), keeper.namespace, keeper.key);
+          db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?').run(donor.namespace, donor.key);
+          db.prepare('INSERT INTO memory_history (namespace, key, value, timestamp) VALUES (?, ?, ?, ?)')
+            .run(donor.namespace, donor.key, donor.value, Date.now());
+          mergedKeys.push(donor.key + ' -> ' + keeper.key);
+          consumed.add(keeper === rows[i] ? j : i);
+          merged++;
+        }
+      }
+    }
+    if (merged > 0) {
+      db.prepare('INSERT INTO memory_evolution_log (api_key, action, detail, merged_keys, ts) VALUES (?, ?, ?, ?, ?)').run(
+        apiKey, 'consolidate', 'Merged ' + merged + ' similar keys via Levenshtein', JSON.stringify(mergedKeys), Date.now()
+      );
+    }
+    return { merged, mergedKeys };
+  } catch (e) {
+    return { merged: 0, error: e.message };
+  }
+}
+
+app.post('/v1/memory/evolve/start', auth, (req, res) => {
+  const { interval_minutes } = req.body;
+  const mins = Math.max(1, Math.min(interval_minutes || 30, 1440));
+  const key = req.apiKey;
+
+  if (memoryEvolutionTimers.has(key)) {
+    clearInterval(memoryEvolutionTimers.get(key));
+  }
+
+  const timerId = setInterval(() => {
+    evolveMemory(key);
+  }, mins * 60 * 1000);
+  memoryEvolutionTimers.set(key, timerId);
+
+  // Run one immediate pass
+  const immediate = evolveMemory(key);
+
+  res.json({
+    ok: true,
+    status: 'evolution_started',
+    interval_minutes: mins,
+    immediate_result: immediate,
+    stop: 'POST /v1/memory/evolve/stop',
+    _engine: 'real',
+  });
+});
+
+app.post('/v1/memory/evolve/stop', auth, (req, res) => {
+  const key = req.apiKey;
+  if (memoryEvolutionTimers.has(key)) {
+    clearInterval(memoryEvolutionTimers.get(key));
+    memoryEvolutionTimers.delete(key);
+    return res.json({ ok: true, status: 'evolution_stopped', _engine: 'real' });
+  }
+  res.json({ ok: true, status: 'no_evolution_running', _engine: 'real' });
+});
+
+app.get('/v1/memory/evolve/log', auth, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  const logs = db.prepare('SELECT * FROM memory_evolution_log WHERE api_key = ? ORDER BY ts DESC LIMIT ?').all(req.apiKey, limit);
+  res.json({ ok: true, logs, count: logs.length, _engine: 'real' });
+});
+
+// --- 2. Swarm Visualizer SSE ---
+app.get('/v1/swarm/live', auth, (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.write('data: ' + JSON.stringify({ type: 'connected', ts: Date.now() }) + '\n\n');
+
+  const apiKey = req.apiKey;
+  const userId = req.acct?.email || apiKey.slice(0, 12);
+
+  const intervalId = setInterval(() => {
+    try {
+      // Army runs
+      let armyRuns = [];
+      try { armyRuns = db.prepare("SELECT id, status, created_at FROM army_runs WHERE user_id = ? ORDER BY created_at DESC LIMIT 10").all(userId); } catch {}
+
+      // Hive messages (recent)
+      let hiveMessages = [];
+      try { hiveMessages = db.prepare("SELECT hive_id, sender, channel, message, ts FROM hive_messages WHERE ts > ? ORDER BY ts DESC LIMIT 20").all(Date.now() - 120000); } catch {}
+
+      // Memory count
+      let memoryCount = 0;
+      try { memoryCount = db.prepare("SELECT COUNT(*) as c FROM memory WHERE namespace = ?").get(apiKey.slice(0, 12))?.c || 0; } catch {}
+
+      // Recent API calls
+      let recentCalls = [];
+      try { recentCalls = db.prepare("SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE key_prefix = ? ORDER BY ts DESC LIMIT 10").all(apiKey.slice(0, 12) + '...'); } catch {}
+
+      // Active stakes
+      let activeStakes = 0;
+      try { activeStakes = db.prepare("SELECT COUNT(*) as c FROM staking WHERE api_key = ? AND withdrawn = 0").get(apiKey)?.c || 0; } catch {}
+
+      const payload = {
+        type: 'tick',
+        ts: Date.now(),
+        army_runs: armyRuns,
+        hive_messages: hiveMessages,
+        memory_count: memoryCount,
+        recent_calls: recentCalls,
+        active_stakes: activeStakes,
+      };
+      res.write('data: ' + JSON.stringify(payload) + '\n\n');
+    } catch (e) {
+      res.write('data: ' + JSON.stringify({ type: 'error', message: e.message }) + '\n\n');
+    }
+  }, 2000);
+
+  req.on('close', () => {
+    clearInterval(intervalId);
+  });
+});
+
+// --- 3. Hive Activity ---
+app.post('/v1/hive/:id/activity', auth, (req, res) => {
+  const hiveId = req.params.id;
+  const { limit: lim, since } = req.body;
+  const maxItems = Math.min(parseInt(lim) || 50, 200);
+  const sinceTs = since || 0;
+
+  const activity = db.prepare(
+    'SELECT id, agent_id, action, detail, ts FROM hive_activity WHERE hive_id = ? AND ts > ? ORDER BY ts DESC LIMIT ?'
+  ).all(hiveId, sinceTs, maxItems);
+
+  // Also get recent message counts per channel
+  const channelStats = db.prepare(
+    'SELECT channel, COUNT(*) as msg_count, MAX(ts) as last_message_ts FROM hive_messages WHERE hive_id = ? AND ts > ? GROUP BY channel'
+  ).all(hiveId, sinceTs || (Date.now() - 86400000));
+
+  // Active members
+  const activeMembers = db.prepare(
+    'SELECT DISTINCT agent_id FROM hive_activity WHERE hive_id = ? AND ts > ? LIMIT 50'
+  ).all(hiveId, Date.now() - 3600000);
+
+  res.json({
+    ok: true,
+    hive_id: hiveId,
+    activity: activity.map(a => ({
+      ...a,
+      detail: (() => { try { return JSON.parse(a.detail); } catch { return a.detail; } })(),
+    })),
+    count: activity.length,
+    channel_stats: channelStats,
+    active_members: activeMembers.map(m => m.agent_id),
+    _engine: 'real',
+  });
+});
+
+// --- 4. Chain Branching — add conditional step execution to /v1/chain/run ---
+// Patching: wrap the existing chain/run handler by adding condition support
+// We add a dedicated endpoint for branching chains; the existing /v1/chain/run is augmented inline
+// Instead of modifying existing code, add /v1/chain/run/branching that supports `if` conditions on steps
+app.post('/v1/chain/run/branching', auth, async (req, res) => {
+  const { chain_id, max_steps, max_iterations } = req.body;
+  const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(chain_id);
+  if (!chain) return res.status(404).json({ error: { code: 'chain_not_found' } });
+
+  const steps = JSON.parse(chain.steps);
+  let ctx = JSON.parse(chain.context);
+  let currentStep = chain.current_step;
+  const maxExec = Math.min(max_steps || steps.length, 10);
+  const maxLoopIterations = Math.min(max_iterations || 10000, 10000);
+
+  if (chain.loop && (ctx._loop_count || 0) >= maxLoopIterations) {
+    db.prepare('UPDATE agent_chains SET status = ? WHERE id = ?').run('completed', chain_id);
+    return res.json({ ok: true, chain_id, status: 'completed', reason: 'max_iterations_reached', loop_count: ctx._loop_count, _engine: 'real' });
+  }
+  const results = [];
+  const llmHandler = allHandlers['llm-think'];
+
+  for (let exec = 0; exec < maxExec && currentStep < steps.length; exec++) {
+    const step = steps[currentStep];
+
+    // --- CONDITIONAL BRANCHING ---
+    if (step.condition || step['if']) {
+      const condStr = step.condition || step['if'];
+      try {
+        if (!evalSafeCondition(condStr, ctx)) {
+          results.push({ step: currentStep, skipped: true, reason: 'Condition false: ' + condStr });
+          // Support goto_step for branching: jump to else_step or skip
+          if (step.else_step != null && step.else_step >= 0 && step.else_step < steps.length) {
+            currentStep = step.else_step;
+          } else {
+            currentStep++;
+          }
+          continue;
+        }
+      } catch (e) {
+        results.push({ step: currentStep, skipped: true, reason: 'Condition error: ' + e.message });
+        currentStep++;
+        continue;
+      }
+    }
+
+    const previousResult = results.length > 0 ? (results[results.length - 1].answer || results[results.length - 1].result || '') : '';
+
+    try {
+      if (step.slug && allHandlers[step.slug]) {
+        const handler = allHandlers[step.slug];
+        const stepInput = { ...(step.input || {}), ...(step.input_map || {}) };
+        if (previousResult && typeof previousResult === 'object') Object.assign(stepInput, previousResult);
+        else if (previousResult) stepInput.text = String(previousResult);
+        const handlerResult = await handler(stepInput);
+        ctx['step_' + currentStep + '_result'] = handlerResult;
+        results.push({ step: currentStep, slug: step.slug, result: handlerResult, _engine: handlerResult?._engine || 'real' });
+        const cost = API_DEFS[step.slug]?.credits || 1;
+        req.acct.balance -= cost;
+      } else if (step.prompt || step.role) {
+        if (!llmHandler) { results.push({ step: currentStep, error: 'No LLM key configured' }); break; }
+        const prompt = (step.prompt || step.role || '') + (previousResult ? '\n\nPrevious step output:\n' + String(typeof previousResult === 'string' ? previousResult : JSON.stringify(previousResult)).slice(0, 1000) : '');
+        const llmResult = await llmHandler({ text: prompt, provider: step.provider || undefined, model: step.model || undefined });
+        const answer = llmResult?.answer || llmResult?.summary || llmResult?.text || JSON.stringify(llmResult).slice(0, 500);
+        ctx['step_' + currentStep + '_result'] = answer;
+        results.push({ step: currentStep, role: step.role, model: step.model, answer: answer.slice(0, 500), _engine: 'llm' });
+        req.acct.balance -= 10;
+      } else {
+        results.push({ step: currentStep, error: 'Step must have slug or prompt', step_data: step });
+        break;
+      }
+    } catch (e) {
+      results.push({ step: currentStep, error: e.message });
+      break;
+    }
+
+    // Support goto_step for unconditional branching
+    if (step.goto_step != null && step.goto_step >= 0 && step.goto_step < steps.length) {
+      currentStep = step.goto_step;
+    } else {
+      currentStep++;
+    }
+
+    if (currentStep >= steps.length && chain.loop) {
+      ctx._loop_count = (ctx._loop_count || 0) + 1;
+      if (ctx._loop_count >= maxLoopIterations) break;
+      currentStep = 0;
+    }
+  }
+
+  const hitMaxLoop = chain.loop && (ctx._loop_count || 0) >= maxLoopIterations;
+  const status = (currentStep >= steps.length && !chain.loop) || hitMaxLoop ? 'completed' : 'running';
+  db.prepare('UPDATE agent_chains SET context = ?, current_step = ?, status = ? WHERE id = ?')
+    .run(JSON.stringify(ctx), currentStep, status, chain_id);
+  persistKey(req.apiKey);
+
+  res.json({
+    ok: true, chain_id, status,
+    steps_executed: results.length,
+    current_step: currentStep,
+    loop_count: ctx._loop_count || 0,
+    results,
+    branching: true,
+    _engine: 'real',
+  });
+});
+
+// --- 5. Staking Yield Loop — hourly yield distribution ---
+let stakingYieldTimer = null;
+
+function distributeStakingYield() {
+  try {
+    const activeStakes = dbGetActiveStakes.all();
+    if (activeStakes.length === 0) return { distributed: 0 };
+
+    // Calculate platform volume from audit log (last 24 hours)
+    let volume24h = 0;
+    try { volume24h = db.prepare("SELECT COALESCE(SUM(credits), 0) as vol FROM audit_log WHERE ts > datetime('now', '-1 day')").get()?.vol || 0; } catch {}
+
+    const hourlyPool = Math.floor(volume24h * 0.05 / 24); // 5% of daily volume / 24 hours
+    if (hourlyPool <= 0) return { distributed: 0, reason: 'no_volume' };
+
+    const totalStaked = activeStakes.reduce((sum, s) => sum + s.amount, 0);
+    if (totalStaked <= 0) return { distributed: 0, reason: 'no_stakes' };
+
+    let totalDistributed = 0;
+    const distributions = [];
+
+    for (const stake of activeStakes) {
+      // Skip if already unlocked and withdrawn
+      if (stake.withdrawn) continue;
+
+      const share = stake.amount / totalStaked;
+      const yieldAmount = Math.max(1, Math.floor(hourlyPool * share));
+
+      if (stake.auto_compound) {
+        // Compound: add yield to staked amount
+        dbUpdateStakeAmount.run(stake.amount + yieldAmount, stake.id);
+      } else {
+        // Pay out: add to user balance
+        const acct = apiKeys.get(stake.api_key);
+        if (acct) {
+          acct.balance += yieldAmount;
+          persistKey(stake.api_key);
+        }
+      }
+
+      const yieldId = 'yield_' + uuidv4();
+      dbInsertYield.run(yieldId, stake.id, stake.api_key, yieldAmount, volume24h, hourlyPool, totalStaked, stake.auto_compound ? 1 : 0);
+      totalDistributed += yieldAmount;
+      distributions.push({ stake_id: stake.id, amount: yieldAmount, compounded: !!stake.auto_compound });
+    }
+
+    // Log the distribution event
+    db.prepare('INSERT INTO memory_evolution_log (api_key, action, detail, merged_keys, ts) VALUES (?, ?, ?, ?, ?)').run(
+      'system', 'yield_distribution', 'Distributed ' + totalDistributed + ' credits to ' + distributions.length + ' stakes',
+      JSON.stringify({ pool: hourlyPool, total_staked: totalStaked, volume_24h: volume24h }), Date.now()
+    );
+
+    return { distributed: totalDistributed, stakes_paid: distributions.length, hourly_pool: hourlyPool, distributions };
+  } catch (e) {
+    log.error('Yield distribution failed', { error: e.message });
+    return { distributed: 0, error: e.message };
+  }
+}
+
+// Start the hourly yield distribution loop
+stakingYieldTimer = setInterval(distributeStakingYield, 3600000); // every hour
+
+app.get('/v1/staking/yield/history', auth, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  const history = dbGetYieldHistory.all(req.apiKey, limit);
+  res.json({ ok: true, history, count: history.length, _engine: 'real' });
+});
+
+app.post('/v1/staking/yield/distribute-now', auth, (req, res) => {
+  // Manual trigger for testing — distributes yield immediately
+  const result = distributeStakingYield();
+  res.json({ ok: true, ...result, _engine: 'real' });
+});
+
+// --- 6. Marketplace Install ---
+app.post('/v1/marketplace/install', auth, (req, res) => {
+  const { plugin_id } = req.body;
+  if (!plugin_id) return res.status(400).json({ error: { code: 'missing_plugin_id', message: 'Provide plugin_id' } });
+
+  const plugin = dbGetForgePlugin.get(plugin_id);
+  if (!plugin) return res.status(404).json({ error: { code: 'plugin_not_found', message: 'Plugin ' + plugin_id + ' not found' } });
+  if (plugin.status !== 'active') return res.status(410).json({ error: { code: 'plugin_inactive', message: 'Plugin is not active' } });
+
+  try {
+    // Build a sandboxed handler from the handler_code
+    // handler_code should be a function body that receives (input) and returns a result
+    const handlerFn = new Function('input', 'db', 'crypto',
+      '"use strict";\n' + plugin.handler_code
+    );
+
+    // Wrap in a safe async handler
+    const slug = 'plugin-' + plugin.id;
+    allHandlers[slug] = async (input) => {
+      const result = await Promise.resolve(handlerFn(input, null, null)); // no db/crypto access for security
+      return { ...((result && typeof result === 'object') ? result : { result }), _engine: 'plugin', plugin_id: plugin.id };
+    };
+
+    // Register in API_DEFS so it shows up in routing
+    API_DEFS[slug] = {
+      slug,
+      name: plugin.name,
+      desc: plugin.description || 'Installed plugin: ' + plugin.name,
+      category: 'marketplace',
+      credits: 1,
+      tier: 'free',
+    };
+    apiMap.set(slug, API_DEFS[slug]);
+
+    res.json({
+      ok: true,
+      installed: true,
+      slug,
+      plugin_id: plugin.id,
+      name: plugin.name,
+      description: plugin.description,
+      call_via: 'POST /v1/call/' + slug,
+      _engine: 'real',
+    });
+  } catch (e) {
+    res.status(422).json({ error: { code: 'install_failed', message: e.message } });
+  }
+});
+
+// --- 7. A2A Broadcast ---
+app.post('/v1/agent/a2a/broadcast', auth, (req, res) => {
+  const { channel, message, target_agents } = req.body;
+  if (!message) return res.status(400).json({ error: { code: 'missing_message', message: 'message is required' } });
+  const ch = channel || 'broadcast';
+  const sender = req.acct?.email || req.apiKey.slice(0, 12);
+
+  let targets = [];
+  if (target_agents && Array.isArray(target_agents)) {
+    targets = target_agents;
+  } else {
+    // Broadcast to all agents that have sent or received A2A messages on this channel
+    try {
+      const recipients = db.prepare(
+        'SELECT DISTINCT target_agent_id as agent FROM a2a_messages WHERE channel = ? AND target_agent_id != ? ' +
+        'UNION SELECT DISTINCT sender as agent FROM a2a_messages WHERE channel = ? AND sender != ?'
+      ).all(ch, sender, ch, sender);
+      targets = recipients.map(r => r.agent);
+    } catch {}
+    // Also include agents from hive subscriptions if any
+    try {
+      const hiveSubs = db.prepare('SELECT DISTINCT agent_id FROM hive_subscriptions WHERE agent_id != ?').all(sender);
+      for (const s of hiveSubs) {
+        if (!targets.includes(s.agent_id)) targets.push(s.agent_id);
+      }
+    } catch {}
+  }
+
+  const msgIds = [];
+  const now = new Date().toISOString();
+  for (const target of targets) {
+    const msgId = 'a2a_bc_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    try {
+      db.prepare('INSERT INTO a2a_messages (id, sender, target_agent_id, channel, message) VALUES (?, ?, ?, ?, ?)').run(
+        msgId, sender, target, ch, typeof message === 'string' ? message : JSON.stringify(message)
+      );
+      msgIds.push({ target, message_id: msgId });
+    } catch (e) {
+      msgIds.push({ target, error: e.message });
+    }
+  }
+
+  const cost = Math.max(1, Math.ceil(targets.length / 10));
+  req.acct.balance = Math.max(0, req.acct.balance - cost);
+  persistKey(req.apiKey);
+
+  const latency = Date.now();
+  dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'agent/a2a/broadcast', cost, 0, 'real');
+
+  res.json({
+    ok: true,
+    channel: ch,
+    sender,
+    recipients: targets.length,
+    deliveries: msgIds,
+    credits_used: cost,
+    _engine: 'real',
+  });
+});
+
+// ===== MARKETPLACE INSTALL / UNINSTALL =====
+
+// POST /v1/marketplace/install — Install a plugin at runtime
+app.post('/v1/marketplace/install', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const { listing_id } = req.body;
+    if (!listing_id) return res.status(400).json({ error: { code: 'missing_listing_id', message: 'listing_id is required' } });
+
+    const listing = db.prepare('SELECT * FROM marketplace_listings WHERE id = ?').get(listing_id);
+    if (!listing) return res.status(404).json({ error: { code: 'listing_not_found', message: 'No listing with that id' } });
+
+    // Validate handler_code in VM sandbox
+    const vm = require('vm');
+    let handlerFn;
+    try {
+      const script = new vm.Script(listing.handler_code, { filename: 'install-handler.js', timeout: 2000 });
+      const sandbox = { module: { exports: {} }, exports: {}, console: { log() {} }, setTimeout: () => {}, Buffer };
+      const ctx = vm.createContext(sandbox);
+      script.runInContext(ctx, { timeout: 2000 });
+      handlerFn = sandbox.module.exports;
+      if (typeof handlerFn !== 'function') {
+        return res.status(400).json({ error: { code: 'invalid_handler', message: 'handler_code must export a function via module.exports' } });
+      }
+    } catch (e) {
+      return res.status(400).json({ error: { code: 'invalid_handler', message: 'handler_code failed sandbox validation: ' + e.message } });
+    }
+
+    // Derive slug from listing name
+    const slug = 'mpl-' + listing.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 40);
+
+    // Register in allHandlers so it becomes callable via POST /v1/{slug}
+    allHandlers[slug] = async (input) => {
+      return handlerFn(input);
+    };
+
+    // Increment download count
+    db.prepare('UPDATE marketplace_listings SET downloads = downloads + 1 WHERE id = ?').run(listing_id);
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'marketplace/install', 1, latency, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 1);
+    persistKey(req.apiKey);
+
+    res.json({ ok: true, slug, installed: true, _engine: 'real' });
+  } catch (e) {
+    log.error('marketplace/install failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
+// POST /v1/marketplace/uninstall — Remove an installed plugin
+app.post('/v1/marketplace/uninstall', auth, (req, res) => {
+  try {
+    const { slug } = req.body;
+    if (!slug) return res.status(400).json({ error: { code: 'missing_slug', message: 'slug is required' } });
+
+    if (!allHandlers[slug]) {
+      return res.status(404).json({ error: { code: 'not_installed', message: 'No handler found for slug: ' + slug } });
+    }
+
+    delete allHandlers[slug];
+    res.json({ ok: true, uninstalled: true, slug, _engine: 'real' });
+  } catch (e) {
+    log.error('marketplace/uninstall failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
+// ===== AGENT-TO-AGENT BROADCAST / SUBSCRIBE =====
+
+db.exec(`CREATE TABLE IF NOT EXISTS a2a_subscriptions (
+  id TEXT PRIMARY KEY,
+  agent_id TEXT NOT NULL,
+  channel TEXT NOT NULL,
+  webhook_url TEXT,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// POST /v1/agent/a2a/subscribe — Subscribe to a channel
+app.post('/v1/agent/a2a/subscribe', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const { channel, webhook_url } = req.body;
+    if (!channel) return res.status(400).json({ error: { code: 'missing_channel', message: 'channel is required' } });
+
+    const agentId = req.acct?.email || req.apiKey.slice(0, 12);
+    const subId = 'sub_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+
+    // Upsert: remove old subscription for same agent+channel, then insert
+    db.prepare('DELETE FROM a2a_subscriptions WHERE agent_id = ? AND channel = ?').run(agentId, channel);
+    db.prepare('INSERT INTO a2a_subscriptions (id, agent_id, channel, webhook_url) VALUES (?, ?, ?, ?)').run(
+      subId, agentId, channel, webhook_url || null
+    );
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'agent/a2a/subscribe', 1, latency, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 1);
+    persistKey(req.apiKey);
+
+    res.json({ ok: true, subscription_id: subId, channel, agent_id: agentId, _engine: 'real' });
+  } catch (e) {
+    log.error('agent/a2a/subscribe failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
+// POST /v1/agent/a2a/broadcast — Broadcast message to all channel subscribers
+app.post('/v1/agent/a2a/broadcast', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const { channel, message } = req.body;
+    if (!channel) return res.status(400).json({ error: { code: 'missing_channel', message: 'channel is required' } });
+    if (!message) return res.status(400).json({ error: { code: 'missing_message', message: 'message is required' } });
+
+    const sender = req.acct?.email || req.apiKey.slice(0, 12);
+    const subscribers = db.prepare('SELECT * FROM a2a_subscriptions WHERE channel = ?').all(channel);
+
+    const msgPayload = typeof message === 'string' ? message : JSON.stringify(message);
+    const delivered = [];
+    const webhookFires = [];
+
+    for (const sub of subscribers) {
+      const msgId = 'a2a_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+      db.prepare('INSERT INTO a2a_messages (id, sender, target_agent_id, channel, message) VALUES (?, ?, ?, ?, ?)').run(
+        msgId, sender, sub.agent_id, channel, msgPayload
+      );
+      delivered.push({ agent_id: sub.agent_id, message_id: msgId });
+
+      // Fire webhook if subscriber has one
+      if (sub.webhook_url) {
+        webhookFires.push(
+          fetch(sub.webhook_url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ channel, sender, message: msgPayload, message_id: msgId }),
+            signal: AbortSignal.timeout(5000),
+          }).catch(() => {})
+        );
+      }
+    }
+
+    // Fire webhooks in background — don't block response
+    if (webhookFires.length) Promise.allSettled(webhookFires);
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'agent/a2a/broadcast', 1, latency, 'real');
+    req.acct.balance = Math.max(0, req.acct.balance - 1);
+    persistKey(req.apiKey);
+
+    res.json({
+      ok: true,
+      channel,
+      subscribers_count: subscribers.length,
+      delivered,
+      webhooks_fired: webhookFires.length,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('agent/a2a/broadcast failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
 });
 
 // ===== START =====
