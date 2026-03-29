@@ -799,7 +799,7 @@ async function cmdHealth() {
     console.log(`\n  Status:  ${ok ? green('operational') : red(d.status)}`);
     console.log(`  APIs:    ${yellow(String(d.apis_loaded || 0))} loaded`);
     console.log(`  Uptime:  ${dim(formatUptime(d.uptime_seconds || 0))}`);
-    console.log(`  Version: ${dim(d.version || 'unknown')}`);
+    console.log(`  Version: ${dim(d.version !== undefined ? d.version : 'unknown')}`);
     console.log(`  Base:    ${dim(BASE_URL)}`);
   } catch (err) {
     handleError(err);
@@ -1026,25 +1026,35 @@ ${contextLines}
 THE LINE TO IMPROVE:
 ${targetLine}
 
-Rewrite ONLY this one line to be better (fix bug, add safety, optimize).
-Output ONLY your improved replacement line. Nothing else before REPLACE.
+Rewrite this one line to fix a REAL bug or add MISSING error handling.
 
-PRIORITY: <why>
-REPLACE: <your improved version — must be valid JS>
-SCORE: X/10` : `Sprint ${s}. Mission: ${mission.slice(0, 80)}. PRIORITY: research. SCORE: 5/10`;
+RULES:
+- Do NOT use yoda conditions (bad: "production" === x)
+- Do NOT rewrite working patterns into "clever" alternatives
+- Do NOT change .slice to .splice (splice mutates!)
+- Do NOT add typeof checks for things that are always defined
+- Do NOT change console.warn to console.error
+- ONLY fix actual bugs, null safety, or missing try/catch
+- If the line is already fine, output SKIP
+
+PRIORITY: <what bug you are fixing — be specific>
+REPLACE: <your fixed version — same indent, valid JS>
+SCORE: X/10` : `Sprint ${s}. Mission: ${mission.slice(0, 80)}. PRIORITY: skip. SCORE: 5/10`;
 
     const resp = await ask(thinkPrompt);
     const priorityMatch = (resp||'').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
-    const priority = priorityMatch ? priorityMatch[1].trim().slice(0, 100) : 'iterate';
-    if (priority && priority !== 'iterate') todos.push({ sprint: s, priority, phase });
+    const priority = priorityMatch ? priorityMatch[1].trim().slice(0, 100) : 'skip';
+    const isSkip = priority.toLowerCase().includes('skip') || (resp||'').toLowerCase().includes('skip');
+    if (priority && !isSkip && priority !== 'iterate') todos.push({ sprint: s, priority, phase });
     const score = extractScore(resp) || (phase === 'EXPLORE' ? 6 : 7);
     const nextMatch = (resp||'').match(/NEXT:\s*(.+?)(?:\n|$)/i);
 
     console.log(`  ${dim('│')} ${green('→')} ${priority.slice(0, 70)}`);
 
-    // ── BUILD — we already KNOW the find text (targetLine). Just parse REPLACE. ──
+    // ── BUILD ──
     let built_n = 0;
-    const replaceMatch = (resp||'').match(/REPLACE:\s*([\s\S]*?)(?=\nSCORE:|$)/i);
+    if (isSkip) console.log(`  ${dim('│')} ${dim('SKIP — line is fine')}`);
+    const replaceMatch = !isSkip ? (resp||'').match(/REPLACE:\s*([\s\S]*?)(?=\nSCORE:|$)/i) : null;
     const findText = targetLine ? targetLine.trimEnd() : '';
     // Clean REPLACE: strip backticks, preserve indentation from original
     const indent = findText.match(/^(\s*)/)?.[1] || '';
@@ -1070,11 +1080,14 @@ SCORE: X/10` : `Sprint ${s}. Mission: ${mission.slice(0, 80)}. PRIORITY: researc
             catch(e) { syntaxOk = false; }
           }
 
-          // Gate 2: Functional test — actually run a quick command to verify no runtime crash
+          // Gate 2: Runtime test — run the edited file to catch const reassignment, undefined vars, etc
           let runtimeOk = true;
-          if (syntaxOk && targetFile === 'cli.js') {
-            try { require('child_process').execSync('node "' + filePath + '" version --json --quiet', { stdio: 'pipe', timeout: 10000 }); }
-            catch(e) { runtimeOk = false; }
+          if (syntaxOk) {
+            try {
+              if (targetFile === 'cli.js') {
+                require('child_process').execSync('node "' + filePath + '" version --json --quiet', { stdio: 'pipe', timeout: 10000 });
+              }
+            } catch(e) { runtimeOk = false; }
           }
 
           // Gate 3: Meaningful change (not whitespace-only or bloating)

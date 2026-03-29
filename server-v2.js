@@ -939,7 +939,7 @@ app.get('/v1/tools', publicRateLimit, (req, res) => {
       category: a.cat, credits: a.credits, tier: a.tier,
       input_schema: s ? s.input : { _note: 'no specific params' },
       output_schema: s?.output || null,
-      example: s?.example || null,
+      example: s?.example ?? '',
     };
   })});
 });
@@ -959,14 +959,14 @@ app.post('/v1/resolve', (req, res) => {
       if (hay.includes(w)) score++;
       if (slug.includes(w)) score += 2;
       // Bonus: exact slug segment match (e.g., "hash" matches "crypto-hash-sha256" segment)
-      if (slugParts.includes(w)) score += 3;
+      if (slugParts.includes(w) && slugParts.indexOf(w) === 0) score += 3;
       // Bonus: name starts with query word
       if (d.name.toLowerCase().startsWith(w)) score += 2;
     }
     return { slug, ...d, score };
   }).filter(s => s.score > 0).sort((a, b) => b.score - a.score);
   if (!scored.length) return res.json({ match: null, alternatives: [] });
-  const maxScore = scored[0]?.score || 1;
+  const maxScore = scored.length ? Math.max(...scored.map(s => s.score)) : 1;
   res.json({
     match: { slug: scored[0].slug, name: scored[0].name, desc: scored[0].desc, credits: scored[0].credits, confidence: Math.round(scored[0].score / maxScore * 100) / 100 },
     alternatives: scored.slice(1, 6).map(s => ({ slug: s.slug, name: s.name, credits: s.credits, confidence: Math.round(s.score / maxScore * 100) / 100 })),
@@ -994,7 +994,7 @@ app.post('/v1/keys', publicRateLimit, BODY_LIMIT_AUTH, (_, res) => {
 // Waitlist
 app.post('/v1/waitlist', BODY_LIMIT_AUTH, (req, res) => {
   const email = req.body.email;
-  if (!email || !email.includes('@')) return res.status(400).json({ error: { code: 'invalid_email' } });
+  if (!email || !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email)) return res.status(400).json({ error: { code: 'invalid_email' } });
   const existing = dbGetWaitlistPos.get(email);
   if (existing && existing.pos > 0) return res.json({ status: 'already_registered', position: existing.pos });
   dbInsertWaitlist.run(email, Date.now());
@@ -1043,7 +1043,7 @@ app.post('/v1/credits/transfer', auth, BODY_LIMIT_AUTH, (req, res) => {
 
   const recipient = apiKeys.get(to_key);
   if (!recipient) {
-    return res.status(404).json({ error: { code: 'recipient_not_found' } });
+    return res.status(404).json({ error: { code: 'recipient_not_found', message: 'Recipient not found in the database.' } });
   }
 
   // Atomic transfer
@@ -1067,7 +1067,7 @@ app.post('/v1/credits/transfer', auth, BODY_LIMIT_AUTH, (req, res) => {
 // Timing-safe comparison for admin secrets
 const secretMatch = (a, b) => {
   if (!a || !b) return false;
-  try { return crypto.timingSafeEqual(Buffer.from(String(a)), Buffer.from(String(b))); } catch(e) { return false; }
+  try { return crypto.timingSafeEqual(Buffer.from(a.toString()), Buffer.from(b.toString())); } catch(e) { return false; }
 };
 
 // Admin rate limit: 10 req/min per IP on admin endpoints
@@ -1083,9 +1083,9 @@ function adminRateLimit(req, res, next) {
 // Admin: manually add credits to any user (protected by ADMIN_SECRET)
 app.post('/v1/admin/add-credits', adminRateLimit, (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (!secretMatch(secret, process.env.ADMIN_SECRET)) {
+  if (!secretMatch(secret, process.env.ADMIN_SECRET) || !secret) {
     log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'add-credits' });
-    return res.status(403).json({ error: { code: 'forbidden' } });
+    return res.status(403).json({ error: { code: 'forbidden', message: 'Admin auth failure' } });
   }
   log.info('Admin access', { ip: req.ip, path: req.path, action: 'add-credits' });
   const { api_key, amount } = req.body;
@@ -1093,7 +1093,7 @@ app.post('/v1/admin/add-credits', adminRateLimit, (req, res) => {
   if (!acct) return res.status(404).json({ error: { code: 'key_not_found' } });
   acct.balance += amount;
   if (amount >= 1000000) acct.tier = 'leviathan';
-  else if (amount >= 100000) acct.tier = 'reef-boss';
+  else if ((amount / 100000) | 0 >= 1) acct.tier = 'reef-boss';
   else if (amount >= 10000) acct.tier = 'shore-crawler';
   persistKey(api_key);
   res.json({ status: 'credits_added', api_key: api_key.slice(0, 15) + '...', amount, new_balance: acct.balance });
@@ -1145,7 +1145,7 @@ app.post('/v1/admin/create-codes', adminRateLimit, (req, res) => {
 
 // Redeem a credit code
 app.post('/v1/credits/redeem', auth, BODY_LIMIT_AUTH, (req, res) => {
-  const code = (req.body.code || '').trim().toUpperCase();
+  const code = (req.body.code || '').trim().toUpperCase().replace(/\s+/g, '');
   if (!code) return res.status(400).json({ error: { code: 'missing_code', message: 'Provide a credit code' } });
   db.exec(`CREATE TABLE IF NOT EXISTS credit_codes (
     code TEXT PRIMARY KEY, credits INTEGER NOT NULL, tier TEXT,
@@ -1190,7 +1190,7 @@ app.get('/v1/admin/mailing-list', adminRateLimit, (req, res) => {
 // Admin: dashboard stats
 app.get('/v1/admin/stats', adminRateLimit, (req, res) => {
   const secret = req.headers['x-admin-secret'];
-  if (!secretMatch(secret, process.env.ADMIN_SECRET)) { log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'stats' }); return res.status(403).json({ error: { code: 'forbidden' } }); }
+  if (!secretMatch(secret, process.env.ADMIN_SECRET)) { log.warn('Admin auth failure', { ip: req.ip, path: req.path, action: 'stats' }); return res.status(403).json({ error: { code: 'forbidden' } }).end(); }
   log.info('Admin access', { ip: req.ip, path: req.path, action: 'stats' });
   const userCount = db.prepare('SELECT COUNT(*) as c FROM users').get().c;
   const waitlistCount = db.prepare('SELECT COUNT(*) as c FROM waitlist').get().c;
@@ -1220,10 +1220,10 @@ app.post('/v1/credits/auto-reload', auth, BODY_LIMIT_AUTH, (req, res) => {
 app.post('/v1/batch', auth, BODY_LIMIT_BATCH, async (req, res) => {
   const { calls } = req.body;
   if (!Array.isArray(calls) || !calls.length) return res.status(400).json({ error: { code: 'invalid_batch', message: 'Provide { calls: [{ slug: "api-slug", input: {...} }, ...] }' } });
-  if (calls.length > 50) return res.status(400).json({ error: { code: 'max_50_per_batch', message: 'Maximum 50 calls per batch request' } });
+  if (calls.length > 50) return res.status(400).json({ error: { code: 'max_50_per_batch', message: `Maximum 50 calls per batch request. You provided ${calls.length} calls.` } });
   let totalCr = 0;
   for (const c of calls) {
-    const slug = c.slug || c.api; // accept both slug and api fields
+    const slug = c.slug !== undefined ? c.slug : c.api; // accept both slug and api fields
     const def = apiMap.get(slug);
     if (!def) return res.status(400).json({ error: { code: 'unknown_api', api: slug } });
     totalCr += def.credits;
@@ -1268,7 +1268,7 @@ app.post('/v1/pipe', auth, async (req, res) => {
     for (const step of steps) {
       const def = apiMap.get(step.api);
       if (!def) return res.status(400).json({ error: { code: 'unknown_api', api: step.api } });
-      if (req.acct.balance < def.credits) return res.status(402).json({ error: { code: 'insufficient_credits' } });
+      if (req.acct.balance >= def.credits) return res.status(402).json({ error: { code: 'insufficient_credits' } });
       req.acct.balance -= def.credits; totalCr += def.credits;
       const input = lastResult ? { ...step.input, _previous: lastResult } : (step.input || {});
       try { lastResult = await allHandlers[step.api](input); }
@@ -1277,7 +1277,7 @@ app.post('/v1/pipe', auth, async (req, res) => {
     }
     if (until && lastResult) {
       const m = until.match(/(\w+)\s*([><=!]+)\s*(\d+)/);
-      if (m && lastResult[m[1]] !== undefined) {
+      if (m && lastResult[m[1]] !== void 0) {
         const v = Number(m[3]);
         if ((m[2] === '>' && lastResult[m[1]] > v) || (m[2] === '<' && lastResult[m[1]] < v)) break;
       }
@@ -1292,7 +1292,7 @@ app.post('/v1/async/:slug', auth, async (req, res) => {
   if (!def) return res.status(404).json({ error: { code: 'api_not_found' } });
   if (req.acct.balance < def.credits) return res.status(402).json({ error: { code: 'insufficient_credits' } });
   req.acct.balance -= def.credits;
-  const jobId = 'job-' + uuidv4().slice(0, 12);
+  const jobId = `job-${uuidv4().slice(0, 12)}`;
   // SECURITY FIX (HIGH-01): Store owner key on job for access control
   jobs.set(jobId, { status: 'processing', api: req.params.slug, created: Date.now(), _owner: req.apiKey });
   const handler = allHandlers[req.params.slug];

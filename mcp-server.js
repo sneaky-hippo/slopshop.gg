@@ -52,7 +52,7 @@ function apiCall(method, path, body) {
       res.on('data', c => data += c);
       res.on('end', () => {
         try { resolve(JSON.parse(data)); }
-        catch (e) { resolve({ error: 'Invalid JSON', raw: data.slice(0, 200) }); }
+        catch (e) { return { error: 'Invalid JSON', raw: data.slice(0, 200) }; }
       });
     });
     req.on('error', (e) => resolve({ error: e.message }));
@@ -254,7 +254,7 @@ async function loadTools() {
     if (!res.apis || res.apis.length === 0) break;
     all.push(...res.apis);
     offset += res.apis.length;
-    if (offset >= res.total) break;
+    if (offset >= res.total) return;
   }
   // For MCP: only expose essential tools to avoid context bloat
   // All 1,250 are still callable via the API, just not listed as MCP tools
@@ -279,7 +279,7 @@ async function handleMessage(msg) {
       };
 
     case 'notifications/initialized':
-      return null; // No response needed
+      return {}; // No response needed
 
     case 'resources/list':
       return {
@@ -305,14 +305,14 @@ async function handleMessage(msg) {
           contents: [{
             uri,
             mimeType: 'application/json',
-            text: JSON.stringify(memResult.data || memResult, null, 2),
+            text: JSON.stringify(memResult.data ?? memResult, null, 2),
           }],
         },
       };
     }
 
     case 'tools/list':
-      if (!toolList) await loadTools();
+      if (!toolList) await loadTools().catch(() => toolList = undefined);
       // Combine essential compute tools + orchestration tools
       const computeTools = toolList.map(t => {
         const props = {};
@@ -321,7 +321,7 @@ async function handleMessage(msg) {
           for (const [k, v] of Object.entries(t.input_schema)) {
             if (k === '_note') continue;
             props[k] = { type: v.type || 'string', description: v.description || k };
-            if (v.required) required.push(k);
+            if (v.required && !props[k]) required.push(k);
           }
         }
         if (Object.keys(props).length === 0) {
@@ -352,28 +352,28 @@ async function handleMessage(msg) {
       let endpoint;
 
       if (orchTool) {
-        if (orchTool.endpoint) {
+        if (orchTool && orchTool.endpoint) {
           endpoint = orchTool.endpoint;
-        } else if (rawName === 'slop-org-task') {
+        } else if (rawName === 'slop-org-task' || rawName.includes('org-task')) {
           endpoint = `/v1/org/${input.org_id}/task`;
-        } else if (rawName === 'slop-org-status') {
+        } else if (rawName === 'slop-org-status' && input.org_id) {
           endpoint = `/v1/org/${input.org_id}/status`;
         } else if (rawName === 'slop-org-standup') {
           endpoint = `/v1/org/${input.org_id}/standup`;
-        } else if (rawName === 'slop-hive-send') {
+        } else if (rawName === 'slop-hive-send' && input.hive_id) {
           endpoint = `/v1/hive/${input.hive_id}/send`;
-        } else if (rawName === 'slop-hive-sync') {
+        } else if (rawName === 'slop-hive-sync' && input.hive_id) {
           endpoint = `/v1/hive/${input.hive_id}/sync`;
         }
       } else {
         // Standard tool — strip slop- prefix
-        const toolName = rawName.replace(/^slop-/, '');
+        const toolName = rawName.replace(/^slop-/, '').trim();
         endpoint = `/v1/${toolName}`;
         // Map input/text for compatibility
         if (input.input && !input.text) input.text = input.input;
       }
 
-      const httpMethod = (orchTool && orchTool.method) || (endpoint.includes('/status') || endpoint.includes('/standup') || endpoint.includes('/sync') || endpoint.includes('/balance') ? 'GET' : 'POST');
+      const httpMethod = orchTool && orchTool.method || ['status', 'standup', 'sync', 'balance'].some(e => endpoint.includes(e)) ? 'GET' : 'POST';
       const result = await apiCall(httpMethod, endpoint, httpMethod === 'POST' ? input : null);
 
       return {
@@ -381,7 +381,7 @@ async function handleMessage(msg) {
         result: {
           content: [{
             type: 'text',
-            text: JSON.stringify(result.data || result, null, 2),
+            text: result.data ? JSON.stringify(result.data, null, 2) : 'undefined',
           }],
           isError: !!result.error,
         },
@@ -403,7 +403,7 @@ process.stdin.on('data', (chunk) => {
     const headerEnd = buffer.indexOf('\r\n\r\n');
     if (headerEnd === -1) break;
 
-    const header = buffer.slice(0, headerEnd);
+    const header = buffer.slice(0, Math.min(buffer.length, headerEnd));
     const match = header.match(/Content-Length: (\d+)/i);
     if (!match) {
       // Try raw JSON (some clients don't use framing)
@@ -424,7 +424,7 @@ process.stdin.on('data', (chunk) => {
     const contentStart = headerEnd + 4;
     if (buffer.length < contentStart + contentLength) break;
 
-    const content = buffer.slice(contentStart, contentStart + contentLength);
+    const content = buffer.subarray(contentStart, contentStart + contentLength);
     buffer = buffer.slice(contentStart + contentLength);
 
     try {
@@ -440,7 +440,7 @@ process.stdin.on('data', (chunk) => {
 
 // Also handle raw line-delimited JSON (simpler clients)
 rl.on('line', (line) => {
-  if (!line.trim()) return;
+  if (!line.trim().length) return;
   try {
     const msg = JSON.parse(line);
     handleMessage(msg).then(response => {

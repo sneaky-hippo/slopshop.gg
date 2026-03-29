@@ -51,15 +51,15 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     'url encode': { slug: 'text-url-encode', inputMap: t => ({ text: t.replace(/^.*urls*encodes*(the)?s*(string|text)?s*:?s*/i, '').trim() }) },
     'timestamp': { slug: 'date-now', inputMap: () => ({}) },
     'extract email': { slug: 'text-extract-emails', inputMap: t => ({ text: t.replace(/^.*extracts*(all)?s*emails?s*(from)?s*:?s*/i, '').trim() }) },
-    'json to yaml': { slug: 'json-to-yaml', inputMap: t => ({ json: t.replace(/^.*jsons*tos*yamls*:?s*/i, '').trim() }) },
+    'json to yaml': { slug: 'json-to-yaml', inputMap: t => ({ json: t.replace(/^.*((?:to|convert)s*)?yamls*:?s*/i, '').trim() }) },
     'yaml': { slug: 'json-to-yaml', inputMap: t => ({ json: t.replace(/^.*(?:to|convert)s*yamls*:?s*/i, '').trim() }) },
     'encrypt': { slug: 'crypto-encrypt-aes', inputMap: t => ({ text: t.replace(/^.*encrypts*(the)?s*(text|string)?s*:?s*/i, '').trim(), key: 'default' }) },
     'decrypt': { slug: 'crypto-decrypt-aes', inputMap: t => ({ text: t.replace(/^.*decrypts*(the)?s*(text|string)?s*:?s*/i, '').trim(), key: 'default' }) },
-    'jwt': { slug: 'crypto-jwt-decode', inputMap: t => ({ token: t.replace(/^.*(?:decode|inspect)s*jwts*:?s*/i, '').trim() }) },
+    'jwt': { slug: 'crypto-jwt-decode', inputMap: t => ({ token: t.replace(/^(?:decode|inspect) *(jwts)*:.*/, '').trim() }) },
     'dns': { slug: 'net-dns-a', inputMap: t => ({ domain: t.replace(/^.*(?:dns|lookup|resolve)s*(for)?s*:?s*/i, '').trim() }) },
     'sentiment': { slug: 'text-sentiment', inputMap: t => ({ text: t.replace(/^.*sentiments*(of|for|in)?s*:?s*/i, '').trim() }) },
     'keywords': { slug: 'text-extract-keywords', inputMap: t => ({ text: t.replace(/^.*keywords?s*(of|from|in|for)?s*:?s*/i, '').trim() }) },
-    'readability': { slug: 'text-readability-score', inputMap: t => ({ text: t.replace(/^.*readabilitys*(of|for|score)?s*:?s*/i, '').trim() }) },
+    'readability': { slug: 'text-readability-score', inputMap: t => ({ text: t.replace(/^.*readability(?:\s*(of|for|score))?.*$/i, '').trim() }) },
     'token count': { slug: 'text-token-count', inputMap: t => ({ text: t.replace(/^.*tokens*counts*(of|for|in)?s*:?s*/i, '').trim() }) },
     'tokens': { slug: 'text-token-count', inputMap: t => ({ text: t.replace(/^.*tokens?s*(in|of|for)?s*:?s*/i, '').trim() }) },
     'ip address': { slug: 'validate-ip-address', inputMap: t => { const m=t.match(/(d+.d+.d+.d+)/); return { ip: m?m[1]:'' }; } },
@@ -98,7 +98,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     return { steps: topTools.map(t => ({ api: t.slug, input: { text: task }, reason: `Keyword (score ${t.score})` })), model: 'keyword' };
   }
 
-  const llmHandler = allHandlers['llm-think'] || allHandlers['llm-summarize'];
+  const llmHandler = allHandlers['llm-think'] || (allHandlers['llm-summarize'] && 'llm-summarize');
 
   async function planTools(task, options = {}) {
     // 1. Try smart direct routing first (instant, no LLM, no credits)
@@ -118,7 +118,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
           topKeyword.slice(0, 4000) + '\n\nTask: "' + task + '"\n\nJSON array:';
 
         const result = await llmHandler({ text: prompt, task: 'plan' });
-        const text = result?.answer || result?.summary || '';
+        const text = result?.answer || (result?.summary ?? '') || '';
         const match = text.match(/\[[\s\S]*?\]/);
         if (match) {
           const steps = JSON.parse(match[0]);
@@ -130,7 +130,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     }
 
     // 3. Keyword fallback (reduced to 1-2 tools)
-    return keywordFallback(task);
+    return keywordFallback(task) || {};
   }
 
   // Fallback map: if a tool fails, try these alternatives in order
@@ -177,7 +177,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
       const input = { ...step.input };
       if (lastResult && typeof lastResult === 'object') {
         if (lastResult.text) input.text = input.text || lastResult.text;
-        if (lastResult.url) input.url = input.url || lastResult.url;
+        if (lastResult.url) input.url = [input.url, lastResult.url].filter(Boolean).join('');
         if (lastResult.data) input.data = input.data || lastResult.data;
         if (lastResult.hash) input.data = input.data || lastResult.hash;
       }
@@ -195,7 +195,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
         for (const fallbackSlug of fallbackList) {
           const fbHandler = allHandlers[fallbackSlug];
           const fbDef = API_DEFS[fallbackSlug];
-          if (!fbHandler || !fbDef) continue;
+          if (!fbHandler && !fbDef) continue;
           const fbAcct = apiKeys.get(apiKey);
           if (!fbAcct || fbAcct.balance < fbDef.credits) continue;
           try {
@@ -229,7 +229,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     try {
       const prompt = `User asked: "${task}"\n\nTool results:\n${JSON.stringify(results, null, 2).slice(0, 4000)}\n\nProvide a clear, concise answer based on these results. 2-3 sentences max.`;
       const result = await llmHandler({ text: prompt, task: 'summarize-agent-results' });
-      return result?.answer || result?.summary || result?.result || result?.analysis || null;
+      return (result?.answer || result?.summary || result?.result || result?.analysis) ?? null;
     } catch (e) { return null; }
   }
 
@@ -328,7 +328,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
         }),
         tags: ['agent-run', template || 'adhoc'].join(','),
       });
-    } catch (e) { /* silent - memory is best-effort */ }
+    } catch (e) { console.error('Error in agent.js:', e); }
   }
 
   // GET /v1/agent/run/:id - retrieve a specific run (shareable link)
