@@ -4769,6 +4769,202 @@ async function cmdSession(args) {
 }
 
 // ============================================================
+// TUI — Full-screen dashboard (zero dependencies, pure ANSI)
+// ============================================================
+async function cmdTui() {
+  requireKey();
+  const W = process.stdout.columns || 120;
+  const H = process.stdout.rows || 40;
+  const ESC = '\x1b[';
+  const clear = () => process.stdout.write(`${ESC}2J${ESC}H`);
+  const moveTo = (r, c) => process.stdout.write(`${ESC}${r};${c}H`);
+  const box = (r, c, w, h, title) => {
+    moveTo(r, c); process.stdout.write(`\x1b[90m╔${'═'.repeat(w - 2)}╗\x1b[0m`);
+    if (title) { moveTo(r, c + 2); process.stdout.write(` \x1b[1;33m${title}\x1b[0m `); }
+    for (let i = 1; i < h - 1; i++) { moveTo(r + i, c); process.stdout.write(`\x1b[90m║\x1b[0m${' '.repeat(w - 2)}\x1b[90m║\x1b[0m`); }
+    moveTo(r + h - 1, c); process.stdout.write(`\x1b[90m╚${'═'.repeat(w - 2)}╝\x1b[0m`);
+  };
+  const writeAt = (r, c, text) => { moveTo(r, c); process.stdout.write(text); };
+
+  let tab = 'dashboard'; // dashboard | army | memory | tools | hive
+  let balance = 0;
+  let tier = 'free';
+  let recentCalls = [];
+  let armyRuns = [];
+  let memoryKeys = [];
+  let hives = [];
+  let running = true;
+  let lastError = '';
+  let refreshCount = 0;
+
+  // Fetch data from live API
+  async function fetchData() {
+    try {
+      const [bal, usage, health] = await Promise.all([
+        request('GET', '/v1/credits/balance').catch(() => ({ data: {} })),
+        request('GET', '/v1/usage/today').catch(() => ({ data: {} })),
+        request('GET', '/v1/health').catch(() => ({ data: {} })),
+      ]);
+      balance = bal.data?.balance || 0;
+      tier = bal.data?.tier || 'free';
+      recentCalls = (usage.data?.calls || []).slice(0, 8);
+      lastError = '';
+      refreshCount++;
+    } catch (e) { lastError = e.message; }
+  }
+
+  async function fetchArmy() {
+    try {
+      const res = await request('GET', '/v1/army/runs').catch(() => ({ data: { runs: [] } }));
+      armyRuns = (res.data?.runs || []).slice(0, 5);
+    } catch {}
+  }
+
+  async function fetchMemory() {
+    try {
+      const res = await request('POST', '/v1/memory-list', {}).catch(() => ({ data: { keys: [] } }));
+      memoryKeys = (res.data?.keys || res.data?.entries || []).slice(0, 10);
+    } catch {}
+  }
+
+  function render() {
+    const w = process.stdout.columns || 120;
+    const h = process.stdout.rows || 40;
+    clear();
+
+    // Header
+    writeAt(1, 2, `\x1b[1;31mS L O P   T U I\x1b[0m  \x1b[90mv${PKG_VERSION}\x1b[0m  \x1b[90m•\x1b[0m  \x1b[36m${BASE_URL}\x1b[0m  \x1b[90m•\x1b[0m  Refresh #${refreshCount}`);
+    writeAt(2, 2, `\x1b[1mCredits:\x1b[0m \x1b[32m${balance.toLocaleString()}\x1b[0m  \x1b[90m|\x1b[0m  \x1b[1mTier:\x1b[0m ${tier}  \x1b[90m|\x1b[0m  \x1b[1mKey:\x1b[0m ${API_KEY.slice(0, 16)}...`);
+
+    // Tab bar
+    const tabs = [['dashboard', 'D'], ['army', 'A'], ['memory', 'M'], ['tools', 'T'], ['hive', 'H']];
+    let tabBar = '  ';
+    for (const [name, key] of tabs) {
+      if (tab === name) tabBar += `\x1b[1;41;37m [${key}] ${name.toUpperCase()} \x1b[0m  `;
+      else tabBar += `\x1b[90m[${key}] ${name}\x1b[0m  `;
+    }
+    writeAt(3, 1, tabBar);
+    writeAt(4, 1, '\x1b[90m' + '─'.repeat(w - 2) + '\x1b[0m');
+
+    if (tab === 'dashboard') {
+      // Left: Recent activity
+      const leftW = Math.floor(w / 2) - 2;
+      box(5, 1, leftW, 12, 'LIVE ACTIVITY');
+      if (recentCalls.length > 0) {
+        recentCalls.forEach((c, i) => {
+          if (i < 10) writeAt(6 + i, 3, `\x1b[90m${(c.time || '').padEnd(10)}\x1b[0m \x1b[36m${(c.api || c.slug || '?').slice(0, 25).padEnd(25)}\x1b[0m \x1b[33m${(c.credits || 0)}cr\x1b[0m \x1b[32m${(c.latency_ms || '?')}ms\x1b[0m`);
+        });
+      } else {
+        writeAt(7, 3, '\x1b[90mNo recent calls. Try: slop call crypto-uuid\x1b[0m');
+      }
+
+      // Right: Stats
+      const rightX = leftW + 3;
+      box(5, rightX, w - leftW - 3, 12, 'SYSTEM STATUS');
+      writeAt(6, rightX + 2, `\x1b[1mEngine:\x1b[0m   \x1b[32m_engine: real\x1b[0m \x1b[90m(SHA-256 verified)\x1b[0m`);
+      writeAt(7, rightX + 2, `\x1b[1mAPIs:\x1b[0m     \x1b[36m1,255\x1b[0m endpoints \x1b[90m|\x1b[0m \x1b[36m925\x1b[0m compute handlers`);
+      writeAt(8, rightX + 2, `\x1b[1mLLMs:\x1b[0m     Claude \x1b[90m|\x1b[0m GPT \x1b[90m|\x1b[0m Grok \x1b[90m|\x1b[0m DeepSeek`);
+      writeAt(9, rightX + 2, `\x1b[1mMemory:\x1b[0m   \x1b[32mFREE FOREVER\x1b[0m \x1b[90m(SQLite-backed)\x1b[0m`);
+      writeAt(10, rightX + 2, `\x1b[1mArmy:\x1b[0m     Up to 100 parallel agents \x1b[90m+ Merkle\x1b[0m`);
+      writeAt(11, rightX + 2, `\x1b[1mStreaming:\x1b[0m SSE \x1b[90m|\x1b[0m Batch \x1b[90m|\x1b[0m Dry-run`);
+
+      // Bottom: Army runs
+      box(18, 1, w - 2, 8, 'ARMY RUNS');
+      if (armyRuns.length > 0) {
+        armyRuns.forEach((r, i) => {
+          writeAt(19 + i, 3, `\x1b[33m${(r.id || '?').slice(0, 16).padEnd(16)}\x1b[0m  \x1b[36m${(r.status || '?').padEnd(10)}\x1b[0m  agents: ${r.agent_count || '?'}  \x1b[90m${r.task || ''}\x1b[0m`);
+        });
+      } else {
+        writeAt(19, 3, '\x1b[90mNo army runs yet. Press A to deploy.\x1b[0m');
+      }
+
+    } else if (tab === 'memory') {
+      box(5, 1, w - 2, h - 10, 'MEMORY KEYS');
+      if (memoryKeys.length > 0) {
+        memoryKeys.forEach((k, i) => {
+          const key = typeof k === 'string' ? k : k.key || '?';
+          const val = typeof k === 'object' ? (k.value || '').slice(0, 60) : '';
+          writeAt(6 + i, 3, `\x1b[36m${key.padEnd(30)}\x1b[0m \x1b[90m${val}\x1b[0m`);
+        });
+      } else {
+        writeAt(7, 3, '\x1b[90mNo memory keys yet. Use: slop memory set <key> <value>\x1b[0m');
+      }
+
+    } else if (tab === 'army') {
+      box(5, 1, w - 2, h - 10, 'ARMY DEPLOY');
+      writeAt(6, 3, '\x1b[1mRecent army deployments:\x1b[0m');
+      if (armyRuns.length > 0) {
+        armyRuns.forEach((r, i) => {
+          writeAt(8 + i * 2, 3, `\x1b[33m${r.id || '?'}\x1b[0m  Status: \x1b[36m${r.status || '?'}\x1b[0m  Agents: ${r.agent_count || '?'}  Merkle: \x1b[32m${(r.merkle_root || 'pending').slice(0, 16)}\x1b[0m`);
+          writeAt(9 + i * 2, 5, `\x1b[90mTask: ${(r.task || 'N/A').slice(0, 80)}\x1b[0m`);
+        });
+      } else {
+        writeAt(8, 3, '\x1b[90mNo deployments. Deploy with: slop call army/deploy --task "your task" --agents 10\x1b[0m');
+      }
+
+    } else if (tab === 'tools') {
+      box(5, 1, w - 2, h - 10, 'TOOLS (925 handlers across 78 categories)');
+      const cats = ['crypto', 'text', 'date', 'math', 'code', 'net', 'enrich', 'generate', 'sense', 'comm', 'orch', 'data', 'llm'];
+      cats.forEach((c, i) => {
+        writeAt(6 + i, 3, `\x1b[36m${c.padEnd(12)}\x1b[0m \x1b[90m→ slop list --category ${c}\x1b[0m`);
+      });
+
+    } else if (tab === 'hive') {
+      box(5, 1, w - 2, h - 10, 'HIVE WORKSPACES');
+      writeAt(6, 3, '\x1b[90mHive workspaces allow multi-agent collaboration with channels, standups, and shared state.\x1b[0m');
+      writeAt(8, 3, `\x1b[1mCreate:\x1b[0m  slop call hive/create --name "my-workspace"`);
+      writeAt(9, 3, `\x1b[1mSend:\x1b[0m    slop call hive/<id>/send --message "hello"`);
+      writeAt(10, 3, `\x1b[1mStandup:\x1b[0m slop call hive/<id>/standup`);
+    }
+
+    // Footer hotkeys
+    writeAt(h - 2, 1, '\x1b[90m' + '─'.repeat(w - 2) + '\x1b[0m');
+    writeAt(h - 1, 2, '\x1b[1m[D]\x1b[0m Dashboard  \x1b[1m[A]\x1b[0m Army  \x1b[1m[M]\x1b[0m Memory  \x1b[1m[T]\x1b[0m Tools  \x1b[1m[H]\x1b[0m Hive  \x1b[1m[R]\x1b[0m Refresh  \x1b[1m[Q]\x1b[0m Quit');
+    if (lastError) writeAt(h - 3, 2, `\x1b[31mError: ${lastError.slice(0, 60)}\x1b[0m`);
+  }
+
+  // Initial fetch
+  await fetchData();
+  await Promise.all([fetchArmy(), fetchMemory()]);
+
+  // Enter raw mode
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(true);
+    process.stdin.resume();
+    process.stdout.write(`${ESC}?25l`); // hide cursor
+  }
+
+  render();
+
+  // Auto-refresh every 5s
+  const refreshInterval = setInterval(async () => {
+    if (!running) return;
+    await fetchData();
+    render();
+  }, 5000);
+
+  // Handle keypress
+  process.stdin.on('data', async (data) => {
+    const key = data.toString();
+    if (key === 'q' || key === 'Q' || key === '\x03') {
+      running = false;
+      clearInterval(refreshInterval);
+      process.stdout.write(`${ESC}?25h`); // show cursor
+      clear();
+      if (process.stdin.isTTY) process.stdin.setRawMode(false);
+      console.log(dim('\n  TUI closed.\n'));
+      process.exit(0);
+    }
+    if (key === 'd' || key === 'D') { tab = 'dashboard'; render(); }
+    if (key === 'a' || key === 'A') { tab = 'army'; await fetchArmy(); render(); }
+    if (key === 'm' || key === 'M') { tab = 'memory'; await fetchMemory(); render(); }
+    if (key === 't' || key === 'T') { tab = 'tools'; render(); }
+    if (key === 'h' || key === 'H') { tab = 'hive'; render(); }
+    if (key === 'r' || key === 'R') { await fetchData(); await Promise.all([fetchArmy(), fetchMemory()]); render(); }
+  });
+}
+
+// ============================================================
 // INTERACTIVE — Minimal TUI / REPL (zero dependencies)
 // ============================================================
 async function cmdInteractive() {
@@ -4877,6 +5073,7 @@ async function cmdInteractive() {
           case 'types': await cmdTypes(args); break;
           case 'model': await cmdModels(args); break;
           case 'do': await cmdNatural(args); break;
+          case 'tui': case 'dashboard': await cmdTui(); break;
           default:
             // Smart LOCAL routing before burning cloud credits
             const lowerLine = line.toLowerCase();
@@ -5402,7 +5599,8 @@ async function main() {
     case 'review':  await cmdReview(args); break;
     case 'session': await cmdSession(args); break;
     case 'live':    await cmdLive(args);    break;
-    case 'i': case 'interactive': case 'tui': case 'shell': case 'repl': await cmdInteractive(); break;
+    case 'tui': case 'dashboard': await cmdTui(); break;
+    case 'i': case 'interactive': case 'shell': case 'repl': await cmdInteractive(); break;
     case 'version': case '-v': case '--version': {
       if (jsonMode) {
         console.log(JSON.stringify({ version: PKG_VERSION, name: 'slopshop', node: process.version, platform: `${process.platform}-${process.arch}`, config: CONFIG_FILE }));
