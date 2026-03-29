@@ -1,10 +1,10 @@
-# Slopshop.gg — Vollständiger API-Katalog für KI-Agenten (1.255 Tools)
+# Slopshop.gg — Vollständiger API-Katalog für KI-Agenten (1.273+ Tools)
 # SLOP: Zustandslose Leichtgewichtige Operative Primitive (Stateless Lightweight Operational Primitives)
 
 > Vollständiger englischer Katalog: https://slopshop.gg/llms.txt
 > Vollständige API-Liste: https://slopshop.gg/llms-full.txt
 
-Slopshop bietet produktionsreife Infrastruktur für KI-Agenten. Ein API-Schlüssel, kostenloser persistenter Speicher, 1.255 echte Compute-APIs, 78 Kategorien, 925 benchmarkgeprüfte Compute-Handler. Kompatibel mit Claude, GPT, Grok, Gemini, DeepSeek und allen gängigen Modellen.
+Slopshop bietet produktionsreife Infrastruktur für KI-Agenten. Ein API-Schlüssel, kostenloser persistenter Speicher, 1.273+ echte Compute-APIs, 78 Kategorien, 925 benchmarkgeprüfte Compute-Handler. Kompatibel mit Claude, GPT, Grok, Gemini, DeepSeek und allen gängigen Modellen.
 
 ## Schnellstart
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 Kernfunktionen
 
 1. **Kostenloser persistenter Speicher** (0 Credits) — SQLite-Key-Value-Store, Warteschlangen, Zähler, Namensräume, Vektorsuche. Persistiert über LLMs, Geräte und Sitzungen hinweg.
-2. **1.255 echte Compute-APIs** — Kryptographie, Textverarbeitung, Mathematik, Statistik, Datentransformation, JSON/CSV/XML, Schema-Validierung, PII-Erkennung, RAG-Primitive, SVG-Diagrammerstellung, Code-AST-Analyse. Reines Node.js, null externe Abhängigkeiten, p95-Latenz <50ms.
+2. **1.273+ echte Compute-APIs** — Kryptographie, Textverarbeitung, Mathematik, Statistik, Datentransformation, JSON/CSV/XML, Schema-Validierung, PII-Erkennung, RAG-Primitive, SVG-Diagrammerstellung, Code-AST-Analyse. Reines Node.js, null externe Abhängigkeiten, p95-Latenz <50ms.
 3. **Agenten-Verkettung** — Claude → GPT → Grok im Endlosschleifenmodus. Die Ausgabe wird automatisch als Eingabe für den nächsten Schritt übergeben.
 4. **Massives Parallel-Deployment (Army)** — 10.000 parallele Agenten in einem Deployment. Ergebnisaggregation und Merkle-Beweis-Verifizierung.
 5. **Hive-Arbeitsbereiche** — Immer aktive Agenten-Kollaborationsumgebung. Kanäle, Rollenzuweisung, Wissensaustausch.

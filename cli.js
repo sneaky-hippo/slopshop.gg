@@ -1557,7 +1557,7 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'wallet', 'bounty', 'market', 'eval', 'replay', 'queue', 'webhooks', 'teams', 'knowledge', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'version', 'upgrade', 'completions', 'help'],
+      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'wallet', 'bounty', 'market', 'eval', 'replay', 'queue', 'webhooks', 'teams', 'knowledge', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'voice', 'simulate', 'snapshot', 'guardrails', 'template', 'marketplace', 'version', 'upgrade', 'completions', 'help'],
       flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N', '--model M', '--dry-run', '--limit N', '--offset N'],
       version: PKG_VERSION
     }, null, 2));
@@ -1580,7 +1580,16 @@ ${C.reset}`;
   console.log(`    ${cyan('slop memory')} ${dim('<sub>')}                      Direct memory key-value operations`);
   console.log(`    ${cyan('slop live')} ${dim('<org-id>')}                     Real-time agent dashboard (The Sims for AI)`);
   console.log(`    ${cyan('slop live --launch')}                    Launch 30-agent startup + watch`);
+  console.log(`    ${cyan('slop simulate')} ${dim('--task "..." --agents 10')}  Run agent simulation`);
+  console.log(`    ${cyan('slop snapshot save')} ${dim('--run-id ID')}        Save swarm snapshot`);
+  console.log(`    ${cyan('slop template')} ${dim('list|run')}               Agent templates`);
   console.log(`    ${cyan('slop interactive')}                      Interactive REPL / shell mode\n`);
+  console.log(`  ${bold('SAFETY & VOICE')}`);
+  console.log(`    ${cyan('slop voice transcribe')} ${dim('--file path')}    Transcribe audio file`);
+  console.log(`    ${cyan('slop guardrails scan')} ${dim('"text"')}          Deep scan text for safety\n`);
+  console.log(`  ${bold('MARKETPLACE')}`);
+  console.log(`    ${cyan('slop marketplace publish')} ${dim('--name X')}    Publish a tool`);
+  console.log(`    ${cyan('slop marketplace top')}                  Browse top tools\n`);
   console.log(`  ${bold('ECONOMY & KNOWLEDGE')}`);
   console.log(`    ${cyan('slop wallet')} ${dim('create|list|fund|transfer')} Manage wallets and funds`);
   console.log(`    ${cyan('slop bounty')} ${dim('post|list|claim')}            Post and claim bounties`);
@@ -6399,6 +6408,265 @@ async function cmdLive(args) {
 }
 
 // ============================================================
+// VOICE — Transcribe audio files
+// ============================================================
+async function cmdVoice(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Voice')}\n`);
+    console.log(`  ${cyan('slop voice transcribe')} ${dim('--file path')}   Transcribe an audio file\n`);
+    return;
+  }
+
+  if (sub === 'transcribe') {
+    const fileIdx = args.indexOf('--file');
+    const filePath = fileIdx >= 0 ? args[fileIdx + 1] : null;
+    if (!filePath) die('Usage: slop voice transcribe --file <path>');
+    spinnerStart('Transcribing audio...');
+    try {
+      const res = await request('POST', '/v1/voice/transcribe', { file: filePath });
+      spinnerStop(true);
+      if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+      const d = res.data || res;
+      console.log(`\n  ${green('✓ Transcription complete')}\n`);
+      if (d.text || d.transcript) console.log(`  ${d.text || d.transcript}\n`);
+      if (d.duration) console.log(`  ${dim('Duration:')} ${d.duration}`);
+      if (d.language) console.log(`  ${dim('Language:')} ${d.language}`);
+      console.log('');
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  die(`Unknown voice subcommand: ${sub}. Try: slop voice help`);
+}
+
+// ============================================================
+// SIMULATE — Run agent simulations
+// ============================================================
+async function cmdSimulate(args) {
+  requireKey();
+  const taskIdx = args.indexOf('--task');
+  const agentsIdx = args.indexOf('--agents');
+  const task = taskIdx >= 0 ? args[taskIdx + 1] : null;
+  const agents = agentsIdx >= 0 ? parseInt(args[agentsIdx + 1]) || 10 : 10;
+
+  if (!task) die('Usage: slop simulate --task "..." --agents 10');
+
+  spinnerStart(`Simulating with ${agents} agents...`);
+  try {
+    const res = await request('POST', '/v1/agent/simulate', { task, agents });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Simulation complete')}`);
+    console.log(`  ${bold('Task:')}   ${task}`);
+    console.log(`  ${bold('Agents:')} ${agents}`);
+    if (d.simulation_id || d.id) console.log(`  ${bold('ID:')}     ${cyan(d.simulation_id || d.id)}`);
+    if (d.results) {
+      console.log(`\n  ${bold('Results:')}`);
+      for (const r of Array.isArray(d.results) ? d.results : []) {
+        console.log(`    ${dim('-')} ${r.agent || r.name || 'agent'}: ${r.output || r.result || ''}`);
+      }
+    }
+    console.log('');
+  } catch (err) { spinnerStop(false); handleError(err); }
+}
+
+// ============================================================
+// SNAPSHOT — Save/restore swarm snapshots
+// ============================================================
+async function cmdSnapshot(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Swarm Snapshots')}\n`);
+    console.log(`  ${cyan('slop snapshot save')} ${dim('--run-id ID')}   Save a swarm snapshot\n`);
+    return;
+  }
+
+  if (sub === 'save') {
+    const runIdx = args.indexOf('--run-id');
+    const runId = runIdx >= 0 ? args[runIdx + 1] : null;
+    if (!runId) die('Usage: slop snapshot save --run-id <ID>');
+    spinnerStart('Saving snapshot...');
+    try {
+      const res = await request('POST', '/v1/swarm/snapshot', { run_id: runId });
+      spinnerStop(true);
+      if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+      const d = res.data || res;
+      console.log(`\n  ${green('✓ Snapshot saved')}`);
+      if (d.snapshot_id || d.id) console.log(`  ${bold('Snapshot ID:')} ${cyan(d.snapshot_id || d.id)}`);
+      console.log(`  ${bold('Run ID:')}      ${runId}`);
+      console.log('');
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  die(`Unknown snapshot subcommand: ${sub}. Try: slop snapshot help`);
+}
+
+// ============================================================
+// GUARDRAILS — Scan text for safety issues
+// ============================================================
+async function cmdGuardrails(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Guardrails')}\n`);
+    console.log(`  ${cyan('slop guardrails scan')} ${dim('"text"')}   Deep scan text for safety issues\n`);
+    return;
+  }
+
+  if (sub === 'scan') {
+    const text = args.slice(1).filter(a => !GLOBAL_FLAGS.includes(a)).join(' ');
+    if (!text) die('Usage: slop guardrails scan "text to scan"');
+    spinnerStart('Scanning text...');
+    try {
+      const res = await request('POST', '/v1/guardrails/scan-deep', { text });
+      spinnerStop(true);
+      if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+      const d = res.data || res;
+      const safe = d.safe !== false;
+      console.log(`\n  ${safe ? green('✓ Text passed safety scan') : red('✗ Safety issues detected')}`);
+      if (d.score !== undefined) console.log(`  ${bold('Score:')}  ${d.score}`);
+      if (d.flags && d.flags.length > 0) {
+        console.log(`  ${bold('Flags:')}`);
+        for (const f of d.flags) {
+          console.log(`    ${red('•')} ${f.category || f.type || f}: ${f.message || f.description || ''}`);
+        }
+      }
+      if (d.categories) {
+        console.log(`  ${bold('Categories:')}`);
+        for (const [k, v] of Object.entries(d.categories)) {
+          console.log(`    ${dim(k + ':')} ${v}`);
+        }
+      }
+      console.log('');
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  die(`Unknown guardrails subcommand: ${sub}. Try: slop guardrails help`);
+}
+
+// ============================================================
+// TEMPLATE — List and run agent templates
+// ============================================================
+async function cmdTemplate(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Agent Templates')}\n`);
+    console.log(`  ${cyan('slop template list')}                      List available templates`);
+    console.log(`  ${cyan('slop template run')} ${dim('--name truth-seeker')}   Run an agent template\n`);
+    return;
+  }
+
+  if (sub === 'list') {
+    spinnerStart('Fetching templates...');
+    try {
+      const res = await request('GET', '/v1/agent/templates');
+      spinnerStop(true);
+      if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+      const templates = res.data?.templates || res.templates || res.data || [];
+      console.log(`\n  ${bold('Agent Templates')}\n`);
+      if (!Array.isArray(templates) || templates.length === 0) {
+        console.log(dim('  No templates found.\n'));
+        return;
+      }
+      for (const t of templates) {
+        console.log(`  ${cyan((t.name || t.slug || '').padEnd(24))} ${t.description || t.desc || ''}`);
+      }
+      console.log('');
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  if (sub === 'run') {
+    const nameIdx = args.indexOf('--name');
+    const name = nameIdx >= 0 ? args[nameIdx + 1] : null;
+    if (!name) die('Usage: slop template run --name <template-name>');
+    spinnerStart(`Running template "${name}"...`);
+    try {
+      const res = await request('POST', '/v1/agent/template/run', { name });
+      spinnerStop(true);
+      if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+      const d = res.data || res;
+      console.log(`\n  ${green('✓ Template launched')}`);
+      console.log(`  ${bold('Template:')} ${cyan(name)}`);
+      if (d.agent_id || d.id) console.log(`  ${bold('Agent ID:')} ${d.agent_id || d.id}`);
+      if (d.status) console.log(`  ${bold('Status:')}   ${d.status}`);
+      console.log('');
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  die(`Unknown template subcommand: ${sub}. Try: slop template help`);
+}
+
+// ============================================================
+// MARKETPLACE — Publish tools and browse top tools
+// ============================================================
+async function cmdMarketplace(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Marketplace')}\n`);
+    console.log(`  ${cyan('slop marketplace publish')} ${dim('--name "tool"')}   Publish a tool`);
+    console.log(`  ${cyan('slop marketplace top')}                       Browse top tools\n`);
+    return;
+  }
+
+  if (sub === 'publish') {
+    const nameIdx = args.indexOf('--name');
+    const name = nameIdx >= 0 ? args[nameIdx + 1] : null;
+    if (!name) die('Usage: slop marketplace publish --name "tool-name"');
+    spinnerStart(`Publishing "${name}"...`);
+    try {
+      const res = await request('POST', '/v1/marketplace/publish', { name });
+      spinnerStop(true);
+      if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+      const d = res.data || res;
+      console.log(`\n  ${green('✓ Published to marketplace')}`);
+      console.log(`  ${bold('Name:')} ${cyan(name)}`);
+      if (d.tool_id || d.id) console.log(`  ${bold('ID:')}   ${d.tool_id || d.id}`);
+      if (d.url) console.log(`  ${bold('URL:')}  ${d.url}`);
+      console.log('');
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  if (sub === 'top') {
+    spinnerStart('Fetching top tools...');
+    try {
+      const res = await request('GET', '/v1/marketplace/top');
+      spinnerStop(true);
+      if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+      const tools = res.data?.tools || res.tools || res.data || [];
+      console.log(`\n  ${bold('Top Marketplace Tools')}\n`);
+      if (!Array.isArray(tools) || tools.length === 0) {
+        console.log(dim('  No tools found.\n'));
+        return;
+      }
+      for (const t of tools) {
+        const downloads = t.downloads || t.installs || 0;
+        console.log(`  ${cyan((t.name || t.slug || '').padEnd(24))} ${dim(String(downloads) + ' downloads')}  ${t.description || t.desc || ''}`);
+      }
+      console.log('');
+    } catch (err) { spinnerStop(false); handleError(err); }
+    return;
+  }
+
+  die(`Unknown marketplace subcommand: ${sub}. Try: slop marketplace help`);
+}
+
+// ============================================================
 // QUICKSTART — Interactive guided tutorial
 // ============================================================
 async function cmdQuickstart() {
@@ -6720,6 +6988,12 @@ async function main() {
     case 'quickstart': case 'start': case 'tutorial': await cmdQuickstart(); break;
     case 'upgrade':     await cmdUpgrade();         break;
     case 'completions': cmdCompletions(args);       break;
+    case 'voice':   await cmdVoice(args);  break;
+    case 'simulate': await cmdSimulate(args); break;
+    case 'snapshot': await cmdSnapshot(args); break;
+    case 'guardrails': await cmdGuardrails(args); break;
+    case 'template': await cmdTemplate(args); break;
+    case 'marketplace': await cmdMarketplace(args); break;
     case 'do':      await cmdNatural(args[0] || '', args.slice(1)); break;
     default:
       // Natural language routing — understand what the user wants

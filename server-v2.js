@@ -8421,6 +8421,152 @@ app.post('/v1/guardrails/redact', auth, (req, res) => {
   res.json({ ok: true, redacted_text: text, redactions, _engine: 'real' });
 });
 
+// ===== DEEP SCAN — All-in-one guardrail: PII, injection, toxicity, bias, hallucination =====
+app.post('/v1/guardrails/scan-deep', auth, (req, res) => {
+  const text = req.body.text || '';
+  if (!text) return res.status(422).json({ error: { code: 'missing_text' } });
+  const checks = Array.isArray(req.body.checks) ? req.body.checks : ['pii', 'injection', 'toxicity', 'bias', 'hallucination'];
+
+  const findings = [];
+  const addFinding = (type, severity, location, detail) => findings.push({ type, severity, location, detail });
+
+  // --- PII regex: SSN, credit card, email, phone, IP, API key ---
+  if (checks.includes('pii')) {
+    const piiDefs = [
+      { name: 'ssn', pattern: /\b\d{3}-\d{2}-\d{4}\b/g, severity: 'critical' },
+      { name: 'credit_card', pattern: /\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b/g, severity: 'critical' },
+      { name: 'email', pattern: /[\w.+-]+@[\w.-]+\.\w{2,}/g, severity: 'high' },
+      { name: 'phone', pattern: /\b\d{3}[-.]?\d{3}[-.]?\d{4}\b/g, severity: 'high' },
+      { name: 'ip_address', pattern: /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, severity: 'medium' },
+      { name: 'api_key', pattern: /\b(sk-[a-zA-Z0-9]{20,}|xai-[a-zA-Z0-9]{20,}|key-[a-zA-Z0-9]{20,})\b/g, severity: 'critical' },
+    ];
+    for (const { name, pattern, severity } of piiDefs) {
+      let m;
+      while ((m = pattern.exec(text)) !== null) {
+        addFinding('pii:' + name, severity, { offset: m.index, length: m[0].length }, m[0].slice(0, 4) + '***');
+      }
+    }
+  }
+
+  // --- SQL + prompt injection patterns ---
+  if (checks.includes('injection')) {
+    const sqlPatterns = [
+      { pattern: /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|ALTER|UNION)\b\s+.{0,60}\b(FROM|INTO|TABLE|SET|ALL)\b)/gi, name: 'sql_injection' },
+      { pattern: /('\s*(OR|AND)\s+'?\d*'?\s*=\s*'?\d*)/gi, name: 'sql_tautology' },
+      { pattern: /(;\s*DROP\s+TABLE)/gi, name: 'sql_drop' },
+      { pattern: /(--\s*$|\/\*[\s\S]*?\*\/)/gm, name: 'sql_comment' },
+    ];
+    for (const { pattern, name } of sqlPatterns) {
+      let m;
+      while ((m = pattern.exec(text)) !== null) {
+        addFinding('injection:' + name, 'critical', { offset: m.index, length: m[0].length }, m[0].slice(0, 60));
+      }
+    }
+
+    const promptPatterns = [
+      /ignore\s+(all\s+)?previous\s+instructions/gi,
+      /you\s+are\s+now\s+(a|an)\s+/gi,
+      /system\s*:\s*you\s+are/gi,
+      /\]\s*\}\s*\{\s*"role"\s*:\s*"system"/gi,
+      /pretend\s+you\s+(are|have)\s+no\s+rules/gi,
+      /disregard\s+(your|all|any)\s+(instructions|rules|guidelines)/gi,
+      /do\s+not\s+follow\s+(your|any)\s+(instructions|rules)/gi,
+      /jailbreak/gi,
+      /DAN\s+mode/gi,
+    ];
+    for (const pattern of promptPatterns) {
+      let m;
+      while ((m = pattern.exec(text)) !== null) {
+        addFinding('injection:prompt', 'critical', { offset: m.index, length: m[0].length }, m[0].slice(0, 60));
+      }
+    }
+  }
+
+  // --- Toxicity keywords ---
+  if (checks.includes('toxicity')) {
+    const toxicTerms = [
+      { term: 'kill', severity: 'high' }, { term: 'bomb', severity: 'critical' },
+      { term: 'hack into', severity: 'high' }, { term: 'steal', severity: 'high' },
+      { term: 'exploit vulnerability', severity: 'high' }, { term: 'murder', severity: 'critical' },
+      { term: 'terrorism', severity: 'critical' }, { term: 'assault', severity: 'high' },
+      { term: 'suicide', severity: 'high' }, { term: 'self-harm', severity: 'high' },
+      { term: 'slur', severity: 'critical' }, { term: 'hate speech', severity: 'critical' },
+      { term: 'racial', severity: 'medium' }, { term: 'violent', severity: 'medium' },
+    ];
+    const lower = text.toLowerCase();
+    for (const { term, severity } of toxicTerms) {
+      let idx = lower.indexOf(term);
+      while (idx !== -1) {
+        addFinding('toxicity', severity, { offset: idx, length: term.length }, term);
+        idx = lower.indexOf(term, idx + 1);
+      }
+    }
+  }
+
+  // --- Bias indicators ---
+  if (checks.includes('bias')) {
+    const biasPatterns = [
+      { pattern: /\b(all|every|no)\s+(men|women|blacks|whites|asians|muslims|christians|jews|immigrants|gays|lesbians)\s+(are|have|should|must|always|never)\b/gi, name: 'group_generalization', severity: 'high' },
+      { pattern: /\b(obviously|clearly|everyone knows|it'?s? (a )?fact that)\b/gi, name: 'assumption_language', severity: 'low' },
+      { pattern: /\b(inferior|superior|subhuman|master race)\b/gi, name: 'supremacy_language', severity: 'critical' },
+      { pattern: /\b(typical|stereotyp(e|ical|ically)|always like that)\b/gi, name: 'stereotype_language', severity: 'medium' },
+    ];
+    for (const { pattern, name, severity } of biasPatterns) {
+      let m;
+      while ((m = pattern.exec(text)) !== null) {
+        addFinding('bias:' + name, severity, { offset: m.index, length: m[0].length }, m[0].slice(0, 60));
+      }
+    }
+  }
+
+  // --- Hallucination risk scoring ---
+  if (checks.includes('hallucination')) {
+    let hallucinationScore = 0;
+    const hallucinationSignals = [];
+
+    const specificNumbers = text.match(/\b\d{2,}\.\d+%\b/g);
+    if (specificNumbers) { hallucinationScore += specificNumbers.length * 10; hallucinationSignals.push('precise_percentages:' + specificNumbers.length); }
+
+    const certaintyMatches = text.match(/\b(definitely|absolutely|certainly|undoubtedly|without question|100%|guaranteed|proven fact)\b/gi);
+    if (certaintyMatches) { hallucinationScore += certaintyMatches.length * 8; hallucinationSignals.push('certainty_language:' + certaintyMatches.length); }
+
+    const fakeCites = text.match(/\b(according to (a |the )?(recent )?stud(y|ies)|research (shows|proves|confirms|suggests))\b/gi);
+    if (fakeCites) { hallucinationScore += fakeCites.length * 12; hallucinationSignals.push('unverified_citations:' + fakeCites.length); }
+
+    const quotes = text.match(/"[^"]{20,}"/g);
+    if (quotes && quotes.length > 2) { hallucinationScore += quotes.length * 6; hallucinationSignals.push('many_quotes:' + quotes.length); }
+
+    const urls = text.match(/https?:\/\/[^\s)]+/g);
+    if (urls) { hallucinationScore += urls.length * 5; hallucinationSignals.push('urls_present:' + urls.length); }
+
+    const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 10);
+    if (sentences.length > 20) { hallucinationScore += Math.floor(sentences.length / 5); hallucinationSignals.push('high_claim_density:' + sentences.length); }
+
+    hallucinationScore = Math.min(hallucinationScore, 100);
+    if (hallucinationScore > 0) {
+      addFinding('hallucination_risk', hallucinationScore >= 50 ? 'high' : hallucinationScore >= 25 ? 'medium' : 'low',
+        { offset: 0, length: text.length }, 'score:' + hallucinationScore + ' signals:' + hallucinationSignals.join(','));
+    }
+  }
+
+  // Compute overall risk score (0-100)
+  const severityWeights = { critical: 25, high: 15, medium: 8, low: 3 };
+  let risk_score = findings.reduce((sum, f) => sum + (severityWeights[f.severity] || 5), 0);
+  risk_score = Math.min(risk_score, 100);
+  const safe = risk_score === 0;
+
+  res.json({
+    ok: true,
+    safe,
+    risk_score,
+    findings,
+    finding_count: findings.length,
+    checks_run: checks,
+    text_length: text.length,
+    _engine: 'real',
+  });
+});
+
 // ===== PROMPT REGISTRY — Versioned templates (Claude roadmap #4) =====
 app.post('/v1/prompts/save', auth, (req, res) => {
   const { name, template, variables, tags } = req.body;
@@ -11741,50 +11887,127 @@ app.post('/v1/code/sandbox', auth, (req, res) => {
 });
 
 // ===== STRAT 4: VOICE TRANSCRIPTION =====
-// POST /v1/voice/transcribe — Audio transcription
-app.post('/v1/voice/transcribe', auth, (req, res) => {
+// POST /v1/voice/transcribe — Audio transcription with Whisper API support
+app.post('/v1/voice/transcribe', auth, async (req, res) => {
   const start = Date.now();
   try {
     const { audio_base64, format, language } = req.body;
     if (!audio_base64) return res.status(400).json({ error: { code: 'missing_audio', message: 'audio_base64 is required' } });
 
-    const audioFormat = format || 'wav';
-    const lang = language || 'en';
+    // Decode base64 audio
     const audioBuf = Buffer.from(audio_base64, 'base64');
-    const durationEstimate = Math.round((audioBuf.length / 32000) * 100) / 100;
+    const lang = language || 'en';
+    const byteLength = audioBuf.length;
 
-    const hasWhisper = process.env.OPENAI_API_KEY || process.env.WHISPER_API_KEY;
+    // Detect format from magic bytes when not explicitly provided
+    let detectedFormat = format || 'unknown';
+    if (!format && audioBuf.length >= 4) {
+      const magic = audioBuf.slice(0, 4).toString('hex');
+      const magicAscii = audioBuf.slice(0, 4).toString('ascii');
+      if (magicAscii === 'RIFF') detectedFormat = 'wav';
+      else if (magicAscii === 'fLaC') detectedFormat = 'flac';
+      else if (magicAscii === 'OggS') detectedFormat = 'ogg';
+      else if (magic.startsWith('fff') || magic.startsWith('ffe')) detectedFormat = 'mp3';
+      else if (magic === '49443303') detectedFormat = 'mp3'; // ID3 tag
+      else if (audioBuf.length >= 8 && audioBuf.slice(4, 8).toString('ascii') === 'ftyp') detectedFormat = 'mp4';
+      else if (magic === '1a45dfa3') detectedFormat = 'webm';
+    }
 
-    if (!hasWhisper) {
+    // Estimate duration based on format-typical bitrates
+    const bitrateMap = { wav: 176400, mp3: 16000, ogg: 16000, flac: 88200, mp4: 16000, webm: 16000, unknown: 32000 };
+    const bytesPerSec = bitrateMap[detectedFormat] || 32000;
+    const durationEstimate = Math.round((byteLength / bytesPerSec) * 100) / 100;
+
+    const audioStats = {
+      byte_length: byteLength,
+      detected_format: detectedFormat,
+      duration_estimate_seconds: durationEstimate,
+      language: lang,
+    };
+
+    const whisperKey = process.env.WHISPER_API_KEY || process.env.OPENAI_API_KEY;
+
+    if (!whisperKey) {
       const latency = Date.now() - start;
       dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'voice/transcribe', 0, latency, 'needs_key');
       return res.json({
         ok: true,
-        text: '[stub] Set OPENAI_API_KEY or WHISPER_API_KEY to enable real transcription.',
-        language: lang,
-        duration_seconds: durationEstimate,
-        format: audioFormat,
+        text: '[stub] No Whisper/OpenAI key configured. Audio received and decoded successfully.',
+        audio_stats: audioStats,
         _engine: 'needs_key',
-        _hint: 'Set OPENAI_API_KEY or WHISPER_API_KEY env var to unlock Whisper transcription',
+        _hint: 'Set OPENAI_API_KEY or WHISPER_API_KEY env var to unlock real Whisper transcription',
+        _instructions: {
+          step1: 'Get an OpenAI API key from https://platform.openai.com/api-keys',
+          step2: 'Set OPENAI_API_KEY=sk-... in your environment',
+          step3: 'Restart the server and call this endpoint again',
+        },
       });
     }
 
-    // Real transcription — would call Whisper API here
+    // Real transcription via OpenAI Whisper API
+    const extMap = { wav: 'wav', mp3: 'mp3', ogg: 'ogg', flac: 'flac', mp4: 'm4a', webm: 'webm', unknown: 'wav' };
+    const fileExt = extMap[detectedFormat] || 'wav';
+    const mimeMap = { wav: 'audio/wav', mp3: 'audio/mpeg', ogg: 'audio/ogg', flac: 'audio/flac', mp4: 'audio/mp4', webm: 'audio/webm', unknown: 'audio/wav' };
+    const mimeType = mimeMap[detectedFormat] || 'audio/wav';
+
+    // Build multipart/form-data payload for Whisper API
+    const boundary = '----SlopshopBoundary' + crypto.randomBytes(8).toString('hex');
+    const parts = [];
+    parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${fileExt}"\r\nContent-Type: ${mimeType}\r\n\r\n`));
+    parts.push(audioBuf);
+    parts.push(Buffer.from('\r\n'));
+    parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n`));
+    parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\n${lang}\r\n`));
+    parts.push(Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="response_format"\r\n\r\njson\r\n`));
+    parts.push(Buffer.from(`--${boundary}--\r\n`));
+    const body = Buffer.concat(parts);
+
+    const whisperResult = await new Promise((resolve, reject) => {
+      const https = require('https');
+      const apiReq = https.request({
+        hostname: 'api.openai.com',
+        path: '/v1/audio/transcriptions',
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${whisperKey}`,
+          'Content-Type': `multipart/form-data; boundary=${boundary}`,
+          'Content-Length': body.length,
+        },
+      }, (apiRes) => {
+        let data = '';
+        apiRes.on('data', (chunk) => data += chunk);
+        apiRes.on('end', () => {
+          try {
+            const parsed = JSON.parse(data);
+            if (apiRes.statusCode >= 400) {
+              reject(new Error(parsed.error?.message || `Whisper API returned ${apiRes.statusCode}`));
+            } else {
+              resolve(parsed);
+            }
+          } catch (parseErr) {
+            reject(new Error('Failed to parse Whisper API response: ' + data.slice(0, 200)));
+          }
+        });
+      });
+      apiReq.on('error', reject);
+      apiReq.write(body);
+      apiReq.end();
+    });
+
     const latency = Date.now() - start;
     dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'voice/transcribe', 2, latency, 'real');
     req.acct.balance = Math.max(0, req.acct.balance - 2);
     persistKey(req.apiKey);
     res.json({
       ok: true,
-      text: '[transcription would appear here with Whisper]',
-      language: lang,
-      duration_seconds: durationEstimate,
-      format: audioFormat,
+      text: whisperResult.text || '',
+      audio_stats: audioStats,
       _engine: 'real',
+      _latency_ms: latency,
     });
   } catch (e) {
     log.error('voice/transcribe failed', { error: e.message });
-    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+    res.status(500).json({ error: { code: 'transcription_error', message: e.message } });
   }
 });
 
@@ -11918,6 +12141,69 @@ app.post('/v1/swarm/budget', auth, (req, res) => {
   }
 });
 
+
+// ===== STRAT 4: SWARM SNAPSHOT =====
+db.exec(`CREATE TABLE IF NOT EXISTS swarm_snapshots (
+  id TEXT PRIMARY KEY,
+  api_key TEXT,
+  run_id TEXT,
+  results TEXT,
+  merkle_root TEXT,
+  agent_count INTEGER,
+  status TEXT,
+  verified INTEGER,
+  run_ts INTEGER,
+  snapshot_ts INTEGER,
+  size_bytes INTEGER DEFAULT 0,
+  created_at TEXT DEFAULT (datetime('now'))
+)`);
+
+// POST /v1/swarm/snapshot — Capture full state of a compute run for replay
+app.post('/v1/swarm/snapshot', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const { run_id } = req.body;
+    if (!run_id) return res.status(400).json({ error: { code: 'missing_run_id', message: 'run_id is required' } });
+
+    const row = db.prepare('SELECT * FROM compute_runs WHERE id = ? AND api_key = ?').get(run_id, req.apiKey);
+    if (!row) return res.status(404).json({ error: { code: 'run_not_found', message: 'No compute run found for this run_id' } });
+
+    // Parse stored fields
+    let results = [];
+    let config = {};
+    try { results = JSON.parse(row.results || '[]'); } catch(e) {}
+    try { config = JSON.parse(row.config || '{}'); } catch(e) {}
+
+    const snapshotId = 'snap-' + crypto.randomUUID().slice(0, 12);
+    const snapshotPayload = JSON.stringify({
+      results,
+      merkle_root: config.merkle_root || null,
+      agent_count: row.agent_count,
+      status: row.status,
+      verified: row.verified,
+      run_ts: row.ts,
+      config,
+    });
+    const sizeBytes = Buffer.byteLength(snapshotPayload, 'utf8');
+
+    db.prepare('INSERT INTO swarm_snapshots (id, api_key, run_id, results, merkle_root, agent_count, status, verified, run_ts, snapshot_ts, size_bytes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      snapshotId, req.apiKey.slice(0, 12), run_id, JSON.stringify(results), config.merkle_root || null,
+      row.agent_count, row.status, row.verified, row.ts, Date.now(), sizeBytes
+    );
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'swarm/snapshot', 0, latency, 'real');
+    res.json({
+      ok: true,
+      snapshot_id: snapshotId,
+      size_bytes: sizeBytes,
+      _engine: 'real',
+    });
+  } catch (e) {
+    log.error('swarm/snapshot failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
 // ===== STRAT 4: MCP MANIFEST =====
 // GET /v1/mcp/manifest — Full MCP manifest for all tools
 app.get('/v1/mcp/manifest', publicRateLimit, (req, res) => {
@@ -12139,93 +12425,10 @@ Reply in JSON: {"critique":"refined critique paragraph","score":0-100,"improveme
   });
 });
 // ===== START =====
-
-// ===== Grok Critique =====
-app.post('/v1/grok/critique', auth, async (req, res) => {
-  const { content, criteria, max_iterations } = req.body;
-  if (!content) return res.status(400).json({ error: { code: 'missing_content', message: 'content is required' } });
-
-  const criteriaTxt = criteria || 'clarity, correctness, completeness, conciseness';
-  const iterations = Math.min(Math.max(parseInt(max_iterations) || 1, 1), 5);
-  const llmThink = allHandlers['llm-think'];
-  let usedLlm = false;
-  let critique = '';
-  let score = 0;
-  let improvements = [];
-
-  if (llmThink) {
-    try {
-      let currentContent = content.slice(0, 2000);
-      let lastCritique = '';
-      for (let i = 0; i < iterations; i++) {
-        const prompt = i === 0
-          ? `Critique the following content based on these criteria: ${criteriaTxt}.
-Content: "${currentContent}"
-Reply in JSON: {"critique":"detailed critique paragraph","score":0-100,"improvements":["list","of","suggestions"]}`
-          : `The content was previously critiqued. Refine your critique considering improvements.
-Content: "${currentContent}"
-Previous critique: "${lastCritique}"
-Criteria: ${criteriaTxt}
-Reply in JSON: {"critique":"refined critique paragraph","score":0-100,"improvements":["list","of","remaining suggestions"]}`;
-        const result = await llmThink({ text: prompt, temperature: 0.4 });
-        const answer = result?.answer || result?.text || '';
-        const jsonMatch = answer.match(/\{[\s\S]*\}/);
-        const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
-        if (parsed) {
-          critique = parsed.critique || critique;
-          score = Math.min(100, Math.max(0, parseInt(parsed.score) || score));
-          improvements = Array.isArray(parsed.improvements) ? parsed.improvements : improvements;
-          lastCritique = critique;
-          usedLlm = true;
-        }
-      }
-    } catch { /* fall through to heuristic */ }
-  }
-
-  // Heuristic fallback: keyword-based analysis
-  if (!usedLlm) {
-    const lower = content.toLowerCase();
-    const len = content.length;
-    let s = 50;
-    const issues = [];
-
-    // Clarity checks
-    if (len < 20) { s -= 15; issues.push('Content is very short; consider elaborating.'); }
-    if (len > 5000) { s -= 5; issues.push('Content is lengthy; consider trimming for conciseness.'); }
-    if ((content.match(/\./g) || []).length < 2 && len > 100) { issues.push('Few sentence breaks detected; improve structure.'); s -= 5; }
-
-    // Keyword quality signals
-    const positiveSignals = ['because', 'therefore', 'evidence', 'example', 'specifically', 'data', 'result', 'conclusion'];
-    const negativeSignals = ['maybe', 'stuff', 'things', 'probably', 'i think', 'kind of', 'sort of', 'basically'];
-    let posHits = 0, negHits = 0;
-    for (const kw of positiveSignals) { if (lower.includes(kw)) posHits++; }
-    for (const kw of negativeSignals) { if (lower.includes(kw)) { negHits++; issues.push('Vague language detected: "' + kw + '". Be more precise.'); } }
-    s += posHits * 5;
-    s -= negHits * 5;
-
-    // Criteria-aware checks
-    if (criteriaTxt.includes('correctness') && !lower.match(/\d/)) { issues.push('No data or numbers found; consider adding evidence.'); s -= 3; }
-    if (criteriaTxt.includes('completeness') && len < 100) { issues.push('Content may be incomplete given its brevity.'); s -= 5; }
-
-    score = Math.min(100, Math.max(0, s));
-    improvements = issues.length > 0 ? issues : ['No major issues found via heuristic analysis.'];
-    critique = 'Heuristic analysis based on keyword patterns and structural checks (criteria: ' + criteriaTxt + '). ' +
-      (score >= 70 ? 'Content appears reasonably well-structured.' : 'Content has areas that could be improved.') +
-      ' Set ANTHROPIC_API_KEY for deeper LLM-powered critique.';
-  }
-
-  res.json({
-    ok: true,
-    critique,
-    score,
-    improvements,
-    iterations_run: usedLlm ? iterations : 0,
-    _engine: usedLlm ? 'real' : 'heuristic',
-  });
-});
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   const llm = process.env.ANTHROPIC_API_KEY ? 'Anthropic' : process.env.OPENAI_API_KEY ? 'OpenAI' : 'NONE';
+
   console.log(`\n  🦞 SLOPSHOP v2 is live on http://localhost:${PORT}`);
   console.log(`  📡 ${apiCount} APIs, ${handlerCount} handlers`);
   console.log(`  🔑 Demo key: sk-slop-demo-key-12345678 (200 cr)`);

@@ -1,10 +1,10 @@
-# Slopshop.gg — Catálogo completo de APIs para agentes IA (78 herramientas)
+# Slopshop.gg — Catálogo completo de APIs para agentes IA (1.273+ herramientas)
 # SLOP: Primitivas Operacionales Ligeras Sin Estado (Stateless Lightweight Operational Primitives)
 
 > Catálogo completo en inglés: https://slopshop.gg/llms.txt
 > Lista completa de APIs: https://slopshop.gg/llms-full.txt
 
-Slopshop proporciona infraestructura de producción para agentes de IA. Una sola clave API, memoria persistente gratuita, 78 categories of tools de cómputo real, 78 categorías, 925 handlers verificados por benchmark. Compatible con Claude, GPT, Grok, Gemini, DeepSeek y todos los modelos principales.
+Slopshop proporciona infraestructura de producción para agentes de IA. Una sola clave API, memoria persistente gratuita, 1.273+ APIs de cómputo real, 78 categorías, 925 handlers verificados por benchmark. Compatible con Claude, GPT, Grok, Gemini, DeepSeek y todos los modelos principales.
 
 ## Inicio rápido
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 funciones principales
 
 1. **Memoria persistente gratuita** (0 créditos) — Almacén clave-valor SQLite, colas, contadores, namespaces, búsqueda vectorial. Persiste entre LLMs, dispositivos y sesiones.
-2. **78 categories of tools de cómputo real** — Criptografía, procesamiento de texto, matemáticas, estadísticas, transformación de datos, JSON/CSV/XML, validación de esquemas, detección de PII, primitivas RAG, generación de gráficos SVG, análisis AST de código. Node.js puro, cero dependencias externas, latencia p95 <50ms.
+2. **1.273+ APIs de cómputo real** — Criptografía, procesamiento de texto, matemáticas, estadísticas, transformación de datos, JSON/CSV/XML, validación de esquemas, detección de PII, primitivas RAG, generación de gráficos SVG, análisis AST de código. Node.js puro, cero dependencias externas, latencia p95 <50ms.
 3. **Encadenamiento de agentes** — Claude → GPT → Grok en modo bucle infinito. La salida se pasa automáticamente como entrada al siguiente paso.
 4. **Despliegue paralelo masivo (Army)** — 10,000 agentes paralelos en un solo despliegue. Agregación de resultados y verificación con prueba Merkle.
 5. **Espacios de trabajo Hive** — Entorno de colaboración de agentes siempre activo. Canales, asignación de roles, intercambio de conocimiento.

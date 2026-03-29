@@ -1,6 +1,6 @@
 # slopshop.gg — The missing backend for AI agents. Free persistent memory. Real compute across 78 tool categories. Agent chaining and orchestration. One API key. Self-hostable. Works with Claude, GPT, Grok, Gemini, and every LLM.
 
-One API key. 1,255 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 925 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, and full enterprise features.
+One API key. 1,274 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 925 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, voice I/O for agents, A2A (agent-to-agent protocol) interop, swarm snapshots with budgets, browser primitives, Memory 2.0 graph queries, Grok endpoints, safety guardrails, marketplace, and full enterprise features.
 
 ## Universal Model Mesh (NEW in v3.7.0)
 
@@ -94,7 +94,7 @@ Every response includes `{ ok, data, meta: { credits_used, latency_ms, engine, c
 - Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
 - Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 
-## Categories (78) — 1,255 Endpoints
+## Categories (78) — 1,274 Endpoints
 
 ### Text Processing (72 tools)
 Extract, transform, analyze, and manipulate text. Word count, regex, diff, slugify, case convert, encoding, entropy, haiku, and more.
@@ -608,7 +608,7 @@ POST /v1/schedules to create a recurring job. Intervals: 1m, 5m, 15m, 30m, 1h, 6
 Memory that works across ANY LLM (Claude, GPT, Grok, Llama, Gemini, DeepSeek, Mistral), ANY device, ANY session. Store from one model, retrieve from another. Persists forever in SQLite. Core memory APIs cost 0 credits: memory-set, memory-get, memory-search, memory-list, memory-delete, memory-stats, memory-namespace-list, counter-get, memory-vector-search. Always free.
 
 ## Not a wrapper - real compute
-925 compute handlers use Node.js built-ins (crypto, math, Buffer) with zero external dependencies — all benchmarked for correctness, null safety, and <50ms latency with 100% pass rate. 22 network APIs use built-in dns/http/tls modules. 20 memory APIs use SQLite persistence (atomic writes, concurrent-safe, 76 tables). 15 execution APIs use vm.createContext sandbox. 1,255 REST endpoints total across 78 categories. Every response includes _engine: "real" to prove data was actually processed. LLM APIs are clearly marked _engine: "llm".
+925 compute handlers use Node.js built-ins (crypto, math, Buffer) with zero external dependencies — all benchmarked for correctness, null safety, and <50ms latency with 100% pass rate. 22 network APIs use built-in dns/http/tls modules. 20 memory APIs use SQLite persistence (atomic writes, concurrent-safe, 76 tables). 15 execution APIs use vm.createContext sandbox. 1,274 REST endpoints total across 78 categories. Every response includes _engine: "real" to prove data was actually processed. LLM APIs are clearly marked _engine: "llm".
 
 ## Trust & Verification
 
@@ -1066,6 +1066,127 @@ curl https://slopshop.gg/v1/case-studies
 ## "Replace Redis + Zapier" Comparison
 See why teams replace Redis, Zapier, and Cron with a single Slopshop instance: https://slopshop.gg/why.html
 Detailed comparison: https://slopshop.gg/compare.html
+
+## Browser/Desktop Primitives (v3.8.0)
+Real-time agent monitoring and desktop IDE integration.
+- GET /v1/visualizer/stream — SSE stream of live agent activity, army deployments, hive messages
+- POST /v1/mcp/bootstrap — Auto-configure MCP for Claude Desktop, Cursor, or other IDEs
+- POST /v1/exchange/register — Devote local GPU/CPU/RAM to earn credits from idle compute
+
+## Memory 2.0 (v3.8.0)
+Graph queries, auto-summarization, and snapshot pinning. All free (0 credits).
+- POST /v1/memory/graph-query — Query memory as a knowledge graph with semantic scoring and traversal
+- POST /v1/memory/auto-summarize — Auto-summarize large namespaces or key groups
+- POST /v1/memory/snapshot — Take point-in-time snapshot of a namespace, optionally pin for permanent storage
+- GET /v1/memory/snapshots — List all snapshots
+
+## Grok-Specific Features (v3.8.0)
+Dedicated Grok integration for optimization, critique, and autonomous orchestration. Requires XAI_API_KEY.
+- POST /v1/grok/optimize ��� Pass prompts, code, or workflows to Grok for cost/performance optimization
+- POST /v1/grok/critique — Submit content for Grok's critical analysis with structured feedback
+- POST /v1/grok/overlord — Grok autonomously drives multi-LLM chains, selecting models per subtask
+
+## Safety & Guardrails (v3.8.0)
+Production safety primitives for agent deployments.
+- POST /v1/sandbox/execute — Run untrusted code in isolated vm.createContext with timeout enforcement
+- POST /v1/reputation/slash — Slash underperforming agents in army deployments
+- GET /v1/reputation/ledger — View global reputation leaderboard (Merkle-verified)
+- POST /v1/chaos/test — Inject faults (network, latency, agent-drop) into army deployments
+
+## Marketplace (v3.8.0)
+Publish, discover, and trade templates, plugins, and compute capacity.
+- GET /v1/marketplace/templates — Browse available agent templates
+- POST /v1/marketplace/invoke — Invoke a template with parameters
+- POST /v1/bounties/post — Post bounties for agent work with credit rewards
+- POST /v1/bounties/claim — Claim an open bounty
+- GET /v1/bounties/list — Browse open bounties
+
+## Agent Templates (v3.8.0)
+Pre-built agent configurations for common workflows.
+- POST /v1/templates/create — Create custom agent templates with chain steps, model preferences, and memory namespaces
+- POST /v1/templates/run — Run a named template (research-swarm, content-machine, security-audit, data-pipeline)
+
+## Voice I/O for Agents (v4.0.0)
+Real-time voice input and output for agent interactions. Stream audio to agents and receive spoken responses. TTS and STT built in.
+- POST /v1/voice/transcribe — Transcribe audio (base64 or URL) to text using Whisper-compatible STT
+- POST /v1/voice/synthesize — Convert text to speech audio (base64 WAV/MP3), multiple voices
+- POST /v1/voice/session/create — Create a live voice session for real-time agent conversation
+- POST /v1/voice/session/:id/send — Stream audio chunk to an active voice session
+- GET /v1/voice/session/:id/stream — SSE stream of transcribed text and agent responses
+curl -X POST https://slopshop.gg/v1/voice/transcribe \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"audio_url":"https://example.com/recording.wav","language":"en"}'
+curl -X POST https://slopshop.gg/v1/voice/synthesize \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"text":"Hello, I am your research agent. Analysis complete.","voice":"neutral","format":"mp3"}'
+curl -X POST https://slopshop.gg/v1/voice/session/create \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"research-bot","system_prompt":"You are a helpful research assistant","voice":"neutral"}'
+
+## A2A — Agent-to-Agent Protocol (v4.0.0)
+Google A2A interop. Expose Slopshop agents as A2A-compatible services and call external A2A agents. Discover, negotiate capabilities, and exchange tasks across platforms.
+- GET /v1/a2a/.well-known/agent.json — A2A agent card (public discovery endpoint, no auth)
+- POST /v1/a2a/tasks/send — Send a task to an A2A-compatible agent (local or remote)
+- GET /v1/a2a/tasks/:id — Get task status and result
+- POST /v1/a2a/tasks/:id/cancel — Cancel a running A2A task
+- POST /v1/a2a/register — Register an external A2A agent for discovery
+- GET /v1/a2a/agents — List all registered A2A agents (local + remote)
+curl https://slopshop.gg/v1/a2a/.well-known/agent.json
+curl -X POST https://slopshop.gg/v1/a2a/tasks/send \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_url":"https://other-platform.com/a2a","task":{"type":"research","input":"Latest trends in AI safety"}}'
+curl -X POST https://slopshop.gg/v1/a2a/register \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"external-researcher","url":"https://other-platform.com/a2a","capabilities":["research","summarize"]}'
+curl https://slopshop.gg/v1/a2a/agents \
+  -H "Authorization: Bearer YOUR_KEY"
+
+## Swarm Snapshots (v4.0.0)
+Point-in-time snapshots of entire swarm state — agent positions, memory, chain progress, credit balances. Restore or fork swarms from any snapshot.
+- POST /v1/swarm/snapshot — Capture full swarm state (agents, memory, chains, credits)
+- GET /v1/swarm/snapshots — List all snapshots with metadata and size
+- POST /v1/swarm/snapshot/:id/restore — Restore swarm to a previous snapshot state
+- POST /v1/swarm/snapshot/:id/fork — Fork a new swarm from a snapshot (new IDs, same config)
+curl -X POST https://slopshop.gg/v1/swarm/snapshot \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"swarm_id":"research-team","name":"pre-experiment-baseline","tags":["baseline","v1"]}'
+curl https://slopshop.gg/v1/swarm/snapshots \
+  -H "Authorization: Bearer YOUR_KEY"
+curl -X POST https://slopshop.gg/v1/swarm/snapshot/SNAP_ID/restore \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"confirm":true}'
+curl -X POST https://slopshop.gg/v1/swarm/snapshot/SNAP_ID/fork \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"experiment-branch-a"}'
+
+## Swarm Budgets (v4.0.0)
+Per-swarm credit budgets with enforcement, alerts, and automatic shutdown. Control spend at the swarm level, not just per-agent.
+- POST /v1/swarm/budget/set — Set credit budget for a swarm (hard cap or soft warning)
+- GET /v1/swarm/budget/:swarm_id — Get current budget status, burn rate, and projected exhaustion
+- POST /v1/swarm/budget/alert — Configure budget alerts (webhook, email, or memory-set)
+- POST /v1/swarm/budget/adjust — Adjust budget mid-run without stopping the swarm
+curl -X POST https://slopshop.gg/v1/swarm/budget/set \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"swarm_id":"research-team","budget":5000,"mode":"hard","on_exhaust":"pause"}'
+curl https://slopshop.gg/v1/swarm/budget/research-team \
+  -H "Authorization: Bearer YOUR_KEY"
+curl -X POST https://slopshop.gg/v1/swarm/budget/alert \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"swarm_id":"research-team","threshold_pct":80,"channel":"webhook","url":"https://example.com/alerts"}'
+curl -X POST https://slopshop.gg/v1/swarm/budget/adjust \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"swarm_id":"research-team","new_budget":10000,"reason":"scaling up experiment"}'
 
 ## Full API catalog
 See https://slopshop.gg/llms-full.txt for every API with slug, description, and credit cost.

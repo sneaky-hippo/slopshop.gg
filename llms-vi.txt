@@ -1,10 +1,10 @@
-# Slopshop.gg — Danh mục API đầy đủ cho tác tử AI (1.255 công cụ)
+# Slopshop.gg — Danh mục API đầy đủ cho tác tử AI (1.273+ công cụ)
 # SLOP: Nguyên thủy Vận hành Nhẹ Không Trạng thái (Stateless Lightweight Operational Primitives)
 
 > Danh mục đầy đủ tiếng Anh: https://slopshop.gg/llms.txt
 > Danh sách API đầy đủ: https://slopshop.gg/llms-full.txt
 
-Slopshop cung cấp hạ tầng cấp sản xuất cho tác tử AI. Một khóa API, bộ nhớ bền vững miễn phí, 1.255 API tính toán thực, 78 danh mục, 925 trình xử lý đã kiểm chuẩn. Tương thích với Claude, GPT, Grok, Gemini, DeepSeek và tất cả các mô hình chính.
+Slopshop cung cấp hạ tầng cấp sản xuất cho tác tử AI. Một khóa API, bộ nhớ bền vững miễn phí, 1.273+ API tính toán thực, 78 danh mục, 925 trình xử lý đã kiểm chuẩn. Tương thích với Claude, GPT, Grok, Gemini, DeepSeek và tất cả các mô hình chính.
 
 ## Bắt đầu nhanh
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 Tính năng Cốt lõi
 
 1. **Bộ nhớ bền vững miễn phí** (0 tín dụng) — Kho khóa-giá trị SQLite, hàng đợi, bộ đếm, không gian tên, tìm kiếm vectơ. Bền vững xuyên LLM, thiết bị và phiên.
-2. **1.255 API tính toán thực** — Mã hóa, xử lý văn bản, toán học, thống kê, chuyển đổi dữ liệu, JSON/CSV/XML, xác thực lược đồ, phát hiện PII, nguyên thủy RAG, biểu đồ SVG, phân tích AST mã. Hoàn toàn Node.js thuần, không phụ thuộc bên ngoài, p95 độ trễ <50ms.
+2. **1.273+ API tính toán thực** — Mã hóa, xử lý văn bản, toán học, thống kê, chuyển đổi dữ liệu, JSON/CSV/XML, xác thực lược đồ, phát hiện PII, nguyên thủy RAG, biểu đồ SVG, phân tích AST mã. Hoàn toàn Node.js thuần, không phụ thuộc bên ngoài, p95 độ trễ <50ms.
 3. **Chuỗi tác tử** — Claude → GPT → Grok chế độ vòng lặp vô hạn, đầu ra tự động truyền làm đầu vào bước tiếp theo.
 4. **Triển khai hàng loạt (Army)** — Triển khai 10.000 tác tử song song, tổng hợp kết quả và xác minh bằng chứng Merkle.
 5. **Không gian làm việc Hive** — Môi trường cộng tác tác tử luôn hoạt động, kênh, phân vai trò, chia sẻ kiến thức.

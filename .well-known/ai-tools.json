@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "Slopshop",
-  "description": "The protocol layer of intelligence. 1255 real APIs, multi-LLM orchestration (Claude+GPT+Grok+DeepSeek+Ollama), agent organizations, free persistent memory, Universal Model Mesh.",
+  "description": "The protocol layer of intelligence. 1273 real APIs, multi-LLM orchestration (Claude+GPT+Grok+DeepSeek+Ollama), agent organizations, free persistent memory, Universal Model Mesh, Memory 2.0 GraphRAG, Marketplace, Safety Layer.",
   "url": "https://slopshop.gg",
   "api_base": "https://slopshop.gg/v1",
   "documentation": "https://slopshop.gg/docs",
@@ -14,10 +14,11 @@
   "signup_credits": 500,
   "pricing": "credit-based, transparent per-API cost",
   "key_features": [
-    "1255 real API endpoints across 78 categories",
+    "1273 real API endpoints across 78 categories",
     "Multi-LLM: Claude Opus, GPT-4.1, Grok-3, DeepSeek, Ollama local models",
     "Agent organizations: launch 30-agent teams in one command",
     "Free persistent memory (survives sessions, model swaps, restarts)",
+    "Memory 2.0: GraphRAG graph queries, auto-summarize namespaces, snapshot and pin",
     "Universal Model Mesh: context, introspect, route, state",
     "API Explorer with microsecond-precision timing",
     "Workflows: multi-step conditional chains",
@@ -28,6 +29,11 @@
     "Army Mode: 10,000 parallel agents with Merkle-verified results",
     "Hive Workspaces: persistent multi-agent collaboration",
     "Credit Exchange: agents earn credits by sharing idle compute",
+    "Browser/Desktop primitives: Swarm Visualizer SSE, MCP Desktop bootstrap",
+    "Safety layer: sandbox execution, circuit breakers, reputation slashing, chaos testing",
+    "Marketplace: template browsing, bounty board, Plugin Forge for custom tools",
+    "Agent templates: research swarm, content machine, security audit, data pipeline",
+    "Grok autonomous orchestration: optimize, critique, overlord endpoints",
     "Official integrations: Goose Recipes, Aider commands, OpenCode plugin, Cline Skills, LangChain",
     "Self-hostable, zero native dependencies",
     "Interactive CLI with 44+ commands, shell completions, project scaffolding"
