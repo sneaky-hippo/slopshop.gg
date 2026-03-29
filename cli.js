@@ -11,7 +11,7 @@ const readline = require('readline');
 const quiet   = process.argv.includes('--quiet') || process.argv.includes('-q');
 const jsonMode = process.argv.includes('--json');
 const noColor  = process.argv.includes('--no-color');
-const verbose  = process.argv.includes('--verbose') || process.argv.includes('-V');
+const verbose = process.argv.some(arg => arg.includes('--verbose') || arg.includes('-V'));
 const timeoutFlag = process.argv.find(a => a.startsWith('--timeout='));
 const globalTimeout = timeoutFlag ? parseInt(timeoutFlag.split('=')[1]) * 1000 : 30000;
 const retryIdx = process.argv.indexOf('--retry');
@@ -58,7 +58,7 @@ const PKG_VERSION = (() => { try { return require('./package.json').version; } c
 
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
-  catch (e) { return {}; }
+catch (e) { return { error: e }; }
 }
 function saveConfig(cfg) {
   if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
@@ -985,44 +985,46 @@ async function cmdHive(args) {
     const phase = s <= 3 ? 'EXPLORE' : (trend > 0.5 ? 'ACCELERATE' : (trend < -0.5 ? 'FIX' : 'OPTIMIZE'));
 
     // ── THINK: one LLM call with real file context ──
-    // Only edit JS files (syntax-checkable). Show FUNCTIONAL code, not CSS/HTML/ASCII
+    // Only JS files. Pick ONE specific line to improve — less hallucination room.
     const editableFiles = ['server-v2.js', 'cli.js', 'mcp-server.js', 'agent.js'];
     const targetFile = editableFiles[s % editableFiles.length];
-    let fileSample = '';
-    let sampleStart = 0;
+    let targetLine = '', targetLineNum = 0, contextLines = '';
     try {
       const content = fs.readFileSync(path.join(__dirname, targetFile), 'utf8');
       const lines = content.split('\n');
-      // Find a section with actual logic (skip comments, blank lines, CSS)
-      const goodStarts = [];
-      for (let i = 0; i < lines.length - 15; i++) {
-        const line = lines[i].trim();
-        if (line.startsWith('if ') || line.startsWith('const ') || line.startsWith('app.') || line.startsWith('function ') || line.startsWith('async ')) {
-          goodStarts.push(i);
+      // Find lines with improvable patterns
+      const candidates = [];
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i].trim();
+        if (l.length > 20 && l.length < 200 && !l.startsWith('//') && !l.startsWith('*') && !l.startsWith('/*') &&
+            (l.includes('||') || l.includes('catch') || l.includes('.slice') || l.includes('TODO') ||
+             l.includes('console.') || l.includes('.replace') || l.includes('if (') || l.includes('return '))) {
+          candidates.push(i);
         }
       }
-      sampleStart = goodStarts.length > 0 ? goodStarts[s % goodStarts.length] : Math.floor(lines.length / 2);
-      fileSample = lines.slice(sampleStart, sampleStart + 12).join('\n');
+      if (candidates.length > 0) {
+        targetLineNum = candidates[s % candidates.length];
+        targetLine = lines[targetLineNum];
+        // Show 3 lines of context (line before, target, line after)
+        contextLines = lines.slice(Math.max(0, targetLineNum - 1), targetLineNum + 2).join('\n');
+      }
     } catch(e) {}
 
-    const thinkPrompt = `Sprint ${s}. Mission: ${mission.slice(0, 100)}
-Phase: ${phase}. Last scores: ${recentScores.join('→')||'none'}.
-Built so far: ${built || 'nothing'}
+    const thinkPrompt = targetLine ? `Sprint ${s}. Mission: ${mission.slice(0, 80)}
+Phase: ${phase}. Scores: ${recentScores.join('→')||'none'}.
 
-${targetFile} lines ${sampleStart}-${sampleStart+12}:
-\`\`\`
-${fileSample.slice(0, 500)}
-\`\`\`
+Improve THIS line from ${targetFile} (line ${targetLineNum + 1}):
+${contextLines}
 
-Find ONE bug, optimization, or improvement in this code that advances the mission.
-The FIND text must be EXACTLY copied from the code above — character for character.
-Do NOT change variable names, formatting, or comments unless they are wrong.
-Focus on: logic bugs, missing error handling, performance, or feature gaps.
+THE LINE TO IMPROVE:
+${targetLine}
 
-PRIORITY: <what and why — one sentence>
-FIND: <exact text copied from above>
-REPLACE: <your fix>
-SCORE: X/10`;
+Rewrite ONLY this one line to be better (fix bug, add safety, optimize).
+Output ONLY your improved replacement line. Nothing else before REPLACE.
+
+PRIORITY: <why>
+REPLACE: <your improved version — must be valid JS>
+SCORE: X/10` : `Sprint ${s}. Mission: ${mission.slice(0, 80)}. PRIORITY: research. SCORE: 5/10`;
 
     const resp = await ask(thinkPrompt);
     const priorityMatch = (resp||'').match(/PRIORITY:\s*(.+?)(?:\n|$)/i);
@@ -1033,14 +1035,13 @@ SCORE: X/10`;
 
     console.log(`  ${dim('│')} ${green('→')} ${priority.slice(0, 70)}`);
 
-    // ── BUILD — parse FIND/REPLACE from response, edit the actual file ──
+    // ── BUILD — we already KNOW the find text (targetLine). Just parse REPLACE. ──
     let built_n = 0;
-    const findMatch = (resp||'').match(/FIND:\s*([\s\S]*?)(?=\nREPLACE:)/i);
     const replaceMatch = (resp||'').match(/REPLACE:\s*([\s\S]*?)(?=\nSCORE:|$)/i);
+    const findText = targetLine ? targetLine.trimEnd() : '';
+    const replaceText = replaceMatch ? replaceMatch[1].trim().split('\n')[0] : ''; // one line only
 
-    if (findMatch && replaceMatch) {
-      const findText = findMatch[1].trim();
-      const replaceText = replaceMatch[1].trim();
+    if (findText && replaceText && findText !== replaceText) {
       const filePath = path.resolve(__dirname, targetFile);
 
       if (findText.length > 5 && replaceText.length > 3 && fs.existsSync(filePath)) {

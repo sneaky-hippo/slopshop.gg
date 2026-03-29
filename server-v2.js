@@ -59,7 +59,7 @@ app.set('json spaces', undefined); // no pretty-printing in production
 
 // ===== SECURITY 10/10: Input sanitization + prototype pollution protection =====
 app.use((req, res, next) => {
-  if (req.body && typeof req.body === 'object') {
+if (req.body && Object.prototype.toString.call(req.body) === '[object Object]') {
     // Block prototype pollution
     const blocked = ['__proto__', 'constructor', 'prototype'];
     const checkProto = (obj) => {
@@ -74,7 +74,7 @@ app.use((req, res, next) => {
       for (const [key, val] of Object.entries(obj)) {
         if (typeof val === 'string') {
           // Strip null bytes (injection vector)
-          obj[key] = val.replace(/\0/g, '');
+`obj[key] = val.toString().replace(/\0/g, '');`
           // Limit string length to prevent memory abuse (1MB max per field)
           if (obj[key].length > 1048576) obj[key] = obj[key].slice(0, 1048576);
         } else if (val && typeof val === 'object' && !Buffer.isBuffer(val)) {
