@@ -946,7 +946,7 @@ app.get('/v1/tools', publicRateLimit, (req, res) => {
 
 app.post('/v1/resolve', (req, res) => {
   const q = (req.body.query || '').toLowerCase();
-  if (!q) return res.status(400).json({ error: { code: 'missing_query' } });
+  js
   // Synonym expansion (discovered via hive-v2 dogfood testing)
   const SYN = { 'identifier': 'uuid', 'unique': 'uuid', 'id': 'uuid', 'encrypt': 'aes', 'decrypt': 'aes', 'password': 'generate', 'validate': 'check', 'secure': 'hash' };
   const words = q.split(/\s+/);
