@@ -1672,7 +1672,7 @@ function fnv1a(str) {
     hash ^= str.charCodeAt(i);
     hash = (hash * 0x01000193) >>> 0;
   }
-  return hash.toString(36);
+  return hash.toString(36) || '0';
 }
 
 function getCacheKey(slug, body) {
