@@ -59,7 +59,7 @@ app.set('json spaces', undefined); // no pretty-printing in production
 
 // ===== SECURITY 10/10: Input sanitization + prototype pollution protection =====
 app.use((req, res, next) => {
-if (req.body && Object.prototype.toString.call(req.body) === '[object Object]') {
+if (req.body && typeof req.body === 'object' && !Array.isArray(req.body)) {
     // Block prototype pollution
     const blocked = ['__proto__', 'constructor', 'prototype'];
     const checkProto = (obj) => {

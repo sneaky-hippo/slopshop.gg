@@ -11,7 +11,7 @@ const readline = require('readline');
 const quiet   = process.argv.includes('--quiet') || process.argv.includes('-q');
 const jsonMode = process.argv.includes('--json');
 const noColor  = process.argv.includes('--no-color');
-const verbose = process.argv.some(arg => arg.includes('--verbose') || arg.includes('-V'));
+const verbose = process.argv.some(arg => arg.includes('--verbose') || ['-V', '--v'].includes(arg.startsWith('-')));
 const timeoutFlag = process.argv.find(a => a.startsWith('--timeout='));
 const globalTimeout = timeoutFlag ? parseInt(timeoutFlag.split('=')[1]) * 1000 : 30000;
 const retryIdx = process.argv.indexOf('--retry');
@@ -58,7 +58,7 @@ const PKG_VERSION = (() => { try { return require('./package.json').version; } c
 
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
-catch (e) { return { error: e }; }
+catch (e) { return Promise.reject({ error: e }); }
 }
 function saveConfig(cfg) {
   if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
@@ -1039,7 +1039,11 @@ SCORE: X/10` : `Sprint ${s}. Mission: ${mission.slice(0, 80)}. PRIORITY: researc
     let built_n = 0;
     const replaceMatch = (resp||'').match(/REPLACE:\s*([\s\S]*?)(?=\nSCORE:|$)/i);
     const findText = targetLine ? targetLine.trimEnd() : '';
-    const replaceText = replaceMatch ? replaceMatch[1].trim().split('\n')[0] : ''; // one line only
+    // Clean REPLACE: strip backticks, preserve indentation from original
+    const indent = findText.match(/^(\s*)/)?.[1] || '';
+    let replaceText = replaceMatch ? replaceMatch[1].trim().split('\n')[0] : '';
+    replaceText = replaceText.replace(/^`+|`+$/g, '').trim(); // strip backticks
+    if (replaceText && !replaceText.startsWith(indent)) replaceText = indent + replaceText; // preserve indent
 
     if (findText && replaceText && findText !== replaceText) {
       const filePath = path.resolve(__dirname, targetFile);
