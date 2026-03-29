@@ -5096,6 +5096,321 @@ async function cmdSession(args) {
 }
 
 // ============================================================
+// STAKING — Deposit, withdraw, status
+// ============================================================
+async function cmdStaking(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Staking')}\n`);
+    console.log(`  ${cyan('slop staking deposit <amount>')} ${dim('--lock 30')}   Deposit stake`);
+    console.log(`  ${cyan('slop staking withdraw <stake_id>')}            Withdraw stake`);
+    console.log(`  ${cyan('slop staking status')}                         View staking status\n`);
+    return;
+  }
+
+  if (sub === 'deposit') {
+    const amount = Number(args[1]);
+    if (!amount) die('Usage: slop staking deposit <amount> [--lock 30]');
+    const lockIdx = args.indexOf('--lock');
+    const lock = lockIdx >= 0 ? Number(args[lockIdx + 1]) || 30 : 30;
+    spinnerStart('Depositing stake...');
+    const res = await request('POST', '/v1/staking/deposit', { amount, lock_days: lock });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Stake deposited')}  ${cyan(d.stake_id || d.id || '')}  ${yellow(String(amount) + ' credits')}  ${dim('locked ' + lock + ' days')}\n`);
+    return;
+  }
+
+  if (sub === 'withdraw') {
+    const stakeId = args[1];
+    if (!stakeId) die('Usage: slop staking withdraw <stake_id>');
+    spinnerStart('Withdrawing stake...');
+    const res = await request('POST', '/v1/staking/withdraw', { stake_id: stakeId });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Stake withdrawn')}  ${cyan(stakeId)}  ${yellow(String(d.amount || d.credits || '') + ' credits returned')}\n`);
+    return;
+  }
+
+  if (sub === 'status') {
+    spinnerStart('Fetching staking status...');
+    const res = await request('GET', '/v1/staking/status', null);
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    const stakes = d.stakes || [];
+    console.log(`\n  ${bold('Staking Status')}  ${dim('Total staked:')} ${yellow(String(d.total_staked || 0))}\n`);
+    for (const s of stakes) {
+      const status = s.locked ? yellow('locked') : green('unlocked');
+      console.log(`  ${cyan((s.id || s.stake_id || '').padEnd(20))} ${yellow(String(s.amount ?? 0).padStart(10))} cr  ${status}  ${dim(s.lock_days ? s.lock_days + 'd' : '')}`);
+    }
+    console.log('');
+    return;
+  }
+
+  die(`Unknown staking subcommand: ${sub}. Try: slop staking help`);
+}
+
+// ============================================================
+// FORGE — Create, browse, execute plugins
+// ============================================================
+async function cmdForge(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Forge — Plugin Marketplace')}\n`);
+    console.log(`  ${cyan('slop forge create')} ${dim('--name "my-tool" --code "return {result: input.text}"')}  Create a plugin`);
+    console.log(`  ${cyan('slop forge browse')}                                                      Browse plugins`);
+    console.log(`  ${cyan('slop forge execute <plugin_id>')} ${dim('--input \'{}\'')}                           Execute a plugin\n`);
+    return;
+  }
+
+  if (sub === 'create') {
+    const nameIdx = args.indexOf('--name');
+    const codeIdx = args.indexOf('--code');
+    const name = nameIdx >= 0 ? args[nameIdx + 1] : null;
+    const code = codeIdx >= 0 ? args[codeIdx + 1] : null;
+    if (!name || !code) die('Usage: slop forge create --name "my-tool" --code "return {result: input.text}"');
+    spinnerStart('Creating plugin...');
+    const res = await request('POST', '/v1/forge/create', { name, code });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Plugin created')}  ${cyan(d.plugin_id || d.id || '')}  ${dim(name)}\n`);
+    return;
+  }
+
+  if (sub === 'browse') {
+    spinnerStart('Browsing forge...');
+    const res = await request('GET', '/v1/forge/browse', null);
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const plugins = res.data?.plugins || res.plugins || [];
+    console.log(`\n  ${bold('Forge — Plugins')}\n`);
+    for (const p of plugins) {
+      console.log(`  ${cyan((p.id || p.plugin_id || '').padEnd(20))} ${(p.name || '').padEnd(25)} ${dim(p.description || p.desc || '')}`);
+    }
+    if (plugins.length === 0) console.log(`  ${dim('No plugins yet. Create one with: slop forge create')}`);
+    console.log('');
+    return;
+  }
+
+  if (sub === 'execute') {
+    const pluginId = args[1];
+    if (!pluginId) die('Usage: slop forge execute <plugin_id> --input \'{}\'');
+    const inputIdx = args.indexOf('--input');
+    let input = {};
+    if (inputIdx >= 0) {
+      try { input = JSON.parse(args[inputIdx + 1]); } catch { input = { text: args[inputIdx + 1] }; }
+    }
+    spinnerStart(`Executing plugin ${pluginId}...`);
+    const res = await request('POST', '/v1/forge/execute', { plugin_id: pluginId, input });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Plugin executed')}  ${cyan(pluginId)}`);
+    console.log(`  ${dim('Result:')} ${JSON.stringify(d.result || d.output || d, null, 2).slice(0, 500)}\n`);
+    return;
+  }
+
+  die(`Unknown forge subcommand: ${sub}. Try: slop forge help`);
+}
+
+// ============================================================
+// ARBITRAGE — Multi-model cost optimization
+// ============================================================
+async function cmdArbitrage(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Arbitrage — Multi-Model Optimizer')}\n`);
+    console.log(`  ${cyan('slop arbitrage optimize')} ${dim('--task "summarize" --budget 100')}  Optimize across models\n`);
+    return;
+  }
+
+  if (sub === 'optimize') {
+    const taskIdx = args.indexOf('--task');
+    const budgetIdx = args.indexOf('--budget');
+    const task = taskIdx >= 0 ? args[taskIdx + 1] : null;
+    const budget = budgetIdx >= 0 ? Number(args[budgetIdx + 1]) : 100;
+    if (!task) die('Usage: slop arbitrage optimize --task "summarize" --budget 100');
+    spinnerStart('Optimizing across models...');
+    const res = await request('POST', '/v1/arbitrage/optimize', { task, budget });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Arbitrage complete')}`);
+    console.log(`  ${bold('Best model:')}  ${cyan(d.model || d.best_model || 'N/A')}`);
+    console.log(`  ${bold('Cost:')}        ${yellow(String(d.cost || d.credits || '?') + ' credits')}`);
+    console.log(`  ${bold('Latency:')}     ${dim(String(d.latency_ms || d.latency || '?') + 'ms')}`);
+    if (d.alternatives) {
+      console.log(`  ${bold('Alternatives:')}`);
+      for (const alt of d.alternatives) {
+        console.log(`    ${dim('•')} ${cyan(alt.model || '?')} — ${yellow(String(alt.cost || '?') + ' cr')} ${dim(String(alt.latency_ms || '') + 'ms')}`);
+      }
+    }
+    console.log('');
+    return;
+  }
+
+  die(`Unknown arbitrage subcommand: ${sub}. Try: slop arbitrage help`);
+}
+
+// ============================================================
+// SANDBOX — Secure code execution
+// ============================================================
+async function cmdSandbox(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Sandbox — Secure Code Execution')}\n`);
+    console.log(`  ${cyan('slop sandbox execute')} ${dim('--code "return 2+2"')}  Execute code in sandbox\n`);
+    return;
+  }
+
+  if (sub === 'execute') {
+    const codeIdx = args.indexOf('--code');
+    const code = codeIdx >= 0 ? args[codeIdx + 1] : null;
+    if (!code) die('Usage: slop sandbox execute --code "return 2+2"');
+    spinnerStart('Executing in sandbox...');
+    const res = await request('POST', '/v1/sandbox/execute', { code });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ Sandbox result')}`);
+    console.log(`  ${dim('Output:')} ${JSON.stringify(d.result || d.output || d, null, 2).slice(0, 500)}`);
+    if (d.execution_time_ms) console.log(`  ${dim('Time:')} ${d.execution_time_ms}ms`);
+    console.log('');
+    return;
+  }
+
+  die(`Unknown sandbox subcommand: ${sub}. Try: slop sandbox help`);
+}
+
+// ============================================================
+// FEDERATION — Cross-instance federation status
+// ============================================================
+async function cmdFederation(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Federation — Cross-Instance Mesh')}\n`);
+    console.log(`  ${cyan('slop federation status')}  View federation status\n`);
+    return;
+  }
+
+  if (sub === 'status') {
+    spinnerStart('Fetching federation status...');
+    const res = await request('GET', '/v1/federation/status', null);
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${bold('Federation Status')}\n`);
+    console.log(`  ${bold('Nodes:')}      ${cyan(String(d.node_count || d.nodes?.length || 0))}`);
+    console.log(`  ${bold('Connected:')} ${green(String(d.connected || d.active || 0))}`);
+    console.log(`  ${bold('Latency:')}   ${dim(String(d.avg_latency_ms || d.latency || '?') + 'ms')}`);
+    if (d.nodes) {
+      console.log(`\n  ${bold('Nodes:')}`);
+      for (const n of d.nodes) {
+        const status = n.online ? green('online') : dim('offline');
+        console.log(`    ${dim('•')} ${cyan((n.id || n.name || '?').padEnd(20))} ${status}  ${dim(n.region || '')}`);
+      }
+    }
+    console.log('');
+    return;
+  }
+
+  die(`Unknown federation subcommand: ${sub}. Try: slop federation help`);
+}
+
+// ============================================================
+// GRAPHRAG — Knowledge graph + RAG queries
+// ============================================================
+async function cmdGraphrag(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('GraphRAG — Knowledge Graph Queries')}\n`);
+    console.log(`  ${cyan('slop graphrag query "search term"')}  Query the knowledge graph\n`);
+    return;
+  }
+
+  if (sub === 'query') {
+    const query = args.slice(1).join(' ');
+    if (!query) die('Usage: slop graphrag query "search term"');
+    spinnerStart('Querying knowledge graph...');
+    const res = await request('POST', '/v1/graphrag/query', { query });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${green('✓ GraphRAG results')}`);
+    const results = d.results || d.nodes || d.matches || [];
+    if (results.length > 0) {
+      for (const r of results.slice(0, 10)) {
+        const label = r.label || r.name || r.title || r.id || '?';
+        const score = r.score ? ` ${dim('(' + r.score.toFixed(3) + ')')}` : '';
+        console.log(`  ${dim('•')} ${cyan(label)}${score}  ${dim((r.summary || r.text || '').slice(0, 80))}`);
+      }
+    } else {
+      console.log(`  ${dim('No results found for:')} "${query}"`);
+    }
+    if (d.graph_stats) console.log(`\n  ${dim('Graph:')} ${d.graph_stats.nodes || '?'} nodes, ${d.graph_stats.edges || '?'} edges`);
+    console.log('');
+    return;
+  }
+
+  die(`Unknown graphrag subcommand: ${sub}. Try: slop graphrag help`);
+}
+
+// ============================================================
+// CHAOS — Chaos testing for endpoints
+// ============================================================
+async function cmdChaos(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('Chaos — Endpoint Resilience Testing')}\n`);
+    console.log(`  ${cyan('slop chaos test')} ${dim('--endpoints crypto-uuid,crypto-hash-sha256')}  Test endpoints\n`);
+    return;
+  }
+
+  if (sub === 'test') {
+    const epIdx = args.indexOf('--endpoints');
+    const endpoints = epIdx >= 0 ? args[epIdx + 1] : null;
+    if (!endpoints) die('Usage: slop chaos test --endpoints crypto-uuid,crypto-hash-sha256');
+    const endpointList = endpoints.split(',').map(e => e.trim());
+    spinnerStart(`Chaos testing ${endpointList.length} endpoints...`);
+    const res = await request('POST', '/v1/chaos/test', { endpoints: endpointList });
+    spinnerStop(true);
+    if (jsonMode) { console.log(JSON.stringify(res.data || res, null, 2)); return; }
+    const d = res.data || res;
+    console.log(`\n  ${bold('Chaos Test Results')}\n`);
+    const results = d.results || [];
+    for (const r of results) {
+      const status = r.passed ? green('PASS') : red('FAIL');
+      console.log(`  ${status}  ${cyan((r.endpoint || r.slug || '?').padEnd(30))} ${dim(String(r.latency_ms || '') + 'ms')}  ${r.error ? red(r.error) : ''}`);
+    }
+    if (d.summary) {
+      console.log(`\n  ${bold('Summary:')} ${green(String(d.summary.passed || 0) + ' passed')} / ${red(String(d.summary.failed || 0) + ' failed')} / ${dim(String(d.summary.total || 0) + ' total')}`);
+    }
+    console.log('');
+    return;
+  }
+
+  die(`Unknown chaos subcommand: ${sub}. Try: slop chaos help`);
+}
+
+// ============================================================
 // TUI — Full-screen dashboard matching Grok's Strat 3 spec
 // 4-panel layout: Army Overview | Live Activity | Hive | Memory
 // Plus Swarm Visualizer + hotkey bar. Zero dependencies.
@@ -5106,7 +5421,27 @@ async function cmdTui() {
   const clr = () => process.stdout.write(`${ESC}2J${ESC}H`);
   const mv = (r, c) => process.stdout.write(`${ESC}${r};${c}H`);
   const wr = (r, c, t) => { mv(r, c); process.stdout.write(t); };
-  const R = '\x1b[31m', G = '\x1b[32m', Y = '\x1b[33m', C = '\x1b[36m', D = '\x1b[90m', B = '\x1b[1m', X = '\x1b[0m';
+
+  // Theme wiring — read from config, cycle with [W]
+  const themeNames = Object.keys(THEMES);
+  const cfgTheme = loadConfig().theme || 'default';
+  let themeIdx = Math.max(0, themeNames.indexOf(cfgTheme));
+  function currentTheme() { return THEMES[themeNames[themeIdx]]; }
+  function tR() { return '\x1b' + currentTheme().r; }
+
+  const G = '\x1b[32m', Y = '\x1b[33m', D = '\x1b[90m', B = '\x1b[1m', X = '\x1b[0m';
+  // R and C are now functions that respect the active theme
+  const thR = () => tR();
+  const thC = () => {
+    const name = themeNames[themeIdx];
+    if (name === 'dracula') return '\x1b[38;2;139;233;253m';
+    if (name === 'nord') return '\x1b[38;2;136;192;208m';
+    if (name === 'monokai') return '\x1b[38;2;102;217;239m';
+    return '\x1b[36m';
+  };
+  // Helper to get themed R and C for each render
+  let R, TC;
+  function refreshThemeColors() { R = thR(); TC = thC(); }
 
   function drawBox(r, c, w, h, title) {
     mv(r, c); process.stdout.write(`${D}╔${'═'.repeat(w - 2)}╗${X}`);
@@ -5142,6 +5477,8 @@ async function cmdTui() {
   }
 
   function render() {
+    refreshThemeColors();
+    const C = TC; // themed cyan for TUI panels
     const w = process.stdout.columns || 120;
     const h = process.stdout.rows || 40;
     const halfW = Math.floor(w / 2) - 1;
@@ -5218,7 +5555,7 @@ async function cmdTui() {
 
     // ── HOTKEY BAR ──
     wr(h - 2, 2, `${D}${line}${X}`);
-    wr(h - 1, 2, `${B}[A]${X} Army  ${B}[H]${X} Hive  ${B}[M]${X} Memory  ${B}[T]${X} Tools  ${B}[N]${X} New Swarm  ${B}[P]${X} Pipe/Task  ${B}[S]${X} Swarm Viz  ${B}[B]${X} Balance  ${B}[L]${X} List  ${B}[R]${X} Refresh  ${B}[?]${X} Help  ${B}[Q]${X} Quit`);
+    wr(h - 1, 2, `${B}[A]${X} Army  ${B}[H]${X} Hive  ${B}[M]${X} Memory  ${B}[T]${X} Tools  ${B}[N]${X} New Swarm  ${B}[P]${X} Pipe/Task  ${B}[S]${X} Swarm Viz  ${B}[B]${X} Balance  ${B}[L]${X} List  ${B}[W]${X} Theme  ${B}[R]${X} Refresh  ${B}[?]${X} Help  ${B}[Q]${X} Quit`);
     wr(h, 2, `${D}Dashboard • Refreshing live every 3s • Press any hotkey…${X}`);
   }
 
@@ -5543,6 +5880,14 @@ async function cmdTui() {
       await new Promise(resolve => process.stdin.once('data', resolve));
       render();
     }
+    if (k === 'w') {
+      // Cycle through themes
+      themeIdx = (themeIdx + 1) % themeNames.length;
+      const cfg = loadConfig();
+      cfg.theme = themeNames[themeIdx];
+      saveConfig(cfg);
+      render();
+    }
     if (k === '?') {
       clr();
       console.log(`\n  ${B}${Y}SLOP TUI HELP${X}\n`);
@@ -5555,6 +5900,7 @@ async function cmdTui() {
       console.log(`  ${B}[S]${X} Swarm Viz        Full-screen swarm visualizer`);
       console.log(`  ${B}[B]${X} Balance          Refresh credit balance`);
       console.log(`  ${B}[L]${X} List             All tool categories`);
+      console.log(`  ${B}[W]${X} Theme            Cycle theme (${themeNames.join('/')})`);
       console.log(`  ${B}[R]${X} Refresh          Force data refresh`);
       console.log(`  ${B}[?]${X} Help             This screen`);
       console.log(`  ${B}[Q]${X} Quit             Exit TUI\n`);
@@ -5626,6 +5972,13 @@ async function cmdInteractive() {
           case 'tournament': await cmdTournament(args); break;
           case 'reputation': await cmdReputation(args); break;
           case 'proof': await cmdProof(args); break;
+          case 'staking': await cmdStaking(args); break;
+          case 'forge': await cmdForge(args); break;
+          case 'arbitrage': await cmdArbitrage(args); break;
+          case 'sandbox': await cmdSandbox(args); break;
+          case 'federation': await cmdFederation(args); break;
+          case 'graphrag': await cmdGraphrag(args); break;
+          case 'chaos': await cmdChaos(args); break;
           case 'eval': await cmdEval(args); break;
           case 'replay': await cmdReplay(args); break;
           case 'queue': await cmdQueue(args); break;
@@ -6177,6 +6530,13 @@ async function main() {
     case 'tournament': await cmdTournament(args); break;
     case 'reputation': await cmdReputation(args); break;
     case 'proof':   await cmdProof(args);  break;
+    case 'staking': await cmdStaking(args); break;
+    case 'forge':   await cmdForge(args);  break;
+    case 'arbitrage': await cmdArbitrage(args); break;
+    case 'sandbox': await cmdSandbox(args); break;
+    case 'federation': await cmdFederation(args); break;
+    case 'graphrag': await cmdGraphrag(args); break;
+    case 'chaos':   await cmdChaos(args);  break;
     case 'eval':    await cmdEval(args);   break;
     case 'replay':  await cmdReplay(args); break;
     case 'queue':   await cmdQueue(args);  break;
