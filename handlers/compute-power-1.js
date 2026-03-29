@@ -59,8 +59,8 @@ const handlers = {
     return {_engine:'real',result:Array(c).fill(t).join(s),length:t.length*c+s.length*(c-1)};
   },
 
-  'regex-build': ({pattern, flags, test_string}) => {
-    try{const r=new RegExp(pattern||'',flags||'g');const matches=test_string?(test_string.match(r)||[]):[];
+  'regex-build': (input) => {
+    try{input=input||{};const {pattern, flags, test_string}=input;const r=new RegExp(pattern||'',flags||'g');const ts=typeof test_string==='string'?test_string:'';const matches=ts?(ts.match(r)||[]):[];
     return {_engine:'real',regex:r.toString(),pattern:pattern||'',flags:flags||'g',valid:true,test_matches:matches,match_count:matches.length};}
     catch(e){return {_engine:'real',valid:false,error:e.message};}
   },
@@ -140,19 +140,24 @@ const handlers = {
     return {_engine:'real',result,renamed:Object.keys(m).filter(k=>d[k]!==undefined).length};
   },
 
-  'data-deep-merge': ({objects}) => {
+  'data-deep-merge': (input) => {
+    try{input=input||{};let objects=input.objects;if(typeof objects==='string'){try{objects=JSON.parse(objects);}catch(e){}}if(!Array.isArray(objects))objects=[];
     function merge(target,source){Object.entries(source).forEach(([k,v])=>{if(v&&typeof v==='object'&&!Array.isArray(v)&&target[k]&&typeof target[k]==='object')merge(target[k],v);else target[k]=v;});return target;}
-    const result=(objects||[]).reduce((acc,obj)=>merge(acc,JSON.parse(JSON.stringify(obj))),{});
-    return {_engine:'real',merged:result,sources:(objects||[]).length};
+    const result=objects.reduce((acc,obj)=>merge(acc,JSON.parse(JSON.stringify(obj))),{});
+    return {_engine:'real',merged:result,sources:objects.length};}
+    catch(e){return {_engine:'real',merged:{},sources:0,error:e.message};}
   },
 
-  'data-diff': ({before, after}) => {
-    const b=before||{};const a=after||{};
+  'data-diff': (input) => {
+    try{input=input||{};let before=input.before,after=input.after;
+    if(typeof before==='string'){try{before=JSON.parse(before);}catch(e){}}if(typeof after==='string'){try{after=JSON.parse(after);}catch(e){}}
+    const b=before&&typeof before==='object'?before:{};const a=after&&typeof after==='object'?after:{};
     const allKeys=[...new Set([...Object.keys(b),...Object.keys(a)])];
     const added=allKeys.filter(k=>b[k]===undefined&&a[k]!==undefined).map(k=>({key:k,value:a[k]}));
     const removed=allKeys.filter(k=>b[k]!==undefined&&a[k]===undefined).map(k=>({key:k,value:b[k]}));
     const changed=allKeys.filter(k=>b[k]!==undefined&&a[k]!==undefined&&JSON.stringify(b[k])!==JSON.stringify(a[k])).map(k=>({key:k,before:b[k],after:a[k]}));
-    return {_engine:'real',added,removed,changed,unchanged:allKeys.length-added.length-removed.length-changed.length};
+    return {_engine:'real',added,removed,changed,unchanged:allKeys.length-added.length-removed.length-changed.length};}
+    catch(e){return {_engine:'real',added:[],removed:[],changed:[],unchanged:0,error:e.message};}
   },
 
   'data-coerce-types': ({data, schema}) => {

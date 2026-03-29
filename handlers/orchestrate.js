@@ -818,29 +818,47 @@ module.exports = {
 
   // ===== ORCH RACE =====
   'orch-race': async (input) => {
-    const calls = input.calls || [];
+    try {
+    input = input || {};
+    let calls = input.calls;
+    if (typeof calls === 'string') { try { calls = JSON.parse(calls); } catch(e) {} }
+    if (!Array.isArray(calls) || calls.length === 0) {
+      return { _engine: 'real', winner: null, timing_ms: 0, error: 'calls must be a non-empty array of {api, input}' };
+    }
 
     function callLocal(slug, inp) {
       return new Promise((resolve, reject) => {
+        const timeoutMs = 5000;
         const data = JSON.stringify(inp);
         const req = http.request({
           hostname: 'localhost', port: process.env.PORT || 3000,
           path: '/v1/' + slug, method: 'POST',
           headers: { 'Authorization': 'Bearer sk-slop-demo-key-12345678', 'Content-Type': 'application/json' },
-          timeout: 10000,
+          timeout: timeoutMs,
         }, res => {
           let b = '';
           res.on('data', c => b += c);
           res.on('end', () => { try { resolve(JSON.parse(b)); } catch (e) { resolve(b); } });
         });
+        req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
         req.on('error', reject);
         req.write(data); req.end();
       });
     }
 
     const start = Date.now();
-    const winner = await Promise.race(calls.map(c => callLocal(c.api, c.input || {}).catch(e => ({ error: e.message }))));
+    const raceTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('race_timeout')), 6000));
+    let winner;
+    try {
+      winner = await Promise.race([
+        ...calls.map(c => callLocal(c.api, c.input || {}).catch(e => ({ error: e.message, api: c.api }))),
+        raceTimeout
+      ]);
+    } catch(e) {
+      winner = { error: e.message };
+    }
     return { _engine: 'real', winner, timing_ms: Date.now() - start };
+    } catch(e) { return { _engine: 'real', winner: null, timing_ms: 0, error: e.message }; }
   },
 
   // ===== ORCH TIMEOUT =====

@@ -608,5 +608,96 @@ module.exports = function (db) {
     'counter-get':            counterGet,
     'memory-vector-search':   memoryVectorSearch,
     'memory-time-capsule':    memoryTimeCapsule,
+
+    // ─── STATE HANDLERS (shared agent state via agent_state table) ───
+    'state-set': (input) => {
+      try {
+        input = input || {};
+        const key = input.key;
+        if (!key) return { _engine: 'real', ok: false, error: 'key is required' };
+        const value = input.value;
+        const namespace = input.namespace || 'shared';
+        const version = Date.now();
+        db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run(
+          namespace + ':' + key,
+          JSON.stringify({ value, version, ts: new Date().toISOString() })
+        );
+        return { _engine: 'real', ok: true, key, version, namespace };
+      } catch(e) { return { _engine: 'real', ok: false, error: e.message }; }
+    },
+
+    'state-get': (input) => {
+      try {
+        input = input || {};
+        const key = input.key;
+        if (!key) return { _engine: 'real', ok: false, error: 'key is required' };
+        const namespace = input.namespace || 'shared';
+        const row = db.prepare('SELECT value FROM agent_state WHERE key = ?').get(namespace + ':' + key);
+        if (!row) return { _engine: 'real', ok: true, key, value: null, version: null };
+        try {
+          const parsed = JSON.parse(row.value);
+          return { _engine: 'real', ok: true, key, ...parsed, namespace };
+        } catch(e) {
+          return { _engine: 'real', ok: true, key, value: row.value, namespace };
+        }
+      } catch(e) { return { _engine: 'real', ok: false, error: e.message }; }
+    },
+
+    'state-list': (input) => {
+      try {
+        input = input || {};
+        const namespace = input.namespace || 'shared';
+        const rows = db.prepare("SELECT key, value FROM agent_state WHERE key LIKE ? || ':%'").all(namespace);
+        const entries = rows.map(r => {
+          const shortKey = r.key.replace(namespace + ':', '');
+          try { return { key: shortKey, ...JSON.parse(r.value) }; } catch(e) { return { key: shortKey, value: r.value }; }
+        });
+        return { _engine: 'real', ok: true, namespace, entries, count: entries.length };
+      } catch(e) { return { _engine: 'real', ok: false, entries: [], count: 0, error: e.message }; }
+    },
+
+    // ─── CONTEXT SESSION (aggregate session context for agents) ───
+    'context-session': (input) => {
+      try {
+        input = input || {};
+        const namespace = input.namespace || 'shared';
+        const goal = input.goal || null;
+
+        // Gather memory stats
+        let memoryCount = 0;
+        try { memoryCount = db.prepare('SELECT COUNT(*) as cnt FROM memory').get().cnt; } catch(e) {}
+
+        // Gather state entries for this namespace
+        let stateEntries = [];
+        try {
+          const rows = db.prepare("SELECT key, value FROM agent_state WHERE key LIKE ? || ':%' LIMIT 50").all(namespace);
+          stateEntries = rows.map(r => {
+            const shortKey = r.key.replace(namespace + ':', '');
+            try { return { key: shortKey, ...JSON.parse(r.value) }; } catch(e) { return { key: shortKey, value: r.value }; }
+          });
+        } catch(e) {}
+
+        // Gather recent audit activity
+        let recentActivity = [];
+        try {
+          recentActivity = db.prepare('SELECT slug, ts, latency_ms, engine FROM audit_log ORDER BY rowid DESC LIMIT 10').all();
+        } catch(e) {}
+
+        return {
+          _engine: 'real',
+          ok: true,
+          session: {
+            goal,
+            namespace,
+            memory_entries: memoryCount,
+            state_entries: stateEntries.length,
+            state: stateEntries,
+            recent_activity: recentActivity,
+            capabilities: ['memory', 'state', 'compute', 'orchestrate', 'generate'],
+            ts: new Date().toISOString()
+          }
+        };
+      } catch(e) { return { _engine: 'real', ok: false, error: e.message }; }
+    },
   };
 };

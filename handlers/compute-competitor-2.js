@@ -333,8 +333,10 @@ const handlers = {
   },
 
   // ─── BLOCKCHAIN/WEB3 ──────────────────────────────────────
-  'contract-abi-parse': ({abi}) => {
-    const a = abi||[];
+  'contract-abi-parse': (input) => {
+    try {
+    input=input||{};let abi=input.abi;if(typeof abi==='string'){try{abi=JSON.parse(abi);}catch(e){return {_engine:'real',error:'Invalid ABI JSON: '+e.message,functions:[],events:[],function_count:0,event_count:0,total_items:0};}}
+    const a = Array.isArray(abi)?abi:[];
     const functions = a.filter(x=>x.type==='function').map(f=>({
       name: f.name,
       signature: f.name+'('+((f.inputs||[]).map(i=>i.type).join(','))+')',
@@ -349,6 +351,7 @@ const handlers = {
       signature: e.name+'('+((e.inputs||[]).map(i=>i.type+(i.indexed?' indexed':'')).join(','))+')'
     }));
     return {_engine:'real', functions, events, function_count:functions.length, event_count:events.length, total_items:a.length};
+    } catch(e) { return {_engine:'real', error:e.message, functions:[], events:[], function_count:0, event_count:0, total_items:0}; }
   },
 
   // ─── TOOL PLANNING ────────────────────────────────────────

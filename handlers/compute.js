@@ -42,10 +42,15 @@ function textExtractUrls(input) {
 }
 
 function textExtractPhones(input) {
-  const text = input.text || '';
-  const m = text.match(/(\+?1[\s.-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g) || [];
-  const u = [...new Set(m)];
-  return { _engine: 'real', phones: u, count: u.length };
+  try {
+    input = input || {};
+    const text = String(input.text || '');
+    const m = text.match(/(\+?1[\s.-]?)?\(?\d{3}\)?[\s.\-]?\d{3}[\s.\-]?\d{4}/g) || [];
+    const u = [...new Set(m)];
+    return { _engine: 'real', phones: u, count: u.length };
+  } catch(e) {
+    return { _engine: 'real', phones: [], count: 0, error: e.message };
+  }
 }
 
 function textExtractNumbers(input) {
@@ -1998,7 +2003,8 @@ function textIndent(input) {
 }
 
 function textWrap(input) {
-  const text = input.text || '';
+  input = input || {};
+  const text = String(input.text || '');
   const width = input.width || 80;
   const paragraphs = text.split('\n');
   const wrapped = [];

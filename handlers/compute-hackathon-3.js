@@ -4,12 +4,14 @@ const crypto = require('crypto');
 const handlers = {
 
   // ─── STRATEGIC ANALYSIS ────────────────────────────────────
-  'fog-of-war-simulator': ({units, sight_range}) => {
-    const us=units||[{id:'a',x:0,y:0,team:1},{id:'b',x:5,y:5,team:2}];
-    const sr=sight_range||3;
+  'fog-of-war-simulator': (input) => {
+    try{input=input||{};let units=input.units;if(typeof units==='string'){try{units=JSON.parse(units);}catch(e){}}
+    const us=Array.isArray(units)&&units.length>0?units:[{id:'a',x:0,y:0,team:1},{id:'b',x:5,y:5,team:2}];
+    const sr=input.sight_range||3;
     const visibility={};
-    us.forEach(u=>{visibility[u.id]=us.filter(o=>o.team!==u.team&&Math.sqrt((o.x-u.x)**2+(o.y-u.y)**2)<=sr).map(o=>o.id);});
-    return {_engine:'real', visibility, sight_range:sr, hidden_count:us.length-Object.values(visibility).flat().length, note:'Each unit only sees enemies within range'};
+    us.forEach(u=>{visibility[u.id||'unknown']=us.filter(o=>o.team!==u.team&&Math.sqrt(((o.x||0)-(u.x||0))**2+((o.y||0)-(u.y||0))**2)<=sr).map(o=>o.id||'unknown');});
+    return {_engine:'real', visibility, sight_range:sr, hidden_count:us.length-Object.values(visibility).flat().length, note:'Each unit only sees enemies within range'};}
+    catch(e){return {_engine:'real',error:e.message,visibility:{},sight_range:0,hidden_count:0};}
   },
 
   'supply-line-vulnerability': ({nodes, edges, target}) => {
@@ -81,23 +83,25 @@ const handlers = {
     return {_engine:'real', carrying_capacity:capacity, current_consumption:cons, regeneration:regen, sustainable, overshoot:cons>regen?Math.round((cons-regen)/regen*100)+'%':'0%', time_to_depletion:sustainable?Infinity:Math.round(res/(cons-regen))};
   },
 
-  'trophic-cascade-simulator': ({food_web, removed_species, generations}) => {
-    const fw=food_web||{grass:{pop:1000,eaten_by:['rabbit']},rabbit:{pop:100,eaten_by:['fox']},fox:{pop:10,eaten_by:[]}};
-    const removed=removed_species||'fox';
-    const gen=generations||5;
-    const state={...Object.fromEntries(Object.entries(fw).map(([k,v])=>[k,v.pop]))};
+  'trophic-cascade-simulator': (input) => {
+    try{input=input||{};let food_web=input.food_web;if(typeof food_web==='string'){try{food_web=JSON.parse(food_web);}catch(e){}}
+    const fw=(food_web&&typeof food_web==='object'&&!Array.isArray(food_web))?food_web:{grass:{pop:1000,eaten_by:['rabbit']},rabbit:{pop:100,eaten_by:['fox']},fox:{pop:10,eaten_by:[]}};
+    const removed=input.removed_species||'fox';
+    const gen=input.generations||5;
+    const state={...Object.fromEntries(Object.entries(fw).map(([k,v])=>[k,(v&&v.pop)||0]))};
     if(removed) state[removed]=0;
     const timeline=[{gen:0,...state}];
     for(let g=1;g<=gen;g++){
       Object.entries(fw).forEach(([species,data])=>{
         if(species===removed) return;
-        const predators=data.eaten_by.filter(p=>state[p]>0);
+        const predators=(data.eaten_by||[]).filter(p=>state[p]>0);
         if(predators.length===0) state[species]=Math.round(state[species]*1.2);
         else state[species]=Math.round(state[species]*0.9);
       });
       timeline.push({gen:g,...state});
     }
-    return {_engine:'real', removed_species:removed, timeline, cascade_effect:Object.entries(state).filter(([k,v])=>k!==removed&&v!==fw[k]?.pop).map(([k,v])=>({species:k,original:fw[k]?.pop,now:v}))};
+    return {_engine:'real', removed_species:removed, timeline, cascade_effect:Object.entries(state).filter(([k,v])=>k!==removed&&v!==fw[k]?.pop).map(([k,v])=>({species:k,original:fw[k]?.pop,now:v}))};}
+    catch(e){return {_engine:'real',error:e.message,removed_species:null,timeline:[],cascade_effect:[]};}
   },
 
   'keystone-species-detector': ({food_web}) => {
@@ -132,14 +136,18 @@ const handlers = {
     return {_engine:'real', final_coverage:infected.size, total_cells:gs*gs, coverage_ratio:Math.round(infected.size/(gs*gs)*100)/100, timeline};
   },
 
-  'biodiversity-index-calculator': ({species_counts}) => {
-    const sc=species_counts||[30,25,15,10,8,5,4,2,1];
+  'biodiversity-index-calculator': (input) => {
+    try{input=input||{};let species_counts=input.species_counts;
+    if(typeof species_counts==='string'){try{species_counts=JSON.parse(species_counts);}catch(e){species_counts=species_counts.split(',').map(Number).filter(n=>!isNaN(n));}}
+    const sc=Array.isArray(species_counts)&&species_counts.length>0?species_counts:[30,25,15,10,8,5,4,2,1];
     const total=sc.reduce((a,b)=>a+b,0);
+    if(total===0)return {_engine:'real',species_richness:sc.length,total_individuals:0,shannon_index:0,simpson_index:0,evenness:0,classification:'low_diversity'};
     const proportions=sc.map(c=>c/total);
     const shannon=-proportions.reduce((s,p)=>s+(p>0?p*Math.log(p):0),0);
     const simpson=1-proportions.reduce((s,p)=>s+p*p,0);
-    const evenness=Math.round(shannon/Math.log(sc.length)*100)/100;
-    return {_engine:'real', species_richness:sc.length, total_individuals:total, shannon_index:Math.round(shannon*1000)/1000, simpson_index:Math.round(simpson*1000)/1000, evenness, classification:shannon>2?'high_diversity':shannon>1?'moderate_diversity':'low_diversity'};
+    const evenness=sc.length>1?Math.round(shannon/Math.log(sc.length)*100)/100:1;
+    return {_engine:'real', species_richness:sc.length, total_individuals:total, shannon_index:Math.round(shannon*1000)/1000, simpson_index:Math.round(simpson*1000)/1000, evenness, classification:shannon>2?'high_diversity':shannon>1?'moderate_diversity':'low_diversity'};}
+    catch(e){return {_engine:'real',error:e.message,species_richness:0,total_individuals:0,shannon_index:0,simpson_index:0,evenness:0,classification:'error'};}
   },
 
   'symbiosis-network-analyzer': ({relationships}) => {
