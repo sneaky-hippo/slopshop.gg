@@ -1174,31 +1174,35 @@ memory set <key-no-spaces> {"field":"value"}`;
     const uniqueBuilds = [...new Set(shared.builds.map(b => b.key))].length;
     const lastCeoDirective = shared.plan[0] || 'none';
 
+    // Load north star for CEO context
+    let northStar = '';
+    try { northStar = fs.readFileSync(path.join(__dirname, 'NORTH-STAR.md'), 'utf8').slice(0, 400); } catch(e) {}
+
     const reviewPrompt = `You are CEO. Sprint ${s}/${sprints}. Mission: ${mission.slice(0, 80)}
 
-ORG STATE:
-- Phase: ${phase} (${trend > 0 ? 'improving' : trend < 0 ? 'declining' : 'flat'})
-- Scores: ${recentScores.join('→') || 'none'}. Built: ${buildCount}. QA: ${qaPass}/${qaPass+qaFail}.
-- Vision: ${shared.vision || 'not set yet'}
-- Current URLs we research: ${discoveryUrls.slice(0,3).join(', ')}
-- Latest research: ${shared.research.slice(-2).map(r=>(r.text||'').slice(0,50)).join(' | ')}
+NORTH STAR: ${northStar.replace(/\n/g, ' ').slice(0, 200) || 'The protocol layer of intelligence connecting every AI brain into one composable mesh.'}
 
-${phase === 'EXPLORE' ? 'EARLY PHASE. Try bold things. Discover new competitors.' : ''}
-${phase === 'ACCELERATE' ? 'RISING. Double down. Go deeper on what works.' : ''}
-${phase === 'FIX' ? 'DECLINING. Diagnose. Fix before adding new.' : ''}
-${phase === 'OPTIMIZE' ? 'STABLE. Find the next unlock. New markets, new competitors.' : ''}
+ORG STATE: ${phase} phase. Scores: ${recentScores.join('→') || 'none'}. Built: ${buildCount}. QA: ${qaPass}/${qaPass+qaFail}.
+Current vision: ${shared.vision || 'not set'}
+Researching: ${discoveryUrls.slice(0,3).join(', ')}
+Latest: ${shared.research.slice(-2).map(r=>(r.text||'').slice(0,40)).join(' | ')}
 
-Respond EXACTLY:
+${phase === 'EXPLORE' ? 'EXPLORE: Discover competitors. Try bold bets.' : phase === 'ACCELERATE' ? 'ACCELERATE: Double down on wins.' : phase === 'FIX' ? 'FIX: Something broke. Diagnose first.' : 'OPTIMIZE: Find next unlock.'}
+
+Are we aligned with the North Star? If not, course-correct. Your vision MUST evolve from last sprint.
+
 SCORE: X/10
-VISION: <one sentence — where we should be in 10 sprints>
-NEXT: <specific different task for next sprint>
-DISCOVER: <one new URL to research next sprint, or NONE>`;
+ALIGNED: <yes/no — are we on track with north star?>
+VISION: <evolved vision for next 10 sprints>
+NEXT: <specific new task — DIFFERENT from last sprint>
+DISCOVER: <new URL to add to research, or NONE>`;
 
     const review = localOnly ? await ollamaChat('mistral', reviewPrompt) : await cloudChat('anthropic', reviewPrompt);
     let score = extractScore(review);
     if (!score) score = buildCount > 0 && qaFail === 0 ? 7.5 : buildCount > 0 ? 6 : 4;
     const nextMatch = (review || '').match(/NEXT:\s*(.+?)(?:\n|$)/i);
     const visionMatch = (review || '').match(/VISION:\s*(.+?)(?:\n|$)/i);
+    const alignedMatch = (review || '').match(/ALIGNED:\s*(\w+)/i);
     const discoverMatch = (review || '').match(/DISCOVER:\s*(https?:\/\/\S+)/i);
 
     // CEO discovers new URLs → adds to research targets for next sprint
@@ -1217,8 +1221,10 @@ DISCOVER: <one new URL to research next sprint, or NONE>`;
 
     const sprintMs = Date.now() - sprintStart;
     const phaseColor = phase === 'ACCELERATE' ? green : phase === 'FIX' ? red : phase === 'EXPLORE' ? cyan : dim;
-    console.log(`  ${dim('└')} ${C.red}${bold('CEO')}${C.reset} ${bold(score + '/10')} ${phaseColor('[' + phase + ']')} ${nextMatch ? yellow('→ ' + nextMatch[1].slice(0, 50)) : ''} ${dim(sprintMs + 'ms')}`);
+    const aligned = alignedMatch ? alignedMatch[1].toLowerCase().startsWith('y') : true;
+    console.log(`  ${dim('└')} ${C.red}${bold('CEO')}${C.reset} ${bold(score + '/10')} ${phaseColor('[' + phase + ']')} ${aligned ? '' : red('[MISALIGNED]')} ${nextMatch ? yellow('→ ' + nextMatch[1].slice(0, 50)) : ''} ${dim(sprintMs + 'ms')}`);
     if (visionMatch && s % 5 === 0) console.log(`    ${bold('VISION:')} ${green(visionMatch[1].slice(0, 70))}`);
+    if (!aligned) console.log(`    ${red('⚠ NORTH STAR DRIFT — CEO is course-correcting')}`);
 
     // ── ALARMS ──
     if (totalResearchTokens === 0) console.log(`    ${red('⚠ ALARM: zero research tokens — nothing was gathered')}`);
