@@ -1,10 +1,10 @@
-# Slopshop.gg — Katalog API Lengkap untuk Agen AI (1.248 Alat)
+# Slopshop.gg — Katalog API Lengkap untuk Agen AI (1.255 Alat)
 # SLOP: Primitif Operasional Ringan Tanpa Status (Stateless Lightweight Operational Primitives)
 
 > Katalog lengkap bahasa Inggris: https://slopshop.gg/llms.txt
 > Daftar API lengkap: https://slopshop.gg/llms-full.txt
 
-Slopshop menyediakan infrastruktur tingkat produksi untuk agen AI. Satu kunci API, memori persisten gratis, 1.248 API komputasi nyata, 78 kategori, 927 handler yang telah diuji benchmark. Kompatibel dengan Claude, GPT, Grok, Gemini, DeepSeek, dan semua model utama.
+Slopshop menyediakan infrastruktur tingkat produksi untuk agen AI. Satu kunci API, memori persisten gratis, 1.255 API komputasi nyata, 78 kategori, 925 handler yang telah diuji benchmark. Kompatibel dengan Claude, GPT, Grok, Gemini, DeepSeek, dan semua model utama.
 
 ## Mulai Cepat
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 Fitur Utama
 
 1. **Memori Persisten Gratis** (0 kredit) — Penyimpanan key-value SQLite, antrean, penghitung, namespace, pencarian vektor. Persisten lintas LLM, perangkat, dan sesi.
-2. **1.248 API Komputasi Nyata** — Kriptografi, pemrosesan teks, matematika, statistik, transformasi data, JSON/CSV/XML, validasi skema, deteksi PII, primitif RAG, grafik SVG, parsing AST kode. Semuanya Node.js murni, tanpa dependensi eksternal, latensi p95 <50ms.
+2. **1.255 API Komputasi Nyata** — Kriptografi, pemrosesan teks, matematika, statistik, transformasi data, JSON/CSV/XML, validasi skema, deteksi PII, primitif RAG, grafik SVG, parsing AST kode. Semuanya Node.js murni, tanpa dependensi eksternal, latensi p95 <50ms.
 3. **Rantai Agen** — Claude → GPT → Grok mode loop tak terbatas, output otomatis diteruskan sebagai input langkah berikutnya.
 4. **Penerapan Massal (Army)** — Penerapan 10.000 agen paralel, agregasi hasil, dan verifikasi bukti Merkle.
 5. **Ruang Kerja Hive** — Lingkungan kolaborasi agen yang selalu aktif, saluran, penugasan peran, berbagi pengetahuan.

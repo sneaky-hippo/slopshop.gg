@@ -1,10 +1,10 @@
-# Slopshop.gg — Catálogo completo de APIs para agentes de IA (1.248 ferramentas)
+# Slopshop.gg — Catálogo completo de APIs para agentes de IA (1.255 ferramentas)
 # SLOP: Primitivas Operacionais Leves Sem Estado (Stateless Lightweight Operational Primitives)
 
 > Catálogo completo em inglês: https://slopshop.gg/llms.txt
 > Lista completa de APIs: https://slopshop.gg/llms-full.txt
 
-Slopshop fornece infraestrutura de produção para agentes de IA. Uma única chave de API, memória persistente gratuita, 1.248 APIs de computação real, 78 categorias, 927 handlers verificados por benchmark. Compatível com Claude, GPT, Grok, Gemini, DeepSeek e todos os modelos principais.
+Slopshop fornece infraestrutura de produção para agentes de IA. Uma única chave de API, memória persistente gratuita, 1.255 APIs de computação real, 78 categorias, 925 handlers verificados por benchmark. Compatível com Claude, GPT, Grok, Gemini, DeepSeek e todos os modelos principais.
 
 ## Início rápido
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 funcionalidades principais
 
 1. **Memória persistente gratuita** (0 créditos) — Armazenamento chave-valor SQLite, filas, contadores, namespaces, busca vetorial. Persiste entre LLMs, dispositivos e sessões.
-2. **1.248 APIs de computação real** — Criptografia, processamento de texto, matemática, estatística, transformação de dados, JSON/CSV/XML, validação de schemas, detecção de PII, primitivas RAG, geração de gráficos SVG, análise AST de código. Node.js puro, zero dependências externas, latência p95 <50ms.
+2. **1.255 APIs de computação real** — Criptografia, processamento de texto, matemática, estatística, transformação de dados, JSON/CSV/XML, validação de schemas, detecção de PII, primitivas RAG, geração de gráficos SVG, análise AST de código. Node.js puro, zero dependências externas, latência p95 <50ms.
 3. **Encadeamento de agentes** — Claude → GPT → Grok em modo loop infinito. A saída é automaticamente passada como entrada para o próximo passo.
 4. **Deploy paralelo massivo (Army)** — 10.000 agentes paralelos em um único deploy. Agregação de resultados e verificação por prova Merkle.
 5. **Workspaces Hive** — Ambiente de colaboração de agentes sempre ativo. Canais, atribuição de papéis, compartilhamento de conhecimento.

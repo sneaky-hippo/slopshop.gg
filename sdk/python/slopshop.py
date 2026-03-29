@@ -59,6 +59,9 @@ class Slopshop:
     def memory_search(self, query, **kwargs):
         return self.call('memory-search', {'query': query, **kwargs})
 
+    def memory_list(self, **kwargs):
+        return self.call('memory-list', kwargs)
+
     def me(self):
         return self._request('GET', '/v1/auth/me')
 
@@ -67,6 +70,9 @@ class Slopshop:
 
     def search(self, query, **kwargs):
         return self._request('POST', '/v1/tools/search', {'query': query, **kwargs})
+
+    def categories(self):
+        return self._request('GET', '/v1/tools/categories')
 
     def recommend(self, task):
         return self._request('POST', '/v1/tools/recommend', {'task': task})

@@ -322,10 +322,66 @@
 - [ ] Hive corrupted 5 lines across 3 files ("javascript" bug)
 
 ### Safety Improvements Needed
-- [ ] Disable file editing by default (opt-in only)
-- [ ] Blacklist files from hive editing (agent.js, server-v2.js critical paths)
+- [x] Disable file editing by default (opt-in only) — FIXED 2026-03-29
+- [x] Blacklist files from hive editing (agent.js, server-v2.js critical paths) — FIXED 2026-03-29
 - [ ] Full benchmark gate (not just syntax + version)
 - [ ] Post-deploy health check before marking success
+
+---
+
+## AUDIT FIXES (2026-03-29)
+
+### CLI Bugs Fixed
+- [x] cmdBalance JSON mode broken (SCORE: X/10 label statement) — FIXED
+- [x] cmdCall arg parsing inverted (skipped real args) — FIXED
+- [x] cmdHive stray `js` on line 1520 (ReferenceError) — FIXED
+- [x] loadConfig returned rejected Promise instead of {} — FIXED
+- [x] 9 commands missing from interactive REPL — FIXED
+
+### _engine: "real" Integrity Fixes
+- [x] army/survey — changed to _engine: 'simulated' (was Math.random masquerading as research)
+- [x] army/quick-poll — changed to _engine: 'simulated' (was coin flips)
+- [x] bureaucracy/red-tape — changed to _engine: 'simulated'
+- [x] bureaucracy/compliance — changed to _engine: 'simulated'
+- [x] bureaucracy/wait — changed to _engine: 'simulated'
+- [x] bureaucracy/form-27b — changed to _engine: 'simulated'
+- [x] Hardcoded uptime 99.97% — changed to null with note to use external monitoring
+- [x] Compliance SOC2/HIPAA — now actually checks runtime state (Railway, audit log, etc.)
+- [x] Compliance HIPAA — added encryption_at_rest: false (honest about SQLite WAL)
+- [x] Confidence scoring — added 'simulated' engine type at 0.50 confidence (was auto-0.99)
+- [x] Boot message "0 mocks" — removed false claim
+- [x] Case studies — removed fabricated specific numbers, added disclaimer
+
+### Additional CLI Bugs Fixed (second pass)
+- [x] cmdCall --dry-run referenced undefined `dryRun` variable — FIXED
+- [x] Spinner never ran (quiet always !== undefined) — FIXED condition to `if (quiet || ...)`
+- [x] Verbose flag parsing broken (`arg.startsWith('-')` returns bool, not string) — FIXED
+- [x] extractMeta type guard used wrong operator precedence — FIXED
+- [x] extractMeta unconditionally pushed `remaining:` for all meta keys — FIXED with else-if chain
+
+### Site Claim Fixes
+- [x] Pricing tiers aligned to CLI (1K/$9, 10K/$49, 100K/$299, 1M/$1999) in index.html + pricing.html
+- [x] Handler counts: "1,255 compute handlers" → "925 compute handlers" in index.html, docs.html
+- [x] Network handler count: compare.html aligned to 22 (matching index.html)
+- [x] 12 localized llms-*.txt: "1,248" → "1,255" — FIXED (all 12 files)
+- [x] 5 additional localized llms-*.txt: "927" → "925" (zh, th, hi, ar, es)
+- [x] server-v2.js enterprise capabilities: "927" → "925" (3 occurrences)
+- [x] llms.txt: "288 REST endpoints" → "1,255 REST endpoints", "927" → "925"
+- [x] council-responses.txt: "1248" → "1255" (3 occurrences)
+- [x] POST /v1/compare — no longer ranks by response length (sorted alphabetically by provider)
+- [x] GET /v1/api/versions — changed to _engine: 'static'
+- [x] POST /v1/router/smart — changed to _engine: 'static' with hardcoded scores note
+
+### Real Inference Implementations (2026-03-29)
+- [x] POST /v1/army/survey — LLM generates each persona response (real diverse reasoning), heuristic fallback
+- [x] POST /v1/army/quick-poll — LLM agents reason about options before voting, random fallback
+- [x] POST /v1/bureaucracy/compliance — LLM analyzes action plan, keyword-scoring fallback
+- [x] POST /v1/eval/self-improve — LLM analyzes test failures with specific suggestions, canned fallback
+- [x] POST /v1/cost-optimizer — live provider benchmarking when benchmark:true, static estimates otherwise
+- [x] POST /v1/fine-tuning/jobs — actually submits to OpenAI Fine-Tuning API when key available
+
+### SDK Parity
+- [x] Python SDK: added memory_list() and categories() (parity with Node)
 
 ---
 

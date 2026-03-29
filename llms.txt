@@ -1,6 +1,6 @@
 # slopshop.gg — The missing backend for AI agents. Free persistent memory. Real compute across 78 tool categories. Agent chaining and orchestration. One API key. Self-hostable. Works with Claude, GPT, Grok, Gemini, and every LLM.
 
-One API key. 1,255 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 927 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, and full enterprise features.
+One API key. 1,255 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 925 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer compute exchange, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, and full enterprise features.
 
 ## Universal Model Mesh (NEW in v3.7.0)
 
@@ -74,7 +74,7 @@ Results auto-stored in free memory: POST /v1/memory-get key:"chain_results"
 5. Set alerts: POST /v1/webhooks/create {"url":"https://slack.com/webhook","events":["budget_alert"]}
 
 ## Core capabilities (by handler type)
-- **Compute** (927 handlers, all benchmarked, 100% pass rate, `_engine: "real"`): hashing, encryption, text processing, math, statistics, data transforms, JSON/CSV/XML, schema validation, PII detection, RAG primitives, SVG chart generation, code AST parsing, context window management — all pure Node.js `crypto`/`zlib`/`Buffer`, zero external dependencies, p95 latency <50ms
+- **Compute** (925 handlers, all benchmarked, 100% pass rate, `_engine: "real"`): hashing, encryption, text processing, math, statistics, data transforms, JSON/CSV/XML, schema validation, PII detection, RAG primitives, SVG chart generation, code AST parsing, context window management — all pure Node.js `crypto`/`zlib`/`Buffer`, zero external dependencies, p95 latency <50ms
 - **Network** (22 handlers): DNS lookup, SSL check, HTTP status, WHOIS, subdomain enum, cert transparency — real `dns.resolve` / `tls.connect` socket connections
 - **Memory** (22 handlers, FREE, 0 credits): persistent key-value, queues, counters, namespaces, vector search — SQLite-backed, works across any LLM, any device, any session
 - **Execution** (15 handlers): sandboxed JavaScript (`vm.createContext`) + Python with timeout enforcement
@@ -608,7 +608,7 @@ POST /v1/schedules to create a recurring job. Intervals: 1m, 5m, 15m, 30m, 1h, 6
 Memory that works across ANY LLM (Claude, GPT, Grok, Llama, Gemini, DeepSeek, Mistral), ANY device, ANY session. Store from one model, retrieve from another. Persists forever in SQLite. Core memory APIs cost 0 credits: memory-set, memory-get, memory-search, memory-list, memory-delete, memory-stats, memory-namespace-list, counter-get, memory-vector-search. Always free.
 
 ## Not a wrapper - real compute
-927 compute handlers use Node.js built-ins (crypto, math, Buffer) with zero external dependencies — all benchmarked for correctness, null safety, and <50ms latency with 100% pass rate. 22 network APIs use built-in dns/http/tls modules. 20 memory APIs use SQLite persistence (atomic writes, concurrent-safe, 76 tables). 15 execution APIs use vm.createContext sandbox. 288 REST endpoints total across 78 categories. Every response includes _engine: "real" to prove data was actually processed. LLM APIs are clearly marked _engine: "llm".
+925 compute handlers use Node.js built-ins (crypto, math, Buffer) with zero external dependencies — all benchmarked for correctness, null safety, and <50ms latency with 100% pass rate. 22 network APIs use built-in dns/http/tls modules. 20 memory APIs use SQLite persistence (atomic writes, concurrent-safe, 76 tables). 15 execution APIs use vm.createContext sandbox. 1,255 REST endpoints total across 78 categories. Every response includes _engine: "real" to prove data was actually processed. LLM APIs are clearly marked _engine: "llm".
 
 ## Trust & Verification
 
@@ -708,7 +708,7 @@ GET /v1/stats/public — total calls, users, top tools (real-time from audit log
 GET /v1/badge.svg — embeddable "powered by slopshop" badge
 
 ## Self-hosting
-Fully self-hostable. Clone the repo, npm install, node server-v2.js. Pure-compute APIs (927) run with zero external dependencies. Network APIs use Node.js built-in modules. LLM APIs need your own Anthropic/OpenAI key. Docker and fly.toml included.
+Fully self-hostable. Clone the repo, npm install, node server-v2.js. Pure-compute APIs (925) run with zero external dependencies. Network APIs use Node.js built-in modules. LLM APIs need your own Anthropic/OpenAI key. Docker and fly.toml included.
 
 ## Limitations (when NOT to use Slopshop)
 - Not a database: memory/SQLite is great for agent state, not for storing millions of records.

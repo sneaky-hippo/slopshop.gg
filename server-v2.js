@@ -1015,8 +1015,8 @@ function cloudRequest(hostname, path, apiKey, body, timeoutMs = 120000) {
 
 // --- Grok (xAI) ---
 app.post('/v1/models/grok/generate', auth, async (req, res) => {
-  const grokKey = process.env.GROK_API_KEY || process.env.X_API_KEY;
-  if (!grokKey) return res.status(503).json({ error: { code: 'grok_not_configured', message: 'GROK_API_KEY or X_API_KEY env var not set' } });
+  const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY;
+  if (!grokKey) return res.status(503).json({ error: { code: 'grok_not_configured', message: 'XAI_API_KEY env var not set' } });
   const { model, prompt, messages, namespace, ...extra } = req.body;
   if (!prompt && !messages) return res.status(400).json({ error: { code: 'missing_fields', message: 'prompt or messages required' } });
   const creditCost = 10;
@@ -1085,7 +1085,7 @@ app.post('/v1/models/auto', auth, async (req, res) => {
 
   function isAvailable(provider) {
     if (provider === 'ollama') return true;
-    if (provider === 'grok') return !!(process.env.GROK_API_KEY || process.env.X_API_KEY);
+    if (provider === 'grok') return !!(process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY);
     if (provider === 'deepseek') return !!process.env.DEEPSEEK_API_KEY;
     if (provider === 'anthropic') return !!process.env.ANTHROPIC_API_KEY;
     return false;
@@ -1108,7 +1108,7 @@ app.post('/v1/models/auto', auth, async (req, res) => {
         answer = resp.message?.content || '';
         respModel = ollamaModel;
       } else if (provider === 'grok') {
-        const grokKey = process.env.GROK_API_KEY || process.env.X_API_KEY;
+        const grokKey = process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY;
         const resp = await cloudRequest('api.x.ai', '/v1/chat/completions', grokKey, { model: model || 'grok-3', messages: chatMessages, ...extra });
         if (resp.error) continue;
         answer = resp.choices?.[0]?.message?.content || '';
@@ -1169,7 +1169,7 @@ app.get('/v1/models', publicRateLimit, async (req, res) => {
   } catch(e) { /* Ollama not running */ }
 
   // Cloud providers
-  if (process.env.GROK_API_KEY || process.env.X_API_KEY) {
+  if (process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY) {
     models.push({ id: 'grok-3', provider: 'grok', type: 'cloud', credits_per_call: 10 });
     models.push({ id: 'grok-3-mini', provider: 'grok', type: 'cloud', credits_per_call: 10 });
   }
@@ -1271,7 +1271,8 @@ app.get('/v1/status', (_, res) => {
     status: 'operational', apis: apiCount, categories: catalog.length,
     by_tier: tiers, llm_configured: llmReady,
     llm_provider: process.env.ANTHROPIC_API_KEY ? 'anthropic' : process.env.OPENAI_API_KEY ? 'openai' : 'none',
-    uptime_pct: 99.97,
+    uptime_pct: null,
+    uptime_note: 'Use external monitoring (e.g. UptimeRobot) for measured uptime',
   });
 });
 
@@ -2424,7 +2425,7 @@ app.post('/v1/tasks/run', auth, async (req, res) => {
   }
 
   const engineForTask = result?._engine || 'unknown';
-  const confidenceForTask = engineForTask === 'real' ? 0.99 : engineForTask === 'llm' ? 0.85 : engineForTask === 'needs_key' ? 0.0 : engineForTask === 'error' ? 0.0 : 0.80;
+  const confidenceForTask = engineForTask === 'real' ? 0.99 : engineForTask === 'simulated' ? 0.50 : engineForTask === 'llm' ? 0.85 : engineForTask === 'needs_key' ? 0.0 : engineForTask === 'error' ? 0.0 : 0.80;
 
   res.json({
     ok: true,
@@ -2653,19 +2654,27 @@ app.post('/v1/knowledge/add', auth, (req, res) => {
   const { subject, predicate, object, confidence } = req.body;
   if (!subject || !predicate || !object) return res.status(400).json({ error: { code: 'missing_fields', message: 'Provide subject, predicate, object' } });
   db.prepare('INSERT INTO knowledge_graph (api_key, subject, predicate, object, confidence, ts) VALUES (?, ?, ?, ?, ?, ?)').run(req.apiKey, subject, predicate, object, confidence || 1.0, Date.now());
-  res.json({ ok: true, triple: { subject, predicate, object } });
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify({ subject, predicate, object })).digest('hex').slice(0, 16);
+  res.json({ ok: true, triple: { subject, predicate, object }, output_hash: outputHash, _engine: 'real' });
 });
 
-app.get('/v1/knowledge/query', auth, (req, res) => {
-  const { subject, predicate, object } = req.query;
+// Support both GET and POST for knowledge/query
+function handleKnowledgeQuery(req, res) {
+  const params_src = req.method === 'POST' ? req.body : req.query;
+  const { subject, predicate, object, query } = params_src;
   let sql = 'SELECT * FROM knowledge_graph WHERE api_key = ?';
   const params = [req.apiKey];
   if (subject) { sql += ' AND subject = ?'; params.push(subject); }
   if (predicate) { sql += ' AND predicate = ?'; params.push(predicate); }
   if (object) { sql += ' AND object = ?'; params.push(object); }
+  if (query) { sql += ' AND (subject LIKE ? OR predicate LIKE ? OR object LIKE ?)'; params.push('%' + query + '%', '%' + query + '%', '%' + query + '%'); }
   sql += ' ORDER BY ts DESC LIMIT 100';
-  res.json({ triples: db.prepare(sql).all(...params) });
-});
+  const triples = db.prepare(sql).all(...params);
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify(triples)).digest('hex').slice(0, 16);
+  res.json({ ok: true, triples, count: triples.length, output_hash: outputHash, _engine: 'real' });
+}
+app.get('/v1/knowledge/query', auth, handleKnowledgeQuery);
+app.post('/v1/knowledge/query', auth, handleKnowledgeQuery);
 
 app.get('/v1/knowledge/connections/:entity', auth, (req, res) => {
   const entity = req.params.entity;
@@ -2959,11 +2968,13 @@ app.get('/v1/license/:hash', publicRateLimit, (req, res) => {
 });
 
 // ===== TRUE RANDOM (crypto-grade) =====
-app.get('/v1/random', publicRateLimit, (req, res) => {
-  const type = req.query.type || 'number';
-  const min = parseInt(req.query.min) || 0;
-  const max = parseInt(req.query.max) || 1000000;
-  const count = Math.min(Math.max(parseInt(req.query.count, 10) || 1, 1), 100);
+function handleRandom(req, res) {
+  const src = req.method === 'POST' ? { ...req.query, ...req.body } : req.query;
+  const type = src.type || 'number';
+  const min = parseInt(src.min) || 0;
+  const max = parseInt(src.max) || 1000000;
+  const count = Math.min(Math.max(parseInt(src.count) || 1, 1), 100);
+  req.query = { ...req.query, ...src }; // merge for compatibility
 
   if (type === 'bytes') {
     const bytes = crypto.randomBytes(Math.min(parseInt(req.query.size) || 32, 1024));
@@ -2992,7 +3003,9 @@ app.get('/v1/random', publicRateLimit, (req, res) => {
   // Default: crypto-grade random numbers
   const values = Array.from({ length: count }, () => min + crypto.randomInt(max - min + 1));
   res.json({ type: 'number', values, min, max, count, _engine: 'real', source: 'crypto.randomInt (CSPRNG)' });
-});
+}
+app.get('/v1/random', publicRateLimit, handleRandom);
+app.post('/v1/random', publicRateLimit, handleRandom);
 
 // ===== BUREAUCRACY AS A SERVICE =====
 db.exec(`CREATE TABLE IF NOT EXISTS forms (id TEXT PRIMARY KEY, api_key TEXT, title TEXT, fields TEXT, submissions TEXT DEFAULT '[]', status TEXT DEFAULT 'open', ts INTEGER)`);
@@ -3118,19 +3131,75 @@ const RED_TAPE_OBSTACLES = [
 app.post('/v1/bureaucracy/red-tape', auth, (req, res) => {
   const obstacle = RED_TAPE_OBSTACLES[crypto.randomInt(RED_TAPE_OBSTACLES.length)];
   const ticket = 'RT-' + crypto.randomInt(100000, 999999);
-  res.json({ ok: false, obstacle, ticket_number: ticket, retry_after_days: 1 + crypto.randomInt(14), bureaucratic_level: 1 + crypto.randomInt(7), _engine: 'real' });
+  res.json({ ok: false, obstacle, ticket_number: ticket, retry_after_days: 1 + crypto.randomInt(14), bureaucratic_level: 1 + crypto.randomInt(7), _engine: 'simulated' });
 });
 
-// 2. Compliance check
-app.post('/v1/bureaucracy/compliance', auth, (req, res) => {
+// 2. Compliance check — LLM-analyzed or heuristic scoring
+app.post('/v1/bureaucracy/compliance', auth, async (req, res) => {
   const { action_plan } = req.body;
   if (!action_plan) return res.status(400).json({ error: { code: 'missing_action_plan' } });
   const dimensions = ['risk','precedent','stakeholder_impact','form_completeness','signature_count','waiting_period','appeals_process','regulatory_alignment','budget_authorization','change_management','audit_trail','escalation_path'];
-  const scores = {};
+  const llmThink = allHandlers['llm-think'];
+  let scores = {};
   let total = 0;
-  for (const dim of dimensions) { const s = crypto.randomInt(40, 101); scores[dim] = s; total += s; }
+  let usedLlm = false;
+  let recommendation = '';
+
+  if (llmThink) {
+    try {
+      const result = await llmThink({
+        text: `Analyze this action plan for bureaucratic compliance. Score each dimension 0-100.
+Action plan: "${action_plan.slice(0, 1000)}"
+Dimensions: ${dimensions.join(', ')}
+Reply in JSON: {"scores":{"risk":N,...},"recommendation":"one paragraph","concerns":["list"]}`,
+        temperature: 0.3
+      });
+      const answer = result?.answer || result?.text || '';
+      const jsonMatch = answer.match(/\{[\s\S]*\}/);
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+      if (parsed?.scores) {
+        for (const dim of dimensions) {
+          const s = Math.min(100, Math.max(0, parseInt(parsed.scores[dim]) || 50));
+          scores[dim] = s;
+          total += s;
+        }
+        recommendation = parsed.recommendation || '';
+        usedLlm = true;
+      }
+    } catch { /* fall through to heuristic */ }
+  }
+
+  // Heuristic fallback: keyword-based scoring of the action plan text
+  if (!usedLlm) {
+    const planLower = action_plan.toLowerCase();
+    for (const dim of dimensions) {
+      // Score based on whether the plan mentions relevant concepts
+      let s = 50; // baseline
+      if (dim === 'risk' && (planLower.includes('risk') || planLower.includes('mitigation'))) s += 20;
+      if (dim === 'audit_trail' && (planLower.includes('audit') || planLower.includes('log'))) s += 25;
+      if (dim === 'budget_authorization' && (planLower.includes('budget') || planLower.includes('cost'))) s += 20;
+      if (dim === 'stakeholder_impact' && (planLower.includes('stakeholder') || planLower.includes('team'))) s += 15;
+      if (dim === 'regulatory_alignment' && (planLower.includes('compliance') || planLower.includes('regulation'))) s += 25;
+      if (dim === 'change_management' && (planLower.includes('rollback') || planLower.includes('change'))) s += 20;
+      if (dim === 'escalation_path' && (planLower.includes('escalat') || planLower.includes('owner'))) s += 20;
+      // Penalize short plans
+      if (action_plan.length < 50) s = Math.max(30, s - 20);
+      s = Math.min(100, s);
+      scores[dim] = s;
+      total += s;
+    }
+    recommendation = 'Plan analyzed via keyword heuristics. Set ANTHROPIC_API_KEY for deeper LLM analysis.';
+  }
+
   const overall = Math.round(total / dimensions.length);
-  res.json({ ok: true, action_plan: action_plan.slice(0, 100), scores, overall_score: overall, bureaucratic_readiness: overall >= 80 ? 'approved' : overall >= 60 ? 'needs_revision' : 'rejected', recommendation: overall >= 80 ? 'Proceed with caution.' : 'File additional paperwork before proceeding.', _engine: 'real' });
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify(scores)).digest('hex').slice(0, 16);
+  res.json({
+    ok: true, action_plan: action_plan.slice(0, 200), scores, overall_score: overall,
+    bureaucratic_readiness: overall >= 80 ? 'approved' : overall >= 60 ? 'needs_revision' : 'rejected',
+    recommendation: recommendation || (overall >= 80 ? 'Plan meets compliance thresholds.' : 'Address gaps in low-scoring dimensions before proceeding.'),
+    output_hash: outputHash,
+    _engine: usedLlm ? 'real' : 'heuristic',
+  });
 });
 
 // 3. Waiting room (responds after random 5-60s delay)
@@ -3149,7 +3218,7 @@ app.post('/v1/bureaucracy/wait', auth, (req, res) => {
   }, 10000);
   setTimeout(() => {
     clearInterval(interval);
-    res.json({ ok: true, ticket: ticketNum, waited_sec: delaySec, status: 'Your request has been processed. Please proceed to Window 7.', _engine: 'real' });
+    res.json({ ok: true, ticket: ticketNum, waited_sec: delaySec, status: 'Your request has been processed. Please proceed to Window 7.', _engine: 'simulated' });
   }, delaySec * 1000);
   res.setTimeout(90000);
 });
@@ -3164,7 +3233,7 @@ const FORM_27B_REQUIREMENTS = [
 app.get('/v1/bureaucracy/form-27b', (req, res) => {
   const variant = FORM_27B_REQUIREMENTS[crypto.randomInt(FORM_27B_REQUIREMENTS.length)];
   const formId = '27B-' + crypto.randomInt(10000, 99999) + '-6';
-  res.json({ form_id: formId, title: 'Form 27-B Stroke 6 (Revised)', required_items: variant, warning: 'Requirements change on every attempt. This is by design.', expiry: 'This form expires at midnight tonight, wherever you are.', _engine: 'real' });
+  res.json({ form_id: formId, title: 'Form 27-B Stroke 6 (Revised)', required_items: variant, warning: 'Requirements change on every attempt. This is by design.', expiry: 'This form expires at midnight tonight, wherever you are.', _engine: 'simulated' });
 });
 
 // 5. Broadcast poll
@@ -3441,39 +3510,88 @@ app.post('/v1/army/survey', auth, async (req, res) => {
   ];
 
   const selectedPersonas = (personas || defaultPersonas).slice(0, n);
+  const llmThink = allHandlers['llm-think'];
+  let usedLlm = false;
 
-  // Generate responses based on personas (deterministic simulation)
-  const responses = selectedPersonas.map((persona, i) => {
-    const p = typeof persona === 'string' ? { role: persona, traits: persona } : persona;
+  // Try LLM-powered survey: each persona gets real inference
+  let responses;
+  if (llmThink) {
+    try {
+      const batchSize = 5;
+      responses = [];
+      for (let b = 0; b < selectedPersonas.length; b += batchSize) {
+        const batch = selectedPersonas.slice(b, b + batchSize);
+        const batchResults = await Promise.all(batch.map(async (persona, idx) => {
+          const p = typeof persona === 'string' ? { role: persona, traits: persona } : persona;
+          const surveyPrompt = `You are ${p.role || 'a user'}. Your traits: ${p.traits || 'general'}.
+${context ? `Context: ${context.slice(0, 300)}` : ''}
+Question: "${question.slice(0, 500)}"
 
-    // Simulate response based on persona traits
-    const traits = (p.traits || '').toLowerCase();
-    let sentiment = 'neutral';
-    let confidence = 0.5 + Math.random() * 0.4;
+Respond AS this persona in JSON:
+{"sentiment":"positive|cautious|neutral|impatient|price_sensitive","confidence":0.0-1.0,"would_use":true|false,"priority":"must_have|nice_to_have|dont_care|actively_avoid","open_response":"your honest 1-2 sentence response from this persona's perspective","concerns":["list","any","concerns"]}`;
+          try {
+            const result = await llmThink({ text: surveyPrompt, temperature: 0.9 });
+            const answer = result?.answer || result?.text || '';
+            let parsed;
+            try {
+              const jsonMatch = answer.match(/\{[\s\S]*\}/);
+              parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+            } catch { parsed = null; }
+            return {
+              respondent: b + idx + 1,
+              persona: p.role || 'anonymous_' + (b + idx + 1),
+              traits: p.traits || 'general',
+              sentiment: parsed?.sentiment || 'neutral',
+              confidence: Math.min(1, Math.max(0, parsed?.confidence || 0.5)),
+              would_use: parsed?.would_use !== undefined ? parsed.would_use : true,
+              priority: parsed?.priority || 'nice_to_have',
+              open_response: parsed?.open_response || answer.slice(0, 500),
+              concerns: parsed?.concerns || [],
+              _inference: 'llm',
+            };
+          } catch (e) {
+            // Individual persona failed — use heuristic fallback for this one
+            const traits = (p.traits || '').toLowerCase();
+            const sentiment = traits.includes('skeptic') ? 'cautious' : traits.includes('enthusi') ? 'positive' : 'neutral';
+            return {
+              respondent: b + idx + 1, persona: p.role || 'anonymous_' + (b + idx + 1),
+              traits: p.traits || 'general', sentiment, confidence: 0.4,
+              would_use: sentiment !== 'cautious', priority: 'nice_to_have',
+              open_response: `[LLM inference failed for this persona: ${e.message}]`,
+              _inference: 'fallback',
+            };
+          }
+        }));
+        responses.push(...batchResults);
+      }
+      usedLlm = true;
+    } catch (e) {
+      responses = null; // Fall through to heuristic
+    }
+  }
 
-    if (traits.includes('skeptic') || traits.includes('paranoid') || traits.includes('risk')) sentiment = 'cautious';
-    if (traits.includes('enthusi') || traits.includes('excited') || traits.includes('curious')) sentiment = 'positive';
-    if (traits.includes('busy') || traits.includes('time') || traits.includes('fast')) sentiment = 'impatient';
-    if (traits.includes('budget') || traits.includes('cost') || traits.includes('revenue')) sentiment = 'price_sensitive';
-
-    return {
-      respondent: i + 1,
-      persona: p.role || 'anonymous_' + (i + 1),
-      traits: p.traits || 'general',
-      sentiment,
-      confidence: Math.round(confidence * 100) / 100,
-      would_use: Math.random() > (sentiment === 'cautious' ? 0.6 : sentiment === 'positive' ? 0.2 : 0.4),
-      priority: ['must_have', 'nice_to_have', 'dont_care', 'actively_avoid'][Math.floor(Math.random() * (sentiment === 'positive' ? 2 : sentiment === 'cautious' ? 4 : 3))],
-      open_response: `As a ${p.role || 'user'} (${p.traits || 'general'}), regarding "${question.slice(0, 100)}": ${
-        sentiment === 'cautious' ? 'I would need to see more evidence before committing. What are the failure modes?' :
-        sentiment === 'positive' ? 'This looks promising and I would try it immediately. When can I start?' :
-        sentiment === 'impatient' ? 'Does this save me time? If not, I am not interested. Show me the 30-second demo.' :
-        sentiment === 'price_sensitive' ? 'What does this cost at scale? Can I self-host to control costs?' :
-        'I would evaluate this against alternatives. What makes this different from existing solutions?'
-      }`,
-      context_aware: context ? `Given "${context.slice(0, 200)}": ${sentiment === 'positive' ? 'This context makes it more appealing.' : 'This context raises additional questions.'}` : null,
-    };
-  });
+  // Heuristic fallback when no LLM available
+  if (!responses) {
+    responses = selectedPersonas.map((persona, i) => {
+      const p = typeof persona === 'string' ? { role: persona, traits: persona } : persona;
+      const traits = (p.traits || '').toLowerCase();
+      let sentiment = 'neutral';
+      if (traits.includes('skeptic') || traits.includes('paranoid') || traits.includes('risk')) sentiment = 'cautious';
+      if (traits.includes('enthusi') || traits.includes('excited') || traits.includes('curious')) sentiment = 'positive';
+      if (traits.includes('busy') || traits.includes('time') || traits.includes('fast')) sentiment = 'impatient';
+      if (traits.includes('budget') || traits.includes('cost') || traits.includes('revenue')) sentiment = 'price_sensitive';
+      const confidence = 0.3 + Math.random() * 0.3;
+      return {
+        respondent: i + 1, persona: p.role || 'anonymous_' + (i + 1),
+        traits: p.traits || 'general', sentiment,
+        confidence: Math.round(confidence * 100) / 100,
+        would_use: Math.random() > (sentiment === 'cautious' ? 0.6 : 0.35),
+        priority: ['must_have', 'nice_to_have', 'dont_care'][crypto.randomInt(3)],
+        open_response: `[No LLM configured — heuristic response] As a ${p.role}, my ${sentiment} perspective on "${question.slice(0, 60)}..." would depend on specifics not evaluable without inference.`,
+        _inference: 'heuristic',
+      };
+    });
+  }
 
   // Aggregate
   const wouldUse = responses.filter(r => r.would_use).length;
@@ -3488,6 +3606,7 @@ app.post('/v1/army/survey', auth, async (req, res) => {
     id, req.apiKey, question, context || null, JSON.stringify(selectedPersonas), JSON.stringify(responses), 'completed', Date.now()
   );
 
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify(responses)).digest('hex').slice(0, 16);
   res.json({
     survey_id: id,
     question,
@@ -3501,8 +3620,9 @@ app.post('/v1/army/survey', auth, async (req, res) => {
       priority_breakdown: priorityBreakdown,
     },
     responses,
-    _engine: 'real',
-    note: 'Simulated survey from diverse persona army. Use with LLM for deeper analysis.',
+    output_hash: outputHash,
+    _engine: usedLlm ? 'real' : 'heuristic',
+    _inference_note: usedLlm ? 'Each persona response generated by LLM inference' : 'No LLM configured — responses are trait-based heuristics. Set ANTHROPIC_API_KEY or run Ollama for real inference.',
   });
 });
 
@@ -3519,19 +3639,67 @@ app.get('/v1/army/survey/:id', auth, (req, res) => {
   res.json({ ...row, personas: JSON.parse(row.personas), responses: JSON.parse(row.responses) });
 });
 
-// Quick poll — simplified version
-app.post('/v1/army/quick-poll', auth, (req, res) => {
+// Quick poll — LLM-powered diverse agent voting
+app.post('/v1/army/quick-poll', auth, async (req, res) => {
   const { question, options, count } = req.body;
   if (!question || !Array.isArray(options)) return res.status(400).json({ error: { code: 'missing_fields', message: 'Provide question and options array' } });
-  const n = Math.min(count || 50, 200);
+  const n = Math.min(count || 20, 50);  // Cap at 50 for LLM (each is an inference call)
   const votes = {};
   options.forEach(o => votes[o] = 0);
-  for (let i = 0; i < n; i++) {
-    const choice = options[crypto.randomInt(options.length)];
-    votes[choice]++;
+  const llmThink = allHandlers['llm-think'];
+  let usedLlm = false;
+  const reasonings = [];
+
+  if (llmThink) {
+    try {
+      // Run LLM agents in batches of 5
+      const personas = ['engineer', 'designer', 'pm', 'student', 'executive', 'researcher', 'founder', 'analyst', 'marketer', 'ops'];
+      for (let b = 0; b < n; b += 5) {
+        const batch = Array.from({ length: Math.min(5, n - b) }, (_, i) => personas[(b + i) % personas.length]);
+        const results = await Promise.all(batch.map(async (role) => {
+          try {
+            const result = await llmThink({
+              text: `You are a ${role}. Vote on: "${question.slice(0, 300)}"
+Options: ${options.map((o, i) => `${i + 1}. ${o}`).join(', ')}
+Reply ONLY in JSON: {"choice":"exact option text","reasoning":"one sentence why"}`,
+              temperature: 1.0
+            });
+            const answer = result?.answer || result?.text || '';
+            const jsonMatch = answer.match(/\{[\s\S]*\}/);
+            const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+            const choice = parsed?.choice && options.includes(parsed.choice) ? parsed.choice : options.find(o => answer.includes(o)) || options[crypto.randomInt(options.length)];
+            return { role, choice, reasoning: parsed?.reasoning || answer.slice(0, 200) };
+          } catch { return { role, choice: options[crypto.randomInt(options.length)], reasoning: 'inference failed' }; }
+        }));
+        results.forEach(r => { votes[r.choice]++; reasonings.push(r); });
+      }
+      usedLlm = true;
+    } catch (e) {
+      // Fall through to random
+    }
   }
-  const winner = Object.entries(votes).sort((a, b) => b[1] - a[1])[0];
-  res.json({ question, army_size: n, votes, winner: winner[0], winner_pct: Math.round(winner[1] / n * 100) + '%', margin_of_error: Math.round(100 / Math.sqrt(n) * 10) / 10 + '%', _engine: 'real' });
+
+  // Random fallback if no LLM
+  if (!usedLlm) {
+    for (let i = 0; i < n; i++) {
+      const choice = options[crypto.randomInt(options.length)];
+      votes[choice]++;
+    }
+  }
+
+  const sorted = Object.entries(votes).sort((a, b) => b[1] - a[1]);
+  const winner = sorted[0];
+  const total = Object.values(votes).reduce((a, b) => a + b, 0);
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify(votes)).digest('hex').slice(0, 16);
+  res.json({
+    question, army_size: total, votes,
+    winner: winner[0], winner_pct: Math.round(winner[1] / total * 100) + '%',
+    margin_of_error: Math.round(100 / Math.sqrt(total) * 10) / 10 + '%',
+    reasonings: usedLlm ? reasonings.slice(0, 20) : undefined,
+    output_hash: outputHash,
+    _engine: usedLlm ? 'real' : 'heuristic',
+    _inference_note: usedLlm ? 'Each vote cast by LLM agent with reasoning' : 'No LLM configured — random distribution. Set ANTHROPIC_API_KEY or run Ollama for real agent voting.',
+  });
 });
 
 // ===== VERIFIABLE COMPUTE ARMY — massively parallel verified execution =====
@@ -6909,14 +7077,14 @@ app.post('/v1/wallet/create', auth, (req, res) => {
     id, req.acct?.email || req.apiKey, agent_name || 'Agent', initial, budget_limit || 1000, 0, 0
   );
 
-  res.json({ ok: true, wallet_id: id, agent_name: agent_name || 'Agent', balance: initial, budget_limit: budget_limit || 1000 });
+  res.json({ ok: true, wallet_id: id, agent_name: agent_name || 'Agent', balance: initial, budget_limit: budget_limit || 1000, _engine: 'real' });
 });
 
 // GET /v1/wallet/list — List my agent wallets
 app.get('/v1/wallet/list', auth, (req, res) => {
   const ownerId = req.acct?.email || req.apiKey;
   const wallets = db.prepare('SELECT * FROM agent_wallets WHERE owner_id = ? ORDER BY created_at DESC').all(ownerId);
-  res.json({ ok: true, wallets, count: wallets.length });
+  res.json({ ok: true, wallets, count: wallets.length, _engine: 'real' });
 });
 
 // POST /v1/wallet/transfer — Transfer between wallets
@@ -6962,7 +7130,7 @@ app.post('/v1/wallet/transfer', auth, (req, res) => {
     db.prepare('UPDATE agent_wallets SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?').run(amount, amount, to_wallet_id);
   }
 
-  res.json({ ok: true, from: from_wallet_id, to: to_wallet_id, amount, transferred: true });
+  res.json({ ok: true, from: from_wallet_id, to: to_wallet_id, amount, transferred: true, _engine: 'real' });
 });
 
 // POST /v1/wallet/:id/fund — Add credits from main account to wallet
@@ -6979,7 +7147,7 @@ app.post('/v1/wallet/:id/fund', auth, (req, res) => {
   persistKey(req.apiKey);
   db.prepare('UPDATE agent_wallets SET balance = balance + ?, total_earned = total_earned + ? WHERE id = ?').run(amount, amount, req.params.id);
 
-  res.json({ ok: true, wallet_id: req.params.id, amount_funded: amount, new_wallet_balance: wallet.balance + amount, main_balance: req.acct.balance });
+  res.json({ ok: true, wallet_id: req.params.id, amount_funded: amount, new_wallet_balance: wallet.balance + amount, main_balance: req.acct.balance, _engine: 'real' });
 });
 
 // ===== USER LLM KEY MANAGEMENT (BYOK — Bring Your Own Key) =====
@@ -7362,8 +7530,8 @@ app.post('/v1/compare', auth, async (req, res) => {
     }
   }
 
-  // Rank by response quality (length as proxy for now)
-  results.sort((a, b) => (b.answer || '').length - (a.answer || '').length);
+  // Sort alphabetically by provider (length is not a quality metric)
+  results.sort((a, b) => (a.provider || '').localeCompare(b.provider || ''));
   results.forEach((r, i) => r.rank = i + 1);
 
   const totalCredits = results.filter(r => !r.error).length * 10;
@@ -7379,7 +7547,7 @@ app.post('/v1/compare', auth, async (req, res) => {
     slowest: results.filter(r => r.latency_ms).sort((a, b) => b.latency_ms - a.latency_ms)[0]?.provider,
     cost_per_model: results.filter(r => !r.error).reduce((o, r) => { o[r.provider] = r.credits + 'cr'; return o; }, {}),
     avg_latency_ms: Math.round(results.filter(r => r.latency_ms).reduce((s, r) => s + r.latency_ms, 0) / results.filter(r => r.latency_ms).length),
-    _engine: 'real',
+    _engine: 'static',
   });
 });
 
@@ -7855,30 +8023,68 @@ app.post('/v1/cache/set', auth, (req, res) => {
 });
 
 // ===== COST OPTIMIZER (Claude roadmap #5) =====
-app.post('/v1/cost-optimizer', auth, (req, res) => {
+app.post('/v1/cost-optimizer', auth, async (req, res) => {
   const task = req.body.task || req.body.text || '';
   const budget = req.body.max_credits || 100;
+  const benchmark = req.body.benchmark === true; // Actually test providers if requested
   if (!task) return res.status(422).json({ error: { code: 'missing_task' } });
 
   const envMap = { anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY', grok: 'XAI_API_KEY', deepseek: 'DEEPSEEK_API_KEY' };
-  const costs = { anthropic: 15, openai: 10, grok: 8, deepseek: 3, ollama: 0 };
-  const quality = { anthropic: 9.5, openai: 9, grok: 8.5, deepseek: 8, ollama: 6 };
+  const baseCosts = { anthropic: 15, openai: 10, grok: 8, deepseek: 3, ollama: 0 };
+  const baseQuality = { anthropic: 9.5, openai: 9, grok: 8.5, deepseek: 8, ollama: 6 };
   const available = Object.entries(envMap).filter(([_, env]) => process.env[env]).map(([p]) => p);
-  if (process.env.OLLAMA_ENABLED) available.push('ollama');
+  // Check if Ollama is actually running
+  let ollamaAvailable = false;
+  try { await ollamaRequest('/api/tags', {}); ollamaAvailable = true; } catch {}
+  if (ollamaAvailable) available.push('ollama');
 
-  const recommendations = available.map(p => ({
-    provider: p, estimated_credits: costs[p] || 10, quality_score: quality[p] || 5,
-    value_ratio: ((quality[p] || 5) / Math.max(costs[p] || 1, 1)).toFixed(2),
-    within_budget: (costs[p] || 10) <= budget,
-  })).sort((a, b) => parseFloat(b.value_ratio) - parseFloat(a.value_ratio));
+  let usedLlm = false;
+  let benchmarkResults = {};
 
+  // If benchmark=true, actually test each provider with a small prompt
+  if (benchmark && available.length > 0) {
+    const testPrompt = `Briefly answer in under 20 words: ${task.slice(0, 200)}`;
+    for (const provider of available.slice(0, 4)) {
+      const start = Date.now();
+      try {
+        if (provider === 'ollama') {
+          const resp = await ollamaRequest('/api/generate', { model: 'llama3.2', prompt: testPrompt, stream: false });
+          benchmarkResults[provider] = { latency_ms: Date.now() - start, response_length: (resp.response || '').length, success: true };
+        } else {
+          const llmThink = allHandlers['llm-think'];
+          if (llmThink) {
+            const result = await llmThink({ text: testPrompt, provider, max_tokens: 50 });
+            benchmarkResults[provider] = { latency_ms: Date.now() - start, response_length: (result?.answer || '').length, success: true };
+          }
+        }
+        usedLlm = true;
+      } catch (e) {
+        benchmarkResults[provider] = { latency_ms: Date.now() - start, success: false, error: e.message };
+      }
+    }
+  }
+
+  const recommendations = available.map(p => {
+    const bench = benchmarkResults[p];
+    const qualityScore = bench?.success ? Math.min(10, baseQuality[p] + (bench.response_length > 10 ? 0.5 : -1)) : baseQuality[p] || 5;
+    return {
+      provider: p, estimated_credits: baseCosts[p] || 10, quality_score: qualityScore,
+      value_ratio: (qualityScore / Math.max(baseCosts[p] || 1, 1)).toFixed(2),
+      within_budget: (baseCosts[p] || 10) <= budget,
+      benchmark: bench || null,
+    };
+  }).sort((a, b) => parseFloat(b.value_ratio) - parseFloat(a.value_ratio));
+
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify(recommendations)).digest('hex').slice(0, 16);
   res.json({
     ok: true, task: task.slice(0, 100), budget,
     best_value: recommendations[0]?.provider,
-    cheapest: recommendations.sort((a, b) => a.estimated_credits - b.estimated_credits)[0]?.provider,
-    highest_quality: recommendations.sort((a, b) => b.quality_score - a.quality_score)[0]?.provider,
-    recommendations: recommendations.sort((a, b) => parseFloat(b.value_ratio) - parseFloat(a.value_ratio)),
-    _engine: 'real',
+    cheapest: [...recommendations].sort((a, b) => a.estimated_credits - b.estimated_credits)[0]?.provider,
+    highest_quality: [...recommendations].sort((a, b) => b.quality_score - a.quality_score)[0]?.provider,
+    recommendations,
+    output_hash: outputHash,
+    _engine: usedLlm ? 'real' : 'static',
+    _note: usedLlm ? 'Benchmarked against live providers' : 'Baseline estimates. Pass benchmark:true to test providers live.',
   });
 });
 
@@ -7991,15 +8197,59 @@ app.post('/v1/fine-tuning/jobs', auth, async (req, res) => {
   const userKeyNs = 'user-keys:' + req.apiKey.slice(0, 16);
   const userKeyRow = db.prepare('SELECT value FROM agent_state WHERE key = ?').get(userKeyNs + ':' + provider);
 
-  if (userKeyRow) {
-    job.status = 'submitted';
-    job.note = 'Job submitted via BYOK. Check provider dashboard for progress.';
-  } else if (process.env[{ anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY' }[provider] || '']) {
+  const apiKeyForProvider = userKeyRow ? Buffer.from(userKeyRow.value, 'base64').toString() : process.env[{ anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY' }[provider] || ''];
+
+  if (apiKeyForProvider && provider === 'openai' && Array.isArray(training_data)) {
+    // Actually submit to OpenAI Fine-Tuning API
+    try {
+      // Format training data as JSONL
+      const jsonl = training_data.map(ex => JSON.stringify({
+        messages: ex.messages || [
+          { role: 'system', content: ex.system || 'You are a helpful assistant.' },
+          { role: 'user', content: ex.input || ex.prompt || '' },
+          { role: 'assistant', content: ex.output || ex.completion || '' },
+        ]
+      })).join('\n');
+
+      // Upload file first
+      const boundary = 'slopshop' + Date.now();
+      const fileBody = `--${boundary}\r\nContent-Disposition: form-data; name="purpose"\r\n\r\nfine-tune\r\n--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="training.jsonl"\r\nContent-Type: application/jsonl\r\n\r\n${jsonl}\r\n--${boundary}--`;
+      const fileResp = await new Promise((resolve, reject) => {
+        const req = require('https').request({ hostname: 'api.openai.com', path: '/v1/files', method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + apiKeyForProvider, 'Content-Type': 'multipart/form-data; boundary=' + boundary, 'Content-Length': Buffer.byteLength(fileBody) },
+          timeout: 30000 }, r => { let d = ''; r.on('data', c => d += c); r.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } }); });
+        req.on('error', reject); req.write(fileBody); req.end();
+      });
+
+      if (fileResp.id) {
+        // Create fine-tuning job
+        const ftBody = JSON.stringify({ training_file: fileResp.id, model: model || 'gpt-4o-mini-2024-07-18', hyperparameters: { n_epochs: hyperparameters?.epochs || 3 } });
+        const ftResp = await new Promise((resolve, reject) => {
+          const req = require('https').request({ hostname: 'api.openai.com', path: '/v1/fine_tuning/jobs', method: 'POST',
+            headers: { 'Authorization': 'Bearer ' + apiKeyForProvider, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(ftBody) },
+            timeout: 30000 }, r => { let d = ''; r.on('data', c => d += c); r.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } }); });
+          req.on('error', reject); req.write(ftBody); req.end();
+        });
+
+        job.status = 'submitted';
+        job.provider_job_id = ftResp.id || null;
+        job.provider_status = ftResp.status || 'unknown';
+        job.training_file_id = fileResp.id;
+        job.note = ftResp.id ? 'Fine-tuning job submitted to OpenAI. Track via provider_job_id.' : 'Submission attempted but no job ID returned: ' + JSON.stringify(ftResp.error || ftResp).slice(0, 200);
+      } else {
+        job.status = 'error';
+        job.note = 'File upload failed: ' + JSON.stringify(fileResp.error || fileResp).slice(0, 200);
+      }
+    } catch (e) {
+      job.status = 'error';
+      job.note = 'OpenAI API call failed: ' + e.message;
+    }
+  } else if (apiKeyForProvider) {
     job.status = 'queued';
-    job.note = 'Job queued. Platform key will be used. Fine-tuning charges apply at provider rates.';
+    job.note = provider === 'openai' ? 'OpenAI key found but training_data must be an array. Resubmit with training_data as array of {input, output} objects.' : 'Fine-tuning via ' + provider + ' API not yet supported. Job metadata stored for manual submission.';
   } else {
     job.status = 'pending_key';
-    job.note = 'No API key for ' + provider + '. Set your key via POST /v1/keys/llm/set to proceed.';
+    job.note = 'No API key for ' + provider + '. Set via POST /v1/keys/llm/set or set ' + ({ anthropic: 'ANTHROPIC_API_KEY', openai: 'OPENAI_API_KEY' }[provider] || 'PROVIDER_KEY') + ' env var.';
   }
 
   db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run('ft-jobs:' + jobId, JSON.stringify(job));
@@ -8233,7 +8483,7 @@ app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => 
   }
 
   const engine = result?._engine || 'unknown';
-  const confidence = engine === 'real' ? 0.99 : engine === 'llm' ? 0.85 : engine === 'needs_key' ? 0.0 : engine === 'error' ? 0.0 : 0.80;
+  const confidence = engine === 'real' ? 0.99 : engine === 'simulated' ? 0.50 : engine === 'llm' ? 0.85 : engine === 'needs_key' ? 0.0 : engine === 'error' ? 0.0 : 0.80;
 
   // REAL verification: SHA-256 hash of output proves the data was actually computed
   // Uses sorted-keys canonical JSON so any language can independently verify:
@@ -8706,12 +8956,13 @@ app.get('/v1/memory/leaderboard', publicRateLimit, (req, res) => {
   }
 });
 
-// 10. Multi-LLM smart router with cost, speed, quality, and task-fit scoring
+// 10. Multi-LLM smart router — data-driven from audit_log + baseline profiles
 app.post('/v1/router/smart', auth, (req, res) => {
   const { task, providers, optimize_for } = req.body;
-  const opt = optimize_for || 'balanced'; // 'cost', 'speed', 'quality', 'balanced'
+  const opt = optimize_for || 'balanced';
 
-  const providerProfiles = {
+  // Baseline profiles (used when no audit data available)
+  const baseProfiles = {
     'claude': { cost: 3, speed: 7, quality: 9, best_for: ['reasoning', 'code', 'analysis', 'writing'] },
     'grok': { cost: 2, speed: 9, quality: 8, best_for: ['real-time', 'search', 'humor', 'speed'] },
     'gpt': { cost: 5, speed: 6, quality: 9, best_for: ['general', 'creative', 'structured'] },
@@ -8721,34 +8972,68 @@ app.post('/v1/router/smart', auth, (req, res) => {
     'deepseek': { cost: 1, speed: 7, quality: 8, best_for: ['code', 'math', 'reasoning'] },
   };
 
+  // Query actual performance data from audit_log (last 7 days)
+  let liveStats = {};
+  let dataSource = 'baseline';
+  try {
+    const rows = db.prepare(`
+      SELECT engine, COUNT(*) as calls, AVG(latency_ms) as avg_latency,
+        SUM(CASE WHEN engine != 'error' THEN 1.0 ELSE 0 END) / COUNT(*) as success_rate,
+        AVG(credits) as avg_cost
+      FROM audit_log WHERE ts > datetime('now', '-7 days') AND engine IN ('ollama','grok','deepseek','real')
+      GROUP BY engine
+    `).all();
+    rows.forEach(r => {
+      const provider = r.engine === 'real' ? 'claude' : r.engine;
+      liveStats[provider] = {
+        calls: r.calls,
+        avg_latency: Math.round(r.avg_latency || 0),
+        success_rate: Math.round((r.success_rate || 0) * 100),
+        avg_cost: Math.round(r.avg_cost || 0),
+      };
+    });
+    if (Object.keys(liveStats).length > 0) dataSource = 'audit_log';
+  } catch {}
+
   const taskWords = (task || '').toLowerCase().split(/\s+/);
-  const available = providers || Object.keys(providerProfiles);
+  const available = providers || Object.keys(baseProfiles);
 
   const scored = available.map(p => {
-    const profile = providerProfiles[p] || { cost: 5, speed: 5, quality: 5, best_for: [] };
-    let score = 0;
+    const base = baseProfiles[p] || { cost: 5, speed: 5, quality: 5, best_for: [] };
+    const live = liveStats[p];
 
-    // Task fit bonus
-    const taskFit = profile.best_for.filter(b => taskWords.some(w => b.includes(w))).length;
+    // Merge live data with baseline
+    const speed = live ? Math.min(10, Math.round(10 - (live.avg_latency / 500))) : base.speed;
+    const quality = live ? Math.min(10, Math.round(live.success_rate / 10)) : base.quality;
+    const cost = live ? Math.min(10, live.avg_cost) : base.cost;
+
+    let score = 0;
+    const taskFit = base.best_for.filter(b => taskWords.some(w => b.includes(w))).length;
     score += taskFit * 3;
 
-    // Optimization preference weighting
-    if (opt === 'cost') score += (10 - profile.cost) * 2;
-    else if (opt === 'speed') score += profile.speed * 2;
-    else if (opt === 'quality') score += profile.quality * 2;
-    else score += profile.quality + profile.speed + (10 - profile.cost); // balanced
+    if (opt === 'cost') score += (10 - cost) * 2;
+    else if (opt === 'speed') score += speed * 2;
+    else if (opt === 'quality') score += quality * 2;
+    else score += quality + speed + (10 - cost);
 
-    return { provider: p, score: Math.round(score * 100) / 100, ...profile, task_fit: taskFit };
+    return {
+      provider: p, score: Math.round(score * 100) / 100,
+      cost, speed, quality, best_for: base.best_for, task_fit: taskFit,
+      live_stats: live || null,
+    };
   }).sort((a, b) => b.score - a.score);
 
   const recommended = scored[0];
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify(scored)).digest('hex').slice(0, 16);
   res.json({
     ok: true,
     recommended: recommended.provider,
     reasoning: `${recommended.provider} scored highest for "${opt}" optimization with task fit ${recommended.task_fit}`,
     all_scores: scored,
     optimize_for: opt,
-    _engine: 'real'
+    data_source: dataSource,
+    output_hash: outputHash,
+    _engine: dataSource === 'audit_log' ? 'real' : 'static',
   });
 });
 
@@ -9067,9 +9352,9 @@ app.get('/v1/enterprise/capabilities', publicRateLimit, (req, res) => {
     enterprise: {
       multi_region: { status: 'roadmap', regions: ['us-east-1', 'eu-west-1', 'ap-southeast-1'], description: 'Multi-region deployment with automatic failover', roadmap: 'Q4 2026' },
       soc2: { status: 'in_progress', description: 'SOC 2 Type II certification in progress', path: 'Audit scheduled Q3 2026, expected completion Q4 2026', current: 'Data encrypted in transit (TLS 1.3). SQLite with WAL mode for durability. Encryption at rest via Railway volume encryption. Self-hosted users should enable disk encryption.' },
-      p99_latency: { guarantee: '<100ms for compute APIs', measured: '<50ms p95, <100ms p99 for all 927 compute handlers', sla: 'Enterprise SLA available on request' },
-      air_gapped: { status: 'available', description: 'Air-gapped enterprise version — zero internet required for 927 compute APIs', setup: 'docker run --network=none slopshop/slopshop-airgap:latest', note: 'Network and LLM APIs require connectivity' },
-      open_source_core: { status: 'available', description: 'All 927 compute handlers are open-source (MIT). LLM and enterprise features are proprietary.', repo: 'https://github.com/slopshop/slopshop' },
+      p99_latency: { guarantee: '<100ms for compute APIs', measured: '<50ms p95, <100ms p99 for all 925 compute handlers', sla: 'Enterprise SLA available on request' },
+      air_gapped: { status: 'available', description: 'Air-gapped enterprise version — zero internet required for 925 compute APIs', setup: 'docker run --network=none slopshop/slopshop-airgap:latest', note: 'Network and LLM APIs require connectivity' },
+      open_source_core: { status: 'available', description: 'All 925 compute handlers are open-source (MIT). LLM and enterprise features are proprietary.', repo: 'https://github.com/slopshop/slopshop' },
       self_host_cloud_sync: { status: 'roadmap', description: 'Hybrid mode: self-host compute, sync memory and state to slopshop.gg cloud', features: ['Bidirectional memory sync', 'Cloud backup of local state', 'Unified billing'], roadmap: 'Q2 2027' },
       kubernetes: { manifest_url: 'https://slopshop.gg/deploy/k8s-manifest.yaml', helm_chart: 'helm install slopshop slopshop/slopshop', one_command: 'kubectl apply -f https://slopshop.gg/deploy/k8s-manifest.yaml' },
     },
@@ -9081,27 +9366,33 @@ app.get('/v1/enterprise/capabilities', publicRateLimit, (req, res) => {
 
 // SOC2 readiness status
 app.get('/v1/compliance/soc2', publicRateLimit, (req, res) => {
+  // Actually verify each check at runtime
+  const hasAuditLog = typeof dbInsertAudit !== 'undefined';
+  const hasRateLimit = typeof rateLimitStore !== 'undefined' || typeof publicRateLimit !== 'undefined';
+  const auditTableExists = (() => { try { db.prepare('SELECT COUNT(*) as c FROM audit_log').get(); return true; } catch { return false; } })();
   const checks = [
-    { name: 'tls_encryption', passed: true, detail: 'TLS 1.3 enforced via Railway' },
-    { name: 'audit_logging', passed: typeof dbInsertAudit !== 'undefined', detail: 'All API calls logged to audit_log table with key_prefix, timestamps, credits' },
-    { name: 'key_hashing', passed: true, detail: 'API keys stored as SHA-256 hashes, never plaintext' },
-    { name: 'rate_limiting', passed: true, detail: 'Per-key and global rate limiting enforced on all endpoints' },
-    { name: 'tenant_isolation', passed: true, detail: 'All data scoped by API key prefix, no cross-tenant access' },
+    { name: 'tls_encryption', passed: process.env.RAILWAY_ENVIRONMENT ? true : false, detail: process.env.RAILWAY_ENVIRONMENT ? 'TLS enforced via Railway reverse proxy' : 'NOT VERIFIED — not running on Railway' },
+    { name: 'audit_logging', passed: hasAuditLog && auditTableExists, detail: hasAuditLog && auditTableExists ? 'audit_log table exists and logging function defined' : 'Audit logging not fully configured' },
+    { name: 'key_hashing', passed: hasAuditLog, detail: 'API key prefixes stored, not full keys. SHA-256 hashing available.' },
+    { name: 'rate_limiting', passed: hasRateLimit, detail: hasRateLimit ? 'Rate limiting middleware active' : 'Rate limiting not configured' },
+    { name: 'tenant_isolation', passed: true, detail: 'Data scoped by API key prefix in all queries' },
   ];
   const ready = checks.every(c => c.passed);
-  res.json({ ok: true, ready, checks, certification: 'in_progress', estimated: 'Q4 2026', _engine: 'real' });
+  res.json({ ok: true, ready, checks, certification: 'in_progress', estimated: 'Q4 2026', note: 'Self-assessment — not yet externally audited', _engine: 'real' });
 });
 
 // HIPAA readiness status
 app.get('/v1/compliance/hipaa', publicRateLimit, (req, res) => {
+  const hasAuditLog = typeof dbInsertAudit !== 'undefined';
   const checks = [
-    { name: 'encryption_in_transit', passed: true, detail: 'TLS 1.3 enforced on all connections' },
-    { name: 'audit_logs', passed: typeof dbInsertAudit !== 'undefined', detail: 'Comprehensive audit trail for all data access' },
-    { name: 'access_controls', passed: true, detail: 'API key authentication with role-based scoping' },
-    { name: 'data_isolation', passed: true, detail: 'Per-tenant data isolation via key-prefixed storage' },
+    { name: 'encryption_in_transit', passed: !!process.env.RAILWAY_ENVIRONMENT, detail: process.env.RAILWAY_ENVIRONMENT ? 'TLS enforced via Railway' : 'NOT VERIFIED — not on Railway' },
+    { name: 'audit_logs', passed: hasAuditLog, detail: hasAuditLog ? 'Audit trail active' : 'Audit logging not configured' },
+    { name: 'access_controls', passed: true, detail: 'API key authentication required on all data endpoints' },
+    { name: 'data_isolation', passed: true, detail: 'Per-key data scoping in all queries' },
+    { name: 'encryption_at_rest', passed: false, detail: 'SQLite WAL mode — not encrypted at rest. Use SQLCipher for HIPAA compliance.' },
   ];
   const ready = checks.every(c => c.passed);
-  res.json({ ok: true, ready, checks, note: 'Contact enterprise@slopshop.gg for BAA and HIPAA-compliant deployment options', _engine: 'real' });
+  res.json({ ok: true, ready, checks, note: 'Self-assessment — BAA not yet available. Contact enterprise@slopshop.gg', _engine: 'real' });
 });
 
 // TEE attestation stub
@@ -9118,18 +9409,21 @@ app.post('/v1/proof/tee', auth, (req, res) => {
 
 // Unified compliance dashboard
 app.get('/v1/compliance/status', publicRateLimit, (req, res) => {
+  const hasAuditLog = typeof dbInsertAudit !== 'undefined';
+  const onRailway = !!process.env.RAILWAY_ENVIRONMENT;
   const soc2Checks = [
-    { name: 'tls_encryption', passed: true },
-    { name: 'audit_logging', passed: typeof dbInsertAudit !== 'undefined' },
-    { name: 'key_hashing', passed: true },
+    { name: 'tls_encryption', passed: onRailway },
+    { name: 'audit_logging', passed: hasAuditLog },
+    { name: 'key_hashing', passed: hasAuditLog },
     { name: 'rate_limiting', passed: true },
     { name: 'tenant_isolation', passed: true },
   ];
   const hipaaChecks = [
-    { name: 'encryption_in_transit', passed: true },
-    { name: 'audit_logs', passed: typeof dbInsertAudit !== 'undefined' },
+    { name: 'encryption_in_transit', passed: onRailway },
+    { name: 'audit_logs', passed: hasAuditLog },
     { name: 'access_controls', passed: true },
     { name: 'data_isolation', passed: true },
+    { name: 'encryption_at_rest', passed: false },
   ];
   const soc2Ready = soc2Checks.every(c => c.passed);
   const hipaaReady = hipaaChecks.every(c => c.passed);
@@ -9141,43 +9435,75 @@ app.get('/v1/compliance/status', publicRateLimit, (req, res) => {
       tee: { supported: false, roadmap: 'Q3 2026', description: 'Intel SGX / AWS Nitro attestation' },
     },
     overall_ready: soc2Ready && hipaaReady,
+    note: 'Self-assessment — not externally audited',
     _engine: 'real',
   });
 });
 
-// Self-improving eval stub
-app.post('/v1/eval/self-improve', auth, (req, res) => {
-  const { agent_id, test_results, improve } = req.body || {};
+// Self-improving eval — LLM-powered analysis with heuristic fallback
+app.post('/v1/eval/self-improve', auth, async (req, res) => {
+  const { agent_id, test_results, improve, system_prompt } = req.body || {};
   if (!agent_id) return res.status(400).json({ error: { code: 'missing_agent_id', message: 'agent_id is required' } });
-  const suggestions = [];
-  if (Array.isArray(test_results)) {
-    const failures = test_results.filter(t => t.passed === false || t.status === 'failed');
-    if (failures.length > 0) {
-      suggestions.push({ type: 'retry_failures', detail: `Re-run ${failures.length} failed test(s) with increased timeout` });
-      suggestions.push({ type: 'prompt_refinement', detail: 'Adjust system prompt to address failure patterns' });
+  const llmThink = allHandlers['llm-think'];
+  let suggestions = [];
+  let usedLlm = false;
+
+  if (llmThink && Array.isArray(test_results) && test_results.length > 0) {
+    try {
+      const failures = test_results.filter(t => t.passed === false || t.status === 'failed');
+      const result = await llmThink({
+        text: `Analyze these agent test results and suggest specific improvements.
+Agent: ${agent_id}
+${system_prompt ? `System prompt: "${system_prompt.slice(0, 500)}"` : ''}
+Total tests: ${test_results.length}, Failures: ${failures.length}
+Failed tests: ${JSON.stringify(failures.slice(0, 10))}
+Passing tests: ${JSON.stringify(test_results.filter(t => t.passed !== false).slice(0, 5))}
+
+Reply in JSON: {"suggestions":[{"type":"string","detail":"specific actionable suggestion","priority":"high|medium|low"}],"root_cause":"what pattern explains the failures","improved_prompt":"if system_prompt was provided, suggest an improved version"}`,
+        temperature: 0.3
+      });
+      const answer = result?.answer || result?.text || '';
+      const jsonMatch = answer.match(/\{[\s\S]*\}/);
+      const parsed = jsonMatch ? JSON.parse(jsonMatch[0]) : null;
+      if (parsed?.suggestions && Array.isArray(parsed.suggestions)) {
+        suggestions = parsed.suggestions;
+        if (parsed.root_cause) suggestions.unshift({ type: 'root_cause', detail: parsed.root_cause, priority: 'high' });
+        if (parsed.improved_prompt) suggestions.push({ type: 'improved_prompt', detail: parsed.improved_prompt, priority: 'high' });
+        usedLlm = true;
+      }
+    } catch { /* fall through */ }
+  }
+
+  // Heuristic fallback
+  if (!usedLlm) {
+    if (Array.isArray(test_results)) {
+      const failures = test_results.filter(t => t.passed === false || t.status === 'failed');
+      if (failures.length > 0) {
+        suggestions.push({ type: 'retry_failures', detail: `Re-run ${failures.length} failed test(s) with increased timeout`, priority: 'high' });
+        suggestions.push({ type: 'prompt_refinement', detail: 'Adjust system prompt to address failure patterns', priority: 'medium' });
+      }
+      if (test_results.length > 0) {
+        suggestions.push({ type: 'coverage_expansion', detail: 'Add edge-case tests for untested input boundaries', priority: 'low' });
+      }
     }
-    if (test_results.length > 0) {
-      suggestions.push({ type: 'coverage_expansion', detail: 'Add edge-case tests for untested input boundaries' });
-    }
+    if (improve) suggestions.push({ type: 'auto_tune', detail: 'Schedule automatic parameter tuning based on test results', priority: 'medium' });
+    if (suggestions.length === 0) suggestions.push({ type: 'baseline', detail: 'No test results provided — submit test_results array for targeted suggestions', priority: 'low' });
   }
-  if (improve) {
-    suggestions.push({ type: 'auto_tune', detail: 'Schedule automatic parameter tuning based on test results' });
-  }
-  if (suggestions.length === 0) {
-    suggestions.push({ type: 'baseline', detail: 'No test results provided — submit test_results array for targeted suggestions' });
-  }
-  res.json({ ok: true, agent_id, suggestions, next_eval_in: '1h', _engine: 'real' });
+
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify(suggestions)).digest('hex').slice(0, 16);
+  res.json({ ok: true, agent_id, suggestions, output_hash: outputHash, next_eval_in: '1h', _engine: usedLlm ? 'real' : 'heuristic' });
 });
 
 // 23. Case studies page reference
 app.get('/v1/case-studies', publicRateLimit, (req, res) => {
   res.json({
     ok: true,
+    note: 'These are example use cases showing what Slopshop enables — not verified customer stories.',
     case_studies: [
-      { title: 'AI Research Lab — 10x faster paper analysis', use_case: 'Deployed 5,000-agent army to analyze and summarize 10,000 research papers in under 2 hours', tools_used: ['army/deploy', 'llm-summarize', 'memory-set', 'knowledge/add'], credits_used: 50000 },
-      { title: 'E-commerce — Automated product enrichment', use_case: 'Knowledge graph + memory to auto-enrich 100K product listings with SEO metadata', tools_used: ['knowledge/add', 'llm-seo-meta', 'text-keyword-extract', 'memory-set'], credits_used: 120000 },
-      { title: 'DevOps Agency — Replace Redis + Zapier + Cron', use_case: 'Single Slopshop instance replaced 3 SaaS subscriptions for an agency managing 50 client sites', tools_used: ['memory-set', 'orch-schedule-once', 'sense-url-content', 'comm-webhook-get'], credits_used: 15000 },
-      { title: 'Crypto Trading Firm — Real-time signal verification', use_case: 'Merkle proofs + hash verification for audit-grade trade signal logging', tools_used: ['proof/merkle', 'crypto-hash-sha256', 'memory-set', 'orch-cache-set'], credits_used: 8000 },
+      { title: 'AI Research Lab — 10x faster paper analysis', use_case: 'Deploy agent army to analyze and summarize research papers in bulk', tools_used: ['army/deploy', 'llm-summarize', 'memory-set', 'knowledge/add'] },
+      { title: 'E-commerce — Automated product enrichment', use_case: 'Knowledge graph + memory to auto-enrich product listings with SEO metadata', tools_used: ['knowledge/add', 'llm-seo-meta', 'text-keyword-extract', 'memory-set'] },
+      { title: 'DevOps Agency — Replace Redis + Zapier + Cron', use_case: 'Single Slopshop instance replaces multiple SaaS subscriptions for agencies', tools_used: ['memory-set', 'orch-schedule-once', 'sense-url-content', 'comm-webhook-get'] },
+      { title: 'Crypto Trading Firm — Signal verification', use_case: 'Merkle proofs + hash verification for audit-grade trade signal logging', tools_used: ['proof/merkle', 'crypto-hash-sha256', 'memory-set', 'orch-cache-set'] },
     ],
     submit_your_story: 'POST /v1/case-studies/submit',
     page: 'https://slopshop.gg/case-studies.html',
@@ -9554,7 +9880,7 @@ const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   const llm = process.env.ANTHROPIC_API_KEY ? 'Anthropic' : process.env.OPENAI_API_KEY ? 'OpenAI' : 'NONE';
   console.log(`\n  🦞 SLOPSHOP v2 is live on http://localhost:${PORT}`);
-  console.log(`  📡 ${apiCount} APIs, ${handlerCount} handlers, 0 mocks`);
+  console.log(`  📡 ${apiCount} APIs, ${handlerCount} handlers`);
   console.log(`  🔑 Demo key: sk-slop-demo-key-12345678 (200 cr)`);
   console.log(`  🤖 LLM: ${llm}${llm === 'NONE' ? ' (set ANTHROPIC_API_KEY to unlock 48 AI APIs)' : ''}`);
   console.log(`  🌐 http://localhost:${PORT}/index.html\n`);

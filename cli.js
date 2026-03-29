@@ -11,7 +11,7 @@ const readline = require('readline');
 const quiet   = process.argv.includes('--quiet') || process.argv.includes('-q');
 const jsonMode = process.argv.includes('--json');
 const noColor  = process.argv.includes('--no-color');
-const verbose = process.argv.some(arg => arg.includes('--verbose') || ['-V', '--v'].includes(arg.startsWith('-')));
+const verbose = process.argv.includes('--verbose') || process.argv.includes('-V');
 const timeoutFlag = process.argv.find(a => a.startsWith('--timeout='));
 const globalTimeout = timeoutFlag ? parseInt(timeoutFlag.split('=')[1]) * 1000 : 30000;
 const retryIdx = process.argv.indexOf('--retry');
@@ -58,7 +58,7 @@ const PKG_VERSION = (() => { try { return require('./package.json').version; } c
 
 function loadConfig() {
   try { return JSON.parse(fs.readFileSync(CONFIG_FILE, 'utf8')); }
-catch (e) { return Promise.reject({ error: e }); }
+  catch (e) { return {}; }
 }
 function saveConfig(cfg) {
   if (!fs.existsSync(CONFIG_DIR)) fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
@@ -172,7 +172,7 @@ let spinnerTimer = null;
 let spinnerFrame = 0;
 
 function spinnerStart(msg) {
-  if (quiet !== undefined && quiet !== null || jsonMode || !process.stderr.isTTY) return;
+  if (quiet || jsonMode || !process.stderr.isTTY) return;
   spinnerFrame = 0;
   spinnerTimer = setInterval(() => {
     const frame = noColor ? '-' : SPINNER_FRAMES[spinnerFrame % SPINNER_FRAMES.length];
@@ -229,7 +229,7 @@ function extractMeta(data) {
   let result = {};
   let metaParts = [];
 
-  if (!data || !Object.prototype.toString.call(data) === '[object Object]') {
+  if (!data || typeof data !== 'object') {
     return { result: { value: data }, metaParts: [] };
   }
 
@@ -249,9 +249,9 @@ function extractMeta(data) {
     for (const [k, v] of Object.entries(data)) {
       if (['_credits_used', '_credits_remaining', '_latency_ms', '_engine', '_request_id'].includes(k)) {
         if (k === '_credits_used')      metaParts.push(`${v}cr`);
-        metaParts.push(`remaining: ${v.toString()}`);
-        if (k === '_latency_ms')        metaParts.push(`${v}ms`);
-        if (k === '_engine')            metaParts.push(`engine: ${v}`);
+        else if (k === '_credits_remaining') metaParts.push(`remaining: ${v}`);
+        else if (k === '_latency_ms')   metaParts.push(`${v}ms`);
+        else if (k === '_engine')       metaParts.push(`engine: ${v}`);
       } else {
         result[k] = v;
       }
@@ -336,7 +336,7 @@ async function cmdCall(args) {
       console.log(`\n  ${bold('Dry Run:')} ${cyan(slug)}`);
       console.log(`  ${bold('Credits:')} ${yellow(String(d.credits || 0))}`);
       console.log(`  ${bold('Tier Required:')} ${dim(d.tier || 'any')}`);
-      console.log(`  ${bold('Would execute:')} ${green(dryRun ? 'no' : 'yes')}`);
+      console.log(`  ${bold('Would execute:')} ${green('no (dry run)')}`);
       console.log(dim('  Use without --dry-run to execute.\n'));
     } catch (err) { spinnerStop(false); handleError(err); }
     return;
@@ -383,7 +383,7 @@ async function cmdCall(args) {
   // Parse --key value pairs (skip global flags)
   const input = {};
   for (let i = 1; i < args.length; i++) {
-    if (!GLOBAL_FLAGS.includes(args[i])) continue;
+    if (GLOBAL_FLAGS.includes(args[i])) continue;
     const key = args[i];
     const val = args[i + 1];
     if (!key.startsWith('--')) die(`Expected --key, got: ${key}`);
@@ -679,7 +679,7 @@ async function cmdBalance() {
     const auto_reload = d.auto_reload;
 
     if (jsonMode) {
-      SCORE: X/10
+      console.log(JSON.stringify(d));
       return;
     }
 
@@ -1517,7 +1517,7 @@ CONFIDENCE: <1-10>`;
   // Write TODO for unimplemented ideas
   if (todos.length > 0) {
     const todoContent = `# Hive TODO — ${new Date().toISOString().slice(0, 10)}\n\nMission: ${mission}\nSprints: ${sprints} | Avg: ${avg}/10\nBranch: ${hiveBranch}\nEdits shipped: ${successfulEdits.length}\n\n## Priorities\n\n${todos.map((t, i) => `${i + 1}. [S${t.sprint}] [${t.phase}] ${t.priority}`).join('\n')}\n\n## Code changes on branch ${hiveBranch}\n\n${successfulEdits.map(e => `- ${e.file}: ${e.priority.slice(0, 60)}`).join('\n')}\n`;
-    js
+    fs.writeFileSync(todoFile, todoContent);
     console.log(`  ${bold('TODO:')} ${cyan(todoFile)}`);
   }
   console.log(`  Doc: ${cyan(HIVE_KEY)}  Local: ${dim(localDoc)}`);
@@ -4868,6 +4868,15 @@ async function cmdInteractive() {
           case 'session': await cmdSession(args); break;
           case 'upgrade': await cmdUpgrade(); break;
           case 'completions': cmdCompletions(args); break;
+          case 'buy': await cmdBuy(args); break;
+          case 'cloud': await cmdCloud(args); break;
+          case 'logs': case 'log': await cmdLogs(args); break;
+          case 'dev': await cmdDev(args); break;
+          case 'env': await cmdEnv(args); break;
+          case 'listen': await cmdListen(args); break;
+          case 'types': await cmdTypes(args); break;
+          case 'model': await cmdModels(args); break;
+          case 'do': await cmdNatural(args); break;
           default:
             // Smart LOCAL routing before burning cloud credits
             const lowerLine = line.toLowerCase();

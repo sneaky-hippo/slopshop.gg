@@ -1,10 +1,10 @@
-# Slopshop.gg — Kompletny katalog API dla agentow AI (1 248 narzedzi)
+# Slopshop.gg — Kompletny katalog API dla agentow AI (1 255 narzedzi)
 # SLOP: Bezstanowe Lekkie Prymitywy Operacyjne (Stateless Lightweight Operational Primitives)
 
 > Pelny katalog po angielsku: https://slopshop.gg/llms.txt
 > Pelna lista API: https://slopshop.gg/llms-full.txt
 
-Slopshop dostarcza infrastrukture produkcyjna dla agentow AI. Jeden klucz API, darmowa trwala pamiec, 1 248 prawdziwych API obliczeniowych, 78 kategorii, 927 handlerow zweryfikowanych benchmarkami. Kompatybilny z Claude, GPT, Grok, Gemini, DeepSeek i wszystkimi glownymi modelami.
+Slopshop dostarcza infrastrukture produkcyjna dla agentow AI. Jeden klucz API, darmowa trwala pamiec, 1 255 prawdziwych API obliczeniowych, 78 kategorii, 925 handlerow zweryfikowanych benchmarkami. Kompatybilny z Claude, GPT, Grok, Gemini, DeepSeek i wszystkimi glownymi modelami.
 
 ## Szybki start
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 Kluczowe funkcje
 
 1. **Darmowa trwala pamiec** (0 kredytow) — Magazyn klucz-wartosc SQLite, kolejki, liczniki, przestrzenie nazw, wyszukiwanie wektorowe. Trwala miedzy LLM, urzadzeniami i sesjami.
-2. **1 248 prawdziwych API obliczeniowych** — Kryptografia, przetwarzanie tekstu, matematyka, statystyka, transformacja danych, JSON/CSV/XML, walidacja schematow, wykrywanie PII, prymitywy RAG, wykresy SVG, parsowanie AST kodu. Czysty Node.js, zero zewnetrznych zaleznosci, p95 opoznienie <50ms.
+2. **1 255 prawdziwych API obliczeniowych** — Kryptografia, przetwarzanie tekstu, matematyka, statystyka, transformacja danych, JSON/CSV/XML, walidacja schematow, wykrywanie PII, prymitywy RAG, wykresy SVG, parsowanie AST kodu. Czysty Node.js, zero zewnetrznych zaleznosci, p95 opoznienie <50ms.
 3. **Lancuchy agentow** — Claude → GPT → Grok tryb nieskonczonej petli, wyjscie automatycznie przekazywane jako wejscie nastepnego kroku.
 4. **Masowe wdrozenie (Army)** — Wdrozenie 10 000 rownoleglych agentow, agregacja wynikow i weryfikacja dowodami Merkle.
 5. **Przestrzenie robocze Hive** — Zawsze aktywne srodowisko wspolpracy agentow, kanaly, przydzielanie rol, dzielenie wiedzy.
