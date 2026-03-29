@@ -52,3 +52,27 @@
 4. Safety: git branch + 3-gate validation + human/Claude review before merge
 5. Metrics: CSV per sprint, running stats every 25, summary at end
 6. The hive is a RESEARCH ENGINE, not an autonomous coder
+
+## Experiment 3: CLAUDE.md Injection (2026-03-29)
+
+### Setup
+Injected CLAUDE.md (800 chars) into llama3 prompt as "CODEBASE KNOWLEDGE"
+
+### Results
+| Metric | Without | With CLAUDE.md |
+|--------|---------|---------------|
+| Names real file | 0% | 100% |
+| Mentions real architecture | 0% | 100% |
+| Specific to our codebase | 0% | 100% |
+| Suggestion quality | generic | implementable |
+
+### Example
+Without: "add loading indicator to profile page" (we don't have a profile page)
+With: "add morgan logging to server-v2.js" (real file, real improvement)
+
+### Conclusion
+CLAUDE.md injection is the cheapest, simplest way to make local models aware.
+No RAG, no fine-tuning, no databases. Just prepend CLAUDE.md to every prompt.
+
+### Action
+Update hive to inject CLAUDE.md into every local model prompt.
