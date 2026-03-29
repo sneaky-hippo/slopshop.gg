@@ -9261,7 +9261,116 @@ app.get('/v1/eval/report/:id', auth, (req, res) => {
   res.json({ ok: true, report: row });
 });
 
-// POST /v1/eval/regression — Compare a new run against a baseline compute runapp.post('/v1/eval/regression', auth, async (req, res) => {  const { swarm_config, baseline_run_id } = req.body;  if (!baseline_run_id) return res.status(400).json({ error: { code: 'missing_baseline', message: 'Provide baseline_run_id from a previous compute run' } });  // Load baseline run  const baselineRow = db.prepare('SELECT * FROM compute_runs WHERE id = ? AND api_key = ?').get(baseline_run_id, req.apiKey);  if (!baselineRow) return res.status(404).json({ error: { code: 'baseline_not_found', message: 'No compute run found with that id for your API key' } });  let baselineConfig;  try { baselineConfig = JSON.parse(baselineRow.config || '{}'); } catch(e) { baselineConfig = {}; }  let baselineResults;  try { baselineResults = JSON.parse(baselineRow.results || '[]'); } catch(e) { baselineResults = []; }  // Merge: use swarm_config overrides on top of baseline config  const runConfig = { ...baselineConfig, ...(swarm_config || {}) };  const tool = runConfig.tool;  const input = runConfig.input || {};  const n = Math.min(runConfig.agents || 10, 200);  const handler = tool ? allHandlers[tool] : null;  if (tool && !handler) return res.status(404).json({ error: { code: 'tool_not_found', slug: tool } });  // Re-run with same config  const newResults = [];  const startTime = Date.now();  for (let i = 0; i < n; i++) {    const agentId = `agent-${i + 1}`;    const cleanInput = input ? { ...input } : {};    if (handler) {      try {        const result = await Promise.resolve(handler(cleanInput));        const hash = crypto.createHash('sha256').update(JSON.stringify(result || {})).digest('hex').slice(0, 16);        newResults.push({ agent_id: agentId, result, hash, verified: true, _engine: result?._engine || 'real' });      } catch(e) {        newResults.push({ agent_id: agentId, error: e.message, verified: false });      }    } else {      newResults.push({ agent_id: agentId, perspective: `Agent ${i+1}: "${(runConfig.task||'').slice(0,200)}"`, hash: crypto.createHash('sha256').update(agentId + (runConfig.task||'')).digest('hex').slice(0,16), verified: true });    }  }  const latency = Date.now() - startTime;  // Compare baseline vs new results  const regressions = [];  const improvements = [];  const unchanged = [];  const baselineSuccess = baselineResults.filter(r => r.verified).length;  const baselineFail = baselineResults.filter(r => r.error).length;  const newSuccess = newResults.filter(r => r.verified).length;  const newFail = newResults.filter(r => r.error).length;  const baselineTotal = baselineResults.length || 1;  const newTotal = newResults.length || 1;  const baselineSuccessRate = Math.round(baselineSuccess / baselineTotal * 100);  const newSuccessRate = Math.round(newSuccess / newTotal * 100);  if (newSuccessRate < baselineSuccessRate) {    regressions.push({ metric: 'success_rate', baseline: baselineSuccessRate, current: newSuccessRate, delta: newSuccessRate - baselineSuccessRate });  } else if (newSuccessRate > baselineSuccessRate) {    improvements.push({ metric: 'success_rate', baseline: baselineSuccessRate, current: newSuccessRate, delta: newSuccessRate - baselineSuccessRate });  } else {    unchanged.push({ metric: 'success_rate', value: newSuccessRate });  }  if (newFail > baselineFail) {    regressions.push({ metric: 'failure_count', baseline: baselineFail, current: newFail, delta: newFail - baselineFail });  } else if (newFail < baselineFail) {    improvements.push({ metric: 'failure_count', baseline: baselineFail, current: newFail, delta: newFail - baselineFail });  } else {    unchanged.push({ metric: 'failure_count', value: newFail });  }  // Compare hashes to detect output drift  const baselineHashes = new Set(baselineResults.filter(r => r.hash).map(r => r.hash));  const newHashes = newResults.filter(r => r.hash).map(r => r.hash);  const driftCount = newHashes.filter(h => !baselineHashes.has(h)).length;  const driftPct = Math.round(driftCount / Math.max(newHashes.length, 1) * 100);  if (driftPct > 50) {    regressions.push({ metric: 'output_drift', drift_pct: driftPct, note: 'Majority of outputs differ from baseline' });  } else if (driftPct > 0 && driftPct <= 50) {    unchanged.push({ metric: 'output_drift', drift_pct: driftPct, note: 'Some outputs differ from baseline' });  } else {    improvements.push({ metric: 'output_drift', drift_pct: 0, note: 'All outputs match baseline hashes' });  }  // Store the new run  const newRunId = 'reg-' + crypto.randomUUID().slice(0, 12);  db.prepare('INSERT INTO compute_runs (id, api_key, config, results, agent_count, status, verified, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(    newRunId, req.apiKey, JSON.stringify(runConfig), JSON.stringify(newResults.slice(0, 100)), n, 'completed', newSuccess, Date.now()  );  res.json({    ok: true,    regression_run_id: newRunId,    baseline_run_id,    agents: n,    latency_ms: latency,    baseline_summary: { success_rate: baselineSuccessRate, succeeded: baselineSuccess, failed: baselineFail, total: baselineResults.length },    current_summary: { success_rate: newSuccessRate, succeeded: newSuccess, failed: newFail, total: newResults.length },    regressions,    improvements,    unchanged,    verdict: regressions.length === 0 ? 'pass' : 'regression_detected',    _engine: 'real',  });});
+// POST /v1/eval/regression — Compare a new run against a baseline compute run
+app.post('/v1/eval/regression', auth, async (req, res) => {
+  const { swarm_config, baseline_run_id } = req.body;
+  if (!baseline_run_id) return res.status(400).json({ error: { code: 'missing_baseline', message: 'Provide baseline_run_id from a previous compute run' } });
+
+  // Load baseline run
+  const baselineRow = db.prepare('SELECT * FROM compute_runs WHERE id = ? AND api_key = ?').get(baseline_run_id, req.apiKey);
+  if (!baselineRow) return res.status(404).json({ error: { code: 'baseline_not_found', message: 'No compute run found with that id for your API key' } });
+
+  let baselineConfig;
+  try { baselineConfig = JSON.parse(baselineRow.config || '{}'); } catch(e) { baselineConfig = {}; }
+  let baselineResults;
+  try { baselineResults = JSON.parse(baselineRow.results || '[]'); } catch(e) { baselineResults = []; }
+
+  // Merge: use swarm_config overrides on top of baseline config
+  const runConfig = { ...baselineConfig, ...(swarm_config || {}) };
+  const tool = runConfig.tool;
+  const input = runConfig.input || {};
+  const n = Math.min(runConfig.agents || 10, 200);
+  const handler = tool ? allHandlers[tool] : null;
+
+  if (tool && !handler) return res.status(404).json({ error: { code: 'tool_not_found', slug: tool } });
+
+  // Re-run with same config
+  const newResults = [];
+  const startTime = Date.now();
+  for (let i = 0; i < n; i++) {
+    const agentId = `agent-${i + 1}`;
+    const cleanInput = input ? { ...input } : {};
+    if (handler) {
+      try {
+        const result = await Promise.resolve(handler(cleanInput));
+        const hash = crypto.createHash('sha256').update(JSON.stringify(result || {})).digest('hex').slice(0, 16);
+        newResults.push({ agent_id: agentId, result, hash, verified: true, _engine: result?._engine || 'real' });
+      } catch(e) {
+        newResults.push({ agent_id: agentId, error: e.message, verified: false });
+      }
+    } else {
+      newResults.push({ agent_id: agentId, perspective: `Agent ${i+1}: "${(runConfig.task||'').slice(0,200)}"`, hash: crypto.createHash('sha256').update(agentId + (runConfig.task||'')).digest('hex').slice(0,16), verified: true });
+    }
+  }
+  const latency = Date.now() - startTime;
+
+  // Compare baseline vs new results
+  const regressions = [];
+  const improvements = [];
+  const unchanged = [];
+
+  const baselineSuccess = baselineResults.filter(r => r.verified).length;
+  const baselineFail = baselineResults.filter(r => r.error).length;
+  const newSuccess = newResults.filter(r => r.verified).length;
+  const newFail = newResults.filter(r => r.error).length;
+  const baselineTotal = baselineResults.length || 1;
+  const newTotal = newResults.length || 1;
+
+  const baselineSuccessRate = Math.round(baselineSuccess / baselineTotal * 100);
+  const newSuccessRate = Math.round(newSuccess / newTotal * 100);
+
+  if (newSuccessRate < baselineSuccessRate) {
+    regressions.push({ metric: 'success_rate', baseline: baselineSuccessRate, current: newSuccessRate, delta: newSuccessRate - baselineSuccessRate });
+  } else if (newSuccessRate > baselineSuccessRate) {
+    improvements.push({ metric: 'success_rate', baseline: baselineSuccessRate, current: newSuccessRate, delta: newSuccessRate - baselineSuccessRate });
+  } else {
+    unchanged.push({ metric: 'success_rate', value: newSuccessRate });
+  }
+
+  if (newFail > baselineFail) {
+    regressions.push({ metric: 'failure_count', baseline: baselineFail, current: newFail, delta: newFail - baselineFail });
+  } else if (newFail < baselineFail) {
+    improvements.push({ metric: 'failure_count', baseline: baselineFail, current: newFail, delta: newFail - baselineFail });
+  } else {
+    unchanged.push({ metric: 'failure_count', value: newFail });
+  }
+
+  // Compare hashes to detect output drift
+  const baselineHashes = new Set(baselineResults.filter(r => r.hash).map(r => r.hash));
+  const newHashes = newResults.filter(r => r.hash).map(r => r.hash);
+  const driftCount = newHashes.filter(h => !baselineHashes.has(h)).length;
+  const driftPct = Math.round(driftCount / Math.max(newHashes.length, 1) * 100);
+
+  if (driftPct > 50) {
+    regressions.push({ metric: 'output_drift', drift_pct: driftPct, note: 'Majority of outputs differ from baseline' });
+  } else if (driftPct > 0 && driftPct <= 50) {
+    unchanged.push({ metric: 'output_drift', drift_pct: driftPct, note: 'Some outputs differ from baseline' });
+  } else {
+    improvements.push({ metric: 'output_drift', drift_pct: 0, note: 'All outputs match baseline hashes' });
+  }
+
+  // Store the new run
+  const newRunId = 'reg-' + crypto.randomUUID().slice(0, 12);
+  db.prepare('INSERT INTO compute_runs (id, api_key, config, results, agent_count, status, verified, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+    newRunId, req.apiKey, JSON.stringify(runConfig), JSON.stringify(newResults.slice(0, 100)), n, 'completed', newSuccess, Date.now()
+  );
+
+  res.json({
+    ok: true,
+    regression_run_id: newRunId,
+    baseline_run_id,
+    agents: n,
+    latency_ms: latency,
+    baseline_summary: { success_rate: baselineSuccessRate, succeeded: baselineSuccess, failed: baselineFail, total: baselineResults.length },
+    current_summary: { success_rate: newSuccessRate, succeeded: newSuccess, failed: newFail, total: newResults.length },
+    regressions,
+    improvements,
+    unchanged,
+    verdict: regressions.length === 0 ? 'pass' : 'regression_detected',
+    _engine: 'real',
+  });
+});
+
 // ===== PHASE 2-3: AGENT TEMPLATES SYSTEM =====
 
 // POST /v1/templates/publish — Publish a template to marketplace
