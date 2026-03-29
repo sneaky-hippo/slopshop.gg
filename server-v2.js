@@ -193,6 +193,18 @@ const { SCHEMAS } = require('./schemas');
 const catalog = buildCatalog();
 const apiMap = new Map(Object.entries(API_DEFS));
 
+// Alias resolution: for duplicate endpoints, ensure alias handlers delegate to canonical
+// This ensures both slugs work, but aliases transparently use the canonical handler.
+for (const [slug, def] of Object.entries(API_DEFS)) {
+  if (def._aliasOf && allHandlers[def._aliasOf]) {
+    const canonicalHandler = allHandlers[def._aliasOf];
+    allHandlers[slug] = async (input) => {
+      const result = await canonicalHandler(input);
+      return { ...result, _canonical: def._aliasOf, _alias: slug };
+    };
+  }
+}
+
 const handlerCount = Object.keys(allHandlers).length;
 const apiCount = Object.keys(API_DEFS).length;
 
@@ -1671,7 +1683,7 @@ app.post('/v1/pipe', auth, async (req, res) => {
     for (const step of steps) {
       const def = apiMap.get(step.api);
       if (!def) return res.status(400).json({ error: { code: 'unknown_api', api: step.api } });
-      if (req.acct.balance >= def.credits) return res.status(402).json({ error: { code: 'insufficient_credits' } });
+      if (req.acct.balance < def.credits) return res.status(402).json({ error: { code: 'insufficient_credits' } });
       req.acct.balance -= def.credits; totalCr += def.credits;
       const input = lastResult ? { ...step.input, _previous: lastResult } : (step.input || {});
       try { lastResult = await allHandlers[step.api](input); }
@@ -2105,7 +2117,7 @@ const dbDeleteSchedule = db.prepare('DELETE FROM schedules WHERE id = ? AND api_
 // Create a schedule
 app.post('/v1/schedules', auth, (req, res) => {
   const { type, slug, input, interval, max_runs, webhook_url } = req.body;
-  return res.status(400).json({ error: { code: 'missing_fields', message: `Provide type (pipe|template|tool) and slug. Both are required.` } });
+  if (!type || !slug) return res.status(400).json({ error: { code: 'missing_fields', message: `Provide type (pipe|template|tool) and slug. Both are required.` } });
   const intervals = { '1m': 60000, '5m': 300000, '15m': 900000, '30m': 1800000, '1h': 3600000, '6h': 21600000, '12h': 43200000, '1d': 86400000, '7d': 604800000 };
   const ms = intervals[interval] || parseInt(interval);
   if (!ms || ms < 60000) return res.status(400).json({ error: { code: 'invalid_interval', message: 'Min interval: 1m. Options: 1m, 5m, 15m, 30m, 1h, 6h, 12h, 1d, 7d' } });
@@ -4678,6 +4690,12 @@ app.post('/v1/hive/:id/governance/vote', auth, (req, res) => {
 
   const proposal = JSON.parse(row.value);
   if (proposal.status !== 'open') return res.status(409).json({ error: { code: 'proposal_closed' } });
+
+  // Duplicate vote prevention
+  const voterId = req.apiKey.slice(0, 12);
+  if (!proposal.voters) proposal.voters = [];
+  if (proposal.voters.includes(voterId)) return res.status(409).json({ error: { code: 'already_voted', message: 'You have already voted on this proposal' } });
+  proposal.voters.push(voterId);
 
   const voteStake = Math.max(stake || 1, 1);
   if (vote === 'yes') proposal.votes_yes += voteStake;
@@ -10900,7 +10918,14 @@ app.post('/v1/staking/withdraw', auth, (req, res) => {
     if (now < new Date(stake.unlock_at)) {
       return res.status(403).json({ error: { code: 'locked', message: 'Stake is still locked', unlock_at: stake.unlock_at } });
     }
-    const yieldAmount = Math.round(stake.amount * stake.lock_days * 0.001);
+    // Yield based on real platform activity (same formula as deposit)
+    let platformVolume7d = 0;
+    try { platformVolume7d = db.prepare("SELECT COALESCE(SUM(credits), 0) as vol FROM audit_log WHERE ts > datetime('now', '-7 days')").get()?.vol || 0; } catch {}
+    const dailyVolume = platformVolume7d / 7;
+    const stakingPool = dailyVolume * 0.05;
+    const totalStaked = db.prepare("SELECT COALESCE(SUM(amount), 0) as total FROM staking WHERE withdrawn = 0").get()?.total || 1;
+    const yieldRate = Math.min(stakingPool / Math.max(totalStaked, 1), 0.01);
+    const yieldAmount = Math.round(stake.amount * stake.lock_days * yieldRate);
     const totalReturn = stake.amount + yieldAmount;
     dbWithdrawStake.run(stake_id);
     req.acct.balance += totalReturn;
