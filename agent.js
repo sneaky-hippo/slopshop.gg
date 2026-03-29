@@ -159,7 +159,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     for (const step of steps) {
       const handler = allHandlers[step.api];
       const def = API_DEFS[step.api];
-      if (!handler || !def) {
+      if (!handler || !API_DEFS[step.api]) {
         results.push({ api: step.api, error: 'Tool not found', reason: step.reason });
         continue;
       }
