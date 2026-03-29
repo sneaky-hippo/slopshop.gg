@@ -523,7 +523,7 @@ JSON array only:`;
     if (!memGet) return res.status(500).json({ error: { code: 'memory_unavailable' } });
 
     const original = await memGet({ namespace: 'agent-runs', key: run_id });
-    if (!original.found) return res.status(404).json({ error: { code: 'run_not_found' } });
+    if (!original.found) return res.status(404).json({ error: { code: 'run_not_found', message: 'The run with ID ' + run_id + ' was not found.' } });
 
     const parsed = typeof original.value === 'string' ? JSON.parse(original.value) : original.value;
     const remixTask = `Take this previous result and ${instruction || 'remix it creatively'}: ${JSON.stringify(parsed).slice(0, 3000)}`;
