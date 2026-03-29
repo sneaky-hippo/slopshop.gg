@@ -826,6 +826,59 @@ app.get('/v1/models', (req, res) => {
   });
 });
 
+// ===== NATIVE OLLAMA INTEGRATION =====
+function ollamaRequest(path, body) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(body);
+    const req = require('http').request({ hostname: '127.0.0.1', port: 11434, path, method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) }, timeout: 120000 }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(new Error('Invalid JSON from Ollama')); } });
+    });
+    req.on('error', e => reject(e));
+    req.on('timeout', () => { req.destroy(); reject(new Error('Ollama timeout')); });
+    req.write(data); req.end();
+  });
+}
+
+app.get('/v1/models/ollama', publicRateLimit, async (req, res) => {
+  try {
+    const resp = await new Promise((resolve, reject) => {
+      require('http').get('http://127.0.0.1:11434/api/tags', r => {
+        let d = ''; r.on('data', c => d += c); r.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
+      }).on('error', reject);
+    });
+    const models = (resp.models || []).map(m => ({ name: m.name, size: m.size, parameter_size: m.details?.parameter_size, family: m.details?.family }));
+    res.json({ ok: true, models, count: models.length, _engine: 'ollama' });
+  } catch(e) { res.status(502).json({ error: { code: 'ollama_unavailable', message: 'Ollama not running on localhost:11434', hint: 'Start with: ollama serve' } }); }
+});
+
+app.post('/v1/models/ollama/generate', auth, async (req, res) => {
+  const { model, prompt, namespace } = req.body;
+  if (!model || !prompt) return res.status(400).json({ error: { code: 'missing_fields', message: 'model and prompt required' } });
+  const start = Date.now();
+  try {
+    const resp = await ollamaRequest('/api/chat', { model, messages: [{ role: 'user', content: prompt }], stream: false });
+    const answer = resp.message?.content || '';
+    const latency = Date.now() - start;
+    const outputHash = crypto.createHash('sha256').update(answer).digest('hex').slice(0, 16);
+    if (namespace && allHandlers['memory-set']) { try { allHandlers['memory-set']({ key: namespace + '-' + Date.now(), value: answer.slice(0, 1000), namespace }); } catch(e) {} }
+    res.json({ ok: true, data: { answer, model, _engine: 'ollama', output_hash: outputHash }, meta: { credits_used: 0, latency_ms: latency, engine: 'ollama' } });
+  } catch(e) { res.status(502).json({ error: { code: 'ollama_error', message: e.message, hint: 'Is Ollama running? ollama serve' } }); }
+});
+
+app.post('/v1/models/ollama/embeddings', auth, async (req, res) => {
+  const { model, prompt, namespace } = req.body;
+  if (!model || !prompt) return res.status(400).json({ error: { code: 'missing_fields', message: 'model and prompt required' } });
+  try {
+    const resp = await ollamaRequest('/api/embeddings', { model, prompt });
+    const embedding = resp.embedding || [];
+    const outputHash = crypto.createHash('sha256').update(JSON.stringify(embedding)).digest('hex').slice(0, 16);
+    if (namespace && allHandlers['memory-set']) { try { allHandlers['memory-set']({ key: namespace + '-emb-' + Date.now(), value: JSON.stringify(embedding.slice(0, 100)), namespace }); } catch(e) {} }
+    res.json({ ok: true, data: { embedding, dimensions: embedding.length, model, _engine: 'ollama', output_hash: outputHash }, meta: { credits_used: 0, engine: 'ollama' } });
+  } catch(e) { res.status(502).json({ error: { code: 'ollama_error', message: e.message } }); }
+});
+
 // robots.txt pointing agents to the tool manifest
 app.get('/robots.txt', (req, res) => {
   res.type('text/plain').send(`User-agent: *
