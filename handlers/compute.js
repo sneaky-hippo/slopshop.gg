@@ -529,8 +529,9 @@ function cryptoPasswordGenerate(input) {
 }
 
 function cryptoPasswordHash(input) {
-  const {password='',salt:si}=input;
-  const salt=si||crypto.randomBytes(16).toString('hex');
+  if (!input || !input.password) return { _engine: 'real', error: 'password is required' };
+  const password = String(input.password);
+  const salt=input.salt||crypto.randomBytes(16).toString('hex');
   const hash=crypto.pbkdf2Sync(password,salt,100000,64,'sha512').toString('hex');
   return { _engine: 'real',hash,salt,iterations:100000,algorithm:'pbkdf2-sha512'};
 }
@@ -625,9 +626,9 @@ function cryptoChecksumFile(input) {
 // ─── MATH & NUMBERS ─────────────────────────────────────────────────────────
 
 function mathEvaluate(input) {
-  const expr=(input.expression||'').replace(/\s+/g,'');
+  const expr=(input.expression||input.text||'').replace(/\s+/g,'');
   if (!/^[0-9+\-*/.()%^]+$/.test(expr)) return { _engine: 'real',error:'Invalid characters in expression'};
-  const tokens=expr.match(/(\d+\.?\d*|\*\*|[+\-*/%()])/g)||[];
+  const tokens=expr.match(/(\d+\.?\d*|\*\*|[+\-*/%()^])/g)||[];
   let pos=0;
   const peek=()=>tokens[pos];
   const consume=()=>tokens[pos++];
@@ -642,10 +643,10 @@ function mathEvaluate(input) {
     while (peek()==='*'||peek()==='/'||peek()==='%') { const op=consume(); const r=parsePow(); l=op==='*'?l*r:op==='/'?l/r:l%r; }
     return l;
   }
-  function parsePow() { let l=parseUnary(); while(peek()==='**'){consume();l=Math.pow(l,parseUnary());} return l; }
+  function parsePow() { let l=parseUnary(); while(peek()==='**'||peek()==='^'){consume();l=Math.pow(l,parseUnary());} return l; }
   function parseUnary() { if(peek()==='-'){consume();return -parsePrimary();} if(peek()==='+'){consume();return parsePrimary();} return parsePrimary(); }
   function parsePrimary() { if(peek()==='('){consume();const v=parseExpr();consume();return v;} const t=consume(); return t!==undefined?parseFloat(t):0; }
-  try { return { _engine: 'real',result:parseExpr(),expression:input.expression}; }
+  try { return { _engine: 'real',result:parseExpr(),expression:input.expression||input.text}; }
   catch(e) { return { _engine: 'real',error:'Parse error: '+e.message}; }
 }
 
@@ -702,7 +703,10 @@ const UNITS={
 };
 
 function mathUnitConvert(input) {
-  const {value=0,from='',to='',type=''}=input;
+  const ALIASES={miles:'mi',mile:'mi',kilometers:'km',kilometer:'km',meters:'m',meter:'m',centimeters:'cm',centimeter:'cm',millimeters:'mm',millimeter:'mm',yards:'yd',yard:'yd',feet:'ft',foot:'ft',inches:'in',inch:'in',kilograms:'kg',kilogram:'kg',grams:'g',gram:'g',pounds:'lb',pound:'lb',lbs:'lb',ounces:'oz',ounce:'oz',tons:'t',ton:'t',litres:'l',liters:'l',liter:'l',litre:'l',milliliters:'ml',milliliter:'ml',gallons:'gal',gallon:'gal',celsius:'C',fahrenheit:'F',kelvin:'K',c:'C',f:'F',k:'K'};
+  const norm=(u)=>{const l=String(u).trim();return ALIASES[l.toLowerCase()]||ALIASES[l]||l;};
+  const {value=0,type=''}=input;
+  const from=norm(input.from||''),to=norm(input.to||'');
   if (type==='temperature'||['C','F','K'].includes(from)) {
     let c; if(from==='C')c=value; else if(from==='F')c=(value-32)*5/9; else if(from==='K')c=value-273.15; else return { _engine: 'real',error:'Unknown temp unit: '+from};
     let r; if(to==='C')r=c; else if(to==='F')r=c*9/5+32; else if(to==='K')r=c+273.15; else return { _engine: 'real',error:'Unknown target temp unit: '+to};
@@ -715,7 +719,7 @@ function mathUnitConvert(input) {
 }
 
 function mathColorConvert(input) {
-  const {color='',from='hex'}=input;
+  const {color=input.hex||input.rgb||input.hsl||'',from=input.hex?'hex':input.rgb?'rgb':input.hsl?'hsl':'hex'}=input;
   let r,g,b;
   if (from==='hex') {
     const hex=color.replace('#','');
@@ -800,21 +804,24 @@ function mathPrimeCheck(input) {
 }
 
 function mathGcd(input) {
-  let a=Math.abs(input.a||0),b=Math.abs(input.b||0);
-  while(b){const t=b;b=a%b;a=t;}
-  return { _engine: 'real',a:input.a,b:input.b,gcd:a};
+  const nums = input.numbers || [input.a||0, input.b||0];
+  const gcd2 = (x,y) => { x=Math.abs(x); y=Math.abs(y); while(y){const t=y;y=x%y;x=t;} return x; };
+  const result = nums.reduce((a,b) => gcd2(a,b));
+  return { _engine: 'real', numbers: nums, gcd: result };
 }
 
 function mathLcm(input) {
-  const {a=0,b=0}=input;
-  let ga=Math.abs(a),gb=Math.abs(b);
-  const oa=ga,ob=gb;
-  while(gb){const t=gb;gb=ga%gb;ga=t;}
-  return { _engine: 'real',a,b,gcd:ga,lcm:ga===0?0:(oa/ga)*ob};
+  const nums = input.numbers || [input.a||0, input.b||0];
+  const gcd2 = (x,y) => { x=Math.abs(x); y=Math.abs(y); while(y){const t=y;y=x%y;x=t;} return x; };
+  const lcm2 = (x,y) => { const g=gcd2(x,y); return g===0?0:(Math.abs(x)/g)*Math.abs(y); };
+  const result = nums.reduce((a,b) => lcm2(a,b));
+  return { _engine: 'real', numbers: nums, lcm: result };
 }
 
 function mathBaseConvert(input) {
-  const {value='0',from=10,to=2}=input;
+  const value=input.text||input.value||'0';
+  const from=input.from_base||input.from||10;
+  const to=input.to_base||input.to||2;
   try {
     const d=parseInt(String(value),from);
     if (isNaN(d)) return { _engine: 'real',error:'Invalid number for given base'};
@@ -824,14 +831,16 @@ function mathBaseConvert(input) {
 
 // ─── STATISTICS ─────────────────────────────────────────────────────────────
 
-const statsMean = ({ data }) => {
+const statsMean = (input) => {
+  const data = input.data || input.numbers;
   if (!Array.isArray(data)) return { _engine: 'real', error: 'Provide data as array of numbers' };
   const nums = data.filter(n => typeof n === 'number');
   const mean = nums.reduce((a,b) => a+b, 0) / nums.length;
   return { _engine: 'real', mean, count: nums.length };
 };
 
-const statsMedian = ({ data }) => {
+const statsMedian = (input) => {
+  const data = input.data || input.numbers;
   if (!Array.isArray(data)) return { _engine: 'real', error: 'Provide data as array of numbers' };
   const sorted = [...data].filter(n => typeof n === 'number').sort((a,b) => a-b);
   const mid = Math.floor(sorted.length / 2);
@@ -839,7 +848,8 @@ const statsMedian = ({ data }) => {
   return { _engine: 'real', median, count: sorted.length };
 };
 
-const statsStddev = ({ data }) => {
+const statsStddev = (input) => {
+  const data = input.data || input.numbers;
   if (!Array.isArray(data)) return { _engine: 'real', error: 'Provide data as array of numbers' };
   const nums = data.filter(n => typeof n === 'number');
   const mean = nums.reduce((a,b) => a+b, 0) / nums.length;
@@ -896,7 +906,7 @@ function dateParse(input) {
 }
 
 function dateFormat(input) {
-  const {date,pattern='YYYY-MM-DD'}=input;
+  const {date,pattern=input.format||'YYYY-MM-DD'}=input;
   const d=new Date(date);
   if (isNaN(d.getTime())) return { _engine: 'real',error:'Invalid date'};
   const pad=n=>String(n).padStart(2,'0');
@@ -914,9 +924,19 @@ function dateDiff(input) {
 }
 
 function dateAdd(input) {
-  const {date,amount=0,unit='days'}=input;
+  const {date}=input;
+  // Support both {amount, unit} style and {days, hours, months, years, ...} style
+  let amount=input.amount||0, unit=input.unit||'days';
   const d=new Date(date);
   if (isNaN(d.getTime())) return { _engine: 'real',error:'Invalid date'};
+  // If individual unit fields provided, apply them all
+  if (input.days||input.hours||input.minutes||input.seconds||input.weeks||input.months||input.years||input.milliseconds) {
+    const fields={milliseconds:1,seconds:1000,minutes:60000,hours:3600000,days:86400000,weeks:604800000};
+    for (const [u,ms] of Object.entries(fields)) { if(input[u]) d.setTime(d.getTime()+input[u]*ms); }
+    if (input.months) d.setMonth(d.getMonth()+input.months);
+    if (input.years) d.setFullYear(d.getFullYear()+input.years);
+    return { _engine: 'real',result:d.toISOString(),original:date};
+  }
   const ms={milliseconds:1,seconds:1000,minutes:60000,hours:3600000,days:86400000,weeks:604800000};
   if (ms[unit]!==undefined) d.setTime(d.getTime()+amount*ms[unit]);
   else if (unit==='months') d.setMonth(d.getMonth()+amount);
@@ -1004,7 +1024,7 @@ function dateUnixToIso(input) { const ts=(input.unix!=null)?input.unix:Math.floo
 function dateIsoToUnix(input) { const d=new Date(input.date); if(isNaN(d.getTime()))return{ _engine: 'real',error:'Invalid date'}; return { _engine: 'real',date:input.date,unix:Math.floor(d.getTime()/1000),ms:d.getTime()}; }
 
 function dateRelative(input) {
-  const {timestamp,from:ft}=input;
+  const {timestamp=input.date,from:ft}=input;
   const base=ft?new Date(ft):new Date();
   const target=new Date(timestamp);
   if(isNaN(target.getTime()))return{ _engine: 'real',error:'Invalid timestamp'};
@@ -1256,7 +1276,7 @@ function codeJsonToGoStruct(input) {
 }
 
 function codeSqlFormat(input) {
-  const {sql=''}=input;
+  const {sql=input.text||input.query||''}=input;
   const kws=['SELECT','FROM','WHERE','LEFT JOIN','RIGHT JOIN','INNER JOIN','OUTER JOIN','CROSS JOIN','JOIN','ON','GROUP BY','ORDER BY','HAVING','LIMIT','OFFSET','INSERT INTO','VALUES','UPDATE','SET','DELETE FROM','CREATE TABLE','DROP TABLE','ALTER TABLE','UNION ALL','UNION','DISTINCT','AS','CASE','WHEN','THEN','ELSE','END','AND','OR','NOT','IN','EXISTS','BETWEEN','LIKE','IS NULL','IS NOT NULL'];
   let f=sql.replace(/\s+/g,' ').trim();
   for(const kw of kws) f=f.replace(new RegExp('\\b'+kw.replace(/ /g,'\\s+')+'\\b','gi'),'\n'+kw);
@@ -1298,7 +1318,7 @@ function codeSemverCompare(input) {
 }
 
 function codeSemverBump(input) {
-  const {version='0.0.0',type='patch'}=input;
+  const {version='0.0.0',type=input.bump||'patch'}=input;
   const p=version.replace(/^v/,'').split('.').map(Number);
   if(type==='major'){p[0]++;p[1]=0;p[2]=0;}else if(type==='minor'){p[1]++;p[2]=0;}else p[2]++;
   return { _engine: 'real',original:version,bumped:p.join('.'),type};
