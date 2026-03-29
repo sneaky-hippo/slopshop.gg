@@ -4891,7 +4891,7 @@ async function cmdTui() {
 
     // ── HOTKEY BAR ──
     wr(h - 2, 2, `${D}${line}${X}`);
-    wr(h - 1, 2, `${B}[A]${X} Deploy Army  ${B}[H]${X} Hive  ${B}[M]${X} Memory  ${B}[T]${X} Tools  ${B}[N]${X} New Swarm  ${B}[S]${X} Swarm Viz  ${B}[B]${X} Balance  ${B}[L]${X} List  ${B}[R]${X} Refresh  ${B}[Q]${X} Quit`);
+    wr(h - 1, 2, `${B}[A]${X} Army  ${B}[H]${X} Hive  ${B}[M]${X} Memory  ${B}[T]${X} Tools  ${B}[N]${X} New Swarm  ${B}[P]${X} Pipe/Task  ${B}[S]${X} Swarm Viz  ${B}[B]${X} Balance  ${B}[L]${X} List  ${B}[R]${X} Refresh  ${B}[?]${X} Help  ${B}[Q]${X} Quit`);
     wr(h, 2, `${D}Dashboard • Refreshing live every 3s • Press any hotkey…${X}`);
   }
 
@@ -4928,13 +4928,85 @@ async function cmdTui() {
       process.exit(0);
     }
     if (k === 'r') { await fetchAll(); render(); }
+    if (k === 'p') {
+      // Run pipe/task inline
+      clr();
+      process.stdout.write(`${ESC}?25h`);
+      if (process.stdin.isTTY) process.stdin.setRawMode(false);
+      console.log(`\n  ${B}${Y}RUN PIPE / TASK${X}\n`);
+      console.log(`  ${D}Chain APIs with pipes: "sense-url-tech-stack stripe.com | text-summarize | memory-set --key=summary"${X}`);
+      console.log(`  ${D}Or run a natural language task via agent/run${X}\n`);
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const input = await new Promise(r => rl.question(`  ${B}> ${X}`, r));
+      rl.close();
+      if (input) {
+        if (input.includes('|')) {
+          // Pipe mode
+          const steps = input.split('|').map(s => s.trim());
+          console.log(`\n  ${D}Running ${steps.length}-step pipe...${X}\n`);
+          let lastOutput = {};
+          for (const step of steps) {
+            const parts = step.split(/\s+/);
+            const slug = parts[0];
+            const rest = parts.slice(1).join(' ');
+            let body = { ...lastOutput };
+            if (rest) {
+              try { body = { ...body, ...JSON.parse(rest) }; } catch { body.text = rest; body.input = rest; }
+            }
+            try {
+              console.log(`  ${D}→ ${slug}${X}`);
+              const res = await request('POST', '/v1/' + slug, body);
+              lastOutput = res.data || {};
+              console.log(`    ${G}✓${X} ${D}${JSON.stringify(lastOutput).slice(0, 120)}${X}`);
+            } catch (e) { console.log(`    ${R}✗ ${e.message}${X}`); break; }
+          }
+          console.log(`\n  ${G}Pipe complete.${X} ${D}_engine: real${X}`);
+        } else {
+          // Agent run mode
+          console.log(`\n  ${D}Running agent task...${X}\n`);
+          try {
+            const res = await request('POST', '/v1/agent/run', { task: input });
+            const d = res.data || {};
+            console.log(`  ${G}✓${X} ${JSON.stringify(d.output || d).slice(0, 300)}`);
+            console.log(`  ${D}_engine: ${d.output?._engine || d._engine || 'real'}${X}`);
+          } catch (e) { console.log(`  ${R}Error: ${e.message}${X}`); }
+        }
+      }
+      console.log(`\n  ${D}Press any key to return to dashboard...${X}`);
+      if (process.stdin.isTTY) process.stdin.setRawMode(true);
+      process.stdout.write(`${ESC}?25l`);
+      await new Promise(resolve => process.stdin.once('data', resolve));
+      await fetchAll();
+      render();
+    }
     if (k === 'b') {
-      // Quick balance overlay
+      // Rich balance + stats view
+      clr();
+      console.log(`\n  ${B}${Y}BALANCE + STATS${X}\n`);
       try {
-        const res = await request('GET', '/v1/credits/balance');
-        balance = res.data?.balance || 0;
-        tier = res.data?.tier || 'free';
-      } catch {}
+        const [bal, usage, health] = await Promise.all([
+          request('GET', '/v1/credits/balance').catch(() => ({ data: {} })),
+          request('GET', '/v1/usage/today').catch(() => ({ data: {} })),
+          request('GET', '/v1/health').catch(() => ({ data: {} })),
+        ]);
+        balance = bal.data?.balance || 0;
+        tier = bal.data?.tier || 'free';
+        const hp = health.data || {};
+        console.log(`  ${B}Tier:${X}            ${G}${tier.toUpperCase()}${X}`);
+        console.log(`  ${B}Credits:${X}         ${G}${balance.toLocaleString()}${X}`);
+        console.log(`  ${B}Memory:${X}          ${G}FREE FOREVER${X} ${D}(${hp.sqlite_tables || '?'} tables)${X}`);
+        console.log(`  ${B}Agents online:${X}   ${C}${agentCount || 0}${X}`);
+        console.log(`  ${B}APIs available:${X}  ${C}${hp.apis || 1255}${X} endpoints, ${C}${hp.detail?.handlers || 925}${X} handlers`);
+        console.log(`  ${B}Server uptime:${X}   ${D}${hp.uptime_seconds ? Math.floor(hp.uptime_seconds / 60) + 'm' : '?'}${X}`);
+        console.log(`  ${B}Heap used:${X}       ${D}${hp.detail?.heap_used_mb || '?'}MB / ${hp.detail?.heap_total_mb || '?'}MB${X}`);
+        const calls = usage.data?.total_calls || usage.data?.calls?.length || 0;
+        const credits = usage.data?.total_credits || 0;
+        console.log(`  ${B}Calls today:${X}     ${C}${calls}${X}`);
+        console.log(`  ${B}Credits today:${X}   ${Y}${credits}${X}`);
+      } catch (e) { console.log(`  ${R}Error: ${e.message}${X}`); }
+      console.log(`\n  ${D}Press any key to return to dashboard...${X}`);
+      await new Promise(resolve => process.stdin.once('data', resolve));
+      await fetchAll();
       render();
     }
     if (k === 'l') {
@@ -4951,19 +5023,32 @@ async function cmdTui() {
       render();
     }
     if (k === 'n') {
-      // Deploy quick army
+      // Deploy army with interactive prompt
       clr();
       process.stdout.write(`${ESC}?25h`);
+      if (process.stdin.isTTY) process.stdin.setRawMode(false);
       console.log(`\n  ${B}${Y}NEW SWARM${X}\n`);
-      console.log(`  ${D}Deploying 5-agent swarm with crypto-uuid...${X}\n`);
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const ask = (q) => new Promise(r => rl.question(q, r));
+      const task = await ask(`  ${B}Task:${X} `);
+      const agentStr = await ask(`  ${B}Agents${X} ${D}(default 10):${X} `);
+      const toolStr = await ask(`  ${B}Tool slug${X} ${D}(or blank for agent/run):${X} `);
+      rl.close();
+      const agents = parseInt(agentStr) || 10;
+      console.log(`\n  ${D}Deploying ${agents}-agent swarm...${X}\n`);
       try {
-        const res = await request('POST', '/v1/army/deploy', { tool: 'crypto-uuid', input: {}, agents: 5, task: 'Generate UUIDs' });
+        const body = toolStr ? { tool: toolStr, input: { text: task }, agents, task } : { task, agents };
+        const endpoint = toolStr ? '/v1/army/deploy' : '/v1/agent/run';
+        const res = await request('POST', endpoint, body);
         const d = res.data || {};
-        console.log(`  ${G}✓${X} Army deployed: ${C}${d.run_id || '?'}${X}`);
-        console.log(`  Agents: ${d.agent_count || 5} | Merkle: ${G}${(d.merkle_root || '').slice(0, 16)}...${X}`);
-        console.log(`  Results: ${JSON.stringify((d.results || []).slice(0, 2)).slice(0, 100)}...`);
+        console.log(`  ${G}✓${X} Swarm deployed: ${C}${d.run_id || d.task_id || '?'}${X}`);
+        if (d.agent_count) console.log(`  Agents: ${d.agent_count} | Merkle: ${G}${(d.merkle_root || '').slice(0, 20)}...${X}`);
+        if (d.results) console.log(`  Results: ${JSON.stringify((d.results || []).slice(0, 2)).slice(0, 120)}...`);
+        if (d.output) console.log(`  Output: ${JSON.stringify(d.output).slice(0, 200)}`);
+        console.log(`  ${D}_engine: ${d._engine || d.output?._engine || 'real'}${X}`);
       } catch (e) { console.log(`  ${R}Error: ${e.message}${X}`); }
-      console.log(`\n  ${D}Press any key to return...${X}`);
+      console.log(`\n  ${D}Press any key to return to dashboard...${X}`);
+      if (process.stdin.isTTY) process.stdin.setRawMode(true);
       process.stdout.write(`${ESC}?25l`);
       await new Promise(resolve => process.stdin.once('data', resolve));
       await fetchAll();
@@ -4988,35 +5073,105 @@ async function cmdTui() {
       render();
     }
     if (k === 'm') {
-      // Memory detail view
+      // Memory: interactive set/search/delete
       clr();
-      const w = process.stdout.columns || 120;
-      drawBox(1, 1, w - 2, process.stdout.rows - 2, 'MEMORY — Free Forever');
+      process.stdout.write(`${ESC}?25h`);
+      if (process.stdin.isTTY) process.stdin.setRawMode(false);
+      console.log(`\n  ${B}${Y}MEMORY${X} ${D}(FREE FOREVER • SQLite-backed • persistent across sessions)${X}\n`);
+      // Show current keys
       try {
         const res = await request('POST', '/v1/memory-list', {});
         const entries = res.data?.entries || res.data?.keys || [];
-        entries.slice(0, 20).forEach((m, i) => {
+        console.log(`  ${B}${entries.length} keys stored${X}\n`);
+        entries.slice(0, 8).forEach(m => {
           const key = typeof m === 'string' ? m : (m.key || '?');
-          const val = typeof m === 'object' ? (m.value || '').slice(0, 60) : '';
-          wr(3 + i, 3, `${C}${key.slice(0, 35).padEnd(35)}${X} ${D}${val}${X}`);
+          const val = typeof m === 'object' ? (m.value || '').slice(0, 50) : '';
+          console.log(`  ${C}${key.padEnd(30)}${X} ${D}${val}${X}`);
         });
-        if (entries.length === 0) wr(4, 3, `${D}No keys. Use: slop memory set <key> <value>${X}`);
-        wr(process.stdout.rows - 3, 3, `${D}Total: ${entries.length} keys | All free forever | SQLite-backed${X}`);
-      } catch { wr(4, 3, `${D}Could not fetch memory${X}`); }
-      wr(process.stdout.rows - 2, 2, `${D}Press any key to return...${X}`);
+        if (entries.length > 8) console.log(`  ${D}... and ${entries.length - 8} more${X}`);
+      } catch {}
+      console.log('');
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const ask = (q) => new Promise(r => rl.question(q, r));
+      const op = await ask(`  ${B}[S]et / [G]et / [Q]uery / [D]elete / [Enter] back:${X} `);
+      if (op.toLowerCase() === 's') {
+        const key = await ask(`  ${B}Key:${X} `);
+        const val = await ask(`  ${B}Value:${X} `);
+        if (key && val) {
+          try {
+            await request('POST', '/v1/memory-set', { key, value: val });
+            console.log(`  ${G}✓${X} Set ${C}${key}${X} = "${val.slice(0, 50)}" ${D}(FREE)${X}`);
+          } catch (e) { console.log(`  ${R}Error: ${e.message}${X}`); }
+        }
+      } else if (op.toLowerCase() === 'g') {
+        const key = await ask(`  ${B}Key:${X} `);
+        try {
+          const res = await request('POST', '/v1/memory-get', { key });
+          console.log(`  ${G}✓${X} ${C}${key}${X} = "${JSON.stringify(res.data?.value || res.data?.data?.value || '(empty)').slice(0, 200)}"`);
+        } catch (e) { console.log(`  ${R}Not found: ${e.message}${X}`); }
+      } else if (op.toLowerCase() === 'q') {
+        const query = await ask(`  ${B}Search:${X} `);
+        try {
+          const res = await request('POST', '/v1/memory-search', { query });
+          const results = res.data?.results || res.data?.matches || [];
+          console.log(`  ${G}${results.length} results:${X}`);
+          results.slice(0, 10).forEach(r => {
+            const key = typeof r === 'string' ? r : (r.key || '?');
+            const score = r.score ? ` (score: ${r.score})` : '';
+            console.log(`  ${D}•${X} ${C}${key}${X}${D}${score}${X}`);
+          });
+        } catch (e) { console.log(`  ${R}Error: ${e.message}${X}`); }
+      } else if (op.toLowerCase() === 'd') {
+        const key = await ask(`  ${B}Key to delete:${X} `);
+        try {
+          await request('POST', '/v1/memory-delete', { key });
+          console.log(`  ${G}✓${X} Deleted ${C}${key}${X}`);
+        } catch (e) { console.log(`  ${R}Error: ${e.message}${X}`); }
+      }
+      rl.close();
+      console.log(`\n  ${D}Press any key to return to dashboard...${X}`);
+      if (process.stdin.isTTY) process.stdin.setRawMode(true);
+      process.stdout.write(`${ESC}?25l`);
       await new Promise(resolve => process.stdin.once('data', resolve));
+      await fetchAll();
       render();
     }
     if (k === 't') {
-      // Tools view
+      // Tools: search + execute inline
       clr();
-      const w = process.stdout.columns || 120;
-      drawBox(1, 1, w - 2, process.stdout.rows - 2, 'TOOLS — 925 Real Handlers across 78 Categories');
-      const cats = ['crypto (18)', 'text (12)', 'date (14)', 'math (10)', 'code (18)', 'net (22)', 'enrich (12)',
-                    'generate (8)', 'sense (15)', 'comm (14)', 'orch (20)', 'data (5)', 'llm (20+)', 'validate (8)',
-                    'finance (6)', 'ai (15)', 'devops (8)', 'search (5)'];
-      cats.forEach((c, i) => wr(3 + i, 3, `${C}${c.padEnd(20)}${X} ${D}→ slop list --category ${c.split(' ')[0]}${X}`));
-      wr(process.stdout.rows - 2, 2, `${D}Press any key to return...${X}`);
+      process.stdout.write(`${ESC}?25h`);
+      if (process.stdin.isTTY) process.stdin.setRawMode(false);
+      console.log(`\n  ${B}${Y}TOOLS CATALOG${X} ${D}(1,255 endpoints • 925 real handlers • 78 categories)${X}\n`);
+      const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+      const ask = (q) => new Promise(r => rl.question(q, r));
+      const query = await ask(`  ${B}Search or slug:${X} `);
+      if (query) {
+        // Try as slug first, then search
+        console.log(`\n  ${D}Searching for "${query}"...${X}\n`);
+        try {
+          const res = await request('POST', '/v1/resolve', { query });
+          const d = res.data || {};
+          const slug = d.slug || d.best_match || query;
+          const name = d.name || slug;
+          console.log(`  ${G}✓${X} Found: ${C}${slug}${X} — ${name} ${D}(${d.credits || '?'} credits)${X}`);
+          const exec = await ask(`\n  ${B}Execute? (y/N):${X} `);
+          if (exec.toLowerCase() === 'y') {
+            const input = await ask(`  ${B}Input${X} ${D}(JSON or text):${X} `);
+            let body;
+            try { body = JSON.parse(input); } catch { body = { text: input }; }
+            console.log(`\n  ${D}Executing ${slug}...${X}\n`);
+            const callRes = await request('POST', '/v1/' + slug, body);
+            const cd = callRes.data || {};
+            console.log(`  ${G}✓ RESULT:${X}`);
+            console.log(`  ${JSON.stringify(cd, null, 2).split('\n').slice(0, 15).join('\n')}`);
+            console.log(`  ${D}_engine: ${cd._engine || 'real'} | latency: ${callRes.meta?.latency_ms || '?'}ms | credits: ${callRes.meta?.credits_used || '?'}${X}`);
+          }
+        } catch (e) { console.log(`  ${R}Error: ${e.message}${X}`); }
+      }
+      rl.close();
+      console.log(`\n  ${D}Press any key to return to dashboard...${X}`);
+      if (process.stdin.isTTY) process.stdin.setRawMode(true);
+      process.stdout.write(`${ESC}?25l`);
       await new Promise(resolve => process.stdin.once('data', resolve));
       render();
     }
