@@ -348,7 +348,7 @@ async function genDocEditorconfig(input) {
 // ---------------------------------------------------------------------------
 async function execJavascript(input) {
   const code = input.code || '';
-  const timeout = Math.min(parseInt(input.timeout, 10) || 1000, 5000);
+  const timeout = Math.min(parseInt(input.timeout, 10) || 5000, 120000); // Default 5s, user-configurable up to 120s
 
   const logs = [];
   const context = vm.createContext({

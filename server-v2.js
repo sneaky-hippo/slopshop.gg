@@ -7227,7 +7227,7 @@ app.post('/v1/chain/run', auth, async (req, res) => {
   let ctx = JSON.parse(chain.context);
   let currentStep = chain.current_step;
   const maxExec = Math.min(max_steps || steps.length, 10); // Safety cap per call
-  const maxLoopIterations = Math.min(max_iterations || 100, 100); // Max total loop iterations
+  const maxLoopIterations = Math.min(max_iterations || 10000, 10000); // User-configurable up to 10k iterations
 
   // Enforce max_iterations safety cap across calls
   if (chain.loop && (ctx._loop_count || 0) >= maxLoopIterations) {
@@ -10775,7 +10775,7 @@ app.post('/v1/sandbox/execute', auth, (req, res) => {
   if (typeof code !== 'string') return res.status(400).json({ error: { code: 'invalid_code', message: 'code must be a string' } });
   if (code.length > 50000) return res.status(400).json({ error: { code: 'code_too_large', message: 'Max 50KB of code allowed' } });
 
-  const execTimeout = Math.min(timeout || 5000, 5000); // Hard cap at 5 seconds
+  const execTimeout = Math.min(timeout || 30000, 120000); // Default 30s, user-configurable up to 120s
 
   // Security: build a restricted sandbox — no require, no process, no global access
   const sandbox = {
