@@ -1020,7 +1020,7 @@ function dateCronNext(input) {
   return { _engine: 'real',cron,next:results};
 }
 
-function dateUnixToIso(input) { const ts=(input.unix!=null)?input.unix:Math.floor(Date.now()/1000); const d=new Date(ts*1000); return { _engine: 'real',unix:ts,iso:d.toISOString(),readable:d.toString()}; }
+function dateUnixToIso(input) { const ts=(input.unix!=null)?input.unix:(input.timestamp!=null)?input.timestamp:Math.floor(Date.now()/1000); const d=new Date(ts*1000); return { _engine: 'real',unix:ts,iso:d.toISOString(),readable:d.toString()}; }
 function dateIsoToUnix(input) { const d=new Date(input.date); if(isNaN(d.getTime()))return{ _engine: 'real',error:'Invalid date'}; return { _engine: 'real',date:input.date,unix:Math.floor(d.getTime()/1000),ms:d.getTime()}; }
 
 function dateRelative(input) {

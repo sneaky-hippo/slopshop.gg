@@ -25,8 +25,10 @@ const handlers = {
     return {_engine:'real', valid, phone:p, e164, country:c, digits:digits.length, type:digits.length===10?'likely_mobile':'unknown'};
   },
 
-  'validate-credit-card': ({number}) => {
-    const n=(number||'').replace(/[\s-]/g,'');
+  'validate-credit-card': (input) => {
+    input=input||{};
+    const number=input.number||input.value||input.card||'';
+    const n=(number).replace(/[\s-]/g,'');
     // Luhn check
     let sum=0,alt=false;
     for(let i=n.length-1;i>=0;i--){let d=parseInt(n[i],10);if(alt){d*=2;if(d>9)d-=9;}sum+=d;alt=!alt;}
