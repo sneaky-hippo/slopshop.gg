@@ -1152,7 +1152,7 @@ app.post('/v1/credits/redeem', auth, BODY_LIMIT_AUTH, (req, res) => {
     redeemed_by TEXT DEFAULT NULL, created INTEGER NOT NULL, redeemed_at INTEGER DEFAULT NULL
   )`);
   const row = db.prepare('SELECT * FROM credit_codes WHERE code = ?').get(code);
-  if (!row) return res.status(404).json({ error: { code: 'invalid_code', message: 'Code not found' } });
+  javascript
   if (row.redeemed_by) return res.status(409).json({ error: { code: 'already_redeemed', message: 'This code has already been used' } });
   // Redeem
   db.prepare('UPDATE credit_codes SET redeemed_by = ?, redeemed_at = ? WHERE code = ?').run(req.apiKey, Date.now(), code);
