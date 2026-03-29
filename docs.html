@@ -257,7 +257,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
 
     <h3>What <code>_engine: "real"</code> Means</h3>
     <p>
-      Every Slopshop response includes <code>"_engine": "real"</code> to signal that the result was genuinely computed, not cached from a template or mocked. This is Slopshop's core guarantee: when you call an API, your data is actually processed. Hash APIs run real cryptographic functions. Network APIs make real DNS/HTTP calls. LLM APIs send real prompts to Claude or GPT. There are no fake responses.
+      Every Slopshop response includes <code>"_engine": "real"</code> to signal that the result was genuinely computed, not cached from a template or mocked. This is Slopshop's core guarantee: when you call an API, your data is actually processed. Hash APIs run real cryptographic functions. Network APIs make real DNS/HTTP calls. LLM APIs send real prompts to Claude, GPT, Grok, or DeepSeek. There are no fake responses.
     </p>
 
     <!-- TRUST & VERIFICATION -->
@@ -1434,6 +1434,8 @@ docker run -p 3000:3000 \
         <tr><td><code>PORT</code></td><td>No</td><td>Server port (default: 3000)</td></tr>
         <tr><td><code>ANTHROPIC_API_KEY</code></td><td>For LLM APIs</td><td>Anthropic API key for Claude-powered APIs</td></tr>
         <tr><td><code>OPENAI_API_KEY</code></td><td>For LLM APIs</td><td>OpenAI API key (fallback if Anthropic not set)</td></tr>
+        <tr><td><code>XAI_API_KEY</code></td><td>For LLM APIs</td><td>xAI API key for Grok-powered APIs</td></tr>
+        <tr><td><code>DEEPSEEK_API_KEY</code></td><td>For LLM APIs</td><td>DeepSeek API key for DeepSeek-powered APIs</td></tr>
         <tr><td><code>SLOPSHOP_SECRET</code></td><td>No</td><td>Secret for JWT signing and key generation</td></tr>
         <tr><td><code>DEMO_CREDITS</code></td><td>No</td><td>Credits for demo key (default: 100)</td></tr>
         <tr><td><code>RATE_LIMIT</code></td><td>No</td><td>Max requests per minute per key (default: 60)</td></tr>

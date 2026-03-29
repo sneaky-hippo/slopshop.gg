@@ -148,6 +148,64 @@ footer .footer-right a:hover{color:var(--t2);text-decoration:none}
   <!-- Timeline -->
   <div class="timeline">
 
+    <!-- v3.3.0 -->
+    <div class="version-entry major" id="v3.3.0">
+      <div class="version-header">
+        <span class="version-number">v3.3.0</span>
+        <span class="version-date">March 29, 2026</span>
+        <span class="version-label label-major">Major</span>
+      </div>
+
+      <div class="change-section">Multi-LLM &amp; Army Intelligence</div>
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>4 cloud LLM providers:</strong> Anthropic Claude, OpenAI GPT, Grok (xAI), and DeepSeek. Auto-router at <code>POST /v1/models/auto/generate</code> picks the cheapest available provider.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Army survey with LLM inference:</strong> <code>POST /v1/army/survey</code> sends a question to diverse simulated personas, each getting individual LLM inference. Returns aggregated sentiment, confidence, and open responses.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Knowledge graph POST support:</strong> <code>POST /v1/knowledge/add</code>, <code>/query</code>, <code>/walk</code>, <code>/path</code>, and <code>/auto-discover</code>. Build and traverse knowledge graphs via API.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-dx">DX</span>
+          <span class="change-text">Documentation updated: 4 LLM provider env vars, corrected 925 compute handlers, standardized pricing tiers (1K/$9, 10K/$49, 100K/$299, 1M/$1,999).</span>
+        </li>
+      </ul>
+    </div>
+
+    <!-- v3.2.0 -->
+    <div class="version-entry minor" id="v3.2.0">
+      <div class="version-header">
+        <span class="version-number">v3.2.0</span>
+        <span class="version-date">March 27, 2026</span>
+        <span class="version-label label-minor">Minor</span>
+      </div>
+
+      <div class="change-section">Series B Engineering</div>
+      <ul class="change-list">
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Comprehensive test suite</strong> with full endpoint coverage and edge case testing.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>Node.js and Python SDKs</strong> with typed interfaces and automatic retries.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-feature">Feature</span>
+          <span class="change-text"><strong>OpenAPI 3.1 spec</strong> at <code>/v1/openapi.json</code>. Structured JSON logging with request tracing.</span>
+        </li>
+        <li class="change-item">
+          <span class="tag tag-dx">DX</span>
+          <span class="change-text">Enterprise landing page, changelog, roadmap, and status page. Input validation hardened with schema enforcement.</span>
+        </li>
+      </ul>
+    </div>
+
     <!-- v2.1.0 -->
     <div class="version-entry minor" id="v2.1.0">
       <div class="version-header">
@@ -314,7 +372,7 @@ footer .footer-right a:hover{color:var(--t2);text-decoration:none}
 </main>
 
 <footer>
-  <div class="footer-left">slopshop.gg &mdash; v2.1.0</div>
+  <div class="footer-left">slopshop.gg &mdash; v3.3.0</div>
   <div class="footer-right">
     <a href="/">Home</a>
     <a href="/docs">Docs</a>
