@@ -227,7 +227,19 @@ const handlers = {
   'swarm-role-crystallize': ({agents, mission}) => {
     const as = agents||[{id:'a',skills:['fast']},{id:'b',skills:['precise']},{id:'c',skills:['creative']}];
     const roles = ['scout','worker','validator','coordinator'];
-    const assigned = as.map((a,i)=>({...a,role:roles[i%roles.length],fit_score:Math.round((0.7+Math.random()*0.3)*100)/100}));
+    const roleSkillMap = {scout:['fast','speed','explore','search'],worker:['build','create','execute','process'],validator:['precise','check','verify','test','accurate'],coordinator:['plan','organize','lead','manage','creative']};
+    const assigned = as.map((a,i) => {
+      const skills = (a.skills||[]).join(' ').toLowerCase();
+      // Match role by skill overlap, fallback to round-robin
+      let bestRole = roles[i%roles.length];
+      let bestScore = 0;
+      roles.forEach(r => {
+        const score = (roleSkillMap[r]||[]).filter(s=>skills.includes(s)).length;
+        if(score > bestScore) { bestScore = score; bestRole = r; }
+      });
+      const fit_score = Math.round(Math.min(1, 0.7 + bestScore * 0.1) * 100) / 100;
+      return {...a, role:bestRole, fit_score};
+    });
     return {_engine:'real', assignments:assigned, mission:mission||'general', roles_used:[...new Set(assigned.map(a=>a.role))], coverage:Math.round([...new Set(assigned.map(a=>a.role))].length/roles.length*100)/100};
   },
 
@@ -310,8 +322,13 @@ const handlers = {
 
   'inverse-dimension-map': ({solution, problem_dimensions}) => {
     const dims = problem_dimensions||['performance','cost','reliability','usability'];
-    const sol = solution||'';
-    const coverage = dims.map(d=>({dimension:d,addressed:sol.toLowerCase().includes(d.toLowerCase())||Math.random()>0.4, importance:Math.round(Math.random()*100)/100}));
+    const sol = (solution||'').toLowerCase();
+    const coverage = dims.map(d => {
+      const addressed = sol.includes(d.toLowerCase());
+      // Derive importance from position in the dimension list and name length (earlier = more important)
+      const importance = Math.round((1 - dims.indexOf(d) / (dims.length * 2)) * 100) / 100;
+      return {dimension:d, addressed, importance};
+    });
     const gaps = coverage.filter(c=>!c.addressed);
     return {_engine:'real', coverage, addressed_count:coverage.length-gaps.length, gaps, gap_risk:gaps.length>0?'Unaddressed dimensions may cause failure':'Full coverage'};
   },
@@ -320,7 +337,17 @@ const handlers = {
     const its = items||[];
     const dims = gate_dimensions||['quality','relevance'];
     const ms = min_score||0.5;
-    const scored = its.map(item=>{const dimScores=dims.map(d=>({dimension:d,score:item[d]||Math.round(Math.random()*100)/100}));const avg=dimScores.reduce((s,d)=>s+d.score,0)/Math.max(dimScores.length,1);return {...item,dim_scores:dimScores,avg_score:Math.round(avg*100)/100,passed:avg>=ms};});
+    const scored = its.map(item=>{
+      const dimScores=dims.map(d => {
+        // Use provided score or derive from item content hash
+        if(item[d] !== undefined) return {dimension:d, score:item[d]};
+        const str = JSON.stringify(item) + d;
+        let h=0; for(let i=0;i<str.length;i++) h=((h<<5)-h+str.charCodeAt(i))|0;
+        return {dimension:d, score:Math.round(Math.abs(h%100)/100*100)/100};
+      });
+      const avg=dimScores.reduce((s,d)=>s+d.score,0)/Math.max(dimScores.length,1);
+      return {...item,dim_scores:dimScores,avg_score:Math.round(avg*100)/100,passed:avg>=ms};
+    });
     const passed = scored.filter(s=>s.passed);
     return {_engine:'real', passed, rejected:scored.filter(s=>!s.passed), pass_rate:Math.round(passed.length/Math.max(scored.length,1)*100)/100, gate_dimensions:dims, min_score:ms};
   },
@@ -341,7 +368,13 @@ const handlers = {
     const ins = inputs||[];
     const cr = compression_ratio||0.5;
     const keep = Math.max(1,Math.round(ins.length*cr));
-    const scored = ins.map((item,i)=>({item,index:i,info_value:Math.round(Math.random()*100)/100})).sort((a,b)=>b.info_value-a.info_value);
+    // Derive info_value deterministically from item content
+    const scored = ins.map((item,i) => {
+      const str = typeof item === 'string' ? item : JSON.stringify(item);
+      const uniqueChars = new Set(str).size;
+      const info_value = Math.round(Math.min(1, uniqueChars / (str.length * 0.8 + 1)) * 100) / 100;
+      return {item,index:i,info_value};
+    }).sort((a,b)=>b.info_value-a.info_value);
     const retained = scored.slice(0,keep);
     const discarded = scored.slice(keep);
     return {_engine:'real', retained:retained.map(r=>r.item), discarded_count:discarded.length, compression_ratio:cr, info_preserved:Math.round(retained.reduce((s,r)=>s+r.info_value,0)/Math.max(scored.reduce((s,r)=>s+r.info_value,0),1)*100)/100, note:'Kept '+keep+' of '+ins.length+' inputs'};
