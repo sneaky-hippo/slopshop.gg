@@ -205,7 +205,8 @@ const handlers = {
       while(curr!==end&&path.length<nodes.length+1){
         const neighbors=Object.keys(g[curr]||{}).filter(n=>!path.includes(n));
         if(!neighbors.length)break;
-        const next=neighbors[Math.floor(Math.random()*neighbors.length)];
+        // Deterministic selection: pick neighbor based on iteration index and edge weight
+        const next=neighbors.sort((a,b)=>(g[curr][a]||0)-(g[curr][b]||0))[(i+path.length)%neighbors.length];
         cost+=g[curr][next];path.push(next);curr=next;
       }
       if(curr===end) paths.push({path,cost});
