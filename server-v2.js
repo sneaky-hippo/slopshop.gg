@@ -1788,10 +1788,38 @@ db.exec(`CREATE TABLE IF NOT EXISTS custom_pipes (
   UNIQUE(slug, owner_key)
 )`);
 
-// POST /v1/pipe/run — run a named pipe (prebuilt or custom)
+// POST /v1/pipe/run — run a named pipe (prebuilt or custom) or inline steps
 app.post('/v1/pipe/run', auth, async (req, res) => {
-  const { pipe, input } = req.body || {};
-  if (!pipe) return res.status(400).json({ error: { code: 'missing_field', field: 'pipe' } });
+  const { pipe, steps, input } = req.body || {};
+
+  // Support inline steps: { steps: ["crypto-uuid", "crypto-hash-sha256"] }
+  if (Array.isArray(steps) && steps.length > 0 && !pipe) {
+    const slugs = steps.map(s => typeof s === 'string' ? s : s.slug || s.tool);
+    let totalCredits = 0;
+    for (const slug of slugs) {
+      const def = API_DEFS[slug];
+      if (!def) return res.status(400).json({ error: { code: 'unknown_step', slug, message: `Step "${slug}" not found in API registry` } });
+      totalCredits += def.credits;
+    }
+    if (req.acct.balance < totalCredits) return res.status(402).json({ error: { code: 'insufficient_credits', need: totalCredits, have: req.acct.balance } });
+    req.acct.balance -= totalCredits;
+    persistKey(req.apiKey);
+    let lastResult = input || {};
+    const results = [];
+    for (const slug of slugs) {
+      const handler = allHandlers[slug];
+      if (!handler) { results.push({ slug, error: 'no_handler' }); continue; }
+      try {
+        const stepInput = { ...lastResult, ...(typeof lastResult === 'object' ? {} : { text: String(lastResult) }) };
+        const result = await handler(stepInput);
+        lastResult = result;
+        results.push({ slug, result, _engine: result?._engine || 'real' });
+      } catch (e) { results.push({ slug, error: e.message }); break; }
+    }
+    return res.json({ ok: true, steps: results.length, results, final_output: lastResult, credits_used: totalCredits, _engine: 'real' });
+  }
+
+  if (!pipe) return res.status(400).json({ error: { code: 'missing_field', field: 'pipe or steps', hint: 'Provide {pipe: "name"} for prebuilt pipes or {steps: ["slug1", "slug2"]} for inline chaining' } });
 
   // Check prebuilt pipes first
   const prebuilt = _PREBUILT_PIPES[pipe];
@@ -1832,9 +1860,9 @@ app.post('/v1/pipe/run', auth, async (req, res) => {
   const row = db.prepare('SELECT * FROM custom_pipes WHERE slug = ? AND owner_key = ?').get(pipe, req.acct.key);
   if (!row) return res.status(404).json({ error: { code: 'pipe_not_found', pipe } });
 
-  const steps = JSON.parse(row.steps);
+  const customSteps = JSON.parse(row.steps);
   let totalCredits = 0;
-  for (const s of steps) {
+  for (const s of customSteps) {
     const def = API_DEFS[s.slug];
     if (!def) return res.status(500).json({ error: { code: 'broken_pipe', step: s.slug } });
     totalCredits += def.credits;
@@ -1846,7 +1874,7 @@ app.post('/v1/pipe/run', auth, async (req, res) => {
 
   let lastResult = null;
   const results = [];
-  for (const s of steps) {
+  for (const s of customSteps) {
     const handler = allHandlers[s.slug];
     if (!handler) { results.push({ step: s.slug, error: 'no_handler' }); continue; }
     const stepInput = { ...(input || {}), ...(s.input_map || {}), ...(lastResult && typeof lastResult === 'object' ? { _previous: lastResult } : {}) };
@@ -3707,6 +3735,9 @@ db.exec(`CREATE TABLE IF NOT EXISTS compute_runs (id TEXT PRIMARY KEY, api_key T
 
 // POST /v1/army/deploy — Deploy N agents to execute a task in parallel with verified outputs
 app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
+  // Extend timeout for army operations (parallel agents take time)
+  req.setTimeout(120000);
+  res.setTimeout(120000);
   const { task, tool, input, agents, verify } = req.body;
   if (!task && !tool) return res.status(400).json({ error: { code: 'missing_task', message: 'Provide task (natural language) or tool (slug) + input' } });
 
@@ -5217,16 +5248,16 @@ db.exec(`CREATE TABLE IF NOT EXISTS copilot_pushes (
 
 // POST /v1/copilot/spawn — create a copilot session linked to a main agent session
 app.post('/v1/copilot/spawn', auth, (req, res) => {
-  const { main_session_id, copilot_model, system_prompt } = req.body;
-  if (!main_session_id) return res.status(400).json({ error: { code: 'missing_field', message: 'main_session_id is required' } });
+  const { main_session_id, copilot_model, system_prompt, name } = req.body;
+  const sessionId = main_session_id || 'session-' + crypto.randomUUID().slice(0, 12);
   const copilot_id = 'copilot-' + crypto.randomUUID().slice(0, 12);
   const role = copilot_model || 'assistant';
   db.prepare('INSERT INTO copilot_sessions (id, main_session_id, role, system_prompt, status, message_count) VALUES (?, ?, ?, ?, ?, ?)').run(
-    copilot_id, main_session_id, role, system_prompt || null, 'active', 0
+    copilot_id, sessionId, role, system_prompt || null, 'active', 0
   );
   res.json({
     copilot_id,
-    main_session_id,
+    main_session_id: sessionId,
     role,
     status: 'active',
     system_prompt: system_prompt || null,
