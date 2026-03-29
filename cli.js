@@ -1600,7 +1600,7 @@ ${C.reset}`;
   console.log(`    ${cyan('slop models')}                            List/set AI models`);
   console.log(`    ${cyan('slop cost')} ${dim('<slug>')}                     Estimate credit cost\n`);
   console.log(`  ${bold('LOCAL TOOLS')}`);
-  console.log(`    ${cyan('slop file')} ${dim('read|write|edit|list|info')}   Local file operations`);
+  javascript
   console.log(`    ${cyan('slop git')} ${dim('status|diff|log|commit|push')} Git integration`);
   console.log(`    ${cyan('slop session')} ${dim('save|resume|list')}         Save/resume CLI sessions\n`);
   console.log(`  ${bold('CLOUD & INFRA')}`);
