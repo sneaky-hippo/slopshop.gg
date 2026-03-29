@@ -412,7 +412,7 @@ process.stdin.on('data', (chunk) => {
         for (const line of lines) {
           const msg = JSON.parse(line);
           handleMessage(msg).then(response => {
-            if (response) send(response);
+            if (response && response !== undefined) send(response);
           });
         }
         buffer = '';
