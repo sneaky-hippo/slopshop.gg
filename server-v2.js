@@ -1068,6 +1068,57 @@ app.post('/v1/models/grok/generate', auth, async (req, res) => {
   }
 });
 
+// --- Grok Tool Optimizer ---
+app.post('/v1/grok/optimize', auth, (req, res) => {
+  const { tool_slug, task_description } = req.body;
+  if (!tool_slug) return res.status(400).json({ error: { code: 'missing_fields', message: 'tool_slug is required' } });
+  if (!task_description) return res.status(400).json({ error: { code: 'missing_fields', message: 'task_description is required' } });
+
+  const def = API_DEFS[tool_slug];
+  if (!def) return res.status(404).json({ error: { code: 'tool_not_found', message: `No tool found for slug: ${tool_slug}` } });
+
+  const schema = SCHEMAS[tool_slug] || null;
+  const inputFields = schema?.input ? Object.keys(schema.input) : [];
+  const example = schema?.example || null;
+
+  // Build Grok-optimized chain-of-thought hints
+  const hints = [
+    `Think step-by-step before calling "${def.name}".`,
+    `Task context: ${task_description}`,
+    `This tool belongs to category "${def.cat}" and costs ${def.credits} credit(s) (tier: ${def.tier}).`,
+    inputFields.length ? `Required input fields: ${inputFields.join(', ')}. Map your reasoning to each field before invoking.` : null,
+    `Grok reasoning style: Be direct, break the problem into sub-tasks, solve each, then compose the final tool call.`,
+    `If the output is unexpected, re-examine your inputs — don't retry blindly.`,
+  ].filter(Boolean);
+
+  const optimized_schema = {
+    slug: tool_slug,
+    name: def.name,
+    description: def.desc,
+    category: def.cat,
+    tier: def.tier,
+    credits: def.credits,
+    input: schema?.input || {},
+    output: schema?.output || {},
+    example,
+    chain_of_thought_prompt: [
+      `You are solving: "${task_description}"`,
+      `Available tool: ${def.name} — ${def.desc}`,
+      inputFields.length ? `Step 1: Identify values for each input field: [${inputFields.join(', ')}].` : null,
+      `Step 2: Validate that your inputs match the tool's expectations.`,
+      `Step 3: Call the tool with your prepared inputs.`,
+      `Step 4: Interpret the result and decide if you need a follow-up action.`,
+    ].filter(Boolean),
+  };
+
+  res.json({
+    ok: true,
+    optimized_schema,
+    hints,
+    _engine: 'real',
+  });
+});
+
 // --- DeepSeek ---
 app.post('/v1/models/deepseek/generate', auth, async (req, res) => {
   const dsKey = process.env.DEEPSEEK_API_KEY;
@@ -1358,6 +1409,34 @@ app.get('/v1/tools', publicRateLimit, (req, res) => {
       example: s?.example ?? '',
     };
   })});
+});
+
+// ===== MCP MANIFEST (public, no auth) =====
+app.get('/v1/mcp/manifest', publicRateLimit, (req, res) => {
+  function getInputSchema(slug) {
+    const s = SCHEMAS[slug];
+    if (!s || !s.input) return { type: 'object', properties: { input: { type: 'string', description: 'Input data' } } };
+    const props = {};
+    const required = [];
+    for (const [k, v] of Object.entries(s.input)) {
+      props[k] = { type: v.type || 'string', description: v.description || k };
+      if (v.required) required.push(k);
+    }
+    return { type: 'object', properties: props, ...(required.length ? { required } : {}) };
+  }
+
+  const tools = Object.entries(API_DEFS).map(([slug, d]) => ({
+    name: slug,
+    description: `[${d.credits}cr] ${d.desc}`,
+    inputSchema: getInputSchema(slug),
+  }));
+
+  res.json({
+    protocolVersion: '2024-11-05',
+    capabilities: { tools: {} },
+    serverInfo: { name: 'slopshop', version: '2.0.0', description: 'Real tools for AI agents. Credit-based. Zero mocks.' },
+    tools,
+  });
 });
 
 app.post('/v1/resolve', (req, res) => {
@@ -2031,6 +2110,55 @@ app.get('/v1/marketplace/browse', (req, res) => {
 });
 
 // ===== TOOL DETAIL: Inspect a single tool's cost + schema =====
+
+// ===== MARKETPLACE LISTINGS (publish + top) =====
+db.exec(`CREATE TABLE IF NOT EXISTS marketplace_listings (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  description TEXT NOT NULL,
+  type TEXT NOT NULL DEFAULT 'handler',
+  handler_code TEXT NOT NULL,
+  price REAL NOT NULL DEFAULT 0,
+  publisher_key TEXT NOT NULL,
+  downloads INTEGER DEFAULT 0,
+  created INTEGER NOT NULL
+)`);
+
+app.post('/v1/marketplace/publish', auth, (req, res) => {
+  const { name, description, type, handler_code, price } = req.body;
+  if (!name || !description || !handler_code) {
+    return res.status(400).json({ error: { code: 'missing_fields', required: ['name', 'description', 'handler_code'] } });
+  }
+  const listingType = type || 'handler';
+  const listingPrice = typeof price === 'number' ? price : 0;
+
+  // Validate handler_code in a VM sandbox
+  const vm = require('vm');
+  try {
+    const script = new vm.Script(handler_code, { filename: 'listing-handler.js', timeout: 2000 });
+    const sandbox = { module: { exports: {} }, exports: {}, console: { log() {} }, setTimeout: () => {}, Buffer };
+    const ctx = vm.createContext(sandbox);
+    script.runInContext(ctx, { timeout: 2000 });
+  } catch (e) {
+    return res.status(400).json({ error: { code: 'invalid_handler', message: 'handler_code failed sandbox validation: ' + e.message } });
+  }
+
+  const listingId = 'mpl_' + crypto.randomUUID().replace(/-/g, '').slice(0, 16);
+  try {
+    db.prepare('INSERT INTO marketplace_listings (id, name, description, type, handler_code, price, publisher_key, downloads, created) VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)').run(
+      listingId, name, description, listingType, handler_code, listingPrice, req.apiKey, Date.now()
+    );
+    res.status(201).json({ ok: true, listing_id: listingId, _engine: 'real' });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'publish_failed', message: e.message } });
+  }
+});
+
+app.get('/v1/marketplace/top', publicRateLimit, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  const rows = db.prepare('SELECT id, name, description, type, price, downloads, created FROM marketplace_listings ORDER BY downloads DESC LIMIT ?').all(limit);
+  res.json({ ok: true, listings: rows, count: rows.length, _engine: 'real' });
+});
 app.get('/v1/tools/:slug', publicRateLimit, (req, res) => {
   const def = apiMap.get(req.params.slug);
   if (!def) return res.status(404).json({ error: { code: 'api_not_found' } });
@@ -2936,6 +3064,31 @@ app.post('/v1/memory/decay', auth, (req, res) => {
     });
     res.json({ namespace: ns, total: decayed.length, decay_factor: decayFactor, memories: decayed.slice(0, 50) });
   } catch(e) { res.json({ error: e.message }); }
+});
+
+// POST /v1/memory/snapshot — Export all keys in a namespace as JSON or CSV
+app.post('/v1/memory/snapshot', auth, (req, res) => {
+  const { namespace, format } = req.body;
+  const ns = namespace || 'default';
+  const fmt = (format || 'json').toLowerCase();
+  if (fmt !== 'json' && fmt !== 'csv') {
+    return res.status(400).json({ error: { code: 'invalid_format', message: 'format must be "json" or "csv"' } });
+  }
+  try {
+    const rows = db.prepare('SELECT key, value, namespace, updated FROM memory WHERE namespace = ?').all(ns);
+    let snapshot;
+    if (fmt === 'csv') {
+      const header = 'key,value,namespace,updated';
+      const lines = rows.map(r => {
+        const val = (r.value || '').replace(/"/g, '""');
+        return `"${r.key}","${val}","${r.namespace}",${r.updated}`;
+      });
+      snapshot = [header, ...lines].join('\n');
+    } else {
+      snapshot = rows.map(r => ({ key: r.key, value: r.value, namespace: r.namespace, updated: r.updated }));
+    }
+    res.json({ ok: true, snapshot, key_count: rows.length, format: fmt, _engine: 'real' });
+  } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
 // ===== FEATURE: Dead Man's Switch (#60) =====
@@ -3973,6 +4126,60 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
     balance: req.acct.balance,
     _engine: 'army',
     note: n >= 100 ? `Deployed ${n} agents in parallel. This is ${n}x your compute in one call.` : undefined,
+  });
+});
+
+// POST /v1/agent/simulate — Dry-run simulation of army/deploy (no credits charged)
+app.post('/v1/agent/simulate', auth, async (req, res) => {
+  const { task, tool, input, agents, verify } = req.body;
+  if (!task && !tool) return res.status(400).json({ error: { code: 'missing_task', message: 'Provide task (natural language) or tool (slug) + input' } });
+
+  const n = Math.min(agents || 10, 1000);
+  const creditsPerAgent = tool ? (API_DEFS[tool]?.credits || 1) : 1;
+  const totalCredits = n * creditsPerAgent;
+  const handler = tool ? allHandlers[tool] : null;
+
+  if (tool && !handler) {
+    return res.status(404).json({ error: { code: 'tool_not_found', slug: tool, hint: 'Use GET /v1/tools to browse available tools' } });
+  }
+
+  // Generate a small sample (max 3 agents) to preview results without real cost
+  const sampleSize = Math.min(n, 3);
+  const sampleResults = [];
+
+  for (let i = 0; i < sampleSize; i++) {
+    const agentId = `sim-agent-${i + 1}`;
+    if (handler) {
+      try {
+        const cleanInput = input ? { ...input } : {};
+        const result = await Promise.resolve(handler(cleanInput));
+        sampleResults.push({ agent_id: agentId, result, _engine: result?._engine || 'real', simulated: true });
+      } catch (e) {
+        sampleResults.push({ agent_id: agentId, error: e.message, simulated: true });
+      }
+    } else {
+      sampleResults.push({
+        agent_id: agentId,
+        perspective: `Simulated agent ${i + 1} analysis of: "${(task || '').slice(0, 200)}"`,
+        simulated: true,
+        note: 'For real handler execution, pass tool: "slug-name" + input: {...}',
+      });
+    }
+  }
+
+  // Estimate time based on sample or heuristics
+  const estimatedPerAgent = handler ? 50 : 5; // ms per agent estimate
+  const projectedTime = n <= 20
+    ? `~${Math.round(n * estimatedPerAgent)}ms (sync)`
+    : `~${Math.round((n / 10) * estimatedPerAgent)}ms (batched async, ${Math.ceil(n / 10)} batches)`;
+
+  res.json({
+    ok: true,
+    simulated: true,
+    projected_cost: { total_credits: totalCredits, per_agent: creditsPerAgent, agent_count: n, current_balance: req.acct.balance, balance_after: req.acct.balance - totalCredits },
+    projected_time: projectedTime,
+    sample_results: sampleResults,
+    _engine: 'real',
   });
 });
 
@@ -9154,6 +9361,51 @@ app.get('/v1/memory/health', auth, (req, res) => {
   }
 });
 
+// 8. "Auto-Summarize" — read all keys in a namespace, extract keywords, generate summary
+app.post('/v1/memory/auto-summarize', auth, (req, res) => {
+  const { namespace, max_entries } = req.body;
+  const ns = namespace || 'default';
+  const limit = Math.min(Math.max(parseInt(max_entries) || 200, 1), 5000);
+  try {
+    const rows = db.prepare("SELECT key, value FROM agent_state WHERE key LIKE ? LIMIT ?").all(ns + ':%', limit);
+    if (!rows.length) {
+      return res.json({ ok: true, summary: 'No entries found in namespace.', original_count: 0, _engine: 'real' });
+    }
+    // Extract keywords from all values
+    const stopWords = new Set(['the','a','an','is','are','was','were','be','been','being','have','has','had',
+      'do','does','did','will','would','shall','should','may','might','must','can','could',
+      'i','me','my','we','our','you','your','he','him','his','she','her','it','its','they','them','their',
+      'this','that','these','those','what','which','who','whom','how','when','where','why',
+      'and','but','or','nor','not','no','so','if','then','than','too','very','just',
+      'of','in','on','at','to','for','with','by','from','as','into','about','after','before',
+      'up','out','off','over','under','between','through','during','above','below',
+      'all','each','every','both','few','more','most','other','some','such','only','own','same',
+      'true','false','null','undefined','string','number','object']);
+    const freq = {};
+    let totalValues = 0;
+    for (const row of rows) {
+      let text = row.value || '';
+      try { const parsed = JSON.parse(text); text = typeof parsed === 'string' ? parsed : JSON.stringify(parsed); } catch(_) {}
+      const words = text.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+      for (const w of words) { freq[w] = (freq[w] || 0) + 1; }
+      totalValues++;
+    }
+    const topKeywords = Object.entries(freq).sort((a, b) => b[1] - a[1]).slice(0, 20).map(([w, c]) => ({ word: w, count: c }));
+    const keyPrefixes = [...new Set(rows.map(r => r.key.replace(ns + ':', '').split(':')[0]))].slice(0, 10);
+    const summary = `Namespace "${ns}" contains ${totalValues} entries across key groups: [${keyPrefixes.join(', ')}]. ` +
+      `Top keywords: ${topKeywords.slice(0, 10).map(k => k.word).join(', ')}. ` +
+      `Total unique terms: ${Object.keys(freq).length}.`;
+    // Store summary
+    db.prepare('INSERT OR REPLACE INTO agent_state (key, value) VALUES (?, ?)').run(
+      'summary:' + ns,
+      JSON.stringify({ summary, keywords: topKeywords, key_groups: keyPrefixes, original_count: totalValues, generated: new Date().toISOString() })
+    );
+    res.json({ ok: true, summary, original_count: totalValues, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ ok: false, error: e.message, _engine: 'real' });
+  }
+});
+
 // 7. "Clone my last successful swarm" button
 app.post('/v1/army/clone-last', auth, (req, res) => {
   db.exec(`CREATE TABLE IF NOT EXISTS army_runs (
@@ -11642,6 +11894,15 @@ app.post('/v1/swarm/budget', auth, (req, res) => {
       run_id, req.apiKey.slice(0, 12), cap
     );
 
+    // Also store budget cap in compute_runs config
+    const runRow = db.prepare('SELECT config FROM compute_runs WHERE id = ?').get(run_id);
+    if (runRow) {
+      const cfg = JSON.parse(runRow.config || '{}');
+      cfg.budget_cap = cap;
+      cfg.budget_set_at = new Date().toISOString();
+      db.prepare('UPDATE compute_runs SET config = ? WHERE id = ?').run(JSON.stringify(cfg), run_id);
+    }
+
     const latency = Date.now() - start;
     dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'swarm/budget', 0, latency, 'real');
     res.json({
@@ -11692,6 +11953,105 @@ app.get('/v1/mcp/manifest', publicRateLimit, (req, res) => {
     log.error('mcp/manifest failed', { error: e.message });
     res.status(500).json({ error: { code: 'internal_error', message: e.message } });
   }
+});
+
+// ===== MEMORY GRAPH QUERY — Knowledge Graph + Memory Search + Entity Expansion =====
+app.post('/v1/memory/graph-query', auth, (req, res) => {
+  const { query, depth, max_results } = req.body;
+  if (!query) return res.status(400).json({ error: { code: 'missing_query', message: 'Provide query string' } });
+
+  const hops = Math.min(depth || 2, 5);
+  const limit = Math.min(max_results || 20, 100);
+  const startTime = Date.now();
+
+  // Step 1: Search knowledge_graph triples matching query terms
+  const queryTerms = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
+  let directTriples = [];
+  if (queryTerms.length > 0) {
+    const likeClauses = queryTerms.map(() => '(LOWER(subject) LIKE ? OR LOWER(predicate) LIKE ? OR LOWER(object) LIKE ?)').join(' OR ');
+    const likeParams = queryTerms.flatMap(t => [`%${t}%`, `%${t}%`, `%${t}%`]);
+    try {
+      directTriples = db.prepare(
+        `SELECT * FROM knowledge_graph WHERE api_key = ? AND (${likeClauses}) ORDER BY confidence DESC, ts DESC LIMIT ?`
+      ).all(req.apiKey, ...likeParams, limit);
+    } catch (e) { directTriples = []; }
+  }
+
+  // Step 2: Extract seed entities and expand by depth (hops)
+  const entities = new Map();
+  directTriples.forEach(r => {
+    entities.set(r.subject, { name: r.subject, hop: 0 });
+    entities.set(r.object, { name: r.object, hop: 0 });
+  });
+
+  let allTriples = [...directTriples];
+  const seenIds = new Set(directTriples.map(r => r.id));
+
+  for (let hop = 1; hop < hops; hop++) {
+    const frontier = [...entities.entries()].filter(([, v]) => v.hop === hop - 1).map(([k]) => k).slice(0, 20);
+    if (frontier.length === 0) break;
+    for (const entity of frontier) {
+      try {
+        const excludeClause = seenIds.size > 0 ? ` AND id NOT IN (${[...seenIds].join(',')})` : '';
+        const neighbors = db.prepare(
+          `SELECT * FROM knowledge_graph WHERE api_key = ? AND (subject = ? OR object = ?)${excludeClause} LIMIT 5`
+        ).all(req.apiKey, entity, entity);
+        for (const n of neighbors) {
+          seenIds.add(n.id);
+          allTriples.push(n);
+          if (!entities.has(n.subject)) entities.set(n.subject, { name: n.subject, hop });
+          if (!entities.has(n.object)) entities.set(n.object, { name: n.object, hop });
+        }
+      } catch (e) { /* skip */ }
+    }
+  }
+
+  // Step 3: Memory search — search agent_state for keys matching entities + query terms
+  let memoryMatches = [];
+  const searchTerms = [...entities.keys(), ...queryTerms].slice(0, 15);
+  const seenMemKeys = new Set();
+  for (const term of searchTerms) {
+    try {
+      const rows = db.prepare("SELECT key, value FROM agent_state WHERE key LIKE ? LIMIT 5").all(`%${term}%`);
+      for (const r of rows) {
+        if (seenMemKeys.has(r.key)) continue;
+        seenMemKeys.add(r.key);
+        let parsed;
+        try { parsed = JSON.parse(r.value); } catch { parsed = r.value; }
+        memoryMatches.push({ key: r.key, value: parsed, matched_term: term });
+      }
+    } catch (e) { /* skip */ }
+  }
+  memoryMatches = memoryMatches.slice(0, limit);
+
+  // Build response
+  const relationships = allTriples.map(t => ({
+    subject: t.subject,
+    predicate: t.predicate,
+    object: t.object,
+    confidence: t.confidence,
+  }));
+
+  const entityList = [...entities.entries()].map(([name, meta]) => ({ name, hop: meta.hop }));
+
+  const latency = Date.now() - startTime;
+  const outputHash = crypto.createHash('sha256').update(JSON.stringify({ e: entityList.length, r: relationships.length, m: memoryMatches.length })).digest('hex').slice(0, 16);
+  dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory-graph-query', 1, latency, 'real');
+  req.acct.balance = Math.max(0, req.acct.balance - 1);
+  persistKey(req.apiKey);
+
+  res.json({
+    ok: true,
+    entities: entityList,
+    relationships,
+    memory_matches: memoryMatches,
+    query,
+    depth: hops,
+    latency_ms: latency,
+    output_hash: outputHash,
+    balance: req.acct.balance,
+    _engine: 'real',
+  });
 });
 
 // ===== START =====
