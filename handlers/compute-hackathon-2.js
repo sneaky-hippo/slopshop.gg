@@ -144,15 +144,30 @@ const handlers = {
 
   // ─── NARRATIVE INTELLIGENCE ────────────────────────────────
   'plot-twist-injector': ({story_state, characters}) => {
-    const twists=['The ally was the antagonist all along','The goal was a decoy for the real objective','The protagonist discovers they caused the original problem','A presumed-dead character returns with crucial information','The rules of the world suddenly change'];
-    // Select twist deterministically based on story_state and characters content
-    const stateStr = JSON.stringify(story_state||'') + JSON.stringify(characters||[]);
-    let h=0; for(let i=0;i<stateStr.length;i++) h=((h<<5)-h+stateStr.charCodeAt(i))|0;
-    const idx = Math.abs(h) % twists.length;
-    const t = twists[idx];
+    const twistTemplates = [
+      {twist:'The ally was the antagonist all along', keywords:['trust','friend','ally','together','help','loyal','partner','companion'], theme:'betrayal'},
+      {twist:'The goal was a decoy for the real objective', keywords:['quest','mission','goal','find','search','seek','treasure','prize','objective'], theme:'misdirection'},
+      {twist:'The protagonist discovers they caused the original problem', keywords:['origin','cause','start','begin','past','mistake','memory','forgot','blame'], theme:'self_discovery'},
+      {twist:'A presumed-dead character returns with crucial information', keywords:['death','dead','lost','gone','disappeared','missing','vanish','mourn'], theme:'resurrection'},
+      {twist:'The rules of the world suddenly change', keywords:['power','magic','law','rule','system','control','balance','order','force'], theme:'paradigm_shift'}
+    ];
+    // Analyze story_state and characters to select the best-fitting twist
+    const stateStr = JSON.stringify(story_state||'').toLowerCase();
+    const charStr = JSON.stringify(characters||[]).toLowerCase();
+    const combined = stateStr + ' ' + charStr;
     const charCount = (characters||[]).length;
-    const impact_score = Math.round(Math.min(1, 0.6 + charCount * 0.05 + stateStr.length * 0.001) * 100) / 100;
-    return {_engine:'real', twist:t, impact_score, foreshadowable:true, characters_affected:characters||[], note:'Plant subtle hints 3 beats before reveal'};
+
+    // Score each twist by how many of its keywords appear in the story content
+    const scored = twistTemplates.map(tt => {
+      const matches = tt.keywords.filter(k=>combined.includes(k)).length;
+      return {...tt, relevance: matches};
+    }).sort((a,b) => b.relevance - a.relevance);
+
+    // Pick the most relevant twist (or the first if no keywords match)
+    const best = scored[0];
+    const impact_score = Math.round(Math.min(1, best.relevance * 0.15 + charCount * 0.05 + (combined.length > 20 ? 0.2 : 0)) * 100) / 100;
+
+    return {_engine:'real', twist:best.twist, theme:best.theme, impact_score, keyword_matches:best.relevance, foreshadowable:true, characters_affected:characters||[], all_twists_ranked:scored.map(s=>({twist:s.twist,relevance:s.relevance})), note:'Plant subtle hints 3 beats before reveal'};
   },
 
   'dramatic-tension-curve': ({events}) => {
@@ -228,16 +243,27 @@ const handlers = {
   },
 
   'antagonist-motivation-engine': ({conflict}) => {
-    const motivations=['They believe they are saving something more important','They experienced a betrayal that makes this the only logical response','They see a pattern others cannot and feel compelled to act','Their culture or upbringing makes this the honorable choice','They are trapped by commitments made before they understood the cost'];
-    // Select motivation deterministically based on conflict content
+    const motivationTemplates = [
+      {motivation:'They believe they are saving something more important', keywords:['protect','save','sacrifice','greater','family','children','people','world','future','prevent','defend']},
+      {motivation:'They experienced a betrayal that makes this the only logical response', keywords:['betray','trust','broken','abandoned','deceived','lie','lied','cheated','wronged','revenge','vengeance']},
+      {motivation:'They see a pattern others cannot and feel compelled to act', keywords:['vision','see','pattern','truth','hidden','secret','conspiracy','understand','alone','prophet','warning']},
+      {motivation:'Their culture or upbringing makes this the honorable choice', keywords:['honor','tradition','duty','culture','family','code','oath','ancestor','legacy','pride','tribe','nation']},
+      {motivation:'They are trapped by commitments made before they understood the cost', keywords:['promise','deal','contract','bound','trapped','debt','owe','committed','forced','no choice','blackmail']}
+    ];
     const conflictStr = (conflict||'').toLowerCase();
-    let h=0; for(let i=0;i<conflictStr.length;i++) h=((h<<5)-h+conflictStr.charCodeAt(i))|0;
-    const idx = Math.abs(h) % motivations.length;
-    const m = motivations[idx];
-    // Moral complexity derived from conflict text length and word diversity
     const words = new Set(conflictStr.split(/\s+/).filter(w=>w.length>2));
-    const moral_complexity = Math.round(Math.min(1, 0.7 + words.size * 0.01) * 100) / 100;
-    return {_engine:'real', conflict:conflict||'',sympathetic_motivation:m,moral_complexity,note:'The most compelling antagonists believe they are the hero of their own story'};
+
+    // Score each motivation by keyword overlap with the conflict description
+    const scored = motivationTemplates.map(mt => {
+      const matches = mt.keywords.filter(k=>conflictStr.includes(k)).length;
+      return {motivation: mt.motivation, relevance: matches};
+    }).sort((a,b) => b.relevance - a.relevance);
+
+    const best = scored[0];
+    // Moral complexity: word diversity + relevant keyword density
+    const moral_complexity = Math.round(Math.min(1, words.size * 0.02 + best.relevance * 0.1 + 0.3) * 100) / 100;
+
+    return {_engine:'real', conflict:conflict||'', sympathetic_motivation:best.motivation, keyword_matches:best.relevance, moral_complexity, all_motivations_ranked:scored, note:'The most compelling antagonists believe they are the hero of their own story'};
   },
 
   // ─── SENSORY SIMULATION ────────────────────────────────────

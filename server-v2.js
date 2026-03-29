@@ -5980,7 +5980,8 @@ app.post('/v1/exchange/heartbeat', auth, (req, res) => {
 });
 
 // POST /v1/exchange/submit — Consumer submits a task to the exchange
-// If task_type matches a handler slug, executes immediately (self-serve compute)
+// REAL FLOW: find supplier with webhook -> POST task to their machine -> they execute and POST result back
+// FALLBACK: if no supplier has a webhook, self-execute using local handlers
 app.post('/v1/exchange/submit', auth, async (req, res) => {
   const { task_type, input, credits_offered } = req.body;
   if (!task_type || input === undefined) return res.status(400).json({ error: { code: 'missing_fields', message: 'task_type and input are required' } });
@@ -5995,11 +5996,72 @@ app.post('/v1/exchange/submit', auth, async (req, res) => {
   const taskId = 'task_' + uuidv4();
   const consumerId = req.acct.id;
 
-  // Try to match to an online supplier with matching capabilities
-  const supplier = dbGetOnlineSupplier.get('%' + task_type + '%');
+  // STEP 1: Find a matching supplier WITH a webhook_url (real distributed execution)
+  const webhookSupplier = db.prepare(
+    "SELECT * FROM compute_suppliers WHERE status = 'online' AND webhook_url IS NOT NULL AND webhook_url != '' AND capabilities LIKE ? ORDER BY reliability_score DESC, tasks_completed ASC LIMIT 1"
+  ).get('%' + task_type + '%');
 
-  // If task_type is a valid handler slug, execute it IMMEDIATELY on this server
-  // This is the real guts: the exchange can self-execute using the server's own compute
+  if (webhookSupplier) {
+    // REAL DISPATCH: POST the task to the supplier's webhook
+    dbInsertTask.run(taskId, consumerId, webhookSupplier.id, task_type, JSON.stringify(input), credits, 'dispatched');
+    const payload = {
+      task_id: taskId,
+      task_type,
+      input: typeof input === 'string' ? JSON.parse(input) : input,
+      credits_offered: credits,
+      result_url: '/v1/exchange/result',
+      dispatched_at: new Date().toISOString(),
+    };
+
+    try {
+      log.info('exchange-dispatch', { task_id: taskId, supplier_id: webhookSupplier.id, webhook_url: webhookSupplier.webhook_url });
+      const webhookResponse = await webhookPost(webhookSupplier.webhook_url, payload);
+      log.info('exchange-dispatch-ack', { task_id: taskId, supplier_id: webhookSupplier.id, status: webhookResponse.status });
+
+      if (webhookResponse.status >= 200 && webhookResponse.status < 300) {
+        dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'exchange-dispatch', credits, 0, 'real');
+        return res.json({
+          ok: true, task_id: taskId, status: 'dispatched',
+          supplier_id: webhookSupplier.id,
+          supplier_name: webhookSupplier.name || webhookSupplier.id,
+          credits_escrowed: credits,
+          execution: 'distributed',
+          message: 'Task dispatched to supplier webhook. Supplier will execute and POST result to /v1/exchange/result.',
+          poll_status: `GET /v1/exchange/status/${taskId}`,
+        });
+      } else {
+        // Webhook returned non-2xx — mark supplier as degraded, fall through
+        log.warn('exchange-dispatch-fail', { task_id: taskId, supplier_id: webhookSupplier.id, http_status: webhookResponse.status });
+        db.prepare("UPDATE compute_suppliers SET reliability_score = MAX(0, reliability_score - 0.05) WHERE id = ?").run(webhookSupplier.id);
+        db.prepare("UPDATE compute_tasks SET status = 'pending', supplier_id = NULL WHERE id = ?").run(taskId);
+        // Fall through to next step
+      }
+    } catch (e) {
+      // Webhook unreachable — mark supplier offline, fall through
+      log.error('exchange-dispatch-error', { task_id: taskId, supplier_id: webhookSupplier.id, error: e.message });
+      db.prepare("UPDATE compute_suppliers SET status = 'offline', reliability_score = MAX(0, reliability_score - 0.1) WHERE id = ?").run(webhookSupplier.id);
+      db.prepare("UPDATE compute_tasks SET status = 'pending', supplier_id = NULL WHERE id = ?").run(taskId);
+      // Fall through to next step
+    }
+  }
+
+  // STEP 2: No webhook supplier — check for poll-based suppliers
+  const pollSupplier = db.prepare(
+    "SELECT * FROM compute_suppliers WHERE status = 'online' AND (webhook_url IS NULL OR webhook_url = '') AND capabilities LIKE ? ORDER BY reliability_score DESC, tasks_completed ASC LIMIT 1"
+  ).get('%' + task_type + '%');
+
+  if (pollSupplier) {
+    const existingTask = dbGetTask.get(taskId);
+    if (!existingTask) {
+      dbInsertTask.run(taskId, consumerId, pollSupplier.id, task_type, JSON.stringify(input), credits, 'assigned');
+    } else {
+      db.prepare("UPDATE compute_tasks SET supplier_id = ?, status = 'assigned' WHERE id = ?").run(pollSupplier.id, taskId);
+    }
+    return res.json({ ok: true, task_id: taskId, status: 'assigned', supplier_id: pollSupplier.id, credits_offered: credits, execution: 'poll-based',
+      instructions: { poll: `GET /v1/exchange/poll/${pollSupplier.id}`, complete: 'POST /v1/exchange/complete {task_id, output}' } });
+  }
+
+  // STEP 3: FALLBACK — No external suppliers at all. Self-execute if we have a local handler.
   const handler = allHandlers[task_type];
   if (handler) {
     try {
@@ -6011,44 +6073,41 @@ app.post('/v1/exchange/submit', auth, async (req, res) => {
       const outputStr = JSON.stringify(result);
       const verificationHash = crypto.createHash('sha256').update(outputStr).digest('hex');
 
-      // Store as completed immediately
-      dbInsertTask.run(taskId, consumerId, 'self-server', task_type, JSON.stringify(input), credits, 'completed');
+      const existingTask = dbGetTask.get(taskId);
+      if (!existingTask) {
+        dbInsertTask.run(taskId, consumerId, 'self-server', task_type, JSON.stringify(input), credits, 'completed');
+      } else {
+        db.prepare("UPDATE compute_tasks SET supplier_id = 'self-server', status = 'completed' WHERE id = ?").run(taskId);
+      }
       db.prepare("UPDATE compute_tasks SET output = ?, verification_hash = ?, credits_paid = ?, completed_at = datetime('now') WHERE id = ?")
         .run(outputStr, verificationHash, credits, taskId);
 
-      // Credits already deducted from consumer — no supplier to pay (self-executed)
-      // Refund the difference (server execution costs less than exchange)
       const refund = Math.max(0, credits - (API_DEFS[task_type]?.credits || 1));
       if (refund > 0) { req.acct.balance += refund; persistKey(req.apiKey); }
 
       dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'exchange-self-execute', credits - refund, latency, 'real');
 
       return res.json({
-        ok: true, task_id: taskId, status: 'completed',
+        ok: true, task_id: taskId, status: 'self-executed',
         execution: 'self-server',
         result, verification_hash: verificationHash,
         latency_ms: latency, credits_used: credits - refund, credits_refunded: refund,
         _engine: result?._engine || 'real',
+        message: 'No external supplier available — executed locally as fallback.',
       });
     } catch (e) {
-      // Self-execution failed — log and fall through to supplier matching
       console.error(`[exchange] Self-execution failed for ${task_type}: ${e.message}`);
-      // Still try supplier matching below
     }
   }
 
-  // No handler or execution failed — try supplier matching
-  // Re-check for supplier since the initial check may have missed due to capability format
-  const matchedSupplier = supplier || db.prepare("SELECT * FROM compute_suppliers WHERE status = 'online' ORDER BY last_heartbeat DESC LIMIT 1").get();
-  if (matchedSupplier) {
-    dbInsertTask.run(taskId, consumerId, matchedSupplier.id, task_type, JSON.stringify(input), credits, 'assigned');
-    res.json({ ok: true, task_id: taskId, status: 'matched', supplier_id: matchedSupplier.id, credits_offered: credits, execution: 'supplier',
-      instructions: { poll: `GET /v1/exchange/poll/${matchedSupplier.id}`, complete: 'POST /v1/exchange/complete {task_id, output}' } });
-  } else {
+  // STEP 4: Nothing worked — queue for future supplier
+  const existingTask = dbGetTask.get(taskId);
+  if (!existingTask) {
     dbInsertTask.run(taskId, consumerId, null, task_type, JSON.stringify(input), credits, 'pending');
-    res.json({ ok: true, task_id: taskId, status: 'queued', credits_offered: credits, execution: 'pending',
-      message: 'No supplier online and no local handler for this task_type. Task queued for next available supplier.' });
   }
+  res.json({ ok: true, task_id: taskId, status: 'queued', credits_offered: credits, execution: 'pending',
+    message: 'No supplier online and no local handler. Task queued for next available supplier.',
+    poll_status: `GET /v1/exchange/status/${taskId}` });
 });
 
 // GET /v1/exchange/poll/:supplier_id — Supplier polls for assigned tasks
@@ -6081,7 +6140,7 @@ app.post('/v1/exchange/complete', auth, (req, res) => {
   const task = dbGetTask.get(task_id);
   if (!task) return res.status(404).json({ error: { code: 'not_found', message: 'Task not found' } });
   if (task.status === 'completed') return res.status(409).json({ error: { code: 'already_completed', message: 'Task already completed' } });
-  if (task.status !== 'in_progress' && task.status !== 'assigned') return res.status(400).json({ error: { code: 'invalid_status', message: `Task status is '${task.status}', expected 'in_progress' or 'assigned'` } });
+  if (task.status !== 'in_progress' && task.status !== 'assigned' && task.status !== 'dispatched') return res.status(400).json({ error: { code: 'invalid_status', message: `Task status is '${task.status}', expected 'in_progress', 'assigned', or 'dispatched'` } });
 
   // Verify supplier ownership
   const supplier = dbGetSupplier.get(task.supplier_id);
@@ -6124,6 +6183,100 @@ app.post('/v1/exchange/complete', auth, (req, res) => {
     credits_earned: task.credits_offered,
     settlement_id: settlementId
   });
+});
+
+// POST /v1/exchange/result — Supplier POSTs their result back after executing on THEIR machine
+// This is the callback endpoint for webhook-dispatched tasks
+app.post('/v1/exchange/result', auth, (req, res) => {
+  const { task_id, output, verification_hash } = req.body;
+  if (!task_id || output === undefined) return res.status(400).json({ error: { code: 'missing_fields', message: 'task_id and output are required' } });
+
+  const task = dbGetTask.get(task_id);
+  if (!task) return res.status(404).json({ error: { code: 'not_found', message: 'Task not found' } });
+  if (task.status === 'completed') return res.status(409).json({ error: { code: 'already_completed', message: 'Task already completed' } });
+  if (task.status !== 'dispatched' && task.status !== 'in_progress' && task.status !== 'assigned') {
+    return res.status(400).json({ error: { code: 'invalid_status', message: `Task status is '${task.status}', expected 'dispatched', 'in_progress', or 'assigned'` } });
+  }
+
+  // Verify supplier ownership
+  const supplier = dbGetSupplier.get(task.supplier_id);
+  if (!supplier || supplier.user_id !== req.acct.id) {
+    return res.status(403).json({ error: { code: 'forbidden', message: 'You are not the assigned supplier for this task' } });
+  }
+
+  // Compute verification hash from output
+  const outputStr = JSON.stringify(output);
+  const computedHash = crypto.createHash('sha256').update(outputStr).digest('hex');
+
+  // If supplier provided a verification_hash, cross-check it
+  let hashVerified = true;
+  if (verification_hash && verification_hash !== computedHash) {
+    hashVerified = false;
+    // Hash mismatch — could be tampering or serialization issue. Still accept but flag it.
+    log.warn('exchange-result-hash-mismatch', { task_id, supplier_id: supplier.id, expected: verification_hash, computed: computedHash });
+  }
+
+  // Update task as completed
+  db.prepare("UPDATE compute_tasks SET output = ?, status = 'completed', verification_hash = ?, credits_paid = ?, completed_at = datetime('now') WHERE id = ?")
+    .run(outputStr, computedHash, task.credits_offered, task_id);
+
+  // Update supplier stats
+  db.prepare('UPDATE compute_suppliers SET tasks_completed = tasks_completed + 1, credits_earned = credits_earned + ? WHERE id = ?')
+    .run(task.credits_offered, task.supplier_id);
+
+  // Settle credits: pay the supplier's account
+  const supplierKey = db.prepare('SELECT key FROM api_keys WHERE id = ?').get(supplier.user_id);
+  if (supplierKey) {
+    const supplierAcct = apiKeys.get(supplierKey.key);
+    if (supplierAcct) {
+      supplierAcct.balance += task.credits_offered;
+      persistKey(supplierKey.key);
+    }
+  }
+
+  // Record settlement
+  const settlementId = 'stl_' + uuidv4();
+  dbInsertSettlement.run(settlementId, task_id, task.supplier_id, task.consumer_id, task.credits_offered);
+
+  // Audit log
+  dbInsertAudit.run(new Date().toISOString(), 'exchange', 'compute-exchange-result-settle', task.credits_offered, 0, 'exchange');
+
+  res.json({
+    ok: true,
+    verified: hashVerified,
+    hash_match: hashVerified,
+    task_id,
+    verification_hash: computedHash,
+    credits_earned: task.credits_offered,
+    settlement_id: settlementId,
+  });
+});
+
+// GET /v1/exchange/status/:task_id — Check the status of a submitted task
+app.get('/v1/exchange/status/:task_id', auth, (req, res) => {
+  const task = dbGetTask.get(req.params.task_id);
+  if (!task) return res.status(404).json({ error: { code: 'not_found', message: 'Task not found' } });
+  // Only the consumer or the assigned supplier can check status
+  const supplier = task.supplier_id ? dbGetSupplier.get(task.supplier_id) : null;
+  if (task.consumer_id !== req.acct.id && (!supplier || supplier.user_id !== req.acct.id)) {
+    return res.status(403).json({ error: { code: 'forbidden', message: 'You are not the consumer or supplier for this task' } });
+  }
+  const response = {
+    ok: true,
+    task_id: task.id,
+    status: task.status,
+    task_type: task.task_type,
+    supplier_id: task.supplier_id,
+    credits_offered: task.credits_offered,
+    credits_paid: task.credits_paid,
+    created_at: task.created_at,
+    completed_at: task.completed_at,
+  };
+  if (task.status === 'completed') {
+    response.output = JSON.parse(task.output);
+    response.verification_hash = task.verification_hash;
+  }
+  res.json(response);
 });
 
 // POST /v1/exchange/dispute — Consumer disputes a completed task result

@@ -9,11 +9,18 @@ const handlers = {
     const branches = (actions||[['A'],['B']]).map((acts,i) => {
       const state = JSON.parse(JSON.stringify(states||{v:0}));
       acts.forEach(a => { state.v = (state.v||0)+1; state.last_action = a; });
-      // Deterministic score based on action content and outcome
-      const actionStr = acts.join('');
-      let hash = 0;
-      for (let c = 0; c < actionStr.length; c++) hash = ((hash << 5) - hash + actionStr.charCodeAt(c)) | 0;
-      const score = Math.abs(hash % 100);
+      // Score based on actual action content analysis
+      const actionStr = acts.join(' ').toLowerCase();
+      const actionWords = actionStr.split(/\s+/).filter(w=>w.length>0);
+      // Positive-outcome indicators
+      const positiveActions = ['fix','build','create','improve','resolve','optimize','upgrade','add','enable','connect','deploy','complete','finish','succeed'];
+      const negativeActions = ['break','remove','delete','disable','destroy','fail','crash','corrupt','undo','revert','drop','abandon'];
+      const posCount = positiveActions.filter(w=>actionStr.includes(w)).length;
+      const negCount = negativeActions.filter(w=>actionStr.includes(w)).length;
+      // Score: action count (more steps = more thorough) + positive/negative balance
+      const thoroughness = Math.min(acts.length * 15, 50);
+      const sentiment = Math.min((posCount - negCount) * 15 + 25, 50);
+      const score = Math.max(0, Math.min(100, thoroughness + sentiment));
       return {branch:i, actions:acts, outcome:state, score};
     });
     return {_engine:'real', branches: branches.sort((a,b)=>b.score-a.score), best_branch:branches[0]?.branch, recommendation:'Commit to highest-scored branch'};
@@ -159,13 +166,18 @@ const handlers = {
   'swarm-consensus-vote': ({options, voter_count}) => {
     const opts = options||['A','B','C'];
     const n = voter_count||100;
-    // Deterministic vote distribution based on option content
+    // Score options by actual content analysis: length, specificity, actionability
     const votes = {};
     const weights = opts.map(o => {
-      const str = String(o);
-      let w = 0;
-      for (let i = 0; i < str.length; i++) w += str.charCodeAt(i);
-      return w;
+      const str = String(o).toLowerCase();
+      const words = str.split(/\s+/).filter(w=>w.length>0);
+      // Longer, more specific options attract more votes
+      const specificity = words.filter(w=>w.length>4).length;
+      // Actionable words attract votes
+      const actionable = ['implement','build','create','fix','improve','deploy','launch','start','enable','optimize','develop','deliver','execute'];
+      const actionScore = actionable.filter(w=>str.includes(w)).length;
+      // Base weight: at least 1 per option for fairness, plus content-derived bonus
+      return Math.max(1, words.length * 0.5 + specificity * 2 + actionScore * 3);
     });
     const totalWeight = weights.reduce((a,b)=>a+b,0);
     let assigned = 0;
@@ -278,10 +290,22 @@ const handlers = {
     return {_engine:'real', original_problem:problem||'', warped_views:warped, most_revealing:warped.sort((a,b)=>b.priority_shift-a.priority_shift)[0].perspective};
   },
 
-  'dimensional-collapse': ({dimensions, scores}) => {
+  'dimensional-collapse': ({dimensions, scores, context}) => {
     const dims = dimensions||['cost','speed','quality'];
-    // Derive default scores deterministically from dimension names
-    const sc = scores||dims.map(d => { let h=0; for(let i=0;i<d.length;i++) h=((h<<5)-h+d.charCodeAt(i))|0; return Math.round(Math.abs(h%100)/100*100)/100; });
+    // Derive default scores from context text analysis: how much the context discusses each dimension
+    const ctxStr = (context||'').toLowerCase();
+    const sc = scores||dims.map(d => {
+      const dLower = d.toLowerCase();
+      // Synonyms/related words for common dimensions
+      const synonyms = {cost:['cost','price','expense','budget','cheap','expensive','money','afford'],speed:['speed','fast','quick','slow','latency','response','time','rapid','immediate'],quality:['quality','reliable','robust','stable','accurate','precise','excellent','good','poor'],scalability:['scale','scalable','growth','capacity','load','throughput'],security:['secure','security','safe','protect','vulnerability','risk','encrypt'],usability:['usable','easy','intuitive','simple','user','friendly','accessible']};
+      const relatedWords = synonyms[dLower]||[dLower];
+      if(ctxStr.length > 0) {
+        const mentions = relatedWords.filter(w=>ctxStr.includes(w)).length;
+        return Math.round(Math.min(1, mentions / Math.max(relatedWords.length * 0.5, 1)) * 100) / 100;
+      }
+      // Without context, spread scores evenly based on position
+      return Math.round((dims.indexOf(d) + 1) / dims.length * 100) / 100;
+    });
     const avg = sc.reduce((a,b)=>a+b,0)/sc.length;
     const variance = sc.map((s,i)=>({dimension:dims[i],score:s,variance:Math.round(Math.abs(s-avg)*100)/100}));
     const key = [...variance].sort((a,b)=>b.variance-a.variance)[0];
@@ -304,12 +328,27 @@ const handlers = {
 
   'flatland-projection': ({variables, data}) => {
     const vars = variables||['x','y','z'];
+    const d = data||[];
     const pairs = [];
     for(let i=0;i<vars.length;i++) for(let j=i+1;j<vars.length;j++) {
-      // Derive info_score deterministically from variable name lengths and char values
-      const combined = vars[i]+vars[j];
-      let h=0; for(let c=0;c<combined.length;c++) h=((h<<5)-h+combined.charCodeAt(c))|0;
-      pairs.push({axes:[vars[i],vars[j]], info_score:Math.round(Math.abs(h%100)/100*100)/100});
+      let info_score;
+      if(d.length >= 2) {
+        // Compute actual variance in this 2D projection from data
+        const vals_i = d.map(row => row[vars[i]]||row[i]||0).filter(v=>typeof v==='number');
+        const vals_j = d.map(row => row[vars[j]]||row[j]||0).filter(v=>typeof v==='number');
+        const range_i = vals_i.length > 0 ? Math.max(...vals_i) - Math.min(...vals_i) : 0;
+        const range_j = vals_j.length > 0 ? Math.max(...vals_j) - Math.min(...vals_j) : 0;
+        // Info score = how much spread exists in this projection (normalized)
+        const maxRange = Math.max(range_i, range_j, 1);
+        info_score = Math.round(Math.min(1, (range_i + range_j) / (maxRange * 2)) * 100) / 100;
+      } else {
+        // Without data, score by name distinctiveness: longer, more unique names = more informative axes
+        const nameA = vars[i].toLowerCase(); const nameB = vars[j].toLowerCase();
+        const sharedChars = [...new Set(nameA)].filter(c=>nameB.includes(c)).length;
+        const totalChars = new Set(nameA + nameB).size;
+        info_score = Math.round(Math.min(1, 1 - sharedChars / Math.max(totalChars, 1)) * 100) / 100;
+      }
+      pairs.push({axes:[vars[i],vars[j]], info_score});
     }
     const best = [...pairs].sort((a,b)=>b.info_score-a.info_score)[0];
     return {_engine:'real', best_projection:best.axes, info_score:best.info_score, all_projections:pairs, total_dimensions:vars.length, note:'View problem through '+best.axes.join(' vs ')+' for maximum insight'};
@@ -338,13 +377,27 @@ const handlers = {
     const its = items||[];
     const dims = gate_dimensions||['quality','relevance'];
     const ms = min_score||0.5;
+    // Keyword lexicons for common gate dimensions
+    const dimLexicons = {
+      quality:['quality','excellent','robust','reliable','tested','proven','polished','refined','solid','thorough'],
+      relevance:['relevant','related','applicable','pertinent','appropriate','fitting','suitable','useful','connected','aligned'],
+      novelty:['new','novel','innovative','original','unique','creative','fresh','unprecedented','breakthrough'],
+      clarity:['clear','concise','readable','understandable','simple','plain','explicit','direct','transparent'],
+      completeness:['complete','comprehensive','full','entire','thorough','exhaustive','detailed','finished'],
+      accuracy:['accurate','correct','precise','exact','true','verified','validated','factual']
+    };
     const scored = its.map(item=>{
+      const itemStr = JSON.stringify(item).toLowerCase();
+      const itemWords = itemStr.split(/\s+/).filter(w=>w.length>2);
       const dimScores=dims.map(d => {
-        // Use provided score or derive from item content hash
         if(item[d] !== undefined) return {dimension:d, score:item[d]};
-        const str = JSON.stringify(item) + d;
-        let h=0; for(let i=0;i<str.length;i++) h=((h<<5)-h+str.charCodeAt(i))|0;
-        return {dimension:d, score:Math.round(Math.abs(h%100)/100*100)/100};
+        // Score by how many dimension-related keywords appear in the item
+        const lexicon = dimLexicons[d.toLowerCase()]||[d.toLowerCase()];
+        const matches = lexicon.filter(w=>itemStr.includes(w)).length;
+        // Also consider item richness: more content = higher base score
+        const richness = Math.min(0.3, itemWords.length * 0.02);
+        const score = Math.round(Math.min(1, matches / Math.max(lexicon.length * 0.4, 1) + richness) * 100) / 100;
+        return {dimension:d, score};
       });
       const avg=dimScores.reduce((s,d)=>s+d.score,0)/Math.max(dimScores.length,1);
       return {...item,dim_scores:dimScores,avg_score:Math.round(avg*100)/100,passed:avg>=ms};
