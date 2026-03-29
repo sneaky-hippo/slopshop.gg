@@ -227,7 +227,7 @@ for (const candidate of DB_CANDIDATES) {
   }
 }
 if (!db) {
-  console.error('FATAL: Could not open database at any path');
+  console.error('FATAL: Could not open database at any path'); console.log('Slopshop shutting down due to missing database');
   process.exit(1);
 }
 db.pragma('journal_mode = WAL'); // fast concurrent reads
