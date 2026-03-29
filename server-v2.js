@@ -1534,7 +1534,7 @@ const dbDeleteSchedule = db.prepare('DELETE FROM schedules WHERE id = ? AND api_
 // Create a schedule
 app.post('/v1/schedules', auth, (req, res) => {
   const { type, slug, input, interval, max_runs, webhook_url } = req.body;
-  if (!type || !slug) return res.status(400).json({ error: { code: 'missing_fields', message: 'Provide type (pipe|template|tool) and slug' } });
+  return res.status(400).json({ error: { code: 'missing_fields', message: `Provide type (pipe|template|tool) and slug. Both are required.` } });
   const intervals = { '1m': 60000, '5m': 300000, '15m': 900000, '30m': 1800000, '1h': 3600000, '6h': 21600000, '12h': 43200000, '1d': 86400000, '7d': 604800000 };
   const ms = intervals[interval] || parseInt(interval);
   if (!ms || ms < 60000) return res.status(400).json({ error: { code: 'invalid_interval', message: 'Min interval: 1m. Options: 1m, 5m, 15m, 30m, 1h, 6h, 12h, 1d, 7d' } });
