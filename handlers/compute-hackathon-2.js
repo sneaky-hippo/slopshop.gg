@@ -229,8 +229,15 @@ const handlers = {
 
   'antagonist-motivation-engine': ({conflict}) => {
     const motivations=['They believe they are saving something more important','They experienced a betrayal that makes this the only logical response','They see a pattern others cannot and feel compelled to act','Their culture or upbringing makes this the honorable choice','They are trapped by commitments made before they understood the cost'];
-    const m=motivations[Math.floor(Math.random()*motivations.length)];
-    return {_engine:'real', conflict:conflict||'',sympathetic_motivation:m,moral_complexity:Math.round(Math.random()*30+70)/100,note:'The most compelling antagonists believe they are the hero of their own story'};
+    // Select motivation deterministically based on conflict content
+    const conflictStr = (conflict||'').toLowerCase();
+    let h=0; for(let i=0;i<conflictStr.length;i++) h=((h<<5)-h+conflictStr.charCodeAt(i))|0;
+    const idx = Math.abs(h) % motivations.length;
+    const m = motivations[idx];
+    // Moral complexity derived from conflict text length and word diversity
+    const words = new Set(conflictStr.split(/\s+/).filter(w=>w.length>2));
+    const moral_complexity = Math.round(Math.min(1, 0.7 + words.size * 0.01) * 100) / 100;
+    return {_engine:'real', conflict:conflict||'',sympathetic_motivation:m,moral_complexity,note:'The most compelling antagonists believe they are the hero of their own story'};
   },
 
   // ─── SENSORY SIMULATION ────────────────────────────────────

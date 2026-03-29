@@ -41,8 +41,9 @@ const handlers = {
     let a={...side_a||{units:100,replenish:5}}; let b={...side_b||{units:80,replenish:3}};
     const t=turns||20; const log=[];
     for(let i=1;i<=t;i++){
-      const aLoss=Math.round(Math.random()*b.units*0.1);
-      const bLoss=Math.round(Math.random()*a.units*0.1);
+      // Deterministic Lanchester-style attrition: losses proportional to opposing force strength
+      const aLoss=Math.round(b.units*0.08);
+      const bLoss=Math.round(a.units*0.08);
       a.units=Math.max(0,a.units-aLoss+a.replenish);
       b.units=Math.max(0,b.units-bLoss+b.replenish);
       log.push({turn:i,a_units:a.units,b_units:b.units});
