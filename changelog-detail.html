@@ -142,10 +142,54 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
 <!-- CHANGELOG -->
 <section class="sec">
 
-  <!-- v3.2.0 -->
+  <!-- v3.7.0 -->
   <div class="release latest">
     <div class="release-header">
-      <div class="release-version">v3.2.0 <span class="release-tag tag-latest">Latest</span></div>
+      <div class="release-version">v3.7.0 <span class="release-tag tag-latest">Latest</span></div>
+      <div class="release-date">March 29, 2026</div>
+      <div class="release-title">Engine: Real — Every Feature Backed by Actual Computation</div>
+    </div>
+    <div class="change-group">
+      <h4>Added</h4>
+      <ul class="change-list added">
+        <li>4 live LLM providers: Claude Opus 4.6, GPT-4o, Grok-3, DeepSeek — all verified on production</li>
+        <li>Army survey with real LLM inference — each persona gets individual reasoning via <code style="color:var(--o);font-family:var(--mono);font-size:0.78rem">POST /v1/army/survey</code></li>
+        <li>Army quick-poll with LLM agent voting — agents reason about options before casting votes</li>
+        <li>Knowledge graph POST support — <code style="color:var(--o);font-family:var(--mono);font-size:0.78rem">POST /v1/knowledge/query</code> with free-text search</li>
+        <li>Fine-tuning actually submits to OpenAI API — uploads JSONL, creates job, returns provider_job_id</li>
+        <li>Cost optimizer live benchmarking — pass <code style="color:var(--o);font-family:var(--mono);font-size:0.78rem">benchmark:true</code> to test providers in real-time</li>
+        <li>Smart router queries real audit_log data — latency, success rate, cost per provider from last 7 days</li>
+        <li>POST /v1/random endpoint (was GET-only)</li>
+      </ul>
+    </div>
+    <div class="change-group">
+      <h4>Fixed</h4>
+      <ul class="change-list fixed">
+        <li>Grok dedicated endpoint: fixed env var mismatch (XAI_API_KEY now checked)</li>
+        <li>9 CLI bugs: balance JSON mode, call arg parsing, hive todo writing, spinner, verbose flag, extractMeta</li>
+        <li>Compliance endpoints: SOC2/HIPAA now perform real runtime checks instead of hardcoded passed:true</li>
+        <li>Confidence scoring: simulated endpoints no longer get 99% confidence (now 50%)</li>
+        <li>Removed fabricated uptime claim (99.97%), boot "0 mocks" message, case study fake numbers</li>
+        <li>Compare endpoint: no longer ranks LLM quality by response length</li>
+      </ul>
+    </div>
+    <div class="change-group">
+      <h4>Improved</h4>
+      <ul class="change-list improved">
+        <li>Pricing aligned across all 26 files: 1K/$9, 10K/$49, 100K/$299, 1M/$1,999</li>
+        <li>Handler counts corrected: 925 compute handlers, 1,255 total endpoints</li>
+        <li>17 localized llms files updated (1248→1255, 927→925)</li>
+        <li>_engine field added to wallet, knowledge, and random endpoints</li>
+        <li>Python SDK: added memory_list() and categories() for Node parity</li>
+        <li>9 missing commands added to interactive CLI REPL</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- v3.2.0 -->
+  <div class="release">
+    <div class="release-header">
+      <div class="release-version">v3.2.0</div>
       <div class="release-date">March 27, 2026</div>
       <div class="release-title">Series B Engineering</div>
     </div>
@@ -195,7 +239,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
         <li>Security hardening: CSP headers, timing-safe auth, HTTPS enforcement</li>
         <li>Memory isolation between API keys</li>
         <li>Rate limiting with per-tier burst allowances</li>
-        <li>927 compute handlers benchmarked for performance</li>
+        <li>925 compute handlers benchmarked for performance</li>
       </ul>
     </div>
   </div>
@@ -287,7 +331,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
         <a href="mailto:dev@slopshop.gg">Contact</a>
       </div>
     </div>
-    <div class="footer-copy">The backend your agent is missing &middot; 78 categories of tools across 78 categories &middot; 927 benchmarked handlers &middot; free memory &middot; self-hostable &middot; slopshop.gg</div>
+    <div class="footer-copy">The backend your agent is missing &middot; 78 categories of tools across 78 categories &middot; 925 benchmarked handlers &middot; free memory &middot; self-hostable &middot; slopshop.gg</div>
   </div>
 </footer>
 
