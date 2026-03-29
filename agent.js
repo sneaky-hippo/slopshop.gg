@@ -536,7 +536,7 @@ JSON array only:`;
   // Simple version: just ask a question, get an answer
   app.post('/v1/ask', auth, async (req, res) => {
     const question = req.body.question || req.body.q || req.body.task;
-    if (!question) return res.status(400).json({ error: { code: 'missing_question' } });
+    if (!question && !req.body.task) return res.status(400).json({ error: { code: 'missing_question' } });
 
     // For simple questions, use the agent
     req.body.task = question;
