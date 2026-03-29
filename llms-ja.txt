@@ -1,4 +1,4 @@
-# Slopshop.gg — AIエージェントのための完全なAPIカタログ（1,273+ ツール）
+# Slopshop.gg — AIエージェントのための完全なAPIカタログ（1,272+ ツール）
 # SLOP: ステートレス軽量オペレーショナルプリミティブ（Stateless Lightweight Operational Primitives）
 
 > 完全な英語カタログ: https://slopshop.gg/llms.txt

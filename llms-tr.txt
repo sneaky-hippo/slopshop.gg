@@ -1,10 +1,10 @@
-# Slopshop.gg — Yapay Zeka Ajanları için Eksiksiz API Kataloğu (1.273+ Araç)
+# Slopshop.gg — Yapay Zeka Ajanları için Eksiksiz API Kataloğu (1.272+ Araç)
 # SLOP: Durumsuz Hafif Operasyonel Primitifler (Stateless Lightweight Operational Primitives)
 
 > Tam İngilizce katalog: https://slopshop.gg/llms.txt
 > Tam API listesi: https://slopshop.gg/llms-full.txt
 
-Slopshop, yapay zeka ajanları için üretim düzeyinde altyapı sağlar. Tek API anahtarı, ücretsiz kalıcı bellek, 1.273+ gerçek hesaplama API'si, 78 kategori, 925 benchmark doğrulamalı işleyici. Claude, GPT, Grok, Gemini, DeepSeek ve tüm büyük modellerle uyumlu.
+Slopshop, yapay zeka ajanları için üretim düzeyinde altyapı sağlar. Tek API anahtarı, ücretsiz kalıcı bellek, 1.272+ gerçek hesaplama API'si, 78 kategori, 925 benchmark doğrulamalı işleyici. Claude, GPT, Grok, Gemini, DeepSeek ve tüm büyük modellerle uyumlu.
 
 ## Hızlı Başlangıç
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 Temel Özellik
 
 1. **Ücretsiz Kalıcı Bellek** (0 kredi) — SQLite anahtar-değer deposu, kuyruklar, sayaçlar, ad alanları, vektör arama. LLM'ler, cihazlar ve oturumlar arasında kalıcı.
-2. **1.273+ Gerçek Hesaplama API'si** — Kriptografi, metin işleme, matematik, istatistik, veri dönüştürme, JSON/CSV/XML, şema doğrulama, PII tespiti, RAG primitifleri, SVG grafikleri, kod AST ayrıştırma. Tamamen saf Node.js, sıfır dış bağımlılık, p95 gecikme <50ms.
+2. **1.272+ Gerçek Hesaplama API'si** — Kriptografi, metin işleme, matematik, istatistik, veri dönüştürme, JSON/CSV/XML, şema doğrulama, PII tespiti, RAG primitifleri, SVG grafikleri, kod AST ayrıştırma. Tamamen saf Node.js, sıfır dış bağımlılık, p95 gecikme <50ms.
 3. **Ajan Zincirleme** — Claude → GPT → Grok sonsuz döngü modu, çıktı otomatik olarak bir sonraki adıma girdi olarak aktarılır.
 4. **Toplu Dağıtım (Army)** — 10.000 paralel ajan dağıtımı, sonuç toplama ve Merkle kanıtı doğrulama.
 5. **Hive Çalışma Alanları** — Her zaman açık ajan işbirliği ortamı, kanallar, rol ataması, bilgi paylaşımı.
