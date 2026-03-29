@@ -1974,7 +1974,7 @@ app.post('/v1/files/upload', auth, (req, res) => {
 
   // Create files table if not exists
   db.exec('CREATE TABLE IF NOT EXISTS files (id TEXT PRIMARY KEY, key TEXT NOT NULL, filename TEXT, size INTEGER, tags TEXT, created INTEGER)');
-  db.prepare('INSERT INTO files (id, key, filename, size, tags, created) VALUES (?, ?, ?, ?, ?, ?)').run(fileId, req.apiKey, filename, buf.length, tags || '', Date.now());
+  try { db.prepare('INSERT INTO files (id, key, filename, size, tags, created) VALUES (?, ?, ?, ?, ?, ?)').run(fileId, req.apiKey, filename, buf.length, tags || '', Date.now()); } catch (e) { return res.status(500).json({ error: 'File storage failed', detail: e.message }); }
 
   // Write to disk
   const dir = path.join(__dirname, '.data', 'files');
