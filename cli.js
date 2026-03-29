@@ -1131,7 +1131,7 @@ Is this line buggy/unsafe/improvable? VERDICT: BUG/UNSAFE/IMPROVE/FINE ISSUE: <o
     }
 
     // ── CEO evolve ──
-    if (nextMatch) shared.plan = [nextMatch[1].trim()];
+    if (priority) shared.plan = [priority];
     shared.scores.push({ sprint: s, score, phase });
     if (shared.scores.length > 50) shared.scores = shared.scores.slice(-50);
     shared.vision = (resp||'').match(/VISION:\s*(.+?)(?:\n|$)/i)?.[1]?.trim() || shared.vision;
