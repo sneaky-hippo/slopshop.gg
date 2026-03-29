@@ -356,7 +356,7 @@ async function handleMessage(msg) {
           endpoint = orchTool.endpoint;
         } else if (rawName === 'slop-org-task' || rawName.includes('org-task')) {
           endpoint = `/v1/org/${input.org_id}/task`;
-        } else if (rawName === 'slop-org-status' && input.org_id) {
+        } else if (rawName === 'slop-org-status' && input.org_id !== undefined) {
           endpoint = `/v1/org/${input.org_id}/status`;
         } else if (rawName === 'slop-org-standup') {
           endpoint = `/v1/org/${input.org_id}/standup`;
