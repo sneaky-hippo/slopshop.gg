@@ -389,7 +389,7 @@ async function handleMessage(msg) {
     }
 
     default:
-      return { jsonrpc: '2.0', id, error: { code: -32601, message: `Unknown method: ${method}` } };
+      javascript
   }
 }
 
