@@ -884,8 +884,9 @@ async function cmdDoctor() {
 }
 
 // ============================================================
-// HIVE — 4-phase sprint: Research → Plan → Build → QA
-// Shared doc. Context measured. CEO directs. Real data.
+// HIVE v9 — Research → Plan → Build → QA → Evolve
+// Discovers new things. CEO course-corrects. Outputs real TODOs.
+// Budget-gated. Safe proofs. Local log of every credit.
 // Usage: slop hive [sprints] [--local-only] "mission"
 // ============================================================
 async function cmdHive(args) {
@@ -895,7 +896,9 @@ async function cmdHive(args) {
   const localOnly = args.includes('--local-only');
   const mission = args.filter(a => !/^\d+$/.test(a) && !a.startsWith('--')).join(' ').trim() || 'improve slopshop';
 
-  // ── Helpers ──
+  // ── Helpers with credit tracking ──
+  let creditsSpent = 0;
+  const BUDGET_PER_SPRINT = 50; // max credits per sprint (safe proof)
   const ollamaChat = (model, prompt) => new Promise(r => {
     const body = JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false });
     const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
@@ -907,8 +910,12 @@ async function cmdHive(args) {
     req.write(body); req.end();
   });
   const cloudChat = async (provider, prompt) => {
-    try { const r = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 3000), provider }); return r.data?.data?.answer || r.data?.answer || ''; }
-    catch(e) { return ''; }
+    if (creditsSpent >= BUDGET_PER_SPRINT) return ''; // budget gate
+    try {
+      const r = await request('POST', '/v1/llm-think', { text: prompt.slice(0, 3000), provider });
+      creditsSpent += 10; // track spend
+      return r.data?.data?.answer || r.data?.answer || '';
+    } catch(e) { return ''; }
   };
   const slopCall = async (slug, params) => {
     try { const r = await request('POST', '/v1/' + slug, params); return { ok: true, data: r.data?.data || r.data }; }
@@ -952,15 +959,20 @@ async function cmdHive(args) {
 
   console.log('');
   console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║            SLOPSHOP HIVE v8                    ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║  Research → Plan → Build → QA · every sprint  ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║            SLOPSHOP HIVE v9                    ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║  Research → Plan → Build → QA → Evolve        ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════╝${C.reset}`);
   console.log(`  ${bold('Mission:')} ${green(mission)}`);
-  console.log(`  ${dim('Sprints:')} ${sprints}  ${dim('Local:')} ${dim(localDoc)}  ${dim('Cloud:')} ${cyan(HIVE_KEY)}`);
+  console.log(`  ${dim('Sprints:')} ${sprints}  ${dim('Budget:')} ${BUDGET_PER_SPRINT}cr/sprint  ${dim('Doc:')} ${cyan(HIVE_KEY)}`);
   console.log('');
+
+  // Discovery URLs — starts with mission URLs, CEO adds new ones each sprint
+  let discoveryUrls = [...new Set((mission.match(/https?:\/\/[^\s,)]+/g) || []))];
+  let discoveryDomains = [...new Set((mission.match(/\b[\w-]+\.(?:com|dev|io|gg|ai|org)\b/g) || []))];
 
   for (let s = 1; s <= sprints; s++) {
     const sprintStart = Date.now();
+    creditsSpent = 0; // reset per-sprint budget
     console.log(`  ${C.red}${C.bold}══ SPRINT ${s}/${sprints} ══${C.reset}`);
 
     // ── PHASE 1: RESEARCH — real data from internet via slop + cloud LLMs ──
@@ -968,21 +980,9 @@ async function cmdHive(args) {
     const researchTokens = { input: 0, output: 0 };
     const researchFindings = [];
 
-    // Slop APIs: scrape URLs + auto-generate research targets from keywords
-    const allText = mission + ' ' + (shared.plan[0] || '');
-    const urls = allText.match(/https?:\/\/[^\s,)]+/g) || [];
-    const domains = allText.match(/\b[\w-]+\.(?:com|dev|io|gg|ai|org)\b/g) || [];
-
-    // Auto-detect research targets from mission keywords
-    const missionWords = mission.toLowerCase();
-    const autoTargets = [];
-    if (missionWords.includes('competitor') || missionWords.includes('compar')) autoTargets.push('https://composio.dev', 'https://langchain.com', 'https://slopshop.gg');
-    if (missionWords.includes('pricing') || missionWords.includes('price')) autoTargets.push('https://slopshop.gg/pricing');
-    if (missionWords.includes('security') || missionWords.includes('audit')) autoTargets.push('https://slopshop.gg/security');
-    if (missionWords.includes('homepage') || missionWords.includes('landing')) autoTargets.push('https://slopshop.gg');
-    if (missionWords.includes('docs') || missionWords.includes('document')) autoTargets.push('https://slopshop.gg/docs');
-    const allUrls = [...new Set([...urls, ...autoTargets])].slice(0, 4);
-    const allDomains = [...new Set([...domains, ...autoTargets.map(u => { try { return new URL(u).hostname; } catch(e) { return ''; } }).filter(Boolean)])].slice(0, 5);
+    // Dynamic discovery — CEO can add new URLs each sprint
+    const allUrls = [...new Set(discoveryUrls)].slice(0, 4);
+    const allDomains = [...new Set(discoveryDomains)].slice(0, 5);
 
     // Scrape targets
     for (const url of allUrls) {
@@ -1165,6 +1165,7 @@ memory set <key-no-spaces> {"field":"value"}`;
       plan_to_build: planCmds.length > 0 ? Math.round(buildCount / planCmds.length * 100) + '%' : '?',
     };
     shared.context_log.push(contextFlow);
+    if (shared.context_log.length > 20) shared.context_log = shared.context_log.slice(-20);
 
     // ── CEO REVIEW — evolving vision based on org state ──
     const recentScores = shared.scores.slice(-5).map(x => x.score);
@@ -1177,27 +1178,38 @@ memory set <key-no-spaces> {"field":"value"}`;
 
 ORG STATE:
 - Phase: ${phase} (${trend > 0 ? 'improving' : trend < 0 ? 'declining' : 'flat'})
-- Score trend: ${recentScores.join('→') || 'none'} (${trend > 0 ? '+' : ''}${trend.toFixed(1)})
-- Unique builds: ${uniqueBuilds}. This sprint built: ${buildCount}. QA: ${qaPass}/${qaPass+qaFail}.
-- Last directive: ${lastCeoDirective.slice(0, 80)}
-- Priority was: ${priority.slice(0, 60)}
-- Top research: ${shared.research.slice(-2).map(r=>(r.text||'').slice(0,60)).join(' | ')}
+- Scores: ${recentScores.join('→') || 'none'}. Built: ${buildCount}. QA: ${qaPass}/${qaPass+qaFail}.
+- Vision: ${shared.vision || 'not set yet'}
+- Current URLs we research: ${discoveryUrls.slice(0,3).join(', ')}
+- Latest research: ${shared.research.slice(-2).map(r=>(r.text||'').slice(0,50)).join(' | ')}
 
-${phase === 'EXPLORE' ? 'We are early. Cast a wide net. Try bold things.' : ''}
-${phase === 'ACCELERATE' ? 'Scores rising. Double down on what works. Go deeper.' : ''}
-${phase === 'FIX' ? 'Scores dropping. Something broke. Diagnose and fix before adding new things.' : ''}
-${phase === 'OPTIMIZE' ? 'Scores stable. Find the next unlock. What are we missing?' : ''}
+${phase === 'EXPLORE' ? 'EARLY PHASE. Try bold things. Discover new competitors.' : ''}
+${phase === 'ACCELERATE' ? 'RISING. Double down. Go deeper on what works.' : ''}
+${phase === 'FIX' ? 'DECLINING. Diagnose. Fix before adding new.' : ''}
+${phase === 'OPTIMIZE' ? 'STABLE. Find the next unlock. New markets, new competitors.' : ''}
 
-Your directive MUST be DIFFERENT from last sprint. Evolve the vision.
+Respond EXACTLY:
 SCORE: X/10
-VISION: <where the org should be in 10 sprints — one sentence>
-NEXT: <specific task for next sprint that advances the vision>`;
+VISION: <one sentence — where we should be in 10 sprints>
+NEXT: <specific different task for next sprint>
+DISCOVER: <one new URL to research next sprint, or NONE>`;
 
     const review = localOnly ? await ollamaChat('mistral', reviewPrompt) : await cloudChat('anthropic', reviewPrompt);
     let score = extractScore(review);
     if (!score) score = buildCount > 0 && qaFail === 0 ? 7.5 : buildCount > 0 ? 6 : 4;
     const nextMatch = (review || '').match(/NEXT:\s*(.+?)(?:\n|$)/i);
     const visionMatch = (review || '').match(/VISION:\s*(.+?)(?:\n|$)/i);
+    const discoverMatch = (review || '').match(/DISCOVER:\s*(https?:\/\/\S+)/i);
+
+    // CEO discovers new URLs → adds to research targets for next sprint
+    if (discoverMatch && discoverMatch[1] !== 'NONE') {
+      const newUrl = discoverMatch[1].trim();
+      if (!discoveryUrls.includes(newUrl)) {
+        discoveryUrls.push(newUrl);
+        try { discoveryDomains.push(new URL(newUrl).hostname); } catch(e) {}
+        console.log(`  ${dim('│')} ${green('NEW DISCOVERY:')} ${cyan(newUrl)}`);
+      }
+    }
 
     shared.scores.push({ sprint: s, score, phase });
     if (nextMatch) shared.plan.unshift(nextMatch[1].trim());
