@@ -317,7 +317,7 @@ async function handleMessage(msg) {
       const computeTools = toolList.map(t => {
         const props = {};
         const required = [];
-        if (t.input_schema && typeof t.input_schema === 'object') {
+        if (t.input_schema && typeof t.input_schema === 'object' && !Array.isArray(t.input_schema)) {
           for (const [k, v] of Object.entries(t.input_schema)) {
             if (k === '_note') continue;
             props[k] = { type: v.type || 'string', description: v.description || k };
