@@ -990,183 +990,487 @@ async function cmdHive(args) {
   const successfulEdits = [];
   console.log('');
 
+  // ===============================================================
+  // HIVE v3 SPRINT LOOP — Cloud finds issues, local adds context, cloud fixes
+  //
+  // Cycle of cloudEvery sprints (default 10):
+  //   Sprint 1 (CLOUD-SCAN):  Claude reads code, finds up to 5 real issues
+  //   Sprints 2..N-1 (LOCAL): Local picks one issue, reads surrounding code, adds notes
+  //   Sprint N (CLOUD-FIX):   Claude reads notes, picks best issue, generates + applies fix
+  //
+  // Why this works:
+  //   - Cloud does HARD work (finding bugs, writing fixes) -- good at this
+  //   - Local does EASY work (reading code, confirming, adding context) -- can do this
+  //   - Every cycle produces ONE real shipped fix with 5-gate safety
+  // ===============================================================
+
+  const editableFiles = ['server-v2.js', 'cli.js', 'mcp-server.js', 'agent.js',
+    'handlers/compute.js', 'handlers/llm.js', 'handlers/network.js',
+    'handlers/external.js', 'handlers/memory.js', 'pipes.js', 'schemas.js'];
+
+  // Issues found by cloud scan, enriched by local sprints during a cycle
+  let cycleIssues = []; // { file, line, issue, context, localNotes: [] }
+
   for (let s = 1; s <= sprints; s++) {
     const t0 = Date.now();
     creditsSpent = 0;
-    const sprintCloud = useCloud && (s === 1 || s % cloudEvery === 0);
-    const ask = sprintCloud ? cloudAsk : localAsk; // context-injected
+    const cyclePos = ((s - 1) % cloudEvery) + 1; // 1-based position within cycle
+    const isCloudScan = useCloud && cyclePos === 1;         // first sprint: cloud finds issues
+    const isCloudFix  = useCloud && cyclePos === cloudEvery; // last sprint: cloud fixes best issue
+    const isLocal = !isCloudScan && !isCloudFix;
 
-    console.log(`  ${C.red}${C.bold}══ S${s} ══${C.reset} ${sprintCloud ? yellow('[CLOUD]') : dim('[LOCAL]')}`);
-
-    // ── Context: what the org knows right now ──
-    const kb = shared.research.slice(-8).map(r => (r.text||'').slice(0, 60)).join('\n');
-    const built = shared.builds.slice(-5).map(b => b.key).join(', ');
     const recentScores = shared.scores.slice(-5).map(x => x.score);
-    const trend = recentScores.length >= 2 ? recentScores[recentScores.length-1] - recentScores[0] : 0;
+    const trend = recentScores.length >= 2 ? recentScores[recentScores.length - 1] - recentScores[0] : 0;
     const phase = s <= 3 ? 'EXPLORE' : (trend > 0.5 ? 'ACCELERATE' : (trend < -0.5 ? 'FIX' : 'OPTIMIZE'));
 
-    // ── LOCAL: analyze → TODO. CLOUD: implement TODO → edit. ──
-    const editableFiles = ['server-v2.js', 'cli.js', 'mcp-server.js', 'agent.js'];
-    const targetFile = editableFiles[s % editableFiles.length];
-    let targetLine = '', targetLineNum = 0;
-    try {
-      const lines = fs.readFileSync(path.join(__dirname, targetFile), 'utf8').split('\n');
-      const cands = [];
-      for (let i = 0; i < lines.length; i++) {
-        const l = lines[i].trim();
-        if (l.length > 20 && l.length < 200 && !l.startsWith('//') && !l.startsWith('*') &&
-            (l.includes('||') || l.includes('catch') || l.includes('if (') || l.includes('return '))) cands.push(i);
+    let priority = '', score = 0, built_n = 0;
+
+    // --------------------------------------------------
+    // CLOUD-SCAN: Claude analyzes 50 lines of code, finds real issues
+    // --------------------------------------------------
+    if (isCloudScan) {
+      console.log(`  ${C.red}${C.bold}== S${s} ==${C.reset} ${yellow('[CLOUD-SCAN]')} ${dim('Finding issues for next cycle')}`);
+
+      // Rotate through editable files each cycle
+      const cycleNum = Math.floor((s - 1) / cloudEvery);
+      const targetFile = editableFiles[cycleNum % editableFiles.length];
+      let codeSnippet = '';
+      let startLine = 0;
+      try {
+        const allLines = fs.readFileSync(path.join(__dirname, targetFile), 'utf8').split('\n');
+        // Pick a 50-line window -- use prime multiplier for good spread across file
+        const windowStart = (cycleNum * 37) % Math.max(1, allLines.length - 50);
+        startLine = windowStart;
+        codeSnippet = allLines.slice(windowStart, windowStart + 50).map((l, i) => `${windowStart + i + 1}: ${l}`).join('\n');
+      } catch (e) {
+        console.log(`  ${dim('|')} ${yellow('Cannot read ' + targetFile)}`);
       }
-      if (cands.length > 0) { targetLineNum = cands[s % cands.length]; targetLine = lines[targetLineNum]; }
-    } catch(e) {}
 
-    let priority = '', score = 0, resp = '';
+      if (codeSnippet) {
+        const scanPrompt = `You are reviewing ${targetFile} for slopshop.gg.
 
-    if (!sprintCloud) {
-      // LOCAL: analyze only — NEVER edit files
-      resp = await ask(`Sprint ${s}. ${mission.slice(0,60)}. ${targetFile}:${targetLineNum+1}: ${(targetLine||'').slice(0,80)}
-Is this line buggy/unsafe/improvable? VERDICT: BUG/UNSAFE/IMPROVE/FINE ISSUE: <one sentence> SCORE: X/10`);
-      const verdict = ((resp||'').match(/VERDICT:\s*(\w+)/i)||[])[1] || 'FINE';
-      const issue = ((resp||'').match(/ISSUE:\s*(.+?)(?:\n|$)/i)||[])[1] || '';
-      priority = issue; score = extractScore(resp) || 7;
-      if (verdict !== 'FINE' && issue && issue !== 'none') {
-        todos.push({ sprint: s, file: targetFile, line: targetLineNum+1, verdict, issue, phase });
-        console.log(`  ${dim('│')} ${verdict==='BUG'?red('BUG'):verdict==='UNSAFE'?yellow('UNSAFE'):cyan('IMPROVE')} ${dim(targetFile+':'+(targetLineNum+1))} ${issue.slice(0,50)}`);
-      } else {
-        console.log(`  ${dim('│')} ${dim('FINE')} ${dim(targetFile+':'+(targetLineNum+1))}`);
-      }
-    } else {
-      // CLOUD: implement top TODO with real file edit
-      const todo = todos.length > 0 ? todos[todos.length-1] : null;
-      if (todo) {
-        console.log(`  ${dim('│')} ${bold('IMPLEMENTING:')} ${(todo.issue||'').slice(0,50)}`);
-        const fp = path.resolve(__dirname, todo.file || targetFile);
-        const lines = fs.readFileSync(fp, 'utf8').split('\n');
-        const ln = (todo.line||1)-1;
-        const ctx = lines.slice(Math.max(0,ln-2), ln+3).join('\n');
-        resp = await cloudAsk(`Fix: ${todo.issue}\n${todo.file}:${todo.line}:\n${ctx}\nLine: ${lines[ln]||''}\nOutput ONLY the fixed line. Same indent. No backticks.\nREPLACE: <fixed line>`);
-        priority = todo.issue || ''; score = extractScore(resp) || 8;
-      } else {
-        console.log(`  ${dim('│')} ${dim('No TODOs yet')}`);
-        resp = ''; priority = 'analyzing'; score = 7;
-      }
-    }
+CODEBASE:
+${codebaseContext.slice(0, 800)}
 
-    // ── BUILD (cloud sprints only — local sprints skip this entirely) ──
-    let built_n = 0;
-    const replaceMatch = sprintCloud ? (resp||'').match(/REPLACE:\s*([\s\S]*?)(?=\nSCORE:|$)/i) : null;
-    const todo = sprintCloud && todos.length > 0 ? todos[todos.length-1] : null;
-    const findText = todo ? (() => { try { const ls = fs.readFileSync(path.resolve(__dirname, todo.file), 'utf8').split('\n'); return (ls[(todo.line||1)-1]||'').trimEnd(); } catch(e) { return ''; } })() : '';
-    const indent = findText.match(/^(\s*)/)?.[1] || '';
-    let replaceText = replaceMatch ? replaceMatch[1].trim().split('\n')[0] : '';
-    replaceText = replaceText.replace(/^`+|`+$/g, '').trim();
-    if (replaceText && !replaceText.startsWith(indent)) replaceText = indent + replaceText;
+MISSION: ${mission}
 
-    if (findText && replaceText && findText !== replaceText) {
-      const filePath = path.resolve(__dirname, targetFile);
+CODE (lines ${startLine + 1}-${startLine + 50}):
+${codeSnippet}
 
-      if (findText.length > 5 && replaceText.length > 3 && fs.existsSync(filePath)) {
-        const content = fs.readFileSync(filePath, 'utf8');
-        if (content.includes(findText)) {
-          // Safety: save backup, edit, validate syntax, revert if broken
-          const backup = content;
-          const newContent = content.replace(findText, replaceText);
-          fs.writeFileSync(filePath, newContent);
+Find up to 5 REAL issues in this code. Only report issues that are:
+- Missing error handling (no try-catch around risky ops)
+- Potential null/undefined crashes
+- Security issues (unsanitized input, missing auth checks)
+- Logic bugs (wrong operator, off-by-one, mutating when should copy)
+- Missing timeouts or resource leaks
 
-          // Gate 1: Syntax check
-          let syntaxOk = true;
-          if (targetFile.endsWith('.js')) {
-            try { require('child_process').execSync('node -c "' + filePath + '"', { stdio: 'pipe', timeout: 5000 }); }
-            catch(e) { syntaxOk = false; }
+Do NOT report:
+- Style preferences, renaming, or formatting
+- "Could be more elegant" rewrites
+- Anything that works correctly as-is
+
+For each issue, output EXACTLY this format (one per line):
+ISSUE: ${targetFile}:<line_number> | <one sentence describing the real bug/risk>
+
+If fewer than 5 real issues exist, output fewer. If zero real issues, output:
+ISSUE: none`;
+
+        const scanResp = await cloudAsk(scanPrompt);
+        cycleIssues = [];
+        const issueMatches = (scanResp || '').match(/ISSUE:\s*.+/gi) || [];
+        for (const m of issueMatches) {
+          if (m.toLowerCase().includes('none')) continue;
+          const parts = m.replace(/^ISSUE:\s*/i, '').split('|');
+          const loc = (parts[0] || '').trim();
+          const desc = (parts[1] || '').trim();
+          const fileMatch = loc.match(/^([^:]+):(\d+)/);
+          if (fileMatch && desc) {
+            cycleIssues.push({
+              file: fileMatch[1].trim(),
+              line: parseInt(fileMatch[2]),
+              issue: desc,
+              context: '',
+              localNotes: [],
+            });
           }
+        }
 
-          // Gate 2: Runtime test — run the edited file to catch const reassignment, undefined vars, etc
-          let runtimeOk = true;
-          if (syntaxOk) {
-            try {
-              if (targetFile === 'cli.js') {
-                require('child_process').execSync('node "' + filePath + '" version --json --quiet', { stdio: 'pipe', timeout: 10000 });
+        score = 8;
+        priority = `Found ${cycleIssues.length} issues in ${targetFile}`;
+        for (const iss of cycleIssues) {
+          console.log(`  ${dim('|')} ${red('ISSUE')} ${dim(iss.file + ':' + iss.line)} ${iss.issue.slice(0, 60)}`);
+          todos.push({ sprint: s, file: iss.file, line: iss.line, verdict: 'BUG', issue: iss.issue, phase });
+        }
+        if (cycleIssues.length === 0) {
+          console.log(`  ${dim('|')} ${dim('No real issues found in this region -- clean code')}`);
+          score = 6;
+        }
+      } else {
+        score = 5; priority = 'no code to scan';
+        console.log(`  ${dim('|')} ${dim('No code snippet available')}`);
+      }
+
+    // --------------------------------------------------
+    // LOCAL SPRINT: Pick one cloud-found issue, read surrounding code, add notes
+    //
+    // KEY INSIGHT: Local models (llama3 4GB) CANNOT find bugs -- they say FINE to
+    // everything. But they CAN do simple tasks:
+    //   - Read code and describe what it does (CONTEXT)
+    //   - Confirm whether a KNOWN issue looks real (CONFIRM yes/no)
+    //   - Flag whether nearby code might break if we edit (RISK)
+    //
+    // These are easy yes/no + one-sentence tasks. Even a 4GB model handles this.
+    // --------------------------------------------------
+    } else if (isLocal) {
+      console.log(`  ${C.red}${C.bold}== S${s} ==${C.reset} ${dim('[LOCAL]')} ${dim('Enriching issue ' + (cyclePos - 1) + '/' + (cloudEvery - 2))}`);
+
+      if (cycleIssues.length === 0) {
+        // No cloud issues to enrich -- happens if cloud-scan found nothing or --local-only
+        console.log(`  ${dim('|')} ${dim('No issues to research -- waiting for next cloud scan')}`);
+        score = 5; priority = 'waiting for cloud scan';
+      } else {
+        // Round-robin through cloud-found issues so each gets multiple local reviews
+        const issueIdx = (cyclePos - 2) % cycleIssues.length;
+        const issue = cycleIssues[issueIdx];
+
+        // Read 10 lines of context around the flagged line
+        let surroundingCode = '';
+        try {
+          const allLines = fs.readFileSync(path.join(__dirname, issue.file), 'utf8').split('\n');
+          const ln = issue.line - 1;
+          const ctxStart = Math.max(0, ln - 5);
+          const ctxEnd = Math.min(allLines.length, ln + 5);
+          surroundingCode = allLines.slice(ctxStart, ctxEnd).map((l, i) => `${ctxStart + i + 1}: ${l}`).join('\n');
+          issue.context = surroundingCode;
+        } catch (e) {}
+
+        // Ask local model SIMPLE questions it CAN answer.
+        // NOT "find bugs" (it can't). Instead: "here's a known bug, tell me about context."
+        const localPrompt = `Sprint ${s}/${sprints}. Mission: ${mission.slice(0, 60)}
+
+A senior code reviewer found this issue in ${issue.file} line ${issue.line}:
+ISSUE: ${issue.issue}
+
+Here is the code around that line:
+${surroundingCode}
+
+Answer these 3 questions. Keep each answer to ONE sentence.
+
+1. CONFIRM: Does the issue look real based on the code? (YES or NO, then why)
+2. CONTEXT: What does this code section do? (function name and purpose)
+3. RISK: If we change line ${issue.line}, could it break nearby code? (YES or NO, then what)
+
+CONFIRM:
+CONTEXT:
+RISK:`;
+
+        const localResp = await localAsk(localPrompt);
+
+        // Parse the structured response
+        const confirm = ((localResp || '').match(/CONFIRM:\s*(.+?)(?:\n|$)/i) || [])[1] || '';
+        const context = ((localResp || '').match(/CONTEXT:\s*(.+?)(?:\n|$)/i) || [])[1] || '';
+        const risk = ((localResp || '').match(/RISK:\s*(.+?)(?:\n|$)/i) || [])[1] || '';
+
+        // Store notes -- even partial/garbled responses add value because
+        // multiple local sprints reviewing the same issue create consensus
+        const note = {
+          sprint: s,
+          confirm: confirm.slice(0, 100),
+          context: context.slice(0, 100),
+          risk: risk.slice(0, 100),
+          raw: (localResp || '').slice(0, 200),
+        };
+        issue.localNotes.push(note);
+
+        const confirmed = confirm.toLowerCase().startsWith('yes');
+        score = confirmed ? 7 : 5;
+        priority = `${issue.file}:${issue.line} ${confirmed ? 'CONFIRMED' : 'UNCERTAIN'}: ${issue.issue.slice(0, 40)}`;
+
+        console.log(`  ${dim('|')} ${dim('Issue:')} ${issue.issue.slice(0, 55)}`);
+        console.log(`  ${dim('|')} ${confirmed ? green('CONFIRMED') : yellow('UNCERTAIN')} ${dim(confirm.slice(0, 50))}`);
+        if (context) console.log(`  ${dim('|')} ${dim('Context:')} ${context.slice(0, 55)}`);
+        if (risk) console.log(`  ${dim('|')} ${dim('Risk:')} ${risk.slice(0, 55)}`);
+
+        // Add to shared research for persistence across sessions
+        shared.research.push({
+          text: `[S${s}] ${issue.file}:${issue.line} ${confirmed ? 'CONFIRMED' : 'UNCERTAIN'}: ${issue.issue.slice(0, 80)}`,
+          sprint: s,
+        });
+        if (shared.research.length > 50) shared.research = shared.research.slice(-50);
+      }
+
+    // --------------------------------------------------
+    // CLOUD-FIX: Claude reads all local enrichment notes, picks best issue,
+    // generates a precise find/replace patch, applies through 5-gate safety
+    // --------------------------------------------------
+    } else if (isCloudFix) {
+      console.log(`  ${C.red}${C.bold}== S${s} ==${C.reset} ${yellow('[CLOUD-FIX]')} ${dim('Implementing best issue from cycle')}`);
+
+      // Filter to issues that got at least one local review
+      const reviewedIssues = cycleIssues.filter(iss => iss.localNotes.length > 0);
+
+      if (reviewedIssues.length === 0 && cycleIssues.length === 0) {
+        console.log(`  ${dim('|')} ${dim('No issues to fix this cycle')}`);
+        score = 5; priority = 'no issues found';
+      } else {
+        // Use reviewed issues if available, otherwise fall back to all issues
+        const candidates = reviewedIssues.length > 0 ? reviewedIssues : cycleIssues;
+
+        // Build summary for CEO decision -- includes local confirmation counts
+        const issueSummary = candidates.map((iss, i) => {
+          const confirmedCount = iss.localNotes.filter(n => n.confirm.toLowerCase().startsWith('yes')).length;
+          const totalNotes = iss.localNotes.length;
+          const riskNotes = iss.localNotes.map(n => n.risk).filter(Boolean).join('; ');
+          return `${i + 1}. ${iss.file}:${iss.line} -- ${iss.issue}\n   Local votes: ${confirmedCount}/${totalNotes} confirmed\n   Context: ${iss.localNotes[0]?.context || 'no local review'}\n   Risk: ${riskNotes || 'unknown'}`;
+        }).join('\n');
+
+        // CEO prompt: pick the single best issue to fix
+        const ceoPrompt = `You are the CEO of an engineering team for slopshop.gg.
+
+MISSION: ${mission}
+VISION: ${shared.vision}
+PHASE: ${phase}
+RECENT EDITS: ${shared.builds.filter(b => b.type === 'file-edit').slice(-3).map(b => b.key + ': ' + (b.find || '').slice(0, 30)).join('; ') || 'none yet'}
+
+Issues found by code review, researched by local agents:
+
+${issueSummary}
+
+Pick the SINGLE highest-impact issue to fix NOW. Prefer:
+- Issues confirmed by local research (more votes = more confidence)
+- Low risk of breaking other code
+- Real bugs over style issues
+
+Output EXACTLY:
+PICK: <number 1-${candidates.length}>
+FILE: <filename>
+ISSUE: <one sentence>
+APPROACH: <one sentence -- the exact code change to make>
+VISION: <updated project vision, or "unchanged">`;
+
+        const ceoResp = await cloudAsk(ceoPrompt);
+        const pickNum = parseInt(((ceoResp || '').match(/PICK:\s*(\d+)/i) || [])[1]) || 1;
+        const pickedIssue = candidates[Math.min(pickNum - 1, candidates.length - 1)];
+        const approach = ((ceoResp || '').match(/APPROACH:\s*(.+?)(?:\n|$)/i) || [])[1] || '';
+        const newVision = ((ceoResp || '').match(/VISION:\s*(.+?)(?:\n|$)/i) || [])[1] || '';
+        if (newVision && newVision.toLowerCase() !== 'unchanged') {
+          shared.vision = newVision.slice(0, 200);
+        }
+
+        console.log(`  ${dim('|')} ${bold('CEO PICK:')} #${pickNum} ${pickedIssue.issue.slice(0, 55)}`);
+        console.log(`  ${dim('|')} ${dim('Approach:')} ${approach.slice(0, 55)}`);
+
+        // Read the target code region for patch generation
+        const fp = path.resolve(__dirname, pickedIssue.file);
+        let codeRegion = '';
+        try {
+          const allLines = fs.readFileSync(fp, 'utf8').split('\n');
+          const ln = pickedIssue.line - 1;
+          const regionStart = Math.max(0, ln - 5);
+          const regionEnd = Math.min(allLines.length, ln + 10);
+          codeRegion = allLines.slice(regionStart, regionEnd).map((l, i) => `${regionStart + i + 1}: ${l}`).join('\n');
+        } catch (e) {
+          console.log(`  ${dim('|')} ${red('Cannot read')} ${pickedIssue.file}`);
+        }
+
+        if (codeRegion) {
+          // Generate exact find/replace patch
+          const patchPrompt = `You are editing ${pickedIssue.file} to fix this issue:
+ISSUE: ${pickedIssue.issue}
+APPROACH: ${approach}
+
+Here is the code region:
+${codeRegion}
+
+Local research notes:
+${pickedIssue.localNotes.map(n => '- Confirm: ' + n.confirm + ' | Context: ' + n.context + ' | Risk: ' + n.risk).join('\n') || '- No local notes available'}
+
+Write an EXACT find-and-replace patch.
+
+CRITICAL RULES:
+- FIND block: copy the EXACT text from the code above (preserve indentation with spaces)
+- REPLACE block: your fixed version
+- Change as FEW lines as possible (1-3 ideal)
+- Do NOT use .splice where .slice is correct
+- Do NOT add .default to require() calls
+- Do NOT invert boolean conditions unless that IS the fix
+- Do NOT rewrite working patterns into "clever" alternatives
+- Preserve exact whitespace (spaces, not tabs)
+
+FIND:
+${'```'}
+<exact existing text>
+${'```'}
+
+REPLACE:
+${'```'}
+<your fix>
+${'```'}
+
+CONFIDENCE: <1-10>`;
+
+          const patchResp = await cloudAsk(patchPrompt);
+
+          // Parse FIND/REPLACE blocks from response
+          const ticks = '`'.repeat(3);
+          const findMatch = (patchResp || '').match(new RegExp('FIND:\\s*' + ticks + '\\s*\\n?([\\s\\S]*?)' + ticks, 'i'));
+          const replaceMatch2 = (patchResp || '').match(new RegExp('REPLACE:\\s*' + ticks + '\\s*\\n?([\\s\\S]*?)' + ticks, 'i'));
+          const confidence = parseInt(((patchResp || '').match(/CONFIDENCE:\s*(\d+)/i) || [])[1]) || 0;
+
+          const findText = findMatch ? findMatch[1].replace(/\n$/, '') : '';
+          const replaceText = replaceMatch2 ? replaceMatch2[1].replace(/\n$/, '') : '';
+
+          priority = pickedIssue.issue;
+
+          if (findText && replaceText && findText !== replaceText && confidence >= 5) {
+            const filePath = path.resolve(__dirname, pickedIssue.file);
+
+            if (fs.existsSync(filePath)) {
+              const content = fs.readFileSync(filePath, 'utf8');
+
+              // == GATE 0: EXACT MATCH -- find text must exist verbatim ==
+              if (content.includes(findText)) {
+                const backup = content;
+                const newContent = content.replace(findText, replaceText);
+                fs.writeFileSync(filePath, newContent);
+
+                // == GATE 1: SYNTAX -- node -c must pass ==
+                let syntaxOk = true;
+                if (filePath.endsWith('.js')) {
+                  try { require('child_process').execSync('node -c "' + filePath + '"', { stdio: 'pipe', timeout: 5000 }); }
+                  catch (e) { syntaxOk = false; }
+                }
+
+                // == GATE 2: RUNTIME -- file must load without crash ==
+                let runtimeOk = true;
+                if (syntaxOk) {
+                  try {
+                    if (pickedIssue.file === 'cli.js') {
+                      require('child_process').execSync('node "' + filePath + '" version --json --quiet', { stdio: 'pipe', timeout: 10000 });
+                    } else if (pickedIssue.file === 'server-v2.js') {
+                      require('child_process').execSync("node -e \"require('./server-v2.js')\"", { cwd: __dirname, stdio: 'pipe', timeout: 5000 });
+                    } else {
+                      require('child_process').execSync('node -c "' + filePath + '"', { stdio: 'pipe', timeout: 5000 });
+                    }
+                  } catch (e) { runtimeOk = false; }
+                }
+
+                // == GATE 3: SEMANTIC REVIEW -- cloud LLM checks for known bad patterns ==
+                let semanticOk = true;
+                if (syntaxOk && runtimeOk) {
+                  const reviewResp = await cloudAsk('Review this code change for bugs.\n\nORIGINAL:\n' + findText + '\n\nREPLACEMENT:\n' + replaceText + '\n\nISSUE BEING FIXED: ' + pickedIssue.issue + '\n\nCheck for these specific bug patterns:\n1. .splice used where .slice was intended (splice mutates)\n2. Inverted boolean logic (condition flipped from original)\n3. const variable being reassigned\n4. .default added to require() (does not exist in Node CJS)\n5. Variable shadowing in nested scope\n6. Off-by-one errors in loops or slicing\n7. Missing null/undefined checks that existed in original\n8. Breaking change to function signature or return type\n\nOutput EXACTLY one line:\nSAFE: <reason>\nor\nDANGEROUS: <reason>');
+                  if ((reviewResp || '').toLowerCase().includes('dangerous')) {
+                    semanticOk = false;
+                    const reason = ((reviewResp || '').match(/DANGEROUS:\s*(.+?)(?:\n|$)/i) || [])[1] || 'unknown';
+                    console.log(`  ${dim('|')} ${red('GATE 3 FAIL:')} ${reason.slice(0, 60)}`);
+                  }
+                }
+
+                // == GATE 4: SIZE -- not whitespace-only, not bloating 3x ==
+                const meaningful = findText.replace(/\s/g, '') !== replaceText.replace(/\s/g, '') &&
+                                   replaceText.length < findText.length * 3;
+
+                if (syntaxOk && runtimeOk && semanticOk && meaningful) {
+                  // All 5 gates passed -- commit the edit
+                  try {
+                    require('child_process').execSync(
+                      `git add "${filePath}" && git commit -m "hive S${s}: ${priority.replace(/"/g, '').slice(0, 50)}"`,
+                      { cwd: __dirname, stdio: 'pipe', timeout: 5000 }
+                    );
+                  } catch (e) { /* not in git or nothing to commit */ }
+
+                  shared.builds.push({ key: pickedIssue.file, type: 'file-edit', find: findText.slice(0, 50), replace: replaceText.slice(0, 50), sprint: s });
+                  successfulEdits.push({ sprint: s, file: pickedIssue.file, priority, find: findText.slice(0, 60), replace: replaceText.slice(0, 60) });
+                  built_n++;
+                  score = 9;
+                  console.log(`  ${dim('|')} ${green('GATE 0: exact match OK')}`);
+                  console.log(`  ${dim('|')} ${green('GATE 1: syntax OK')}`);
+                  console.log(`  ${dim('|')} ${green('GATE 2: runtime OK')}`);
+                  console.log(`  ${dim('|')} ${green('GATE 3: semantic SAFE')}`);
+                  console.log(`  ${dim('|')} ${green('GATE 4: size OK')}`);
+                  console.log(`  ${dim('|')} ${green('SHIPPED')} ${cyan(pickedIssue.file)} ${dim('(5-gate pass + committed)')}`);
+                  console.log(`  ${dim('|')} ${red('-')} ${dim(findText.split('\n')[0].slice(0, 60))}`);
+                  console.log(`  ${dim('|')} ${green('+')} ${dim(replaceText.split('\n')[0].slice(0, 60))}`);
+                } else {
+                  // Gate failed -- revert from in-memory backup
+                  fs.writeFileSync(filePath, backup);
+                  const reason = !syntaxOk ? 'syntax error' : !runtimeOk ? 'runtime crash' : !semanticOk ? 'semantic DANGEROUS' : 'trivial/bloated';
+                  console.log(`  ${dim('|')} ${red('REVERTED')} ${cyan(pickedIssue.file)} ${dim('(' + reason + ')')}`);
+                  score = 4;
+                }
+              } else {
+                console.log(`  ${dim('|')} ${yellow('GATE 0 FAIL:')} find text not found in ${pickedIssue.file}`);
+                score = 4;
               }
-            } catch(e) { runtimeOk = false; }
-          }
-
-          // Gate 3: Meaningful change (not whitespace-only or bloating)
-          const meaningful = findText.replace(/\s/g,'') !== replaceText.replace(/\s/g,'') && replaceText.length < findText.length * 3;
-
-          if (syntaxOk && runtimeOk && meaningful) {
-            // Git commit the edit so it can be individually reverted
-            try { require('child_process').execSync(`git add "${filePath}" && git commit -m "hive S${s}: ${priority.replace(/"/g,'').slice(0,50)}"`, { cwd: __dirname, stdio: 'pipe', timeout: 5000 }); }
-            catch(e) { /* not in git or nothing to commit */ }
-
-            shared.builds.push({ key: targetFile, type: 'file-edit', find: findText.slice(0, 50), replace: replaceText.slice(0, 50), sprint: s });
-            successfulEdits.push({ sprint: s, file: targetFile, priority, find: findText.slice(0, 60), replace: replaceText.slice(0, 60) });
-            built_n++;
-            console.log(`  ${dim('│')} ${green('✓ SHIPPED')} ${cyan(targetFile)} ${dim('(3-gate pass + committed)')}`);
-            console.log(`  ${dim('│')} ${dim(findText.slice(0, 50))}`);
-            console.log(`  ${dim('│')} ${green('→')} ${dim(replaceText.slice(0, 50))}`);
+            }
           } else {
-            fs.writeFileSync(filePath, backup);
-            const reason = !syntaxOk ? 'syntax error' : !runtimeOk ? 'runtime crash' : 'trivial/risky';
-            console.log(`  ${dim('│')} ${red('✗ REVERTED')} ${cyan(targetFile)} ${dim('(' + reason + ')')}`);
+            const reason = !findText ? 'no FIND block' : !replaceText ? 'no REPLACE block' : findText === replaceText ? 'no change' : 'low confidence (' + confidence + ')';
+            console.log(`  ${dim('|')} ${dim('No valid patch: ' + reason)}`);
+            score = 5;
           }
         } else {
-          console.log(`  ${dim('│')} ${yellow('⚠ text not found in')} ${targetFile}`);
+          score = 5; priority = pickedIssue?.issue || 'no code region';
         }
       }
+
+      // Clear cycle issues -- next cycle starts fresh with new cloud scan
+      cycleIssues = [];
     }
 
-    // Fallback: store priority in memory
+    // == Store in memory if no file edit shipped ==
     if (built_n === 0) {
       await slopMem('hive-s' + s, JSON.stringify({ priority, sprint: s }));
       shared.builds.push({ key: 'hive-s' + s, type: 'memory', sprint: s });
-      built_n = 1;
     }
     if (shared.builds.length > 50) shared.builds = shared.builds.slice(-50);
 
-    // ── QA: verify this sprint's builds ──
-    let qa_ok = 0;
-    for (const b of shared.builds.filter(b => b.sprint === s)) {
-      const r = await slopCall('memory-get', { key: b.key });
-      if (r.data?.value ?? r.data?.data?.value) qa_ok++;
-    }
-
-    // ── CEO evolve ──
-    if (priority) shared.plan = [priority];
+    // == Score + phase tracking ==
     shared.scores.push({ sprint: s, score, phase });
     if (shared.scores.length > 50) shared.scores = shared.scores.slice(-50);
-    shared.vision = (resp||'').match(/VISION:\s*(.+?)(?:\n|$)/i)?.[1]?.trim() || shared.vision;
+    if (priority) shared.plan = [priority];
 
-    // Re-scrape every 25 sprints to refresh knowledge
+    // Re-scrape every 25 sprints to refresh knowledge base
     if (s % 25 === 0 && urls.length > 0) {
-      console.log(`  ${dim('│')} ${cyan('↻ refreshing knowledge base...')}`);
+      console.log(`  ${dim('|')} ${cyan('refreshing knowledge base...')}`);
       const fresh = await slopCall('ext-web-scrape', { url: urls[s % urls.length] });
-      if (fresh.ok) shared.research.push({ text: `[REFRESH ${urls[s%urls.length]}] ${fresh.data?.title||''}: ${(fresh.data?.content||'').slice(0,150)}`, sprint: s });
-      if (shared.research.length > 20) shared.research = shared.research.slice(-20);
+      if (fresh.ok) shared.research.push({ text: `[REFRESH ${urls[s % urls.length]}] ${fresh.data?.title || ''}: ${(fresh.data?.content || '').slice(0, 150)}`, sprint: s });
+      if (shared.research.length > 50) shared.research = shared.research.slice(-50);
     }
 
-    // Discovery: ask for new URL every 10 sprints on cloud
-    if (sprintCloud && s % 10 === 0) {
+    // Compaction every 100 sprints -- prevent unbounded growth
+    if (s % 100 === 0) {
+      const oldResearch = shared.research.slice(0, -10);
+      const kept = shared.research.slice(-10);
+      if (oldResearch.length > 5) {
+        const themes = [...new Set(oldResearch.map(r => (r.text || '').split(':')[0]).filter(Boolean))].slice(0, 5).join(', ');
+        shared.research = [{ text: `[COMPACTED S1-${s - 10}] ${oldResearch.length} items. Themes: ${themes}`, sprint: s }].concat(kept);
+      }
+      shared.builds = shared.builds.filter(b => b.type === 'file-edit').slice(-20);
+    }
+
+    // Discovery: find new competitor URLs on cloud-fix sprints
+    if (isCloudFix && urls.length > 0) {
       const discResp = await cloudChat('anthropic', `We research: ${urls.join(', ')}. Name ONE new competitor URL we should add. Just the URL, nothing else.`);
-      const newUrl = (discResp||'').match(/https?:\/\/\S+/)?.[0];
-      if (newUrl && !urls.includes(newUrl)) { urls.push(newUrl); shared.discoveries.push(newUrl); console.log(`  ${dim('│')} ${green('DISCOVERED:')} ${cyan(newUrl)}`); }
+      const newUrl = (discResp || '').match(/https?:\/\/\S+/)?.[0];
+      if (newUrl && !urls.includes(newUrl)) { urls.push(newUrl); shared.discoveries.push(newUrl); console.log(`  ${dim('|')} ${green('DISCOVERED:')} ${cyan(newUrl)}`); }
     }
 
     const ms = Date.now() - t0;
     const phaseColor = phase === 'ACCELERATE' ? green : phase === 'FIX' ? red : phase === 'EXPLORE' ? cyan : dim;
-    console.log(`  ${dim('└')} ${bold(score+'/10')} ${phaseColor('['+phase+']')} built:${built_n} qa:${qa_ok} ${dim(ms+'ms')} ${dim(creditsSpent+'cr')}`);
+    console.log(`  ${dim('>')} ${bold(score + '/10')} ${phaseColor('[' + phase + ']')} built:${built_n} ${dim(ms + 'ms')} ${dim(creditsSpent + 'cr')}`);
     if (s % 5 === 0 && shared.vision) console.log(`    ${bold('VISION:')} ${green(shared.vision.slice(0, 70))}`);
 
-    // Metrics log — local CSV for analysis
+    // Metrics CSV -- append-only, never loaded into prompts
     const metricsFile = path.join(CONFIG_DIR, 'hive-metrics.csv');
-    if (s === 1) { try { fs.writeFileSync(metricsFile, 'sprint,score,phase,built,qa,edits,reverts,credits,ms,file,priority\n'); } catch(e) {} }
+    if (s === 1) { try { fs.writeFileSync(metricsFile, 'sprint,score,phase,built,edits,credits,ms,file,priority\n'); } catch (e) {} }
     const editResult = successfulEdits.length > 0 ? successfulEdits[successfulEdits.length - 1]?.file || '' : '';
-    try { fs.appendFileSync(metricsFile, `${s},${score},${phase},${built_n},${qa_ok},${successfulEdits.length},${successfulEdits.length - built_n < 0 ? 0 : 0},${creditsSpent},${ms},${editResult},${(priority||'').replace(/,/g,';').slice(0,60)}\n`); } catch(e) {}
+    try { fs.appendFileSync(metricsFile, `${s},${score},${phase},${built_n},${successfulEdits.length},${creditsSpent},${ms},${editResult},${(priority || '').replace(/,/g, ';').slice(0, 60)}\n`); } catch (e) {}
 
-    // Print running stats every 25 sprints
+    // Running stats every 25 sprints
     if (s % 25 === 0) {
       const totalEdits = successfulEdits.length;
-      const avgMs = Math.round(shared.scores.reduce((a, x) => a + (x.score || 0), 0) / shared.scores.length * 10) / 10;
-      console.log(`    ${bold('STATS @' + s + ':')} edits:${totalEdits} avg:${avgMs}/10 scores:${shared.scores.slice(-5).map(x=>x.score).join('→')}`);
+      const avgScore = Math.round(shared.scores.reduce((a, x) => a + (x.score || 0), 0) / shared.scores.length * 10) / 10;
+      console.log(`    ${bold('STATS @' + s + ':')} edits:${totalEdits} avg:${avgScore}/10 scores:${shared.scores.slice(-5).map(x => x.score).join(' > ')}`);
     }
 
     shared.sprints_done = s;
