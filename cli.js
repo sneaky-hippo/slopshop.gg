@@ -1075,7 +1075,7 @@ memory set <key-no-spaces> {"field":"value"}`;
     }
 
     shared.plan = [priority, ...planCmds];
-    const planTokensIn = tokenEst(allResearchText);
+    const planTokensIn = tokenEst(researchSummary);
     const planTokensOut = tokenEst(planResp);
     console.log(`  ${dim('│')} ${green('PRIORITY:')} ${priority.slice(0, 70)}`);
     console.log(`  ${dim('│')} ${dim(planCmds.length + ' commands')} ${dim('(' + planTokensIn + 't in → ' + planTokensOut + 't out)')}`);
