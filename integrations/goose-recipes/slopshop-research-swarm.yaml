@@ -1,6 +1,6 @@
 version: "1.0.0"
 title: "Slopshop Research Swarm"
-description: "Research a URL or topic using Slopshop's 925+ real compute handlers, store findings in persistent memory, and optionally verify with parallel agents."
+description: "Research a URL or topic using Slopshop's 1,273+ real compute handlers, store findings in persistent memory, and optionally verify with parallel agents."
 
 instructions: |
   Use Slopshop extensions to research {{ url }}.
@@ -28,5 +28,5 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 300
-    description: "925+ real deterministic compute handlers + free persistent memory + Army swarms"
+    description: "1,273+ real deterministic compute handlers + free persistent memory + Army swarms"
     env_keys: [SLOPSHOP_KEY]

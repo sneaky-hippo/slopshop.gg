@@ -39,5 +39,5 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 300
-    description: "925+ real deterministic compute handlers for UUID generation, hashing, and persistent wallet/bounty storage"
+    description: "1,273+ real deterministic compute handlers for UUID generation, hashing, and persistent wallet/bounty storage"
     env_keys: [SLOPSHOP_KEY]

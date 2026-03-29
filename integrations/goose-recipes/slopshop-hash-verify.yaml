@@ -37,5 +37,5 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 300
-    description: "925+ real deterministic compute handlers for SHA-256, MD5, HMAC, and persistent proof storage"
+    description: "1,273+ real deterministic compute handlers for SHA-256, MD5, HMAC, and persistent proof storage"
     env_keys: [SLOPSHOP_KEY]

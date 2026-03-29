@@ -36,5 +36,5 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 300
-    description: "925+ real deterministic compute handlers + free persistent memory for backup and verification"
+    description: "1,273+ real deterministic compute handlers + free persistent memory for backup and verification"
     env_keys: [SLOPSHOP_KEY]

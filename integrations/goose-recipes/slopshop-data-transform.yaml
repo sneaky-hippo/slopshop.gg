@@ -37,5 +37,5 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 300
-    description: "925+ real deterministic compute handlers for data parsing, transformation, and validation"
+    description: "1,273+ real deterministic compute handlers for data parsing, transformation, and validation"
     env_keys: [SLOPSHOP_KEY]

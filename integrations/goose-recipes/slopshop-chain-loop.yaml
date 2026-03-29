@@ -44,5 +44,5 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 900
-    description: "925+ real deterministic compute handlers + AI generation for multi-agent chain orchestration"
+    description: "1,273+ real deterministic compute handlers + AI generation for multi-agent chain orchestration"
     env_keys: [SLOPSHOP_KEY, ANTHROPIC_API_KEY]

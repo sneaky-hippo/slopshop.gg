@@ -40,5 +40,5 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 900
-    description: "925+ real deterministic compute handlers + Army swarm deployment for parallel research"
+    description: "1,273+ real deterministic compute handlers + Army swarm deployment for parallel research"
     env_keys: [SLOPSHOP_KEY, ANTHROPIC_API_KEY]

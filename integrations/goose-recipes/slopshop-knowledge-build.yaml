@@ -38,5 +38,5 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 600
-    description: "925+ real deterministic compute handlers + AI extraction for knowledge graph construction"
+    description: "1,273+ real deterministic compute handlers + AI extraction for knowledge graph construction"
     env_keys: [SLOPSHOP_KEY, ANTHROPIC_API_KEY]

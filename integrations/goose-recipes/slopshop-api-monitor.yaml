@@ -37,5 +37,5 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 600
-    description: "925+ real deterministic compute handlers for HTTP probing, SSL checks, and persistent storage"
+    description: "1,273+ real deterministic compute handlers for HTTP probing, SSL checks, and persistent storage"
     env_keys: [SLOPSHOP_KEY]

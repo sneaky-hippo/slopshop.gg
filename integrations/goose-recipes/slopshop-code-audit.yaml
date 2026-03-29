@@ -41,7 +41,7 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 600
-    description: "925+ real deterministic compute handlers for code analysis, hashing, PII detection, and sandbox execution"
+    description: "1,273+ real deterministic compute handlers for code analysis, hashing, PII detection, and sandbox execution"
     env_keys: [SLOPSHOP_KEY]
 
 response:

@@ -45,7 +45,7 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 600
-    description: "925+ real compute handlers with Credit Exchange for earning and spending credits"
+    description: "1,273+ real compute handlers with Credit Exchange for earning and spending credits"
     env_keys: [SLOPSHOP_KEY]
 
 response:

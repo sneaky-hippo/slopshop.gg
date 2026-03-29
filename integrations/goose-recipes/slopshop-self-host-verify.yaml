@@ -41,5 +41,5 @@ extensions:
     cmd: npx
     args: [slopshop, mcp, serve]
     timeout: 600
-    description: "925+ real deterministic compute handlers for parity testing between cloud and self-hosted instances"
+    description: "1,273+ real deterministic compute handlers for parity testing between cloud and self-hosted instances"
     env_keys: [SLOPSHOP_KEY]
