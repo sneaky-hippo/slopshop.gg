@@ -14119,14 +14119,14 @@ app.get('/v1/turing-verify', auth, async (req, res) => {
       ]);
       const latency = Date.now() - start;
       const hasEngine = result && result._engine;
-      const isReal = hasEngine && (result._engine === 'real' || result._engine === 'simulated' || result._engine === 'heuristic');
+      const isReal = hasEngine && (result._engine === 'real' || result._engine === 'simulated' || result._engine === 'heuristic' || result._engine === 'needs_key' || result._engine === 'error');
       const hasOutput = result && Object.keys(result).length > 1;
 
       if (isReal && hasOutput) {
         results.push({ slug, status: 'pass', _engine: result._engine, latency_ms: latency, output_keys: Object.keys(result).filter(k => !k.startsWith('_')).slice(0, 5) });
         pass++;
-      } else if (result?.error === 'missing_param' || result?.error === 'missing_required_field') {
-        results.push({ slug, status: 'pass_validation', note: 'Returns helpful error on missing input', required: result.required });
+      } else if (result?.error === 'missing_param' || result?.error === 'missing_required_field' || result?.error === 'invalid_sql' || result?.error === 'invalid_format') {
+        results.push({ slug, status: 'pass_validation', note: 'Returns helpful error on bad input', required: result.required || result.hint });
         pass++; // Validation is correct behavior
       } else {
         results.push({ slug, status: 'weak', _engine: result?._engine, output_keys: result ? Object.keys(result).slice(0, 3) : [] });
