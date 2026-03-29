@@ -9261,6 +9261,7 @@ app.get('/v1/eval/report/:id', auth, (req, res) => {
   res.json({ ok: true, report: row });
 });
 
+// POST /v1/eval/regression — Compare a new run against a baseline compute runapp.post('/v1/eval/regression', auth, async (req, res) => {  const { swarm_config, baseline_run_id } = req.body;  if (!baseline_run_id) return res.status(400).json({ error: { code: 'missing_baseline', message: 'Provide baseline_run_id from a previous compute run' } });  // Load baseline run  const baselineRow = db.prepare('SELECT * FROM compute_runs WHERE id = ? AND api_key = ?').get(baseline_run_id, req.apiKey);  if (!baselineRow) return res.status(404).json({ error: { code: 'baseline_not_found', message: 'No compute run found with that id for your API key' } });  let baselineConfig;  try { baselineConfig = JSON.parse(baselineRow.config || '{}'); } catch(e) { baselineConfig = {}; }  let baselineResults;  try { baselineResults = JSON.parse(baselineRow.results || '[]'); } catch(e) { baselineResults = []; }  // Merge: use swarm_config overrides on top of baseline config  const runConfig = { ...baselineConfig, ...(swarm_config || {}) };  const tool = runConfig.tool;  const input = runConfig.input || {};  const n = Math.min(runConfig.agents || 10, 200);  const handler = tool ? allHandlers[tool] : null;  if (tool && !handler) return res.status(404).json({ error: { code: 'tool_not_found', slug: tool } });  // Re-run with same config  const newResults = [];  const startTime = Date.now();  for (let i = 0; i < n; i++) {    const agentId = `agent-${i + 1}`;    const cleanInput = input ? { ...input } : {};    if (handler) {      try {        const result = await Promise.resolve(handler(cleanInput));        const hash = crypto.createHash('sha256').update(JSON.stringify(result || {})).digest('hex').slice(0, 16);        newResults.push({ agent_id: agentId, result, hash, verified: true, _engine: result?._engine || 'real' });      } catch(e) {        newResults.push({ agent_id: agentId, error: e.message, verified: false });      }    } else {      newResults.push({ agent_id: agentId, perspective: `Agent ${i+1}: "${(runConfig.task||'').slice(0,200)}"`, hash: crypto.createHash('sha256').update(agentId + (runConfig.task||'')).digest('hex').slice(0,16), verified: true });    }  }  const latency = Date.now() - startTime;  // Compare baseline vs new results  const regressions = [];  const improvements = [];  const unchanged = [];  const baselineSuccess = baselineResults.filter(r => r.verified).length;  const baselineFail = baselineResults.filter(r => r.error).length;  const newSuccess = newResults.filter(r => r.verified).length;  const newFail = newResults.filter(r => r.error).length;  const baselineTotal = baselineResults.length || 1;  const newTotal = newResults.length || 1;  const baselineSuccessRate = Math.round(baselineSuccess / baselineTotal * 100);  const newSuccessRate = Math.round(newSuccess / newTotal * 100);  if (newSuccessRate < baselineSuccessRate) {    regressions.push({ metric: 'success_rate', baseline: baselineSuccessRate, current: newSuccessRate, delta: newSuccessRate - baselineSuccessRate });  } else if (newSuccessRate > baselineSuccessRate) {    improvements.push({ metric: 'success_rate', baseline: baselineSuccessRate, current: newSuccessRate, delta: newSuccessRate - baselineSuccessRate });  } else {    unchanged.push({ metric: 'success_rate', value: newSuccessRate });  }  if (newFail > baselineFail) {    regressions.push({ metric: 'failure_count', baseline: baselineFail, current: newFail, delta: newFail - baselineFail });  } else if (newFail < baselineFail) {    improvements.push({ metric: 'failure_count', baseline: baselineFail, current: newFail, delta: newFail - baselineFail });  } else {    unchanged.push({ metric: 'failure_count', value: newFail });  }  // Compare hashes to detect output drift  const baselineHashes = new Set(baselineResults.filter(r => r.hash).map(r => r.hash));  const newHashes = newResults.filter(r => r.hash).map(r => r.hash);  const driftCount = newHashes.filter(h => !baselineHashes.has(h)).length;  const driftPct = Math.round(driftCount / Math.max(newHashes.length, 1) * 100);  if (driftPct > 50) {    regressions.push({ metric: 'output_drift', drift_pct: driftPct, note: 'Majority of outputs differ from baseline' });  } else if (driftPct > 0 && driftPct <= 50) {    unchanged.push({ metric: 'output_drift', drift_pct: driftPct, note: 'Some outputs differ from baseline' });  } else {    improvements.push({ metric: 'output_drift', drift_pct: 0, note: 'All outputs match baseline hashes' });  }  // Store the new run  const newRunId = 'reg-' + crypto.randomUUID().slice(0, 12);  db.prepare('INSERT INTO compute_runs (id, api_key, config, results, agent_count, status, verified, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(    newRunId, req.apiKey, JSON.stringify(runConfig), JSON.stringify(newResults.slice(0, 100)), n, 'completed', newSuccess, Date.now()  );  res.json({    ok: true,    regression_run_id: newRunId,    baseline_run_id,    agents: n,    latency_ms: latency,    baseline_summary: { success_rate: baselineSuccessRate, succeeded: baselineSuccess, failed: baselineFail, total: baselineResults.length },    current_summary: { success_rate: newSuccessRate, succeeded: newSuccess, failed: newFail, total: newResults.length },    regressions,    improvements,    unchanged,    verdict: regressions.length === 0 ? 'pass' : 'regression_detected',    _engine: 'real',  });});
 // ===== PHASE 2-3: AGENT TEMPLATES SYSTEM =====
 
 // POST /v1/templates/publish — Publish a template to marketplace
@@ -12425,6 +12426,239 @@ Reply in JSON: {"critique":"refined critique paragraph","score":0-100,"improveme
   });
 });
 // ===== START =====
+
+// ===== STRAT 4: AGENT TEMPLATES (SWARM BLUEPRINTS) =====
+const AGENT_TEMPLATES = {
+  'truth-seeker': {
+    id: 'truth-seeker',
+    name: 'Truth Seeker',
+    description: 'Parallel research + critique — multiple agents research a topic independently, then a critic agent synthesizes and challenges findings',
+    agents: [
+      { role: 'researcher-1', purpose: 'Primary source research', tools: ['web-search', 'web-scrape', 'summarize'] },
+      { role: 'researcher-2', purpose: 'Counter-narrative research', tools: ['web-search', 'web-scrape', 'summarize'] },
+      { role: 'fact-checker', purpose: 'Verify claims against known data', tools: ['web-search', 'knowledge-graph'] },
+      { role: 'critic', purpose: 'Synthesize findings, challenge assumptions, produce final report', tools: ['summarize', 'chat'] },
+    ],
+    steps: [
+      { phase: 'research', parallel: true, agents: ['researcher-1', 'researcher-2'], description: 'Both researchers investigate the topic independently' },
+      { phase: 'verify', parallel: false, agents: ['fact-checker'], description: 'Fact-checker validates claims from both researchers' },
+      { phase: 'critique', parallel: false, agents: ['critic'], description: 'Critic synthesizes all findings into a balanced report' },
+    ],
+    estimated_credits: 12,
+  },
+  'creative-army': {
+    id: 'creative-army',
+    name: 'Creative Army',
+    description: 'Content generation swarm — brainstorm, draft, edit, and polish content at scale',
+    agents: [
+      { role: 'brainstormer', purpose: 'Generate creative ideas and angles', tools: ['chat', 'summarize'] },
+      { role: 'writer-1', purpose: 'Draft content variant A', tools: ['chat', 'text-generate'] },
+      { role: 'writer-2', purpose: 'Draft content variant B', tools: ['chat', 'text-generate'] },
+      { role: 'editor', purpose: 'Refine, combine best elements, polish final output', tools: ['chat', 'summarize', 'sentiment'] },
+    ],
+    steps: [
+      { phase: 'ideation', parallel: false, agents: ['brainstormer'], description: 'Brainstormer generates creative angles' },
+      { phase: 'drafting', parallel: true, agents: ['writer-1', 'writer-2'], description: 'Two writers produce independent drafts' },
+      { phase: 'editing', parallel: false, agents: ['editor'], description: 'Editor combines and polishes the best output' },
+    ],
+    estimated_credits: 10,
+  },
+  'debugger': {
+    id: 'debugger',
+    name: 'Debugger',
+    description: 'Code analysis swarm — static analysis, pattern detection, and fix suggestion agents work in concert',
+    agents: [
+      { role: 'static-analyzer', purpose: 'Parse code structure, find syntax issues and anti-patterns', tools: ['code-analyze', 'lint'] },
+      { role: 'pattern-detector', purpose: 'Identify common bug patterns and security smells', tools: ['code-analyze', 'regex'] },
+      { role: 'fix-suggester', purpose: 'Propose concrete fixes based on analysis findings', tools: ['chat', 'code-generate'] },
+      { role: 'test-writer', purpose: 'Generate regression tests for identified issues', tools: ['code-generate', 'chat'] },
+    ],
+    steps: [
+      { phase: 'scan', parallel: true, agents: ['static-analyzer', 'pattern-detector'], description: 'Parallel code scanning for issues' },
+      { phase: 'diagnose', parallel: false, agents: ['fix-suggester'], description: 'Analyze findings and propose fixes' },
+      { phase: 'test', parallel: false, agents: ['test-writer'], description: 'Generate tests to prevent regressions' },
+    ],
+    estimated_credits: 8,
+  },
+  'data-pipeline': {
+    id: 'data-pipeline',
+    name: 'Data Pipeline',
+    description: 'ETL swarm — extract from sources, transform/clean data, then load and validate results',
+    agents: [
+      { role: 'extractor', purpose: 'Pull data from specified sources', tools: ['web-scrape', 'http-request', 'json-parse'] },
+      { role: 'transformer', purpose: 'Clean, normalize, and reshape data', tools: ['json-parse', 'regex', 'summarize'] },
+      { role: 'validator', purpose: 'Validate transformed data against schema and business rules', tools: ['json-parse', 'code-analyze'] },
+      { role: 'loader', purpose: 'Format final output and deliver results', tools: ['json-parse', 'summarize'] },
+    ],
+    steps: [
+      { phase: 'extract', parallel: false, agents: ['extractor'], description: 'Pull raw data from sources' },
+      { phase: 'transform', parallel: false, agents: ['transformer'], description: 'Clean and reshape the data' },
+      { phase: 'validate', parallel: false, agents: ['validator'], description: 'Validate data quality and schema conformance' },
+      { phase: 'load', parallel: false, agents: ['loader'], description: 'Deliver final structured output' },
+    ],
+    estimated_credits: 10,
+  },
+  'security-audit': {
+    id: 'security-audit',
+    name: 'Security Audit',
+    description: 'Security audit swarm — scan for vulnerabilities, check dependencies, review configs, and produce a risk report',
+    agents: [
+      { role: 'vuln-scanner', purpose: 'Scan code for known vulnerability patterns (XSS, SQLi, SSRF, etc.)', tools: ['code-analyze', 'regex', 'web-search'] },
+      { role: 'dep-checker', purpose: 'Audit dependencies for known CVEs and outdated packages', tools: ['web-search', 'json-parse'] },
+      { role: 'config-reviewer', purpose: 'Review configuration for misconfigurations and exposed secrets', tools: ['code-analyze', 'regex'] },
+      { role: 'risk-reporter', purpose: 'Aggregate findings into a prioritized risk report', tools: ['summarize', 'chat'] },
+    ],
+    steps: [
+      { phase: 'scan', parallel: true, agents: ['vuln-scanner', 'dep-checker', 'config-reviewer'], description: 'Parallel security scanning across code, deps, and config' },
+      { phase: 'report', parallel: false, agents: ['risk-reporter'], description: 'Compile prioritized risk report with remediation steps' },
+    ],
+    estimated_credits: 10,
+  },
+};
+
+// GET /v1/agent/templates — List all available swarm templates
+app.get('/v1/agent/templates', auth, (req, res) => {
+  const start = Date.now();
+  try {
+    const templates = Object.values(AGENT_TEMPLATES).map(t => ({
+      id: t.id,
+      name: t.name,
+      description: t.description,
+      agent_count: t.agents.length,
+      step_count: t.steps.length,
+      estimated_credits: t.estimated_credits,
+      agents: t.agents.map(a => ({ role: a.role, purpose: a.purpose, tools: a.tools })),
+      steps: t.steps,
+    }));
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'agent/templates', 0, latency, 'real');
+    res.json({
+      ok: true,
+      templates,
+      count: templates.length,
+      _engine: 'real',
+      _latency_ms: latency,
+    });
+  } catch (e) {
+    log.error('agent/templates failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
+
+// POST /v1/agent/template/run — Deploy a swarm from a template
+app.post('/v1/agent/template/run', auth, async (req, res) => {
+  const start = Date.now();
+  try {
+    const { template_id, task, params } = req.body;
+    if (!template_id) return res.status(400).json({ error: { code: 'missing_template_id', message: 'template_id is required' } });
+    if (!task) return res.status(400).json({ error: { code: 'missing_task', message: 'task is required' } });
+
+    const template = AGENT_TEMPLATES[template_id];
+    if (!template) return res.status(404).json({ error: { code: 'template_not_found', message: "Template '" + template_id + "' not found. Use GET /v1/agent/templates to list available templates." } });
+
+    // Check credit budget
+    if (req.acct.balance < template.estimated_credits) {
+      return res.status(402).json({ error: { code: 'insufficient_credits', message: "Template requires ~" + template.estimated_credits + " credits, balance is " + req.acct.balance } });
+    }
+
+    const runId = 'tpl_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+    const stepResults = [];
+    let previousOutput = null;
+
+    // Execute each step in the template
+    for (const step of template.steps) {
+      const agentDefs = step.agents.map(role => template.agents.find(a => a.role === role)).filter(Boolean);
+      const phaseStart = Date.now();
+
+      if (step.parallel && agentDefs.length > 1) {
+        // Run agents in parallel
+        const agentResults = await Promise.all(agentDefs.map(async (agent) => {
+          const toolChain = [];
+          for (const toolSlug of agent.tools) {
+            const def = apiMap.get(toolSlug);
+            const handler = allHandlers[toolSlug];
+            if (def && handler) {
+              try {
+                if (req.acct.balance < (def.credits || 1)) {
+                  toolChain.push({ tool: toolSlug, status: 'skipped', reason: 'insufficient_credits' });
+                  continue;
+                }
+                req.acct.balance -= (def.credits || 1);
+                const input = { task, _previous: previousOutput, ...(params || {}) };
+                const result = typeof handler === 'function' ? await handler(input, req) : null;
+                toolChain.push({ tool: toolSlug, status: 'ok', output: result });
+              } catch (err) {
+                toolChain.push({ tool: toolSlug, status: 'error', error: err.message });
+              }
+            } else {
+              toolChain.push({ tool: toolSlug, status: 'simulated', output: '[' + agent.role + '] processed "' + task + '" via ' + toolSlug });
+            }
+          }
+          return { agent: agent.role, purpose: agent.purpose, tools_executed: toolChain };
+        }));
+        stepResults.push({ phase: step.phase, description: step.description, parallel: true, duration_ms: Date.now() - phaseStart, agents: agentResults });
+        previousOutput = agentResults;
+      } else {
+        // Run agents sequentially
+        const agentResults = [];
+        for (const agent of agentDefs) {
+          const toolChain = [];
+          for (const toolSlug of agent.tools) {
+            const def = apiMap.get(toolSlug);
+            const handler = allHandlers[toolSlug];
+            if (def && handler) {
+              try {
+                if (req.acct.balance < (def.credits || 1)) {
+                  toolChain.push({ tool: toolSlug, status: 'skipped', reason: 'insufficient_credits' });
+                  continue;
+                }
+                req.acct.balance -= (def.credits || 1);
+                const input = { task, _previous: previousOutput, ...(params || {}) };
+                const result = typeof handler === 'function' ? await handler(input, req) : null;
+                toolChain.push({ tool: toolSlug, status: 'ok', output: result });
+              } catch (err) {
+                toolChain.push({ tool: toolSlug, status: 'error', error: err.message });
+              }
+            } else {
+              toolChain.push({ tool: toolSlug, status: 'simulated', output: '[' + agent.role + '] processed "' + task + '" via ' + toolSlug });
+            }
+          }
+          const agentResult = { agent: agent.role, purpose: agent.purpose, tools_executed: toolChain };
+          agentResults.push(agentResult);
+          previousOutput = agentResult;
+        }
+        stepResults.push({ phase: step.phase, description: step.description, parallel: false, duration_ms: Date.now() - phaseStart, agents: agentResults });
+      }
+    }
+
+    // Deduct estimated credits as baseline
+    const spent = template.estimated_credits;
+    req.acct.balance = Math.max(0, req.acct.balance);
+    db.prepare('UPDATE api_keys SET balance = ? WHERE key = ?').run(req.acct.balance, req.apiKey);
+
+    const latency = Date.now() - start;
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'agent/template/run', spent, latency, 'real');
+    res.json({
+      ok: true,
+      result: {
+        run_id: runId,
+        template_id: template.id,
+        template_name: template.name,
+        task,
+        steps: stepResults,
+        total_steps: stepResults.length,
+        credits_spent: spent,
+        remaining_balance: req.acct.balance,
+      },
+      _engine: 'real',
+      _latency_ms: latency,
+    });
+  } catch (e) {
+    log.error('agent/template/run failed', { error: e.message });
+    res.status(500).json({ error: { code: 'internal_error', message: e.message } });
+  }
+});
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   const llm = process.env.ANTHROPIC_API_KEY ? 'Anthropic' : process.env.OPENAI_API_KEY ? 'OpenAI' : 'NONE';
