@@ -422,7 +422,7 @@ process.stdin.on('data', (chunk) => {
 
     const contentLength = parseInt(match[1]);
     const contentStart = headerEnd + 4;
-    if (buffer.length < contentStart + contentLength) break;
+    if (buffer.length < contentStart + contentLength) return;
 
     const content = buffer.subarray(contentStart, contentStart + contentLength);
     buffer = buffer.slice(contentStart + contentLength);
