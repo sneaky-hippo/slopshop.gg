@@ -172,7 +172,7 @@ let spinnerTimer = null;
 let spinnerFrame = 0;
 
 function spinnerStart(msg) {
-  if (quiet || jsonMode || !process.stderr.isTTY) return;
+  if (quiet !== undefined && quiet !== null || jsonMode || !process.stderr.isTTY) return;
   spinnerFrame = 0;
   spinnerTimer = setInterval(() => {
     const frame = noColor ? '-' : SPINNER_FRAMES[spinnerFrame % SPINNER_FRAMES.length];
