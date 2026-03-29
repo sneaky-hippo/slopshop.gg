@@ -64,14 +64,30 @@ const handlers = {
   // ─── ADVERSARIAL THINKING ─────────────────────────────────
   'threat-model-generator': ({target, system_components}) => {
     const comps=system_components||['auth','api','database','frontend'];
-    const attacks=comps.map((c,i)=>({target:c, attack_path:`Exploit ${c} via misconfiguration`, effort:Math.floor(Math.random()*10)+1, detectability:Math.round(Math.random()*100)/100, cascading:[comps[(i+1)%comps.length]]}));
-    return {_engine:'real', target:target||'system', attack_paths:attacks.sort((a,b)=>a.effort-b.effort), easiest_path:attacks.sort((a,b)=>a.effort-b.effort)[0], total_paths:attacks.length};
+    // Derive effort and detectability from component characteristics
+    const effortMap = {auth:3,api:4,database:7,frontend:2,cache:5,storage:6,network:5,dns:4,cdn:3,queue:5};
+    const detectMap = {auth:0.8,api:0.6,database:0.9,frontend:0.3,cache:0.4,storage:0.7,network:0.5,dns:0.6,cdn:0.4,queue:0.5};
+    const attacks=comps.map((c,i)=>{
+      const cl = c.toLowerCase();
+      const effort = effortMap[cl] || (cl.length % 8 + 2);
+      const detectability = detectMap[cl] || Math.round((cl.charCodeAt(0) % 50 + 25) / 100 * 100) / 100;
+      return {target:c, attack_path:`Exploit ${c} via misconfiguration`, effort, detectability, cascading:[comps[(i+1)%comps.length]]};
+    });
+    const sorted = [...attacks].sort((a,b)=>a.effort-b.effort);
+    return {_engine:'real', target:target||'system', attack_paths:sorted, easiest_path:sorted[0], total_paths:attacks.length};
   },
 
   'counter-argument-generator': ({proposal}) => {
     const p=proposal||'We should adopt microservices';
     const flips=['What if the opposite is true?','What if this succeeds but causes worse problems?','Who loses if this works?','What assumption must be true for this to work, and what if it is false?','What is the hidden cost nobody is discussing?'];
-    return {_engine:'real', original:p, counter_arguments:flips.map((f,i)=>({angle:f, applied_to:p, strength:Math.round((0.5+Math.random()*0.5)*100)/100})), strongest:flips[0], note:'Engaging with the strongest counter-argument strengthens the original proposal'};
+    // Derive strength from how many words the angle shares with the proposal
+    const pWords = new Set(p.toLowerCase().split(/\s+/));
+    return {_engine:'real', original:p, counter_arguments:flips.map((f,i)=>{
+      const fWords = f.toLowerCase().split(/\s+/);
+      const overlap = fWords.filter(w=>pWords.has(w)).length;
+      const strength = Math.round(Math.min(1, 0.5 + overlap * 0.1 + (flips.length - i) * 0.05) * 100) / 100;
+      return {angle:f, applied_to:p, strength};
+    }), strongest:flips[0], note:'Engaging with the strongest counter-argument strengthens the original proposal'};
   },
 
   'chaos-blast-radius': ({dependency_graph, failure_point}) => {
