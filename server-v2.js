@@ -5223,7 +5223,46 @@ app.post('/v1/hive/:id/governance/vote', auth, (req, res) => {
     req.params.id, 'governance:vote:' + proposal_id + ':' + voter, JSON.stringify(voteRecord), now
   );
 
-  res.json({ ok: true, hive_id: req.params.id, proposal_id, vote, stake: voteStake, proposal });
+  // --- Auto-execute: check if quorum is reached (>50% of hive members voted) ---
+  let autoExecuted = false;
+  const hiveRow = db.prepare('SELECT members FROM hives WHERE id = ?').get(req.params.id);
+  if (hiveRow) {
+    const members = JSON.parse(hiveRow.members || '[]');
+    const memberCount = Math.max(members.length, 1);
+    const voterCount = proposal.voters.length;
+    if (voterCount > memberCount / 2) {
+      // Quorum reached — determine outcome and execute
+      const passed = proposal.votes_yes > proposal.votes_no;
+      proposal.status = 'executed';
+      proposal.executed_at = now;
+      proposal.quorum_met = true;
+      proposal.outcome = passed ? 'passed' : 'rejected';
+      proposal.quorum_detail = { voters: voterCount, members: memberCount, threshold: Math.floor(memberCount / 2) + 1 };
+
+      if (passed) {
+        const pType = (proposal.type || 'general').toLowerCase();
+        if (pType === 'upgrade') {
+          // Store upgrade result in hive state
+          db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(
+            req.params.id, 'upgrade:' + proposal.id, JSON.stringify({ proposal_id: proposal.id, title: proposal.title, description: proposal.description, applied_at: now }), now
+          );
+        } else if (pType === 'budget') {
+          // Update budget allocation in hive state
+          db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(
+            req.params.id, 'budget:' + proposal.id, JSON.stringify({ proposal_id: proposal.id, title: proposal.title, description: proposal.description, allocated_at: now }), now
+          );
+        }
+      }
+
+      // Persist updated proposal with executed status
+      db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(
+        req.params.id, 'governance:proposal:' + proposal_id, JSON.stringify(proposal), now
+      );
+      autoExecuted = true;
+    }
+  }
+
+  res.json({ ok: true, hive_id: req.params.id, proposal_id, vote, stake: voteStake, proposal, auto_executed: autoExecuted });
 });
 
 // GET /v1/hive/:id/governance — list governance proposals for this hive
