@@ -1,14 +1,14 @@
 # Slopshop Integration for Aider — Official Configuration
 # Place in ~/.aider.conf.yml or project .aider/aider_commands.yml
 #
-# Gives Aider access to 925+ real deterministic compute handlers,
+# Gives Aider access to 1,273+ real deterministic compute handlers,
 # free persistent memory, and verifiable parallel agent swarms.
 #
 # Requirements: npm install -g slopshop && export SLOPSHOP_KEY=sk-slop-xxx
 
 commands:
   - name: slop
-    description: "Call any of Slopshop's 925+ real compute handlers (hash, crypto, data transform, sandbox exec, memory, network sense)"
+    description: "Call any of Slopshop's 1,273+ real compute handlers (hash, crypto, data transform, sandbox exec, memory, network sense)"
     min_num_of_args: 1
     aider_command: "slop call {0} --json"
     add_output_to_chat: true
@@ -26,7 +26,7 @@ commands:
     add_output_to_chat: true
 
   - name: slop-search
-    description: "Search Slopshop's 925+ tools by natural language description"
+    description: "Search Slopshop's 1,273+ tools by natural language description"
     min_num_of_args: 1
     aider_command: "slop search \"{0}\""
     add_output_to_chat: true

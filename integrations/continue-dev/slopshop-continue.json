@@ -1,7 +1,7 @@
 {
   "name": "slopshop",
   "displayName": "Slopshop — AI Agent Backend",
-  "description": "925+ real compute handlers, free persistent memory, MCP server",
+  "description": "1,273+ real compute handlers, free persistent memory, MCP server",
   "type": "mcp",
   "config": {
     "command": "npx",

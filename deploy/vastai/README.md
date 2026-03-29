@@ -26,7 +26,7 @@ vastai create instance <INSTANCE_ID> \
   --image slopshop/slopshop:3.7.0 \
   --env "NODE_ENV=production DB_PATH=/app/data/slopshop.db SLOPSHOP_BASE=https://slopshop.gg" \
   --disk 10 \
-  --onstart-cmd "node dist/index.js"
+  --onstart-cmd "node server-v2.js"
 ```
 
 Or via the web UI:

@@ -1,5 +1,5 @@
 // Slopshop OpenCode Plugin — full event-driven integration
-// Provides 925+ real compute tools, persistent memory, agent swarms,
+// Provides 1,273+ real compute tools, persistent memory, agent swarms,
 // and hive workspaces as native OpenCode capabilities.
 
 const BASE_URL = process.env.SLOPSHOP_URL || "https://slopshop.gg";
@@ -30,7 +30,7 @@ async function fetchToolRegistry() {
 module.exports = {
   name: "@slopshop/opencode-plugin",
   version: "1.0.0",
-  description: "925+ real deterministic compute handlers, persistent memory, agent swarms, and hive workspaces for OpenCode.",
+  description: "1,273+ real deterministic compute handlers, persistent memory, agent swarms, and hive workspaces for OpenCode.",
 
   // --- Lifecycle hooks ---
 
@@ -63,12 +63,12 @@ module.exports = {
       description: "Persistent key-value memory that survives across sessions. Free forever.",
       uri: "slopshop://memory",
       async read({ key, prefix }) {
-        if (key) return slopFetch("/v1/call/slop-memory-get", { key });
-        if (prefix) return slopFetch("/v1/call/slop-memory-list", { prefix });
-        return slopFetch("/v1/call/slop-memory-list", {});
+        if (key) return slopFetch("/v1/memory-get", { key });
+        if (prefix) return slopFetch("/v1/memory-list", { prefix });
+        return slopFetch("/v1/memory-list", {});
       },
       async write({ key, value }) {
-        return slopFetch("/v1/call/slop-memory-set", { key, value });
+        return slopFetch("/v1/memory-set", { key, value });
       },
     });
 
@@ -92,7 +92,7 @@ module.exports = {
         // Auto-store results in memory if configured
         if (ctx.config?.autoMemory) {
           const memKey = `auto/${toolName}/${Date.now()}`;
-          slopFetch("/v1/call/slop-memory-set", {
+          slopFetch("/v1/memory-set", {
             key: memKey,
             value: JSON.stringify({ tool: toolName, input, result, elapsed }),
           }).catch(() => {});
@@ -116,30 +116,30 @@ module.exports = {
       case "/slop-search": {
         // Search tools: /slop-search hash
         const query = args.join(" ");
-        return slopFetch("/v1/call/slop-tools-search", { query });
+        return slopFetch("/v1/tools-search", { query });
       }
 
       case "/slop-memory": {
         // Memory operations: /slop-memory get mykey, /slop-memory set mykey myvalue
         const [action, key, ...valueParts] = args;
-        if (action === "get") return slopFetch("/v1/call/slop-memory-get", { key });
-        if (action === "set") return slopFetch("/v1/call/slop-memory-set", { key, value: valueParts.join(" ") });
-        if (action === "search") return slopFetch("/v1/call/slop-memory-search", { query: key });
-        if (action === "list") return slopFetch("/v1/call/slop-memory-list", { prefix: key });
+        if (action === "get") return slopFetch("/v1/memory-get", { key });
+        if (action === "set") return slopFetch("/v1/memory-set", { key, value: valueParts.join(" ") });
+        if (action === "search") return slopFetch("/v1/memory-search", { query: key });
+        if (action === "list") return slopFetch("/v1/memory-list", { prefix: key });
         return { error: "Usage: /slop-memory <get|set|search|list> <key> [value]" };
       }
 
       case "/slop-army": {
         // Deploy swarm: /slop-army deploy "task" 10
         const [action, task, count] = args;
-        if (action === "deploy") return slopFetch("/v1/call/slop-army-deploy", { task, count: parseInt(count) || 5 });
-        if (action === "status") return slopFetch("/v1/call/slop-army-status", { army_id: task });
-        if (action === "collect") return slopFetch("/v1/call/slop-army-collect", { army_id: task });
+        if (action === "deploy") return slopFetch("/v1/army-deploy", { task, count: parseInt(count) || 5 });
+        if (action === "status") return slopFetch("/v1/army-status", { army_id: task });
+        if (action === "collect") return slopFetch("/v1/army-collect", { army_id: task });
         return { error: "Usage: /slop-army <deploy|status|collect> <task|army_id> [count]" };
       }
 
       case "/slop-balance": {
-        return slopFetch("/v1/call/slop-credit-balance", {});
+        return slopFetch("/v1/credit-balance", {});
       }
 
       default:
@@ -159,7 +159,7 @@ module.exports = {
         toolCalls: ctx.metadata?.toolCallCount || 0,
         project: ctx.project?.name || "unknown",
       };
-      await slopFetch("/v1/call/slop-memory-set", {
+      await slopFetch("/v1/memory-set", {
         key: `sessions/${sessionId}`,
         value: JSON.stringify(summary),
       });
@@ -173,7 +173,7 @@ module.exports = {
   tools: [
     {
       name: "slop-call",
-      description: "Call any of 925+ Slopshop compute handlers by slug. Use slop-tools-search to discover available tools.",
+      description: "Call any of 1,273+ Slopshop compute handlers by slug. Use slop-tools-search to discover available tools.",
       inputSchema: {
         type: "object",
         properties: {
@@ -195,7 +195,7 @@ module.exports = {
         },
         required: ["key", "value"],
       },
-      handler: async (input) => slopFetch("/v1/call/slop-memory-set", input),
+      handler: async (input) => slopFetch("/v1/memory-set", input),
     },
     {
       name: "slop-memory-get",
@@ -205,7 +205,7 @@ module.exports = {
         properties: { key: { type: "string" } },
         required: ["key"],
       },
-      handler: async (input) => slopFetch("/v1/call/slop-memory-get", input),
+      handler: async (input) => slopFetch("/v1/memory-get", input),
     },
     {
       name: "slop-memory-search",
@@ -215,7 +215,7 @@ module.exports = {
         properties: { query: { type: "string" } },
         required: ["query"],
       },
-      handler: async (input) => slopFetch("/v1/call/slop-memory-search", input),
+      handler: async (input) => slopFetch("/v1/memory-search", input),
     },
     {
       name: "slop-army-deploy",
@@ -228,7 +228,7 @@ module.exports = {
         },
         required: ["task"],
       },
-      handler: async (input) => slopFetch("/v1/call/slop-army-deploy", input),
+      handler: async (input) => slopFetch("/v1/army-deploy", input),
     },
     {
       name: "slop-tools-search",
@@ -238,7 +238,7 @@ module.exports = {
         properties: { query: { type: "string" } },
         required: ["query"],
       },
-      handler: async (input) => slopFetch("/v1/call/slop-tools-search", input),
+      handler: async (input) => slopFetch("/v1/tools-search", input),
     },
   ],
 

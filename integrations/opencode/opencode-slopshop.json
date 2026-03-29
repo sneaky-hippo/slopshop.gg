@@ -1,7 +1,7 @@
 {
   "name": "@slopshop/opencode-plugin",
   "version": "1.0.0",
-  "description": "925+ real deterministic compute handlers, free persistent memory, Army swarms with Merkle verification, Hive collaboration workspaces, and Credit Exchange — all as native OpenCode tools.",
+  "description": "1,273+ real deterministic compute handlers, free persistent memory, Army swarms with Merkle verification, Hive collaboration workspaces, and Credit Exchange — all as native OpenCode tools.",
   "homepage": "https://slopshop.gg",
   "repository": "https://github.com/sneaky-hippo/slopshop.gg",
   "mcp_server": {
@@ -12,7 +12,7 @@
     }
   },
   "tools": [
-    { "name": "slop-call", "description": "Call any of 925+ real compute handlers by slug" },
+    { "name": "slop-call", "description": "Call any of 1,273+ real compute handlers by slug" },
     { "name": "slop-memory-set", "description": "Store persistent memory (free forever)" },
     { "name": "slop-memory-get", "description": "Retrieve persistent memory" },
     { "name": "slop-memory-search", "description": "Semantic search across memory" },

@@ -32,7 +32,7 @@ class Slopshop {
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + this.apiKey,
-          'User-Agent': 'slopshop-sdk-node/3.2.0',
+          'User-Agent': 'slopshop-sdk-node/3.8.0',
         },
         timeout: this.timeout,
       };
@@ -190,6 +190,31 @@ class Slopshop {
   async chainRun(chainId, options = {}) {
     return this.call('chain/run', { chain_id: chainId, ...options });
   }
+
+  // Browser
+  async browserAct(task, options = {}) { return this.call('browser/act', { task, ...options }); }
+  async browserExtract(url, selectors, options = {}) { return this.call('browser/extract', { url, selectors, ...options }); }
+
+  // Grok
+  async grokOptimize(toolSlug, taskDescription) { return this.call('grok/optimize', { tool_slug: toolSlug, task_description: taskDescription }); }
+  async grokCritique(content, criteria) { return this.call('grok/critique', { content, criteria }); }
+
+  // Memory 2.0
+  async memoryGraphQuery(query, options = {}) { return this.call('memory/graph-query', { query, ...options }); }
+  async memoryAutoSummarize(namespace) { return this.call('memory/auto-summarize', { namespace }); }
+  async memorySnapshot(namespace, format = 'json') { return this.call('memory/snapshot', { namespace, format }); }
+
+  // Safety
+  async guardrailsScan(text, checks) { return this.call('guardrails/scan-deep', { text, checks }); }
+
+  // Eval
+  async evalBenchmark(toolSlugs, testCount = 3) { return this.call('eval/benchmark', { tool_slugs: toolSlugs, test_count: testCount }); }
+
+  // Templates
+  async agentTemplates() { const res = await this._request('GET', '/v1/agent/templates'); return res.data; }
+
+  // Simulate
+  async agentSimulate(task, options = {}) { return this.call('agent/simulate', { task, ...options }); }
 }
 
 class SlopshopError extends Error {

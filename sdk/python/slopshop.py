@@ -30,7 +30,7 @@ class Slopshop:
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.api_key}',
-            'User-Agent': 'slopshop-sdk-python/3.2.0',
+            'User-Agent': 'slopshop-sdk-python/3.8.0',
         }
         data = json.dumps(body).encode() if body else None
         req = urllib.request.Request(url, data=data, headers=headers, method=method)
@@ -133,3 +133,28 @@ class Slopshop:
 
     def chain_run(self, chain_id, **kwargs):
         return self.call('chain/run', {'chain_id': chain_id, **kwargs})
+
+    # Browser
+    def browser_act(self, task, **kwargs): return self.call('browser/act', {'task': task, **kwargs})
+    def browser_extract(self, url, selectors, **kwargs): return self.call('browser/extract', {'url': url, 'selectors': selectors, **kwargs})
+
+    # Grok
+    def grok_optimize(self, tool_slug, task_description): return self.call('grok/optimize', {'tool_slug': tool_slug, 'task_description': task_description})
+    def grok_critique(self, content, criteria=None): return self.call('grok/critique', {'content': content, 'criteria': criteria})
+
+    # Memory 2.0
+    def memory_graph_query(self, query, **kwargs): return self.call('memory/graph-query', {'query': query, **kwargs})
+    def memory_auto_summarize(self, namespace='default'): return self.call('memory/auto-summarize', {'namespace': namespace})
+    def memory_snapshot(self, namespace='default', fmt='json'): return self.call('memory/snapshot', {'namespace': namespace, 'format': fmt})
+
+    # Safety
+    def guardrails_scan(self, text, checks=None): return self.call('guardrails/scan-deep', {'text': text, 'checks': checks})
+
+    # Eval
+    def eval_benchmark(self, tool_slugs, test_count=3): return self.call('eval/benchmark', {'tool_slugs': tool_slugs, 'test_count': test_count})
+
+    # Templates
+    def agent_templates(self): return self._request('GET', '/v1/agent/templates')
+
+    # Simulate
+    def agent_simulate(self, task, **kwargs): return self.call('agent/simulate', {'task': task, **kwargs})

@@ -48,6 +48,8 @@ app.use(cors({
   maxAge: 86400,
 }));
 app.use(express.json({ limit: '1mb' })); // 1MB max request body
+// Ensure req.body is always an object (prevents destructuring crashes if body is null/undefined)
+app.use((req, res, next) => { if (!req.body || typeof req.body !== 'object') req.body = {}; next(); });
 app.set('trust proxy', 1); // trust Railway/Vercel proxy for IP
 
 // PERF: Disable Express ETag generation (not needed for API responses)
@@ -1514,11 +1516,11 @@ app.post('/v1/credits/buy', auth, BODY_LIMIT_AUTH, (req, res) => {
       status: 'redirect_to_checkout',
       message: 'Use POST /v1/checkout to buy credits with real payment.',
       checkout_endpoint: 'POST /v1/checkout { "amount": 10000 }',
-      tiers: { 5000: '$9', 50000: '$49', 500000: '$299', 1000000: '$1,999' },
+      tiers: { 1000: '$9', 10000: '$49', 100000: '$299', 1000000: '$1,999' },
     });
   }
 
-  const tiers = { 5000: { price: 9, tier: 'baby-lobster' }, 10000: { price: 49, tier: 'shore-crawler' }, 100000: { price: 299, tier: 'reef-boss' }, 1000000: { price: 1999, tier: 'leviathan' } };
+  const tiers = { 1000: { price: 9, tier: 'baby-lobster' }, 10000: { price: 49, tier: 'shore-crawler' }, 100000: { price: 299, tier: 'reef-boss' }, 1000000: { price: 1999, tier: 'leviathan' } };
   const t = tiers[req.body.amount];
   if (!t) return res.status(400).json({ error: { code: 'invalid_amount', valid: Object.keys(tiers).map(Number) } });
   req.acct.balance += req.body.amount;
@@ -9062,6 +9064,9 @@ app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => 
     if (body === req.body) body = { ...req.body }; // clone only if needed
     body.namespace = req.acct._nsPrefix + ':' + body.namespace;
   }
+
+  // Ensure input is never null/undefined (prevents destructuring crashes in 1100+ handlers)
+  if (!body || typeof body !== 'object') body = {};
 
   req.acct.balance -= def.credits;
   const start = Date.now();

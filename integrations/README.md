@@ -78,7 +78,7 @@ Or use the MCP server directly. See `integrations/opencode/opencode-slopshop.jso
 In Cline VS Code sidebar → MCP Marketplace → Add custom → command: `npx slopshop mcp serve`
 
 **Skills (SKILL.md templates):**
-- `SKILL-slopshop-compute.md` — 925+ real compute handlers (hash, crypto, data transforms, network)
+- `SKILL-slopshop-compute.md` — 1,273+ real compute handlers (hash, crypto, data transforms, network)
 - `SKILL-slopshop-memory.md` — Free persistent memory across sessions
 - `SKILL-slopshop-swarm.md` — Army Mode parallel agents with Merkle verification
 
@@ -110,7 +110,7 @@ from langchain_mcp_adapters import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
 
 client = MultiServerMCPClient([{"url": "http://localhost:8765"}])
-tools = await client.get_tools()  # 925+ real compute tools + memory + swarms
+tools = await client.get_tools()  # 1,273+ real compute tools + memory + swarms
 agent = create_react_agent(llm, tools)
 ```
 

@@ -1,6 +1,6 @@
 # Slopshop Compute Skill
 
-Use Slopshop MCP for real deterministic compute operations. 925+ handlers across 78 categories.
+Use Slopshop MCP for real deterministic compute operations. 1,273+ handlers across 78 categories.
 
 ## When to use
 - Hashing, encryption, data transforms (real compute, not LLM estimation)

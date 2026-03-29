@@ -1557,7 +1557,7 @@ ${C.reset}`;
 
   if (jsonMode) {
     console.log(JSON.stringify({
-      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'wallet', 'bounty', 'market', 'eval', 'replay', 'queue', 'webhooks', 'teams', 'knowledge', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'voice', 'simulate', 'snapshot', 'guardrails', 'template', 'marketplace', 'version', 'upgrade', 'completions', 'help'],
+      commands: ['call', 'pipe', 'search', 'list', 'run', 'org', 'wallet', 'bounty', 'market', 'eval', 'replay', 'queue', 'webhooks', 'teams', 'knowledge', 'chain', 'memory', 'discover', 'stats', 'benchmark', 'signup', 'login', 'whoami', 'key', 'config', 'balance', 'buy', 'health', 'mcp', 'batch', 'watch', 'alias', 'history', 'plan', 'models', 'profile', 'cost', 'debug', 'cloud', 'logs', 'dev', 'env', 'listen', 'types', 'file', 'git', 'review', 'session', 'live', 'voice', 'simulate', 'snapshot', 'guardrails', 'template', 'marketplace', 'version', 'upgrade', 'completions', 'help', 'army', 'schedule', 'copilot', 'tournament', 'reputation', 'proof', 'staking', 'forge', 'arbitrage', 'browser', 'desktop', 'sandbox', 'federation', 'graphrag', 'chaos', 'quickstart'],
       flags: ['--quiet', '-q', '--json', '--no-color', '--verbose', '-V', '--timeout=N', '--retry N', '--model M', '--dry-run', '--limit N', '--offset N'],
       version: PKG_VERSION
     }, null, 2));
@@ -1580,9 +1580,15 @@ ${C.reset}`;
   console.log(`    ${cyan('slop memory')} ${dim('<sub>')}                      Direct memory key-value operations`);
   console.log(`    ${cyan('slop live')} ${dim('<org-id>')}                     Real-time agent dashboard (The Sims for AI)`);
   console.log(`    ${cyan('slop live --launch')}                    Launch 30-agent startup + watch`);
+  console.log(`    ${cyan('slop army')} ${dim('recruit|list|dismiss')}        Manage agent armies`);
+  console.log(`    ${cyan('slop schedule')} ${dim('add|list|remove')}         Schedule recurring agent tasks`);
+  console.log(`    ${cyan('slop copilot')} ${dim('start|stop|status')}        Interactive AI copilot mode`);
+  console.log(`    ${cyan('slop tournament')} ${dim('create|list|join')}      Agent tournaments and competitions`);
   console.log(`    ${cyan('slop simulate')} ${dim('--task "..." --agents 10')}  Run agent simulation`);
   console.log(`    ${cyan('slop snapshot save')} ${dim('--run-id ID')}        Save swarm snapshot`);
   console.log(`    ${cyan('slop template')} ${dim('list|run')}               Agent templates`);
+  console.log(`    ${cyan('slop federation')} ${dim('join|list|leave')}       Federated agent networks`);
+  console.log(`    ${cyan('slop chaos')} ${dim('run|report')}                Chaos testing for agent swarms`);
   console.log(`    ${cyan('slop interactive')}                      Interactive REPL / shell mode\n`);
   console.log(`  ${bold('SAFETY & VOICE')}`);
   console.log(`    ${cyan('slop voice transcribe')} ${dim('--file path')}    Transcribe audio file`);
@@ -1596,7 +1602,13 @@ ${C.reset}`;
   console.log(`    ${cyan('slop market')} ${dim('create|list|bet|resolve')}  Prediction markets`);
   console.log(`    ${cyan('slop eval')} ${dim('run')}                        Run evaluation test sets`);
   console.log(`    ${cyan('slop replay')} ${dim('list|load')}                List/load saved replays`);
-  console.log(`    ${cyan('slop knowledge')} ${dim('add|query')}               Knowledge graph operations\n`);
+  console.log(`    ${cyan('slop knowledge')} ${dim('add|query')}               Knowledge graph operations`);
+  console.log(`    ${cyan('slop reputation')} ${dim('view|rate')}             Agent reputation scores`);
+  console.log(`    ${cyan('slop proof')} ${dim('generate|verify')}            Proof-of-work verification`);
+  console.log(`    ${cyan('slop staking')} ${dim('stake|unstake|status')}     Stake credits on outcomes`);
+  console.log(`    ${cyan('slop forge')} ${dim('create|list|deploy')}         Forge custom tools`);
+  console.log(`    ${cyan('slop arbitrage')} ${dim('scan|execute')}           Credit arbitrage across markets`);
+  console.log(`    ${cyan('slop graphrag')} ${dim('index|query')}             Graph-based RAG operations\n`);
   console.log(`  ${bold('ACCOUNT & CONFIG')}`);
   console.log(`    ${cyan('slop login')}                             Log in`);
   console.log(`    ${cyan('slop whoami')}                            Show current user info`);
@@ -1613,6 +1625,7 @@ ${C.reset}`;
   console.log(`    ${cyan('slop init')} ${dim('[--full-stack --ollama]')}    Scaffold Slopshop project`);
   console.log(`    ${cyan('slop agents')} ${dim('set|start|stop|status')}   Configure always-running local agents`);
   console.log(`    ${cyan('slop doctor')}                            Diagnose your setup (key, server, Ollama, MCP)`);
+  console.log(`    ${cyan('slop quickstart')}                         Guided setup wizard for new users`);
   console.log(`    ${cyan('slop help')}                              Show this help\n`);
   console.log(`  ${bold('AI & PLANNING')}`);
   console.log(`    ${cyan('slop plan')} ${dim('"task description"')}          Plan before executing`);
@@ -1629,7 +1642,10 @@ ${C.reset}`;
   console.log(`    ${cyan('slop logs')} ${dim('[--follow --filter X]')}       Stream platform logs`);
   console.log(`    ${cyan('slop listen')} ${dim('[--forward-to URL]')}        Webhook event listener`);
   console.log(`    ${cyan('slop dev')} ${dim('[--port 3000]')}                Start local dev server`);
-  console.log(`    ${cyan('slop env')} ${dim('list|set|get|delete')}          Manage env variables\n`);
+  console.log(`    ${cyan('slop env')} ${dim('list|set|get|delete')}          Manage env variables`);
+  console.log(`    ${cyan('slop browser')} ${dim('open|scrape|screenshot')}   Browser automation`);
+  console.log(`    ${cyan('slop desktop')} ${dim('capture|click|type')}       Desktop automation`);
+  console.log(`    ${cyan('slop sandbox')} ${dim('create|exec|destroy')}      Sandboxed execution environments\n`);
   console.log(`  ${bold('PRODUCTIVITY')}`);
   console.log(`    ${cyan('slop batch')} ${dim('<file> or "cmd1" "cmd2"')}    Execute multiple commands`);
   console.log(`    ${cyan('slop watch')} ${dim('<slug> [--interval 5]')}      Repeat a command every N seconds`);
