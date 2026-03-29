@@ -25,7 +25,7 @@ const http = require('http');
 const https = require('https');
 
 const KEY = process.env.SLOPSHOP_KEY;
-const BASE = (process.env.SLOPSHOP_BASE || 'https://slopshop.gg').replace(/\/$/, '');
+const BASE = process.env.SLOPSHOP_BASE || 'https://slopshop.gg';
 
 if (!KEY) {
   process.stderr.write('Warning: SLOPSHOP_KEY not set. API calls will fail without authentication.\n');
