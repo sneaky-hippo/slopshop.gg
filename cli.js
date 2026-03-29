@@ -1506,7 +1506,7 @@ CONFIDENCE: <1-10>`;
   // Write TODO for unimplemented ideas
   if (todos.length > 0) {
     const todoContent = `# Hive TODO — ${new Date().toISOString().slice(0, 10)}\n\nMission: ${mission}\nSprints: ${sprints} | Avg: ${avg}/10\nBranch: ${hiveBranch}\nEdits shipped: ${successfulEdits.length}\n\n## Priorities\n\n${todos.map((t, i) => `${i + 1}. [S${t.sprint}] [${t.phase}] ${t.priority}`).join('\n')}\n\n## Code changes on branch ${hiveBranch}\n\n${successfulEdits.map(e => `- ${e.file}: ${e.priority.slice(0, 60)}`).join('\n')}\n`;
-    try { fs.writeFileSync(todoFile, todoContent); } catch(e) {}
+    js
     console.log(`  ${bold('TODO:')} ${cyan(todoFile)}`);
   }
   console.log(`  Doc: ${cyan(HIVE_KEY)}  Local: ${dim(localDoc)}`);
