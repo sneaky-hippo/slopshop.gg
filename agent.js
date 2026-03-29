@@ -46,7 +46,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
     'email valid': { slug: 'validate-email-syntax', inputMap: t => { const m = t.match(/[\w.+-]+@[\w.-]+/); return { email: m ? m[0] : '' }; } },
     'totp': { slug: 'crypto-totp-generate', inputMap: () => ({}) },
     'statistics': { slug: 'math-statistics', inputMap: t => { const nums = t.match(/[\d.]+/g); return { data: nums ? nums.map(Number) : [] }; } },
-    'char count': { slug: 'text-char-count', inputMap: t => ({ text: t.replace(/^.*count\s*(the\s*)?char\w*\s*(in|of|for)?\s*:?\s*/i, '').trim() }) },
+    'char count': { slug: 'text-char-count', inputMap: t => ({ text: t.replace(/^.*(?:the\s*)?char(?:\s*(in|of|for)?)*:\s*/i, '').trim() }) },
     'md5': { slug: 'crypto-hash-md5', inputMap: t => ({ text: t.replace(/^.*md5s*(hash)?s*(of)?s*:?s*/i, '').trim() }) },
     'url encode': { slug: 'text-url-encode', inputMap: t => ({ text: t.replace(/^.*urls*encodes*(the)?s*(string|text)?s*:?s*/i, '').trim() }) },
     'timestamp': { slug: 'date-now', inputMap: () => ({}) },
