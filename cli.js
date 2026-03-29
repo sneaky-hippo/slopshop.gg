@@ -930,7 +930,7 @@ async function cmdHive(args) {
   const saveLog = () => { try { fs.writeFileSync(localLog, JSON.stringify(logEntries, null, 2)); } catch(e) {} };
 
   // ── Pull cloud memory into local at session start ──
-  let shared = { mission, sprints_done: 0, research: [], plan: [], builds: [], qa: [], scores: [], context_log: [] };
+  let shared = { mission, sprints_done: 0, research: [], plan: [], builds: [], qa: [], scores: [], context_log: [], vision: mission };
   try {
     // Check if a previous hive doc exists locally
     if (fs.existsSync(localDoc)) {
@@ -1166,20 +1166,47 @@ memory set <key-no-spaces> {"field":"value"}`;
     };
     shared.context_log.push(contextFlow);
 
-    // ── CEO REVIEW ──
-    const reviewPrompt = `Sprint ${s}. Built: ${buildCount} items (${shared.builds.slice(-3).map(b=>b.key).join(', ')}). QA: ${qaPass}/${qaPass+qaFail}. Priority was: ${priority.slice(0,60)}.
-Rate 1-10 and give next sprint's #1 task. SCORE: X/10 NEXT: <one sentence>`;
+    // ── CEO REVIEW — evolving vision based on org state ──
+    const recentScores = shared.scores.slice(-5).map(x => x.score);
+    const trend = recentScores.length >= 2 ? recentScores[recentScores.length-1] - recentScores[0] : 0;
+    const phase = s <= 3 ? 'EXPLORE' : (trend > 0.5 ? 'ACCELERATE' : (trend < -0.5 ? 'FIX' : 'OPTIMIZE'));
+    const uniqueBuilds = [...new Set(shared.builds.map(b => b.key))].length;
+    const lastCeoDirective = shared.plan[0] || 'none';
+
+    const reviewPrompt = `You are CEO. Sprint ${s}/${sprints}. Mission: ${mission.slice(0, 80)}
+
+ORG STATE:
+- Phase: ${phase} (${trend > 0 ? 'improving' : trend < 0 ? 'declining' : 'flat'})
+- Score trend: ${recentScores.join('→') || 'none'} (${trend > 0 ? '+' : ''}${trend.toFixed(1)})
+- Unique builds: ${uniqueBuilds}. This sprint built: ${buildCount}. QA: ${qaPass}/${qaPass+qaFail}.
+- Last directive: ${lastCeoDirective.slice(0, 80)}
+- Priority was: ${priority.slice(0, 60)}
+- Top research: ${shared.research.slice(-2).map(r=>(r.text||'').slice(0,60)).join(' | ')}
+
+${phase === 'EXPLORE' ? 'We are early. Cast a wide net. Try bold things.' : ''}
+${phase === 'ACCELERATE' ? 'Scores rising. Double down on what works. Go deeper.' : ''}
+${phase === 'FIX' ? 'Scores dropping. Something broke. Diagnose and fix before adding new things.' : ''}
+${phase === 'OPTIMIZE' ? 'Scores stable. Find the next unlock. What are we missing?' : ''}
+
+Your directive MUST be DIFFERENT from last sprint. Evolve the vision.
+SCORE: X/10
+VISION: <where the org should be in 10 sprints — one sentence>
+NEXT: <specific task for next sprint that advances the vision>`;
+
     const review = localOnly ? await ollamaChat('mistral', reviewPrompt) : await cloudChat('anthropic', reviewPrompt);
     let score = extractScore(review);
-    // Fallback score based on actual results
     if (!score) score = buildCount > 0 && qaFail === 0 ? 7.5 : buildCount > 0 ? 6 : 4;
     const nextMatch = (review || '').match(/NEXT:\s*(.+?)(?:\n|$)/i);
+    const visionMatch = (review || '').match(/VISION:\s*(.+?)(?:\n|$)/i);
 
-    shared.scores.push({ sprint: s, score });
+    shared.scores.push({ sprint: s, score, phase });
     if (nextMatch) shared.plan.unshift(nextMatch[1].trim());
+    if (visionMatch) shared.vision = visionMatch[1].trim();
 
     const sprintMs = Date.now() - sprintStart;
-    console.log(`  ${dim('└')} ${C.red}${bold('CEO')}${C.reset} ${bold((score || '?') + '/10')} ${nextMatch ? yellow('→ ' + nextMatch[1].slice(0, 60)) : ''} ${dim(sprintMs + 'ms')}`);
+    const phaseColor = phase === 'ACCELERATE' ? green : phase === 'FIX' ? red : phase === 'EXPLORE' ? cyan : dim;
+    console.log(`  ${dim('└')} ${C.red}${bold('CEO')}${C.reset} ${bold(score + '/10')} ${phaseColor('[' + phase + ']')} ${nextMatch ? yellow('→ ' + nextMatch[1].slice(0, 50)) : ''} ${dim(sprintMs + 'ms')}`);
+    if (visionMatch && s % 5 === 0) console.log(`    ${bold('VISION:')} ${green(visionMatch[1].slice(0, 70))}`);
 
     // ── ALARMS ──
     if (totalResearchTokens === 0) console.log(`    ${red('⚠ ALARM: zero research tokens — nothing was gathered')}`);
