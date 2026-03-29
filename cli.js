@@ -884,18 +884,20 @@ async function cmdDoctor() {
 }
 
 // ============================================================
-// HIVE — Local-only by default. Zero cloud cost. Outputs TODO.
-// Cloud only with --cloud flag. Scrapes once. Thinks locally.
+// HIVE v3 — Production. Context-injected. 5-gate safety. Metrics.
+// Local=research, Cloud=edits. CLAUDE.md in every prompt.
 // Usage: slop hive [sprints] [--cloud] "mission"
 // ============================================================
 async function cmdHive(args) {
   requireKey();
   const numArg = args.find(a => /^\d+$/.test(a));
   const sprints = numArg ? parseInt(numArg) : 10;
-  const useCloud = args.includes('--cloud'); // OFF by default — zero cost
+  const useCloud = args.includes('--cloud');
+  const cloudEveryArg = args.find(a => a.startsWith('--cloud-every='));
+  const cloudEvery = cloudEveryArg ? parseInt(cloudEveryArg.split('=')[1]) : 10;
   const mission = args.filter(a => !/^\d+$/.test(a) && !a.startsWith('--')).join(' ').trim() || 'improve slopshop';
 
-  // Helpers — local LLM only (free)
+  // ── Helpers ──
   const ollamaChat = (model, prompt) => new Promise(r => {
     const body = JSON.stringify({ model, messages: [{ role: 'user', content: prompt }], stream: false });
     const req = http.request({ hostname: 'localhost', port: 11434, path: '/api/chat', method: 'POST',
@@ -921,47 +923,59 @@ async function cmdHive(args) {
   const todoFile = path.join(CONFIG_DIR, 'hive-todo.md');
   const todos = [];
 
-  // Shared state — persists locally between sessions
+  // ── Context injection: load CLAUDE.md + auto-extract codebase summary ──
+  let codebaseContext = '';
+  try {
+    // Try the auto-extractor first
+    const ctxBuilder = require('./hive-context');
+    const ctx = ctxBuilder.loadOrBuild();
+    codebaseContext = ctx.context.slice(0, 2000);
+  } catch(e) {
+    // Fallback: just CLAUDE.md
+    try { codebaseContext = fs.readFileSync(path.join(__dirname, 'CLAUDE.md'), 'utf8').slice(0, 800); } catch(e2) {}
+  }
+  // Inject context into every local prompt
+  const localAsk = async (prompt) => {
+    const injected = codebaseContext ? `CODEBASE:\n${codebaseContext}\n\n${prompt}` : prompt;
+    return ollamaChat('llama3', injected);
+  };
+  const cloudAsk = async (prompt) => {
+    const injected = codebaseContext ? `CODEBASE:\n${codebaseContext.slice(0, 500)}\n\n${prompt}` : prompt;
+    return cloudChat('anthropic', injected);
+  };
+
+  // ── Shared state ──
   const HIVE_KEY = 'hive-' + Date.now();
   const localDoc = path.join(CONFIG_DIR, 'hive-shared.json');
   let shared = { mission, sprints_done: 0, research: [], builds: [], scores: [], vision: mission, discoveries: [] };
   try { if (fs.existsSync(localDoc)) { const p = JSON.parse(fs.readFileSync(localDoc, 'utf8')); if (p.research?.length) { shared = { ...shared, ...p, mission }; console.log(dim(`  Loaded ${p.research?.length||0} research from cache`)); } } } catch(e) {}
   const save = async () => { try { fs.writeFileSync(localDoc, JSON.stringify(shared, null, 2)); } catch(e) {} await slopMem(HIVE_KEY, shared); };
 
-  // North star
   let northStar = 'The protocol layer of intelligence connecting every AI brain into one composable mesh.';
   try { northStar = fs.readFileSync(path.join(__dirname, 'NORTH-STAR.md'), 'utf8').replace(/\n/g, ' ').slice(0, 250); } catch(e) {}
 
   console.log('');
-  console.log('');
   console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════╗${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║            SLOPSHOP HIVE                       ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║ ${padToWidth('Scrape once · Think local · Output TODO', C.width - 30)} ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║          SLOPSHOP HIVE v3 (production)         ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════╝${C.reset}`);
   console.log(`  ${bold('Mission:')} ${green(mission)}`);
-  console.log(`  ${dim(useCloud ? 'Cloud enabled (costs credits)' : 'Local only (free). Add --cloud for cloud LLMs.')}`);
-  console.log(`  ${dim('TODO output:')} ${cyan(todoFile || '(no todo file set)')}`);
+  console.log(`  ${dim('Context:')} ${codebaseContext ? green(codebaseContext.split('\n').length + ' lines injected') : yellow('CLAUDE.md not found')}`);
+  console.log(`  ${dim(useCloud ? 'Cloud every ' + cloudEvery + ' sprints' : 'Local only (free). --cloud for cloud LLMs.')}`);
   console.log('');
 
-  // ── PHASE 0: SCRAPE ONCE at session start ──
+  // ── Scrape once ──
   console.log(`  ${bold('INITIAL SCRAPE')}`);
   const urls = [...new Set(mission.match(/https?:\/\/[^\s,)]+/g) || [])];
-  const domains = [...new Set(mission.match(/\b[\w-]+\.(?:com|dev|io|gg|ai|org)\b/g) || [])];
   const mw = mission.toLowerCase();
-  if (mw.includes('competitor') || mw.includes('compar')) { if (!urls.find(u=>u.includes('composio'))) urls.push('https://composio.dev'); if (!urls.find(u=>u.includes('langchain'))) urls.push('https://langchain.com'); }
-  if (!urls.includes('https://slopshop.gg') && mw.includes('slopshop')) urls.push('https://slopshop.gg');
+  if (mw.includes('competitor') || mw.includes('compar')) { if (!urls.find(u=>u.includes('composio'))) urls.push('https://composio.dev'); }
+  if (mw.includes('slopshop') && !urls.find(u=>u.includes('slopshop'))) urls.push('https://slopshop.gg');
 
-  for (const url of urls.slice(0, 6)) {
+  for (const url of urls.slice(0, 4)) {
     const r = await slopCall('ext-web-scrape', { url });
     if (r.ok && (r.data?.title || r.data?.content)) {
-      const entry = { url, title: r.data?.title || '', content: (r.data?.content || '').slice(0, 300), scraped: new Date().toISOString() };
-      shared.research.push({ text: `[${url}] ${entry.title}: ${entry.content.slice(0, 150)}`, sprint: 0 });
-      console.log(`  ${green('✓')} ${cyan(url.slice(0, 40))} ${dim(entry.title.slice(0, 30))}`);
+      shared.research.push({ text: `[${url}] ${r.data?.title || ''}: ${(r.data?.content || '').slice(0, 150)}`, sprint: 0 });
+      console.log(`  ${green('✓')} ${cyan(url.slice(0, 40))} ${dim((r.data?.title || '').slice(0, 30))}`);
     }
-  }
-  for (const d of domains.slice(0, 6)) {
-    const r = await slopCall('net-http-status', { url: 'https://' + d });
-    if (r.ok) console.log(`  ${r.data?.status_code === 200 ? green('✓') : yellow('⚠')} ${d} HTTP ${r.data?.status_code || '?'}`);
   }
   if (shared.research.length > 20) shared.research = shared.research.slice(-20);
   await save();
@@ -979,8 +993,8 @@ async function cmdHive(args) {
   for (let s = 1; s <= sprints; s++) {
     const t0 = Date.now();
     creditsSpent = 0;
-    const sprintCloud = useCloud && (s % 10 === 1 || s === 1); // Cloud only sprint 1, 11, 21...
-    const ask = sprintCloud ? (p) => cloudChat('anthropic', p) : (p) => ollamaChat('llama3', p);
+    const sprintCloud = useCloud && (s === 1 || s % cloudEvery === 0);
+    const ask = sprintCloud ? cloudAsk : localAsk; // context-injected
 
     console.log(`  ${C.red}${C.bold}══ S${s} ══${C.reset} ${sprintCloud ? yellow('[CLOUD]') : dim('[LOCAL]')}`);
 
