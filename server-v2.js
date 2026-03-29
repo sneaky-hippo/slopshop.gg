@@ -641,6 +641,44 @@ const jobs = new Map();
 const serverStart = Date.now();
 const uuidv4 = () => crypto.randomUUID();
 
+// ===== OBSERVABILITY EXPORT HOOK =====
+// Env vars: LANGFUSE_PUBLIC_KEY, LANGFUSE_SECRET_KEY (Langfuse), HELICONE_API_KEY (Helicone)
+function exportObservability(slug, credits, latency, engine, outputHash, apiKey) {
+  // Langfuse
+  if (process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY) {
+    const body = JSON.stringify({
+      name: slug, type: 'GENERATION',
+      metadata: { engine, credits, output_hash: outputHash },
+      latency, status: 'success',
+    });
+    try {
+      const req = require('https').request({
+        hostname: 'cloud.langfuse.com', path: '/api/public/ingestion',
+        method: 'POST', headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Basic ' + Buffer.from(process.env.LANGFUSE_PUBLIC_KEY + ':' + process.env.LANGFUSE_SECRET_KEY).toString('base64'),
+        }
+      });
+      req.write(body); req.end();
+    } catch(e) {}
+  }
+
+  // Helicone
+  if (process.env.HELICONE_API_KEY) {
+    try {
+      const req = require('https').request({
+        hostname: 'api.helicone.ai', path: '/v1/log',
+        method: 'POST', headers: {
+          'Content-Type': 'application/json',
+          'Helicone-Auth': 'Bearer ' + process.env.HELICONE_API_KEY,
+        }
+      });
+      req.write(JSON.stringify({ model: slug, latency, status: 200, metadata: { engine, credits, output_hash: outputHash } }));
+      req.end();
+    } catch(e) {}
+  }
+}
+
 // ===== USAGE STREAM INFRASTRUCTURE =====
 const usageStreamClients = new Set();
 function emitUsageEvent(keyPrefix, slug, credits, status) {
@@ -1005,6 +1043,18 @@ app.get('/v1/health', (_, res) => {
       heap_total_mb: Math.round(mem.heapTotal / 1024 / 1024),
       last_benchmark_ts: lastBenchmarkTs,
     },
+  });
+});
+
+app.get('/v1/observability/status', (_, res) => {
+  res.json({
+    ok: true,
+    exporters: {
+      langfuse: { configured: !!(process.env.LANGFUSE_PUBLIC_KEY && process.env.LANGFUSE_SECRET_KEY), host: 'cloud.langfuse.com' },
+      helicone: { configured: !!process.env.HELICONE_API_KEY, host: 'api.helicone.ai' },
+    },
+    env_vars: ['LANGFUSE_PUBLIC_KEY', 'LANGFUSE_SECRET_KEY', 'HELICONE_API_KEY'],
+    _engine: 'real',
   });
 });
 
@@ -6133,7 +6183,7 @@ app.post('/v1/agent/estimate', auth, (req, res) => {
 });
 
 app.post('/v1/agent/run', auth, async (req, res) => {
-  const { task, tools, max_steps } = req.body;
+  const { task, tools, max_steps, model, provider } = req.body;
   if (!task) return res.status(400).json({ error: { code: 'task_required' } });
 
   const steps = Math.min(max_steps || 5, 10);
@@ -6156,6 +6206,14 @@ app.post('/v1/agent/run', auth, async (req, res) => {
     toolSlugs = scored.sort((a, b) => b.score - a.score).slice(0, steps).map(t => t.slug);
   }
 
+  // Helper: route LLM steps through Ollama when provider=ollama
+  const useOllama = provider === 'ollama';
+  const ollamaLlm = async (prompt) => {
+    const ollamaModel = model || 'llama3';
+    const resp = await ollamaRequest('/api/chat', { model: ollamaModel, messages: [{ role: 'user', content: prompt }], stream: false });
+    return resp.message?.content || '';
+  };
+
   // Execute tool chain
   let totalCredits = 0;
   for (const slug of toolSlugs.slice(0, steps)) {
@@ -6169,10 +6227,26 @@ app.post('/v1/agent/run', auth, async (req, res) => {
     totalCredits += def.credits;
 
     const input = lastResult ? { ...req.body, _previous: lastResult, task } : { ...req.body, task };
+    // If provider is ollama and this is an LLM step, route through local Ollama
+    if (useOllama && slug.startsWith('llm-')) {
+      input.provider = 'ollama';
+      if (model) input.model = model;
+    } else if (provider) {
+      input.provider = provider;
+      if (model) input.model = model;
+    }
     try {
       const start = Date.now();
-      const result = await handler(input);
-      chain.push({ step: chain.length + 1, tool: slug, credits: def.credits, latency_ms: Date.now() - start, result });
+      let result;
+      if (useOllama && slug === 'llm-think') {
+        // Direct Ollama routing for the primary LLM think step
+        result = await ollamaLlm(input.text || input.task || task);
+      } else {
+        result = await handler(input);
+      }
+      chain.push({ step: chain.length + 1, tool: slug, credits: useOllama && slug.startsWith('llm-') ? 0 : def.credits, latency_ms: Date.now() - start, result });
+      // Refund credits for ollama LLM steps (they're free)
+      if (useOllama && slug.startsWith('llm-')) { req.acct.balance += def.credits; totalCredits -= def.credits; }
       lastResult = result;
     } catch (e) {
       chain.push({ step: chain.length + 1, tool: slug, error: e.message });
@@ -6264,6 +6338,8 @@ app.post('/v1/agent/run', auth, async (req, res) => {
     balance: req.acct.balance,
     _engine: 'real'
   };
+  if (provider) response.provider = provider;
+  if (model) response.model = model;
   if (debateResult) response.debate = debateResult;
   res.json(response);
 });
@@ -7915,6 +7991,10 @@ app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => 
 
   dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', req.params.slug, def.credits, latency, handlerError ? 'error' : (result?._engine || 'unknown'));
   persistKey(req.apiKey);
+
+  // Export to external observability (Langfuse / Helicone) if configured
+  const obsHash = result ? require('crypto').createHash('md5').update(JSON.stringify(result)).digest('hex').slice(0, 12) : null;
+  exportObservability(req.params.slug, def.credits, latency, handlerError ? 'error' : (result?._engine || 'unknown'), obsHash, req.apiKey.slice(0, 12));
 
   // Emit real-time usage event
   emitUsageEvent(req.apiKey.slice(0, 12), req.params.slug, def.credits, handlerError ? 'error' : 'ok');
