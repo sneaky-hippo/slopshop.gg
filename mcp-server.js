@@ -360,7 +360,7 @@ async function handleMessage(msg) {
           endpoint = `/v1/org/${input.org_id}/status`;
         } else if (rawName === 'slop-org-standup') {
           endpoint = `/v1/org/${input.org_id}/standup`;
-        } else if (rawName === 'slop-hive-send' && input.hive_id) {
+        } else if (rawName === 'slop-hive-send' && input.hive_id && typeof input.hive_id === 'string' && input.hive_id.trim()) {
           endpoint = `/v1/hive/${input.hive_id}/send`;
         } else if (rawName === 'slop-hive-sync' && input.hive_id) {
           endpoint = `/v1/hive/${input.hive_id}/sync`;
