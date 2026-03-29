@@ -936,7 +936,7 @@ async function cmdHive(args) {
   console.log('');
   console.log(`  ${C.red}${C.bold}╔════════════════════════════════════════════════╗${C.reset}`);
   console.log(`  ${C.red}${C.bold}║            SLOPSHOP HIVE                       ║${C.reset}`);
-  console.log(`  ${C.red}${C.bold}║  Scrape once · Think local · Output TODO       ║${C.reset}`);
+  console.log(`  ${C.red}${C.bold}║ ${padToWidth('Scrape once · Think local · Output TODO', C.width - 30)} ║${C.reset}`);
   console.log(`  ${C.red}${C.bold}╚════════════════════════════════════════════════╝${C.reset}`);
   console.log(`  ${bold('Mission:')} ${green(mission)}`);
   console.log(`  ${dim(useCloud ? 'Cloud enabled (costs credits)' : 'Local only (free). Add --cloud for cloud LLMs.')}`);
