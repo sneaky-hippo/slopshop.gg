@@ -555,6 +555,11 @@ if (!demoExists) {
 function hashApiKey(key) {
   return crypto.createHash('sha256').update(key).digest('hex');
 }
+// Deterministic float [0,1) from a seed string — replaces Math.random() in analysis results
+function deterministicFloat(seed) {
+  const hash = crypto.createHash('sha256').update(seed).digest();
+  return hash.readUInt32BE(0) / 0x100000000;
+}
 // Extract prefix for indexed lookup (first 10 chars, e.g. "sk-slop-xx")
 function keyPrefix(key) {
 }
@@ -3629,12 +3634,12 @@ Respond AS this persona in JSON:
       if (traits.includes('enthusi') || traits.includes('excited') || traits.includes('curious')) sentiment = 'positive';
       if (traits.includes('busy') || traits.includes('time') || traits.includes('fast')) sentiment = 'impatient';
       if (traits.includes('budget') || traits.includes('cost') || traits.includes('revenue')) sentiment = 'price_sensitive';
-      const confidence = 0.3 + Math.random() * 0.3;
+      const confidence = 0.3 + deterministicFloat(`confidence:${question}:${p.role}:${i}`) * 0.3;
       return {
         respondent: i + 1, persona: p.role || 'anonymous_' + (i + 1),
         traits: p.traits || 'general', sentiment,
         confidence: Math.round(confidence * 100) / 100,
-        would_use: Math.random() > (sentiment === 'cautious' ? 0.6 : 0.35),
+        would_use: deterministicFloat(`would_use:${question}:${p.role}:${i}`) > (sentiment === 'cautious' ? 0.6 : 0.35),
         priority: ['must_have', 'nice_to_have', 'dont_care'][crypto.randomInt(3)],
         open_response: `[No LLM configured — heuristic response] As a ${p.role}, my ${sentiment} perspective on "${question.slice(0, 60)}..." would depend on specifics not evaluable without inference.`,
         _inference: 'heuristic',
@@ -11071,9 +11076,9 @@ app.post('/v1/arbitrage/optimize', auth, (req, res) => {
     // Compare cost across providers for the same task
     const providerCosts = providers.map(p => {
       const name = typeof p === 'string' ? p : (p.name || p.id || 'unknown');
-      const baseCost = typeof p === 'object' && p.cost_per_unit ? p.cost_per_unit : Math.floor(Math.random() * 20) + 1;
-      const latencyEstimate = typeof p === 'object' && p.latency_ms ? p.latency_ms : Math.floor(Math.random() * 500) + 50;
-      const qualityScore = typeof p === 'object' && p.quality ? p.quality : Math.round((Math.random() * 40 + 60) * 10) / 10;
+      const baseCost = typeof p === 'object' && p.cost_per_unit ? p.cost_per_unit : Math.floor(deterministicFloat(`cost:${task}:${name}`) * 20) + 1;
+      const latencyEstimate = typeof p === 'object' && p.latency_ms ? p.latency_ms : Math.floor(deterministicFloat(`latency:${task}:${name}`) * 500) + 50;
+      const qualityScore = typeof p === 'object' && p.quality ? p.quality : Math.round((deterministicFloat(`quality:${task}:${name}`) * 40 + 60) * 10) / 10;
       return { provider: name, cost_per_unit: baseCost, latency_ms: latencyEstimate, quality_score: qualityScore, within_budget: baseCost <= maxBudget };
     });
     providerCosts.sort((a, b) => a.cost_per_unit - b.cost_per_unit);

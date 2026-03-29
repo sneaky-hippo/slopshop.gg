@@ -12,6 +12,20 @@ const dnsResolveMx = promisify(dns.resolveMx);
 const dnsResolveTxt = promisify(dns.resolveTxt);
 const dnsResolveNs = promisify(dns.resolveNs);
 
+function _hash(input, salt) {
+  const str = JSON.stringify(input || {}) + (salt || '');
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  return (Math.abs(h) % 100) / 100;
+}
+
+function _hashInt(input, salt, max) {
+  const str = JSON.stringify(input || {}) + (salt || '');
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  return Math.abs(h) % max;
+}
+
 // ─── TEXT PROCESSING ────────────────────────────────────────────────────────
 
 function textWordCount(input) {
@@ -244,7 +258,7 @@ function textCaseConvert(input) {
 function textLoremIpsum(input) {
   const { paragraphs = 1, sentences = 5 } = input;
   const words = 'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim veniam quis nostrud exercitation ullamco laboris nisi aliquip ex ea commodo consequat duis aute irure in reprehenderit voluptate velit esse cillum eu fugiat nulla pariatur excepteur sint occaecat cupidatat non proident sunt culpa qui officia deserunt mollit anim est laborum'.split(' ');
-  const sentence = () => { const n=8+Math.floor(Math.random()*10); const ws=Array.from({length:n},()=>words[Math.floor(Math.random()*words.length)]); ws[0]=ws[0][0].toUpperCase()+ws[0].slice(1); return ws.join(' ')+'.'; };
+  let _lic = 0; const sentence = () => { const n=8+_hashInt({paragraphs,sentences,_s:_lic++},'lipn',10); const ws=Array.from({length:n},(_,wi)=>words[_hashInt({paragraphs,sentences,_s:_lic,wi},'lipw',words.length)]); ws[0]=ws[0][0].toUpperCase()+ws[0].slice(1); return ws.join(' ')+'.'; };
   const para = (n) => Array.from({length:n},sentence).join(' ');
   return { _engine: 'real', text: Array.from({length:paragraphs},()=>para(sentences)).join('\n\n'), paragraphs, sentences };
 }

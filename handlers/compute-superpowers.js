@@ -337,7 +337,7 @@ const superpowerHandlers = {
 
   'fault-line-map': ({system_components, stress_points}) => {
     const comps = system_components || ['database','api','frontend','auth'];
-    const stress = stress_points || comps.map(c=>({component:c, stress:Math.round(Math.random()*100)}));
+    const stress = stress_points || comps.map((c,i)=>({component:c, stress:Math.round(_hash({c,i},'stress')*100)}));
     const faults = stress.filter(s=>s.stress>70).map(s=>({...s,risk:'high',note:'Approaching rupture threshold'}));
     return {_engine:'real', components: comps, stress_map: stress, fault_lines: faults, highest_risk: faults.sort((a,b)=>b.stress-a.stress)[0]||null, system_stability: faults.length===0?'stable':faults.length<=2?'strained':'critical', recommendation: faults.length>0?'Address fault lines immediately':'System within tolerances'};
   },
@@ -394,16 +394,16 @@ const superpowerHandlers = {
       {metaphor:'a map',explanation:'represents territory but isn\'t the territory, has scale, requires interpretation'},
       {metaphor:'a recipe',explanation:'has ingredients, requires timing, can be improvised, yields different results each time'}
     ];
-    const selected = metaphors[Math.floor(Math.random()*metaphors.length)];
+    const selected = metaphors[_hashInt({concept,depth}, 'metaphor', metaphors.length)];
     return {_engine:'real', concept: concept||'this problem', best_metaphor: (concept||'This')+' is like '+selected.metaphor, explanation: selected.explanation, depth: depth||'surface', all_candidates: metaphors.slice(0,3).map(m=>({metaphor:m.metaphor,fit:'medium'})), insight:'The metaphor reveals hidden structure in the concept'};
   },
 
   'foundation-assess': ({system_name, foundations}) => {
-    const fs = (foundations||['data_model','auth_system','api_design','deployment']).map(f=>({
+    const fs = (foundations||['data_model','auth_system','api_design','deployment']).map((f,i)=>({
       foundation: f,
-      stability: Math.round((0.6+Math.random()*0.4)*100)/100,
-      load_bearing: Math.random()>0.3,
-      cracks_detected: Math.random()>0.7
+      stability: Math.round((0.6+_hash({f,system_name,i},'stab')*0.4)*100)/100,
+      load_bearing: _hash({f,system_name,i},'lb')>0.3,
+      cracks_detected: _hash({f,system_name,i},'crack')>0.7
     }));
     const critical = fs.filter(f=>f.load_bearing && f.cracks_detected);
     return {_engine:'real', system: system_name||'unnamed', foundations: fs, critical_issues: critical, overall_stability: critical.length===0?'solid':critical.length<=1?'concerning':'unstable', recommendation: critical.length>0?'Address cracked load-bearing foundations immediately':'Foundations are sound'};
@@ -416,8 +416,8 @@ const superpowerHandlers = {
       choice: o,
       branch_probability: Math.round(1/opts.length*100)/100,
       outcome_preview: 'In this branch, choosing '+o+' leads to...',
-      risk: Math.round(Math.random()*100)/100,
-      reward: Math.round(Math.random()*100)/100
+      risk: Math.round(_hash({decision,o,i},'risk')*100)/100,
+      reward: Math.round(_hash({decision,o,i},'reward')*100)/100
     }));
     return {_engine:'real', decision: decision||'unnamed', branches: worlds, total_branches: worlds.length, note:'Each branch represents a possible outcome given the selected option.', best_expected_value: worlds.sort((a,b)=>b.reward-b.risk-(a.reward-a.risk))[0].choice};
   },
