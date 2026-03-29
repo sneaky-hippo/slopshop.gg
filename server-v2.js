@@ -2911,8 +2911,17 @@ app.post('/v1/reputation/rate', auth, (req, res) => {
   const clampedScore = Math.max(-1, Math.min(1, score));
   const now = Date.now();
   db.prepare('INSERT INTO reputation (rater, rated, score, context, ts) VALUES (?, ?, ?, ?, ?)').run(req.apiKey.slice(0,12), agent_key.slice(0,12), clampedScore, context||null, now);
-  // Update last_activity on the rated agent's reputation record
-  db.prepare('UPDATE agent_reputation SET last_activity = ? WHERE agent_id = ?').run(now, agent_key.slice(0,12));
+  // Upsert into agent_reputation so the agent appears on the leaderboard
+  const agentId = agent_key.slice(0,12);
+  const existing = db.prepare('SELECT * FROM agent_reputation WHERE agent_id = ?').get(agentId);
+  if (existing) {
+    const newScore = existing.score + clampedScore;
+    const ups = clampedScore > 0 ? existing.upvotes + 1 : existing.upvotes;
+    const downs = clampedScore < 0 ? existing.downvotes + 1 : existing.downvotes;
+    db.prepare('UPDATE agent_reputation SET score = ?, upvotes = ?, downvotes = ?, last_activity = ? WHERE agent_id = ?').run(newScore, ups, downs, now, agentId);
+  } else {
+    db.prepare('INSERT INTO agent_reputation (agent_id, score, upvotes, downvotes, last_activity) VALUES (?, ?, ?, ?, ?)').run(agentId, clampedScore, clampedScore > 0 ? 1 : 0, clampedScore < 0 ? 1 : 0, now);
+  }
   res.json({ ok: true, rated: agent_key.slice(0,12), score: clampedScore });
 });
 
@@ -3613,7 +3622,7 @@ app.post('/v1/knowledge/walk', auth, (req, res) => {
   const path = [{ step: 0, node: start }];
   let current = start;
   for (let i = 1; i <= n; i++) {
-    const neighbors = db.prepare('SELECT object as node FROM knowledge_graph WHERE api_key = ? AND subject = ? UNION SELECT subject as node FROM knowledge_graph WHERE api_key = ? AND object = ? ORDER BY RANDOM() LIMIT 1').get(req.apiKey, current, req.apiKey, current);
+    const neighbors = db.prepare('SELECT node FROM (SELECT object as node FROM knowledge_graph WHERE api_key = ? AND subject = ? UNION SELECT subject as node FROM knowledge_graph WHERE api_key = ? AND object = ?) ORDER BY RANDOM() LIMIT 1').get(req.apiKey, current, req.apiKey, current);
     if (!neighbors) break;
     current = neighbors.node;
     path.push({ step: i, node: current });
