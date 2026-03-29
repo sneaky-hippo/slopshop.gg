@@ -8885,7 +8885,13 @@ const TEST_VECTORS = {
   'code-semver-compare': { input: { a: '1.2.3', b: '1.3.0' }, expect: d => d.result === -1 || d.comparison === -1 || d.a_less === true || (typeof d.result === 'number' && d.result < 0) },
 };
 
-app.get('/v1/benchmark', auth, async (req, res) => {
+app.post('/v1/eval/benchmark', auth, async (req, res) => {
+  // Alias — forwards to the main benchmark handler below
+  req.query.tool_slugs = req.body?.tool_slugs?.join(',');
+  req.query.test_count = req.body?.test_count;
+  return benchmarkHandler(req, res);
+});
+const benchmarkHandler = async (req, res) => {
   const results = [];
   let passed = 0, failed = 0, skipped = 0, errors = 0;
 
@@ -8946,7 +8952,8 @@ app.get('/v1/benchmark', auth, async (req, res) => {
     avg_p50_ms: +(results.filter(r => r.p50_ms != null).reduce((s, r) => s + r.p50_ms, 0) / Math.max(results.filter(r => r.p50_ms != null).length, 1)).toFixed(3),
     _engine: 'real',
   });
-});
+};
+app.get('/v1/benchmark', auth, benchmarkHandler);
 
 
 // Machine-readable documentation endpoint
