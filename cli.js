@@ -46,6 +46,42 @@ const bold   = (s) => `${C.bold}${s}${C.reset}`;
 const yellow = (s) => `${C.yellow}${s}${C.reset}`;
 
 // ============================================================
+// LOGO
+// ============================================================
+function printLogo() {
+  const W = 47;
+  const r = C.red, x = C.reset, d = C.dim;
+  const art = [
+    '                                               ',
+    '       ____  __    ____  ____                  ',
+    '      / ___// /   / __ // __ //                 ',
+    '      /__ // /   / / / / /_/ /                 ',
+    '     ___/ / /___/ /_/ / ____/                  ',
+    '    /____/_____//____/_/                       ',
+    '                                               ',
+    '  S T A T E L E S S . L I G H T W E I G H T   ',
+    '  O P E R A T I N G . P R I M I T I V E S     ',
+    '                                               ',
+  ];
+  // Fix the slashes that JS ate
+  const BS = String.fromCharCode(92); // backslash
+  art[2] = '      / ___' + BS + '/ /   / __ ' + BS + '/ __ ' + BS + '               ';
+  art[3] = '      ' + BS + '__ ' + BS + '/ /   / / / / /_/ /                ';
+  art[5] = '    /____/_____/' + BS + '____/_/                      ';
+  const border = '\u2500'.repeat(W);
+  const lines = [];
+  lines.push(r + '  \u250C' + border + '\u2510' + x);
+  for (const row of art) {
+    const content = row.slice(0, W);
+    const padded = content + ' '.repeat(Math.max(0, W - content.length));
+    lines.push(r + '  \u2502' + x + padded + r + '\u2502' + x);
+  }
+  lines.push(r + '  \u2514' + border + '\u2518' + x);
+  lines.push('       ' + d + 'slopshop.gg' + x + '  ' + d + 'alpha' + x + '  ' + d + '/////////////////////' + x);
+  return lines.join('\n  ');
+}
+
+// ============================================================
 // CONFIG (env vars → config file → defaults)
 // ============================================================
 const os = require('os');
@@ -6880,19 +6916,7 @@ async function main() {
   // and the command isn't signup, help, or version
   if (!fs.existsSync(CONFIG_FILE) && cmd && !['signup', 'help', 'version', '-v', '--version', '-h', '--help'].includes(cmd)) {
     console.log(`
-  ${C.red}  ┌──────────────────────────────────────────┐${C.reset}
-  ${C.red}  │                                          │${C.reset}
-  ${C.red}  │       ____  __    ____  ____              │${C.reset}
-  ${C.red}  │      / ___\\/ /   / __ \\/ __ \\             │${C.reset}
-  ${C.red}  │      \\__ \\/ /   / / / / /_/ /             │${C.reset}
-  ${C.red}  │     ___/ / /___/ /_/ / ____/              │${C.reset}
-  ${C.red}  │    /____/_____/\\____/_/                   │${C.reset}
-  ${C.red}  │                                          │${C.reset}
-  ${C.red}  │${C.reset}  ${dim('S T A T E L E S S · L I G H T W E I G H T')} ${C.red}│${C.reset}
-  ${C.red}  │${C.reset}  ${dim('O P E R A T I N G · P R I M I T I V E S')}   ${C.red}│${C.reset}
-  ${C.red}  │                                          │${C.reset}
-  ${C.red}  └──────────────────────────────────────────┘${C.reset}
-       ${dim('slopshop.gg')}  ${dim('alpha')}  ${dim('/////////////////////')}
+  ${printLogo()}
 
   ${bold('Get started in 30 seconds:')}
 
