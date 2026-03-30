@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Demo | See 'real' in Action | Slopshop</title>
+<meta name="description" content="See Slopshop's real computation in action. Run handlers in the cloud or self-hosted. Every response verified with _engine:'real' + SHA-256.">
+<link rel="canonical" href="https://slopshop.gg/demo">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Slopshop Demo — See 'real' in Action">
+<meta property="og:description" content="Run a real handler. See _engine:'real' + SHA-256 verification. Cloud or self-hosted.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;--b:#1a1a1a;--b2:#2a2a2a;--t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;--r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);--o:#ff8800;--og:rgba(255,136,0,0.1);--g:#00cc66;--gg:rgba(0,204,102,0.1);--c:#00aaff;--cg:rgba(0,170,255,0.1);--v:#8855ff;--vg:rgba(136,85,255,0.1);--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none}a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px;color:var(--t);text-decoration:none}
+.logo .mark{color:var(--r)}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:2px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.hero{padding:140px 32px 48px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:1200px;height:800px;background:radial-gradient(ellipse at center,rgba(255,51,51,0.06) 0%,transparent 60%);pointer-events:none}
+.hero h1{font-family:var(--mono);font-size:clamp(2.2rem,6vw,3.6rem);font-weight:900;letter-spacing:-0.02em;line-height:1.1;margin-bottom:24px}
+.hero h1 .red{color:var(--r)}.hero h1 .white{color:var(--t)}
+.hero .sub{color:var(--t2);font-size:clamp(0.95rem,1.8vw,1.05rem);max-width:580px;margin:0 auto;line-height:1.85}
+.demo-area{max-width:700px;margin:48px auto;padding:0 32px}
+.btn-row{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:32px}
+.demo-btn{display:inline-flex;align-items:center;gap:8px;padding:16px 32px;border-radius:12px;font-family:var(--mono);font-size:0.88rem;font-weight:700;border:none;cursor:pointer;transition:0.2s}
+.demo-btn.cloud{background:var(--r);color:#fff}
+.demo-btn.cloud:hover{box-shadow:0 0 24px rgba(255,51,51,0.3)}
+.demo-btn.local{background:var(--s1);color:var(--g);border:1px solid var(--g)}
+.demo-btn.local:hover{box-shadow:0 0 24px rgba(0,204,102,0.2)}
+.result-box{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:20px 24px;font-family:var(--mono);font-size:0.78rem;color:var(--t2);line-height:1.8;min-height:200px;white-space:pre-wrap;word-break:break-word}
+.result-box .k{color:var(--r)}.result-box .v{color:var(--o)}.result-box .s{color:var(--g)}.result-box .eng{color:var(--g);font-weight:700}
+footer{padding:28px 32px;border-top:1px solid var(--b);text-align:center;margin-top:72px}
+footer p{font-family:var(--mono);font-size:0.65rem;color:var(--t4)}
+footer a{color:var(--t3)}
+@media(max-width:680px){.hero{padding:120px 20px 36px}.demo-area{padding:0 20px}nav{padding:0 16px}}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo"><span class="mark">SLOP</span>SHOP<span class="gg">.GG</span></a>
+  <div class="nav-links">
+    <a href="/">Home</a><a href="/docs">Docs</a><a href="/tools">Tools</a><a href="/pricing">Pricing</a>
+    <a href="/signup" style="background:var(--r);color:#fff;padding:6px 16px;border-radius:6px;font-weight:600">Sign Up Free</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <h1><span class="white">See</span> <span class="red">'real'</span> <span class="white">in action</span></h1>
+  <p class="sub">Click a button. A real handler runs. The response includes <code style="font-family:var(--mono);color:var(--g)">_engine: "real"</code> and a SHA-256 verification hash. No LLM involved.</p>
+</section>
+
+<div class="demo-area">
+  <div class="btn-row">
+    <button class="demo-btn cloud" onclick="runDemo('cloud')">Run in Cloud</button>
+    <button class="demo-btn local" onclick="runDemo('local')">Run Self-Hosted</button>
+  </div>
+  <div class="result-box" id="demoResult">
+<span style="color:var(--t4)">Click a button above to run crypto-hash-sha256 with input "hello from slopshop"
+
+Cloud = https://slopshop-production.up.railway.app
+Self-hosted = http://localhost:3000</span>
+  </div>
+</div>
+
+<footer><p>&copy; 2026 SLOPSHOP.GG &mdash; <a href="/">Home</a> &middot; <a href="/docs">Docs</a> &middot; <a href="/pricing">Pricing</a> &middot; <a href="/about">About</a></p></footer>
+<div style="background:#18181b;padding:24px;text-align:center;font-size:13px;color:#a1a1aa;border-top:1px solid #27272a">
+  <p style="font-family:monospace;color:white">Slopshop is a self-hostable backend for AI agents: real tools, persistent memory, one execution layer.</p>
+  <p style="margin-top:8px">78 categories · 1,255 handlers · 925 self-hostable pure-compute · 8 core memory APIs free forever · 500 free credits on signup</p>
+  <p>memory-set · memory-get · memory-search · memory-list · memory-delete · memory-stats · memory-namespace-list · counter-get — always 0 credits</p>
+</div>
+
+<script>
+async function runDemo(mode){
+  const el=document.getElementById('demoResult');
+  const base=mode==='cloud'?'https://slopshop-production.up.railway.app':'http://localhost:3000';
+  el.textContent=`Calling ${base}/v1/crypto-hash-sha256 ...\n`;
+  try{
+    const t0=performance.now();
+    const r=await fetch(`${base}/v1/crypto-hash-sha256`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({input:'hello from slopshop'})
+    });
+    const ms=Math.round(performance.now()-t0);
+    const d=await r.json();
+    el.innerHTML=`<span style="color:var(--t4)">// ${mode==='cloud'?'Cloud':'Self-hosted'} response (${ms}ms)</span>\n`+JSON.stringify(d,null,2)
+      .replace(/"_engine":\s*"real"/g,'<span class="eng">"_engine": "real"</span>')
+      .replace(/"([^"]+)":/g,'<span class="k">"$1"</span>:')
+      .replace(/: "([^"]+)"/g,': <span class="s">"$1"</span>')
+      .replace(/: (\d+)/g,': <span class="v">$1</span>');
+  }catch(e){
+    el.textContent=`Error: ${e.message}\n\n${mode==='local'?'Is your local server running? Start it with:\n  npm install && node server-v2.js':'Cloud API may be temporarily unavailable.'}`;
+  }
+}
+</script>
+</body>
+</html>

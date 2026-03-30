@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Slopshop for Grok | Real Tools + Memory for Truth-Seeking Agents</title>
+<meta name="description" content="Give Grok a real backend. Tools, persistent memory, and one execution layer for agents that want to understand the universe. 1,255 handlers. 500 free credits.">
+<link rel="canonical" href="https://slopshop.gg/slopshop-for-grok">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Slopshop for Grok | Real Tools + Memory for Truth-Seeking Agents">
+<meta property="og:description" content="Give Grok a real backend. 1,255 handlers across 78 categories. 925 self-hostable pure-compute. 8 core memory APIs free forever.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop for Grok">
+<meta name="twitter:description" content="Give Grok a real backend. Real tools, persistent memory, one execution layer.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none}a:hover{opacity:0.8}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px;color:var(--t);text-decoration:none}
+.logo .mark{color:var(--r)}.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:2px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.hero{padding:140px 32px 72px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-300px;left:50%;transform:translateX(-50%);width:1200px;height:800px;background:radial-gradient(ellipse at center,rgba(255,51,51,0.06) 0%,transparent 60%);pointer-events:none}
+.hero h1{font-family:var(--mono);font-size:clamp(2.2rem,6vw,4rem);font-weight:900;letter-spacing:-0.02em;line-height:1.1;margin-bottom:24px}
+.hero h1 .red{color:var(--r)}.hero h1 .white{color:var(--t)}
+.hero .sub{color:var(--t2);font-size:clamp(0.95rem,1.8vw,1.05rem);max-width:580px;margin:0 auto;line-height:1.85}
+.hero .sub b{color:var(--t);font-weight:600}
+.sec{max-width:900px;margin:0 auto;padding:72px 32px}
+.sec h2{font-family:var(--mono);font-size:1.3rem;font-weight:800;margin-bottom:16px;letter-spacing:-0.02em}
+.sec p{color:var(--t2);font-size:0.88rem;line-height:1.9;margin-bottom:16px}
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:20px 24px;font-family:var(--mono);font-size:0.78rem;color:var(--o);line-height:1.8;overflow-x:auto;margin:24px 0}
+.stats-bar{display:flex;gap:32px;justify-content:center;flex-wrap:wrap;padding:32px 0;border-top:1px solid var(--b);border-bottom:1px solid var(--b);margin:40px 0}
+.stat{text-align:center}.stat .n{font-family:var(--mono);font-size:1.5rem;font-weight:800;color:var(--r)}.stat .l{font-size:0.65rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.1em;margin-top:4px}
+.stat:nth-child(2) .n{color:var(--o)}.stat:nth-child(3) .n{color:var(--g)}.stat:nth-child(4) .n{color:var(--c)}
+.cta-row{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-top:32px}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--r);color:#fff;text-decoration:none;transition:0.2s}
+.btn-primary:hover{box-shadow:0 0 24px rgba(255,51,51,0.3);opacity:1}
+.btn-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2);text-decoration:none;transition:0.2s}
+.btn-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+footer{padding:28px 32px;border-top:1px solid var(--b);text-align:center}
+footer p{font-family:var(--mono);font-size:0.65rem;color:var(--t4)}
+footer a{color:var(--t3)}
+@media(max-width:680px){
+  .hero{padding:120px 20px 56px}
+  .sec{padding:48px 20px}
+  .stats-bar{gap:16px}
+  nav{padding:0 16px}
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nv">
+    <a href="/" class="logo"><span class="mark">SLOP</span>SHOP<span class="gg">.GG</span></a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/docs">Docs</a>
+      <a href="/tools">Tools</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/signup" style="background:var(--r);color:#fff;padding:6px 16px;border-radius:6px;font-weight:600">Sign Up Free</a>
+    </div>
+  </div>
+</nav>
+
+<section class="hero">
+  <h1>
+    <span class="white">Give Grok a</span><br>
+    <span class="red">real backend</span>
+  </h1>
+  <p class="sub">
+    Tools, persistent memory, and one execution layer for agents that want to understand the universe.
+    <br><br>
+    <b>Slopshop is a self-hostable backend for AI agents</b>: real tools, persistent memory, one execution layer.
+  </p>
+</section>
+
+<div class="stats-bar">
+  <div class="stat"><div class="n">78</div><div class="l">Categories</div></div>
+  <div class="stat"><div class="n">1,255</div><div class="l">Handlers</div></div>
+  <div class="stat"><div class="n">925</div><div class="l">Self-hostable pure-compute</div></div>
+  <div class="stat"><div class="n">8</div><div class="l">Memory APIs free forever</div></div>
+</div>
+
+<div class="sec">
+  <h2>Quickstart: connect Grok to Slopshop</h2>
+  <p>One API key gives Grok access to every tool. Hash strings, encrypt payloads, search memory, run code, fetch URLs, generate documents, validate schemas, and more. Every response includes <code style="font-family:var(--mono);color:var(--g)">_engine: "real"</code> plus a SHA-256 verification hash.</p>
+
+  <div class="code-block">
+<span style="color:#666">// 1. Install</span>
+npm install -g slopshop
+
+<span style="color:#666">// 2. Get your free API key (500 free credits)</span>
+slop signup
+
+<span style="color:#666">// 3. Call any handler</span>
+curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"input": "grok seeks truth"}'
+
+<span style="color:#666">// Response includes _engine: "real" + SHA-256 verification</span>
+  </div>
+
+  <h2>Why Grok agents need Slopshop</h2>
+  <p>Grok is built for truth-seeking. Slopshop gives it the tools to act on what it finds. Hash data for verification. Encrypt sensitive payloads. Store findings in persistent memory that survives between sessions. Run parallel compute armies for research tasks. Every response is cryptographically verifiable.</p>
+  <p>925 of the 1,255 handlers are pure-compute with zero external dependencies -- self-host them for air-gapped verification. The remaining handlers cover network operations, AI content generation, and external integrations.</p>
+
+  <div class="cta-row">
+    <a href="/signup" class="btn-primary">Get 500 free credits</a>
+    <a href="/docs" class="btn-secondary">Read the docs</a>
+    <a href="/how-verification-works" class="btn-secondary">How verification works</a>
+  </div>
+</div>
+
+<footer>
+  <p>&copy; 2026 SLOPSHOP.GG &mdash; <a href="/">Home</a> &middot; <a href="/docs">Docs</a> &middot; <a href="/pricing">Pricing</a> &middot; <a href="/about">About</a></p>
+</footer>
+
+<div style="background:#18181b;padding:24px;text-align:center;font-size:13px;color:#a1a1aa;border-top:1px solid #27272a">
+  <p style="font-family:monospace;color:white">Slopshop is a self-hostable backend for AI agents: real tools, persistent memory, one execution layer.</p>
+  <p style="margin-top:8px">78 categories · 1,255 handlers · 925 self-hostable pure-compute · 8 core memory APIs free forever · 500 free credits on signup</p>
+  <p>memory-set · memory-get · memory-search · memory-list · memory-delete · memory-stats · memory-namespace-list · counter-get — always 0 credits</p>
+</div>
+</body>
+</html>
