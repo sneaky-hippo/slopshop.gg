@@ -341,6 +341,8 @@ if (!apiKeysCols.includes('key_hash')) db.exec(`ALTER TABLE api_keys ADD COLUMN 
 if (!apiKeysCols.includes('key_prefix')) db.exec(`ALTER TABLE api_keys ADD COLUMN key_prefix TEXT DEFAULT NULL`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_hash ON api_keys(key_hash)`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_api_keys_prefix ON api_keys(key_prefix)`);
+// Migrate: add name column to schedules if missing
+try { db.exec(`ALTER TABLE schedules ADD COLUMN name TEXT DEFAULT NULL`); } catch(_) {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS schedules (
@@ -360,6 +362,8 @@ db.exec(`
 `);
 
 // ===== FEATURE TABLES (features 1-6) =====
+db.exec(`CREATE TABLE IF NOT EXISTS schedule_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, schedule_id TEXT NOT NULL, api_key TEXT NOT NULL, ran_at INTEGER NOT NULL, status TEXT NOT NULL, error TEXT, credits_used INTEGER DEFAULT 0)`);
+db.exec(`CREATE INDEX IF NOT EXISTS idx_schedule_runs_id ON schedule_runs(schedule_id)`);
 db.exec(`CREATE TABLE IF NOT EXISTS reputation (rater TEXT, rated TEXT, score INTEGER, context TEXT, ts INTEGER)`);
 db.exec(`CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, api_key TEXT, state TEXT, step INTEGER DEFAULT 0, ts INTEGER)`);
 db.exec(`CREATE TABLE IF NOT EXISTS branches (id TEXT PRIMARY KEY, parent_id TEXT, api_key TEXT, label TEXT, state TEXT, ts INTEGER)`);
@@ -946,14 +950,9 @@ app.get('/.well-known/ai-tools.json', publicRateLimit, (req, res) => {
   });
 });
 
-// OpenAI-style model listing (for agents that search for /v1/models)
-app.get('/v1/models', (req, res) => {
-  res.json({
-    object: 'list',
-    data: [{ id: 'slopshop-v2', object: 'model', created: Math.floor(Date.now()/1000), owned_by: 'slopshop',
-      description: 'Real tools for AI agents. Not a language model - a tool server. Use /v1/tools for the tool manifest.' }],
-  });
-});
+// OpenAI-style model listing — NOTE: real unified handler is at line ~1297.
+// This stub is intentionally removed so the real handler wins (was shadowing it).
+// Kept as comment for reference: the real handler returns both OpenAI-compat data[] AND native models{}.
 
 // ===== NATIVE OLLAMA INTEGRATION =====
 function ollamaRequest(path, body) {
@@ -972,14 +971,19 @@ function ollamaRequest(path, body) {
 
 app.get('/v1/models/ollama', publicRateLimit, async (req, res) => {
   try {
+    const ollamaHost = process.env.OLLAMA_HOST || 'http://127.0.0.1:11434';
     const resp = await new Promise((resolve, reject) => {
-      require('http').get('http://127.0.0.1:11434/api/tags', r => {
+      const url = new URL('/api/tags', ollamaHost);
+      const mod = url.protocol === 'https:' ? require('https') : require('http');
+      const request = mod.get(url, { timeout: 5000 }, r => {
         let d = ''; r.on('data', c => d += c); r.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      }).on('error', reject);
+      });
+      request.on('error', reject);
+      request.on('timeout', () => { request.destroy(); reject(new Error('Ollama timeout')); });
     });
     const models = (resp.models || []).map(m => ({ name: m.name, size: m.size, parameter_size: m.details?.parameter_size, family: m.details?.family }));
-    res.json({ ok: true, models, count: models.length, _engine: 'ollama' });
-  } catch(e) { res.status(502).json({ error: { code: 'ollama_unavailable', message: 'Ollama not running on localhost:11434', hint: 'Start with: ollama serve' } }); }
+    res.json({ ok: true, models, count: models.length, host: ollamaHost, _engine: 'ollama' });
+  } catch(e) { res.status(502).json({ error: { code: 'ollama_unavailable', message: 'Ollama not running. Set OLLAMA_HOST env var if using custom host.', hint: 'Start with: ollama serve' } }); }
 });
 
 app.post('/v1/models/ollama/generate', auth, async (req, res) => {
@@ -1032,12 +1036,14 @@ app.get('/v1/models/vllm', publicRateLimit, async (req, res) => {
     const url = new URL('/v1/models', VLLM_HOST);
     const mod = url.protocol === 'https:' ? require('https') : require('http');
     const resp = await new Promise((resolve, reject) => {
-      mod.get(url, r => {
+      const request = mod.get(url, { timeout: 5000 }, r => {
         let d = ''; r.on('data', c => d += c); r.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { reject(e); } });
-      }).on('error', reject);
+      });
+      request.on('error', reject);
+      request.on('timeout', () => { request.destroy(); reject(new Error('vLLM timeout')); });
     });
     const models = (resp.data || []).map(m => ({ id: m.id, object: m.object, owned_by: m.owned_by }));
-    res.json({ ok: true, models, count: models.length, _engine: 'vllm' });
+    res.json({ ok: true, models, count: models.length, host: VLLM_HOST, _engine: 'vllm' });
   } catch(e) { res.status(502).json({ error: { code: 'vllm_unavailable', message: 'vLLM not running on ' + VLLM_HOST, hint: 'Start vLLM with: python -m vllm.entrypoints.openai.api_server --model <model>' } }); }
 });
 
@@ -1227,7 +1233,7 @@ app.post('/v1/models/auto', auth, async (req, res) => {
   const order = providerOrder[strategy] || providerOrder.best;
 
   function isAvailable(provider) {
-    if (provider === 'ollama') return true;
+    if (provider === 'ollama') return !!(process.env.OLLAMA_HOST || process.env.OLLAMA_AVAILABLE);
     if (provider === 'grok') return !!(process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY);
     if (provider === 'deepseek') return !!process.env.DEEPSEEK_API_KEY;
     if (provider === 'anthropic') return !!process.env.ANTHROPIC_API_KEY;
@@ -1798,7 +1804,7 @@ app.post('/v1/credits/auto-reload', auth, BODY_LIMIT_AUTH, (req, res) => {
 
 // ===== BATCH =====
 app.post('/v1/batch', auth, BODY_LIMIT_BATCH, async (req, res) => {
-  const { calls } = req.body;
+  const calls = req.body.calls || req.body.requests; // accept both field names
   if (!Array.isArray(calls) || !calls.length) return res.status(400).json({ error: { code: 'invalid_batch', message: 'Provide { calls: [{ slug: "api-slug", input: {...} }, ...] }' } });
   if (calls.length > 50) return res.status(400).json({ error: { code: 'max_50_per_batch', message: `Maximum 50 calls per batch request. You provided ${calls.length} calls.` } });
   let totalCr = 0;
@@ -1886,6 +1892,16 @@ app.post('/v1/async/:slug', auth, async (req, res) => {
   res.status(202).json({ job_id: jobId, status: 'processing', poll: `/v1/jobs/${jobId}`, credits: def.credits, balance: req.acct.balance });
 });
 
+app.get('/v1/jobs', auth, (req, res) => {
+  const myJobs = [];
+  for (const [id, job] of jobs.entries()) {
+    if (job._owner && job._owner !== req.apiKey) continue;
+    const { _owner, ...safeJob } = job;
+    myJobs.push({ job_id: id, ...safeJob });
+  }
+  myJobs.sort((a, b) => (b.created || 0) - (a.created || 0));
+  res.json({ ok: true, jobs: myJobs, count: myJobs.length, _engine: 'real' });
+});
 app.get('/v1/jobs/:id', auth, (req, res) => {
   const job = jobs.get(req.params.id);
   if (!job) return res.status(404).json({ error: { code: 'job_not_found' } });
@@ -1909,7 +1925,32 @@ app.put('/v1/state/:key', auth, (req, res) => {
 });
 app.delete('/v1/state/:key', auth, (req, res) => {
   dbDelState.run(`${req.apiKey}:${req.params.key}`);
-  res.json({ status: 'deleted' });
+  res.json({ ok: true, status: 'deleted', key: req.params.key });
+});
+
+// GET /v1/state — list all state keys for this API key
+app.get('/v1/state', auth, (req, res) => {
+  const prefix = `${req.apiKey}:`;
+  const rows = db.prepare('SELECT key, value FROM agent_state WHERE key LIKE ?').all(prefix + '%');
+  const items = rows.map(r => {
+    const k = r.key.slice(prefix.length);
+    let v;
+    try { v = JSON.parse(r.value); } catch(e) { v = r.value; }
+    return { key: k, value: v };
+  });
+  res.json({ ok: true, state: items, count: items.length });
+});
+
+// POST /v1/state/:key/increment — atomically increment a numeric value
+app.post('/v1/state/:key/increment', auth, (req, res) => {
+  const stateKey = `${req.apiKey}:${req.params.key}`;
+  const by = typeof req.body.by === 'number' ? req.body.by : 1;
+  const row = dbGetState.get(stateKey);
+  let current = 0;
+  if (row) { try { current = Number(JSON.parse(row.value)) || 0; } catch(e) {} }
+  const newVal = current + by;
+  dbSetState.run(stateKey, JSON.stringify(newVal));
+  res.json({ ok: true, key: req.params.key, value: newVal, previous: current, incremented_by: by });
 });
 
 // ===== USAGE =====
@@ -2014,7 +2055,13 @@ app.post('/v1/pipe/run', auth, async (req, res) => {
       const handler = allHandlers[slug];
       if (!handler) { results.push({ slug, error: 'no_handler' }); continue; }
       try {
-        const stepInput = { ...lastResult, ...(typeof lastResult === 'object' ? {} : { text: String(lastResult) }) };
+        // Thread output of step N as input to step N+1 — remap likely output fields to canonical 'text'
+        const mergedInput = typeof lastResult === 'object' ? { ...lastResult } : { text: String(lastResult) };
+        if (typeof lastResult === 'object' && mergedInput.text === undefined) {
+          const textSrc = mergedInput.slug ?? mergedInput.result ?? mergedInput.output ?? mergedInput.value ?? mergedInput.data ?? mergedInput.hash ?? mergedInput.uuid;
+          if (textSrc !== undefined) mergedInput.text = String(textSrc);
+        }
+        const stepInput = mergedInput;
         const result = await handler(stepInput);
         lastResult = result;
         results.push({ slug, result, _engine: result?._engine || 'real' });
@@ -2342,7 +2389,7 @@ const dbDeleteSchedule = db.prepare('DELETE FROM schedules WHERE id = ? AND api_
 
 // Create a schedule
 app.post('/v1/schedules', auth, (req, res) => {
-  const { type, slug, input, interval, max_runs, webhook_url } = req.body;
+  const { type, slug, input, interval, max_runs, webhook_url, name } = req.body;
   if (!type || !slug) return res.status(400).json({ error: { code: 'missing_fields', message: `Provide type (pipe|template|tool) and slug. Both are required.` } });
   const intervals = { '1m': 60000, '5m': 300000, '15m': 900000, '30m': 1800000, '1h': 3600000, '6h': 21600000, '12h': 43200000, '1d': 86400000, '7d': 604800000 };
   const ms = intervals[interval] || parseInt(interval);
@@ -2350,7 +2397,8 @@ app.post('/v1/schedules', auth, (req, res) => {
   const id = 'sched-' + crypto.randomUUID().slice(0, 12);
   const inputWithWebhook = { ...input || {}, _webhook_url: webhook_url !== null && webhook_url !== undefined ? webhook_url : null };
   dbInsertSchedule.run(id, req.apiKey, type, slug, JSON.stringify(inputWithWebhook), ms, Date.now() + ms, max_runs || 0, Date.now());
-  res.status(201).json({ id, type, slug, interval: interval || ms + 'ms', next_run: new Date(Date.now() + ms).toISOString(), max_runs: max_runs || 'unlimited', webhook_url: webhook_url || null });
+  try { if (name) db.prepare('UPDATE schedules SET name = ? WHERE id = ?').run(name, id); } catch(_) {}
+  res.status(201).json({ ok: true, id, name: name || null, type, slug, interval: interval || ms + 'ms', next_run: new Date(Date.now() + ms).toISOString(), max_runs: max_runs || 'unlimited', webhook_url: webhook_url || null });
 });
 
 // List schedules
@@ -2359,11 +2407,50 @@ app.get('/v1/schedules', auth, (req, res) => {
   res.json({ schedules: rows.map(r => ({ ...r, input: JSON.parse(r.input), next_run_at: new Date(r.next_run).toISOString() })), count: rows.length });
 });
 
+// Get a single schedule
+app.get('/v1/schedules/:id', auth, (req, res) => {
+  const row = db.prepare('SELECT * FROM schedules WHERE id = ? AND api_key = ?').get(req.params.id, req.apiKey);
+  if (!row) return res.status(404).json({ error: { code: 'not_found' } });
+  res.json({ ok: true, schedule: { ...row, input: JSON.parse(row.input), next_run_at: new Date(row.next_run).toISOString() } });
+});
+
+// Get schedule run history
+app.get('/v1/schedules/:id/history', auth, (req, res) => {
+  try {
+    db.exec('CREATE TABLE IF NOT EXISTS schedule_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, schedule_id TEXT NOT NULL, api_key TEXT NOT NULL, ran_at INTEGER NOT NULL, status TEXT NOT NULL, error TEXT, credits_used INTEGER DEFAULT 0)');
+    db.exec('CREATE INDEX IF NOT EXISTS idx_schedule_runs_id ON schedule_runs(schedule_id)');
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const rows = db.prepare('SELECT * FROM schedule_runs WHERE schedule_id = ? AND api_key = ? ORDER BY ran_at DESC LIMIT ?').all(req.params.id, req.apiKey, limit);
+    res.json({ ok: true, runs: rows.map(r => ({ ...r, ran_at_iso: new Date(r.ran_at).toISOString() })), count: rows.length });
+  } catch(e) { res.status(500).json({ error: { code: 'history_error', message: e.message } }); }
+});
+
+// Pause a schedule
+app.post('/v1/schedules/:id/pause', auth, (req, res) => {
+  const result = db.prepare('UPDATE schedules SET enabled = 0 WHERE id = ? AND api_key = ?').run(req.params.id, req.apiKey);
+  if (result.changes === 0) return res.status(404).json({ error: { code: 'not_found' } });
+  res.json({ ok: true, id: req.params.id, status: 'paused' });
+});
+
+// Resume a schedule
+app.post('/v1/schedules/:id/resume', auth, (req, res) => {
+  const result = db.prepare('UPDATE schedules SET enabled = 1 WHERE id = ? AND api_key = ?').run(req.params.id, req.apiKey);
+  if (result.changes === 0) return res.status(404).json({ error: { code: 'not_found' } });
+  res.json({ ok: true, id: req.params.id, status: 'active' });
+});
+
+// Trigger a schedule immediately (next run now)
+app.post('/v1/schedules/:id/trigger', auth, (req, res) => {
+  const result = db.prepare('UPDATE schedules SET next_run = ? WHERE id = ? AND api_key = ? AND enabled = 1').run(Date.now() - 1, req.params.id, req.apiKey);
+  if (result.changes === 0) return res.status(404).json({ error: { code: 'not_found_or_paused', hint: 'Resume the schedule first.' } });
+  res.json({ ok: true, id: req.params.id, message: 'Schedule will run on next scheduler tick (within 30 seconds).' });
+});
+
 // Delete a schedule
 app.delete('/v1/schedules/:id', auth, (req, res) => {
   const result = dbDeleteSchedule.run(req.params.id, req.apiKey);
   if (result.changes === 0) return res.status(404).json({ error: { code: 'not_found' } });
-  res.json({ deleted: req.params.id });
+  res.json({ ok: true, deleted: req.params.id });
 });
 
 // Scheduler loop (checks every 30s for due schedules)
@@ -2371,31 +2458,43 @@ setInterval(async () => {
   const due = dbGetDueSchedules.all(Date.now());
   for (const sched of due) {
     const acct = apiKeys.get(sched.api_key);
-    if (!acct) { dbDisableSchedule.run(sched.id); return; }
+    if (!acct) { dbDisableSchedule.run(sched.id); continue; } // was 'return' — killed all remaining due schedules
     // Check max_runs
     if (sched.max_runs > 0 && sched.runs >= sched.max_runs) { dbDisableSchedule.run(sched.id); continue; }
     try {
       const input = JSON.parse(sched.input);
       const { _webhook_url: webhookUrl, ...cleanInput } = input;
+      let creditsUsed = 0;
+      let runStatus = 'ok';
+      let runError = null;
       if (sched.type === 'tool' && allHandlers[sched.slug]) {
         const def = API_DEFS[sched.slug];
         if (def && acct.balance >= def.credits) {
           acct.balance -= def.credits;
+          creditsUsed = def.credits;
+          persistKey(sched.api_key); // persist credits after deduction
           const result = await allHandlers[sched.slug](cleanInput);
           if (webhookUrl) {
             try {
               fetch(webhookUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schedule_id: sched.id, result, timestamp: new Date().toISOString() }) }).catch(() => {});
             } catch(e) {}
           }
+        } else if (def && acct.balance < def.credits) {
+          runStatus = 'skipped_insufficient_credits';
         }
       }
+      // Log run to history
+      try { db.prepare('INSERT INTO schedule_runs (schedule_id, api_key, ran_at, status, credits_used) VALUES (?, ?, ?, ?, ?)').run(sched.id, sched.api_key, Date.now(), runStatus, creditsUsed); } catch(_) {}
       // Pipes and templates are handled by their respective endpoints internally
       dbUpdateScheduleRun.run(Date.now(), Date.now() + sched.interval_ms, sched.id);
-    } catch (e) { dbUpdateScheduleRun.run(Date.now(), Date.now() + sched.interval_ms, sched.id); }
+    } catch (e) {
+      try { db.prepare('INSERT INTO schedule_runs (schedule_id, api_key, ran_at, status, error) VALUES (?, ?, ?, ?, ?)').run(sched.id, sched.api_key, Date.now(), 'error', e.message); } catch(_) {}
+      dbUpdateScheduleRun.run(Date.now(), Date.now() + sched.interval_ms, sched.id);
+    }
   }
   // ═══ REAL DREAM ENGINE — scans memory, calls LLMs, appends research ═══
   try {
-    const dueDreams = db.prepare('SELECT * FROM dream_subscriptions WHERE active = 1 AND (last_dream IS NULL OR last_dream < ?)').all(new Date(Date.now() - 3600000).toISOString());
+    const dueDreams = db.prepare('SELECT * FROM dream_subscriptions WHERE active = 1 AND (last_dream IS NULL OR last_dream < ?)').all(new Date(Date.now() - 900000).toISOString());
     for (const dream of dueDreams) {
       const hoursSinceLastDream = dream.last_dream ? (Date.now() - new Date(dream.last_dream).getTime()) / 3600000 : Infinity;
       if (hoursSinceLastDream < dream.interval_hours) continue;
@@ -2787,9 +2886,14 @@ app.post('/v1/tasks/run', auth, async (req, res) => {
 
   const slug = TASK_MAP[task];
   if (!slug) {
-    // Fall through to agent/run for natural language tasks
-    const agentHandler = allHandlers['agent-run-internal'];
-    return res.redirect(307, '/v1/agent/run');
+    return res.status(422).json({
+      error: {
+        code: 'task_not_mapped',
+        message: `Task "${task}" is not in the task map. For natural language tasks, call POST /v1/agent/run directly.`,
+        hint: 'GET /v1/tasks for the list of supported task names.',
+        available_tasks: Object.keys(TASK_MAP)
+      }
+    });
   }
 
   const def = API_DEFS[slug];
@@ -2931,8 +3035,58 @@ app.get('/v1/files/:id', auth, (req, res) => {
 
 app.get('/v1/files', auth, (req, res) => {
   db.exec('CREATE TABLE IF NOT EXISTS files (id TEXT PRIMARY KEY, key TEXT NOT NULL, filename TEXT, size INTEGER, tags TEXT, created INTEGER)');
-  const rows = db.prepare('SELECT id, filename, size, tags, created FROM files WHERE key = ? ORDER BY created DESC').all(req.apiKey);
+  const { tag, search } = req.query;
+  let rows;
+  if (search) {
+    rows = db.prepare("SELECT id, filename, size, tags, created FROM files WHERE key = ? AND filename LIKE ? ORDER BY created DESC").all(req.apiKey, `%${search}%`);
+  } else if (tag) {
+    rows = db.prepare("SELECT id, filename, size, tags, created FROM files WHERE key = ? AND tags LIKE ? ORDER BY created DESC").all(req.apiKey, `%${tag}%`);
+  } else {
+    rows = db.prepare('SELECT id, filename, size, tags, created FROM files WHERE key = ? ORDER BY created DESC').all(req.apiKey);
+  }
   res.json({ ok: true, files: rows, count: rows.length, _engine: 'real' });
+});
+
+app.delete('/v1/files/:id', auth, (req, res) => {
+  const row = db.prepare('SELECT * FROM files WHERE id = ? AND key = ?').get(req.params.id, req.apiKey);
+  if (!row) return res.status(404).json({ error: { code: 'file_not_found' } });
+  try {
+    const fp = path.join(__dirname, '.data', 'files', row.id);
+    if (fs.existsSync(fp)) fs.unlinkSync(fp);
+    db.prepare('DELETE FROM files WHERE id = ?').run(row.id);
+    res.json({ ok: true, deleted: row.id, filename: row.filename });
+  } catch(e) { res.status(500).json({ error: { code: 'delete_error', message: e.message } }); }
+});
+
+app.post('/v1/files/:id/rename', auth, (req, res) => {
+  const { filename } = req.body;
+  if (!filename) return res.status(400).json({ error: { code: 'missing_filename' } });
+  const row = db.prepare('SELECT * FROM files WHERE id = ? AND key = ?').get(req.params.id, req.apiKey);
+  if (!row) return res.status(404).json({ error: { code: 'file_not_found' } });
+  db.prepare('UPDATE files SET filename = ? WHERE id = ?').run(filename, row.id);
+  res.json({ ok: true, file_id: row.id, filename, previous_filename: row.filename });
+});
+
+app.post('/v1/files/:id/copy', auth, (req, res) => {
+  const { filename } = req.body;
+  const row = db.prepare('SELECT * FROM files WHERE id = ? AND key = ?').get(req.params.id, req.apiKey);
+  if (!row) return res.status(404).json({ error: { code: 'file_not_found' } });
+  try {
+    const srcPath = path.join(__dirname, '.data', 'files', row.id);
+    if (!fs.existsSync(srcPath)) return res.status(404).json({ error: { code: 'file_data_missing' } });
+    const newId = 'file-' + crypto.randomUUID().slice(0, 12);
+    const newFilename = filename || `copy_of_${row.filename}`;
+    fs.copyFileSync(srcPath, path.join(__dirname, '.data', 'files', newId));
+    db.prepare('INSERT INTO files (id, key, filename, size, tags, created) VALUES (?, ?, ?, ?, ?, ?)').run(newId, req.apiKey, newFilename, row.size, row.tags, Date.now());
+    res.json({ ok: true, file_id: newId, filename: newFilename, copied_from: row.id, size: row.size });
+  } catch(e) { res.status(500).json({ error: { code: 'copy_error', message: e.message } }); }
+});
+
+app.get('/v1/files/search', auth, (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ error: { code: 'missing_query', message: 'Provide ?q=search_term' } });
+  const rows = db.prepare("SELECT id, filename, size, tags, created FROM files WHERE key = ? AND filename LIKE ? ORDER BY created DESC").all(req.apiKey, `%${q}%`);
+  res.json({ ok: true, files: rows, count: rows.length, query: q });
 });
 
 // ===== COST ESTIMATE =====
@@ -2990,6 +3144,17 @@ const RESEARCH_TIERS = {
   deep:     { providers: 4, credits: 75, max_tokens: 1200, description: 'All 4 LLMs + deep search + extended context' },
 };
 
+// Fetch with AbortController timeout — prevents LLM provider calls from hanging the server
+async function fetchWithTimeout(url, options, ms = 20000) {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), ms);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } finally {
+    clearTimeout(id);
+  }
+}
+
 // Core research function — used by both /v1/research and dream engine
 async function executeResearch(topic, options = {}) {
   const { tier = 'advanced', context = '', timeframe = 'recent', language_targets = ['en', 'zh', 'ja'], max_tokens } = options;
@@ -3005,7 +3170,7 @@ ${timeframe !== 'all' ? `Focus on ${timeframe} developments.` : ''}
 Provide: 1) Key findings 2) Patterns & connections 3) Actionable insights 4) Confidence level (1-10)
 Be specific. Cite concrete details.`,
     call: async (prompt) => {
-      const resp = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: tokens, messages: [{ role: 'user', content: prompt }] }) });
+      const resp = await fetchWithTimeout('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: tokens, messages: [{ role: 'user', content: prompt }] }) });
       const j = await resp.json(); return j.content?.[0]?.text || null;
     }
   });
@@ -3018,7 +3183,7 @@ ${timeframe !== 'all' ? `Focus on ${timeframe} posts and discussions.` : ''}
 Report: 1) What people are saying RIGHT NOW on X 2) Trending takes 3) Breaking developments 4) Japanese perspectives (if available)`,
     call: async (prompt) => {
       const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY;
-      const resp = await fetch('https://api.x.ai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'grok-3', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
+      const resp = await fetchWithTimeout('https://api.x.ai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'grok-3', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
       const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
     }
   });
@@ -3042,7 +3207,7 @@ Query in Chinese: 请搜索关于"${zhQuery}"的最新信息
 Report findings in English. Include: 1) Chinese market perspective 2) Technical insights from Zhihu 3) Consumer sentiment from Xiaohongshu 4) Key differences from Western sources`;
     },
     call: async (prompt) => {
-      const resp = await fetch('https://api.deepseek.com/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.DEEPSEEK_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
+      const resp = await fetchWithTimeout('https://api.deepseek.com/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.DEEPSEEK_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
       const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
     }
   });
@@ -3054,7 +3219,7 @@ ${ctx ? 'EXISTING CONTEXT:\n' + ctx.slice(0, 1500) : ''}
 ${timeframe !== 'all' ? `Focus on ${timeframe} information.` : ''}
 Provide: 1) Broad internet findings 2) Academic/research perspectives 3) Creative connections others might miss 4) Contrarian viewpoints`,
     call: async (prompt) => {
-      const resp = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
+      const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
       const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
     }
   });
@@ -3114,12 +3279,30 @@ app.post('/v1/research', auth, async (req, res) => {
 
   try {
     const result = await executeResearch(q, { tier: tier || 'advanced', context, timeframe: timeframe || 'recent', language_targets: languages || ['en', 'zh', 'ja'] });
+    // Store in memory for history
+    try {
+      const histKey = `research-${Date.now().toString(36)}`;
+      allHandlers['memory-set']({ api_key: req.apiKey, namespace: 'research', key: histKey, value: JSON.stringify({ query: q, tier: tier || 'advanced', result, created: new Date().toISOString() }), tags: 'research' });
+    } catch(e) {}
     res.json({ ok: true, data: { _engine: 'real', ...result } });
   } catch (e) {
     req.acct.balance += tierConfig.credits; // Refund on error
     persistKey(req.apiKey);
     res.status(500).json({ error: { code: 'research_failed', message: e.message } });
   }
+});
+
+// GET /v1/research/history — list past research queries
+app.get('/v1/research/history', auth, (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const result = allHandlers['memory-search']({ api_key: req.apiKey, namespace: 'research', tag: 'research', limit });
+    const history = (result.results || []).map(r => {
+      try { const d = JSON.parse(r.value); return { id: r.key, query: d.query, tier: d.tier, summary: d.result?.summary, created: d.created }; }
+      catch(e) { return { id: r.key }; }
+    });
+    res.json({ ok: true, history, count: history.length });
+  } catch(e) { res.status(500).json({ error: { code: 'history_error', message: e.message } }); }
 });
 
 // GET /v1/research/tiers — Show available research tiers and pricing
@@ -3157,22 +3340,18 @@ app.post('/v1/northstar/set', auth, async (req, res) => {
     });
   } catch(e) {}
 
-  // Trigger initial lightweight research
-  let research = null;
-  try {
-    research = await executeResearch(goal, { tier: 'basic', context: '', timeframe: 'recent' });
-  } catch(e) { research = { error: e.message }; }
-
-  // Store research results
-  try {
-    const resData = JSON.stringify({ key: 'northstar_initial_research', value: JSON.stringify(research), namespace: ns, tags: 'northstar,research' });
-    await new Promise((resolve) => {
-      const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-set', method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(resData), 'Authorization': req.headers.authorization }, timeout: 10000
-      }, res2 => { let b = ''; res2.on('data', c => b += c); res2.on('end', () => resolve(b)); });
-      r.on('error', () => resolve(null)); r.write(resData); r.end();
-    });
-  } catch(e) {}
+  // Trigger initial research in background — don't block the response
+  setImmediate(async () => {
+    try {
+      const research = await executeResearch(goal, { tier: 'basic', context: '', timeframe: 'recent' });
+      if (research) {
+        const resData = JSON.stringify({ key: 'northstar_initial_research', value: JSON.stringify(research), namespace: ns, tags: 'northstar,research' });
+        const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-set', method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(resData), 'Authorization': 'Bearer ' + req.apiKey }, timeout: 10000
+        }, () => {}); r.on('error', () => {}); r.write(resData); r.end();
+      }
+    } catch(e) {}
+  });
 
   res.json({
     ok: true,
@@ -3180,35 +3359,29 @@ app.post('/v1/northstar/set', auth, async (req, res) => {
       _engine: 'real',
       goal,
       namespace: ns,
-      research_summary: research ? {
-        providers_used: research.providers_used || 0,
-        findings_count: (research.findings || []).length,
-        total_chars: research.total_chars || 0,
-      } : null,
+      research_summary: { async: true, message: 'Research running in background — check northstar_initial_research in memory in ~30s' },
       next_steps: [
         'View findings: POST /v1/memory-get {key: "northstar_initial_research", namespace: "' + ns + '"}',
         'Set up daily research: POST /v1/dream/subscribe {topic: "' + goal.slice(0, 50) + '", tier: "standard"}',
         'View dashboard: /dashboard',
       ],
-      credits_used: research ? (research.credits_used || 20) : 0,
+      credits_used: 20,
     }
   });
 });
 
-// GET /v1/northstar — Get current North Star
-app.get('/v1/northstar', auth, async (req, res) => {
+// GET /v1/northstar — Get current North Star (reads direct from SQLite, no self-call)
+app.get('/v1/northstar', auth, (req, res) => {
   try {
-    const getData = JSON.stringify({ key: 'northstar_goal', namespace: 'northstar' });
-    const result = await new Promise((resolve) => {
-      const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-get', method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(getData), 'Authorization': req.headers.authorization }, timeout: 5000
-      }, res2 => { let b = ''; res2.on('data', c => b += c); res2.on('end', () => { try { resolve(JSON.parse(b)); } catch(e) { resolve(null); } }); });
-      r.on('error', () => resolve(null)); r.write(getData); r.end();
-    });
-    const goal = result?.data?.value;
-    res.json({ ok: true, data: { goal: goal || null, set: !!goal, namespace: 'northstar' } });
+    const row = db.prepare("SELECT value FROM memory WHERE api_key = ? AND key = 'northstar_goal' AND namespace = 'northstar' ORDER BY created DESC LIMIT 1").get(req.apiKey);
+    const goal = row ? row.value : null;
+    // Also get research summary if available
+    const resRow = db.prepare("SELECT value FROM memory WHERE api_key = ? AND key = 'northstar_initial_research' AND namespace = 'northstar' ORDER BY created DESC LIMIT 1").get(req.apiKey);
+    let researchSummary = null;
+    if (resRow) { try { const r = JSON.parse(resRow.value); researchSummary = { providers_used: r.providers_used || 0, findings_count: (r.findings||[]).length }; } catch(_) {} }
+    res.json({ ok: true, data: { goal: goal || null, set: !!goal, namespace: 'northstar', research_summary: researchSummary } });
   } catch(e) {
-    res.json({ ok: true, data: { goal: null, set: false } });
+    res.json({ ok: true, data: { goal: null, set: false, error: e.message } });
   }
 });
 
@@ -3307,8 +3480,23 @@ db.exec(`CREATE TABLE IF NOT EXISTS dream_subscriptions (
 )`);
 
 app.post('/v1/dream/subscribe', auth, (req, res) => {
-  const { topic, tier, interval_hours, interval_minutes, rem_cycles, credits_per_cycle, max_credits } = req.body;
+  const { topic, tier, interval_hours, interval_minutes, rem_cycles, credits_per_cycle, max_credits, schedule } = req.body;
   if (!topic) return res.status(400).json({ error: { code: 'missing_topic', message: 'What should your agent dream about?' } });
+
+  // Parse human-readable schedule string: "hourly", "daily", "every 30 minutes", "every 2 hours", etc.
+  let scheduleHours;
+  if (schedule) {
+    const s = schedule.toLowerCase().trim();
+    if (s === 'hourly' || s === 'every hour') scheduleHours = 1;
+    else if (s === 'daily' || s === 'every day') scheduleHours = 24;
+    else if (s === 'weekly') scheduleHours = 168;
+    else if (s === 'every 15 minutes' || s === '15min') scheduleHours = 0.25;
+    else if (s === 'every 30 minutes' || s === '30min' || s === 'half-hourly') scheduleHours = 0.5;
+    else if (/^every (\d+(?:\.\d+)?) ?h/.test(s)) scheduleHours = parseFloat(s.match(/(\d+(?:\.\d+)?)/)[1]);
+    else if (/^every (\d+) ?min/.test(s)) scheduleHours = parseFloat(s.match(/(\d+)/)[1]) / 60;
+    else if (/^(\d+(?:\.\d+)?)h$/.test(s)) scheduleHours = parseFloat(s);
+    else if (/^(\d+)min$/.test(s)) scheduleHours = parseFloat(s) / 60;
+  }
 
   // Tier determines default interval and credits
   const dreamTier = tier || 'basic';
@@ -3320,9 +3508,10 @@ app.post('/v1/dream/subscribe', auth, (req, res) => {
   };
   const defaults = tierDefaults[dreamTier] || tierDefaults.basic;
 
-  // User can override interval (hours or minutes)
+  // User can override interval (hours or minutes or schedule string)
   let hours;
-  if (interval_minutes) hours = Math.max(interval_minutes / 60, 0.25); // min 15min
+  if (scheduleHours) hours = Math.max(scheduleHours, 0.25);
+  else if (interval_minutes) hours = Math.max(interval_minutes / 60, 0.25); // min 15min
   else hours = Math.max(interval_hours || defaults.interval_h, 0.25);
 
   const cycles = Math.max(Math.min(rem_cycles || defaults.rem, 10), 1);
@@ -3356,12 +3545,39 @@ app.post('/v1/dream/subscribe', auth, (req, res) => {
 
 app.get('/v1/dream/subscriptions', auth, (req, res) => {
   const subs = db.prepare('SELECT * FROM dream_subscriptions WHERE api_key = ?').all(req.apiKey);
-  res.json({ subscriptions: subs, count: subs.length });
+  res.json({ ok: true, subscriptions: subs, count: subs.length });
+});
+
+app.get('/v1/dream/subscriptions/:id', auth, (req, res) => {
+  const sub = db.prepare('SELECT * FROM dream_subscriptions WHERE id = ? AND api_key = ?').get(req.params.id, req.apiKey);
+  if (!sub) return res.status(404).json({ error: { code: 'not_found', message: 'Subscription not found.' } });
+  res.json({ ok: true, subscription: sub });
+});
+
+app.patch('/v1/dream/subscribe/:id', auth, (req, res) => {
+  const { active, interval_hours, interval_minutes, schedule } = req.body;
+  const sub = db.prepare('SELECT * FROM dream_subscriptions WHERE id = ? AND api_key = ?').get(req.params.id, req.apiKey);
+  if (!sub) return res.status(404).json({ error: { code: 'not_found' } });
+  if (active !== undefined) db.prepare('UPDATE dream_subscriptions SET active = ? WHERE id = ? AND api_key = ?').run(active ? 1 : 0, req.params.id, req.apiKey);
+  if (interval_hours || interval_minutes || schedule) {
+    let hours;
+    if (schedule) {
+      const s = schedule.toLowerCase();
+      if (s === 'hourly') hours = 1;
+      else if (s === 'daily') hours = 24;
+      else if (/(\d+) ?min/.test(s)) hours = parseInt(s.match(/(\d+)/)[1]) / 60;
+      else if (/(\d+(?:\.\d+)?) ?h/.test(s)) hours = parseFloat(s.match(/(\d+(?:\.\d+)?)/)[1]);
+    } else if (interval_minutes) hours = Math.max(interval_minutes / 60, 0.25);
+    else hours = Math.max(interval_hours, 0.25);
+    if (hours) db.prepare('UPDATE dream_subscriptions SET interval_hours = ? WHERE id = ? AND api_key = ?').run(hours, req.params.id, req.apiKey);
+  }
+  const updated = db.prepare('SELECT * FROM dream_subscriptions WHERE id = ?').get(req.params.id);
+  res.json({ ok: true, subscription: updated });
 });
 
 app.delete('/v1/dream/subscribe/:id', auth, (req, res) => {
   db.prepare('UPDATE dream_subscriptions SET active = 0 WHERE id = ? AND api_key = ?').run(req.params.id, req.apiKey);
-  res.json({ deleted: req.params.id });
+  res.json({ ok: true, deleted: req.params.id });
 });
 
 // POST /v1/dream/review — Review pending dream insights before deploying
@@ -3377,59 +3593,162 @@ app.get('/v1/dream/review', auth, (req, res) => {
 });
 
 // POST /v1/dream/deploy — Deploy approved dream insights to main memory
+// Accepts: {dream_id} OR {insight_ids: [...]} OR {deploy_all: true}
 app.post('/v1/dream/deploy', auth, (req, res) => {
-  const { dream_id } = req.body;
-  if (!dream_id) return res.status(400).json({ error: { code: 'missing_dream_id' } });
+  const { dream_id, insight_ids, deploy_all } = req.body;
   try {
     const memGet = allHandlers['memory-get'];
-    const dream = memGet({ namespace: 'dreams', key: dream_id });
-    if (!dream || !dream.value) return res.status(404).json({ error: { code: 'dream_not_found' } });
-    const dreamData = JSON.parse(dream.value);
-    if (dreamData.dreamer !== req.apiKey.slice(0, 12)) return res.status(403).json({ error: { code: 'not_your_dream' } });
+    const memSearch = allHandlers['memory-search'];
+    const memSet = allHandlers['memory-set'];
 
-    // Append each insight to main memory under topic key
-    const deployedKeys = [];
-    for (let i = 0; i < (dreamData.insights || []).length; i++) {
-      const insight = dreamData.insights[i];
-      const key = `dream-insight-${dreamData.topic.replace(/\s+/g, '-').toLowerCase()}-${Date.now().toString(36)}-${i}`;
-      allHandlers['memory-set']({ key, value: insight, tags: ['dream-deployed', dreamData.topic.split(' ')[0]].join(',') });
-      deployedKeys.push(key);
+    // Collect dream IDs to deploy
+    let dreamIds = [];
+    if (deploy_all) {
+      const result = memSearch({ namespace: 'dreams', tag: 'dream', api_key: req.apiKey });
+      dreamIds = (result.results || [])
+        .filter(r => { try { const d = JSON.parse(r.value); return d.dreamer === req.apiKey.slice(0, 12) && d.deploy_status === 'pending'; } catch(e) { return false; } })
+        .map(r => r.key);
+    } else if (Array.isArray(insight_ids) && insight_ids.length > 0) {
+      dreamIds = insight_ids;
+    } else if (dream_id) {
+      dreamIds = [dream_id];
+    } else {
+      return res.status(400).json({ error: { code: 'missing_target', message: 'Provide dream_id, insight_ids[], or deploy_all:true' } });
     }
 
-    // Mark dream as deployed
-    dreamData.deploy_status = 'deployed';
-    dreamData.deployed_at = new Date().toISOString();
-    dreamData.deployed_keys = deployedKeys;
-    allHandlers['memory-set']({ namespace: 'dreams', key: dream_id, value: JSON.stringify(dreamData), tags: 'dream,deployed' });
+    const allDeployedKeys = [];
+    const errors = [];
+    for (const did of dreamIds) {
+      try {
+        const dream = memGet({ namespace: 'dreams', key: did });
+        if (!dream || !dream.value) { errors.push({ id: did, error: 'not_found' }); continue; }
+        const dreamData = JSON.parse(dream.value);
+        if (dreamData.dreamer !== req.apiKey.slice(0, 12)) { errors.push({ id: did, error: 'not_your_dream' }); continue; }
 
-    res.json({ ok: true, deployed: deployedKeys.length, keys: deployedKeys, note: `${deployedKeys.length} insights deployed to your main memory. Topic: "${dreamData.topic}"` });
+        const deployedKeys = [];
+        for (let i = 0; i < (dreamData.insights || []).length; i++) {
+          const insight = dreamData.insights[i];
+          const key = `dream-insight-${(dreamData.topic || 'unknown').replace(/\s+/g, '-').toLowerCase()}-${Date.now().toString(36)}-${i}`;
+          memSet({ api_key: req.apiKey, namespace: 'default', key, value: insight, tags: ['dream-deployed', (dreamData.topic || '').split(' ')[0]].filter(Boolean).join(',') });
+          deployedKeys.push(key);
+        }
+        dreamData.deploy_status = 'deployed';
+        dreamData.deployed_at = new Date().toISOString();
+        dreamData.deployed_keys = deployedKeys;
+        memSet({ api_key: req.apiKey, namespace: 'dreams', key: did, value: JSON.stringify(dreamData), tags: 'dream,deployed' });
+        allDeployedKeys.push(...deployedKeys);
+      } catch(e) { errors.push({ id: did, error: e.message }); }
+    }
+
+    res.json({ ok: true, deployed: allDeployedKeys.length, keys: allDeployedKeys, errors: errors.length > 0 ? errors : undefined, note: `${allDeployedKeys.length} insights deployed to your main memory.` });
   } catch(e) { res.status(500).json({ error: { code: 'deploy_error', message: e.message } }); }
 });
 
-// POST /v1/dream/dismiss — Dismiss a dream without deploying
+// POST /v1/dream/dismiss — Dismiss dreams without deploying
+// Accepts: {dream_id} OR {insight_ids: [...]} OR {dismiss_all: true}
 app.post('/v1/dream/dismiss', auth, (req, res) => {
-  const { dream_id } = req.body;
-  if (!dream_id) return res.status(400).json({ error: { code: 'missing_dream_id' } });
+  const { dream_id, insight_ids, dismiss_all } = req.body;
   try {
-    const dream = allHandlers['memory-get']({ namespace: 'dreams', key: dream_id });
-    if (!dream || !dream.value) return res.status(404).json({ error: { code: 'dream_not_found' } });
-    const dreamData = JSON.parse(dream.value);
-    dreamData.deploy_status = 'dismissed';
-    allHandlers['memory-set']({ namespace: 'dreams', key: dream_id, value: JSON.stringify(dreamData), tags: 'dream,dismissed' });
-    res.json({ ok: true, dismissed: dream_id });
+    const memGet = allHandlers['memory-get'];
+    const memSearch = allHandlers['memory-search'];
+    const memSet = allHandlers['memory-set'];
+
+    let dreamIds = [];
+    if (dismiss_all) {
+      const result = memSearch({ namespace: 'dreams', tag: 'dream', api_key: req.apiKey });
+      dreamIds = (result.results || [])
+        .filter(r => { try { const d = JSON.parse(r.value); return d.dreamer === req.apiKey.slice(0, 12) && d.deploy_status === 'pending'; } catch(e) { return false; } })
+        .map(r => r.key);
+    } else if (Array.isArray(insight_ids) && insight_ids.length > 0) {
+      dreamIds = insight_ids;
+    } else if (dream_id) {
+      dreamIds = [dream_id];
+    } else {
+      return res.status(400).json({ error: { code: 'missing_target', message: 'Provide dream_id, insight_ids[], or dismiss_all:true' } });
+    }
+
+    const dismissed = [];
+    const errors = [];
+    for (const did of dreamIds) {
+      try {
+        const dream = memGet({ namespace: 'dreams', key: did });
+        if (!dream || !dream.value) { errors.push({ id: did, error: 'not_found' }); continue; }
+        const dreamData = JSON.parse(dream.value);
+        if (dreamData.dreamer !== req.apiKey.slice(0, 12)) { errors.push({ id: did, error: 'not_your_dream' }); continue; }
+        dreamData.deploy_status = 'dismissed';
+        dreamData.dismissed_at = new Date().toISOString();
+        memSet({ api_key: req.apiKey, namespace: 'dreams', key: did, value: JSON.stringify(dreamData), tags: 'dream,dismissed' });
+        dismissed.push(did);
+      } catch(e) { errors.push({ id: did, error: e.message }); }
+    }
+
+    res.json({ ok: true, dismissed: dismissed.length, ids: dismissed, errors: errors.length > 0 ? errors : undefined });
   } catch(e) { res.status(500).json({ error: { code: 'dismiss_error', message: e.message } }); }
 });
 
-// Dream shared knowledge — public read of accumulated dreams
-app.get('/v1/dream/shared', publicRateLimit, (req, res) => {
-  const memSearch = allHandlers['memory-search'];
+// GET /v1/dream/insights — list all dream insights for this user
+app.get('/v1/dream/insights', auth, (req, res) => {
   try {
-    const result = memSearch({ namespace: 'dreams', tag: 'dream' });
-    const dreams = (result.results || []).slice(0, 20).map(r => {
-      try { return { key: r.key, ...JSON.parse(r.value) }; } catch(e) { return { key: r.key, raw: r.value }; }
+    const result = allHandlers['memory-search']({ namespace: 'dreams', tag: 'dream', api_key: req.apiKey });
+    const dreams = (result.results || [])
+      .map(r => { try { return { id: r.key, ...JSON.parse(r.value) }; } catch(e) { return { id: r.key, raw: r.value }; } })
+      .filter(d => d.dreamer === req.apiKey.slice(0, 12));
+    const status = req.query.status;
+    const filtered = status ? dreams.filter(d => d.deploy_status === status) : dreams;
+    res.json({ ok: true, insights: filtered, count: filtered.length });
+  } catch(e) { res.status(500).json({ error: { code: 'insights_error', message: e.message } }); }
+});
+
+// POST /v1/dream/run — manually trigger a dream research run now
+app.post('/v1/dream/run', auth, async (req, res) => {
+  const { topic, tier = 'standard' } = req.body;
+  if (!topic) return res.status(400).json({ error: { code: 'missing_topic', message: 'Provide a topic to research.' } });
+  try {
+    res.json({ ok: true, status: 'queued', message: `Dream research for "${topic}" has been queued.`, note: 'Results will appear in GET /v1/dream/insights within 30 seconds.' });
+    setImmediate(async () => {
+      try {
+        const research = await executeResearch(topic, { tier, context: '', timeframe: 'recent' });
+        const dreamId = `dream-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 6)}`;
+        const dreamData = {
+          topic, tier, dreamer: req.apiKey.slice(0, 12),
+          created: new Date().toISOString(), deploy_status: 'pending',
+          insights: research.insights || [research.summary || research.result || ''],
+          sources: research.sources || [], summary: research.summary || ''
+        };
+        allHandlers['memory-set']({ api_key: req.apiKey, namespace: 'dreams', key: dreamId, value: JSON.stringify(dreamData), tags: 'dream,pending' });
+      } catch(e) {}
     });
-    res.json({ dreams, count: dreams.length, note: 'Shared dream knowledge from all agents. Grows daily.' });
-  } catch(e) { res.json({ dreams: [], note: 'Dream library is empty. Subscribe to start dreaming.' }); }
+  } catch(e) { res.status(500).json({ error: { code: 'dream_run_error', message: e.message } }); }
+});
+
+// POST /v1/dream/share/:id — share a dream publicly
+app.post('/v1/dream/share/:id', auth, (req, res) => {
+  const dreamId = req.params.id;
+  try {
+    const dream = allHandlers['memory-get']({ namespace: 'dreams', key: dreamId });
+    if (!dream || !dream.value) return res.status(404).json({ error: { code: 'dream_not_found' } });
+    const dreamData = JSON.parse(dream.value);
+    if (dreamData.dreamer !== req.apiKey.slice(0, 12)) return res.status(403).json({ error: { code: 'not_your_dream' } });
+    dreamData.shared = true;
+    dreamData.shared_at = new Date().toISOString();
+    allHandlers['memory-set']({ api_key: req.apiKey, namespace: 'dreams', key: dreamId, value: JSON.stringify(dreamData), tags: 'dream,shared' });
+    res.json({ ok: true, shared: true, id: dreamId, public_url: `/v1/dream/shared` });
+  } catch(e) { res.status(500).json({ error: { code: 'share_error', message: e.message } }); }
+});
+
+// GET /v1/dream/shared — public read of explicitly shared dreams only
+app.get('/v1/dream/shared', publicRateLimit, (req, res) => {
+  try {
+    const result = allHandlers['memory-search']({ namespace: 'dreams', tag: 'shared' });
+    const dreams = (result.results || []).slice(0, 50).map(r => {
+      try {
+        const d = JSON.parse(r.value);
+        if (!d.shared) return null; // only explicitly shared
+        return { id: r.key, topic: d.topic, summary: d.summary, insights: d.insights, shared_at: d.shared_at, tier: d.tier };
+      } catch(e) { return null; }
+    }).filter(Boolean);
+    res.json({ ok: true, dreams, count: dreams.length, note: 'Publicly shared dream research. Share your own with POST /v1/dream/share/:id' });
+  } catch(e) { res.json({ ok: true, dreams: [], note: 'Dream library is empty.' }); }
 });
 
 // POST /v1/memory/upload — Drag-and-drop memory file import
