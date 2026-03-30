@@ -625,6 +625,25 @@ function cryptoChecksumFile(input) {
   return { _engine: 'real',md5:crypto.createHash('md5').update(c).digest('hex'),sha256:crypto.createHash('sha256').update(c).digest('hex'),sha512:crypto.createHash('sha512').update(c).digest('hex'),size:Buffer.byteLength(c,'utf8')};
 }
 
+function cryptoCrc32(input) {
+  const text = input.text || input.data || input.input || '';
+  const buf = Buffer.from(text, 'utf8');
+  // CRC-32 using the standard polynomial 0xEDB88320
+  let crc = 0xFFFFFFFF;
+  const table = (() => {
+    const t = new Uint32Array(256);
+    for (let i = 0; i < 256; i++) {
+      let c = i;
+      for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      t[i] = c;
+    }
+    return t;
+  })();
+  for (let i = 0; i < buf.length; i++) crc = table[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+  const result = (crc ^ 0xFFFFFFFF) >>> 0;
+  return { _engine: 'real', crc32: result, hex: result.toString(16).padStart(8, '0'), input: text };
+}
+
 // ─── MATH & NUMBERS ─────────────────────────────────────────────────────────
 
 function mathEvaluate(input) {
@@ -642,7 +661,11 @@ function mathEvaluate(input) {
   }
   function parseMulDiv() {
     let l=parsePow();
-    while (peek()==='*'||peek()==='/'||peek()==='%') { const op=consume(); const r=parsePow(); l=op==='*'?l*r:op==='/'?l/r:l%r; }
+    while (peek()==='*'||peek()==='/'||peek()==='%') {
+      const op=consume(); const r=parsePow();
+      if ((op==='/'||op==='%') && r===0) throw new Error('Division by zero');
+      l=op==='*'?l*r:op==='/'?l/r:l%r;
+    }
     return l;
   }
   function parsePow() { let l=parseUnary(); while(peek()==='**'||peek()==='^'){consume();l=Math.pow(l,parseUnary());} return l; }
@@ -3118,6 +3141,7 @@ module.exports = {
   'crypto-encrypt-aes': cryptoEncryptAes,
   'crypto-decrypt-aes': cryptoDecryptAes,
   'crypto-checksum-file': cryptoChecksumFile,
+  'crypto-crc32': cryptoCrc32,
   'math-evaluate': mathEvaluate,
   'math-statistics': mathStatistics,
   'math-percentile': mathPercentile,
@@ -4018,10 +4042,14 @@ module.exports = {
     degrees: (radians || 0) * 180 / Math.PI,
   }),
 
-  'math-percentage': ({value, total}) => ({
-    _engine: 'real',
-    percentage: Math.round((value || 0) / (total || 1) * 10000) / 100,
-  }),
+  'math-percentage': (input) => {
+    // Support: {value, total} → percentage of total; {percent, of} → X% of Y
+    if (input.percent !== undefined && input.of !== undefined) {
+      const result = Math.round((input.percent / 100) * input.of * 1e10) / 1e10;
+      return { _engine: 'real', percent: input.percent, of: input.of, result };
+    }
+    return { _engine: 'real', percentage: Math.round((input.value || 0) / (input.total || 1) * 10000) / 100 };
+  },
 
   'math-normalize': ({data}) => {
     if (!Array.isArray(data)) return { _engine: 'real', error: 'array' };
@@ -4058,9 +4086,41 @@ module.exports = {
     return { _engine: 'real', result: Math.round(value * (g[f] || 1) / (g[t] || 1) * 10000) / 10000 };
   },
 
-  'convert-bytes': ({value, from, to}) => {
+  'convert-bytes': (input) => {
+    // Human-readable mode: {bytes} → "1.5 KB"
+    if (input.bytes !== undefined && input.from === undefined && input.to === undefined) {
+      const bytes = Number(input.bytes) || 0;
+      const units = ['B','KB','MB','GB','TB','PB'];
+      let i = 0, b = Math.abs(bytes);
+      while (b >= 1024 && i < units.length - 1) { b /= 1024; i++; }
+      const formatted = (bytes < 0 ? '-' : '') + b.toFixed(i === 0 ? 0 : 2) + ' ' + units[i];
+      return { _engine: 'real', bytes: input.bytes, formatted, value: Math.round(b * 100) / 100, unit: units[i] };
+    }
+    // Unit-conversion mode: {value, from, to}
     const b = { b: 1, kb: 1024, mb: 1048576, gb: 1073741824, tb: 1099511627776 };
-    return { _engine: 'real', result: Math.round(value * (b[from] || 1) / (b[to] || 1) * 10000) / 10000 };
+    const from = (input.from || 'b').toLowerCase();
+    const to = (input.to || 'kb').toLowerCase();
+    return { _engine: 'real', result: Math.round(input.value * (b[from] || 1) / (b[to] || 1) * 10000) / 10000 };
+  },
+
+  'convert-duration': (input) => {
+    // Accepts {seconds} or {milliseconds} and returns human-readable string
+    let totalSeconds = 0;
+    if (input.milliseconds !== undefined) totalSeconds = Number(input.milliseconds) / 1000;
+    else if (input.seconds !== undefined) totalSeconds = Number(input.seconds);
+    else if (input.value !== undefined) totalSeconds = Number(input.value);
+    const abs = Math.abs(totalSeconds);
+    const d = Math.floor(abs / 86400);
+    const h = Math.floor((abs % 86400) / 3600);
+    const m = Math.floor((abs % 3600) / 60);
+    const s = Math.floor(abs % 60);
+    const parts = [];
+    if (d > 0) parts.push(d + 'd');
+    if (h > 0) parts.push(h + 'h');
+    if (m > 0) parts.push(m + 'm');
+    if (s > 0 || parts.length === 0) parts.push(s + 's');
+    const formatted = (totalSeconds < 0 ? '-' : '') + parts.join(' ');
+    return { _engine: 'real', seconds: totalSeconds, formatted, days: d, hours: h, minutes: m, secs: s };
   },
 
   'convert-time': ({value, from, to}) => {
@@ -5510,5 +5570,214 @@ module.exports = {
       day: now.getUTCDate(),
       weekday: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][now.getUTCDay()],
     };
+  },
+
+  // ─── REQUIRED NEW HANDLERS (audit 2026-03-31) ──────────────────────────────
+
+  'validate-json-schema': (input) => {
+    // Alias for json-schema-validate — full recursive schema validation
+    const data = input.data !== undefined ? input.data : input.json;
+    const schema = input.schema || {};
+    const errors = [];
+    function validate(d, s, path) {
+      if (s.type) {
+        const actualType = d === null ? 'null' : Array.isArray(d) ? 'array' : typeof d;
+        const expected = Array.isArray(s.type) ? s.type : [s.type];
+        if (!expected.includes(actualType)) errors.push({ path, message: `Expected ${s.type}, got ${actualType}` });
+      }
+      if (s.required && typeof d === 'object' && d !== null && !Array.isArray(d)) {
+        for (const key of s.required) {
+          if (!(key in d)) errors.push({ path: path ? path + '.' + key : key, message: `Required field "${key}" is missing` });
+        }
+      }
+      if (s.properties && typeof d === 'object' && d !== null && !Array.isArray(d)) {
+        for (const [key, subSchema] of Object.entries(s.properties)) {
+          if (key in d) validate(d[key], subSchema, path ? path + '.' + key : key);
+        }
+      }
+      if (s.minLength !== undefined && typeof d === 'string' && d.length < s.minLength) errors.push({ path, message: `String too short (min ${s.minLength})` });
+      if (s.maxLength !== undefined && typeof d === 'string' && d.length > s.maxLength) errors.push({ path, message: `String too long (max ${s.maxLength})` });
+      if (s.minimum !== undefined && typeof d === 'number' && d < s.minimum) errors.push({ path, message: `Value ${d} is below minimum ${s.minimum}` });
+      if (s.maximum !== undefined && typeof d === 'number' && d > s.maximum) errors.push({ path, message: `Value ${d} exceeds maximum ${s.maximum}` });
+      if (s.enum && !s.enum.includes(d)) errors.push({ path, message: `Value not in enum: ${s.enum.join(', ')}` });
+      if (s.items && Array.isArray(d)) d.forEach((item, i) => validate(item, s.items, (path ? path : '') + '[' + i + ']'));
+    }
+    validate(data, schema, '');
+    return { _engine: 'real', valid: errors.length === 0, errors };
+  },
+
+  'data-json-pick': (input) => {
+    const data = input.data || input.object || {};
+    const keys = input.keys || input.fields || [];
+    if (!Array.isArray(keys)) return { _engine: 'real', error: 'keys must be an array' };
+    const result = {};
+    keys.forEach(k => { if (k in data) result[k] = data[k]; });
+    return { _engine: 'real', result, picked_keys: Object.keys(result), requested_keys: keys };
+  },
+
+  'data-json-omit': (input) => {
+    const data = input.data || input.object || {};
+    const keys = input.keys || input.fields || [];
+    if (!Array.isArray(keys)) return { _engine: 'real', error: 'keys must be an array' };
+    const result = Object.assign({}, data);
+    keys.forEach(k => delete result[k]);
+    return { _engine: 'real', result, omitted_keys: keys.filter(k => k in data), remaining_keys: Object.keys(result) };
+  },
+
+  'data-json-merge': (input) => {
+    // Deep merge two JSON objects: a and b (b wins on conflict)
+    function deepMergeTwo(a, b) {
+      const r = Object.assign({}, a);
+      for (const k of Object.keys(b)) {
+        const v = b[k];
+        if (v !== null && typeof v === 'object' && !Array.isArray(v) && typeof r[k] === 'object' && r[k] !== null && !Array.isArray(r[k])) {
+          r[k] = deepMergeTwo(r[k], v);
+        } else {
+          r[k] = v;
+        }
+      }
+      return r;
+    }
+    try {
+      const a = typeof input.a === 'object' && input.a !== null ? input.a : JSON.parse(input.a || '{}');
+      const b = typeof input.b === 'object' && input.b !== null ? input.b : JSON.parse(input.b || '{}');
+      const result = deepMergeTwo(a, b);
+      return { _engine: 'real', result, keys_total: Object.keys(result).length };
+    } catch (e) { return { _engine: 'real', error: e.message }; }
+  },
+
+  'array-sort': (input) => {
+    const arr = input.array || input.data || [];
+    if (!Array.isArray(arr)) return { _engine: 'real', error: 'array must be an array' };
+    const field = input.field || input.key;
+    const order = (input.order || 'asc').toLowerCase();
+    const numeric = input.numeric || false;
+    const sorted = [...arr].sort((a, b) => {
+      const va = field ? a[field] : a;
+      const vb = field ? b[field] : b;
+      if (numeric) {
+        return order === 'desc' ? Number(vb) - Number(va) : Number(va) - Number(vb);
+      }
+      if (va === undefined && vb === undefined) return 0;
+      if (va === undefined) return 1;
+      if (vb === undefined) return -1;
+      const cmp = String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: 'base' });
+      return order === 'desc' ? -cmp : cmp;
+    });
+    return { _engine: 'real', sorted, count: sorted.length, field: field || null, order };
+  },
+
+  'text-extract-emails': (input) => {
+    const text = input.text || input.input || input.content || '';
+    const m = text.match(/[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g) || [];
+    const u = [...new Set(m)];
+    return { _engine: 'real', emails: u, count: u.length };
+  },
+
+  'text-extract-urls': (input) => {
+    const text = input.text || input.input || input.content || '';
+    const m = text.match(/https?:\/\/[^\s<>"{}|\\^`[\]]+/g) || [];
+    const u = [...new Set(m)];
+    return { _engine: 'real', urls: u, count: u.length };
+  },
+
+  'text-extract-numbers': (input) => {
+    const text = input.text || input.input || input.content || '';
+    const m = text.match(/-?\d+\.?\d*/g) || [];
+    return { _engine: 'real', numbers: m.map(Number), raw: m, count: m.length };
+  },
+
+  'math-gcd': (input) => {
+    const nums = input.numbers || [Number(input.a || 0), Number(input.b || 0)];
+    const gcd2 = (x, y) => { x = Math.abs(x); y = Math.abs(y); while (y) { const t = y; y = x % y; x = t; } return x; };
+    const result = nums.reduce((a, b) => gcd2(a, b));
+    return { _engine: 'real', numbers: nums, gcd: result };
+  },
+
+  'math-lcm': (input) => {
+    const nums = input.numbers || [Number(input.a || 0), Number(input.b || 0)];
+    const gcd2 = (x, y) => { x = Math.abs(x); y = Math.abs(y); while (y) { const t = y; y = x % y; x = t; } return x; };
+    const lcm2 = (x, y) => { const g = gcd2(x, y); return g === 0 ? 0 : (Math.abs(x) / g) * Math.abs(y); };
+    const result = nums.reduce((a, b) => lcm2(a, b));
+    return { _engine: 'real', numbers: nums, lcm: result };
+  },
+
+  'math-statistics': (input) => {
+    const nums = (input.numbers || input.data || []).map(Number).filter(n => !isNaN(n));
+    if (!nums.length) return { _engine: 'real', error: 'No numbers provided' };
+    const sorted = [...nums].sort((a, b) => a - b);
+    const mean = nums.reduce((a, b) => a + b, 0) / nums.length;
+    const median = nums.length % 2 === 0 ? (sorted[nums.length / 2 - 1] + sorted[nums.length / 2]) / 2 : sorted[Math.floor(nums.length / 2)];
+    const fq = {}; for (const n of nums) fq[n] = (fq[n] || 0) + 1;
+    const maxF = Math.max(...Object.values(fq));
+    const mode = Object.keys(fq).filter(k => fq[k] === maxF).map(Number);
+    const variance = nums.reduce((s, n) => s + Math.pow(n - mean, 2), 0) / nums.length;
+    return { _engine: 'real', mean: Math.round(mean * 1e10) / 1e10, median, mode, stddev: Math.round(Math.sqrt(variance) * 1e10) / 1e10, variance: Math.round(variance * 1e10) / 1e10, min: sorted[0], max: sorted[sorted.length - 1], sum: nums.reduce((a, b) => a + b, 0), count: nums.length, range: sorted[sorted.length - 1] - sorted[0] };
+  },
+
+  'crypto-crc32': (input) => {
+    const text = input.text || input.data || input.input || '';
+    const buf = Buffer.from(text, 'utf8');
+    const table = (() => { const t = new Uint32Array(256); for (let i = 0; i < 256; i++) { let c = i; for (let j = 0; j < 8; j++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[i] = c; } return t; })();
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++) crc = table[(crc ^ buf[i]) & 0xFF] ^ (crc >>> 8);
+    const result = (crc ^ 0xFFFFFFFF) >>> 0;
+    return { _engine: 'real', crc32: result, hex: result.toString(16).padStart(8, '0'), input: text };
+  },
+
+  'text-truncate': (input) => {
+    const text = input.text || input.input || input.content || '';
+    const length = input.length || input.max_length || 100;
+    const suffix = input.suffix !== undefined ? input.suffix : '...';
+    if (text.length <= length) return { _engine: 'real', result: text, truncated: false, originalLength: text.length };
+    const trimmed = text.slice(0, length - suffix.length);
+    const lastSpace = trimmed.lastIndexOf(' ');
+    const result = (lastSpace > 0 ? trimmed.slice(0, lastSpace) : trimmed) + suffix;
+    return { _engine: 'real', result, truncated: true, originalLength: text.length };
+  },
+
+  'text-pad': (input) => {
+    const text = input.text || input.input || '';
+    const length = input.length || input.width || 20;
+    const char = input.char || input.pad_char || ' ';
+    return { _engine: 'real', left: text.padStart(length, char), right: text.padEnd(length, char), center: text.padStart(Math.floor((length + text.length) / 2), char).padEnd(length, char) };
+  },
+
+  'text-repeat': (input) => {
+    const text = input.text || input.input || '';
+    const times = Math.min(input.times || input.count || 2, 1000);
+    return { _engine: 'real', result: text.repeat(times), length: text.length * times };
+  },
+
+  'data-json-flatten': (input) => {
+    function flattenObj(obj, prefix) {
+      prefix = prefix || '';
+      const result = {};
+      for (const k of Object.keys(obj)) {
+        const key = prefix ? prefix + '.' + k : k;
+        const v = obj[k];
+        if (v !== null && typeof v === 'object' && !Array.isArray(v)) Object.assign(result, flattenObj(v, key));
+        else result[key] = v;
+      }
+      return result;
+    }
+    try {
+      const o = typeof input.data === 'object' && input.data !== null ? input.data : JSON.parse(input.text || '{}');
+      const flat = flattenObj(o);
+      return { _engine: 'real', result: flat, keys: Object.keys(flat).length };
+    } catch (e) { return { _engine: 'real', error: e.message }; }
+  },
+
+  'data-json-unflatten': (input) => {
+    try {
+      const flat = typeof input.data === 'object' && input.data !== null ? input.data : JSON.parse(input.text || '{}');
+      const result = {};
+      for (const key of Object.keys(flat)) {
+        const parts = key.split('.'); let cur = result;
+        for (let i = 0; i < parts.length - 1; i++) { if (!(parts[i] in cur)) cur[parts[i]] = {}; cur = cur[parts[i]]; }
+        cur[parts[parts.length - 1]] = flat[key];
+      }
+      return { _engine: 'real', result };
+    } catch (e) { return { _engine: 'real', error: e.message }; }
   },
 };

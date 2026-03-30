@@ -244,6 +244,30 @@ module.exports = {
       tier: 'compute'
     },
 
+    'finance-loan-calculator': {
+      cat: 'Finance',
+      name: 'Loan Calculator',
+      desc: 'Calculate monthly loan payments, total interest, and amortization schedule. Supports extra payment analysis showing interest saved and months cut.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'finance-tax-estimate': {
+      cat: 'Finance',
+      name: 'US Tax Estimator',
+      desc: 'Estimate US federal income tax with bracket breakdown, FICA, effective rate, and after-tax income. Supports all filing statuses (2024 brackets).',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'finance-portfolio-diversification-score': {
+      cat: 'Finance',
+      name: 'Portfolio Diversification Score',
+      desc: 'Score portfolio diversification (0-100) using HHI, effective position count, and sector concentration. Returns risk flags and rebalancing suggestions.',
+      credits: 2,
+      tier: 'compute'
+    },
+
     // =========================================================================
     // DEVOPS VERTICAL
     // =========================================================================
@@ -288,6 +312,30 @@ module.exports = {
       tier: 'compute'
     },
 
+    'devops-docker-image-scan': {
+      cat: 'DevOps',
+      name: 'Docker Image CVE Scanner',
+      desc: 'Rule-based scan of a Docker image name/tag for known EOL versions and CVE-pattern vulnerabilities. Returns severity-ranked findings and upgrade recommendations.',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'devops-ci-pipeline-lint': {
+      cat: 'DevOps',
+      name: 'CI Pipeline Linter',
+      desc: 'Lint a CI/CD pipeline config (GitHub Actions, GitLab CI, Jenkins, CircleCI). Detects missing timeouts, hardcoded secrets, unpinned actions, and missing cache.',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'devops-infrastructure-cost-estimate': {
+      cat: 'DevOps',
+      name: 'Infrastructure Cost Estimator',
+      desc: 'Estimate monthly/annual cloud infrastructure costs for AWS, GCP, or Azure. Supports EC2/VM, RDS, S3, EKS, ELB, NAT Gateway, and more.',
+      credits: 2,
+      tier: 'compute'
+    },
+
     // =========================================================================
     // LEGAL VERTICAL
     // =========================================================================
@@ -308,6 +356,30 @@ module.exports = {
       tier: 'compute'
     },
 
+    'legal-gdpr-compliance-check': {
+      cat: 'Legal',
+      name: 'GDPR Compliance Check',
+      desc: 'Deep GDPR compliance check mapping gaps to specific GDPR articles (Art. 6, 7, 13-14, 15-22, 28, 33-34). Returns risk level and prioritized remediation plan.',
+      credits: 3,
+      tier: 'compute'
+    },
+
+    'legal-terms-of-service-analyzer': {
+      cat: 'Legal',
+      name: 'Terms of Service Analyzer',
+      desc: 'Analyze terms of service for user-hostile clauses: unilateral changes, data selling, broad IP licenses, mandatory arbitration, and account termination rights.',
+      credits: 3,
+      tier: 'compute'
+    },
+
+    'legal-license-compatibility-check': {
+      cat: 'Legal',
+      name: 'License Compatibility Check',
+      desc: 'Check open source license compatibility between two licenses (MIT, GPL, Apache, etc.). Returns compatibility ruling, copyleft obligations, and patent grant status.',
+      credits: 2,
+      tier: 'compute'
+    },
+
     // =========================================================================
     // HEALTHCARE VERTICAL
     // =========================================================================
@@ -324,6 +396,22 @@ module.exports = {
       cat: 'Health',
       name: 'Medication Schedule Generator',
       desc: 'Generate a medication schedule with dose times, reminders, and interaction warnings for a list of medications.',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'health-calorie-estimate': {
+      cat: 'Health',
+      name: 'Calorie & Macro Estimator',
+      desc: 'Estimate daily calorie needs (TDEE) using Mifflin-St Jeor BMR with activity level and goal adjustments. Returns macro split for protein, carbs, and fat.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'health-medication-interaction-check': {
+      cat: 'Health',
+      name: 'Medication Interaction Checker',
+      desc: 'Rule-based check for known drug interactions across a list of medications. Returns severity (contraindicated/major/moderate), effects, and clinical recommendations.',
       credits: 2,
       tier: 'compute'
     },
@@ -352,6 +440,22 @@ module.exports = {
       cat: 'Marketing',
       name: 'SEO Keyword Density',
       desc: 'Analyze keyword density in text content. Returns top keywords, density percentages, TF-IDF scores, and LSI keyword suggestions.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'marketing-readability-score': {
+      cat: 'Marketing',
+      name: 'Readability Score',
+      desc: 'Score text readability using Flesch Reading Ease and Flesch-Kincaid Grade Level. Flags passive voice, long sentences, and complex vocabulary.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'marketing-ab-test-significance': {
+      cat: 'Marketing',
+      name: 'A/B Test Significance',
+      desc: 'Calculate A/B test statistical significance with p-value, 95%/99% confidence thresholds, relative uplift, and required sample size. Flexible field aliases.',
       credits: 1,
       tier: 'compute'
     },
@@ -413,6 +517,46 @@ module.exports = {
       name: 'Memory Importance Rank',
       desc: 'Rank memory keys by importance using access frequency, recency, score, and content richness. Returns sorted list with importance scores.',
       credits: 2,
+      tier: 'compute'
+    },
+
+    'memory-score': {
+      cat: 'Memory',
+      name: 'Memory Score',
+      desc: 'Score a memory item by relevance to a current context/query. Returns a 0-10 relevance score with breakdown of text overlap, recency, and popularity signals.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'memory-drift': {
+      cat: 'Memory',
+      name: 'Memory Drift',
+      desc: 'Detect semantic drift between a stored memory value and a new/current value. Returns drift score, drift level, and token-level diff of what changed.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'memory-summarize-namespace': {
+      cat: 'Memory',
+      name: 'Memory Summarize Namespace',
+      desc: 'Summarize all memories in a namespace into a compact digest. Returns top keys, key themes, category breakdown, and an importance-ranked digest.',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'memory-deduplicate': {
+      cat: 'Memory',
+      name: 'Memory Deduplicate',
+      desc: 'Find and merge near-duplicate memory entries using Jaccard token similarity. Returns duplicate groups, canonical entries, and unique entries.',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'memory-forget-curve': {
+      cat: 'Memory',
+      name: 'Memory Forget Curve',
+      desc: 'Apply Ebbinghaus forgetting curve to decay memory strength over time. Supports spaced-repetition stability boosts. Returns retention scores and forgotten/retained lists.',
+      credits: 1,
       tier: 'compute'
     },
 

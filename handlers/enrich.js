@@ -1224,6 +1224,642 @@ function commEmailValidateDeep(input) {
 }
 
 // ---------------------------------------------------------------------------
+// 31. enrich-text-entities  (named entity extraction — no external deps)
+// ---------------------------------------------------------------------------
+
+// Curated seed lists for heuristic NER
+const KNOWN_ORGS = new Set([
+  'google','apple','microsoft','amazon','meta','tesla','netflix','uber','airbnb',
+  'twitter','x','linkedin','facebook','instagram','youtube','tiktok','snapchat',
+  'stripe','paypal','shopify','salesforce','oracle','ibm','intel','amd','nvidia',
+  'openai','anthropic','deepmind','hugging face','spacex','nasa','un','eu',
+  'the new york times','bbc','cnn','reuters','bloomberg','the guardian','techcrunch',
+  'the washington post','wall street journal','wsj','github','gitlab','stackoverflow',
+  'wikipedia','reddit','discord','slack','zoom','dropbox','atlassian','jira',
+]);
+
+const KNOWN_PLACES = new Set([
+  'new york','los angeles','chicago','houston','phoenix','philadelphia','san antonio',
+  'san diego','dallas','san jose','austin','jacksonville','san francisco','seattle',
+  'london','paris','berlin','tokyo','beijing','shanghai','mumbai','delhi','sydney',
+  'toronto','vancouver','dubai','singapore','amsterdam','barcelona','madrid','rome',
+  'moscow','stockholm','oslo','copenhagen','zurich','vienna','brussels','warsaw',
+  'cairo','lagos','nairobi','johannesburg','sao paulo','buenos aires','bogota',
+  'united states','usa','uk','united kingdom','germany','france','china','india',
+  'russia','brazil','canada','australia','japan','south korea','mexico','spain',
+  'italy','netherlands','sweden','switzerland','poland','turkey','ukraine',
+  'africa','europe','asia','americas','middle east','pacific','atlantic',
+]);
+
+function enrichTextEntities(input) {
+  input = input || {};
+  const text = input.text || input.content || '';
+  if (!text || typeof text !== 'string' || !text.trim()) {
+    return { _engine: 'real', error: 'missing_param', required: 'text', hint: 'Provide a text string to extract named entities from' };
+  }
+
+  const people = [];
+  const orgs = [];
+  const places = [];
+  const emails = [];
+  const urls = [];
+  const phones = [];
+
+  // Extract emails
+  const emailRe = /[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}/g;
+  let m;
+  while ((m = emailRe.exec(text)) !== null) emails.push(m[0]);
+
+  // Extract URLs
+  const urlRe = /https?:\/\/[^\s)>\]"']+/g;
+  while ((m = urlRe.exec(text)) !== null) urls.push(m[0]);
+
+  // Extract phones (loose: +digits, or (XXX) XXX-XXXX patterns)
+  // BUG FIX: strip trailing punctuation from phone matches (e.g. trailing dot or comma)
+  const phoneRe = /(?:\+\d[\d\s\-().]{6,}|\(\d{3}\)\s?\d{3}[\s\-]\d{4})/g;
+  while ((m = phoneRe.exec(text)) !== null) phones.push(m[0].trim().replace(/[.,;!?]+$/, ''));
+
+  // Tokenize on word boundaries for NER
+  const lower = text.toLowerCase();
+
+  // Orgs: match known org names (multi-word first, then single)
+  // BUG FIX: use case-insensitive dedup to avoid "Google" and "google" both appearing
+  const orgsSeenLower = new Set();
+  for (const org of KNOWN_ORGS) {
+    if (lower.includes(org)) {
+      const re = new RegExp(org.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
+      while ((m = re.exec(text)) !== null) {
+        const ml = m[0].toLowerCase();
+        if (!orgsSeenLower.has(ml)) { orgsSeenLower.add(ml); orgs.push(m[0]); }
+      }
+    }
+  }
+
+  // Places: same approach with case-insensitive dedup
+  const placesSeenLower = new Set();
+  for (const place of KNOWN_PLACES) {
+    if (lower.includes(place)) {
+      const re = new RegExp(place.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'ig');
+      while ((m = re.exec(text)) !== null) {
+        const ml = m[0].toLowerCase();
+        if (!placesSeenLower.has(ml)) { placesSeenLower.add(ml); places.push(m[0]); }
+      }
+    }
+  }
+
+  // People heuristic: sequences of 2–3 Title-Cased words not in orgs/places and not at sentence start
+  // (simplified: consecutive capitalized words preceded by lowercase context)
+  const personRe = /(?<=[a-z,;:]\s{1,3}|\bby\s|\bfrom\s|\bwith\s|\bfor\s)([A-Z][a-z]+(?:\s[A-Z][a-z]+){1,2})/g;
+  while ((m = personRe.exec(text)) !== null) {
+    const candidate = m[1].trim();
+    const cl = candidate.toLowerCase();
+    if (!KNOWN_ORGS.has(cl) && !KNOWN_PLACES.has(cl) && !people.includes(candidate)) {
+      people.push(candidate);
+    }
+  }
+
+  return {
+    _engine: 'real',
+    entities: {
+      people: [...new Set(people)],
+      organizations: [...new Set(orgs)],
+      places: [...new Set(places)],
+      emails: [...new Set(emails)],
+      urls: [...new Set(urls)],
+      phones: [...new Set(phones)],
+    },
+    text_length: text.length,
+    entity_count: people.length + orgs.length + places.length + emails.length + urls.length + phones.length,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 32. enrich-text-keywords  (TF-IDF-style keyword extraction, no external deps)
+// ---------------------------------------------------------------------------
+
+const STOP_WORDS = new Set([
+  'a','an','the','and','or','but','in','on','at','to','for','of','with','by',
+  'from','up','about','into','through','during','before','after','above','below',
+  'between','out','off','over','under','again','further','then','once','here',
+  'there','when','where','why','how','all','both','each','few','more','most',
+  'other','some','such','no','nor','not','only','own','same','so','than','too',
+  'very','s','t','can','will','just','don','should','now','i','me','my','we',
+  'our','you','your','he','him','his','she','her','it','its','they','them',
+  'their','what','which','who','whom','this','that','these','those','am','is',
+  'are','was','were','be','been','being','have','has','had','do','does','did',
+  'doing','would','could','may','might','shall','must','need','dare','used','ought',
+  'also','however','therefore','thus','hence','yet','still','already','since',
+  'because','although','though','unless','until','while','whether','if','else',
+]);
+
+function enrichTextKeywords(input) {
+  input = input || {};
+  const text = input.text || input.content || '';
+  if (!text || typeof text !== 'string' || !text.trim()) {
+    return { _engine: 'real', error: 'missing_param', required: 'text', hint: 'Provide a text string to extract keywords from' };
+  }
+  const limit = Math.min(Math.max(parseInt(input.limit) || 10, 1), 50);
+
+  // Tokenize
+  const words = text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s'-]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length > 2 && !STOP_WORDS.has(w) && !/^\d+$/.test(w));
+
+  // Count term frequency
+  const tf = {};
+  for (const w of words) tf[w] = (tf[w] || 0) + 1;
+
+  // Score: TF weighted by word length (longer words tend to be more specific)
+  const scored = Object.entries(tf)
+    .map(([word, count]) => ({ word, count, score: count * Math.log(word.length + 2) }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, limit);
+
+  // Also extract 2-gram phrases (bigrams)
+  const bigrams = {};
+  for (let i = 0; i < words.length - 1; i++) {
+    const bg = `${words[i]} ${words[i + 1]}`;
+    if (!STOP_WORDS.has(words[i]) && !STOP_WORDS.has(words[i + 1])) {
+      bigrams[bg] = (bigrams[bg] || 0) + 1;
+    }
+  }
+  const topPhrases = Object.entries(bigrams)
+    .filter(([, c]) => c > 1)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([phrase, count]) => ({ phrase, count }));
+
+  return {
+    _engine: 'real',
+    keywords: scored,
+    phrases: topPhrases,
+    word_count: words.length,
+    unique_words: Object.keys(tf).length,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 33. enrich-text-language  (language detection — heuristic, no external deps)
+// ---------------------------------------------------------------------------
+
+// Characteristic high-frequency words per language (stopwords + function words)
+const LANG_SIGNATURES = {
+  en: ['the','and','is','in','it','of','to','that','was','he','for','on','are','with','as'],
+  es: ['el','la','los','las','de','en','que','y','es','un','una','se','no','lo','le'],
+  fr: ['le','la','les','de','des','en','et','est','un','une','que','qui','dans','il','pas'],
+  de: ['der','die','das','und','ist','in','ein','eine','zu','den','von','des','mit','auf','ich'],
+  pt: ['de','a','o','que','e','do','da','em','um','para','com','uma','os','no','se'],
+  it: ['il','la','di','e','in','un','è','che','per','con','del','della','i','una','non'],
+  nl: ['de','het','een','van','in','is','dat','op','en','te','zijn','met','er','aan','ook'],
+  pl: ['i','w','z','się','na','to','nie','że','do','jak','ale','tak','go','co','po'],
+  ru: ['в','и','не','на','я','что','он','с','как','это','по','но','все','за','из'],
+  zh: ['的','了','在','是','我','有','和','就','不','都','一','人','上','出','来'],
+  ja: ['の','は','に','を','た','が','で','と','も','です','ます','から','これ','あの','その'],
+  ar: ['في','من','على','إلى','أن','هذا','هو','كان','قد','مع','لا','ما','عن','بعد','كل'],
+  hi: ['है','का','की','के','और','में','को','से','एक','यह','हैं','पर','जो','था','वह'],
+};
+
+function enrichTextLanguage(input) {
+  input = input || {};
+  const text = input.text || input.content || '';
+  if (!text || typeof text !== 'string' || !text.trim()) {
+    return { _engine: 'real', error: 'missing_param', required: 'text', hint: 'Provide a text string to detect language' };
+  }
+  if (text.trim().length < 10) {
+    return { _engine: 'real', error: 'text_too_short', message: 'Text must be at least 10 characters for reliable detection' };
+  }
+
+  // Tokenize to lowercase words
+  const tokens = new Set(text.toLowerCase().split(/\s+/).map(w => w.replace(/[^a-z\u00C0-\u024F\u0400-\u04FF\u0600-\u06FF\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF\u0900-\u097F]/g, '')).filter(Boolean));
+
+  const scores = {};
+  for (const [lang, sigs] of Object.entries(LANG_SIGNATURES)) {
+    let hits = 0;
+    for (const sig of sigs) {
+      if (tokens.has(sig)) hits++;
+    }
+    scores[lang] = hits;
+  }
+
+  // Find winner
+  const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+  const [topLang, topScore] = sorted[0];
+  const [, secondScore] = sorted[1] || [null, 0];
+
+  const total = Object.values(scores).reduce((a, b) => a + b, 0);
+  const confidence = total > 0 ? Math.min(0.99, (topScore - secondScore + 1) / (topScore + secondScore + 1)) : 0;
+
+  // Name lookup
+  const langInfo = LANGUAGES.find(l => l.code === topLang);
+  const name = langInfo ? langInfo.name : topLang;
+
+  return {
+    _engine: 'real',
+    language: topLang,
+    language_name: name,
+    confidence: parseFloat(confidence.toFixed(3)),
+    alternatives: sorted.slice(1, 4).filter(([, s]) => s > 0).map(([code, score]) => {
+      const li = LANGUAGES.find(l => l.code === code);
+      return { code, name: li ? li.name : code, score };
+    }),
+    detected_via: 'heuristic',
+    note: 'Heuristic detection using function-word signatures. For high-stakes use cases, pass text to an LLM handler.',
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 34. enrich-domain-info  (domain registration + tech stack heuristics)
+// ---------------------------------------------------------------------------
+
+const KNOWN_DOMAIN_META = {
+  'google.com':    { company: 'Google LLC', industry: 'Technology', employees: '100000+', founded: 1998, hq: 'Mountain View, CA' },
+  'github.com':    { company: 'GitHub (Microsoft)', industry: 'Developer Tools', employees: '3000+', founded: 2008, hq: 'San Francisco, CA' },
+  'stripe.com':    { company: 'Stripe Inc.', industry: 'Fintech', employees: '7000+', founded: 2010, hq: 'San Francisco, CA' },
+  'shopify.com':   { company: 'Shopify Inc.', industry: 'E-commerce', employees: '10000+', founded: 2006, hq: 'Ottawa, Canada' },
+  'openai.com':    { company: 'OpenAI', industry: 'AI Research', employees: '1000+', founded: 2015, hq: 'San Francisco, CA' },
+  'anthropic.com': { company: 'Anthropic PBC', industry: 'AI Safety', employees: '500+', founded: 2021, hq: 'San Francisco, CA' },
+  'vercel.com':    { company: 'Vercel Inc.', industry: 'Developer Tools', employees: '500+', founded: 2015, hq: 'San Francisco, CA' },
+  'netlify.com':   { company: 'Netlify Inc.', industry: 'Developer Tools', employees: '200+', founded: 2014, hq: 'San Francisco, CA' },
+  'cloudflare.com':{ company: 'Cloudflare Inc.', industry: 'CDN / Security', employees: '3000+', founded: 2009, hq: 'San Francisco, CA' },
+  'aws.amazon.com':{ company: 'Amazon Web Services', industry: 'Cloud Computing', employees: '100000+', founded: 2006, hq: 'Seattle, WA' },
+  'microsoft.com': { company: 'Microsoft Corporation', industry: 'Technology', employees: '220000+', founded: 1975, hq: 'Redmond, WA' },
+  'apple.com':     { company: 'Apple Inc.', industry: 'Technology / Consumer Electronics', employees: '160000+', founded: 1976, hq: 'Cupertino, CA' },
+  'meta.com':      { company: 'Meta Platforms Inc.', industry: 'Social Media / Technology', employees: '80000+', founded: 2004, hq: 'Menlo Park, CA' },
+  'twitter.com':   { company: 'X Corp (Twitter)', industry: 'Social Media', employees: '2000+', founded: 2006, hq: 'San Francisco, CA' },
+  'x.com':         { company: 'X Corp', industry: 'Social Media', employees: '2000+', founded: 2006, hq: 'San Francisco, CA' },
+  'linkedin.com':  { company: 'LinkedIn (Microsoft)', industry: 'Professional Social Network', employees: '20000+', founded: 2003, hq: 'Sunnyvale, CA' },
+  'notion.so':     { company: 'Notion Labs Inc.', industry: 'Productivity', employees: '400+', founded: 2016, hq: 'San Francisco, CA' },
+  'figma.com':     { company: 'Figma Inc.', industry: 'Design Tools', employees: '800+', founded: 2012, hq: 'San Francisco, CA' },
+  'railway.app':   { company: 'Railway Inc.', industry: 'Developer Tools / Hosting', employees: '50+', founded: 2020, hq: 'San Francisco, CA' },
+};
+
+// TLD to country/type mapping
+const TLD_INFO = {
+  '.com': { type: 'Commercial', country: null },
+  '.net': { type: 'Network', country: null },
+  '.org': { type: 'Organization', country: null },
+  '.edu': { type: 'Education', country: 'United States' },
+  '.gov': { type: 'Government', country: 'United States' },
+  '.io':  { type: 'ccTLD / Tech-startup popular', country: 'British Indian Ocean Territory' },
+  '.ai':  { type: 'ccTLD / AI startup popular', country: 'Anguilla' },
+  '.co':  { type: 'Commercial (alt) / ccTLD', country: 'Colombia' },
+  '.app': { type: 'Application gTLD', country: null },
+  '.dev': { type: 'Developer gTLD', country: null },
+  '.uk':  { type: 'ccTLD', country: 'United Kingdom' },
+  '.de':  { type: 'ccTLD', country: 'Germany' },
+  '.fr':  { type: 'ccTLD', country: 'France' },
+  '.jp':  { type: 'ccTLD', country: 'Japan' },
+  '.cn':  { type: 'ccTLD', country: 'China' },
+  '.au':  { type: 'ccTLD', country: 'Australia' },
+  '.ca':  { type: 'ccTLD', country: 'Canada' },
+  '.in':  { type: 'ccTLD', country: 'India' },
+  '.br':  { type: 'ccTLD', country: 'Brazil' },
+  '.mx':  { type: 'ccTLD', country: 'Mexico' },
+  '.ru':  { type: 'ccTLD', country: 'Russia' },
+  '.gg':  { type: 'ccTLD / Gaming popular', country: 'Guernsey' },
+  '.sh':  { type: 'ccTLD / Shell-script popular', country: 'Saint Helena' },
+  '.so':  { type: 'ccTLD / Startup popular', country: 'Somalia' },
+  '.vc':  { type: 'ccTLD / VC firm popular', country: 'Saint Vincent and the Grenadines' },
+  '.xyz': { type: 'Generic gTLD', country: null },
+  '.info':{ type: 'Information gTLD', country: null },
+  '.biz': { type: 'Business gTLD', country: null },
+};
+
+function enrichDomainInfo(input) {
+  input = input || {};
+  const raw = input.domain || input.url || '';
+  if (!raw || typeof raw !== 'string' || !raw.trim()) {
+    return { _engine: 'real', error: 'missing_param', required: 'domain', hint: 'Provide a domain name (e.g. "stripe.com") or URL' };
+  }
+
+  // Normalize to bare domain
+  // BUG FIX: handle email addresses passed as domain (strip local-part)
+  let rawClean = raw.trim();
+  if (rawClean.includes('@')) rawClean = rawClean.split('@')[1] || rawClean;
+  let domain = rawClean.toLowerCase()
+    .replace(/^https?:\/\//, '')
+    .replace(/^www\./, '')
+    .split('/')[0]
+    .split('?')[0]
+    .split('#')[0];
+
+  // Extract TLD
+  const parts = domain.split('.');
+  const tld = parts.length >= 2 ? '.' + parts.slice(-1)[0] : '';
+  const tldInfo = TLD_INFO[tld] || { type: 'Unknown', country: null };
+
+  // Company name heuristic
+  const companyName = (parts[0] || domain).replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+
+  // Known domain meta
+  const known = KNOWN_DOMAIN_META[domain] || KNOWN_DOMAIN_META['www.' + domain] || null;
+
+  // Likely tech stack heuristics based on TLD + known patterns
+  const techHints = [];
+  if (['.io', '.dev', '.app'].includes(tld)) techHints.push('Likely developer / SaaS');
+  if (tld === '.ai') techHints.push('Likely AI / ML product');
+  if (tld === '.gg') techHints.push('Likely gaming or esports');
+  if (tld === '.edu') techHints.push('Academic institution');
+  if (tld === '.gov') techHints.push('Government entity');
+
+  // Disposable / free email domain check
+  const isFreeEmail = ['gmail.com','yahoo.com','hotmail.com','outlook.com','protonmail.com','icloud.com','aol.com','mail.com'].includes(domain);
+  const isDisposable = DISPOSABLE_DOMAINS.has(domain);
+
+  return {
+    _engine: 'real',
+    domain,
+    tld,
+    tld_type: tldInfo.type,
+    tld_country: tldInfo.country,
+    company_name: known ? known.company : companyName,
+    industry: known ? known.industry : null,
+    employees: known ? known.employees : null,
+    founded: known ? known.founded : null,
+    headquarters: known ? known.hq : null,
+    is_free_email_provider: isFreeEmail,
+    is_disposable_email_domain: isDisposable,
+    tech_hints: techHints,
+    data_source: known ? 'built-in-database' : 'heuristic',
+    note: known ? null : 'Full WHOIS, Clearbit, and tech-stack data requires external API keys (CLEARBIT_API_KEY, WHOIS_API_KEY).',
+    requires: known ? [] : ['CLEARBIT_API_KEY'],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 35. enrich-social-profile  (public social profile extraction from URL)
+// ---------------------------------------------------------------------------
+
+const SOCIAL_PLATFORMS = {
+  'twitter.com':    { name: 'Twitter/X', handle_pattern: /twitter\.com\/([A-Za-z0-9_]+)/ },
+  'x.com':          { name: 'X (Twitter)', handle_pattern: /x\.com\/([A-Za-z0-9_]+)/ },
+  'linkedin.com':   { name: 'LinkedIn', handle_pattern: /linkedin\.com\/(?:in|company)\/([^/?#]+)/ },
+  'github.com':     { name: 'GitHub', handle_pattern: /github\.com\/([A-Za-z0-9\-]+)/ },
+  'instagram.com':  { name: 'Instagram', handle_pattern: /instagram\.com\/([A-Za-z0-9_.]+)/ },
+  'facebook.com':   { name: 'Facebook', handle_pattern: /facebook\.com\/([A-Za-z0-9.]+)/ },
+  'youtube.com':    { name: 'YouTube', handle_pattern: /youtube\.com\/(?:@|c\/|channel\/|user\/)?([^/?#]+)/ },
+  'tiktok.com':     { name: 'TikTok', handle_pattern: /tiktok\.com\/@([A-Za-z0-9_.]+)/ },
+  'reddit.com':     { name: 'Reddit', handle_pattern: /reddit\.com\/(?:u|r)\/([A-Za-z0-9_]+)/ },
+  'medium.com':     { name: 'Medium', handle_pattern: /medium\.com\/@?([A-Za-z0-9_.\-]+)/ },
+  'dev.to':         { name: 'DEV Community', handle_pattern: /dev\.to\/([A-Za-z0-9_]+)/ },
+  'dribbble.com':   { name: 'Dribbble', handle_pattern: /dribbble\.com\/([A-Za-z0-9_\-]+)/ },
+  'behance.net':    { name: 'Behance', handle_pattern: /behance\.net\/([A-Za-z0-9_\-]+)/ },
+  'producthunt.com':{ name: 'Product Hunt', handle_pattern: /producthunt\.com\/@([A-Za-z0-9_\-]+)/ },
+  'substack.com':   { name: 'Substack', handle_pattern: /([A-Za-z0-9\-]+)\.substack\.com/ },
+};
+
+function enrichSocialProfile(input) {
+  input = input || {};
+  const profileUrl = input.url || input.profile_url || '';
+  if (!profileUrl || typeof profileUrl !== 'string' || !profileUrl.trim()) {
+    return { _engine: 'real', error: 'missing_param', required: 'url', hint: 'Provide a social profile URL (e.g. "https://twitter.com/elonmusk")' };
+  }
+
+  const normalized = profileUrl.trim().toLowerCase();
+
+  // Identify platform
+  let platform = null;
+  let platformName = null;
+  let handle = null;
+  let profileType = 'person';
+
+  for (const [domain, meta] of Object.entries(SOCIAL_PLATFORMS)) {
+    if (normalized.includes(domain)) {
+      platform = domain;
+      platformName = meta.name;
+      const m = profileUrl.match(meta.handle_pattern);
+      if (m) handle = m[1];
+      break;
+    }
+  }
+
+  if (!platform) {
+    // Try to extract handle from any URL as fallback
+    const parts = profileUrl.replace(/^https?:\/\//, '').split('/').filter(Boolean);
+    const hostname = parts[0] || '';
+    const pathHandle = parts[1] ? parts[1].replace(/^@/, '') : null;
+    return {
+      _engine: 'real',
+      url: profileUrl,
+      platform: hostname,
+      platform_name: 'Unknown',
+      handle: pathHandle,
+      profile_type: null,
+      public_data: null,
+      note: 'Platform not recognized. Supported: ' + Object.values(SOCIAL_PLATFORMS).map(p => p.name).join(', '),
+      requires: [],
+    };
+  }
+
+  // Heuristics for profile type
+  if (normalized.includes('/company/') || normalized.includes('/r/')) profileType = 'organization';
+  else if (normalized.includes('/channel/') || normalized.includes('/c/')) profileType = 'channel';
+
+  // Build canonical profile URL
+  const canonical = platform === 'substack.com'
+    ? `https://${handle}.substack.com`
+    : `https://${platform}/${handle || ''}`;
+
+  return {
+    _engine: 'real',
+    url: profileUrl,
+    canonical_url: canonical,
+    platform,
+    platform_name: platformName,
+    handle: handle ? handle.replace(/^@/, '') : null,
+    profile_type: profileType,
+    public_data: null,
+    note: 'Static profile metadata only. Live follower counts, bio, and posts require OAuth or scraping APIs.',
+    requires: [],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 36. enrich-image-labels  (image classification via heuristic + optional AI)
+// ---------------------------------------------------------------------------
+
+// Common image label categories based on URL/filename heuristics
+const IMAGE_LABEL_HINTS = {
+  // Patterns in URL or filename -> likely labels
+  'logo':       ['logo', 'branding', 'corporate'],
+  'avatar':     ['portrait', 'profile', 'person'],
+  'photo':      ['photograph', 'real-world'],
+  'screenshot': ['screenshot', 'ui', 'interface', 'software'],
+  'banner':     ['banner', 'advertising', 'promotional'],
+  'chart':      ['chart', 'data-visualization', 'infographic'],
+  'graph':      ['graph', 'data-visualization', 'analytics'],
+  'map':        ['map', 'geography', 'location'],
+  'icon':       ['icon', 'ui', 'symbol'],
+  'thumbnail':  ['thumbnail', 'preview'],
+  'cover':      ['cover', 'hero', 'featured'],
+  'profile':    ['portrait', 'profile', 'person'],
+  'team':       ['group', 'people', 'team'],
+  'product':    ['product', 'commercial', 'e-commerce'],
+  'background': ['background', 'texture', 'abstract'],
+  'diagram':    ['diagram', 'technical', 'documentation'],
+};
+
+function enrichImageLabels(input) {
+  input = input || {};
+  const imageUrl = input.url || input.image_url || '';
+  const imageBase64 = input.base64 || input.image_base64 || '';
+
+  if (!imageUrl && !imageBase64) {
+    return {
+      _engine: 'real',
+      error: 'missing_param',
+      required: 'url or base64',
+      hint: 'Provide an image URL (url) or base64-encoded image (base64). For AI-powered labeling, an ANTHROPIC_API_KEY is required.',
+    };
+  }
+
+  // If ANTHROPIC_API_KEY is available, we'd use vision — but we degrade gracefully
+  const hasAiKey = !!process.env.ANTHROPIC_API_KEY;
+
+  if (imageBase64 || hasAiKey) {
+    // Signal that AI is needed for actual vision analysis
+    return {
+      _engine: 'real',
+      url: imageUrl || null,
+      labels: [],
+      categories: [],
+      confidence: null,
+      note: 'AI-powered vision labeling requires ANTHROPIC_API_KEY to be configured on the server.',
+      requires: ['ANTHROPIC_API_KEY'],
+    };
+  }
+
+  // Heuristic-only mode: analyze URL/filename for hints
+  const source = imageUrl.toLowerCase();
+  const filename = source.split('/').pop().split('?')[0];
+  const ext = filename.split('.').pop();
+
+  const labels = new Set();
+  const categories = new Set();
+
+  // Extension-based labels
+  if (['jpg', 'jpeg', 'png', 'webp', 'gif'].includes(ext)) {
+    labels.add('image');
+    if (ext === 'gif') labels.add('animated');
+  }
+  if (ext === 'svg') { labels.add('vector'); labels.add('scalable'); }
+
+  // Filename/path-based labels
+  for (const [keyword, tags] of Object.entries(IMAGE_LABEL_HINTS)) {
+    if (source.includes(keyword)) {
+      tags.forEach(t => labels.add(t));
+    }
+  }
+
+  // Generic catch-all
+  if (labels.size === 0) labels.add('image');
+
+  // Category inference
+  if (labels.has('portrait') || labels.has('person') || labels.has('people')) categories.add('People');
+  if (labels.has('chart') || labels.has('graph') || labels.has('data-visualization')) categories.add('Data Visualization');
+  if (labels.has('ui') || labels.has('interface') || labels.has('screenshot')) categories.add('Software / UI');
+  if (labels.has('logo') || labels.has('branding')) categories.add('Branding');
+  if (labels.has('map') || labels.has('geography')) categories.add('Geography');
+  if (labels.has('product') || labels.has('commercial')) categories.add('Product / E-commerce');
+  if (categories.size === 0) categories.add('General');
+
+  return {
+    _engine: 'real',
+    url: imageUrl || null,
+    labels: [...labels],
+    categories: [...categories],
+    confidence: 'low',
+    method: 'heuristic-url-analysis',
+    note: 'Labels derived from URL/filename heuristics. For accurate content-based labeling, provide ANTHROPIC_API_KEY.',
+    requires: ['ANTHROPIC_API_KEY'],
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 37. enrich-contact  (combine email + domain into a full contact record)
+// ---------------------------------------------------------------------------
+
+function enrichContact(input) {
+  input = input || {};
+  const email = input.email || '';
+  const name = input.name || null;
+  const phone = input.phone || null;
+  const company = input.company || null;
+
+  if (!email || typeof email !== 'string' || !email.trim()) {
+    return { _engine: 'real', error: 'missing_param', required: 'email', hint: 'Provide at minimum an email address to build a contact record' };
+  }
+
+  const trimmedEmail = email.trim().toLowerCase();
+
+  // Validate email format
+  const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~\-]+@[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9\-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
+  if (!emailRegex.test(trimmedEmail)) {
+    return { _engine: 'real', error: 'invalid_format', message: 'Invalid email address format' };
+  }
+
+  // Extract domain
+  const domainResult = enrichEmailToDomain({ email: trimmedEmail });
+  const domain = domainResult.domain || '';
+
+  // Extract name from email if not provided
+  const nameResult = enrichEmailToName({ email: trimmedEmail });
+  const inferredName = name || nameResult.name || null;
+
+  // Get domain/company info
+  const domainInfo = enrichDomainInfo({ domain });
+
+  // Validate phone if provided
+  let phoneInfo = null;
+  if (phone) {
+    const pv = commPhoneValidate({ phone });
+    phoneInfo = { number: phone, valid: pv.valid, formatted: pv.formatted, country: pv.country };
+  }
+
+  // Email quality signals
+  const is_disposable = DISPOSABLE_DOMAINS.has(domain);
+  const is_free_email = domainInfo.is_free_email_provider;
+  const isBusiness = !is_disposable && !is_free_email;
+
+  // Social profile guesses based on email handle
+  const localPart = trimmedEmail.split('@')[0];
+  const socialGuesses = [];
+  if (domain === 'github.com') socialGuesses.push({ platform: 'GitHub', url: `https://github.com/${localPart}` });
+  if (!is_free_email && !is_disposable) {
+    socialGuesses.push({ platform: 'LinkedIn', url: `https://linkedin.com/in/${localPart}` });
+  }
+
+  return {
+    _engine: 'real',
+    email: trimmedEmail,
+    name: inferredName,
+    phone: phoneInfo,
+    domain,
+    company: company || domainInfo.company_name,
+    industry: domainInfo.industry,
+    headquarters: domainInfo.headquarters,
+    email_quality: {
+      valid_format: true,
+      is_disposable,
+      is_free_email_provider: is_free_email,
+      is_business_email: isBusiness,
+    },
+    domain_info: {
+      tld: domainInfo.tld,
+      tld_type: domainInfo.tld_type,
+      founded: domainInfo.founded,
+      employees: domainInfo.employees,
+      data_source: domainInfo.data_source,
+    },
+    social_profile_guesses: socialGuesses,
+    note: 'Built from heuristics and local data. For verified enrichment (Clearbit, Hunter.io, etc.), external API keys are required.',
+    requires: ['CLEARBIT_API_KEY'],
+  };
+}
+
+// ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
 module.exports = {
@@ -1257,4 +1893,12 @@ module.exports = {
   'comm-mailto-link':             commMailtoLink,
   'comm-phone-validate':          commPhoneValidate,
   'comm-email-validate-deep':     commEmailValidateDeep,
+  // New features (v2)
+  'enrich-text-entities':         enrichTextEntities,
+  'enrich-text-keywords':         enrichTextKeywords,
+  'enrich-text-language':         enrichTextLanguage,
+  'enrich-domain-info':           enrichDomainInfo,
+  'enrich-social-profile':        enrichSocialProfile,
+  'enrich-image-labels':          enrichImageLabels,
+  'enrich-contact':               enrichContact,
 };

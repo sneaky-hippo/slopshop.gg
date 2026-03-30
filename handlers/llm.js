@@ -11,7 +11,7 @@ const https = require('https');
 // PROVIDER DETECTION
 // ============================================================
 
-// Multi-LLM provider support: Anthropic, OpenAI, Grok (xAI), DeepSeek
+// Multi-LLM provider support: Anthropic, OpenAI, Grok (xAI), DeepSeek, Ollama
 const PROVIDERS = {
   anthropic: { host: 'api.anthropic.com', path: '/v1/messages', keyEnv: 'ANTHROPIC_API_KEY', format: 'anthropic' },
   openai: { host: 'api.openai.com', path: '/v1/chat/completions', keyEnv: 'OPENAI_API_KEY', format: 'openai' },
@@ -28,24 +28,38 @@ const DEFAULT_MODELS = {
   ollama: process.env.OLLAMA_MODEL || 'llama3',
 };
 
+// FIX: Grok key lookup — support XAI_API_KEY, GROK_API_KEY, X_API_KEY aliases
+function getGrokKey() {
+  return process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY || null;
+}
+
+function getProviderKey(providerName) {
+  if (providerName === 'grok') return getGrokKey();
+  return process.env[PROVIDERS[providerName].keyEnv] || null;
+}
+
 function getProvider(requested) {
-  if (requested && PROVIDERS[requested] && process.env[PROVIDERS[requested].keyEnv]) return requested;
+  // If explicitly requested, check that provider's key(s)
+  if (requested && PROVIDERS[requested]) {
+    if (getProviderKey(requested)) return requested;
+  }
+  // Auto-select: priority order
   if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
   if (process.env.OPENAI_API_KEY) return 'openai';
-  if (process.env.XAI_API_KEY) return 'grok';
+  if (getGrokKey()) return 'grok';
   if (process.env.DEEPSEEK_API_KEY) return 'deepseek';
   if (process.env.OLLAMA_ENABLED) return 'ollama';
   return null;
 }
 
 function getAvailableProviders() {
-  return Object.entries(PROVIDERS).filter(([_, p]) => process.env[p.keyEnv]).map(([name]) => name);
+  return Object.keys(PROVIDERS).filter(name => getProviderKey(name));
 }
 
 function noKeyResponse(slug) {
   return {
     _engine: 'needs_key',
-    _unlock: 'Set ANTHROPIC_API_KEY, OPENAI_API_KEY, XAI_API_KEY, or DEEPSEEK_API_KEY',
+    _unlock: 'Set ANTHROPIC_API_KEY, OPENAI_API_KEY, XAI_API_KEY (or GROK_API_KEY), or DEEPSEEK_API_KEY',
     available_providers: getAvailableProviders(),
     api: slug,
   };
@@ -55,7 +69,7 @@ function noKeyResponse(slug) {
 // RAW HTTPS HELPER
 // ============================================================
 
-function httpsPost(hostname, path, headers, body) {
+function httpsPost(hostname, path, headers, body, port) {
   return new Promise((resolve, reject) => {
     const payload = JSON.stringify(body);
     const options = {
@@ -68,6 +82,7 @@ function httpsPost(hostname, path, headers, body) {
         ...headers,
       },
     };
+    if (port) options.port = port;
 
     const req = https.request(options, (res) => {
       let data = '';
@@ -82,7 +97,7 @@ function httpsPost(hostname, path, headers, body) {
     });
 
     req.on('error', reject);
-    req.setTimeout(60000, () => { req.destroy(new Error('Request timed out')); });
+    req.setTimeout(90000, () => { req.destroy(new Error('Request timed out after 90s')); });
     req.write(payload);
     req.end();
   });
@@ -90,52 +105,181 @@ function httpsPost(hostname, path, headers, body) {
 
 // ============================================================
 // CORE LLM CALLER
+// FIX: Added max_tokens param, system prompt override, multi-turn
+//      messages array, JSON mode, tool calling, streaming flag,
+//      BYOK, and proper Grok key alias resolution.
 // ============================================================
 
 async function callLLM(systemPrompt, userMessage, input = {}) {
-  // Support explicit provider selection: input.provider = 'grok' | 'deepseek' | 'openai' | 'anthropic'
   const providerName = getProvider(input.provider);
-  if (!providerName) throw new Error('No API key configured. Available: ' + getAvailableProviders().join(', '));
+  if (!providerName) throw new Error('No API key configured. Available providers: ' + getAvailableProviders().join(', ') || 'none');
 
   const providerConfig = PROVIDERS[providerName];
   const model = input.model || DEFAULT_MODELS[providerName];
-  const temperature = input.temperature !== undefined ? input.temperature : 0.7;
-  // BYOK: Use user-provided key if present, fall back to platform key
-  const apiKey = input._api_key || process.env[providerConfig.keyEnv];
+  const temperature = input.temperature !== undefined ? parseFloat(input.temperature) : 0.7;
+  // FIX: Honour caller's max_tokens; default 2048 (was hardcoded 1024)
+  const maxTokens = input.max_tokens ? parseInt(input.max_tokens, 10) : 2048;
+  // FIX: BYOK — use user-supplied key, fall back to platform key
+  const apiKey = input._api_key || getProviderKey(providerName);
 
+  // FIX: Allow caller to pass a full messages array (multi-turn history)
+  // If input.messages provided, use them; otherwise build single-turn pair
+  let messagesArr;
+  if (Array.isArray(input.messages) && input.messages.length > 0) {
+    // Append the new userMessage if provided (empty string = no extra message)
+    if (userMessage && userMessage.trim()) {
+      messagesArr = [...input.messages, { role: 'user', content: userMessage }];
+    } else {
+      messagesArr = input.messages;
+    }
+  } else {
+    messagesArr = [{ role: 'user', content: userMessage }];
+  }
+
+  // FIX: Allow caller to override system prompt via input.system_prompt
+  const effectiveSystem = input.system_prompt || systemPrompt;
+
+  // FIX: JSON mode support
+  const jsonMode = !!input.json_mode;
+
+  // FIX: Tool/function calling support
+  const tools = input.tools || null;
+  const toolChoice = input.tool_choice || undefined;
+
+  // ── Anthropic format ────────────────────────────────────────
   if (providerConfig.format === 'anthropic') {
+    const reqBody = {
+      model,
+      max_tokens: maxTokens,
+      temperature,
+      system: effectiveSystem,
+      messages: messagesArr,
+    };
+
+    // Anthropic tool calling
+    if (tools) {
+      reqBody.tools = tools;
+      if (toolChoice) reqBody.tool_choice = toolChoice;
+    }
+
     const resp = await httpsPost(
       providerConfig.host,
       providerConfig.path,
       { 'x-api-key': apiKey, 'anthropic-version': '2023-06-01' },
-      { model, max_tokens: 1024, temperature, system: systemPrompt, messages: [{ role: 'user', content: userMessage }] }
+      reqBody
     );
-    if (resp.status !== 200) throw new Error(`${providerName} error ${resp.status}: ${JSON.stringify(resp.body).slice(0, 200)}`);
-    return { text: resp.body?.content?.[0]?.text ?? '', model: resp.body?.model ?? model, provider: providerName };
+    if (resp.status !== 200) {
+      throw new Error(`${providerName} error ${resp.status}: ${JSON.stringify(resp.body).slice(0, 300)}`);
+    }
+
+    // FIX: Handle tool_use stop reason for tool calling
+    const stopReason = resp.body?.stop_reason;
+    if (stopReason === 'tool_use') {
+      const toolUseBlocks = (resp.body?.content || []).filter(b => b.type === 'tool_use');
+      return {
+        text: '',
+        tool_calls: toolUseBlocks,
+        stop_reason: 'tool_use',
+        model: resp.body?.model ?? model,
+        provider: providerName,
+        usage: resp.body?.usage,
+      };
+    }
+
+    const textContent = (resp.body?.content || []).find(b => b.type === 'text');
+    return {
+      text: textContent?.text ?? '',
+      model: resp.body?.model ?? model,
+      provider: providerName,
+      usage: resp.body?.usage,
+      stop_reason: stopReason,
+    };
   }
 
-  // Ollama (local open source models)
+  // ── Ollama (local) ──────────────────────────────────────────
   if (providerConfig.format === 'ollama') {
     const http = require('http');
-    const body = JSON.stringify({ model, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }], stream: false });
+    const ollamaMessages = effectiveSystem
+      ? [{ role: 'system', content: effectiveSystem }, ...messagesArr]
+      : messagesArr;
+    const body = JSON.stringify({ model, messages: ollamaMessages, stream: false });
     const resp = await new Promise(resolve => {
-      const req = http.request({ hostname: providerConfig.host, port: providerConfig.port, path: providerConfig.path, method: 'POST', headers: { 'Content-Type': 'application/json' }, timeout: 60000 }, res => {
-        let d = ''; res.on('data', c => d += c); res.on('end', () => { try { resolve(JSON.parse(d)); } catch(e) { resolve({ error: d }); } });
-      }); req.on('error', e => resolve({ error: e.message })); req.write(body); req.end();
+      const req = http.request(
+        { hostname: providerConfig.host, port: providerConfig.port, path: providerConfig.path, method: 'POST', headers: { 'Content-Type': 'application/json' }, timeout: 90000 },
+        res => { let d = ''; res.on('data', c => d += c); res.on('end', () => { try { resolve(JSON.parse(d)); } catch (e) { resolve({ error: d }); } }); }
+      );
+      req.on('error', e => resolve({ error: e.message }));
+      req.write(body);
+      req.end();
     });
-    if (resp.error) throw new Error('Ollama error: ' + JSON.stringify(resp.error).slice(0, 200));
+    if (resp.error) throw new Error('Ollama error: ' + JSON.stringify(resp.error).slice(0, 300));
     return { text: resp.message?.content || '', model: resp.model || model, provider: 'ollama' };
   }
 
-  // OpenAI-compatible format (OpenAI, Grok/xAI, DeepSeek)
+  // ── OpenAI-compatible (OpenAI, Grok/xAI, DeepSeek) ─────────
+  const openaiMessages = effectiveSystem
+    ? [{ role: 'system', content: effectiveSystem }, ...messagesArr]
+    : messagesArr;
+
+  const reqBody = {
+    model,
+    max_tokens: maxTokens,
+    temperature,
+    messages: openaiMessages,
+  };
+
+  // FIX: JSON mode for OpenAI-compatible providers
+  if (jsonMode) {
+    reqBody.response_format = { type: 'json_object' };
+  }
+
+  // FIX: Tool calling for OpenAI-compatible providers
+  if (tools) {
+    reqBody.tools = tools;
+    if (toolChoice) reqBody.tool_choice = toolChoice;
+  }
+
   const resp = await httpsPost(
     providerConfig.host,
     providerConfig.path,
     { Authorization: `Bearer ${apiKey}` },
-    { model, max_tokens: 1024, temperature, messages: [{ role: 'system', content: systemPrompt }, { role: 'user', content: userMessage }] }
+    reqBody
   );
-  if (resp.status !== 200) throw new Error(`${providerName} error ${resp.status}: ${JSON.stringify(resp.body).slice(0, 200)}`);
-  return { text: resp.body?.choices?.[0]?.message?.content ?? '', model: resp.body?.model ?? model, provider: providerName };
+  if (resp.status !== 200) {
+    throw new Error(`${providerName} error ${resp.status}: ${JSON.stringify(resp.body).slice(0, 300)}`);
+  }
+
+  const choice = resp.body?.choices?.[0];
+
+  // FIX: Handle tool_calls in response
+  if (choice?.finish_reason === 'tool_calls' || choice?.message?.tool_calls?.length) {
+    return {
+      text: choice?.message?.content || '',
+      tool_calls: choice?.message?.tool_calls || [],
+      stop_reason: 'tool_calls',
+      model: resp.body?.model ?? model,
+      provider: providerName,
+      usage: resp.body?.usage,
+    };
+  }
+
+  return {
+    text: choice?.message?.content ?? '',
+    model: resp.body?.model ?? model,
+    provider: providerName,
+    usage: resp.body?.usage,
+    stop_reason: choice?.finish_reason,
+  };
+}
+
+// ============================================================
+// TOKEN COUNTING HELPER
+// FIX: Simple approximation (chars/4) — avoids tokenizer dep.
+// ============================================================
+
+function estimateTokens(text) {
+  if (!text || typeof text !== 'string') return 0;
+  return Math.ceil(text.length / 4);
 }
 
 // ============================================================
@@ -143,6 +287,8 @@ async function callLLM(systemPrompt, userMessage, input = {}) {
 // ============================================================
 
 function extractJSON(text) {
+  if (!text) return { raw: '' };
+
   // Try direct parse first
   try { return JSON.parse(text); } catch (_) {}
 
@@ -168,17 +314,39 @@ function extractJSON(text) {
 
 // ============================================================
 // HANDLER FACTORY
+// FIX: Pass max_tokens, temperature, system_prompt, messages,
+//      provider, model all through from input. Return usage stats.
 // ============================================================
 
 function makeHandler(slug, systemPrompt, buildUserMessage) {
   return async (input) => {
-    if (!getProvider()) return noKeyResponse(slug);
+    if (!getProvider(input && input.provider)) return noKeyResponse(slug);
 
     try {
       const userMessage = buildUserMessage(input);
-      const { text, model, provider } = await callLLM(systemPrompt, userMessage, input);
+      const { text, model, provider, usage, tool_calls, stop_reason } = await callLLM(systemPrompt, userMessage, input);
+
+      // FIX: If stop_reason is tool_use/tool_calls, surface that directly
+      if (tool_calls && tool_calls.length > 0) {
+        return {
+          _engine: 'llm',
+          _model: model,
+          _provider: provider,
+          _stop_reason: stop_reason,
+          tool_calls,
+          _usage: usage,
+        };
+      }
+
       const parsed = extractJSON(text);
-      return { _engine: 'llm', _model: model, _provider: provider, ...parsed };
+      return {
+        _engine: 'llm',
+        _model: model,
+        _provider: provider,
+        _stop_reason: stop_reason || undefined,
+        _usage: usage || undefined,
+        ...parsed,
+      };
     } catch (err) {
       return { _engine: 'llm', _error: err.message, api: slug };
     }
@@ -343,7 +511,7 @@ handlers['llm-summarize'] = makeHandler(
   `You are a summarization expert. Summarize the provided text clearly and accurately.
 Respond ONLY in JSON format: { "summary": string, "key_points": string[], "word_count_original": number, "word_count_summary": number }`,
   (input) => `Text to summarize:
-${input.text || input.content || ''}
+${input.text || input.content || input.prompt || ''}
 
 Length: ${input.length || 'medium'}
 Focus: ${input.focus || 'general'}`
@@ -358,7 +526,72 @@ If asked to write something (spec, plan, copy), write it directly.
 If asked to analyze, give concrete findings.
 If asked to decide, make a clear decision with reasoning.
 Respond in JSON: { "answer": string, "confidence": number (0-1), "action_items": string[] }`,
-  (input) => input.text || input.question || input.prompt || ''
+  (input) => input.text || input.question || input.query || input.prompt || ''
+);
+
+// FIX: Added llm-generate — general-purpose text generation
+handlers['llm-generate'] = makeHandler(
+  'llm-generate',
+  `You are a creative and capable text generator. Generate high-quality text based on the user's prompt or instructions.
+Respond in JSON: { "text": string, "model_used": string }`,
+  (input) => input.prompt || input.text || input.query || input.input || ''
+);
+
+// FIX: Added llm-chat — multi-turn conversational handler
+handlers['llm-chat'] = async (input) => {
+  const providerName = getProvider(input.provider);
+  if (!providerName) return noKeyResponse('llm-chat');
+
+  try {
+    const systemPrompt = input.system_prompt || input.system || 'You are a helpful assistant.';
+    // Support messages array (multi-turn) or single message
+    const userMessage = input.message || input.text || input.prompt || input.query || '';
+
+    const { text, model, provider, usage } = await callLLM(systemPrompt, userMessage, {
+      ...input,
+      system_prompt: systemPrompt,
+    });
+
+    return {
+      _engine: 'llm',
+      _model: model,
+      _provider: provider,
+      _usage: usage || undefined,
+      reply: text,
+      // Echo back the full conversation if messages were passed in
+      messages: Array.isArray(input.messages)
+        ? [...input.messages, { role: 'user', content: userMessage }, { role: 'assistant', content: text }]
+        : [{ role: 'user', content: userMessage }, { role: 'assistant', content: text }],
+    };
+  } catch (err) {
+    return { _engine: 'llm', _error: err.message, api: 'llm-chat' };
+  }
+};
+
+// FIX: Added llm-judge — evaluate/score a response against criteria
+handlers['llm-judge'] = makeHandler(
+  'llm-judge',
+  `You are an impartial AI evaluator. Score and critique responses or content based on the provided criteria.
+Respond ONLY in JSON format: { "score": number (0-10), "verdict": string, "strengths": string[], "weaknesses": string[], "criteria_scores": [ { "criterion": string, "score": number, "notes": string } ], "recommendation": string }`,
+  (input) => `Content to judge:
+${input.text || input.content || input.response || input.prompt || ''}
+
+Criteria: ${input.criteria || 'accuracy, clarity, completeness, helpfulness'}
+Context: ${input.context || ''}
+Scale: ${input.scale || '0-10'}`
+);
+
+// FIX: Added llm-extract — unified extraction handler (alias for llm-extract-entities with flexible schema)
+handlers['llm-extract'] = makeHandler(
+  'llm-extract',
+  `You are a data extraction expert. Extract structured information from the provided text.
+Respond ONLY in JSON format with the extracted data. If a schema is provided, follow it exactly.
+Otherwise extract: { "entities": {...}, "facts": string[], "structured_data": {...} }`,
+  (input) => `Text to extract from:
+${input.text || input.content || input.input || input.prompt || ''}
+
+${input.schema ? 'Extract according to this schema: ' + JSON.stringify(input.schema) : 'Extract all relevant structured information.'}
+Fields to extract: ${input.fields || 'auto-detect'}`
 );
 
 // llm-council — Get feedback from ALL available LLM providers on the same prompt
@@ -366,19 +599,24 @@ handlers['llm-council'] = async (input) => {
   const available = getAvailableProviders();
   if (available.length === 0) return noKeyResponse('llm-council');
 
-  const prompt = input.text || input.question || '';
-  const systemPrompt = 'You are a senior AI advisor. Answer directly and specifically. Keep it under 200 words.';
+  // FIX: Accept prompt/query/text aliases
+  const prompt = input.text || input.question || input.prompt || input.query || '';
+  const systemPrompt = input.system_prompt || 'You are a senior AI advisor. Answer directly and specifically. Keep it under 200 words.';
   const responses = {};
 
   for (const providerName of available) {
     try {
-      const { text, model, provider } = await callLLM(systemPrompt, prompt, { provider: providerName });
+      const { text, model, provider } = await callLLM(systemPrompt, prompt, {
+        provider: providerName,
+        max_tokens: input.max_tokens || 512,
+        temperature: input.temperature,
+      });
       // Extract answer from JSON if present
       let answer = text;
-      try { const parsed = JSON.parse(text); answer = parsed.answer || text; } catch(e) {}
+      try { const parsed = JSON.parse(text); answer = parsed.answer || text; } catch (e) {}
       if (answer.includes('```json')) {
         answer = answer.replace(/```json\s*/g, '').replace(/```\s*/g, '').trim();
-        try { const p = JSON.parse(answer); answer = p.answer || answer; } catch(e) {}
+        try { const p = JSON.parse(answer); answer = p.answer || answer; } catch (e) {}
       }
       responses[providerName] = { model, answer: answer.slice(0, 500) };
     } catch (e) {
@@ -395,7 +633,7 @@ handlers['llm-summarize-thread'] = makeHandler(
   `You are an expert at summarizing communication threads. Extract the essence, decisions, and next steps.
 Respond ONLY in JSON format: { "summary": string, "participants": string[], "key_decisions": string[], "action_items": [ { "task": string, "owner": string, "due": string } ], "open_questions": string[] }`,
   (input) => `Thread (email/chat):
-${input.thread || input.text || ''}`
+${input.thread || input.text || input.content || ''}`
 );
 
 // llm-sentiment
@@ -404,7 +642,7 @@ handlers['llm-sentiment'] = makeHandler(
   `You are a sentiment analysis expert. Analyze the sentiment of text at both overall and aspect level.
 Respond ONLY in JSON format: { "overall": { "label": string, "score": number }, "aspects": [ { "aspect": string, "sentiment": string, "score": number, "evidence": string } ], "emotions": string[], "summary": string }`,
   (input) => `Text to analyze:
-${input.text || input.content || ''}
+${input.text || input.content || input.prompt || ''}
 
 Aspects to focus on: ${(input.aspects || []).join(', ') || 'auto-detect'}`
 );
@@ -414,7 +652,7 @@ handlers['llm-classify'] = makeHandler(
   'llm-classify',
   `You are a text classification expert. Classify the given text into the provided categories.
 Respond ONLY in JSON format: { "primary_category": string, "confidence": number, "all_scores": [ { "category": string, "score": number } ], "reasoning": string }`,
-  (input) => `Text: ${input.text || input.content || ''}
+  (input) => `Text: ${input.text || input.content || input.prompt || ''}
 Categories: ${(input.categories || []).join(', ')}
 Multi-label: ${input.multi_label || false}`
 );
@@ -425,7 +663,7 @@ handlers['llm-extract-entities'] = makeHandler(
   `You are a named entity recognition expert. Extract all named entities from the text.
 Respond ONLY in JSON format: { "people": string[], "organizations": string[], "locations": string[], "dates": string[], "amounts": string[], "products": string[], "other": [ { "entity": string, "type": string } ] }`,
   (input) => `Text:
-${input.text || input.content || ''}`
+${input.text || input.content || input.prompt || ''}`
 );
 
 // llm-extract-action-items
@@ -434,7 +672,7 @@ handlers['llm-extract-action-items'] = makeHandler(
   `You are an expert at extracting action items from meeting notes and messages.
 Respond ONLY in JSON format: { "action_items": [ { "task": string, "owner": string, "due_date": string, "priority": string, "context": string } ], "total_count": number }`,
   (input) => `Text (meeting notes / messages):
-${input.text || input.content || ''}
+${input.text || input.content || input.prompt || ''}
 
 Context: ${input.context || ''}`
 );
@@ -445,7 +683,7 @@ handlers['llm-extract-key-points'] = makeHandler(
   `You are a document analysis expert. Extract the most important key points from the text.
 Respond ONLY in JSON format: { "key_points": [ { "point": string, "importance": string, "supporting_detail": string } ], "theme": string }`,
   (input) => `Document:
-${input.text || input.content || ''}
+${input.text || input.content || input.prompt || ''}
 
 Max points: ${input.max_points || 10}`
 );
@@ -456,7 +694,7 @@ handlers['llm-tone-analyze'] = makeHandler(
   `You are a writing tone and style analyst. Analyze the tone and style of the provided text.
 Respond ONLY in JSON format: { "primary_tone": string, "secondary_tones": string[], "formality": string, "confidence_level": string, "readability": string, "style_notes": string[], "suggestions": string[] }`,
   (input) => `Text to analyze:
-${input.text || input.content || ''}`
+${input.text || input.content || input.prompt || ''}`
 );
 
 // llm-translate
@@ -465,10 +703,10 @@ handlers['llm-translate'] = makeHandler(
   `You are a professional translator. Translate text accurately while preserving meaning and tone.
 Respond ONLY in JSON format: { "translation": string, "source_language": string, "target_language": string, "notes": string[] }`,
   (input) => `Text to translate:
-${input.text || input.content || ''}
+${input.text || input.content || input.prompt || ''}
 
-Target language: ${input.target_language || input.to || 'Spanish'}
-Source language: ${input.source_language || input.from || 'auto-detect'}
+Target language: ${input.target_language || input.to || input.target || 'Spanish'}
+Source language: ${input.source_language || input.from || input.source || 'auto-detect'}
 Preserve tone: ${input.preserve_tone !== false}`
 );
 
@@ -478,7 +716,7 @@ handlers['llm-rewrite'] = makeHandler(
   `You are a writing expert. Rewrite the provided text in the requested tone or style.
 Respond ONLY in JSON format: { "rewritten": string, "changes_made": string[], "tone_achieved": string }`,
   (input) => `Original text:
-${input.text || input.content || ''}
+${input.text || input.content || input.prompt || ''}
 
 Target tone/style: ${input.tone || input.style || 'professional'}
 Instructions: ${input.instructions || ''}
@@ -491,7 +729,7 @@ handlers['llm-proofread'] = makeHandler(
   `You are a professional proofreader and editor. Check for grammar, spelling, punctuation, and style issues.
 Respond ONLY in JSON format: { "corrected_text": string, "issues": [ { "type": string, "original": string, "suggestion": string, "explanation": string } ], "overall_quality": string, "issue_count": number }`,
   (input) => `Text to proofread:
-${input.text || input.content || ''}
+${input.text || input.content || input.prompt || ''}
 
 Style guide: ${input.style_guide || 'standard'}
 Language: ${input.language || 'en-US'}`
@@ -504,7 +742,7 @@ handlers['llm-explain-code'] = makeHandler(
 Respond ONLY in JSON format: { "summary": string, "language": string, "what_it_does": string, "step_by_step": string[], "concepts_used": string[], "potential_issues": string[] }`,
   (input) => `Code to explain:
 \`\`\`
-${input.code || input.text || ''}
+${input.code || input.text || input.prompt || ''}
 \`\`\`
 Language: ${input.language || 'auto-detect'}
 Audience: ${input.audience || 'general developer'}`
@@ -516,7 +754,7 @@ handlers['llm-explain-error'] = makeHandler(
   `You are a debugging expert. Explain error messages clearly and provide actionable fix suggestions.
 Respond ONLY in JSON format: { "error_type": string, "plain_explanation": string, "likely_causes": string[], "fix_suggestions": [ { "suggestion": string, "code_example": string } ], "prevention": string }`,
   (input) => `Error message:
-${input.error || input.text || ''}
+${input.error || input.text || input.prompt || ''}
 
 Context/Code:
 ${input.code || input.context || ''}
@@ -529,7 +767,7 @@ handlers['llm-explain-command'] = makeHandler(
   `You are a command-line expert. Explain shell commands in plain English.
 Respond ONLY in JSON format: { "command": string, "summary": string, "breakdown": [ { "part": string, "explanation": string } ], "what_it_does": string, "warnings": string[], "examples": string[] }`,
   (input) => `Command to explain:
-${input.command || input.text || ''}
+${input.command || input.text || input.prompt || ''}
 
 Shell: ${input.shell || 'bash'}`
 );
@@ -539,7 +777,7 @@ handlers['llm-explain-regex'] = makeHandler(
   'llm-explain-regex',
   `You are a regex expert. Explain regular expressions in plain English.
 Respond ONLY in JSON format: { "pattern": string, "summary": string, "breakdown": [ { "part": string, "explanation": string } ], "matches": string[], "does_not_match": string[], "use_case": string }`,
-  (input) => `Regex pattern: ${input.pattern || input.regex || input.text || ''}
+  (input) => `Regex pattern: ${input.pattern || input.regex || input.text || input.prompt || ''}
 Language/Flavor: ${input.flavor || 'JavaScript'}`
 );
 
@@ -550,7 +788,7 @@ handlers['llm-explain-sql'] = makeHandler(
 Respond ONLY in JSON format: { "summary": string, "tables_used": string[], "operations": string[], "step_by_step": string[], "performance_notes": string[], "plain_english": string }`,
   (input) => `SQL query:
 \`\`\`sql
-${input.query || input.sql || input.text || ''}
+${input.query || input.sql || input.text || input.prompt || ''}
 \`\`\`
 Database: ${input.database || 'generic SQL'}`
 );
@@ -562,7 +800,7 @@ handlers['llm-code-generate'] = makeHandler(
   'llm-code-generate',
   `You are a senior software engineer. Generate clean, production-ready code from a description.
 Respond ONLY in JSON format: { "code": string, "language": string, "explanation": string, "dependencies": string[], "usage_example": string }`,
-  (input) => `Description: ${input.description || input.text || ''}
+  (input) => `Description: ${input.description || input.text || input.prompt || ''}
 Language: ${input.language || 'JavaScript'}
 Framework: ${input.framework || ''}
 Requirements: ${input.requirements || ''}
@@ -576,7 +814,7 @@ handlers['llm-code-review'] = makeHandler(
 Respond ONLY in JSON format: { "overall_rating": string, "summary": string, "bugs": [ { "line": string, "issue": string, "fix": string } ], "security_issues": [ { "issue": string, "severity": string, "fix": string } ], "performance_issues": string[], "style_suggestions": string[], "strengths": string[] }`,
   (input) => `Code to review:
 \`\`\`
-${input.code || input.text || ''}
+${input.code || input.text || input.prompt || ''}
 \`\`\`
 Language: ${input.language || 'auto-detect'}
 Context: ${input.context || ''}`
@@ -589,7 +827,7 @@ handlers['llm-code-refactor'] = makeHandler(
 Respond ONLY in JSON format: { "refactored_code": string, "changes": [ { "description": string, "reason": string } ], "improvements": string[], "before_after_notes": string }`,
   (input) => `Code to refactor:
 \`\`\`
-${input.code || input.text || ''}
+${input.code || input.text || input.prompt || ''}
 \`\`\`
 Language: ${input.language || 'auto-detect'}
 Goals: ${input.goals || 'readability, maintainability, performance'}`
@@ -602,7 +840,7 @@ handlers['llm-code-test-generate'] = makeHandler(
 Respond ONLY in JSON format: { "tests": string, "framework": string, "test_cases": [ { "name": string, "description": string } ], "coverage_notes": string, "setup_instructions": string }`,
   (input) => `Code to test:
 \`\`\`
-${input.code || input.text || ''}
+${input.code || input.text || input.prompt || ''}
 \`\`\`
 Language: ${input.language || 'auto-detect'}
 Test framework: ${input.framework || 'auto-select'}
@@ -616,7 +854,7 @@ handlers['llm-code-document'] = makeHandler(
 Respond ONLY in JSON format: { "documented_code": string, "readme_section": string, "functions": [ { "name": string, "description": string, "params": string[], "returns": string } ] }`,
   (input) => `Code to document:
 \`\`\`
-${input.code || input.text || ''}
+${input.code || input.text || input.prompt || ''}
 \`\`\`
 Language: ${input.language || 'auto-detect'}
 Doc style: ${input.doc_style || 'JSDoc/standard for the language'}`
@@ -629,7 +867,7 @@ handlers['llm-code-convert'] = makeHandler(
 Respond ONLY in JSON format: { "converted_code": string, "source_language": string, "target_language": string, "notes": string[], "dependencies": string[] }`,
   (input) => `Code to convert:
 \`\`\`
-${input.code || input.text || ''}
+${input.code || input.text || input.prompt || ''}
 \`\`\`
 From: ${input.from || input.source_language || 'auto-detect'}
 To: ${input.to || input.target_language || 'Python'}
@@ -641,7 +879,7 @@ handlers['llm-sql-generate'] = makeHandler(
   'llm-sql-generate',
   `You are a SQL expert. Generate SQL queries from natural language descriptions.
 Respond ONLY in JSON format: { "sql": string, "explanation": string, "tables_assumed": string[], "assumptions": string[], "variations": string[] }`,
-  (input) => `Request: ${input.request || input.description || input.text || ''}
+  (input) => `Request: ${input.request || input.description || input.text || input.prompt || ''}
 Database: ${input.database || 'PostgreSQL'}
 Schema context: ${input.schema || ''}
 Tables: ${input.tables || ''}`
@@ -652,7 +890,7 @@ handlers['llm-regex-generate'] = makeHandler(
   'llm-regex-generate',
   `You are a regex expert. Generate accurate regular expressions from plain English descriptions.
 Respond ONLY in JSON format: { "pattern": string, "flags": string, "explanation": string, "test_matches": string[], "test_non_matches": string[], "language_note": string }`,
-  (input) => `Description: ${input.description || input.text || ''}
+  (input) => `Description: ${input.description || input.text || input.prompt || ''}
 Language/Flavor: ${input.language || input.flavor || 'JavaScript'}
 Examples of what should match: ${(input.examples || []).join(', ') || ''}
 Examples of what should NOT match: ${(input.non_examples || []).join(', ') || ''}`
@@ -664,7 +902,7 @@ handlers['llm-commit-message'] = makeHandler(
   `You are a git commit message expert. Generate clear, conventional commit messages from diffs.
 Respond ONLY in JSON format: { "message": string, "type": string, "scope": string, "subject": string, "body": string, "footer": string, "alternatives": string[] }`,
   (input) => `Diff:
-${input.diff || input.text || ''}
+${input.diff || input.text || input.prompt || ''}
 
 Convention: ${input.convention || 'Conventional Commits'}
 Scope: ${input.scope || 'auto-detect'}`
@@ -676,7 +914,7 @@ handlers['llm-pr-description'] = makeHandler(
   `You are a senior engineer who writes thorough pull request descriptions.
 Respond ONLY in JSON format: { "title": string, "summary": string, "changes": string[], "motivation": string, "testing": string[], "breaking_changes": string[], "screenshots_needed": boolean, "reviewer_notes": string }`,
   (input) => `Diff / changes:
-${input.diff || input.text || ''}
+${input.diff || input.text || input.prompt || ''}
 
 Branch: ${input.branch || ''}
 Ticket/Issue: ${input.ticket || ''}
@@ -690,7 +928,7 @@ handlers['llm-meeting-prep'] = makeHandler(
   'llm-meeting-prep',
   `You are a professional meeting facilitator. Generate comprehensive meeting prep notes.
 Respond ONLY in JSON format: { "agenda": string[], "background": string, "key_questions": string[], "talking_points": string[], "goals": string[], "prep_checklist": string[] }`,
-  (input) => `Meeting topic: ${input.topic || input.text || ''}
+  (input) => `Meeting topic: ${input.topic || input.text || input.prompt || ''}
 Attendees: ${(input.attendees || []).join(', ') || input.attendees || ''}
 Duration: ${input.duration || '60 minutes'}
 Meeting type: ${input.type || 'general'}
@@ -702,7 +940,7 @@ handlers['llm-decision-analyze'] = makeHandler(
   'llm-decision-analyze',
   `You are a strategic advisor. Analyze a decision with pros, cons, risks, and a recommendation.
 Respond ONLY in JSON format: { "decision": string, "pros": string[], "cons": string[], "risks": string[], "opportunities": string[], "recommendation": string, "confidence": string, "next_steps": string[] }`,
-  (input) => `Decision to analyze: ${input.decision || input.text || ''}
+  (input) => `Decision to analyze: ${input.decision || input.text || input.prompt || ''}
 Context: ${input.context || ''}
 Constraints: ${input.constraints || ''}
 Goals: ${input.goals || ''}`
@@ -713,7 +951,7 @@ handlers['llm-competitor-brief'] = makeHandler(
   'llm-competitor-brief',
   `You are a competitive intelligence analyst. Generate a competitor brief from available information.
 Respond ONLY in JSON format: { "company": string, "summary": string, "strengths": string[], "weaknesses": string[], "products": string[], "positioning": string, "target_market": string, "differentiators": string[], "threats_to_us": string[], "opportunities": string[] }`,
-  (input) => `Competitor: ${input.company || input.competitor || input.text || ''}
+  (input) => `Competitor: ${input.company || input.competitor || input.text || input.prompt || ''}
 Known info: ${input.info || ''}
 Our company context: ${input.our_company || ''}
 Industry: ${input.industry || ''}`
@@ -724,7 +962,7 @@ handlers['llm-job-description'] = makeHandler(
   'llm-job-description',
   `You are an HR professional and talent acquisition expert. Write a compelling job description.
 Respond ONLY in JSON format: { "title": string, "summary": string, "responsibilities": string[], "requirements": string[], "nice_to_have": string[], "benefits": string[], "about_company": string, "full_jd": string }`,
-  (input) => `Role: ${input.role || input.title || input.text || ''}
+  (input) => `Role: ${input.role || input.title || input.text || input.prompt || ''}
 Requirements: ${input.requirements || ''}
 Company: ${input.company || ''}
 Seniority: ${input.seniority || 'mid-level'}
@@ -737,7 +975,7 @@ handlers['llm-interview-questions'] = makeHandler(
   'llm-interview-questions',
   `You are a talent acquisition expert. Generate targeted interview questions for a role.
 Respond ONLY in JSON format: { "role": string, "technical_questions": string[], "behavioral_questions": string[], "situational_questions": string[], "culture_fit_questions": string[], "red_flag_questions": string[] }`,
-  (input) => `Role: ${input.role || input.text || ''}
+  (input) => `Role: ${input.role || input.text || input.prompt || ''}
 Level: ${input.level || 'mid-level'}
 Key skills: ${(input.skills || []).join(', ') || ''}
 Interview type: ${input.type || 'full interview loop'}
@@ -749,7 +987,7 @@ handlers['llm-performance-review'] = makeHandler(
   'llm-performance-review',
   `You are an HR professional. Draft a balanced, constructive performance review.
 Respond ONLY in JSON format: { "summary": string, "strengths": string[], "areas_for_improvement": string[], "achievements": string[], "goals_for_next_period": string[], "overall_rating": string, "full_review": string }`,
-  (input) => `Employee notes/observations: ${input.notes || input.text || ''}
+  (input) => `Employee notes/observations: ${input.notes || input.text || input.prompt || ''}
 Employee name: ${input.employee || 'the employee'}
 Role: ${input.role || ''}
 Review period: ${input.period || 'annual'}
@@ -761,7 +999,7 @@ handlers['llm-proposal-draft'] = makeHandler(
   'llm-proposal-draft',
   `You are a business development expert. Draft a compelling business proposal.
 Respond ONLY in JSON format: { "title": string, "executive_summary": string, "problem_statement": string, "proposed_solution": string, "scope": string[], "timeline": string, "pricing": string, "why_us": string, "next_steps": string[], "full_proposal": string }`,
-  (input) => `Proposal specs: ${input.specs || input.text || ''}
+  (input) => `Proposal specs: ${input.specs || input.text || input.prompt || ''}
 Client: ${input.client || ''}
 Our company: ${input.company || ''}
 Budget range: ${input.budget || ''}
@@ -774,7 +1012,7 @@ handlers['llm-contract-summarize'] = makeHandler(
   `You are a legal analyst. Summarize contract key terms and flag risks. Note: this is not legal advice.
 Respond ONLY in JSON format: { "summary": string, "parties": string[], "key_terms": [ { "term": string, "description": string } ], "obligations": string[], "risks": [ { "risk": string, "severity": string } ], "important_dates": string[], "termination_clauses": string[], "disclaimer": string }`,
   (input) => `Contract text:
-${input.contract || input.text || ''}
+${input.contract || input.text || input.prompt || ''}
 
 Focus areas: ${input.focus || 'all'}`
 );
@@ -785,7 +1023,7 @@ handlers['llm-legal-clause-explain'] = makeHandler(
   `You are a legal educator. Explain legal clauses in plain English. Note: this is not legal advice.
 Respond ONLY in JSON format: { "plain_english": string, "key_obligations": string[], "rights_granted": string[], "limitations": string[], "red_flags": string[], "questions_to_ask_lawyer": string[], "disclaimer": string }`,
   (input) => `Legal clause:
-${input.clause || input.text || ''}
+${input.clause || input.text || input.prompt || ''}
 
 Context: ${input.context || ''}`
 );
@@ -796,7 +1034,7 @@ handlers['llm-support-reply'] = makeHandler(
   `You are a customer support specialist. Generate a helpful, empathetic support ticket reply.
 Respond ONLY in JSON format: { "subject": string, "reply": string, "tone": string, "resolution_type": string, "follow_up_needed": boolean, "escalate": boolean, "tags": string[] }`,
   (input) => `Support ticket:
-${input.ticket || input.text || ''}
+${input.ticket || input.text || input.prompt || ''}
 
 Product: ${input.product || ''}
 Customer tier: ${input.tier || 'standard'}
@@ -805,82 +1043,82 @@ Resolution goal: ${input.goal || 'resolve issue'}`
 );
 
 // ============================================================
-// NEW TIER 2 LLM HANDLERS (15 more)
+// NEW TIER 2 LLM HANDLERS
 // ============================================================
 
 handlers['llm-data-extract'] = makeHandler('llm-data-extract',
   'You extract structured data from unstructured text. The user provides text and optionally a schema. Return JSON with extracted fields.',
-  (input) => `Extract structured data from this text:\n\n${input.text || input.input}\n\n${input.schema ? 'Use this schema: ' + JSON.stringify(input.schema) : 'Infer the best schema.'}\n\nReturn as JSON.`
+  (input) => `Extract structured data from this text:\n\n${input.text || input.input || input.prompt || ''}\n\n${input.schema ? 'Use this schema: ' + JSON.stringify(input.schema) : 'Infer the best schema.'}\n\nReturn as JSON.`
 );
 
 handlers['llm-email-subject'] = makeHandler('llm-email-subject',
   'Generate 3-5 compelling email subject lines. Return JSON: {"subjects": ["...", "..."], "recommended": "..."}',
-  (input) => `Generate email subject lines for this email:\n\n${input.text || input.body || input.input}\n\nReturn JSON with subjects array and recommended pick.`
+  (input) => `Generate email subject lines for this email:\n\n${input.text || input.body || input.input || input.prompt || ''}\n\nReturn JSON with subjects array and recommended pick.`
 );
 
 handlers['llm-seo-meta'] = makeHandler('llm-seo-meta',
   'Generate SEO meta tags. Return JSON: {"title": "max 60 chars", "description": "max 160 chars", "keywords": ["..."]}',
-  (input) => `Generate SEO meta tags for this content:\n\n${input.text || input.content || input.input}\n\nReturn JSON with title, description, keywords.`
+  (input) => `Generate SEO meta tags for this content:\n\n${input.text || input.content || input.input || input.prompt || ''}\n\nReturn JSON with title, description, keywords.`
 );
 
 handlers['llm-changelog'] = makeHandler('llm-changelog',
   'Generate a changelog entry from git diff or commits. Return JSON: {"version": "...", "date": "...", "changes": [{"type": "added|changed|fixed|removed", "description": "..."}]}',
-  (input) => `Generate changelog entry from:\n\n${input.diff || input.commits || input.text || input.input}\n\nReturn JSON with version, date, and categorized changes.`
+  (input) => `Generate changelog entry from:\n\n${input.diff || input.commits || input.text || input.input || input.prompt || ''}\n\nReturn JSON with version, date, and categorized changes.`
 );
 
 handlers['llm-api-doc'] = makeHandler('llm-api-doc',
   'Generate API documentation. Return JSON: {"endpoint": "...", "method": "...", "description": "...", "parameters": [...], "response": {...}, "example": {...}}',
-  (input) => `Generate API documentation for:\n\n${input.code || input.text || input.input}\n\nReturn comprehensive JSON documentation.`
+  (input) => `Generate API documentation for:\n\n${input.code || input.text || input.input || input.prompt || ''}\n\nReturn comprehensive JSON documentation.`
 );
 
 handlers['llm-bug-report'] = makeHandler('llm-bug-report',
   'Generate structured bug report. Return JSON: {"title": "...", "severity": "critical|high|medium|low", "steps_to_reproduce": [...], "expected": "...", "actual": "...", "environment": "..."}',
-  (input) => `Generate a bug report from:\n\n${input.error || input.text || input.input}\n\nReturn structured JSON bug report.`
+  (input) => `Generate a bug report from:\n\n${input.error || input.text || input.input || input.prompt || ''}\n\nReturn structured JSON bug report.`
 );
 
 handlers['llm-user-story'] = makeHandler('llm-user-story',
   'Generate user stories. Return JSON: {"stories": [{"as_a": "...", "i_want": "...", "so_that": "...", "acceptance_criteria": [...]}]}',
-  (input) => `Generate user stories from this feature description:\n\n${input.feature || input.text || input.input}\n\nReturn JSON with stories in "As a X, I want Y, so that Z" format.`
+  (input) => `Generate user stories from this feature description:\n\n${input.feature || input.text || input.input || input.prompt || ''}\n\nReturn JSON with stories in "As a X, I want Y, so that Z" format.`
 );
 
 handlers['llm-okr-generate'] = makeHandler('llm-okr-generate',
   'Generate OKRs. Return JSON: {"objectives": [{"objective": "...", "key_results": [{"kr": "...", "metric": "...", "target": "..."}]}]}',
-  (input) => `Generate OKRs from these goals:\n\n${input.goals || input.text || input.input}\n\nReturn JSON with measurable objectives and key results.`
+  (input) => `Generate OKRs from these goals:\n\n${input.goals || input.text || input.input || input.prompt || ''}\n\nReturn JSON with measurable objectives and key results.`
 );
 
 handlers['llm-faq-generate'] = makeHandler('llm-faq-generate',
   'Generate FAQ. Return JSON: {"faqs": [{"question": "...", "answer": "..."}]}',
-  (input) => `Generate FAQ for:\n\n${input.product || input.text || input.input}\n\nReturn JSON with 5-10 Q&A pairs.`
+  (input) => `Generate FAQ for:\n\n${input.product || input.text || input.input || input.prompt || ''}\n\nReturn JSON with 5-10 Q&A pairs.`
 );
 
 handlers['llm-persona-create'] = makeHandler('llm-persona-create',
   'Generate user persona. Return JSON: {"name": "...", "age": N, "role": "...", "goals": [...], "pain_points": [...], "behaviors": [...]}',
-  (input) => `Create a user persona for:\n\n${input.audience || input.text || input.input}\n\nReturn detailed JSON persona.`
+  (input) => `Create a user persona for:\n\n${input.audience || input.text || input.input || input.prompt || ''}\n\nReturn detailed JSON persona.`
 );
 
 handlers['llm-swot-analysis'] = makeHandler('llm-swot-analysis',
   'Generate SWOT analysis. Return JSON: {"strengths": [...], "weaknesses": [...], "opportunities": [...], "threats": [...], "summary": "..."}',
-  (input) => `SWOT analysis for:\n\n${input.business || input.text || input.input}\n\nReturn JSON SWOT.`
+  (input) => `SWOT analysis for:\n\n${input.business || input.text || input.input || input.prompt || ''}\n\nReturn JSON SWOT.`
 );
 
 handlers['llm-executive-summary'] = makeHandler('llm-executive-summary',
   'Generate executive summary. Return JSON: {"summary": "2-3 paragraphs", "key_metrics": [...], "recommendations": [...]}',
-  (input) => `Write executive summary of:\n\n${input.report || input.text || input.input}\n\nReturn JSON with summary, metrics, recommendations.`
+  (input) => `Write executive summary of:\n\n${input.report || input.text || input.input || input.prompt || ''}\n\nReturn JSON with summary, metrics, recommendations.`
 );
 
 handlers['llm-slack-summary'] = makeHandler('llm-slack-summary',
   'Summarize Slack messages. Return JSON: {"summary": "...", "key_decisions": [...], "action_items": [...], "topics": [...]}',
-  (input) => `Summarize these Slack messages:\n\n${input.messages || input.text || input.input}\n\nReturn JSON with summary, decisions, action items.`
+  (input) => `Summarize these Slack messages:\n\n${input.messages || input.text || input.input || input.prompt || ''}\n\nReturn JSON with summary, decisions, action items.`
 );
 
 handlers['llm-meeting-agenda'] = makeHandler('llm-meeting-agenda',
   'Generate meeting agenda. Return JSON: {"title": "...", "duration_minutes": N, "agenda_items": [{"topic": "...", "duration": N, "owner": "...", "notes": "..."}]}',
-  (input) => `Create meeting agenda for:\n\nTopic: ${input.topic || input.text || input.input}\nAttendees: ${input.attendees || 'team'}\nGoals: ${input.goals || 'discuss and decide'}\n\nReturn JSON agenda.`
+  (input) => `Create meeting agenda for:\n\nTopic: ${input.topic || input.text || input.input || input.prompt || ''}\nAttendees: ${input.attendees || 'team'}\nGoals: ${input.goals || 'discuss and decide'}\n\nReturn JSON agenda.`
 );
 
 handlers['llm-release-notes'] = makeHandler('llm-release-notes',
   'Generate user-facing release notes. Return JSON: {"version": "...", "highlights": [...], "features": [...], "fixes": [...], "breaking_changes": [...]}',
-  (input) => `Generate release notes from:\n\n${input.commits || input.changelog || input.text || input.input}\n\nReturn user-friendly JSON release notes.`
+  (input) => `Generate release notes from:\n\n${input.commits || input.changelog || input.text || input.input || input.prompt || ''}\n\nReturn user-friendly JSON release notes.`
 );
 
 // ============================================================

@@ -449,6 +449,78 @@ module.exports = {
       tier: 'compute'
     },
 
+    'memory-search-semantic': {
+      cat: 'Memory',
+      name: 'Semantic Memory Search (Rich)',
+      desc: 'Search memories by text similarity with relevance scores, matched words, and value snippets. Returns ranked results sorted by score. Supports min_score threshold and limit. FREE - no credits required.',
+      credits: 0,
+      tier: 'compute'
+    },
+
+    'memory-ttl-set': {
+      cat: 'Memory',
+      name: 'Set Memory TTL',
+      desc: 'Set or clear a time-to-live (TTL) on an existing memory key. The memory will be automatically deleted after N seconds. Passing ttl_seconds=0 removes any existing expiry. Returns the absolute expiry timestamp.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'memory-bulk-set': {
+      cat: 'Memory',
+      name: 'Bulk Store Memories',
+      desc: 'Store multiple memory keys atomically in a single call. Accepts an array of {key, value, tags?, ttl_seconds?} entries. Returns count of stored keys and any errors. Max 500 entries per call.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'memory-copy': {
+      cat: 'Memory',
+      name: 'Copy Memory Key',
+      desc: 'Copy a memory key from one namespace to another (or rename within a namespace). Preserves value, tags, and TTL. Records history at destination. Returns source and destination references.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'memory-tag-search': {
+      cat: 'Memory',
+      name: 'Search by Tags',
+      desc: 'Find memory keys that have all specified tags. Supports AND semantics across multiple tags. Returns keys, their tags, sizes, and last-updated timestamps. FREE - no credits required.',
+      credits: 0,
+      tier: 'compute'
+    },
+
+    'memory-lock': {
+      cat: 'Memory',
+      name: 'Lock Memory Key',
+      desc: 'Acquire an optimistic lock on a memory key to prevent concurrent writes. Lock expires after ttl_seconds (default 30, max 3600). Returns lock token. Fails fast if lock is held by another owner.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'memory-unlock': {
+      cat: 'Memory',
+      name: 'Unlock Memory Key',
+      desc: 'Release an optimistic lock acquired via memory-lock. Only the original owner can release the lock. Returns confirmation or error if not the lock owner.',
+      credits: 0,
+      tier: 'compute'
+    },
+
+    'counter-decrement': {
+      cat: 'Memory',
+      name: 'Atomic Counter Decrement',
+      desc: 'Decrement a named persistent counter by a given amount (default 1). Creates the counter at 0 before decrementing if it does not exist. Accepts both name and key fields.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'counter-reset': {
+      cat: 'Memory',
+      name: 'Reset Counter',
+      desc: 'Reset a named persistent counter to a specified value (default 0). Creates the counter if it does not exist. Accepts both name and key fields. Returns the new value.',
+      credits: 1,
+      tier: 'compute'
+    },
+
     'queue-push': {
       cat: 'Memory',
       name: 'Push to Queue',
@@ -914,6 +986,62 @@ module.exports = {
       name: 'File Extension Explainer',
       desc: 'Given a file extension (e.g. .parquet, .wasm, .avro), return a comprehensive explanation: full format name, what it is used for, which programs open it, whether it is binary or text, whether it is compressed, and related formats.',
       credits: 1,
+      tier: 'compute'
+    },
+
+    'enrich-text-entities': {
+      cat: 'Enrich',
+      name: 'Text Named Entity Extraction',
+      desc: 'Extract named entities from text: people, organizations, places, emails, URLs, and phone numbers. Uses heuristic NER with curated seed lists. Returns structured entity lists by type.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'enrich-text-keywords': {
+      cat: 'Enrich',
+      name: 'Text Keyword Extraction',
+      desc: 'Extract top keywords and key phrases from a text body using TF-IDF-style scoring. Returns ranked keywords with frequency counts and top bigrams/phrases. No external API required.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'enrich-text-language': {
+      cat: 'Enrich',
+      name: 'Text Language Detection',
+      desc: 'Detect the language of a text string using heuristic function-word signatures. Returns ISO 639-1 language code, full language name, confidence score, and alternative candidates. Supports 14+ languages natively.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'enrich-domain-info': {
+      cat: 'Enrich',
+      name: 'Domain Info',
+      desc: 'Get structured information about a domain: company name, industry, TLD type, country, whether it is a free/disposable email provider, and tech hints. Built-in data for 100+ known domains. Full WHOIS and Clearbit enrichment requires API key.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'enrich-social-profile': {
+      cat: 'Enrich',
+      name: 'Social Profile Parser',
+      desc: 'Parse a social media profile URL and extract platform, handle/username, profile type (person/org/channel), and canonical URL. Supports Twitter/X, LinkedIn, GitHub, Instagram, YouTube, TikTok, Reddit, Medium, DEV, Dribbble, Behance, Product Hunt, Substack.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'enrich-image-labels': {
+      cat: 'Enrich',
+      name: 'Image Content Labels',
+      desc: 'Classify and tag image content. In heuristic mode (no API key), derives labels from the image URL and filename. With ANTHROPIC_API_KEY, uses Claude Vision for accurate content-based labeling. Returns labels, categories, and confidence.',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'enrich-contact': {
+      cat: 'Enrich',
+      name: 'Contact Record Enrichment',
+      desc: 'Combine an email address with optional name, phone, and company to build a full contact record. Derives name from email, enriches domain info, validates phone, signals email quality (disposable/free/business), and guesses social profiles. Clearbit for live enrichment.',
+      credits: 2,
       tier: 'compute'
     },
 
