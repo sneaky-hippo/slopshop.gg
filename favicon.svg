@@ -1,10 +1,9 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
   <rect width="512" height="512" rx="64" fill="#0a0a0b"/>
-  <rect x="20" y="20" width="472" height="472" rx="44" fill="none" stroke="#ef4444" stroke-width="6" opacity="0.5"/>
-  <text x="256" y="210" text-anchor="middle" font-family="'Courier New',monospace" font-weight="900" font-size="200" fill="#ef4444">S</text>
-  <text x="256" y="340" text-anchor="middle" font-family="'Courier New',monospace" font-weight="700" font-size="56" letter-spacing="16" fill="#666">LOP</text>
-  <line x1="80" y1="375" x2="432" y2="375" stroke="#2a2a2e" stroke-width="2"/>
-  <text x="256" y="430" text-anchor="middle" font-family="'Courier New',monospace" font-size="30" fill="#444" letter-spacing="1">slopshop.gg</text>
-  <text x="256" y="470" text-anchor="middle" font-family="'Courier New',monospace" font-size="18" fill="#333">v0.1-alpha</text>
+  <rect x="20" y="20" width="472" height="472" rx="44" fill="none" stroke="#06b6d4" stroke-width="6" opacity="0.5"/>
+  <text x="256" y="280" text-anchor="middle" font-family="'Courier New',monospace" font-weight="900" font-size="160" letter-spacing="-4" fill="#06b6d4">SLOP</text>
+  <line x1="80" y1="340" x2="432" y2="340" stroke="#2a2a2e" stroke-width="2"/>
+  <text x="256" y="390" text-anchor="middle" font-family="'Courier New',monospace" font-size="30" fill="#444" letter-spacing="1">slopshop.gg</text>
+  <text x="256" y="430" text-anchor="middle" font-family="'Courier New',monospace" font-size="20" fill="#333">v0.1-alpha</text>
   <circle cx="452" cy="60" r="10" fill="#22c55e" opacity="0.7"/>
 </svg>
