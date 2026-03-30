@@ -32,7 +32,8 @@ const handlers = {
     // Luhn check
     let sum=0,alt=false;
     for(let i=n.length-1;i>=0;i--){let d=parseInt(n[i],10);if(alt){d*=2;if(d>9)d-=9;}sum+=d;alt=!alt;}
-    const luhnValid=sum%10===0&&n.length>=13;
+    const allZeros=/^0+$/.test(n);
+    const luhnValid=sum%10===0&&n.length>=13&&!allZeros;
     const networks=[{name:'Visa',regex:/^4/,lengths:[13,16,19]},{name:'Mastercard',regex:/^5[1-5]|^2[2-7]/,lengths:[16]},{name:'Amex',regex:/^3[47]/,lengths:[15]},{name:'Discover',regex:/^6(?:011|5)/,lengths:[16,19]},{name:'Diners',regex:/^3(?:0[0-5]|[68])/,lengths:[14]},{name:'JCB',regex:/^35/,lengths:[15,16]}];
     const detected=networks.find(net=>net.regex.test(n)&&net.lengths.includes(n.length));
     return {_engine:'real', valid:luhnValid, number_masked:'****'+n.slice(-4), network:detected?.name||'unknown', digits:n.length, luhn:luhnValid};

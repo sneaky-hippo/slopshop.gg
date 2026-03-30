@@ -232,8 +232,9 @@ function textSortLines(input) {
 }
 
 function textReverse(input) {
-  const text = input.text || '';
-  return { _engine: 'real', result: text.split('').reverse().join(''), original: text };
+  const text = (input.text !== undefined && input.text !== null) ? String(input.text) : '';
+  const reversed = text.split('').reverse().join('');
+  return { _engine: 'real', result: reversed, reversed: reversed, original: text, length: text.length };
 }
 
 function textCaseConvert(input) {
@@ -599,7 +600,7 @@ function cryptoOtpGenerate(input) {
 }
 
 function cryptoEncryptAes(input) {
-  const text=input.data||input.text||'';
+  const text=(input.data !== undefined && input.data !== null) ? String(input.data) : (input.text !== undefined && input.text !== null) ? String(input.text) : '';
   const key=input.key||'';
   const k=crypto.createHash('sha256').update(key).digest();
   const iv=crypto.randomBytes(12);
@@ -4929,5 +4930,70 @@ module.exports = {
       probability: Math.round(1/opts.length*100)/100
     }));
     return {_engine:'real', options: superposed, status:'superposed', note:'All options exist simultaneously until observed. Call with observe:true to collapse.', criteria: crits, entropy: Math.round(-opts.reduce((s,_,i)=>{const p=1/opts.length; return s+p*Math.log2(p);},0)*100)/100};
+  },
+
+  // ─── MISSING SLUGS (added to fix test failures) ────────────────────────────
+
+  'math-solve-quadratic': ({a, b, c}) => {
+    const A = a !== undefined ? Number(a) : 1;
+    const B = b !== undefined ? Number(b) : 0;
+    const C = c !== undefined ? Number(c) : 0;
+    const discriminant = B * B - 4 * A * C;
+    if (A === 0) {
+      // Linear equation
+      if (B === 0) return { _engine: 'real', roots: [], discriminant: 0, error: 'Not a quadratic equation (a=0, b=0)' };
+      return { _engine: 'real', roots: [-C / B], discriminant: null, equation: `${B}x + ${C} = 0` };
+    }
+    if (discriminant < 0) {
+      const realPart = -B / (2 * A);
+      const imagPart = Math.sqrt(-discriminant) / (2 * A);
+      return { _engine: 'real', roots: [], complex_roots: [`${realPart} + ${imagPart}i`, `${realPart} - ${imagPart}i`], discriminant, equation: `${A}x² + ${B}x + ${C} = 0` };
+    }
+    const r1 = (-B + Math.sqrt(discriminant)) / (2 * A);
+    const r2 = (-B - Math.sqrt(discriminant)) / (2 * A);
+    const roots = discriminant === 0 ? [r1] : [r1, r2];
+    return { _engine: 'real', roots, discriminant, equation: `${A}x² + ${B}x + ${C} = 0` };
+  },
+
+  'date-is-leap-year': ({year}) => {
+    const y = Number(year);
+    const isLeap = (y % 4 === 0 && y % 100 !== 0) || (y % 400 === 0);
+    return { _engine: 'real', year: y, result: isLeap, isLeapYear: isLeap, leapYear: isLeap };
+  },
+
+  'search-levenshtein': ({a, b, source, target}) => {
+    const s = a || source || '';
+    const t = b || target || '';
+    const m = s.length;
+    const n = t.length;
+    const dp = Array.from({length: m + 1}, (_, i) => Array.from({length: n + 1}, (_, j) => i === 0 ? j : j === 0 ? i : 0));
+    for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) {
+      dp[i][j] = s[i-1] === t[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+    const dist = dp[m][n];
+    const maxLen = Math.max(m, n);
+    return { _engine: 'real', distance: dist, result: dist, similarity: maxLen ? Math.round((1 - dist / maxLen) * 10000) / 10000 : 1, source_length: m, target_length: n };
+  },
+
+  'ml-sentiment': ({text}) => {
+    const pos = ['good','great','love','happy','excellent','amazing','wonderful','fantastic','best','perfect','awesome','beautiful','lovely','brilliant','outstanding','superb','terrific','marvelous','delightful','pleasant','enjoy','like','nice','fine','positive'];
+    const neg = ['bad','terrible','hate','awful','horrible','worst','ugly','sad','poor','failure','broken','disgusting','dreadful','annoying','disappointing','negative','wrong','worse','painful','miserable','boring','stupid','useless','weak','lousy'];
+    const words = (text || '').toLowerCase().split(/\s+/);
+    const p = words.filter(w => pos.includes(w)).length;
+    const n = words.filter(w => neg.includes(w)).length;
+    const total = p + n || 1;
+    const score = (p - n) / total;
+    const sentiment = p > n ? 'positive' : n > p ? 'negative' : 'neutral';
+    return { _engine: 'real', sentiment, label: sentiment, score, positive: p, negative: n, confidence: Math.abs(score) };
+  },
+
+  'validate-url': ({url}) => {
+    const u = url || '';
+    try {
+      const parsed = new URL(u);
+      return { _engine: 'real', valid: true, result: true, url: u, protocol: parsed.protocol, hostname: parsed.hostname, port: parsed.port || null, pathname: parsed.pathname, search: parsed.search, hash: parsed.hash, is_https: parsed.protocol === 'https:' };
+    } catch (e) {
+      return { _engine: 'real', valid: false, result: false, url: u, error: 'Invalid URL format' };
+    }
   },
 };

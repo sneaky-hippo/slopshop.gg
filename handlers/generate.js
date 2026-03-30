@@ -963,6 +963,14 @@ async function execJq(input) {
       return Object.values(ctx || {});
     }
 
+    // .[].field... - iterate then access remaining
+    const iterFieldM = q.match(/^\.\[\](.+)$/);
+    if (iterFieldM) {
+      const rest = iterFieldM[1];
+      const items = Array.isArray(ctx) ? ctx : Object.values(ctx || {});
+      return items.map(item => evalQuery('.' + rest.replace(/^\./, ''), item)).filter(v => v !== undefined);
+    }
+
     // .[n]
     const idxM = q.match(/^\.\[(\d+)\]$/);
     if (idxM) return (ctx || [])[parseInt(idxM[1], 10)];
@@ -974,6 +982,17 @@ async function execJq(input) {
       const s = sliceM[1] !== '' ? parseInt(sliceM[1], 10) : 0;
       const e = sliceM[2] !== '' ? parseInt(sliceM[2], 10) : arr.length;
       return arr.slice(s, e);
+    }
+
+    // .field[].rest - field access then iterate then continue
+    const fieldIterM = q.match(/^\.(\w+)\[\](.*)$/);
+    if (fieldIterM) {
+      const field = fieldIterM[1];
+      const rest = fieldIterM[2];
+      const val = ctx != null ? ctx[field] : undefined;
+      const items = Array.isArray(val) ? val : Object.values(val || {});
+      if (!rest) return items;
+      return items.map(item => evalQuery('.' + rest.replace(/^\./, ''), item)).filter(v => v !== undefined);
     }
 
     // .field.subfield... or .field

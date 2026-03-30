@@ -694,4 +694,30 @@ SCHEMAS['kv-list'] = {
   example: { input: {}, output: { keys: ['user_preference', 'last_run'], count: 2 } },
 };
 
+SCHEMAS['math-solve-quadratic'] = {
+  input: { a: { type: 'number', description: 'Coefficient a', required: true }, b: { type: 'number', description: 'Coefficient b', required: true }, c: { type: 'number', description: 'Coefficient c', required: true } },
+  output: { roots: 'number[]', discriminant: 'number', equation: 'string' },
+  example: { input: { a: 1, b: -3, c: 2 }, output: { roots: [2, 1], discriminant: 1 } },
+};
+SCHEMAS['date-is-leap-year'] = {
+  input: { year: { type: 'number', description: 'Year to check', required: true } },
+  output: { year: 'number', result: 'boolean', isLeapYear: 'boolean' },
+  example: { input: { year: 2024 }, output: { year: 2024, result: true, isLeapYear: true } },
+};
+SCHEMAS['search-levenshtein'] = {
+  input: { a: { type: 'string', description: 'First string' }, b: { type: 'string', description: 'Second string' } },
+  output: { distance: 'number', similarity: 'number' },
+  example: { input: { a: 'kitten', b: 'sitting' }, output: { distance: 3 } },
+};
+SCHEMAS['ml-sentiment'] = {
+  input: { text: { type: 'string', description: 'Text to analyze', required: true } },
+  output: { sentiment: 'string', score: 'number', positive: 'number', negative: 'number' },
+  example: { input: { text: 'I love this product' }, output: { sentiment: 'positive', score: 1 } },
+};
+SCHEMAS['validate-url'] = {
+  input: { url: { type: 'string', description: 'URL to validate', required: true } },
+  output: { valid: 'boolean', protocol: 'string', hostname: 'string' },
+  example: { input: { url: 'https://slopshop.gg' }, output: { valid: true, protocol: 'https:', hostname: 'slopshop.gg' } },
+};
+
 module.exports = { SCHEMAS };

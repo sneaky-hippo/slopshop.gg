@@ -749,6 +749,11 @@ const API_DEFS = {
   'many-worlds': { cat: 'Agent Superpowers', name: 'Many Worlds', desc: 'Execute decisions in all variations simultaneously in separate branches.', credits: 0, tier: 'compute' },
   'self-referential-loop': { cat: 'Agent Superpowers', name: 'Self Referential Loop', desc: 'Create processes that operate on themselves with iteration tracking.', credits: 0, tier: 'compute' },
   'absence-detect': { cat: 'Analyze', name: 'Absence Detect', desc: 'Detect conspicuous absences — the dog that didnt bark.', credits: 0, tier: 'compute' },
+  'math-solve-quadratic': { cat: 'Math & Numbers', name: 'Solve Quadratic', desc: 'Solve quadratic equations ax²+bx+c=0 returning real or complex roots.', credits: 0, tier: 'compute' },
+  'date-is-leap-year': { cat: 'Date & Time', name: 'Is Leap Year', desc: 'Check whether a given year is a leap year.', credits: 0, tier: 'compute' },
+  'search-levenshtein': { cat: 'Text Processing', name: 'Levenshtein Distance', desc: 'Compute the Levenshtein edit distance between two strings.', credits: 0, tier: 'compute' },
+  'ml-sentiment': { cat: 'Analyze', name: 'ML Sentiment', desc: 'Word-based sentiment analysis returning positive/negative/neutral with score.', credits: 0, tier: 'compute' },
+  'validate-url': { cat: 'Validation', name: 'Validate URL', desc: 'Check if a URL is valid and parse its components.', credits: 0, tier: 'compute' },
 };
 
 function buildCatalog() {
