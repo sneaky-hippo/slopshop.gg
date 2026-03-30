@@ -6880,14 +6880,18 @@ async function main() {
   // and the command isn't signup, help, or version
   if (!fs.existsSync(CONFIG_FILE) && cmd && !['signup', 'help', 'version', '-v', '--version', '-h', '--help'].includes(cmd)) {
     console.log(`
-  ${C.red}        ____  __    ____  ____ ${C.reset}
-  ${C.red}       / ___\\/ /   / __ \\/ __ \\${C.reset}
-  ${C.red}       \\__ \\/ /   / / / / /_/ /${C.reset}
-  ${C.red}      ___/ / /___/ /_/ / ____/ ${C.reset}
-  ${C.red}     /____/_____/\\____/_/      ${C.reset}
-  ${dim('     S T A T E L E S S . L I G H T W E I G H T')}
-  ${dim('     O P E R A T I N G . P R I M I T I V E S')}
-  ${dim('     slopshop.gg')} ${C.bold}v${PKG_VERSION}${C.reset}
+  ${C.red}  ╔══════════════════════════════════════════╗${C.reset}
+  ${C.red}  ║${C.reset}  ${C.bold}${C.red}    ____  __    ____  ____${C.reset}              ${C.red}║${C.reset}
+  ${C.red}  ║${C.reset}  ${C.red}   / ___\\/ /   / __ \\/ __ \\${C.reset}             ${C.red}║${C.reset}
+  ${C.red}  ║${C.reset}  ${C.red}   \\__ \\/ /   / / / / /_/ /${C.reset}             ${C.red}║${C.reset}
+  ${C.red}  ║${C.reset}  ${C.red}  ___/ / /___/ /_/ / ____/${C.reset}              ${C.red}║${C.reset}
+  ${C.red}  ║${C.reset}  ${C.red} /____/_____/\\____/_/${C.reset}                   ${C.red}║${C.reset}
+  ${C.red}  ║${C.reset}  ${dim('─────────────────────────────────────')}  ${C.red}║${C.reset}
+  ${C.red}  ║${C.reset}  ${dim('S T A T E L E S S  ·  L I G H T W E I G H T')}${C.red}║${C.reset}
+  ${C.red}  ║${C.reset}  ${dim('O P E R A T I N G  ·  P R I M I T I V E S')}  ${C.red}║${C.reset}
+  ${C.red}  ║${C.reset}  ${dim('─────────────────────────────────────')}  ${C.red}║${C.reset}
+  ${C.red}  ║${C.reset}  ${dim('slopshop.gg')}  ${C.bold}v${PKG_VERSION}${C.reset}  ${dim('/////////////////')}  ${C.red}║${C.reset}
+  ${C.red}  ╚══════════════════════════════════════════╝${C.reset}
 
   ${bold('Get started in 30 seconds:')}
 
