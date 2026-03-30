@@ -265,6 +265,33 @@ db.pragma('mmap_size = 268435456'); // PERF: 256MB memory-mapped I/O — bypass 
 db.pragma('page_size = 8192'); // PERF: 8KB pages (better for large tables, only works on new DBs)
 log.info('Database initialized', { path: DB_PATH, tables: db.prepare("SELECT count(*) as c FROM sqlite_master WHERE type='table'").get().c });
 
+// Schema migration: drop tables with stale columns so route modules recreate them correctly
+// Safe: all DROP TABLE IF EXISTS — only removes tables that exist with wrong schema
+try {
+  const _staleTables = [
+    'agent_identities','ans_registry','a2a_messages','agent_orgs','org_members',
+    'workflows','workflow_runs','workflow_run_steps','workflow_templates','workflow_approvals',
+    'marketplace_listings','marketplace_installs','marketplace_ratings','marketplace_transactions'
+  ];
+  const _existingTables = db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all().map(r => r.name);
+  let _migrated = 0;
+  for (const t of _staleTables) {
+    if (_existingTables.includes(t)) {
+      // Check if table has expected columns; drop only if schema is stale
+      const cols = db.prepare(`PRAGMA table_info(${t})`).all().map(c => c.name);
+      let needsDrop = false;
+      if (t === 'a2a_messages' && !cols.includes('to_agent')) needsDrop = true;
+      if (t === 'workflows' && !cols.includes('api_key')) needsDrop = true;
+      if (t === 'marketplace_listings' && !cols.includes('category')) needsDrop = true;
+      if (needsDrop) {
+        db.exec(`DROP TABLE IF EXISTS ${t}`);
+        _migrated++;
+      }
+    }
+  }
+  if (_migrated > 0) log.info('Schema migration complete', { dropped: _migrated });
+} catch (e) { /* non-fatal */ }
+
 // Create tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS api_keys (
