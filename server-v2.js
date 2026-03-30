@@ -2425,7 +2425,8 @@ function getCacheKey(slug, body) {
     const k = keys[i];
     if (k === 'mode' || k === 'trace' || k === 'agent_mode' || k === 'session_id') continue;
     const v = body[k];
-    keyStr += ':' + k + '=' + (typeof v === 'string' ? (v.length > 64 ? v.slice(0, 64) : v) : (typeof v === 'object' ? JSON.stringify(v).slice(0, 128) : String(v)));
+    const vStr = typeof v === 'string' ? v : (typeof v === 'object' ? JSON.stringify(v) : String(v));
+    keyStr += ':' + k + '=' + (vStr.length > 128 ? vStr.slice(0, 64) + ':' + vStr.length + ':' + require('crypto').createHash('md5').update(vStr).digest('hex').slice(0, 8) : vStr);
   }
   return slug + ':' + fnv1a(keyStr);
 }
