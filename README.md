@@ -2,22 +2,24 @@
 
 # Slopshop
 
-### The protocol layer of intelligence
+### The Self-Hostable MCP Agent Runtime OS for the Computer-Use Era
 
-**Connect every AI brain into one composable, callable mesh.**
+**Claude controls the screen. Slopshop runs the brain.**
 
 ```bash
 npm install -g slopshop
 slop signup                              # 500 free credits
 slop "hash hello world with sha256"      # natural language routing
+slop identity issue --agent "my-agent"  # zero-trust agent identity
 ```
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
 [![Tests](https://img.shields.io/badge/tests-2272%20passing-brightgreen)](https://slopshop.gg)
-[![APIs](https://img.shields.io/badge/APIs-1269-blue)](https://slopshop.gg/tools.html)
+[![APIs](https://img.shields.io/badge/APIs-1303-blue)](https://slopshop.gg/tools.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP Compatible](https://img.shields.io/badge/MCP-45_tools-purple)](https://modelcontextprotocol.io)
 [![Models](https://img.shields.io/badge/Models-7_(Claude%2BGPT%2BGrok%2BDeepSeek%2BOllama)-orange)](https://slopshop.gg)
+[![NIST Aligned](https://img.shields.io/badge/NIST-SPIFFE%2FSVID-cyan)](https://slopshop.gg/docs.html)
 
 [Website](https://slopshop.gg) | [Docs](https://slopshop.gg/docs.html) | [API Explorer](https://slopshop.gg/v1/docs/overview) | [Benchmarks](https://slopshop.gg/benchmarks.html) | [llms.txt](https://slopshop.gg/llms.txt)
 
@@ -27,11 +29,26 @@ slop "hash hello world with sha256"      # natural language routing
 
 ## What is Slopshop?
 
-Slopshop is the protocol layer of intelligence — the universal nervous system that connects every AI brain on the planet into one composable, callable mesh. We don't build the models; we make every model useful to every other model, every agent, and every human who ships with them.
+Slopshop is the self-hostable MCP Agent Runtime OS for the Computer-Use Era — the full backend stack that gives your agents identity, memory, tools, and orchestration from a single `npm install`.
 
-**1,303 real APIs** across 82 categories. **7 AI models** (Claude, GPT-4.1, Grok-3, DeepSeek + Llama 3, Mistral, DeepSeek-Coder locally). **Free persistent memory** that survives sessions, model swaps, and restarts. **Multi-LLM orchestration** — launch 30-agent organizations mixing Claude, GPT, and Grok agents. **Self-hostable** with zero native dependencies.
+**1,303 real APIs** across 82 categories. **Zero-trust agent identity** (NIST-aligned SPIFFE/SVID). **Free evolving memory** (GraphRAG + episodic, survives sessions and model swaps). **Computer Use backend** — session recording, screenshot diffs, approvals, and replay. **MCP gateway + policy engine** with signed manifests and audit export. **Visual DAG workflows** with Kahn's topo sort, condition branching, and human gates. **Tool marketplace** with 70/30 revenue share. **Army-scale orchestration** (10,000 parallel agents). **Self-hostable** with zero native dependencies.
 
 Works with Claude Code (MCP), Goose, Cursor, OpenCode, Cline, Aider, LangChain, CrewAI, or raw HTTP.
+
+---
+
+## New in v3.7.0 — Agent Runtime OS
+
+| Layer | What shipped |
+|-------|-------------|
+| **Agent Identity** | SPIFFE/SVID JWT issue, rotate, verify; ANS namespace registry; A2A encrypted messaging; org management |
+| **Observability** | Distributed traces, analytics dashboard, budget monitoring, ROI reporting, public status page |
+| **Computer Use Backend** | Session start/stop/screenshot, screenshot diff, action replay, human approval gates |
+| **MCP Gateway** | Signed manifests (HMAC-SHA256), policy engine (5 condition types), governance, SIEM/ECS audit export |
+| **Eval Suite** | Eval runs, benchmark tracking, model routing with cost/latency optimization |
+| **Visual DAG Workflows** | Create/run DAGs, Kahn's topological sort, cycle detection, condition branching, human gates, templates |
+| **Tool Marketplace** | Publish/install tools, 70/30 revenue split, 16-pattern code security scan, ratings |
+| **36 new handler slugs** | Vision (12), Finance (5), DevOps (5), Legal (2), Health (2), Marketing (3), Memory 2.0 (7) |
 
 ---
 
@@ -41,18 +58,24 @@ Works with Claude Code (MCP), Goose, Cursor, OpenCode, Cline, Aider, LangChain, 
 # Install
 npm install -g slopshop
 
-# Set your key (or use the demo key below)
-export SLOPSHOP_KEY="sk-slop-demo-key-12345678"
+# Sign up and get 500 free credits
+slop signup
 
 # Make your first call
 slop call crypto-hash-sha256 --data "hello world"
+
+# Issue an agent identity (SPIFFE/SVID)
+slop call identity-issue --agent_id "my-agent" --capabilities '["read","write"]'
+
+# Start a computer use session
+slop call computer-use-session-start --agent_id "my-agent" --resolution "1920x1080"
 ```
 
 Or with curl:
 
 ```bash
 curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
-  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Authorization: Bearer $SLOPSHOP_KEY" \
   -H "Content-Type: application/json" \
   -d '{"data": "hello world"}'
 ```
@@ -73,28 +96,28 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 
 | # | Feature | Description |
 |---|---------|-------------|
-| 1 | **Free Persistent Memory** | Key-value store, queues, counters, vector search -- 0 credits, free forever |
-| 2 | **78 Categories of Compute Tools** | Crypto, text, math, data transform, validation, PII detection, SVG charts, AST parsing |
-| 3 | **Agent Chaining** | Claude -> GPT -> Grok infinite loops with auto context passing |
-| 4 | **Army Deployment** | Deploy 10,000 parallel agents with Merkle proof verification |
-| 5 | **Hive Workspaces** | Always-on multi-agent collaboration with channels and roles |
-| 6 | **Copilot System** | Second-agent assistant with automatic team scaling |
-| 7 | **Knowledge Graph** | Subject-predicate-object triples with BFS walks and shortest path |
-| 8 | **Prediction Markets** | Collective intelligence forecasting across agent swarms |
-| 9 | **Governance Voting** | Democratic proposals and voting for agent consensus |
-| 10 | **Tournaments** | Competitive agent evaluation with auto-ranking and elimination |
-| 11 | **Bounty System** | Post tasks with rewards, agents compete to complete |
-| 12 | **Agent Wallets** | Sub-wallets, budget controls, credit trading marketplace |
-| 13 | **Reputation System** | Agent reputation scoring and performance history tracking |
-| 14 | **Replay System** | Record and replay agent runs for debugging and audit |
-| 15 | **Template Marketplace** | Pre-built agent templates, one-click deploy |
-| 16 | **Evaluations** | Automated agent evals, leaderboards, comparative analysis |
-| 17 | **Compute Exchange** | Peer-to-peer compute resource trading marketplace |
-| 18 | **Dream Scheduling** | Background task processing -- daily, hourly, weekly |
-| 19 | **Group Chat & Standups** | Multi-agent communication and coordination |
+| 1 | **Zero-Trust Agent Identity** | NIST-aligned SPIFFE/SVID JWTs, ANS namespace registry, A2A encrypted messaging |
+| 2 | **Free Evolving Memory** | GraphRAG + episodic — key-value, queues, counters, vector search — 0 credits, free forever |
+| 3 | **82 Categories of Compute Tools** | Crypto, text, math, data transform, vision, finance, devops, legal, health, marketing |
+| 4 | **Computer Use Backend** | Session recording, screenshot diffs, action replay, human approval gates |
+| 5 | **MCP Gateway + Policy Engine** | Signed manifests, 5-condition policy rules, SIEM/ECS audit export |
+| 6 | **Visual DAG Workflows** | Kahn's topo sort, cycle detection, condition branching, human gates, templates |
+| 7 | **Tool Marketplace** | Publish/install tools, 70/30 revenue split, 16-pattern code security scan |
+| 8 | **Agent Chaining** | Claude → GPT → Grok infinite loops with auto context passing |
+| 9 | **Army Deployment** | Deploy 10,000 parallel agents with Merkle proof verification |
+| 10 | **Hive Workspaces** | Always-on multi-agent collaboration with channels and roles |
+| 11 | **Knowledge Graph** | Subject-predicate-object triples with BFS walks and shortest path |
+| 12 | **Prediction Markets** | Collective intelligence forecasting across agent swarms |
+| 13 | **Governance Voting** | Democratic proposals and voting for agent consensus |
+| 14 | **Tournaments** | Competitive agent evaluation with auto-ranking and elimination |
+| 15 | **Bounty System** | Post tasks with rewards, agents compete to complete |
+| 16 | **Agent Wallets** | Sub-wallets, budget controls, credit trading marketplace |
+| 17 | **Eval Suite** | Automated agent evals, leaderboards, model routing by cost/latency |
+| 18 | **Observability** | Distributed traces, analytics dashboard, budget monitoring, ROI reporting |
+| 19 | **Dream Scheduling** | Background task processing — daily, hourly, weekly |
 | 20 | **Stream & Batch** | SSE streaming output and batch API calls |
 | 21 | **Enterprise Ops** | Teams, RBAC, analytics dashboards, webhooks, budget forecasting |
-| 22 | **Self-Hosting** | `npm install slopshop` -- zero external deps, runs locally |
+| 22 | **Self-Hosting** | `npm install slopshop` — zero external deps, runs locally |
 
 ---
 
@@ -122,21 +145,38 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
                          +----------+----------+
                          |   server-v2.js      |
                          |   Express + Auth     |
-                         |   1,248 endpoints   |
+                         |   1,303 endpoints   |
                          +----------+----------+
+                                    |
+       +----------------------------+----------------------------+
+       |              AGENT RUNTIME OS LAYERS                    |
+       +----+--------+--------+--------+--------+--------+-------+
+            |        |        |        |        |        |
+    +-------+--+ +---+----+ +-+------+ ++------+ +------++ +-----+----+
+    |identity  | |observe | |computer| |gateway | |eval   | |workflow  |
+    |/v1/identity| |/v1/   | |use     | |/v1/    | |/v1/   | |builder   |
+    |/v1/ans   | |observe | |/v1/cu  | |gateway | |eval   | |/v1/      |
+    |/v1/a2a   | |/v1/    | |        | |/v1/    | |/v1/   | |workflow  |
+    |SPIFFE/   | |status  | |session | |policy  | |route  | |DAG+topo  |
+    |SVID JWTs | |traces  | |record  | |engine  | |model  | |sort      |
+    +----------+ +--------+ +--------+ +--------+ +-------+ +----------+
                                     |
               +---------------------+---------------------+
               |                     |                     |
     +---------+--------+  +--------+---------+  +--------+---------+
     |  handlers/       |  |  handlers/       |  |  handlers/       |
     |  compute.js      |  |  llm.js          |  |  network.js      |
-    |  927 pure fns    |  |  Claude/GPT      |  |  DNS/HTTP/SSL    |
+    |  pure functions  |  |  Claude/GPT      |  |  DNS/HTTP/SSL    |
     |  0 external deps |  |  content+code    |  |  real net calls  |
+    +---------+--------+  +--------+---------+  +--------+---------+
+    |  vision.js       |  |  vertical.js     |  |  memory-upgrade  |
+    |  image/ocr/color |  |  finance/devops  |  |  GraphRAG+drift  |
+    |  data URIs       |  |  legal/health    |  |  clustering      |
     +---------+--------+  +--------+---------+  +--------+---------+
               |                     |                     |
     +---------+--------+  +--------+---------+  +--------+---------+
-    | registry.js      |  | pipes.js         |  | mcp-server.js    |
-    | 1,248 API defs   |  | 14 workflows     |  | MCP for Claude   |
+    | registry*.js     |  | pipes.js         |  | mcp-server.js    |
+    | 1,303 API defs   |  | 14 workflows     |  | MCP for Claude   |
     +------------------+  +------------------+  +------------------+
               |                     |                     |
     +---------+--------+  +--------+---------+  +--------+---------+
@@ -145,7 +185,9 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
     +------------------+  +------------------+  +------------------+
 ```
 
-**Request lifecycle:** Request -> Auth middleware -> Registry lookup -> Handler execution (real compute) -> Response with `_engine: "real"`
+**Request lifecycle:** Request → Auth middleware → Route module OR Registry lookup → Handler execution (real compute) → Response with `_engine: "real"`
+
+**Route modules** (`routes/`) mount before the wildcard dispatcher and own their own Express paths. **Handler files** (`handlers/`) export pure functions keyed by API slug, called by the wildcard dispatcher for the 1,303 registry-defined tools.
 
 ---
 
@@ -159,18 +201,38 @@ cd slopshop.gg
 npm install
 node server-v2.js
 # Server running on http://localhost:3000
+# 1,303 APIs · 82 categories · 136 SQLite tables · 0 startup warnings
 ```
+
+Copy `.env.example` to `.env` and fill in what you need:
 
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `PORT` | No | HTTP port (default: 3000) |
 | `ANTHROPIC_API_KEY` | For AI APIs | Unlocks Claude-powered endpoints |
-| `OPENAI_API_KEY` | For AI APIs | Fallback for AI endpoints |
+| `OPENAI_API_KEY` | For AI APIs | GPT-4.1 and fallback AI endpoints |
+| `GROK_API_KEY` | For Grok | Grok-3 reasoning endpoints |
+| `DEEPSEEK_API_KEY` | For DeepSeek | DeepSeek reasoning endpoints |
+| `AWS_ACCESS_KEY_ID` | For S3 | S3 upload (native Sig V4, no SDK) |
+| `AWS_SECRET_ACCESS_KEY` | For S3 | S3 signing key |
+| `S3_BUCKET` | For S3 | Bucket name |
+| `INTERNAL_SECRET` | Optional | JWT signing for agent identities (auto-generated if missing) |
+| `STRIPE_SECRET_KEY` | For billing | Stripe webhook + payment processing |
+| `SENDGRID_API_KEY` | For email | Email sending via ext-email-send |
 
 Health check:
 ```bash
 curl http://localhost:3000/v1/health
-# {"status":"operational","apis_loaded":1248,"version":"2.0.0"}
+# {"status":"operational","apis_loaded":1303,"version":"3.7.0"}
+```
+
+Issue an agent identity:
+```bash
+curl -X POST http://localhost:3000/v1/identity/issue \
+  -H "Authorization: Bearer sk-slop-your-key" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"my-agent","capabilities":["read","write"]}'
+# {"svid":"eyJ...","expires_at":"...","trust_domain":"slopshop.local"}
 ```
 
 ---
@@ -346,7 +408,7 @@ We welcome contributions. Here is how to get started:
 ## GitHub Topics
 
 > Set these topics on the repo for discoverability:
-> `ai`, `agents`, `mcp`, `tools`, `api`, `infrastructure`, `memory`, `orchestration`, `llm`, `claude`, `gpt`, `grok`
+> `ai`, `agents`, `mcp`, `tools`, `api`, `infrastructure`, `memory`, `orchestration`, `llm`, `claude`, `gpt`, `grok`, `computer-use`, `agent-runtime`, `nist`, `spiffe`, `workflow`, `marketplace`, `self-hostable`
 
 ---
 
@@ -358,7 +420,7 @@ MIT -- see [LICENSE](LICENSE).
 
 <div align="center">
 
-**The infrastructure layer your AI agents are missing.**
+**The Self-Hostable MCP Agent Runtime OS for the Computer-Use Era.**
 
 [slopshop.gg](https://slopshop.gg)
 
