@@ -8,13 +8,13 @@
 
 ```bash
 npm install -g slopshop
-slop signup
-slop call crypto-uuid
+slop signup                              # 500 free credits
+slop "hash hello world with sha256"      # natural language routing
 ```
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
-[![Tests](https://img.shields.io/badge/tests-927%20passing-brightgreen)](https://slopshop.gg)
-[![APIs](https://img.shields.io/badge/APIs-1255-blue)](https://slopshop.gg/tools.html)
+[![Tests](https://img.shields.io/badge/tests-2272%20passing-brightgreen)](https://slopshop.gg)
+[![APIs](https://img.shields.io/badge/APIs-1269-blue)](https://slopshop.gg/tools.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP Compatible](https://img.shields.io/badge/MCP-45_tools-purple)](https://modelcontextprotocol.io)
 [![Models](https://img.shields.io/badge/Models-7_(Claude%2BGPT%2BGrok%2BDeepSeek%2BOllama)-orange)](https://slopshop.gg)
