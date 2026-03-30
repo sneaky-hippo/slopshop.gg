@@ -595,13 +595,10 @@ if (missing.length > 0) {
   console.error('WARNING: APIs without handlers:', missing);
 }
 
-// Seed demo key if not exists
-const demoExists = db.prepare('SELECT key FROM api_keys WHERE key = ?').get('sk-slop-demo-key-12345678');
-if (!demoExists) {
-  db.prepare('INSERT INTO api_keys (key, id, balance, tier, created, key_hash, key_prefix) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-    'sk-slop-demo-key-12345678', 'demo', 200, 'baby-lobster', Date.now(), hashApiKey('sk-slop-demo-key-12345678'), keyPrefix('sk-slop-demo-key-12345678')
-  );
-}
+// Seed demo key — upsert so balance/tier always stays generous
+db.prepare('INSERT INTO api_keys (key, id, balance, tier, created, key_hash, key_prefix) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET balance=excluded.balance, tier=excluded.tier').run(
+  'sk-slop-demo-key-12345678', 'demo', 999999, 'lobster', Date.now(), hashApiKey('sk-slop-demo-key-12345678'), keyPrefix('sk-slop-demo-key-12345678')
+);
 
 // DB helpers
 // Hash an API key for secure storage — uses SHA-256, returns hex string
@@ -825,8 +822,8 @@ function auth(req, res, next) {
       return res.status(403).json({ error: { code: 'scope_denied', message: 'This key does not have permission for ' + def.tier + ' tier APIs', scope: acct.scope } });
     }
   }
-  // Per-key rate limiting: 120 requests per minute (PERF: doubled from 60)
-  const rlMax = acct.tier === 'leviathan' ? 1000 : acct.tier === 'reef-boss' ? 300 : 120; if (!rateLimit('api:' + key, rlMax, 60000)) {
+  // Per-key rate limiting
+  const rlMax = acct.tier === 'leviathan' ? 10000 : acct.tier === 'kraken' ? 5000 : acct.tier === 'reef-boss' ? 1000 : acct.tier === 'lobster' ? 600 : acct.tier === 'baby-lobster' ? 300 : 200; if (!rateLimit('api:' + key, rlMax, 60000)) {
     log.warn('Rate limit exceeded', { key_prefix: key.slice(0, 12), ip: req.ip, path: req.path });
     const rlEntry = ipLimits.get('api:' + key);
     res.set('X-RateLimit-Limit', String(rlMax||120));
@@ -845,7 +842,7 @@ function auth(req, res, next) {
 // ===== PUBLIC RATE LIMIT (IP-based for unauthenticated endpoints) =====
 function publicRateLimit(req, res, next) {
   const ip = req.ip || req.connection?.remoteAddress || 'unknown';
-  if (!rateLimit('public:' + ip, 30, 60000)) {
+  if (!rateLimit('public:' + ip, 120, 60000)) {
     log.warn('Public rate limit exceeded', { ip, path: req.path });
     const rlEntry = ipLimits.get('public:' + ip);
     res.set('Retry-After', '30');

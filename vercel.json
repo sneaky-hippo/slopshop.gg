@@ -32,9 +32,9 @@
       ]
     }
   ],
-  "rewrites": [
-    { "source": "/v1/:path*", "destination": "https://slopshop-production.up.railway.app/v1/:path*" },
-    { "source": "/zapier/:path*", "destination": "https://slopshop-production.up.railway.app/zapier/:path*" },
-    { "source": "/.well-known/:path*", "destination": "https://slopshop-production.up.railway.app/.well-known/:path*" }
+  "redirects": [
+    { "source": "/v1/:path*", "destination": "https://slopshop-production.up.railway.app/v1/:path*", "permanent": false },
+    { "source": "/zapier/:path*", "destination": "https://slopshop-production.up.railway.app/zapier/:path*", "permanent": false },
+    { "source": "/.well-known/:path*", "destination": "https://slopshop-production.up.railway.app/.well-known/:path*", "permanent": false }
   ]
 }
