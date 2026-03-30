@@ -208,7 +208,16 @@ const netDnsAll = async (input) => {
 // HTTP handlers
 // ---------------------------------------------------------------------------
 
+const HTTP_STATUS_CODES = {100:'Continue',101:'Switching Protocols',200:'OK',201:'Created',202:'Accepted',204:'No Content',301:'Moved Permanently',302:'Found',304:'Not Modified',307:'Temporary Redirect',308:'Permanent Redirect',400:'Bad Request',401:'Unauthorized',403:'Forbidden',404:'Not Found',405:'Method Not Allowed',408:'Request Timeout',409:'Conflict',410:'Gone',413:'Payload Too Large',415:'Unsupported Media Type',422:'Unprocessable Entity',429:'Too Many Requests',500:'Internal Server Error',501:'Not Implemented',502:'Bad Gateway',503:'Service Unavailable',504:'Gateway Timeout'};
+const HTTP_STATUS_CAT = c => c<200?'Informational':c<300?'Success':c<400?'Redirection':c<500?'Client Error':'Server Error';
 const netHttpStatus = async (input) => {
+  // If code is provided (no URL), return status code info directly
+  if (input.code !== undefined && !input.url) {
+    const c = Number(input.code);
+    const status = HTTP_STATUS_CODES[c];
+    if (status) return { _engine: ENGINE, code: c, status, description: `${c} ${status}`, category: HTTP_STATUS_CAT(c) };
+    return { _engine: ENGINE, code: c, status: 'Unknown', description: `${c} Unknown`, category: HTTP_STATUS_CAT(c) };
+  }
   try {
     const { statusCode, headers, timing } = await makeRequest(input.url, 'HEAD');
     return { _engine: ENGINE, url: input.url, status_code: statusCode, headers, timing_ms: timing };

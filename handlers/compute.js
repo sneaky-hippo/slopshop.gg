@@ -653,7 +653,7 @@ function mathEvaluate(input) {
 }
 
 function mathStatistics(input) {
-  const nums=(input.numbers||[]).map(Number).filter(n=>!isNaN(n));
+  const nums=(input.numbers||input.data||[]).map(Number).filter(n=>!isNaN(n));
   if (!nums.length) return { _engine: 'real',error:'No numbers provided'};
   const sorted=[...nums].sort((a,b)=>a-b);
   const mean=nums.reduce((a,b)=>a+b,0)/nums.length;
@@ -676,7 +676,7 @@ function mathPercentile(input) {
 }
 
 function mathHistogram(input) {
-  const {numbers=[],bins=10}=input;
+  const {bins=10}=input; const numbers=input.numbers||input.data||[];
   const nums=numbers.map(Number).filter(n=>!isNaN(n));
   if (!nums.length) return { _engine: 'real',error:'No numbers'};
   const min=Math.min(...nums),max=Math.max(...nums);
@@ -993,7 +993,7 @@ function parseCronField(val,type) {
 }
 
 function dateCronParse(input) {
-  const {cron='* * * * *'}=input;
+  const cron=input.cron||input.expression||input.expr||'* * * * *';
   const parts=cron.trim().split(/\s+/);
   if (parts.length<5) return { _engine: 'real',error:'Cron must have 5 fields'};
   const [min,hr,dom,mon,dow]=parts;
@@ -1236,7 +1236,8 @@ function tsType(val,indent) {
 
 function codeJsonToTypescript(input) {
   try {
-    const obj=typeof input.data==='object'&&input.data!==null?input.data:JSON.parse(input.text||'{}');
+    const jsonStr=input.json||input.text||'{}';
+    const obj=typeof input.data==='object'&&input.data!==null?input.data:(typeof jsonStr==='string'?JSON.parse(jsonStr):jsonStr);
     const name=input.name||'GeneratedInterface';
     return { _engine: 'real',typescript:'interface '+name+' {\n'+Object.keys(obj).map(k=>'  '+k+': '+tsType(obj[k],2)+';').join('\n')+'\n}'};
   } catch(e){return{ _engine: 'real',error:e.message};}
@@ -4046,13 +4047,15 @@ module.exports = {
   },
 
   'convert-length': ({value, from, to}) => {
-    const m = { m: 1, km: 1000, cm: 0.01, mm: 0.001, in: 0.0254, ft: 0.3048, yd: 0.9144, mi: 1609.34 };
-    return { _engine: 'real', result: Math.round(value * (m[from] || 1) / (m[to] || 1) * 10000) / 10000 };
+    const m = { m: 1, meter: 1, meters: 1, km: 1000, kilometer: 1000, kilometers: 1000, cm: 0.01, centimeter: 0.01, centimeters: 0.01, mm: 0.001, millimeter: 0.001, millimeters: 0.001, in: 0.0254, inch: 0.0254, inches: 0.0254, ft: 0.3048, foot: 0.3048, feet: 0.3048, yd: 0.9144, yard: 0.9144, yards: 0.9144, mi: 1609.34, mile: 1609.34, miles: 1609.34 };
+    const f = (from||'').toLowerCase(), t = (to||'').toLowerCase();
+    return { _engine: 'real', result: Math.round(value * (m[f] || 1) / (m[t] || 1) * 10000) / 10000 };
   },
 
   'convert-weight': ({value, from, to}) => {
-    const g = { g: 1, kg: 1000, mg: 0.001, lb: 453.592, oz: 28.3495, t: 1000000 };
-    return { _engine: 'real', result: Math.round(value * (g[from] || 1) / (g[to] || 1) * 10000) / 10000 };
+    const g = { g: 1, gram: 1, grams: 1, kg: 1000, kilogram: 1000, kilograms: 1000, mg: 0.001, milligram: 0.001, milligrams: 0.001, lb: 453.592, pound: 453.592, pounds: 453.592, oz: 28.3495, ounce: 28.3495, ounces: 28.3495, t: 1000000, ton: 1000000, tons: 1000000 };
+    const f = (from||'').toLowerCase(), t = (to||'').toLowerCase();
+    return { _engine: 'real', result: Math.round(value * (g[f] || 1) / (g[t] || 1) * 10000) / 10000 };
   },
 
   'convert-bytes': ({value, from, to}) => {
@@ -4061,8 +4064,9 @@ module.exports = {
   },
 
   'convert-time': ({value, from, to}) => {
-    const s = { s: 1, ms: 0.001, m: 60, h: 3600, d: 86400, w: 604800, y: 31536000 };
-    return { _engine: 'real', result: Math.round(value * (s[from] || 1) / (s[to] || 1) * 10000) / 10000 };
+    const s = { s: 1, sec: 1, second: 1, seconds: 1, ms: 0.001, millisecond: 0.001, milliseconds: 0.001, m: 60, min: 60, minute: 60, minutes: 60, h: 3600, hr: 3600, hour: 3600, hours: 3600, d: 86400, day: 86400, days: 86400, w: 604800, week: 604800, weeks: 604800, y: 31536000, year: 31536000, years: 31536000 };
+    const f = (from||'').toLowerCase(), t = (to||'').toLowerCase();
+    return { _engine: 'real', result: Math.round(value * (s[f] || 1) / (s[t] || 1) * 10000) / 10000 };
   },
 
   'convert-color-hex-rgb': ({hex}) => {
@@ -4420,9 +4424,9 @@ module.exports = {
 
   // ─── FROM ZAPIER: DATA FORMATTING + CONDITIONAL LOGIC ───────────────────────
 
-  'format-currency': ({amount, currency, locale}) => { try { return {_engine:'real', formatted: new Intl.NumberFormat(locale||'en-US',{style:'currency',currency:currency||'USD'}).format(amount||0)}; } catch(e) { return {_engine:'real', formatted: '$'+(amount||0).toFixed(2)}; } },
+  'format-currency': ({amount, value, currency, locale}) => { const v = amount !== undefined ? amount : (value !== undefined ? value : 0); try { return {_engine:'real', formatted: new Intl.NumberFormat(locale||'en-US',{style:'currency',currency:currency||'USD'}).format(v)}; } catch(e) { return {_engine:'real', formatted: '$'+v.toFixed(2)}; } },
 
-  'format-number': ({number, decimals, locale}) => { return {_engine:'real', formatted: new Intl.NumberFormat(locale||'en-US',{minimumFractionDigits:decimals||0,maximumFractionDigits:decimals||2}).format(number||0)}; },
+  'format-number': ({number, value, decimals, locale}) => { const v = number !== undefined ? number : (value !== undefined ? value : 0); return {_engine:'real', formatted: new Intl.NumberFormat(locale||'en-US',{minimumFractionDigits:decimals||0,maximumFractionDigits:decimals||2}).format(v)}; },
 
   'format-date': ({date, format, locale}) => { const d = new Date(date||Date.now()); const opts = format === 'short' ? {dateStyle:'short'} : format === 'long' ? {dateStyle:'long',timeStyle:'long'} : {year:'numeric',month:'2-digit',day:'2-digit'}; return {_engine:'real', formatted: d.toLocaleDateString(locale||'en-US', opts), iso: d.toISOString(), unix: Math.floor(d.getTime()/1000)}; },
 
@@ -4995,5 +4999,79 @@ module.exports = {
     } catch (e) {
       return { _engine: 'real', valid: false, result: false, url: u, error: 'Invalid URL format' };
     }
+  },
+
+  // ─── SLUG ALIASES for missing endpoints ─────────────────────────────────────
+
+  'convert-angle': ({value, from, to}) => {
+    const toDeg = { degrees: 1, deg: 1, radians: 180 / Math.PI, rad: 180 / Math.PI, gradians: 0.9, grad: 0.9 };
+    const fromDeg = { degrees: 1, deg: 1, radians: Math.PI / 180, rad: Math.PI / 180, gradians: 10/9, grad: 10/9 };
+    const f = (from||'degrees').toLowerCase(), t = (to||'radians').toLowerCase();
+    const deg = value * (toDeg[f] || 1);
+    const result = deg * (fromDeg[t] || 1);
+    return { _engine: 'real', result: Math.round(result * 1e10) / 1e10, from, to };
+  },
+
+  'convert-roman-numeral': ({number}) => {
+    const vals = [[1000,'M'],[900,'CM'],[500,'D'],[400,'CD'],[100,'C'],[90,'XC'],[50,'L'],[40,'XL'],[10,'X'],[9,'IX'],[5,'V'],[4,'IV'],[1,'I']];
+    let n = number || 0, r = '';
+    vals.forEach(([v, s]) => { while (n >= v) { r += s; n -= v; } });
+    return { _engine: 'real', roman: r, result: r };
+  },
+
+  'convert-morse': ({text, direction}) => {
+    const m = {'a':'.-','b':'-...','c':'-.-.','d':'-..','e':'.','f':'..-.','g':'--.','h':'....','i':'..','j':'.---','k':'-.-','l':'.-..','m':'--','n':'-.','o':'---','p':'.--.','q':'--.-','r':'.-.','s':'...','t':'-','u':'..-','v':'...-','w':'.--','x':'-..-','y':'-.--','z':'--..','0':'-----','1':'.----','2':'..---','3':'...--','4':'....-','5':'.....','6':'-....','7':'--...','8':'---..','9':'----.'};
+    if (direction === 'from_morse') {
+      const rev = Object.fromEntries(Object.entries(m).map(([k,v])=>[v,k]));
+      return { _engine: 'real', text: (text||'').split(' ').map(c => rev[c] || c).join(''), result: (text||'').split(' ').map(c => rev[c] || c).join('') };
+    }
+    const morse = (text || '').toLowerCase().split('').map(c => m[c] || c).join(' ');
+    return { _engine: 'real', morse, result: morse };
+  },
+
+  'convert-csv-json': ({csv}) => {
+    const lines = (csv||'').split('\n').filter(l=>l.trim());
+    if (lines.length < 2) return { _engine: 'real', data: [], result: [] };
+    const headers = lines[0].split(',').map(h=>h.trim());
+    const data = lines.slice(1).map(line => {
+      const vals = line.split(',').map(v=>v.trim());
+      const obj = {}; headers.forEach((h,i)=>obj[h]=vals[i]||''); return obj;
+    });
+    return { _engine: 'real', data, result: data, count: data.length };
+  },
+
+  'convert-yaml-json': ({yaml}) => {
+    const result = {}; const lines = (yaml||'').split('\n');
+    for (const line of lines) {
+      const match = line.match(/^(\w[\w.-]*)\s*:\s*(.*)$/);
+      if (match) { let v = match[2].trim(); if(v==='true')v=true;else if(v==='false')v=false;else if(v==='null')v=null;else if(!isNaN(v)&&v!=='')v=Number(v); result[match[1]]=v; }
+    }
+    return { _engine: 'real', data: result, result };
+  },
+
+  'convert-markdown-html': ({markdown}) => {
+    let html = (markdown||'').replace(/^### (.+)$/gm, '<h3>$1</h3>').replace(/^## (.+)$/gm, '<h2>$1</h2>').replace(/^# (.+)$/gm, '<h1>$1</h1>').replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/\*(.+?)\*/g, '<em>$1</em>').replace(/`(.+?)`/g, '<code>$1</code>').replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+    html = '<p>' + html + '</p>';
+    return { _engine: 'real', html, result: html };
+  },
+
+  'finance-loan-payment': ({principal, rate, years}) => {
+    const p = principal || 100000, r = (rate || 5) / 100 / 12, n = (years || 30) * 12;
+    const pmt = r === 0 ? p / n : p * r * Math.pow(1 + r, n) / (Math.pow(1 + r, n) - 1);
+    return { _engine: 'real', principal: p, rate: rate || 5, years: years || 30, payment: Math.round(pmt * 100) / 100, monthly: Math.round(pmt * 100) / 100, total: Math.round(pmt * n * 100) / 100, interest: Math.round((pmt * n - p) * 100) / 100 };
+  },
+
+  'finance-discount': ({price, discount}) => {
+    const p = price || 0, d = discount || 0;
+    const savings = Math.round(p * d / 100 * 100) / 100;
+    const final = Math.round((p - savings) * 100) / 100;
+    return { _engine: 'real', original: p, discount_pct: d, savings, result: final, final: final, price: final };
+  },
+
+  'finance-margin': ({cost, price, revenue}) => {
+    const c = cost || 0, p = price || revenue || 0;
+    const margin = Math.round((p - c) * 100) / 100;
+    const margin_pct = p !== 0 ? Math.round(margin / p * 10000) / 100 : 0;
+    return { _engine: 'real', cost: c, price: p, margin, margin_pct, result: margin };
   },
 };
