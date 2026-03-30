@@ -265,7 +265,7 @@ nav{
 .ic p{font-family:var(--mono);font-size:0.72rem;color:var(--t3);line-height:1.75}
 
 /* WHY CARDS */
-.why-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px}
+.why-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
 .why-card{
   background:var(--s1);
   border:1px solid var(--b);
@@ -602,7 +602,7 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
   <h2>Why developers choose Slopshop</h2>
   <p class="desc">Your agent needs 10+ services. Each has its own API key, billing, docs, and failure modes. Slopshop replaces the glue.</p>
 
-  <div class="why-grid" style="max-width:800px">
+  <div class="why-grid">
     <div class="why-card" style="border-left:3px solid var(--r)">
       <h3 style="color:var(--r)">Start fast</h3>
       <p>One platform instead of wiring 5 services together. <code>npm install -g slopshop</code>, get an API key, call your first tool. Running in under a minute.</p>
