@@ -1,6 +1,6 @@
 {
   "name": "slopshop",
-  "version": "3.8.0",
+  "version": "3.8.0-alpha",
   "description": "The missing backend for AI agents. 1,255 APIs, native MCP server, free persistent memory, multi-LLM orchestration (Claude+GPT+Grok+DeepSeek+Ollama), Army Mode 10k agents, Hive workspaces. Works with Goose, Cursor, Cline, OpenCode, Aider, LangChain. Self-hostable.",
   "main": "server-v2.js",
   "bin": {
