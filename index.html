@@ -6,7 +6,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="dns-prefetch" href="https://slopshop-production.up.railway.app">
-<title>Slopshop — Backend for AI Agents | Tools, Memory, Scheduling, Execution</title>
+<title>Slopshop — The Missing Backend for AI Agents</title>
 <meta name="description" content="Slopshop gives AI agents tools, persistent memory, scheduling, and execution in one platform. Use it from MCP, API, or CLI to build useful agent workflows.">
 <meta name="keywords" content="AI agent tools, agent API, MCP tools, agent memory, agent scheduling, agent execution, tool server, developer tools, slopshop, credit-based API, self-hostable, Claude tools, LLM tools, autonomous agent, function calling, AI agent platform">
 <link rel="canonical" href="https://slopshop.gg/">
@@ -90,7 +90,7 @@ nav{
 .live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
 
 /* HERO */
-.hero{padding:136px 32px 64px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse,rgba(255,51,51,0.04),transparent 60%)}
+.hero{padding:100px 32px 56px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse,rgba(255,51,51,0.04),transparent 60%)}
 .hero-inner{max-width:1200px;margin:0 auto;position:relative;z-index:1}
 .hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(255,51,51,0.15);color:var(--r2);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:500;margin-bottom:28px}
 .hero h1{font-family:var(--mono);font-size:clamp(2.6rem,6.5vw,4.4rem);font-weight:800;letter-spacing:-0.03em;line-height:1.05;margin-bottom:24px}
@@ -483,12 +483,12 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
 <!-- ========== HERO ========== -->
 <section class="hero">
   <div class="hero-inner">
-    <h1><span class="white">Your agent has a brain.</span><br><span class="accent">Now give it hands.</span></h1>
-    <p class="sub" style="max-width:620px">
-      Slopshop is the backend for AI agents that need <b>tools</b>, <b>persistent memory</b>, <b>scheduling</b>, and <b>execution</b>. Use it from MCP, API, or CLI to ship real agent workflows fast.
+    <h1><span class="white">The missing backend</span><br><span class="accent">for AI agents.</span></h1>
+    <p class="sub" style="max-width:600px">
+      Tools, persistent memory, scheduling, and execution in one platform.<br>Connect from MCP, API, or CLI. Ship real agent workflows fast.
     </p>
 
-    <div class="hero-ctas" style="margin-top:36px">
+    <div class="hero-ctas" style="margin-top:32px">
       <a href="/signup" class="cta-primary">Start Free</a>
       <a href="/getting-started" class="cta-secondary">See Quickstart</a>
     </div>
@@ -510,9 +510,10 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
 </section>
 
 <!-- ========== WHAT SLOPSHOP DOES ========== -->
-<div class="sec" style="padding-top:48px;padding-bottom:48px" id="capabilities">
-  <h2 style="font-size:1.6rem;text-align:center">What Slopshop Does</h2>
-  <p class="desc" style="text-align:center;max-width:560px;margin:0 auto 36px">Everything your agent needs after the prompt.</p>
+<div class="sec" style="padding-top:80px;padding-bottom:64px" id="capabilities">
+  <div style="text-align:center;font-family:var(--mono);font-size:0.65rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">What Slopshop does</div>
+  <h2 style="font-size:1.8rem;text-align:center;margin-bottom:8px">Everything your agent needs after the prompt</h2>
+  <p class="desc" style="text-align:center;max-width:520px;margin:0 auto 40px;color:var(--t3);font-size:0.85rem">Most agents can generate text. Few can use tools, remember context, schedule work, or run multi-step workflows without glue code.</p>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px">
 
@@ -557,8 +558,8 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
 </div>
 
 <!-- ========== USE CASES ========== -->
-<div class="sec">
-  <h2 style="font-size:1.4rem;text-align:center">Four ways teams use Slopshop first</h2>
+<div class="sec" style="padding-top:64px;padding-bottom:64px">
+  <h2 style="font-size:1.6rem;text-align:center;letter-spacing:-0.02em">Four ways teams use Slopshop first</h2>
   <p class="desc" style="text-align:center;max-width:560px;margin:0 auto 36px">Real patterns. Start with one, expand as you go.</p>
 
   <div class="build-grid" style="max-width:1200px;margin:0 auto">
@@ -586,7 +587,7 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
 </div>
 
 <!-- ========== WHY DEVELOPERS CHOOSE SLOPSHOP ========== -->
-<div class="sec">
+<div class="sec" style="padding-top:64px;padding-bottom:64px">
   <h2>Why developers choose Slopshop</h2>
   <p class="desc">Your agent needs 10+ services. Each has its own API key, billing, docs, and failure modes. Slopshop replaces the glue.</p>
 
@@ -611,8 +612,8 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
 </div>
 
 <!-- ========== HOW IT WORKS ========== -->
-<div class="sec">
-  <h2 style="font-size:1.4rem;text-align:center">How it works</h2>
+<div class="sec" style="padding-top:64px;padding-bottom:64px">
+  <h2 style="font-size:1.6rem;text-align:center;letter-spacing:-0.02em">How it works</h2>
   <p class="desc" style="text-align:center;max-width:560px;margin:0 auto 36px">Four steps from zero to a working agent system.</p>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;max-width:1000px;margin:0 auto">
@@ -721,8 +722,8 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
 </div>
 
 <!-- ========== TRUST ========== -->
-<div class="sec">
-  <h2 style="font-size:1.4rem;text-align:center">Built for real products, not experiments</h2>
+<div class="sec" style="padding-top:64px;padding-bottom:64px">
+  <h2 style="font-size:1.6rem;text-align:center;letter-spacing:-0.02em">Built for real products, not experiments</h2>
   <p class="desc" style="text-align:center;max-width:560px;margin:0 auto 36px">Production-grade infrastructure you can rely on.</p>
 
   <div style="max-width:900px;margin:0 auto">
@@ -811,7 +812,7 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
 </div>
 
 <!-- ========== FAQ ========== -->
-<div class="sec">
+<div class="sec" style="padding-top:64px;padding-bottom:64px">
   <h2 style="text-align:center">Frequently asked questions</h2>
   <div style="max-width:700px;margin:24px auto 0;display:flex;flex-direction:column;gap:12px">
 
