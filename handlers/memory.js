@@ -378,7 +378,7 @@ module.exports = function (db) {
       value: JSON.parse(r.value),
       timestamp: r.timestamp,
     }));
-    return { _engine: 'real', versions };
+    return { _engine: 'real', versions, history: versions, count: versions.length };
   }
 
   // -------------------------------------------------------------------------

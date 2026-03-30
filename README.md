@@ -29,7 +29,7 @@ slop "hash hello world with sha256"      # natural language routing
 
 Slopshop is the protocol layer of intelligence — the universal nervous system that connects every AI brain on the planet into one composable, callable mesh. We don't build the models; we make every model useful to every other model, every agent, and every human who ships with them.
 
-**1,255 real APIs** across 78 categories. **7 AI models** (Claude, GPT-4.1, Grok-3, DeepSeek + Llama 3, Mistral, DeepSeek-Coder locally). **Free persistent memory** that survives sessions, model swaps, and restarts. **Multi-LLM orchestration** — launch 30-agent organizations mixing Claude, GPT, and Grok agents. **Self-hostable** with zero native dependencies.
+**1,303 real APIs** across 82 categories. **7 AI models** (Claude, GPT-4.1, Grok-3, DeepSeek + Llama 3, Mistral, DeepSeek-Coder locally). **Free persistent memory** that survives sessions, model swaps, and restarts. **Multi-LLM orchestration** — launch 30-agent organizations mixing Claude, GPT, and Grok agents. **Self-hostable** with zero native dependencies.
 
 Works with Claude Code (MCP), Goose, Cursor, OpenCode, Cline, Aider, LangChain, CrewAI, or raw HTTP.
 

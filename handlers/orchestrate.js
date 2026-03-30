@@ -763,7 +763,7 @@ module.exports = {
         const req = http.request({
           hostname: 'localhost', port: process.env.PORT || 3000,
           path: '/v1/' + slug, method: 'POST',
-          headers: { 'Authorization': 'Bearer sk-slop-demo-key-12345678', 'Content-Type': 'application/json' },
+          headers: { 'Authorization': 'Bearer ' + (process.env.ORCHESTRATE_API_KEY || 'sk-slop-demo-key-12345678'), 'Content-Type': 'application/json' },
           timeout: 10000,
         }, res => {
           let b = '';
@@ -800,7 +800,7 @@ module.exports = {
         const req = http.request({
           hostname: 'localhost', port: process.env.PORT || 3000,
           path: '/v1/' + slug, method: 'POST',
-          headers: { 'Authorization': 'Bearer sk-slop-demo-key-12345678', 'Content-Type': 'application/json' },
+          headers: { 'Authorization': 'Bearer ' + (process.env.ORCHESTRATE_API_KEY || 'sk-slop-demo-key-12345678'), 'Content-Type': 'application/json' },
           timeout: 10000,
         }, res => {
           let b = '';
@@ -834,7 +834,7 @@ module.exports = {
         const req = http.request({
           hostname: 'localhost', port: process.env.PORT || 3000,
           path: '/v1/' + slug, method: 'POST',
-          headers: { 'Authorization': 'Bearer sk-slop-demo-key-12345678', 'Content-Type': 'application/json' },
+          headers: { 'Authorization': 'Bearer ' + (process.env.ORCHESTRATE_API_KEY || 'sk-slop-demo-key-12345678'), 'Content-Type': 'application/json' },
           timeout: timeoutMs,
         }, res => {
           let b = '';
@@ -873,7 +873,7 @@ module.exports = {
         const req = http.request({
           hostname: 'localhost', port: process.env.PORT || 3000,
           path: '/v1/' + slug, method: 'POST',
-          headers: { 'Authorization': 'Bearer sk-slop-demo-key-12345678', 'Content-Type': 'application/json' },
+          headers: { 'Authorization': 'Bearer ' + (process.env.ORCHESTRATE_API_KEY || 'sk-slop-demo-key-12345678'), 'Content-Type': 'application/json' },
           timeout: 10000,
         }, res => {
           let b = '';

@@ -175,6 +175,7 @@ try { generateHandlers = require('./handlers/generate'); } catch (e) { console.w
 try { enrichHandlers = require('./handlers/enrich'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 try { orchHandlers = require('./handlers/orchestrate'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 let superpowerHandlers = {}, hackathon1 = {}, hackathon2 = {}, hackathon3 = {}, hackathon4 = {}, hackathon5a = {}, hackathon5b = {}, competitor1 = {}, competitor2 = {}, rapidapi1 = {}, rapidapi2 = {}, rapidapi3 = {}, power1 = {}, power2 = {};
+let visionHandlers = {}, verticalHandlers = {}, memoryUpgradeHandlers = {};
 try { superpowerHandlers = require('./handlers/compute-superpowers'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 try { hackathon1 = require('./handlers/compute-hackathon-1'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 try { hackathon2 = require('./handlers/compute-hackathon-2'); } catch (e) { console.warn('Handler load skipped:', e.message); }
@@ -189,7 +190,10 @@ try { rapidapi2 = require('./handlers/compute-rapidapi-2'); } catch (e) { consol
 try { rapidapi3 = require('./handlers/compute-rapidapi-3'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 try { power1 = require('./handlers/compute-power-1'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 try { power2 = require('./handlers/compute-power-2'); } catch (e) { console.warn('Handler load skipped:', e.message); }
-const allHandlers = { ...computeHandlers, ...superpowerHandlers, ...hackathon1, ...hackathon2, ...hackathon3, ...hackathon4, ...hackathon5a, ...hackathon5b, ...competitor1, ...competitor2, ...rapidapi1, ...rapidapi2, ...rapidapi3, ...power1, ...power2, ...llmHandlers, ...networkHandlers, ...externalHandlers, ...senseHandlers, ...generateHandlers, ...memoryHandlers, ...enrichHandlers, ...orchHandlers };
+try { visionHandlers = require('./handlers/vision'); } catch (e) { console.warn('Handler load skipped:', e.message); }
+try { verticalHandlers = require('./handlers/vertical'); } catch (e) { console.warn('Handler load skipped:', e.message); }
+try { memoryUpgradeHandlers = require('./handlers/memory-upgrade'); } catch (e) { console.warn('Handler load skipped:', e.message); }
+const allHandlers = { ...computeHandlers, ...superpowerHandlers, ...hackathon1, ...hackathon2, ...hackathon3, ...hackathon4, ...hackathon5a, ...hackathon5b, ...competitor1, ...competitor2, ...rapidapi1, ...rapidapi2, ...rapidapi3, ...power1, ...power2, ...llmHandlers, ...networkHandlers, ...externalHandlers, ...senseHandlers, ...generateHandlers, ...memoryHandlers, ...enrichHandlers, ...orchHandlers, ...visionHandlers, ...verticalHandlers, ...memoryUpgradeHandlers };
 
 // Load registry + schemas + expansion
 const { API_DEFS, CATEGORIES, buildCatalog } = require('./registry');
@@ -197,6 +201,8 @@ const { EXPANSION_DEFS } = require('./registry-expansion');
 Object.assign(API_DEFS, EXPANSION_DEFS); // merge expansion into registry
 const { HACKATHON_DEFS } = require('./registry-hackathon');
 Object.assign(API_DEFS, HACKATHON_DEFS); // merge hackathon superpowers into registry
+const { NEW_DEFS } = require('./registry-new');
+Object.assign(API_DEFS, NEW_DEFS); // merge new vision/vertical/memory-upgrade tools
 const { SCHEMAS } = require('./schemas');
 const catalog = buildCatalog();
 const apiMap = new Map(Object.entries(API_DEFS));
@@ -1793,8 +1799,10 @@ app.post('/v1/batch', auth, BODY_LIMIT_BATCH, async (req, res) => {
 
 // ===== PIPE =====
 app.post('/v1/pipe', auth, async (req, res) => {
-  const { steps, until, max_iterations } = req.body;
-  if (!Array.isArray(steps) || !steps.length) return res.status(400).json({ error: { code: 'invalid_pipe' } });
+  const { steps: rawSteps, until, max_iterations, input: globalInput } = req.body;
+  if (!Array.isArray(rawSteps) || !rawSteps.length) return res.status(400).json({ error: { code: 'invalid_pipe', message: 'Provide { steps: [{api,input},...] } or { steps: ["slug1","slug2"], input: {...} }' } });
+  // Accept both string-slug arrays and {api,input} object arrays
+  const steps = rawSteps.map((s, i) => typeof s === 'string' ? { api: s, input: i === 0 ? (globalInput || {}) : {} } : s);
   const maxIter = Math.min(max_iterations || 1, 10);
   let totalCr = 0, lastResult = null;
   const log = [];
@@ -1914,6 +1922,16 @@ require('./polar')(app, db, apiKeys, persistKey);
 require('./agent')(app, allHandlers, API_DEFS, db, apiKeys, auth);
 require('./zapier')(app, allHandlers, API_DEFS, apiKeys, auth);
 require('./pipes')(app, allHandlers, API_DEFS, auth);
+
+// ===== NEW ROUTE MODULES =====
+try { require('./routes/identity')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: identity -', e.message); }
+try { require('./routes/observe')(app, db, apiKeys, ipLimits); } catch (e) { console.warn('Route load skipped: observe -', e.message); }
+try { require('./routes/computer-use')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: computer-use -', e.message); }
+try { require('./routes/gateway')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: gateway -', e.message); }
+try { require('./routes/eval')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: eval -', e.message); }
+try { require('./routes/workflow-builder')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: workflow-builder -', e.message); }
+try { require('./routes/marketplace')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: marketplace -', e.message); }
+// ============================
 
 // ===== PIPE ENDPOINTS (run / create / gallery) =====
 const _PREBUILT_PIPES = (() => {
@@ -5558,6 +5576,30 @@ app.get('/v1/hive/:id/channel/:name', auth, (req, res) => {
 });
 
 // POST /v1/hive/:id/standup — submit a standup to the hive
+// GET /v1/hive/:id/standup — Read hive standup history
+app.get('/v1/hive/:id/standup', auth, (req, res) => {
+  const hive = db.prepare('SELECT id, name FROM hives WHERE id = ?').get(req.params.id);
+  if (!hive) return res.status(404).json({ error: { code: 'hive_not_found' } });
+  const days = Math.min(parseInt(req.query.days) || 7, 30);
+  const since = Date.now() - days * 86400000;
+  const messages = db.prepare("SELECT sender, message, ts FROM hive_messages WHERE hive_id = ? AND channel = 'standup' AND ts > ? ORDER BY ts DESC LIMIT 100").all(req.params.id, since);
+  const today = new Date().toISOString().slice(0, 10);
+  const dailySummaryRow = db.prepare("SELECT value FROM hive_state WHERE hive_id = ? AND key = ?").get(req.params.id, 'standup:daily:' + today);
+  const daily_summary = dailySummaryRow ? JSON.parse(dailySummaryRow.value) : null;
+  res.json({ ok: true, hive_id: req.params.id, name: hive.name, standups: messages, count: messages.length, days, daily_summary, _engine: 'real' });
+});
+
+// GET /v1/hive/:id/status — Status alias for GET /v1/hive/:id
+app.get('/v1/hive/:id/status', auth, (req, res) => {
+  const hive = db.prepare('SELECT * FROM hives WHERE id = ?').get(req.params.id);
+  if (!hive) return res.status(404).json({ error: { code: 'hive_not_found' } });
+  let config = {}; try { config = JSON.parse(hive.config || '{}'); } catch(e) {}
+  let channels = []; try { channels = JSON.parse(hive.channels || '[]'); } catch(e) {}
+  let members = []; try { members = JSON.parse(hive.members || '[]'); } catch(e) {}
+  const msgCount = db.prepare('SELECT COUNT(*) as c FROM hive_messages WHERE hive_id = ?').get(req.params.id)?.c || 0;
+  res.json({ ok: true, hive_id: hive.id, name: hive.name, status: 'active', channels, member_count: members.length, message_count: msgCount, config, created: hive.created, _engine: 'real' });
+});
+
 app.post('/v1/hive/:id/standup', auth, (req, res) => {
   const { did, doing, blockers, mood } = req.body;
   const date = new Date().toISOString().slice(0, 10);
@@ -7581,6 +7623,7 @@ app.get('/v1/exchange/my-earnings/:user_id', auth, (req, res) => {
 
 // POST /v1/tools/search — Semantic tool search
 app.post('/v1/tools/search', publicRateLimit, (req, res) => {
+  const t0search = Date.now();
   const { query, category, max_results, min_relevance } = req.body;
   // Synonym expansion for better search (dogfood-tested via hive-v2)
   const SYNONYMS = {
@@ -7603,7 +7646,8 @@ app.post('/v1/tools/search', publicRateLimit, (req, res) => {
     }
   }
   results.sort((a, b) => b.relevance - a.relevance);
-  res.json({ results: results.slice(0, maxR), total: results.length, query });
+  const sliced = results.slice(0, maxR);
+  res.json({ results: sliced, count: sliced.length, total: results.length, query, _engine: 'real', search_time_ms: Date.now() - t0search });
 });
 
 // GET /v1/tools/categories — List all categories with counts

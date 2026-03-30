@@ -2272,7 +2272,7 @@ async function cmdKey(args) {
     let newKey = args[1];
     if (newKey && !newKey.startsWith('sk-slop-') && args[2]?.startsWith('sk-slop-')) newKey = args[2];
     if (!newKey) return die('Usage: slop key set sk-slop-YOUR-KEY');
-    if (!newKey.startsWith('sk-slop-')) return die('Invalid key format. Keys start with sk-slop-\n  Example: slop key set sk-slop-5a42dc9cbc7341f5bbd0d755');
+    if (!newKey.startsWith('sk-slop-')) return die('Invalid key format. Keys start with sk-slop-\n  Example: slop key set sk-slop-0000000000000000000000');
     cfg.api_key = newKey;
     saveConfig(cfg);
     console.log(green(`\n  API key saved!`));

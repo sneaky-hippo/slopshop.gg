@@ -5074,4 +5074,28 @@ module.exports = {
     const margin_pct = p !== 0 ? Math.round(margin / p * 10000) / 100 : 0;
     return { _engine: 'real', cost: c, price: p, margin, margin_pct, result: margin };
   },
+
+  'route': ({task, intent, budget_credits}) => {
+    const task_str = String(task || intent || '').toLowerCase();
+    const keywords = {
+      'crypto-uuid': ['uuid','id','identifier','unique'],
+      'crypto-hash-sha256': ['hash','sha256','checksum','digest'],
+      'text-count-words': ['count','words','word count'],
+      'text-summarize': ['summarize','summary','tldr'],
+      'memory-set': ['save','store','remember','persist'],
+      'memory-get': ['recall','retrieve','load','get memory'],
+      'llm-think': ['think','reason','analyze','decide','plan'],
+      'math-eval': ['math','calculate','compute','formula'],
+      'date-now': ['date','time','now','current','today'],
+      'text-translate': ['translate','language','spanish','french'],
+    };
+    const scores = [];
+    for (const [slug, kws] of Object.entries(keywords)) {
+      const hits = kws.filter(k => task_str.includes(k)).length;
+      if (hits > 0) scores.push({ slug, score: hits, matched: kws.filter(k => task_str.includes(k)) });
+    }
+    scores.sort((a, b) => b.score - a.score);
+    const best = scores[0] || { slug: 'llm-think', score: 0, matched: ['fallback'] };
+    return { _engine: 'real', recommended: best.slug, reason: best.matched.join(', '), confidence: Math.min(best.score / 3, 1), alternatives: scores.slice(1, 4).map(s => s.slug), task };
+  },
 };

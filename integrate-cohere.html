@@ -6,22 +6,22 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <title>Slopshop + Cohere Integration — Cohere Tools for AI Agents</title>
-<meta name="description" content="Connect real tools across 78 categories to Cohere Command agents via tool_use. Works with command-r-plus and command-r. One API key, verified results.">
+<meta name="description" content="Connect real tools across 82 categories to Cohere Command agents via tool_use. Works with command-r-plus and command-r. One API key, verified results.">
 <meta name="keywords" content="cohere tools, cohere agent tools, cohere tool_use, command-r tools, cohere integration">
 <link rel="canonical" href="https://slopshop.gg/integrate-cohere">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/integrate-cohere">
 <meta property="og:title" content="Slopshop + Cohere Integration — Cohere Tools for AI Agents">
-<meta property="og:description" content="Connect real tools across 78 categories to Cohere Command agents via tool_use. Works with command-r-plus and command-r. One API key, verified results.">
+<meta property="og:description" content="Connect real tools across 82 categories to Cohere Command agents via tool_use. Works with command-r-plus and command-r. One API key, verified results.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="Slopshop + Cohere — Cohere Tools for AI Agents">
-<meta name="twitter:description" content="Connect real tools across 78 categories to Cohere Command agents via tool_use. Works with command-r-plus and command-r. One API key, verified results.">
+<meta name="twitter:description" content="Connect real tools across 82 categories to Cohere Command agents via tool_use. Works with command-r-plus and command-r. One API key, verified results.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
 <meta name="theme-color" content="#39594D">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop + Cohere Integration","description":"Connect real tools across 78 categories to Cohere Command agents via tool_use. Works with command-r-plus and command-r. One API key, verified results.","url":"https://slopshop.gg/integrate-cohere","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"about":{"@type":"SoftwareApplication","name":"Slopshop","applicationCategory":"DeveloperApplication"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop + Cohere Integration","description":"Connect real tools across 82 categories to Cohere Command agents via tool_use. Works with command-r-plus and command-r. One API key, verified results.","url":"https://slopshop.gg/integrate-cohere","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"about":{"@type":"SoftwareApplication","name":"Slopshop","applicationCategory":"DeveloperApplication"}}</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
@@ -137,7 +137,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
     </div>
     <h1>Slopshop for<br><span class="accent">Cohere</span> Agents</h1>
     <p class="sub">
-      real tools across 78 categories via Cohere's <b>tool_use</b> API. Define tools as <b>ToolDefinition</b> objects with the cohere Python SDK — Slopshop handles all execution.<br>
+      real tools across 82 categories via Cohere's <b>tool_use</b> API. Define tools as <b>ToolDefinition</b> objects with the cohere Python SDK — Slopshop handles all execution.<br>
       Free persistent memory. Every result verified.
     </p>
 
@@ -179,7 +179,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
       <div class="step-num">Step 03 &mdash; Handle tool_calls</div>
       <h3>Execute, return ToolResult</h3>
       <p>When <code style="color:var(--accl)">finish_reason="TOOL_CALL"</code>, execute each tool_call via Slopshop and pass results back as <code style="color:var(--accl)">ToolResult</code> objects.</p>
-      <div class="cmd" style="color:var(--g);font-size:0.7rem">78 categories of tools &middot; ToolResult format &middot; verified</div>
+      <div class="cmd" style="color:var(--g);font-size:0.7rem">82 categories of tools &middot; ToolResult format &middot; verified</div>
     </div>
   </div>
 </section>
@@ -314,7 +314,7 @@ answer = <span class="fn">run_agent</span>(<span class="str">"Audit slopshop.gg:
 <section class="sec" style="padding-top:64px">
   <div class="sec-label">What You Get</div>
   <h2>Everything Command R+ needs to act on its reasoning</h2>
-  <p class="desc">Cohere's Command models excel at RAG and enterprise tasks. Slopshop gives them the execution layer — real tools across 78 categories, all verified.</p>
+  <p class="desc">Cohere's Command models excel at RAG and enterprise tasks. Slopshop gives them the execution layer — real tools across 82 categories, all verified.</p>
 
   <div class="get-grid">
     <div class="get-card"><div class="icon">&#126981;</div><h3>78 Categories of Real Tools</h3><p>DNS, SSL, HTTP, crypto, hashing, code execution, data transforms, document generation. All real. No hallucinated outputs.</p></div>
@@ -329,8 +329,8 @@ answer = <span class="fn">run_agent</span>(<span class="str">"Audit slopshop.gg:
 
 <section class="sec" style="padding-top:64px">
   <div class="cta-banner">
-    <h2>Give Command R+ <span class="accent">real tools across 78 categories</span></h2>
-    <p>cohere SDK. ToolDefinition format. 78 categories of tools. Free memory.<br>Command plans — Slopshop executes.</p>
+    <h2>Give Command R+ <span class="accent">real tools across 82 categories</span></h2>
+    <p>cohere SDK. ToolDefinition format. 82 categories of tools. Free memory.<br>Command plans — Slopshop executes.</p>
     <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
       <a href="/docs" class="cta-primary">Get Started Free</a>
       <a href="/v1/openapi.json" class="cta-secondary">OpenAPI Schema</a>
@@ -356,7 +356,7 @@ answer = <span class="fn">run_agent</span>(<span class="str">"Audit slopshop.gg:
       <div class="footer-col"><h4>Resources</h4><a href="/docs">Docs</a><a href="/docs#getting-started">Getting Started</a><a href="/security">Security</a><a href="/changelog">Changelog</a></div>
       <div class="footer-col"><h4>Company</h4><a href="/about">About</a><a href="/status">Status</a><a href="/legal">Legal</a><a href="https://x.com/slopshopgg">@slopshopgg</a></div>
     </div>
-    <div class="footer-copy">The tool layer for AI agents &middot; 78 categories of tools &middot; free memory &middot; all real &middot; slopshop.gg</div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 82 categories of tools &middot; free memory &middot; all real &middot; slopshop.gg</div>
   </div>
 </footer>
 

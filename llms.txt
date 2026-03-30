@@ -1,8 +1,73 @@
-# slopshop.gg — The missing backend for AI agents. Free persistent memory. Real compute across 78 tool categories. Agent chaining and orchestration. One API key. Self-hostable. Works with Claude, GPT, Grok, Gemini, and every LLM.
+# slopshop.gg — The Self-Hostable MCP Agent Runtime OS for the Computer-Use Era. While Claude controls the desktop, Slopshop gives agents verifiable identity, memory that evolves, zero-trust governance, and the platform backbone to run production swarms. NIST-aligned. Self-hostable. One API key.
 
-One API key. 1,269 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 925 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer credit system, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, voice I/O for agents, A2A (agent-to-agent protocol) interop, swarm snapshots with budgets, browser primitives, Memory 2.0 graph queries, autonomous memory evolution, chain branching with conditional steps, eval benchmark with 67 test vectors, Grok endpoints, safety guardrails, marketplace, and full enterprise features.
+One API key. 1,303 endpoints across 82 categories. Free evolving persistent memory (GraphRAG + episodic + scored retrieval, 0 credits forever). NIST-aligned agent identity (SPIFFE/SVID tokens, Agent Name Service, reputation scoring 0-10, A2A typed messaging). Computer Use backend (session recording, screenshot OCR + pixel-diff, replay, human approval gates). MCP Gateway + policy engine (5 condition types, SIEM/ECS audit export). Observability dashboard (traces, p95/p99, cost attribution, ROI calculator, budget alerts). Visual DAG workflow builder (Kahn's topo sort, cycle detection, 10 templates). Tool marketplace (15 listings, 70/30 revenue share, handler code security scan). Eval suite + model routing (benchmark 5/5 score 100 grade A). 925 pure-compute self-hostable handlers (zero external deps). Army-scale orchestration (10k parallel agents, Hive workspaces, Hive A2A). Cron scheduling. Sandboxed code execution. Multi-LLM (Claude + GPT + Grok + DeepSeek + Ollama). Self-hostable Docker/K8s. Air-gapped forever. Works with Claude Code, Cursor, Goose, Cline, OpenCode, Aider, LangChain, CrewAI, AutoGen.
 
-## Universal Model Mesh (NEW in v3.7.0)
+## Agent Runtime OS Layers (v3.7.0)
+
+### Agent Identity & Zero-Trust
+- POST /v1/identity/issue — Issue SPIFFE/SVID JWT token for an agent (scoped capabilities, 24h TTL)
+- POST /v1/identity/verify — Verify a token + check revocation
+- POST /v1/identity/revoke — Revoke a token immediately
+- GET /v1/identity/list — List all identities for this API key
+- POST /v1/ans/register — Register agent in Agent Name Service (ANS) discovery registry
+- GET /v1/ans/discover — Discover agents by capability
+- POST /v1/reputation/signal — Submit outcome signal (success/failure/error/timeout) → updates 0-10 score
+- GET /v1/reputation/:agent_id — Get reputation score + history
+- POST /v1/a2a/message — Send typed A2A message to another agent
+- GET /v1/a2a/inbox/:agent_id — Retrieve pending messages
+- POST /v1/org/create — Create multi-agent organization
+
+### Computer Use Backend
+- POST /v1/computer-use/session/start — Start recording session (name, task, context)
+- POST /v1/computer-use/action — Log an action (click/type/screenshot/scroll)
+- POST /v1/computer-use/screenshot — Store screenshot + run OCR + pixel-diff
+- POST /v1/computer-use/replay — Export session replay (JSON/Python/Markdown)
+- POST /v1/computer-use/verify — Pixel-diff verification between expected and actual
+- POST /v1/computer-use/checkpoint — Save checkpoint for restore
+- POST /v1/computer-use/approval/request — Request human approval (pauses agent)
+- GET /v1/computer-use/approval/pending — List pending approvals
+
+### MCP Gateway & Policy
+- GET /v1/gateway/manifest — Signed MCP manifest (HMAC-SHA256, security ratings)
+- POST /v1/gateway/proxy — Proxy tool call through policy engine
+- POST /v1/policy/create — Create access policy (conditions + action)
+- GET /v1/policy/list — List all policies
+- POST /v1/policy/evaluate — Test a request against policies (dry-run)
+- GET /v1/gateway/audit — Audit log of all gateway calls
+- POST /v1/gateway/audit/export — Export audit log (ECS-compatible NDJSON for SIEM)
+- POST /v1/governance/propose — Propose a governance change
+- POST /v1/governance/vote — Vote on a proposal
+
+### Observability
+- GET /v1/observe/dashboard — Full dashboard: calls, credits, p95/p99 latency, top tools, cost/day, burn rate
+- POST /v1/observe/trace/start — Start a distributed trace span
+- POST /v1/observe/trace/end — End a span (records latency, credits, status)
+- GET /v1/observe/traces — List recent traces with filtering
+- GET /v1/observe/health/system — 4-component health score (latency/error/cost/throughput)
+- POST /v1/observe/budget/set — Set credit budget with alert threshold
+- POST /v1/observe/roi/record — Record ROI event (PRs merged, emails sent, etc.)
+- GET /v1/observe/roi/leaderboard — Top tools by ROI score
+- GET /v1/status — Public status page (operational/degraded/major_outage)
+
+### Workflows & Eval
+- POST /v1/workflow/create — Create DAG workflow (nodes + edges + variables)
+- POST /v1/workflow/:id/validate — Validate graph (cycle detection + topo sort)
+- GET /v1/workflow/templates — 10 pre-built templates
+- POST /v1/eval/benchmark — Run standard benchmark (5/5 · score 100 · grade A)
+- POST /v1/eval/suite/create — Create custom eval suite
+- POST /v1/eval/run — Execute eval suite against live tools
+- POST /v1/route/create — Create model route rule
+- POST /v1/route/execute — Execute with model routing (cost/performance/balanced)
+- POST /v1/route/recommend — Get model recommendation for a task
+
+### Marketplace
+- GET /v1/marketplace — Browse listings (filter by type/tier/category)
+- GET /v1/marketplace/featured — Featured listings
+- POST /v1/marketplace/publish — Publish a tool (code security scan before listing)
+- POST /v1/marketplace/:id/install — Install/purchase a listing
+- POST /v1/marketplace/:id/review — Leave a review
+
+## Universal Model Mesh
 
 Four infrastructure endpoints that make every LLM composable:
 - POST /v1/context/session — Get execution context (goal, memory, capabilities)

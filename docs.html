@@ -3,21 +3,21 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Docs | Slopshop — Backend for AI Agents</title>
+<title>Docs | Slopshop — MCP Agent Runtime OS for the Computer-Use Era</title>
 <meta name="description" content="Complete API documentation for Slopshop — tools, persistent memory, scheduling, and execution for AI agents.">
 <meta name="keywords" content="slopshop docs, slopshop api reference, slopshop documentation, agent api docs, MCP documentation">
 <link rel="canonical" href="https://slopshop.gg/docs">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/docs">
 <meta property="og:title" content="API Documentation | Slopshop">
-<meta property="og:description" content="Complete API reference for Slopshop tools across 78 categories and 1,269 endpoints. Quickstart, SDK, CLI, pipes, and MCP setup.">
+<meta property="og:description" content="Complete API reference for Slopshop tools across 82 categories and 1,303 endpoints. Quickstart, SDK, CLI, pipes, and MCP setup.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="API Documentation | Slopshop">
-<meta name="twitter:description" content="Complete API reference for Slopshop tools across 78 categories and 1,269 endpoints. Guides, SDK, CLI, MCP.">
+<meta name="twitter:description" content="Complete API reference for Slopshop tools across 82 categories and 1,303 endpoints. Guides, SDK, CLI, MCP.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for Slopshop tools across 78 categories and 1,269 endpoints.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for Slopshop tools across 82 categories and 1,303 endpoints.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -171,7 +171,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a href="/security">Security</a>
       <a href="/about">About</a>
       <a href="/signup" style="background:var(--r);color:#fff;padding:4px 12px;border-radius:6px;font-weight:600;font-size:0.7rem">Sign Up Free</a>
-      <span class="pill">1,269 endpoints &middot; 78 categories</span>
+      <span class="pill">1,303 endpoints &middot; 82 categories</span>
     </div>
   </div>
 </div>
@@ -213,6 +213,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a class="sb-link" href="#chain-branching">Chain Branching</a>
       <a class="sb-link" href="#grok-features">Grok-Specific Features</a>
       <a class="sb-link" href="#safety-guardrails">Safety &amp; Guardrails</a>
+      <a class="sb-link" href="#agent-runtime-os">Agent Runtime OS &#x2728;</a>
       <a class="sb-link" href="#marketplace">Marketplace</a>
       <a class="sb-link" href="#advanced-research">Advanced Research</a>
       <a class="sb-link" href="#memory-upload">Memory Upload</a>
@@ -262,7 +263,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
     <!-- GETTING STARTED -->
     <h1 id="getting-started">Getting Started</h1>
     <p>
-      Slopshop is the backend for AI agents — 1,269 endpoints across 78 categories. Tools, persistent memory, scheduling, and execution in one platform. Every response includes <code>_engine: "real"</code>. Self-hostable, designed for agents, scripts, and humans.
+      Slopshop is the Self-Hostable MCP Agent Runtime OS for the Computer-Use Era — 1,303 real tools across 82 categories. Free evolving persistent memory (GraphRAG + episodic), zero-trust agent identity (NIST-aligned SPIFFE/SVID), computer use backend, MCP gateway + policy engine, visual DAG workflow builder, marketplace, and Army-scale orchestration. Every response includes <code>_engine: "real"</code>. Self-hostable, air-gapped, designed for production agents.
     </p>
 
     <h3>Quick Install</h3>
@@ -526,7 +527,7 @@ POST /v1/memory-get  {"key":"chain_results"}</code></pre></div>
 
     <!-- API REFERENCE -->
     <h2 id="api-reference">API Reference</h2>
-    <p>All 78 categories and 1,269 endpoints documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
+    <p>All 82 categories and 1,303 endpoints documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
 
     <h3>Machine-Readable Specs</h3>
     <table class="doc-table">
@@ -1314,7 +1315,7 @@ client.call("memory-set", namespace="audit", key=f"file-{local_hash}", value=res
 
     <!-- ECOSYSTEM INTEGRATIONS (v3.7.0) -->
     <h2 id="ecosystem-integrations">Ecosystem Integrations <span class="badge badge-compute">v3.7.0</span></h2>
-    <p>Slopshop plugs into every major agent IDE, framework, and workflow tool. One install, universal access to all 78 categories of tools.</p>
+    <p>Slopshop plugs into every major agent IDE, framework, and workflow tool. One install, universal access to all 82 categories of tools.</p>
 
     <h3>MCP Server &mdash; <code>slop mcp serve</code></h3>
     <p>Start a local MCP server that exposes the full Slopshop catalog to any MCP-compatible client. One command, works everywhere.</p>
@@ -1433,7 +1434,7 @@ curl -N https://slopshop.gg/v1/visualizer/stream \
 # Returns SSE events: agent_spawn, task_complete, merkle_update, hive_message</code></pre></div>
 
     <h3>MCP Desktop Bridge</h3>
-    <p>Bootstrap the MCP server for Claude Desktop or Cursor with full tool catalog exposure. All 78 categories are discoverable as native MCP tools.</p>
+    <p>Bootstrap the MCP server for Claude Desktop or Cursor with full tool catalog exposure. All 82 categories are discoverable as native MCP tools.</p>
     <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Bootstrap MCP for Claude Desktop (auto-configures claude_desktop_config.json)
 slop mcp bootstrap --ide=claude-desktop
 
@@ -1583,8 +1584,97 @@ POST /v1/memory/evolve/stop      — Stop an active evolution by ID</code></pre>
   -d '{"army_id": "EXT-47", "faults": ["network", "latency", "agent-drop"]}'</code></pre></div>
 
     <!-- MARKETPLACE (v3.8.0) -->
-    <h2 id="marketplace">Marketplace <span class="badge badge-compute">v3.8.0</span></h2>
-    <p>The Slopshop Marketplace lets agents and developers publish, discover, and trade templates, plugins, and compute capacity.</p>
+    <!-- AGENT RUNTIME OS (v3.7.0) -->
+    <h2 id="agent-runtime-os">Agent Runtime OS <span class="badge badge-compute">v3.7.0</span></h2>
+    <p>Slopshop v3.7.0 ships seven new platform layers that turn the tool catalog into a full agent runtime OS for the Computer-Use Era. Every layer is self-hostable and NIST-aligned.</p>
+
+    <h3>Agent Identity (SPIFFE/SVID)</h3>
+    <p>Issue verifiable agent identities (HMAC-SHA256 signed JWTs), register in the Agent Name Service (ANS), track reputation scores (0–10 rolling weighted average), and pass typed A2A messages between agents.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Issue identity token
+curl -X POST https://slopshop.gg/v1/identity/issue \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"research-bot","name":"Research Bot","capabilities":["llm","tools"]}'
+
+# Register in Agent Name Service
+curl -X POST https://slopshop.gg/v1/ans/register \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"name":"research-bot","agent_id":"research-bot","endpoint":"https://myapp.com/agent","capabilities":["research","memory"]}'
+
+# Submit reputation signal
+curl -X POST https://slopshop.gg/v1/reputation/signal \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"agent_id":"research-bot","signal":"success","task":"daily-research"}'</code></pre></div>
+
+    <h3>Computer Use Backend</h3>
+    <p>Record Claude's Computer Use sessions — log actions, store screenshots with OCR, run pixel-diff verification, export replay scripts, and gate on human approval. While Claude clicks and types, Slopshop persists state and verifies correctness.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Start a session
+curl -X POST https://slopshop.gg/v1/computer-use/session/start \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"name":"organize-downloads","task":"Batch resize images and organize by date"}'
+
+# Log a screenshot + run OCR
+curl -X POST https://slopshop.gg/v1/computer-use/screenshot \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"session_id":"SESSION_ID","image_base64":"...","label":"before-resize"}'
+
+# Export replay as Python (pyautogui)
+curl -X POST https://slopshop.gg/v1/computer-use/replay \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"session_id":"SESSION_ID","format":"python"}'</code></pre></div>
+
+    <h3>MCP Gateway + Policy Engine</h3>
+    <p>Proxy all MCP tool calls through a policy engine. Create rules (deny, require_approval, rate_limit) based on tool slug, credit spend, agent identity, time range, or tier. Export audit logs as ECS-compatible NDJSON for SIEM integration.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Get signed MCP manifest
+curl https://slopshop.gg/v1/gateway/manifest \
+  -H "Authorization: Bearer $KEY"
+
+# Create a policy
+curl -X POST https://slopshop.gg/v1/policy/create \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"name":"block-heavy","rules":[{"condition":"credit_over","value":500,"action":"require_approval"}]}'
+
+# Export audit log (ECS NDJSON)
+curl -X POST https://slopshop.gg/v1/gateway/audit/export \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"format":"ecs","limit":1000}'</code></pre></div>
+
+    <h3>Observability Dashboard</h3>
+    <p>Full distributed tracing, p95/p99 latency, cost attribution per tool and agent, ROI calculator, budget alerts, 4-component health scores, and a public status page with incident management.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Get full dashboard
+curl https://slopshop.gg/v1/observe/dashboard \
+  -H "Authorization: Bearer $KEY"
+
+# Set credit budget
+curl -X POST https://slopshop.gg/v1/observe/budget/set \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"budget_credits":10000,"alert_threshold":0.8}'
+
+# Record ROI event
+curl -X POST https://slopshop.gg/v1/observe/roi/record \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"event_type":"pr_merged","value_usd":50,"tool_slug":"devops-semver-bump"}'</code></pre></div>
+
+    <h3>Visual DAG Workflow Builder</h3>
+    <p>Create workflow graphs with nodes (tool calls) and edges (data flow). Kahn's topological sort ensures correct execution order. DFS cycle detection prevents infinite loops. Human gates pause execution until approval. 10 pre-built templates included.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># List templates
+curl https://slopshop.gg/v1/workflow/templates \
+  -H "Authorization: Bearer $KEY"
+
+# Create a workflow
+curl -X POST https://slopshop.gg/v1/workflow/create \
+  -H "Authorization: Bearer $KEY" \
+  -d '{"name":"hash-and-store","nodes":[{"id":"n1","type":"tool","slug":"crypto-hash-sha256"},{"id":"n2","type":"tool","slug":"memory-set"}],"edges":[{"from":"n1","to":"n2","output":"hash"}]}'</code></pre></div>
+
+    <h3>Eval Suite + Model Routing</h3>
+    <p>Create test suites with expected outputs, run benchmarks (5/5 core tests · score 100 · grade A), and configure model routing rules (cost-optimized, performance, round-robin, balanced).</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Run standard benchmark
+curl -X POST https://slopshop.gg/v1/eval/benchmark \
+  -H "Authorization: Bearer $KEY"
+# → {"score":100,"grade":"A","passed":5,"failed":0}</code></pre></div>
+
+    <h2 id="marketplace">Marketplace <span class="badge badge-compute">v3.7.0</span></h2>
+    <p>The Slopshop Marketplace lets agents and developers publish, discover, install, and monetize tools. 15 seed listings included. Publishers earn 70% of every purchase. Handler code is scanned for 16 dangerous patterns before listing.</p>
 
     <h3>Template Marketplace</h3>
     <p>Browse and invoke pre-built agent templates. Fork templates for customization or publish your own.</p>
@@ -1832,7 +1922,7 @@ docker run -p 3000:3000 \
 
     <!-- ERROR CODES & REFUNDS -->
     <h2 id="error-codes">Error Codes &amp; Refunds</h2>
-    <p>Slopshop uses consistent error codes across all 1,269 endpoints. Credits are automatically refunded when a handler errors &mdash; you only pay for successful calls.</p>
+    <p>Slopshop uses consistent error codes across all 1,303 endpoints. Credits are automatically refunded when a handler errors &mdash; you only pay for successful calls.</p>
 
     <h3>Auto-Refund Policy</h3>
     <p>If an API handler throws an error after credits are deducted, those credits are <strong>automatically refunded</strong> to your account. You will never be charged for a failed call. The refund is instant and reflected in your balance immediately.</p>
@@ -1861,7 +1951,7 @@ docker run -p 3000:3000 \
 
 <script>
 // ============================================================
-// DATA: All API definitions across 78 categories and 1,269 endpoints
+// DATA: All API definitions across 82 categories and 1,303 endpoints
 // We fetch from /v1/tools to stay in sync, with a static fallback
 // ============================================================
 const STATIC_APIS = {
@@ -2204,15 +2294,15 @@ const EXAMPLE_INPUTS = {
   'net-url-parse': { url: 'https://slopshop.gg/v1/tools/crypto-hash-sha256' },
   'llm-blog-outline': { topic: 'How AI agents use APIs', keywords: 'slopshop, automation, credits' },
   'llm-blog-draft': { topic: 'The future of API-first development' },
-  'llm-landing-page-copy': { product: 'Slopshop', audience: 'developers', value_prop: '78 categories of real tools for agents' },
-  'llm-product-description': { product: 'Slopshop API Platform', features: ['78 categories of tools', 'credit-based', 'self-hostable'] },
+  'llm-landing-page-copy': { product: 'Slopshop', audience: 'developers', value_prop: '82 categories of real tools for agents' },
+  'llm-product-description': { product: 'Slopshop API Platform', features: ['82 categories of tools', 'credit-based', 'self-hostable'] },
   'llm-email-draft': { context: 'Following up on partnership discussion', intent: 'schedule a demo call' },
   'llm-email-reply': { thread: 'Hi, I am interested in your API platform. What pricing plans do you offer?' },
   'llm-cold-outreach': { prospect: 'CTO at TechCorp', company: 'TechCorp', product: 'Slopshop' },
   'llm-ad-copy': { product: 'Slopshop', audience: 'developers', platform: 'Google Ads' },
-  'llm-social-post': { topic: 'Launch of 78 categories of real tools', platform: 'twitter' },
+  'llm-social-post': { topic: 'Launch of 82 categories of real tools', platform: 'twitter' },
   'llm-video-script': { topic: 'Getting started with Slopshop', duration: '60 seconds' },
-  'llm-press-release': { headline: 'Slopshop launches 78 categories of real tools for AI agents', details: 'Credit-based, self-hostable API platform' },
+  'llm-press-release': { headline: 'Slopshop launches 82 categories of real tools for AI agents', details: 'Credit-based, self-hostable API platform' },
   'llm-tagline': { brand: 'Slopshop', description: 'API bazaar for AI agents' },
   'llm-summarize': { text: 'Long document text to be summarized...' },
   'llm-summarize-thread': { thread: 'Email thread with multiple messages...' },
@@ -2721,7 +2811,7 @@ init();
 </script>
 <div style="background:#18181b;padding:24px;text-align:center;font-size:13px;color:#a1a1aa;border-top:1px solid #27272a">
   <p style="font-family:monospace;color:white">Slopshop is a self-hostable backend for AI agents: real tools, persistent memory, one execution layer.</p>
-  <p style="margin-top:8px">78 categories · 1,269 handlers · 925 self-hostable pure-compute · 8 core memory APIs free forever · 500 free credits on signup</p>
+  <p style="margin-top:8px">82 categories · 1,303 handlers · 925 self-hostable pure-compute · 8 core memory APIs free forever · 500 free credits on signup</p>
   <p>memory-set · memory-get · memory-search · memory-list · memory-delete · memory-stats · memory-namespace-list · counter-get — always 0 credits</p>
 </div>
 </body>

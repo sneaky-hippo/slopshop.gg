@@ -10,6 +10,7 @@
 
 const https = require('https');
 const http = require('http');
+const crypto = require('crypto');
 
 function post(hostname, path, headers, body) {
   return new Promise((resolve, reject) => {
@@ -153,7 +154,8 @@ handlers['ext-linear-issue'] = async (input) => {
     const res = await post('api.linear.app', '/graphql', {
       Authorization: key, 'Content-Type': 'application/json',
     }, {
-      query: `mutation { issueCreate(input: { title: "${(input.title || 'New Issue').replace(/"/g, '\\"')}", description: "${(input.body || input.text || '').replace(/"/g, '\\"')}", teamId: "${input.team_id || ''}" }) { success issue { id identifier url } } }`
+      query: `mutation CreateIssue($input: IssueCreateInput!) { issueCreate(input: $input) { success issue { id identifier url } } }`,
+      variables: { input: { title: input.title || 'New Issue', description: input.body || input.text || '', teamId: input.team_id || '' } }
     });
     return { _engine: 'real', issue: res.body?.data?.issueCreate?.issue };
   } catch (e) { return { _engine: 'real', error: e.message }; }
@@ -204,8 +206,47 @@ handlers['ext-s3-upload'] = async (input) => {
   const accessKey = process.env.AWS_ACCESS_KEY_ID;
   const secretKey = process.env.AWS_SECRET_ACCESS_KEY;
   const bucket = process.env.S3_BUCKET;
+  const region = process.env.AWS_REGION || 'us-east-1';
   if (!accessKey || !secretKey || !bucket) return needsKey('AWS_ACCESS_KEY_ID + AWS_SECRET_ACCESS_KEY + S3_BUCKET', 'AWS credentials and S3 bucket');
-  return { _engine: 'needs_key', _unlock: 'S3 upload requires AWS SDK. Set credentials and use aws-sdk.', note: 'Will implement with @aws-sdk/client-s3 when credentials are provided.' };
+  const key = input.key || input.filename || ('upload-' + Date.now());
+  const body = input.content || input.data || '';
+  const contentType = input.content_type || 'text/plain';
+  const bodyBuf = Buffer.from(typeof body === 'string' ? body : JSON.stringify(body));
+  // AWS Signature V4
+  const now = new Date();
+  const amzDate = now.toISOString().replace(/[:-]/g, '').slice(0, 15) + 'Z';
+  const dateStamp = amzDate.slice(0, 8);
+  const host = `${bucket}.s3.${region}.amazonaws.com`;
+  const path = `/${key}`;
+  const payloadHash = crypto.createHash('sha256').update(bodyBuf).digest('hex');
+  const canonicalHeaders = `content-type:${contentType}\nhost:${host}\nx-amz-content-sha256:${payloadHash}\nx-amz-date:${amzDate}\n`;
+  const signedHeaders = 'content-type;host;x-amz-content-sha256;x-amz-date';
+  const canonicalRequest = ['PUT', path, '', canonicalHeaders, signedHeaders, payloadHash].join('\n');
+  const credentialScope = `${dateStamp}/${region}/s3/aws4_request`;
+  const stringToSign = ['AWS4-HMAC-SHA256', amzDate, credentialScope,
+    crypto.createHash('sha256').update(canonicalRequest).digest('hex')].join('\n');
+  const hmac = (key, data) => crypto.createHmac('sha256', key).update(data).digest();
+  const signingKey = hmac(hmac(hmac(hmac('AWS4' + secretKey, dateStamp), region), 's3'), 'aws4_request');
+  const signature = crypto.createHmac('sha256', signingKey).update(stringToSign).digest('hex');
+  const authHeader = `AWS4-HMAC-SHA256 Credential=${accessKey}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  return new Promise((resolve) => {
+    const req = https.request({ hostname: host, path, method: 'PUT', headers: {
+      'Content-Type': contentType, 'Content-Length': bodyBuf.length,
+      'x-amz-date': amzDate, 'x-amz-content-sha256': payloadHash, 'Authorization': authHeader,
+    } }, res => {
+      let d = ''; res.on('data', c => d += c);
+      res.on('end', () => {
+        if (res.statusCode === 200 || res.statusCode === 204) {
+          resolve({ _engine: 'real', ok: true, key, bucket, region, url: `https://${host}/${key}`, size_bytes: bodyBuf.length, content_type: contentType });
+        } else {
+          resolve({ _engine: 'real', ok: false, status: res.statusCode, error: d.slice(0, 200) });
+        }
+      });
+    });
+    req.on('error', e => resolve({ _engine: 'real', ok: false, error: e.message }));
+    req.write(bodyBuf);
+    req.end();
+  });
 };
 
 // ===== OPENAI EMBEDDING =====
