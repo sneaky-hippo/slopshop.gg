@@ -22,7 +22,7 @@
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
 *{margin:0;padding:0;box-sizing:border-box}
-:root{--bg:#09090b;--s1:#18181b;--s2:#27272a;--s3:#3f3f46;--b:#27272a;--t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;--r:#ef4444;--o:#f97316;--g:#22c55e;--c:#06b6d4;--v:#8b5cf6;--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;--sidebar:260px}
+:root{--bg:#09090b;--s1:#18181b;--s2:#27272a;--s3:#3f3f46;--b:#27272a;--t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;--r:#06b6d4;--o:#f97316;--g:#22c55e;--c:#06b6d4;--v:#8b5cf6;--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;--sidebar:260px}
 html{scroll-behavior:smooth;scroll-padding-top:60px}
 body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased}
 ::selection{background:var(--r);color:#fff}
@@ -162,7 +162,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
 <div class="topbar">
   <div class="topbar-inner">
     <button class="menu-toggle" onclick="toggleSidebar()" aria-label="Menu">&#9776;</button>
-    <a href="/" class="logo-link"><span class="logo"><span class="mark" style="color:#ef4444;font-family:'Courier New',monospace;font-weight:900;letter-spacing:0.05em">SLOP</span><span class="gg" style="color:#666">.gg</span><span style="font-size:0.55rem;color:#444;border:1px solid #2a2a2e;padding:2px 6px;border-radius:4px;margin-left:8px">v0.1-alpha</span></span></a>
+    <a href="/" class="logo-link"><span class="logo"><span class="mark" style="color:#06b6d4;font-family:'JetBrains Mono',monospace;font-weight:700;letter-spacing:0.08em">SLOP</span><span class="gg" style="color:#52525b;font-weight:400;font-size:0.7rem">.gg</span><span style="font-size:0.5rem;color:#52525b;border:1px solid #27272a;padding:1px 6px;border-radius:3px;margin-left:8px;font-family:monospace">alpha</span></span></a>
     <div class="topbar-links">
       <a href="/">Home</a>
       <a href="/docs.html" style="color:var(--r)">Docs</a>
@@ -171,7 +171,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a href="/security">Security</a>
       <a href="/about">About</a>
       <a href="/signup" style="background:var(--r);color:#fff;padding:4px 12px;border-radius:6px;font-weight:600;font-size:0.7rem">Sign Up Free</a>
-      <span class="pill">78 categories &middot; 1,269 endpoints &middot; 78 categories of tools</span>
+      <span class="pill">1,269 endpoints &middot; 78 categories</span>
     </div>
   </div>
 </div>
@@ -245,10 +245,22 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
 
   <div id="docsContent">
 
+    <!-- SLOP Logo -->
+    <div style="background:#0c0c0e;border:1px solid #1e1e22;border-radius:10px;padding:20px 24px;max-width:480px;margin:0 auto 32px">
+      <pre style="margin:0;font-family:'JetBrains Mono',monospace;font-size:0.58rem;line-height:1.3;color:#06b6d4;text-align:center;white-space:pre">    ____  __    ____  ____
+   / ___\/ /   / __ \/ __ \
+   \__ \/ /   / / / / /_/ /
+  ___/ / /___/ /_/ / ____/
+ /____/_____/\____/_/
+<span style="color:#52525b">S T A T E L E S S · L I G H T W E I G H T
+O P E R A T I N G · P R I M I T I V E S</span>
+<span style="color:#3f3f46;font-size:0.9em">slopshop.gg  v0.1-alpha</span></pre>
+    </div>
+
     <!-- GETTING STARTED -->
     <h1 id="getting-started">Getting Started</h1>
     <p>
-      <strong>Slopshop</strong> is the API bazaar for AI agents and developers -- <strong>1,269 endpoints</strong> across <strong>78 categories of real tools</strong> that actually process your data, return real results, and charge by the credit. Every response includes <code>_engine: "real"</code> to prove your data was genuinely processed, not mocked. It is self-hostable, open source, and designed to be called by agents, scripts, or humans alike.
+      Slopshop is the backend for AI agents — 1,269 endpoints across 78 categories. Tools, persistent memory, scheduling, and execution in one platform. Every response includes <code>_engine: "real"</code>. Self-hostable, designed for agents, scripts, and humans.
     </p>
 
     <h3>Quick Install</h3>
