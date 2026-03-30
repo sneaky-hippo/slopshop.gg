@@ -536,9 +536,22 @@ module.exports = function (db) {
   // -------------------------------------------------------------------------
   function counterIncrement(input) {
     input = input || {};
-    const { name, by = 1 } = input;
+    const name = input.name || input.key;
+    const by = input.by || input.amount || 1;
     if (!name) return { _engine: 'real', error: 'missing_required_field', required: 'name' };
     const delta = Number(by);
+    const now = Date.now();
+    stmts.counterUpsert.run({ name, value: delta, delta, now });
+    const row = stmts.counterGet.get(name);
+    return { _engine: 'real', name, value: row.value };
+  }
+
+  function counterDecrement(input) {
+    input = input || {};
+    const name = input.name || input.key;
+    const by = input.by || input.amount || 1;
+    if (!name) return { _engine: 'real', error: 'missing_required_field', required: 'name' };
+    const delta = -Math.abs(Number(by));
     const now = Date.now();
     stmts.counterUpsert.run({ name, value: delta, delta, now });
     const row = stmts.counterGet.get(name);
@@ -625,6 +638,7 @@ module.exports = function (db) {
     'queue-peek':             queuePeek,
     'queue-size':             queueSize,
     'counter-increment':      counterIncrement,
+    'counter-decrement':      counterDecrement,
     'counter-get':            counterGet,
     'memory-vector-search':   memoryVectorSearch,
     'memory-time-capsule':    memoryTimeCapsule,

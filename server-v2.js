@@ -9942,9 +9942,12 @@ app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => 
   }
 
   // Response cache check (identical request deduplication - saves credits)
-  const cacheKey = getCacheKey(req.params.slug, req.body);
+  // NEVER cache stateful operations: memory, counter, queue, state, orch
+  const slug = req.params.slug;
+  const isStateful = slug.startsWith('memory-') || slug.startsWith('counter-') || slug.startsWith('queue-') || slug.startsWith('state-') || slug.startsWith('context-') || slug.startsWith('orch-');
+  const cacheKey = getCacheKey(slug, req.body);
   const cached = responseCache.get(cacheKey);
-  if (cached && def.tier === 'compute' && !req.body.trace) {
+  if (cached && def.tier === 'compute' && !req.body.trace && !isStateful) {
     // Only cache compute-tier (deterministic) results, not LLM/network
     res.set('X-Cache', 'HIT');
     res.set('X-Credits-Used', '0');
