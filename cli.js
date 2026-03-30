@@ -2179,7 +2179,7 @@ async function cmdSignup(overrideArgs) {
     // If account already exists, offer to log in instead
     if (err.body?.error?.code === 'email_exists' || err.message?.includes('exists')) {
       console.log(`\n  ${yellow('Account already exists.')} Logging you in instead...\n`);
-      return cmdLogin(overrideArgs);
+      return await cmdLogin(overrideArgs);
     }
     handleError(err);
   }
@@ -6262,7 +6262,8 @@ async function cmdInteractive() {
           case 'agents': case 'agent': await cmdAgents(args); break;
           case 'doctor': await cmdDoctor(); break;
           case 'hive': await cmdHive(args); break;
-          case 'quickstart': case 'start': case 'tutorial': await cmdQuickstart(); break;
+          case 'quickstart': case 'start': case 'tutorial': { const _cfg2 = loadConfig(); await cmdQuickstart({ email: _cfg2.email, isNew: false }); break; }
+          case 'onboard':  await cmdOnboard(); break;
           case 'dream': await cmdDream(args); break;
           case 'live': await cmdLive(args); break;
           case 'batch': await cmdBatch(args); break;
@@ -6996,7 +6997,7 @@ async function seedUserMemory(email, apiKey) {
       await request('POST', '/v1/memory-set', { key: 'user:joined', value: now, namespace: 'profile', tags: 'identity' });
     }
   } catch (_) { /* non-fatal — memory seeding is best-effort */ }
-  if (!prevKey) API_KEY = prevKey;
+  API_KEY = prevKey;
 }
 
 // ============================================================
@@ -7099,6 +7100,16 @@ async function cmdDream(args) {
     return;
   }
 
+  // slop dream dismiss — discard pending insights without saving
+  if (sub === 'dismiss' || sub === 'discard' || sub === 'clear') {
+    try {
+      const res = await request('POST', '/v1/dream/dismiss');
+      if (jsonMode) return console.log(JSON.stringify(res.data, null, 2));
+      console.log(`\n  ${green('\u2713')} Insights dismissed\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
   // slop dream deploy — push pending insights to memory
   if (sub === 'deploy' || sub === 'apply') {
     try {
@@ -7122,8 +7133,10 @@ async function cmdDream(args) {
       subs.forEach((s, i) => console.log(`  ${dim(i+1 + '.')} ${s.topic} ${dim('('+s.id+')')}`));
       const choice = await prompt('\n  Enter ID to pause: ');
       if (!choice) return;
-      const res2 = await request('DELETE', '/v1/dream/subscribe/' + choice.trim());
-      console.log(`\n  ${green('\u2713')} Dream paused\n`);
+      try {
+        await request('DELETE', '/v1/dream/subscribe/' + choice.trim());
+        console.log(`\n  ${green('\u2713')} Dream paused\n`);
+      } catch (e) { handleError(e); }
       return;
     }
     try {
@@ -7216,7 +7229,7 @@ async function main() {
 
   // First-run auto-onboarding: no config + TTY → launch wizard automatically
   const noConfig = !fs.existsSync(CONFIG_FILE);
-  const skipOnboard = ['signup', 'login', 'help', 'version', '-v', '--version', '-h', '--help', 'key', 'config'];
+  const skipOnboard = ['signup', 'login', 'help', 'version', '-v', '--version', '-h', '--help', 'key', 'config', 'onboard'];
   if (noConfig && process.stdin.isTTY && !jsonMode && !quiet && !(cmd && skipOnboard.includes(cmd))) {
     await cmdOnboard();
     return;
@@ -7346,7 +7359,8 @@ async function main() {
       }
       break;
     }
-    case 'quickstart': case 'start': case 'tutorial': await cmdQuickstart(); break;
+    case 'quickstart': case 'start': case 'tutorial': { const _cfg = loadConfig(); await cmdQuickstart({ email: _cfg.email, isNew: false }); break; }
+    case 'onboard':     await cmdOnboard();            break;
     case 'dream':       await cmdDream(args);          break;
     case 'upgrade':     await cmdUpgrade();            break;
     case 'completions': cmdCompletions(args);          break;
