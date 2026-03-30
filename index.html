@@ -92,7 +92,7 @@ nav{
 .hero{padding:80px 32px 48px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse,rgba(6,182,212,0.04),transparent 60%)}
 .hero-inner{max-width:1200px;margin:0 auto;position:relative;z-index:1}
 .hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(6,182,212,0.15);color:var(--r2);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:500;margin-bottom:28px}
-.hero h1{font-family:var(--sans);font-size:clamp(2.4rem,5.5vw,3.6rem);font-weight:600;letter-spacing:-0.04em;line-height:1.1;margin-bottom:20px}
+.hero h1{font-family:var(--mono);font-size:clamp(1.8rem,4.5vw,2.8rem);font-weight:700;letter-spacing:-0.03em;line-height:1.15;margin-bottom:20px}
 .hero h1 .accent{color:var(--r)}
 .hero h1 .white{color:var(--t)}
 .hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:540px;margin:0 auto;line-height:1.75;font-weight:400}
@@ -114,7 +114,7 @@ nav{
 
 /* HERO CTAs */
 .hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
-.cta-primary,.cta-secondary{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:8px;font-family:var(--sans);font-size:0.82rem;font-weight:500;transition:all 0.2s;text-decoration:none}
+.cta-primary,.cta-secondary{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:600;transition:all 0.2s;text-decoration:none}
 .cta-primary{background:var(--r);color:#fff}
 .cta-primary:hover{box-shadow:0 0 20px rgba(6,182,212,0.25);transform:translateY(-1px);opacity:1}
 .cta-secondary{background:transparent;color:var(--t2);border:1px solid var(--b2);font-weight:500}
@@ -122,17 +122,17 @@ nav{
 
 /* BUILD GRID */
 .build-section{max-width:1200px;margin:0 auto;padding:64px 32px}
-.build-section h2{font-family:var(--sans);font-size:1.5rem;font-weight:600;text-align:center;margin-bottom:36px;letter-spacing:-0.03em}
+.build-section h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;text-align:center;margin-bottom:36px;letter-spacing:-0.02em}
 .build-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:24px}
 .build-card{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:24px;transition:transform 0.15s,border-color 0.2s}
 .build-card:hover{transform:translateY(-2px);border-color:var(--b2)}
-.build-card h3{font-family:var(--sans);font-size:0.85rem;font-weight:600;color:var(--t);margin-bottom:8px}
+.build-card h3{font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--t);margin-bottom:8px}
 .build-card p{font-size:0.78rem;color:var(--t2);line-height:1.7;margin-bottom:12px}
 .build-card code{display:block;background:var(--bg);border:1px solid var(--b);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:0.62rem;color:var(--r);line-height:1.5;overflow-x:auto;white-space:nowrap}
 
 /* SECTIONS */
 .sec{max-width:1200px;margin:0 auto;padding:72px 32px;position:relative}
-.sec h2{font-family:var(--sans);font-size:1.4rem;font-weight:600;margin-bottom:8px;letter-spacing:-0.03em}
+.sec h2{font-family:var(--mono);font-size:1.2rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
 .sec .desc{color:var(--t3);font-size:0.85rem;margin-bottom:32px;line-height:1.75}
 
 /* TERMINAL DEMO (hero) */
@@ -483,16 +483,14 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
   <div class="hero-inner">
 
     <!-- SLOP Logo -->
-    <pre style="margin:0 auto 32px;font-family:var(--mono);font-size:clamp(0.55rem,1.8vw,1rem);line-height:1.25;color:var(--r);text-align:left;white-space:pre;display:inline-block" aria-label="SLOP - Stateless Lightweight Operating Primitives">        ____  __    ____  ____
+    <pre style="margin:0 auto 36px;font-family:var(--mono);font-size:clamp(0.6rem,2.2vw,1.2rem);line-height:1.2;color:var(--r);text-align:left;white-space:pre;display:inline-block" aria-label="SLOP - Stateless Lightweight Operating Primitives">        ____  __    ____  ____
        / ___\/ /   / __ \/ __ \
        \__ \/ /   / / / / /_/ /
       ___/ / /___/ /_/ / ____/
      /____/_____/\____/_/
-
-<span style="color:var(--t4)">  S T A T E L E S S · L I G H T W E I G H T
+<span style="color:var(--t4);font-size:0.5em;letter-spacing:0.15em">  S T A T E L E S S · L I G H T W E I G H T
   O P E R A T I N G · P R I M I T I V E S</span>
-
-<span style="color:var(--t3);font-size:0.65em">          slopshop.gg  v0.1-alpha</span></pre>
+<span style="color:var(--t3);font-size:0.45em">          slopshop.gg  v0.1-alpha</span></pre>
 
     <h1><span class="white">The backend</span> <span class="accent">your agents need.</span></h1>
     <p class="sub" style="max-width:560px">
@@ -525,7 +523,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
 <!-- ========== WHAT SLOPSHOP DOES ========== -->
 <div class="sec" style="padding-top:80px;padding-bottom:64px" id="capabilities">
   <div style="text-align:center;font-family:var(--mono);font-size:0.65rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">What Slopshop does</div>
-  <h2 style="font-size:1.6rem;text-align:center;margin-bottom:8px;font-family:var(--sans);font-weight:600;letter-spacing:-0.03em">Everything your agent needs after the prompt</h2>
+  <h2 style="font-size:1.3rem;text-align:center;margin-bottom:8px;font-family:var(--mono);font-weight:700;letter-spacing:-0.02em">Everything your agent needs after the prompt</h2>
   <p class="desc" style="text-align:center;max-width:520px;margin:0 auto 40px;color:var(--t3);font-size:0.85rem">Most agents can generate text. Few can use tools, remember context, schedule work, or run multi-step workflows without glue code.</p>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px">
@@ -572,7 +570,7 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
 
 <!-- ========== USE CASES ========== -->
 <div class="sec" style="padding-top:64px;padding-bottom:64px">
-  <h2 style="font-size:1.5rem;text-align:center;letter-spacing:-0.03em;font-family:var(--sans);font-weight:600">Six ways teams use Slopshop</h2>
+  <h2 style="font-size:1.2rem;text-align:center;letter-spacing:-0.02em;font-family:var(--mono);font-weight:700">Six ways teams use Slopshop</h2>
   <p class="desc" style="text-align:center;max-width:480px;margin:0 auto 36px;font-size:0.82rem">Real patterns. Start with one, expand as you go.</p>
 
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:1200px;margin:0 auto">
