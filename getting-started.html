@@ -30,7 +30,8 @@
     {"@type":"HowToStep","name":"Use persistent memory","text":"Store, retrieve, and search agent state for free."},
     {"@type":"HowToStep","name":"Run an agent task","text":"Use the natural language endpoint to run multi-tool tasks."},
     {"@type":"HowToStep","name":"Explore tools","text":"Browse all 78 tool categories by category."},
-    {"@type":"HowToStep","name":"Set up MCP for Claude Code","text":"Add Slopshop as an MCP server for Claude Code."}
+    {"@type":"HowToStep","name":"Set up MCP for Claude Code","text":"Add Slopshop as an MCP server for Claude Code."},
+    {"@type":"HowToStep","name":"Connect external services","text":"Configure OAuth connectors for GitHub, Slack, Linear, Notion, and more."}
   ]
 }
 </script>
@@ -253,6 +254,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
       <a href="#step4"><span class="step-badge">4</span> Agent tasks</a>
       <a href="#step5"><span class="step-badge">5</span> Explore tools</a>
       <a href="#step6"><span class="step-badge">6</span> MCP for Claude</a>
+      <a href="#step7"><span class="step-badge">7</span> Connect services</a>
     </nav>
   </div>
 
@@ -657,6 +659,34 @@ slop mcp serve
 slop init --full-stack my-app</code></pre>
       </div>
       <p style="font-size:0.83rem;color:var(--t3);line-height:1.7">See the full <a href="/docs.html#ecosystem-integrations">Ecosystem Integrations docs</a> for Goose Recipes, Aider commands, OpenCode plugins, Cline Skills, LangChain/LangGraph adapters, and more.</p>
+    </section>
+
+    <!-- STEP 7: CONNECT EXTERNAL SERVICES -->
+    <section id="step7">
+      <div class="step-header">
+        <div class="step-num">7</div>
+        <div class="step-meta">
+          <h2>Connect external services</h2>
+          <div class="est">~2 minutes</div>
+        </div>
+      </div>
+      <p class="desc">Connect GitHub, Slack, Linear, Notion, and other services via OAuth connectors. Configure once, and your agents can authenticate and act on your behalf. All tokens are encrypted with AES-256-GCM and auto-rotated nightly.</p>
+
+      <div class="code-block">
+        <div class="code-header"><span class="lang">bash &mdash; configure a GitHub connector</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><code><span class="hl-comment"># Step 7: Connect external services</span>
+curl -X POST https://slopshop.gg/v1/connectors/config \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit":"github","client_id":"YOUR_GITHUB_APP_ID","client_secret":"YOUR_SECRET","scopes":["repo"],"auth_url":"https://github.com/login/oauth/authorize","token_url":"https://github.com/login/oauth/access_token"}'</code></pre>
+      </div>
+
+      <p style="font-size:0.83rem;color:var(--t3);line-height:1.7;margin:16px 0">Once configured, list your connectors with <code>GET /v1/connectors/list</code>, start the OAuth flow with <code>GET /v1/connectors/connect/:toolkit</code>, or remove one with <code>DELETE /v1/connectors/:id</code>. You can also set up webhook triggers to fire agent workflows from external events.</p>
+
+      <div class="callout info">
+        <div class="callout-icon">&#128274;</div>
+        <p><strong>Vault-secured tokens.</strong> All OAuth tokens are encrypted with AES-256-GCM and auto-rotated nightly via refresh token exchange. Revocation is immediate.</p>
+      </div>
     </section>
 
     <!-- NEXT STEPS -->

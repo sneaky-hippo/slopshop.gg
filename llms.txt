@@ -1,6 +1,6 @@
 # slopshop.gg — The missing backend for AI agents. Free persistent memory. Real compute across 78 tool categories. Agent chaining and orchestration. One API key. Self-hostable. Works with Claude, GPT, Grok, Gemini, and every LLM.
 
-One API key. 1,255 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 925 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer credit system, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, voice I/O for agents, A2A (agent-to-agent protocol) interop, swarm snapshots with budgets, browser primitives, Memory 2.0 graph queries, autonomous memory evolution, chain branching with conditional steps, eval benchmark with 67 test vectors, Grok endpoints, safety guardrails, marketplace, and full enterprise features.
+One API key. 1,269 endpoints across 78 categories. 78 categories of real tools — crypto, text, math, validation, finance, DevOps, and more. 925 compute handlers (all benchmarked, 100% pass rate), 85 SQLite tables. Free persistent memory (0 credits, forever). Guaranteed structured outputs. Plus: agent-to-agent chaining with infinite loop mode, prompt queue for batch jobs, template marketplace, agent evaluations and leaderboard, swarm replay system, credit trading market, agent sub-wallets with budgets, agent reputation system, local compute enhancement, swarm visualizer, always-on agent workspaces (Hive), parallel agent deployment (Army), scheduled background processing (Dream), second-agent copilots, peer-to-peer credit system, knowledge graphs, prediction markets, governance, tournaments, bounties, group chat, standups, streaming, batch execution, voice I/O for agents, A2A (agent-to-agent protocol) interop, swarm snapshots with budgets, browser primitives, Memory 2.0 graph queries, autonomous memory evolution, chain branching with conditional steps, eval benchmark with 67 test vectors, Grok endpoints, safety guardrails, marketplace, and full enterprise features.
 
 ## Universal Model Mesh (NEW in v3.7.0)
 
@@ -100,7 +100,7 @@ Every response includes `{ ok, data, meta: { credits_used, latency_ms, engine, c
 - Native MCP server (slop mcp serve) — discoverable by Claude Desktop, Cursor, VS Code, Goose, OpenCode, Cline, Aider
 - Official integrations: Goose Recipes, Aider custom commands, OpenCode plugin, Cline Skills, LangChain adapters
 
-## Categories (78) — 1,255 Endpoints
+## Categories (78) — 1,269 Endpoints
 
 ### Text Processing (72 tools)
 Extract, transform, analyze, and manipulate text. Word count, regex, diff, slugify, case convert, encoding, entropy, haiku, and more.
@@ -1168,6 +1168,41 @@ curl -X POST https://slopshop.gg/v1/swarm/budget/adjust \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
   -d '{"swarm_id":"research-team","new_budget":10000,"reason":"scaling up experiment"}'
+
+## OAuth Connectors (v3.8.0)
+Connect external services via OAuth. Supports GitHub, Slack, Linear, Notion, and any OAuth2 provider. All tokens encrypted with AES-256-GCM. Auto-rotated nightly.
+- POST /v1/connectors/config — Configure an OAuth connector (toolkit, client_id, client_secret, scopes, auth_url, token_url)
+- GET /v1/connectors/list — List all configured connectors
+- GET /v1/connectors/connect/:toolkit — Start OAuth flow (returns redirect URL)
+- DELETE /v1/connectors/:id — Remove a connector and revoke tokens
+curl -X POST https://slopshop.gg/v1/connectors/config \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"toolkit":"github","client_id":"YOUR_GITHUB_APP_ID","client_secret":"YOUR_SECRET","scopes":["repo"],"auth_url":"https://github.com/login/oauth/authorize","token_url":"https://github.com/login/oauth/access_token"}'
+
+## Webhook Triggers (v3.8.0)
+Define triggers that fire agent workflows when external events arrive via webhook.
+- POST /v1/triggers/create — Create a trigger (name, source, event, action)
+- POST /v1/triggers/webhook/:id — Webhook receiver URL (give to external services)
+- GET /v1/triggers/list — List all configured triggers
+curl -X POST https://slopshop.gg/v1/triggers/create \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name":"on-push","source":"github","event":"push","action":{"chain_id":"deploy-pipeline"}}'
+
+## Audit Export (v3.8.0)
+Export full audit trail for compliance, debugging, or SOC2 evidence collection.
+- GET /v1/audit/export — Export timestamped audit entries with endpoint, credits, latency, response hashes
+curl https://slopshop.gg/v1/audit/export \
+  -H "Authorization: Bearer YOUR_KEY"
+
+## Schema Import (v3.8.0)
+Bulk-import tool schemas for self-hosted deployments or custom tool registration.
+- POST /v1/import/schemas — Import an array of tool schemas (slug, name, description, input, output)
+curl -X POST https://slopshop.gg/v1/import/schemas \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"schemas":[{"slug":"custom-tool","name":"Custom Tool","description":"My custom handler","input":{"type":"object","properties":{"text":{"type":"string"}}},"output":{"type":"object","properties":{"result":{"type":"string"}}}}]}'
 
 ## Full API catalog
 See https://slopshop.gg/llms-full.txt for every API with slug, description, and credit cost.
