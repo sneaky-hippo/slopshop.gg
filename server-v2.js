@@ -2345,48 +2345,75 @@ setInterval(async () => {
         dreamLog.push({ phase: 'scan', found: (memResults.results || []).length + ' memory entries' });
       } catch(e) { dreamLog.push({ phase: 'scan', error: e.message }); }
 
-      // Phase 2: REM cycles — each cycle calls an LLM to research and synthesize
+      // Phase 2: Multi-LLM REM cycles — each cycle fans out to ALL available providers
       let totalCreditsUsed = 0;
       const insights = [];
+
+      // Detect available LLM providers
+      const providers = [];
+      if (process.env.ANTHROPIC_API_KEY) providers.push({ name: 'claude', role: 'Deep analysis & synthesis', call: async (prompt) => {
+        const resp = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 800, messages: [{ role: 'user', content: prompt }] }) });
+        const j = await resp.json(); return j.content?.[0]?.text || null;
+      }});
+      if (process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY) providers.push({ name: 'grok', role: 'Real-time web & X/Twitter research', call: async (prompt) => {
+        const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY;
+        const resp = await fetch('https://api.x.ai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'grok-3', messages: [{ role: 'user', content: prompt }], max_tokens: 800 }) });
+        const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
+      }});
+      if (process.env.DEEPSEEK_API_KEY) providers.push({ name: 'deepseek', role: 'Technical depth & Chinese-web research', call: async (prompt) => {
+        const resp = await fetch('https://api.deepseek.com/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.DEEPSEEK_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: 800 }) });
+        const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
+      }});
+      if (process.env.OPENAI_API_KEY) providers.push({ name: 'openai', role: 'Broad knowledge & creative connections', call: async (prompt) => {
+        const resp = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: prompt }], max_tokens: 800 }) });
+        const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
+      }});
+
       for (let cycle = 0; cycle < remCycles && acct.balance >= dream.credits_per_dream; cycle++) {
         acct.balance -= dream.credits_per_dream;
         totalCreditsUsed += dream.credits_per_dream;
 
-        // Build research prompt
-        const researchPrompt = `You are a research agent dreaming about: "${dream.topic}"
+        const cycleInsights = [];
+
+        // Fan out to each available provider with specialized prompts
+        for (const provider of (providers.length > 0 ? providers : [{ name: 'fallback', role: 'analysis', handler: 'llm-think' }])) {
+          const researchPrompt = `You are a ${provider.role} agent dreaming about: "${dream.topic}"
 
 EXISTING MEMORY (do not repeat, only ADD new insights):
-${existingMemory || '(empty — this is the first dream)'}
+${existingMemory || '(empty — first dream)'}
 
-PREVIOUS DREAM INSIGHTS THIS SESSION:
-${insights.join('\n') || '(none yet)'}
+PREVIOUS INSIGHTS THIS SESSION:
+${insights.join('\n').slice(-2000) || '(none yet)'}
 
-REM CYCLE ${cycle + 1} of ${remCycles}. Research this topic thoroughly:
-1. What are the latest developments, facts, or insights about "${dream.topic}"?
-2. What connections or patterns exist that aren't in the existing memory?
-3. What actionable recommendations would improve the user's work?
+REM CYCLE ${cycle + 1}/${remCycles} | Provider: ${provider.name} | Role: ${provider.role}
 
-Respond with a structured analysis. Be specific and cite concrete details. This will be APPENDED to the user's memory (never replacing existing content).`;
+${provider.name === 'grok' ? `Search X/Twitter and the real-time web for the latest on "${dream.topic}". What are people saying RIGHT NOW? What breaking developments exist?` :
+  provider.name === 'deepseek' ? `Research "${dream.topic}" with technical depth. Check Chinese-language sources (Little Red Book, Zhihu, WeChat) for perspectives not available in English.` :
+  provider.name === 'claude' ? `Synthesize all available context on "${dream.topic}". What patterns connect the existing memory entries? What actionable improvements should the user make? Be specific and structured.` :
+  `Research "${dream.topic}" broadly. What connections, creative angles, or overlooked insights exist?`}
 
-        try {
-          // Try each LLM provider (Anthropic first, then others)
-          let llmResult = null;
-          const llmHandler = allHandlers['llm-think'];
-          if (llmHandler) {
-            llmResult = await llmHandler({ prompt: researchPrompt, max_tokens: 1000 });
+Respond with structured findings. This will be APPENDED (never replacing existing memory).`;
+
+          try {
+            const response = await provider.call(researchPrompt);
+            if (response) {
+              cycleInsights.push(`[${provider.name}] ${response}`);
+              dreamLog.push({ phase: `rem_${cycle + 1}_${provider.name}`, status: 'complete', chars: response.length });
+            } else {
+              dreamLog.push({ phase: `rem_${cycle + 1}_${provider.name}`, status: 'no_response' });
+            }
+          } catch(e) {
+            dreamLog.push({ phase: `rem_${cycle + 1}_${provider.name}`, status: 'error', error: e.message });
           }
+        }
 
-          if (llmResult && llmResult.response) {
-            insights.push(`[REM Cycle ${cycle + 1} — ${new Date().toISOString()}]\n${llmResult.response}`);
-            dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'complete', tokens: llmResult.tokens_used || 0 });
-          } else {
-            // Fallback: generate structured analysis without LLM
-            const keywords = dream.topic.split(/\s+/).filter(w => w.length > 3);
-            insights.push(`[REM Cycle ${cycle + 1} — ${new Date().toISOString()}]\nTopic: ${dream.topic}\nKeywords analyzed: ${keywords.join(', ')}\nMemory entries found: ${existingMemory ? existingMemory.split('\n').length : 0}\nRecommendation: Continue building context around ${keywords[0] || dream.topic}. Next dream cycle will have more data to synthesize.`);
-            dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'fallback_no_llm' });
-          }
-        } catch(e) {
-          dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'error', error: e.message });
+        if (cycleInsights.length > 0) {
+          insights.push(`[REM Cycle ${cycle + 1} — ${new Date().toISOString()} — ${cycleInsights.length} providers]\n${cycleInsights.join('\n\n')}`);
+        } else {
+          // Pure fallback — no LLM keys at all
+          const keywords = dream.topic.split(/\s+/).filter(w => w.length > 3);
+          insights.push(`[REM Cycle ${cycle + 1} — ${new Date().toISOString()} — fallback]\nTopic: ${dream.topic}\nKeywords: ${keywords.join(', ')}\nMemory context: ${existingMemory ? existingMemory.split('\n').length + ' entries' : 'empty'}\nNote: Configure ANTHROPIC_API_KEY, XAI_API_KEY, or DEEPSEEK_API_KEY for real multi-LLM research.`);
+          dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'fallback_no_keys' });
         }
       }
 
@@ -5036,6 +5063,43 @@ app.post('/v1/hive/:id/standup', auth, (req, res) => {
   }
 
   res.json({ ok: true, hive_id: req.params.id, channel: 'standup', date, daily_summary: dailySummary });
+});
+
+// POST /v1/hive/:id/synthesize — AI-powered synthesis of hive activity
+app.post('/v1/hive/:id/synthesize', auth, async (req, res) => {
+  const hive = db.prepare('SELECT * FROM hives WHERE id = ?').get(req.params.id);
+  if (!hive) return res.status(404).json({ error: { code: 'hive_not_found' } });
+  const { hours, question } = req.body;
+  const since = Date.now() - (hours || 24) * 3600000;
+  const messages = db.prepare('SELECT * FROM hive_messages WHERE hive_id = ? AND ts > ? ORDER BY ts ASC').all(req.params.id, since);
+  if (messages.length === 0) return res.json({ ok: true, synthesis: 'No activity in the requested window.', messages_analyzed: 0 });
+
+  const msgText = messages.map(m => `[${m.channel}] ${m.sender}: ${m.message.slice(0, 200)}`).join('\n');
+  const prompt = `Synthesize the following hive workspace activity (${messages.length} messages over ${hours || 24}h):
+
+${msgText.slice(0, 4000)}
+
+${question ? 'USER QUESTION: ' + question : 'Provide: 1) Key decisions made 2) Open blockers 3) Consensus reached 4) Action items 5) Recommended next steps'}`;
+
+  // Try LLM synthesis
+  let synthesis = null;
+  try {
+    if (process.env.ANTHROPIC_API_KEY) {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 600, messages: [{ role: 'user', content: prompt }] }) });
+      const j = await resp.json(); synthesis = j.content?.[0]?.text;
+    }
+  } catch(e) {}
+
+  if (!synthesis) {
+    // Fallback: structured summary without LLM
+    const channels = {};
+    messages.forEach(m => { channels[m.channel] = (channels[m.channel] || 0) + 1; });
+    const senders = {};
+    messages.forEach(m => { senders[m.sender] = (senders[m.sender] || 0) + 1; });
+    synthesis = `Activity summary (${messages.length} messages):\nChannels: ${Object.entries(channels).map(([c,n]) => c + ':' + n).join(', ')}\nTop contributors: ${Object.entries(senders).sort((a,b) => b[1] - a[1]).slice(0, 5).map(([s,n]) => s + ':' + n).join(', ')}\nConfigure ANTHROPIC_API_KEY for AI-powered synthesis.`;
+  }
+
+  res.json({ ok: true, synthesis, messages_analyzed: messages.length, hours: hours || 24, ai_powered: !!process.env.ANTHROPIC_API_KEY });
 });
 
 // GET /v1/hive/:id/sync — get everything that happened since last sync
