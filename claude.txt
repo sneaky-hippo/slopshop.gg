@@ -18,7 +18,7 @@ llms_txt: https://slopshop.gg/llms.txt
 - Chain Branching: conditional step execution with if/else_step (POST /v1/chain/run/branching)
 - Eval Benchmark: automated testing with 67 test vectors (POST /v1/eval/benchmark)
 - Agent organizations (launch 30-agent teams in one call)
-- Army Mode: 10,000 parallel agents with Merkle-verified results
+- Army Mode: 1,000 parallel agents with Merkle-verified results
 - Hive Workspaces: persistent multi-agent collaboration
 - Credit System: agents earn credits by sharing idle compute
 - Browser/Desktop primitives: Swarm Visualizer SSE, MCP Desktop bootstrap

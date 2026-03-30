@@ -54,7 +54,7 @@ Results auto-stored in free memory: POST /v1/memory-get key:"chain_results"
 4. Knowledge sharing: POST /v1/knowledge/add {"subject":"article-1","predicate":"reviewed_by","object":"critic-agent"}
 5. Democratic decisions: POST /v1/governance/propose {"title":"Should we pivot topics?"}
 
-### 10,000 Parallel Analysts
+### 1,000 Parallel Analysts
 1. Choose best LLM: POST /v1/router/smart {"task":"analyze financial data","optimize_for":"cost"}
 2. Deploy army: POST /v1/army/deploy {"task":"analyze","count":10000,"api":"text-word-count"}
 3. Save replay: POST /v1/replay/save {"name":"big-analysis","events":[...]}
@@ -68,10 +68,9 @@ Results auto-stored in free memory: POST /v1/memory-get key:"chain_results"
 
 ### Agent Economy
 1. Create wallet: POST /v1/wallet/create {"agent_name":"worker-1","initial_credits":100}
-2. Register as supplier: POST /v1/exchange/register {"capabilities":["compute","text"]}
-3. Post bounty: POST /v1/bounties/post {"title":"Analyze dataset","reward":50}
-4. Create market: POST /v1/market/create {"question":"Will agent-v2 beat v1?"}
-5. Trade credits: POST /v1/credits/offer {"amount":1000,"price_per_credit":0.003}
+2. Post bounty: POST /v1/bounties/post {"title":"Analyze dataset","reward":50}
+3. Create market: POST /v1/market/create {"question":"Will agent-v2 beat v1?"}
+4. Trade credits: POST /v1/credits/offer {"amount":1000,"price_per_credit":0.003}
 
 ### Enterprise Fleet
 1. Create team: POST /v1/teams/create {"name":"Engineering"}
@@ -260,8 +259,8 @@ curl https://slopshop.gg/v1/hive/HIVE_ID/sync \
   -H "Authorization: Bearer YOUR_KEY"
 
 ## ARMY — Parallel Agent Deployment
-Deploy up to 10,000 parallel agents for massive-scale tasks. Run surveys with diverse personas, Monte Carlo simulations, or quick consensus polls. Fan-out any task to thousands of workers.
-- POST /v1/army/deploy — Deploy up to 10,000 parallel agents
+Deploy up to 1,000 parallel agents for massive-scale tasks. Run surveys with diverse personas, Monte Carlo simulations, or quick consensus polls. Fan-out any task to thousands of workers.
+- POST /v1/army/deploy — Deploy up to 1,000 parallel agents
 - POST /v1/army/survey — Survey with diverse personas
 - POST /v1/army/simulate — Monte Carlo simulation
 - POST /v1/army/quick-poll — Quick consensus poll
@@ -338,30 +337,6 @@ curl -X POST https://slopshop.gg/v1/copilot/scale \
   -H "Content-Type: application/json" \
   -d '{"main_session_id":"build-123","count":3,"roles":["reviewer","tester","documenter"]}'
 
-## COMPUTE EXCHANGE — Earn Credits
-Peer-to-peer compute marketplace. Register as a compute supplier, share idle cycles, earn credits. Submit tasks to the exchange for distributed processing. Full leaderboard and stats.
-- POST /v1/exchange/register — Register as compute supplier
-- POST /v1/exchange/heartbeat — Send heartbeat
-- POST /v1/exchange/submit — Submit task to exchange
-- GET /v1/exchange/poll/:id — Poll for assigned tasks
-- POST /v1/exchange/complete — Submit completed work
-- GET /v1/exchange/stats — Exchange statistics
-- GET /v1/exchange/leaderboard — Top earners
-curl -X POST https://slopshop.gg/v1/exchange/register \
-  -H "Authorization: Bearer YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"capabilities":["compute","text","math"]}'
-curl -X POST https://slopshop.gg/v1/exchange/submit \
-  -H "Authorization: Bearer YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"task":"crypto-hash-sha256","input":{"text":"process this"},"max_price":5}'
-curl -X POST https://slopshop.gg/v1/exchange/heartbeat \
-  -H "Authorization: Bearer YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"supplier_id":"SUP_ID","status":"available","load":0.3}'
-curl https://slopshop.gg/v1/exchange/leaderboard \
-  -H "Authorization: Bearer YOUR_KEY"
-
 ## KNOWLEDGE GRAPH
 Store and traverse entity-relationship triples. BFS walks, shortest path queries, connection discovery. Build a persistent knowledge graph that grows with every agent interaction.
 - POST /v1/knowledge/add — Add entity-relationship triple
@@ -410,7 +385,7 @@ Decentralized agent governance. Submit proposals, vote, and reach consensus. Age
 curl -X POST https://slopshop.gg/v1/governance/propose \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"title":"Increase compute exchange payout","description":"Raise per-task credit reward by 20%","options":["approve","reject"]}'
+  -d '{"title":"Increase credit reward rates","description":"Raise per-task credit reward by 20%","options":["approve","reject"]}'
 curl -X POST https://slopshop.gg/v1/governance/vote \
   -H "Authorization: Bearer YOUR_KEY" \
   -H "Content-Type: application/json" \
@@ -1078,7 +1053,6 @@ Detailed comparison: https://slopshop.gg/compare.html
 Real-time agent monitoring and desktop IDE integration.
 - GET /v1/visualizer/stream — SSE stream of live agent activity, army deployments, hive messages
 - POST /v1/mcp/bootstrap — Auto-configure MCP for Claude Desktop, Cursor, or other IDEs
-- POST /v1/exchange/register — Devote local GPU/CPU/RAM to earn credits from idle compute
 
 ## Memory 2.0 (v3.8.0)
 Graph queries, auto-summarization, and snapshot pinning. All free (0 credits).
