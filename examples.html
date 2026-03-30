@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Examples — 20 Real-World Use Cases | Slopshop</title>
-<meta name="description" content="20 complete, copy-paste examples for Slopshop: research agents, multi-agent workspaces, persistent memory, validation, hashing, knowledge graphs, A/B testing, prediction markets, parallel agents, streaming, batch calls, and more.">
+<meta name="description" content="20 complete, copy-paste examples for Slopshop: research agents, multi-agent workspaces, persistent memory, validation, hashing, knowledge graphs, A/B testing, data pipelines, parallel agents, streaming, batch calls, and more.">
 <meta name="keywords" content="slopshop examples, ai agent examples, agent api use cases, agent memory example, batch api example, streaming api example, mcp tools example, code review agent, research agent, knowledge graph agent">
 <link rel="canonical" href="https://slopshop.gg/examples">
 <meta property="og:type" content="website">
@@ -23,7 +23,7 @@
   "@type": "TechArticle",
   "name": "Slopshop Examples — 20 Real-World Use Cases",
   "url": "https://slopshop.gg/examples",
-  "description": "20 complete, copy-paste examples for Slopshop: research agents, multi-agent workspaces, persistent memory, validation, hashing, knowledge graphs, A/B testing, prediction markets, parallel agents, streaming, batch calls, and more.",
+  "description": "20 complete, copy-paste examples for Slopshop: research agents, multi-agent workspaces, persistent memory, validation, hashing, knowledge graphs, A/B testing, data pipelines, parallel agents, streaming, batch calls, and more.",
   "author": {"@type": "Organization", "name": "Slopshop", "url": "https://slopshop.gg"},
   "datePublished": "2025-01-01",
   "dateModified": "2026-03-27",
@@ -156,7 +156,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
 <div class="wrap">
 
 <h1><span class="red">20</span> Real-World Examples</h1>
-<p class="subtitle">Complete, copy-paste examples that work with the demo key. From research agents to prediction markets, every pattern you need to build with <b>78 categories of tools</b>.</p>
+<p class="subtitle">Complete, copy-paste examples that work with the demo key. From research agents to data pipelines, every pattern you need to build with <b>78 categories of tools</b>.</p>
 
 <!-- FILTER -->
 <div class="filter-row">
@@ -187,9 +187,9 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
     <a href="#ex16"><span class="num">16</span> Dockerfile Parsing</a>
     <a href="#ex7"><span class="num">07</span> A/B Testing</a>
     <a href="#ex17"><span class="num">17</span> Prompt Scoring</a>
-    <a href="#ex8"><span class="num">08</span> Prediction Market</a>
+    <a href="#ex8"><span class="num">08</span> Memory Persistence</a>
     <a href="#ex18"><span class="num">18</span> PII Detection</a>
-    <a href="#ex9"><span class="num">09</span> Bounty Board</a>
+    <a href="#ex9"><span class="num">09</span> Data Pipeline</a>
     <a href="#ex19"><span class="num">19</span> Agent Governance</a>
     <a href="#ex10"><span class="num">10</span> 100 Parallel Agents</a>
     <a href="#ex20"><span class="num">20</span> Business Metrics</a>
@@ -333,36 +333,35 @@ curl -X POST https://slopshop.gg/v1/tournament/create \
 # 4. Auto-improve: chain loops eval -> learn -> re-eval</code></pre></div>
   </div>
 
-  <div class="example" id="combo5" data-tags="wallet bounties market credits">
+  <div class="example" id="combo5" data-tags="memory research agent">
     <div class="example-header">
       <span class="example-num" style="background:var(--og);color:var(--o)">C5</span>
-      <h2>Agent Economy</h2>
+      <h2>Research Workflow with Memory</h2>
     </div>
     <div class="tags">
-      <span class="tag" style="background:var(--yg);color:var(--y)">Wallet</span>
-      <span class="tag" style="background:var(--gg);color:var(--g)">Bounties</span>
-      <span class="tag" style="background:var(--vg);color:var(--v)">Market</span>
+      <span class="tag" style="background:var(--gg);color:var(--g)">Memory</span>
+      <span class="tag" style="background:var(--cg);color:var(--c)">Research</span>
+      <span class="tag" style="background:var(--vg);color:var(--v)">Chain</span>
     </div>
-    <p class="desc">Give agents wallets, let them trade credits, post bounties for work, and create prediction markets on outcomes.</p>
-    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># 1. Create agent wallet
-curl -X POST https://slopshop.gg/v1/wallet/create \
+    <p class="desc">Run a research workflow that stores findings in persistent memory, then retrieve and search them across sessions.</p>
+    <div class="code-block"><div class="code-header"><span>bash</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># 1. Run research
+curl -X POST https://slopshop.gg/v1/research \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d '{"agent_name":"worker-1","initial_credits":100}'
+  -d '{"query":"Compare agent platforms 2026","tier":"standard","namespace":"my-research"}'
 
-# 2. Post a bounty
-curl -X POST https://slopshop.gg/v1/bounties/post \
+# 2. Store findings in memory
+curl -X POST https://slopshop.gg/v1/memory-set \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d '{"title":"Analyze dataset","reward":50}'
+  -d '{"namespace":"my-research","key":"findings-v1","value":"Slopshop leads in tool count and memory","tags":"research,agents"}'
 
-# 3. Create prediction market
-curl -X POST https://slopshop.gg/v1/market/create \
+# 3. Search memory later
+curl -X POST https://slopshop.gg/v1/memory-search \
   -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d '{"question":"Will agent-v2 beat v1?"}'
+  -d '{"namespace":"my-research","query":"agent platforms"}'
 
-# 4. Trade credits
-curl -X POST https://slopshop.gg/v1/credits/offer \
-  -H "Authorization: Bearer $KEY" -H "Content-Type: application/json" \
-  -d '{"amount":1000,"price_per_credit":0.003}'</code></pre></div>
+# 4. Check credits used
+curl https://slopshop.gg/v1/credits/balance \
+  -H "Authorization: Bearer $KEY"</code></pre></div>
   </div>
 
   <div class="example" id="combo6" data-tags="teams enterprise analytics webhooks">
@@ -835,45 +834,45 @@ console.log(<span class="hl-str">`Assigned to variant: ${variant}`</span>);
 </div>
 
 <!-- ============ EXAMPLE 8 ============ -->
-<div class="example" id="ex8" data-tags="agent memory">
+<div class="example" id="ex8" data-tags="memory agent">
   <div class="example-header">
     <span class="example-num">08</span>
-    <h2>Set Up a Prediction Market</h2>
+    <h2>Memory Persistence Across Sessions</h2>
   </div>
   <div class="tags">
-    <span class="tag agent">Agent</span>
     <span class="tag memory">Memory</span>
+    <span class="tag agent">Agent</span>
   </div>
-  <p class="desc">Create a prediction market for team decisions. Agents submit predictions with confidence levels, and outcomes are tracked in memory. Use timestamps and UUIDs for audit trails.</p>
+  <p class="desc">Store structured data in persistent memory and retrieve it across agent sessions. Use namespaces and tags to organize knowledge that survives restarts.</p>
   <div class="code-block">
     <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-    <pre><span class="hl-comment"># Create a prediction market</span>
+    <pre><span class="hl-comment"># Store project context</span>
 curl -X POST https://slopshop.gg/v1/memory-set \
   -H "Authorization: Bearer sk-slop-demo-key-12345678" \
   -H "Content-Type: application/json" \
   -d '{
-    "namespace": "predictions",
-    "key": "market-q1-revenue",
-    "value": "{\"question\":\"Will Q1 revenue exceed $1M?\",\"closes\":\"2026-04-01\",\"predictions\":[]}",
-    "tags": "market,active,revenue"
+    "namespace": "project-alpha",
+    "key": "architecture",
+    "value": "{\"stack\":\"React + Node\",\"database\":\"SQLite\",\"deploy\":\"Railway\"}",
+    "tags": "architecture,decisions"
   }'
 
-<span class="hl-comment"># Generate a prediction ID</span>
-curl -X POST https://slopshop.gg/v1/uuid-generate \
-  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
-  -H "Content-Type: application/json" \
-  -d '{}'
-
-<span class="hl-comment"># Submit a prediction (store alongside the market)</span>
+<span class="hl-comment"># Store a decision log entry</span>
 curl -X POST https://slopshop.gg/v1/memory-set \
   -H "Authorization: Bearer sk-slop-demo-key-12345678" \
   -H "Content-Type: application/json" \
   -d '{
-    "namespace": "predictions",
-    "key": "pred-agent-alpha-q1",
-    "value": "{\"market\":\"market-q1-revenue\",\"agent\":\"alpha\",\"prediction\":true,\"confidence\":0.75,\"reasoning\":\"Strong pipeline and seasonal trends\"}",
-    "tags": "prediction,market-q1-revenue,agent-alpha"
-  }'</pre>
+    "namespace": "project-alpha",
+    "key": "decision-001",
+    "value": "{\"decision\":\"Use SQLite over Postgres\",\"reason\":\"Zero-config, self-hostable\",\"date\":\"2026-03-30\"}",
+    "tags": "decision,database"
+  }'
+
+<span class="hl-comment"># Search memory by query</span>
+curl -X POST https://slopshop.gg/v1/memory-search \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "project-alpha", "query": "database"}'</pre>
   </div>
   <div class="code-block">
     <div class="code-header"><span class="lang">python</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
@@ -882,63 +881,61 @@ curl -X POST https://slopshop.gg/v1/memory-set \
 API = <span class="hl-str">"https://slopshop.gg/v1"</span>
 HEADERS = {<span class="hl-str">"Authorization"</span>: <span class="hl-str">"Bearer sk-slop-demo-key-12345678"</span>}
 
-<span class="hl-comment"># Create market</span>
-requests.post(f<span class="hl-str">"{API}/memory-set"</span>, headers=HEADERS, json={
-    <span class="hl-str">"namespace"</span>: <span class="hl-str">"predictions"</span>,
-    <span class="hl-str">"key"</span>: <span class="hl-str">"market-launch-date"</span>,
-    <span class="hl-str">"value"</span>: json.dumps({
-        <span class="hl-str">"question"</span>: <span class="hl-str">"Will we ship v3 before June?"</span>,
-        <span class="hl-str">"closes"</span>: <span class="hl-str">"2026-06-01"</span>,
-    }),
-    <span class="hl-str">"tags"</span>: <span class="hl-str">"market,active"</span>,
-})
-
-<span class="hl-comment"># Submit predictions from multiple agents</span>
-<span class="hl-key">for</span> agent, conf <span class="hl-key">in</span> [(<span class="hl-str">"alpha"</span>, <span class="hl-val">0.8</span>), (<span class="hl-str">"beta"</span>, <span class="hl-val">0.6</span>), (<span class="hl-str">"gamma"</span>, <span class="hl-val">0.9</span>)]:
+<span class="hl-comment"># Store context for multiple agents</span>
+<span class="hl-key">for</span> key, value <span class="hl-key">in</span> [
+    (<span class="hl-str">"stack"</span>, {<span class="hl-str">"frontend"</span>: <span class="hl-str">"React"</span>, <span class="hl-str">"backend"</span>: <span class="hl-str">"Node"</span>}),
+    (<span class="hl-str">"goals"</span>, {<span class="hl-str">"q2"</span>: <span class="hl-str">"Launch v3"</span>, <span class="hl-str">"q3"</span>: <span class="hl-str">"10k users"</span>}),
+]:
     requests.post(f<span class="hl-str">"{API}/memory-set"</span>, headers=HEADERS, json={
-        <span class="hl-str">"namespace"</span>: <span class="hl-str">"predictions"</span>,
-        <span class="hl-str">"key"</span>: f<span class="hl-str">"pred-{agent}-launch"</span>,
-        <span class="hl-str">"value"</span>: json.dumps({<span class="hl-str">"prediction"</span>: True, <span class="hl-str">"confidence"</span>: conf}),
-        <span class="hl-str">"tags"</span>: f<span class="hl-str">"prediction,agent-{agent}"</span>,
+        <span class="hl-str">"namespace"</span>: <span class="hl-str">"project-alpha"</span>,
+        <span class="hl-str">"key"</span>: key,
+        <span class="hl-str">"value"</span>: json.dumps(value),
+        <span class="hl-str">"tags"</span>: <span class="hl-str">"project,context"</span>,
     })
 
-print(<span class="hl-str">"Market created with 3 predictions"</span>)</pre>
+<span class="hl-comment"># Retrieve later (even from a different session)</span>
+result = requests.post(f<span class="hl-str">"{API}/memory-get"</span>, headers=HEADERS, json={
+    <span class="hl-str">"namespace"</span>: <span class="hl-str">"project-alpha"</span>,
+    <span class="hl-str">"key"</span>: <span class="hl-str">"stack"</span>,
+})
+print(result.json())</pre>
   </div>
 </div>
 
 <!-- ============ EXAMPLE 9 ============ -->
-<div class="example" id="ex9" data-tags="agent memory">
+<div class="example" id="ex9" data-tags="agent compute">
   <div class="example-header">
     <span class="example-num">09</span>
-    <h2>Create a Bounty Board for Task Delegation</h2>
+    <h2>Multi-Step Data Processing Pipeline</h2>
   </div>
   <div class="tags">
     <span class="tag agent">Agent</span>
-    <span class="tag memory">Memory</span>
+    <span class="tag compute">Compute</span>
   </div>
-  <p class="desc">Set up a bounty board where tasks are posted with credit rewards. Agents can claim and complete bounties, with results verified through hash comparisons.</p>
+  <p class="desc">Chain multiple tools together: validate input, hash it for integrity, store results in memory, and retrieve them later. A practical pipeline pattern.</p>
   <div class="code-block">
     <div class="code-header"><span class="lang">curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div>
-    <pre><span class="hl-comment"># Post a bounty</span>
-curl -X POST https://slopshop.gg/v1/memory-set \
+    <pre><span class="hl-comment"># Step 1: Validate input data</span>
+curl -X POST https://slopshop.gg/v1/validate-email \
   -H "Authorization: Bearer sk-slop-demo-key-12345678" \
   -H "Content-Type: application/json" \
-  -d '{
-    "namespace": "bounty-board",
-    "key": "bounty-001",
-    "value": "{\"title\":\"Validate 100 email addresses\",\"reward_credits\":50,\"status\":\"open\",\"posted_by\":\"orchestrator\",\"deadline\":\"2026-04-01\"}",
-    "tags": "bounty,open,validation"
-  }'
+  -d '{"email": "user@example.com"}'
 
-<span class="hl-comment"># Agent claims the bounty</span>
+<span class="hl-comment"># Step 2: Hash the validated data for integrity</span>
+curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer sk-slop-demo-key-12345678" \
+  -H "Content-Type: application/json" \
+  -d '{"data": "user@example.com"}'
+
+<span class="hl-comment"># Step 3: Store processing result in memory</span>
 curl -X POST https://slopshop.gg/v1/memory-set \
   -H "Authorization: Bearer sk-slop-demo-key-12345678" \
   -H "Content-Type: application/json" \
   -d '{
-    "namespace": "bounty-board",
-    "key": "bounty-001",
-    "value": "{\"title\":\"Validate 100 email addresses\",\"reward_credits\":50,\"status\":\"claimed\",\"claimed_by\":\"agent-worker-7\",\"posted_by\":\"orchestrator\"}",
-    "tags": "bounty,claimed,validation"
+    "namespace": "pipeline-results",
+    "key": "run-001",
+    "value": "{\"input\":\"user@example.com\",\"valid\":true,\"hash\":\"abc123...\",\"processed_at\":\"2026-03-30\"}",
+    "tags": "pipeline,validation,complete"
   }'</pre>
   </div>
   <div class="code-block">
@@ -948,24 +945,19 @@ curl -X POST https://slopshop.gg/v1/memory-set \
   method: <span class="hl-str">'POST'</span>, headers, body: JSON.stringify(body),
 }).then(r => r.json());
 
-<span class="hl-comment">// Post a bounty</span>
+<span class="hl-comment">// Validate, hash, and store in one pipeline</span>
+<span class="hl-key">const</span> email = <span class="hl-str">'user@example.com'</span>;
+<span class="hl-key">const</span> validation = <span class="hl-key">await</span> post(<span class="hl-str">'validate-email'</span>, { email });
+<span class="hl-key">const</span> hash = <span class="hl-key">await</span> post(<span class="hl-str">'crypto-hash-sha256'</span>, { data: email });
+
 <span class="hl-key">await</span> post(<span class="hl-str">'memory-set'</span>, {
-  namespace: <span class="hl-str">'bounty-board'</span>,
-  key: <span class="hl-str">'bounty-002'</span>,
-  value: JSON.stringify({
-    title: <span class="hl-str">'Hash 500 documents for integrity audit'</span>,
-    reward_credits: <span class="hl-val">100</span>,
-    status: <span class="hl-str">'open'</span>,
-  }),
-  tags: <span class="hl-str">'bounty,open,hashing'</span>,
+  namespace: <span class="hl-str">'pipeline-results'</span>,
+  key: <span class="hl-str">'run-001'</span>,
+  value: JSON.stringify({ email, valid: validation.data, hash: hash.data }),
+  tags: <span class="hl-str">'pipeline,complete'</span>,
 });
 
-<span class="hl-comment">// List all open bounties</span>
-<span class="hl-key">const</span> openBounties = <span class="hl-key">await</span> post(<span class="hl-str">'memory-search'</span>, {
-  namespace: <span class="hl-str">'bounty-board'</span>,
-  tag: <span class="hl-str">'open'</span>,
-});
-console.log(<span class="hl-str">'Open bounties:'</span>, openBounties.data);</pre>
+console.log(<span class="hl-str">'Pipeline complete, results stored in memory'</span>);</pre>
   </div>
 </div>
 
