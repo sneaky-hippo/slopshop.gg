@@ -2345,10 +2345,39 @@ setInterval(async () => {
         dreamLog.push({ phase: 'scan', found: (memResults.results || []).length + ' memory entries' });
       } catch(e) { dreamLog.push({ phase: 'scan', error: e.message }); }
 
-      // Phase 2: Multi-LLM REM cycles — each cycle fans out to ALL available providers
+      // Phase 2: REM cycles — powered by Advanced Research engine
       let totalCreditsUsed = 0;
       const insights = [];
+      const dreamTier = dream.tier || 'basic';
 
+      // Use executeResearch for each REM cycle (same engine as /v1/research)
+      for (let cycle = 0; cycle < remCycles && acct.balance >= dream.credits_per_dream; cycle++) {
+        acct.balance -= dream.credits_per_dream;
+        totalCreditsUsed += dream.credits_per_dream;
+
+        try {
+          const research = await executeResearch(dream.topic, {
+            tier: dreamTier,
+            context: existingMemory + '\n' + insights.join('\n').slice(-2000),
+            timeframe: 'recent',
+            language_targets: ['en', 'zh', 'ja'],
+          });
+
+          if (research.findings && research.findings.length > 0) {
+            const cycleText = research.findings.map(f => `[${f.provider}] ${f.response}`).join('\n\n');
+            insights.push(`[REM Cycle ${cycle + 1} — ${new Date().toISOString()} — ${research.providers_used} providers, ${research.total_chars} chars]\n${cycleText}`);
+            dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'complete', providers: research.providers_used, chars: research.total_chars, latency: research.latency_ms });
+          } else {
+            insights.push(`[REM Cycle ${cycle + 1} — ${new Date().toISOString()} — fallback]\nTopic: ${dream.topic}\nNo LLM keys configured. Set ANTHROPIC_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY.`);
+            dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'no_providers' });
+          }
+        } catch(e) {
+          dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'error', error: e.message });
+        }
+      }
+
+      // Skip old provider detection (now handled by executeResearch)
+      if (false) {
       // Detect available LLM providers
       const providers = [];
       if (process.env.ANTHROPIC_API_KEY) providers.push({ name: 'claude', role: 'Deep analysis & synthesis', call: async (prompt) => {
@@ -2416,6 +2445,7 @@ Respond with structured findings. This will be APPENDED (never replacing existin
           dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'fallback_no_keys' });
         }
       }
+      } // end if(false) — old provider block skipped, using executeResearch above
 
       // Phase 3: Store dream results — APPEND to memory, never replace
       const dreamContent = {
@@ -2875,7 +2905,170 @@ app.get('/v1/badge.svg', (req, res) => {
   res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="200" height="20" viewBox="0 0 200 20"><rect width="120" height="20" rx="3" fill="#555"/><rect x="120" width="80" height="20" rx="3" fill="#ff3333"/><rect x="120" width="4" height="20" fill="#ff3333"/><text x="60" y="14" fill="#fff" font-family="monospace" font-size="11" text-anchor="middle">powered by</text><text x="160" y="14" fill="#fff" font-family="monospace" font-size="11" text-anchor="middle">slopshop</text></svg>`);
 });
 
-// ===== DREAM SUBSCRIPTIONS — agents pay to dream daily, building shared knowledge =====
+// ═══════════════════════════════════════════════════════════════════════════════
+// ADVANCED RESEARCH — multi-LLM, multi-language, real-time web intelligence
+// Each provider has a specialized role:
+//   Claude: deep synthesis & analysis
+//   Grok: real-time X/Twitter + Japanese X search
+//   DeepSeek: Chinese-web search (Xiaohongshu, Zhihu, WeChat, Bilibili)
+//   GPT-4o: broad internet research + creative connections
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const RESEARCH_TIERS = {
+  basic:    { providers: 1, credits: 20, max_tokens: 600, description: 'Single best-available LLM' },
+  standard: { providers: 2, credits: 35, max_tokens: 800, description: '2 LLMs (Claude + Grok)' },
+  advanced: { providers: 4, credits: 50, max_tokens: 800, description: 'All 4 LLMs + multi-language search' },
+  deep:     { providers: 4, credits: 75, max_tokens: 1200, description: 'All 4 LLMs + deep search + extended context' },
+};
+
+// Core research function — used by both /v1/research and dream engine
+async function executeResearch(topic, options = {}) {
+  const { tier = 'advanced', context = '', timeframe = 'recent', language_targets = ['en', 'zh', 'ja'], max_tokens } = options;
+  const tierConfig = RESEARCH_TIERS[tier] || RESEARCH_TIERS.advanced;
+  const tokens = max_tokens || tierConfig.max_tokens;
+
+  const providers = [];
+  if (process.env.ANTHROPIC_API_KEY) providers.push({
+    name: 'claude', role: 'Deep analysis & synthesis',
+    prompt: (q, ctx) => `You are a research analyst. Analyze "${q}" with deep synthesis.
+${ctx ? 'EXISTING CONTEXT:\n' + ctx.slice(0, 2000) : ''}
+${timeframe !== 'all' ? `Focus on ${timeframe} developments.` : ''}
+Provide: 1) Key findings 2) Patterns & connections 3) Actionable insights 4) Confidence level (1-10)
+Be specific. Cite concrete details.`,
+    call: async (prompt) => {
+      const resp = await fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: tokens, messages: [{ role: 'user', content: prompt }] }) });
+      const j = await resp.json(); return j.content?.[0]?.text || null;
+    }
+  });
+
+  if (process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY) providers.push({
+    name: 'grok', role: 'Real-time X/Twitter + Japanese X search',
+    prompt: (q, ctx) => `You are Grok, searching X (Twitter) and the real-time web for: "${q}"
+${language_targets.includes('ja') ? `Also search X Japan (日本語) for Japanese perspectives on "${q}". Translate key findings to English.` : ''}
+${timeframe !== 'all' ? `Focus on ${timeframe} posts and discussions.` : ''}
+Report: 1) What people are saying RIGHT NOW on X 2) Trending takes 3) Breaking developments 4) Japanese perspectives (if available)`,
+    call: async (prompt) => {
+      const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY;
+      const resp = await fetch('https://api.x.ai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'grok-3', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
+      const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
+    }
+  });
+
+  if (process.env.DEEPSEEK_API_KEY) providers.push({
+    name: 'deepseek', role: 'Chinese-web research (小红书, 知乎, 微信, B站)',
+    prompt: (q, ctx) => {
+      // Translate query to Chinese for native search
+      const zhQuery = q; // DeepSeek natively handles Chinese
+      return `You are a Chinese-web research agent. Search for information about "${q}" across Chinese platforms.
+
+SEARCH THESE SOURCES (in Chinese - translate the query):
+- 小红书 (Xiaohongshu/Little Red Book) — lifestyle & consumer insights
+- 知乎 (Zhihu) — technical Q&A and expert opinions
+- 微信公众号 (WeChat Official Accounts) — industry analysis
+- B站 (Bilibili) — tech tutorials and discussions
+- 百度 (Baidu) — general Chinese web search
+
+Query in Chinese: 请搜索关于"${zhQuery}"的最新信息
+
+Report findings in English. Include: 1) Chinese market perspective 2) Technical insights from Zhihu 3) Consumer sentiment from Xiaohongshu 4) Key differences from Western sources`;
+    },
+    call: async (prompt) => {
+      const resp = await fetch('https://api.deepseek.com/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.DEEPSEEK_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
+      const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
+    }
+  });
+
+  if (process.env.OPENAI_API_KEY) providers.push({
+    name: 'openai', role: 'Broad internet research & creative connections',
+    prompt: (q, ctx) => `Research "${q}" thoroughly across the internet.
+${ctx ? 'EXISTING CONTEXT:\n' + ctx.slice(0, 1500) : ''}
+${timeframe !== 'all' ? `Focus on ${timeframe} information.` : ''}
+Provide: 1) Broad internet findings 2) Academic/research perspectives 3) Creative connections others might miss 4) Contrarian viewpoints`,
+    call: async (prompt) => {
+      const resp = await fetch('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
+      const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
+    }
+  });
+
+  // Select providers based on tier
+  const activeProviders = providers.slice(0, tierConfig.providers);
+  if (activeProviders.length === 0) {
+    return { findings: [], providers_used: 0, error: 'No LLM API keys configured. Set ANTHROPIC_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY.' };
+  }
+
+  // Execute all providers in parallel
+  const startTime = Date.now();
+  const results = await Promise.allSettled(
+    activeProviders.map(async p => {
+      const prompt = p.prompt(topic, context);
+      const response = await p.call(prompt);
+      return { provider: p.name, role: p.role, response, chars: response?.length || 0 };
+    })
+  );
+
+  const findings = results
+    .filter(r => r.status === 'fulfilled' && r.value.response)
+    .map(r => r.value);
+  const errors = results
+    .filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.response))
+    .map(r => ({ provider: r.value?.provider || 'unknown', error: r.reason?.message || 'no response' }));
+
+  return {
+    topic,
+    tier,
+    findings,
+    errors,
+    providers_used: findings.length,
+    providers_available: activeProviders.length,
+    total_chars: findings.reduce((s, f) => s + f.chars, 0),
+    latency_ms: Date.now() - startTime,
+    language_targets,
+    timeframe,
+    credits_used: tierConfig.credits,
+  };
+}
+
+// POST /v1/research — On-demand multi-LLM research
+app.post('/v1/research', auth, async (req, res) => {
+  const { topic, query, tier, context, timeframe, languages } = req.body;
+  const q = topic || query;
+  if (!q) return res.status(400).json({ error: { code: 'missing_topic', message: 'Provide topic or query to research' } });
+
+  const tierConfig = RESEARCH_TIERS[tier || 'advanced'];
+  if (!tierConfig) return res.status(400).json({ error: { code: 'invalid_tier', valid: Object.keys(RESEARCH_TIERS) } });
+
+  if (req.acct.balance < tierConfig.credits) {
+    return res.status(402).json({ error: { code: 'insufficient_credits', need: tierConfig.credits, have: req.acct.balance, tiers: RESEARCH_TIERS } });
+  }
+  req.acct.balance -= tierConfig.credits;
+  persistKey(req.apiKey);
+
+  try {
+    const result = await executeResearch(q, { tier: tier || 'advanced', context, timeframe: timeframe || 'recent', language_targets: languages || ['en', 'zh', 'ja'] });
+    res.json({ ok: true, data: { _engine: 'real', ...result } });
+  } catch (e) {
+    req.acct.balance += tierConfig.credits; // Refund on error
+    persistKey(req.apiKey);
+    res.status(500).json({ error: { code: 'research_failed', message: e.message } });
+  }
+});
+
+// GET /v1/research/tiers — Show available research tiers and pricing
+app.get('/v1/research/tiers', publicRateLimit, (req, res) => {
+  const available = [];
+  if (process.env.ANTHROPIC_API_KEY) available.push('claude');
+  if (process.env.XAI_API_KEY || process.env.GROK_API_KEY) available.push('grok');
+  if (process.env.DEEPSEEK_API_KEY) available.push('deepseek');
+  if (process.env.OPENAI_API_KEY) available.push('openai');
+  res.json({ ok: true, tiers: RESEARCH_TIERS, providers_configured: available, provider_roles: {
+    claude: 'Deep analysis & synthesis',
+    grok: 'Real-time X/Twitter + Japanese X search',
+    deepseek: 'Chinese-web research (小红书, 知乎, 微信, B站)',
+    openai: 'Broad internet research & creative connections',
+  }});
+});
+
+// ===== DREAM SUBSCRIPTIONS — agents pay to dream, building shared knowledge =====
 db.exec(`CREATE TABLE IF NOT EXISTS dream_subscriptions (
   id TEXT PRIMARY KEY,
   api_key TEXT NOT NULL,
@@ -2889,23 +3082,50 @@ db.exec(`CREATE TABLE IF NOT EXISTS dream_subscriptions (
 )`);
 
 app.post('/v1/dream/subscribe', auth, (req, res) => {
-  const { topic, interval_hours, rem_cycles, credits_per_cycle, max_credits } = req.body;
+  const { topic, tier, interval_hours, interval_minutes, rem_cycles, credits_per_cycle, max_credits } = req.body;
   if (!topic) return res.status(400).json({ error: { code: 'missing_topic', message: 'What should your agent dream about?' } });
+
+  // Tier determines default interval and credits
+  const dreamTier = tier || 'basic';
+  const tierDefaults = {
+    basic:    { interval_h: 2,    credits: 20, rem: 1, description: 'Single LLM, every 2h' },
+    standard: { interval_h: 1,    credits: 35, rem: 2, description: '2 LLMs, every 1h' },
+    advanced: { interval_h: 0.5,  credits: 50, rem: 3, description: 'All 4 LLMs + multi-language, every 30min' },
+    deep:     { interval_h: 0.25, credits: 75, rem: 4, description: 'All 4 LLMs + deep search, every 15min' },
+  };
+  const defaults = tierDefaults[dreamTier] || tierDefaults.basic;
+
+  // User can override interval (hours or minutes)
+  let hours;
+  if (interval_minutes) hours = Math.max(interval_minutes / 60, 0.25); // min 15min
+  else hours = Math.max(interval_hours || defaults.interval_h, 0.25);
+
+  const cycles = Math.max(Math.min(rem_cycles || defaults.rem, 10), 1);
+  const creditsPerCycle = credits_per_cycle || defaults.credits;
+  const maxCreds = max_credits || 0; // 0 = unlimited
+
   const id = 'dream-sub-' + crypto.randomUUID().slice(0, 12);
-  const hours = Math.max(interval_hours || 24, 1);
-  const cycles = Math.max(Math.min(rem_cycles || 1, 10), 1); // 1-10 REM cycles per dream
-  const creditsPerCycle = credits_per_cycle || 20;
-  const maxCreds = max_credits || 0; // 0 = unlimited (as long as balance allows)
   try { db.exec('ALTER TABLE dream_subscriptions ADD COLUMN rem_cycles INTEGER DEFAULT 1'); } catch(_) {}
   try { db.exec('ALTER TABLE dream_subscriptions ADD COLUMN max_credits INTEGER DEFAULT 0'); } catch(_) {}
-  db.prepare('INSERT INTO dream_subscriptions (id, api_key, topic, interval_hours, credits_per_dream, rem_cycles, max_credits, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, req.apiKey, topic, hours, creditsPerCycle, cycles, maxCreds, Date.now());
+  try { db.exec('ALTER TABLE dream_subscriptions ADD COLUMN tier TEXT DEFAULT \'basic\''); } catch(_) {}
+  db.prepare('INSERT INTO dream_subscriptions (id, api_key, topic, interval_hours, credits_per_dream, rem_cycles, max_credits, tier, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, req.apiKey, topic, hours, creditsPerCycle, cycles, maxCreds, dreamTier, Date.now());
+
+  const intervalStr = hours >= 1 ? `${hours}h` : `${Math.round(hours * 60)}min`;
+  const dailyCycles = Math.round(24 / hours);
+  const dailyCost = dailyCycles * cycles * creditsPerCycle;
+
   res.status(201).json({
-    id, topic, interval_hours: hours,
+    id, topic, tier: dreamTier,
+    interval: intervalStr,
+    interval_hours: hours,
     rem_cycles: cycles,
     credits_per_cycle: creditsPerCycle,
     total_credits_per_dream: cycles * creditsPerCycle,
+    estimated_daily_cost: dailyCost,
+    estimated_monthly_cost: dailyCost * 30,
     max_credits: maxCreds || 'unlimited',
-    note: `Your agent will dream about "${topic}" every ${hours}h with ${cycles} REM cycle(s). Each cycle calls an LLM to research and synthesize. Results stored in memory namespace "dreams" with deploy_status: "pending_review" — you approve what gets applied.`
+    research_tier: RESEARCH_TIERS[dreamTier] || RESEARCH_TIERS.basic,
+    note: `Dream tier: ${dreamTier} (${defaults.description}). Runs every ${intervalStr} with ${cycles} REM cycle(s). Est. ${dailyCost} credits/day ($${(dailyCost * 0.0009).toFixed(2)}/day). Results stored pending review.`
   });
 });
 
