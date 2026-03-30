@@ -1,6 +1,6 @@
 {
   "name": "slopshop",
-  "version": "0.2.0",
+  "version": "3.9.0",
   "description": "The Self-Hostable MCP Agent Runtime OS for the Computer-Use Era. 1,303 APIs across 82 categories, free evolving persistent memory (GraphRAG + episodic), zero-trust agent identity (NIST-aligned SPIFFE/SVID), computer use backend, MCP gateway + policy engine, visual DAG workflows, marketplace, Army-scale orchestration (10k agents). Works with Claude Code, Cursor, Goose, Cline, OpenCode, Aider, LangChain, CrewAI. Self-hostable.",
   "main": "server-v2.js",
   "bin": {
