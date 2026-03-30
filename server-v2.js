@@ -681,6 +681,22 @@ function loadKeysFromDB() {
 }
 loadKeysFromDB();
 
+// Seed admin key from env var (idempotent — skips if key already exists)
+try {
+  const _adminKey = process.env.ADMIN_API_KEY;
+  if (_adminKey && !apiKeys.has(_adminKey)) {
+    const _crypto = require('crypto');
+    const _kHash = _crypto.createHash('sha256').update(_adminKey).digest('hex');
+    const _kPrefix = _adminKey.slice(0, 10);
+    db.prepare('INSERT OR IGNORE INTO api_keys (key, id, balance, tier, scope, label, max_credits, created, key_hash, key_prefix) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      .run(_adminKey, 'admin-' + _kHash.slice(0, 8), 999999999, 'kraken', '*', 'admin', null, Date.now(), _kHash, _kPrefix);
+    const _acct = { id: 'admin-' + _kHash.slice(0, 8), balance: 999999999, tier: 'kraken', auto_reload: false, scope: '*', label: 'admin', max_credits: null, created: Date.now() };
+    apiKeys.set(_adminKey, _acct);
+    apiKeysByHash.set(_kHash, { acct: _acct, plaintextKey: _adminKey });
+    log.info('Admin key seeded', { prefix: _kPrefix });
+  }
+} catch (e) { /* non-fatal */ }
+
 // PERF: Deferred key persistence — mark dirty, flush in batch
 function persistKey(key) {
   dirtyKeys.add(key);
