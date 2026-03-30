@@ -6887,11 +6887,11 @@ async function main() {
 
   ${bold('Get started in 30 seconds:')}
 
-  1. ${cyan('slop signup')}            Create free account (500 credits)
-  2. ${cyan('slop call crypto-uuid')}  Make your first API call
-  3. ${cyan('slop doctor')}            Check your setup
-  4. ${cyan('slop mcp serve')}         Start MCP server (Goose/Cursor/Cline)
-  5. ${cyan('slop help')}              See all 44+ commands
+  1. ${cyan('slop signup')}                         Create free account (500 credits)
+  2. ${cyan('slop "hash hello world"')}              Natural language → auto-routes
+  3. ${cyan('slop "remember goal: ship v1"')}         Store to persistent memory (free)
+  4. ${cyan('slop mcp serve')}                       Start MCP server (Cursor/Claude)
+  5. ${cyan('slop help')}                            See all 70+ commands
 
   ${dim('Free persistent memory forever. 925 real compute handlers.')}
   ${dim('Works inside Claude Code, Cursor, Goose, Cline, OpenCode, Aider.')}
@@ -6903,10 +6903,10 @@ async function main() {
     if (!cmd && !API_KEY && !jsonMode) {
       console.log(`\n  ${C.red}${C.bold}SLOPSHOP${C.reset} v${PKG_VERSION} ${dim('— the missing CLI for AI agents')}\n`);
       console.log(`  ${bold('Quick start:')}`);
-      console.log(`    1. ${cyan('slop signup')}                    Create free account (500 credits)`);
-      console.log(`    2. ${cyan('slop call crypto-uuid')}          Your first API call`);
-      console.log(`    3. ${cyan('slop search "what you need"')}    Find any of 1,255 APIs`);
-      console.log(`    4. ${cyan('slop pipe api1 api2')}            Chain APIs together\n`);
+      console.log(`    1. ${cyan('slop signup')}                          Create free account (500 credits)`);
+      console.log(`    2. ${cyan('slop "hash hello world"')}                Natural language routing`);
+      console.log(`    3. ${cyan('slop "remember goal: ship v1"')}          Free persistent memory`);
+      console.log(`    4. ${cyan('slop research "AI agents"')}              Multi-LLM research\n`);
       console.log(`  ${bold('Already have a key?')}`);
       console.log(`    ${cyan('slop key set sk-slop-YOUR-KEY')}\n`);
       console.log(`  ${dim('Run')} ${cyan('slop help')} ${dim('for all 42 commands.')}\n`);
@@ -7253,6 +7253,120 @@ async function cmdNatural(cmd, args) {
   if (/^(find|search|look for|what tools?|which api|how do i)\s+(.+)/i.test(fullInput)) {
     const query = fullInput.replace(/^(?:find|search|look for|what tools?|which api|how do i)\s+/i, '');
     return cmdSearch([query]);
+  }
+
+  // Research / North Star
+  if (/^(research|investigate|find out about|deep dive|analyze)\s+(.+)/i.test(fullInput)) {
+    requireKey();
+    const topic = fullInput.replace(/^(?:research|investigate|find out about|deep dive|analyze)\s+/i, '');
+    if (!quiet && !jsonMode) console.log(dim('\n  Running multi-LLM research...'));
+    const r = await request('POST', '/v1/research', { topic, tier: 'basic' });
+    if (jsonMode) return console.log(JSON.stringify(r));
+    console.log(`\n  ${bold('Research: ' + topic)}`);
+    if (r.data?.findings) for (const f of r.data.findings) console.log(`  [${cyan(f.provider)}] ${f.response?.slice(0, 200) || 'no response'}`);
+    else console.log(`  ${dim('No LLM keys configured. Set ANTHROPIC_API_KEY, XAI_API_KEY, etc.')}`);
+    console.log();
+    return;
+  }
+  if (/^(set|my)\s+(north\s*star|goal|mission)\s+(?:is\s+|to\s+)?(.+)/i.test(fullInput)) {
+    requireKey();
+    const goal = fullInput.replace(/^(?:set|my)\s+(?:north\s*star|goal|mission)\s+(?:is\s+|to\s+)?/i, '');
+    const r = await request('POST', '/v1/northstar/set', { goal });
+    if (jsonMode) return console.log(JSON.stringify(r));
+    console.log(`\n  ${green('✓')} North Star set: "${goal}"`);
+    console.log(`  ${dim('Run')} ${cyan('slop research "' + goal.slice(0, 30) + '"')} ${dim('to start research')}\n`);
+    return;
+  }
+  if (/^(daily|hive daily|daily intelligence|brief|morning brief)/i.test(lower)) {
+    requireKey();
+    const r = await request('POST', '/v1/hive/daily-intelligence', { mode: 'light' });
+    if (jsonMode) return console.log(JSON.stringify(r));
+    console.log(`\n  ${bold('Daily Intelligence Brief')}`);
+    console.log(`  ${dim('Providers:')} ${r.data?.providers_used || 0}`);
+    console.log(`  ${dim('Credits:')} ${r.data?.credits_used || 0}`);
+    console.log();
+    return;
+  }
+
+  // Connect external services
+  if (/^(connect|link|integrate)\s+(\w+)/i.test(fullInput)) {
+    requireKey();
+    const toolkit = fullInput.match(/(?:connect|link|integrate)\s+(\w+)/i)[1].toLowerCase();
+    const r = await request('GET', '/v1/connectors/connect/' + toolkit);
+    if (r.error) { console.log(`\n  ${red('✗')} ${r.error.message || r.error.code}\n`); return; }
+    console.log(`\n  ${bold('Connect ' + toolkit)}`);
+    console.log(`  ${dim('Auth URL:')} ${r.auth_url}`);
+    console.log(`  ${dim('Open this URL in your browser to authorize.')}\n`);
+    return;
+  }
+
+  // Triggers
+  if (/^(trigger|webhook)\s+(create|new|add)\s+(\w+)/i.test(fullInput)) {
+    requireKey();
+    const toolkit = fullInput.match(/(?:trigger|webhook)\s+(?:create|new|add)\s+(\w+)/i)[1];
+    const r = await request('POST', '/v1/triggers/create', { toolkit, event_type: 'webhook' });
+    if (jsonMode) return console.log(JSON.stringify(r));
+    console.log(`\n  ${green('✓')} Trigger created: ${r.trigger_id}`);
+    console.log(`  ${dim('Webhook URL:')} ${r.webhook_url}\n`);
+    return;
+  }
+
+  // Upload memory file
+  if (/^(upload|import)\s+(memory|file|data)\s+(.+)/i.test(fullInput)) {
+    requireKey();
+    const filePath = fullInput.match(/(?:upload|import)\s+(?:memory|file|data)\s+(.+)/i)[1].trim();
+    if (fs.existsSync(filePath)) {
+      const content = fs.readFileSync(filePath, 'utf8');
+      const r = await request('POST', '/v1/memory/upload', { content, filename: path.basename(filePath) });
+      if (jsonMode) return console.log(JSON.stringify(r));
+      console.log(`\n  ${green('✓')} Uploaded ${r.data?.entries_stored || 0} entries from ${path.basename(filePath)}`);
+      console.log(`  ${dim('Namespace:')} ${r.data?.namespace || 'default'}\n`);
+    } else {
+      console.log(`\n  ${red('✗')} File not found: ${filePath}\n`);
+    }
+    return;
+  }
+
+  // Prime check
+  if (/^is\s+(\d+)\s+prime/i.test(fullInput)) {
+    const n = parseInt(fullInput.match(/is\s+(\d+)\s+prime/i)[1]);
+    return cmdCall(['math-prime-check', '--number', String(n)]);
+  }
+
+  // Factorial
+  if (/^(\d+)\s*!|^factorial\s+(\d+)|^what is (\d+) factorial/i.test(fullInput)) {
+    const m = fullInput.match(/(\d+)/);
+    if (m) return cmdCall(['math-factorial', '--n', m[1]]);
+  }
+
+  // Fibonacci
+  if (/^fib(?:onacci)?\s+(\d+)/i.test(fullInput)) {
+    const n = fullInput.match(/(\d+)/)[1];
+    return cmdCall(['math-fibonacci', '--n', n]);
+  }
+
+  // Temperature conversion
+  if (/^convert\s+(\d+)\s*°?\s*(c|f|celsius|fahrenheit|kelvin)\s+to\s+(c|f|celsius|fahrenheit|kelvin)/i.test(fullInput)) {
+    const m = fullInput.match(/convert\s+(\d+)\s*°?\s*(\w+)\s+to\s+(\w+)/i);
+    return cmdCall(['convert-temperature', '--value', m[1], '--from', m[2], '--to', m[3]]);
+  }
+
+  // Server-side NL router fallback (uses /v1/query)
+  if (API_KEY) {
+    try {
+      const r = await request('POST', '/v1/query', { query: fullInput });
+      if (r.ok && r.data?.routed_to && r.data.routed_to !== null) {
+        if (jsonMode) return console.log(JSON.stringify(r));
+        console.log(`\n  ${dim('Routed to:')} ${cyan(r.data.routed_to)} ${dim('(' + (r.data.method || 'auto') + ')')}`);
+        const d = r.data;
+        delete d._engine; delete d.routed_to; delete d.method;
+        if (Object.keys(d).length > 0) {
+          console.log(`  ${JSON.stringify(d, null, 2).split('\n').map(l => '  ' + l).join('\n')}`);
+        }
+        console.log();
+        return;
+      }
+    } catch(e) {}
   }
 
   // If nothing matched locally, try the server-side agent/run as fallback
