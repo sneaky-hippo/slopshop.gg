@@ -78,7 +78,7 @@ function printLogo() {
   }
   lines.push(r + '  \u2514' + border + '\u2518' + x);
   lines.push('       ' + d + 'slopshop.gg' + x + '  ' + d + 'alpha' + x + '  ' + d + '/////////////////////' + x);
-  return lines.join('\n  ');
+  return lines.join('\n');
 }
 
 // ============================================================
