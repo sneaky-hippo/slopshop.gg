@@ -7106,15 +7106,15 @@ async function cmdNatural(cmd, args) {
   // Validation
   if (/^(validate|check|verify|is)\s+.*(email|mail)\s+(\S+)/i.test(fullInput)) {
     const m = fullInput.match(/(\S+@\S+\.\S+)/);
-    if (m) return cmdCall(['validate-email-syntax', '--email', m[1]]);
+    if (m) return cmdCall(['net-email-validate', '--email', m[1]]);
   }
   if (/^(validate|check|verify)\s+.*url\s+(\S+)/i.test(fullInput)) {
     const m = fullInput.match(/(https?:\/\/\S+)/);
-    if (m) return cmdCall(['validate-url-format', '--url', m[1]]);
+    if (m) return cmdCall(['validate-url', '--url', m[1]]);
   }
   if (/^(validate|check)\s+.*ip\s+([\d.]+)/i.test(fullInput)) {
     const m = fullInput.match(/([\d]+\.[\d]+\.[\d]+\.[\d]+)/);
-    if (m) return cmdCall(['validate-ip-address', '--ip', m[1]]);
+    if (m) return cmdCall(['net-ip-validate', '--ip', m[1]]);
   }
 
   // Word/text operations
@@ -7172,12 +7172,12 @@ async function cmdNatural(cmd, args) {
   // JSON operations
   if (/^(parse|format|prettify|validate)\s+json\s+(.+)/i.test(fullInput)) {
     const data = fullInput.replace(/^(?:parse|format|prettify|validate)\s+json\s+/i, '');
-    return cmdCall(['json-format', '--json', data]);
+    return cmdCall(['text-json-format', '--json', data]);
   }
 
   // Time/date
   if (/^(what time|current time|now|timestamp|date)/i.test(lower)) {
-    return cmdCall(['date-now']);
+    return cmdCall(['sense-time-now']);
   }
 
   // Password generation
@@ -7199,7 +7199,7 @@ async function cmdNatural(cmd, args) {
   // IP/DNS
   if (/^(lookup|resolve|dns)\s+(\S+)/i.test(fullInput)) {
     const domain = fullInput.match(/(?:lookup|resolve|dns)\s+(\S+)/i)[1];
-    return cmdCall(['net-dns-lookup', '--domain', domain]);
+    return cmdCall(['net-dns-a', '--domain', domain]);
   }
 
   // JWT decode

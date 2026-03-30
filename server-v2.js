@@ -784,11 +784,11 @@ function auth(req, res, next) {
     res.set('X-RateLimit-Remaining', '0');
     res.set('X-RateLimit-Reset', String(rlEntry ? Math.ceil((rlEntry.s + 60000) / 1000) : Math.ceil(Date.now() / 1000) + 60));
     res.set('Retry-After', '30');
-    return res.status(429).json({ error: { code: 'rate_limited', message: 'Max 120 requests/min per API key. Retry after 30 seconds.', retry_after: 30 } });
+    return res.status(429).json({ error: { code: 'rate_limited', message: `Max ${rlMax} requests/min per API key. Retry after 30 seconds.`, retry_after: 30 } });
   }
   const rlEntry = ipLimits.get('api:' + key);
   res.set('X-RateLimit-Limit', String(rlMax||120));
-  res.set('X-RateLimit-Remaining', String(Math.max(0, 120 - (rlEntry?.c || 0))));
+  res.set('X-RateLimit-Remaining', String(Math.max(0, rlMax - (rlEntry?.c || 0))));
   res.set('X-RateLimit-Reset', String(rlEntry ? Math.ceil((rlEntry.s + 60000) / 1000) : Math.ceil(Date.now() / 1000) + 60));
   next();
 }

@@ -279,7 +279,7 @@ async function handleMessage(msg) {
       };
 
     case 'notifications/initialized':
-      return {}; // No response needed
+      return null; // No response for notifications
 
     case 'resources/list':
       return {
@@ -312,16 +312,16 @@ async function handleMessage(msg) {
     }
 
     case 'tools/list':
-      if (!toolList) await loadTools().catch(() => toolList = undefined);
+      if (!toolList) await loadTools().catch(() => { toolList = []; });
       // Combine essential compute tools + orchestration tools
-      const computeTools = toolList.map(t => {
+      const computeTools = (toolList || []).map(t => {
         const props = {};
         const required = [];
         if (t.input_schema && typeof t.input_schema === 'object' && !Array.isArray(t.input_schema)) {
           for (const [k, v] of Object.entries(t.input_schema)) {
             if (k === '_note') continue;
             props[k] = { type: v.type || 'string', description: v.description || k };
-            if (v.required && !props[k]) required.push(k);
+            if (v.required) required.push(k);
           }
         }
         if (Object.keys(props).length === 0) {
@@ -412,7 +412,7 @@ process.stdin.on('data', (chunk) => {
         for (const line of lines) {
           const msg = JSON.parse(line);
           handleMessage(msg).then(response => {
-            if (response && response !== undefined) send(response);
+            if (response !== null && response !== undefined) send(response);
           });
         }
         buffer = '';
