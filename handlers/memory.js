@@ -479,7 +479,8 @@ module.exports = function (db) {
   // -------------------------------------------------------------------------
   function queuePush(input) {
     input = input || {};
-    const { queue = 'default', item } = input;
+    const queue = input.queue || input.key || input.name || 'default';
+    const item = input.item !== undefined ? input.item : input.value;
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
     stmts.queueInsert.run(queue, id, JSON.stringify(item), Date.now());
     const { cnt } = stmts.queueSize.get(queue);
@@ -491,7 +492,7 @@ module.exports = function (db) {
   // -------------------------------------------------------------------------
   function queuePop(input) {
     input = input || {};
-    const { queue = 'default' } = input;
+    const queue = input.queue || input.key || input.name || 'default';
 
     const doPop = db.transaction(() => {
       const row = stmts.queuePopRow.get(queue);
@@ -510,7 +511,7 @@ module.exports = function (db) {
   // -------------------------------------------------------------------------
   function queuePeek(input) {
     input = input || {};
-    const { queue = 'default' } = input;
+    const queue = input.queue || input.key || input.name || 'default';
     const row = stmts.queuePeek.get(queue);
     const { cnt } = stmts.queueSize.get(queue);
     return {
@@ -525,7 +526,7 @@ module.exports = function (db) {
   // -------------------------------------------------------------------------
   function queueSize(input) {
     input = input || {};
-    const { queue = 'default' } = input;
+    const queue = input.queue || input.key || input.name || 'default';
     const { cnt } = stmts.queueSize.get(queue);
     return { _engine: 'real', size: cnt };
   }

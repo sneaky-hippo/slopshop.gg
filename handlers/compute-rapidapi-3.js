@@ -35,8 +35,11 @@ const handlers = {
   },
 
   // ─── MEDIA UTILITIES ──────────────────────────────────────
-  'media-detect-format': ({header}) => {
-    const h=(header||'').slice(0,20);
+  'media-detect-format': (input) => {
+    input = input || {};
+    const raw = input.header || input.base64 || input.data || '';
+    const header = typeof raw === 'string' ? raw : String(raw);
+    const h=header.slice(0,20);
     const sigs={'/9j/':'image/jpeg','iVBOR':'image/png','R0lG':'image/gif','UklG':'image/webp','PD94':'image/svg+xml','JVBER':'application/pdf','UEsD':'application/zip','H4sI':'application/gzip'};
     const detected=Object.entries(sigs).find(([sig])=>h.startsWith(sig));
     return {_engine:'real', mime:detected?detected[1]:'unknown', signature:detected?detected[0]:'none', detected:!!detected};
@@ -85,8 +88,10 @@ const handlers = {
   },
 
   // ─── DEVELOPER TOOLS ──────────────────────────────────────
-  'dev-env-validate': ({content}) => {
-    const lines=(content||'').split('\n');
+  'dev-env-validate': (input) => {
+    input = input || {};
+    const content = input.content || input.env || '';
+    const lines=content.split('\n');
     const errors=[];const vars={};
     lines.forEach((line,i)=>{
       const trimmed=line.trim();
@@ -276,8 +281,11 @@ const handlers = {
     return {_engine:'real', state, csrf_token:csrf, extra:extra_data||null, expires_in:300};
   },
 
-  'auth-scope-check': ({required, granted}) => {
-    const req=required||[];const gr=new Set(granted||[]);
+  'auth-scope-check': (input) => {
+    input = input || {};
+    const required = input.required || [];
+    const granted = input.granted || input.scopes || [];
+    const req=Array.isArray(required)?required:(typeof required==='string'?[required]:[]);const gr=new Set(Array.isArray(granted)?granted:(typeof granted==='string'?[granted]:[]));
     const satisfied=req.every(r=>gr.has(r)||gr.has('*'));
     const missing=req.filter(r=>!gr.has(r)&&!gr.has('*'));
     return {_engine:'real', authorized:satisfied, required:req, granted:[...gr], missing, has_wildcard:gr.has('*')};

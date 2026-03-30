@@ -17,7 +17,7 @@ function save(file, d) { ensureDir(); fs.writeFileSync(path.join(DATA, file), JS
 module.exports = {
   // ===== DELAY =====
   'orch-delay': async (input) => {
-    const ms = Math.min(input.ms || input.delay || 1000, 10000);
+    const ms = Math.min(input.ms || input.delay || (input.seconds ? input.seconds * 1000 : 0) || 1000, 10000);
     await new Promise(r => setTimeout(r, ms));
     return { _engine: 'real', delayed_ms: ms, timestamp: new Date().toISOString() };
   },
@@ -56,7 +56,7 @@ module.exports = {
     const limits = load('rate-limits.json', {});
     const key = input.key || 'default';
     const window = (input.window || 60) * 1000;
-    const max = input.max || 100;
+    const max = input.max || input.limit || 100;
     const now = Date.now();
     const entry = limits[key] || { count: 0, window_start: now };
     if (now - entry.window_start > window) { entry.count = 0; entry.window_start = now; }
@@ -66,7 +66,7 @@ module.exports = {
     const limits = load('rate-limits.json', {});
     const key = input.key || 'default';
     const window = (input.window || 60) * 1000;
-    const max = input.max || 100;
+    const max = input.max || input.limit || 100;
     const now = Date.now();
     if (!limits[key]) limits[key] = { count: 0, window_start: now };
     if (now - limits[key].window_start > window) { limits[key].count = 0; limits[key].window_start = now; }
@@ -78,7 +78,7 @@ module.exports = {
   // ===== LOCKS =====
   'orch-lock-acquire': (input) => {
     const locks = load('locks.json', {});
-    const name = input.name || input.lock;
+    const name = input.name || input.lock || input.key;
     const ttl = input.ttl || 30;
     if (locks[name] && locks[name].expires > Date.now()) {
       return { _engine: 'real', acquired: false, held_by: locks[name].holder, expires_in_ms: locks[name].expires - Date.now() };
@@ -90,7 +90,7 @@ module.exports = {
   },
   'orch-lock-release': (input) => {
     const locks = load('locks.json', {});
-    const name = input.name || input.lock;
+    const name = input.name || input.lock || input.key;
     delete locks[name];
     save('locks.json', locks);
     return { _engine: 'real', released: true, lock: name };
@@ -108,10 +108,10 @@ module.exports = {
   // ===== EVENTS =====
   'orch-event-emit': (input) => {
     const events = load('events.json', []);
-    events.push({ name: input.name || input.event, data: input.data, timestamp: Date.now() });
+    events.push({ name: input.name || input.event || input.channel, data: input.data, timestamp: Date.now() });
     if (events.length > 1000) events.splice(0, events.length - 1000);
     save('events.json', events);
-    return { _engine: 'real', emitted: true, event: input.name || input.event, queue_size: events.length };
+    return { _engine: 'real', emitted: true, event: input.name || input.event || input.channel, queue_size: events.length };
   },
   'orch-event-poll': (input) => {
     const events = load('events.json', []);
@@ -125,7 +125,7 @@ module.exports = {
   // ===== CIRCUIT BREAKER =====
   'orch-circuit-breaker-check': (input) => {
     const breakers = load('breakers.json', {});
-    const name = input.name || input.service;
+    const name = input.name || input.service || input.key;
     const b = breakers[name] || { state: 'closed', failures: 0, last_failure: 0 };
     const threshold = input.threshold || 5;
     const cooldown = (input.cooldown || 60) * 1000;
@@ -134,7 +134,7 @@ module.exports = {
   },
   'orch-circuit-breaker-record': (input) => {
     const breakers = load('breakers.json', {});
-    const name = input.name || input.service;
+    const name = input.name || input.service || input.key;
     if (!breakers[name]) breakers[name] = { state: 'closed', failures: 0, last_failure: 0 };
     const threshold = input.threshold || 5;
     if (input.success) {
@@ -388,7 +388,8 @@ module.exports = {
   },
 
   'analyze-csv-correlate': (input) => {
-    const csv = input.data || '';
+    const raw = input.data || input.csv || '';
+    const csv = typeof raw === 'string' ? raw : JSON.stringify(raw);
     const lines = csv.trim().split('\n');
     if (lines.length < 3) return { _engine: 'real', error: 'Need at least 3 rows' };
     const headers = lines[0].split(',').map(h => h.trim());

@@ -29,8 +29,11 @@ const handlers = {
     return {_engine:'real', matrix, labels:ls, accuracy:Math.round(ls.reduce((s,_,i)=>s+matrix[i][i],0)/Math.max((predicted||[]).length,1)*100)/100};
   },
 
-  'rouge-score': ({candidate, reference}) => {
-    const cw=(candidate||'').toLowerCase().split(/\s+/); const rw=(reference||'').toLowerCase().split(/\s+/);
+  'rouge-score': (input) => {
+    input = input || {};
+    const candidate = input.candidate || input.hypothesis || '';
+    const reference = input.reference || '';
+    const cw=candidate.toLowerCase().split(/\s+/); const rw=reference.toLowerCase().split(/\s+/);
     const overlap=cw.filter(w=>rw.includes(w)).length;
     const p=Math.round(overlap/Math.max(cw.length,1)*100)/100; const r=Math.round(overlap/Math.max(rw.length,1)*100)/100;
     return {_engine:'real', rouge_1:{precision:p, recall:r, f1:Math.round(2*p*r/Math.max(p+r,0.01)*100)/100}};
@@ -44,8 +47,11 @@ const handlers = {
     return {_engine:'real', bleu:Math.round(bp*Math.pow(scores.reduce((a,b)=>a*b,1),0.25)*10000)/10000, brevity_penalty:Math.round(bp*100)/100};
   },
 
-  'cosine-similarity': ({vector_a, vector_b}) => {
-    const a=vector_a||[]; const b=vector_b||[];
+  'cosine-similarity': (input) => {
+    input = input || {};
+    const vector_a = input.vector_a || input.a || [];
+    const vector_b = input.vector_b || input.b || [];
+    const a=vector_a; const b=vector_b;
     const dot=a.reduce((s,v,i)=>s+v*(b[i]||0),0);
     const magA=Math.sqrt(a.reduce((s,v)=>s+v*v,0)); const magB=Math.sqrt(b.reduce((s,v)=>s+v*v,0));
     const sim=magA&&magB?dot/(magA*magB):0;
@@ -58,8 +64,13 @@ const handlers = {
     return {_engine:'real', clusters:Array.from({length:numK},(_,c)=>({cluster:c,members:assignments.filter(a=>a.cluster===c).length})), k:numK, total:vs.length};
   },
 
-  'elo-rating': ({rating_a, rating_b, winner, k_factor}) => {
-    const ra=rating_a||1500; const rb=rating_b||1500; const k=k_factor||32;
+  'elo-rating': (input) => {
+    input = input || {};
+    const rating_a = input.rating_a || input.winner_rating || 1500;
+    const rating_b = input.rating_b || input.loser_rating || 1500;
+    const winner = input.winner;
+    const k_factor = input.k_factor;
+    const ra=rating_a; const rb=rating_b; const k=k_factor||32;
     const ea=1/(1+Math.pow(10,(rb-ra)/400)); const sa=winner==='a'?1:winner==='b'?0:0.5;
     return {_engine:'real', new_a:Math.round(ra+k*(sa-ea)), new_b:Math.round(rb+k*((1-sa)-(1-ea))), expected_a:Math.round(ea*100)/100};
   },
@@ -142,7 +153,10 @@ const handlers = {
     return {_engine:'real', level, xp:x, xp_to_next:Math.max(0,nextReq-x), progress:Math.round(x/nextReq*100)};
   },
 
-  'skill-tree-eval': ({tree, unlocked}) => {
+  'skill-tree-eval': (input) => {
+    input = input || {};
+    const tree = input.tree || input.skills;
+    const unlocked = input.unlocked;
     const t=tree||[{id:'a',prereqs:[]},{id:'b',prereqs:['a']},{id:'c',prereqs:['b']}];
     const ul=new Set(unlocked||['a']);
     const available=t.filter(n=>!ul.has(n.id)&&n.prereqs.every(p=>ul.has(p)));
@@ -168,7 +182,10 @@ const handlers = {
     return {_engine:'real', quest_id:crypto.randomUUID(), type:t, difficulty:d, theme:theme||'digital realm', type_confidence:scored[0].matches, rewards:{xp:d*100,credits:d*10}};
   },
 
-  'loot-table-roll': ({table, seed}) => {
+  'loot-table-roll': (input) => {
+    input = input || {};
+    const table = input.table || input.items;
+    const seed = input.seed;
     const t=table||[{item:'Scroll',rarity:'common',weight:60},{item:'Gem',rarity:'rare',weight:25},{item:'Blade',rarity:'epic',weight:10},{item:'Crown',rarity:'legendary',weight:5}];
     // Use numeric seed directly for deterministic roll, or use timestamp-based position
     const numericSeed = typeof seed === 'number' ? seed : (seed ? String(seed).length * 7 + String(seed).split('').reduce((s,c)=>s+c.charCodeAt(0),0) : Date.now());

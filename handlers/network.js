@@ -452,7 +452,7 @@ function parseCidr(cidr) {
   if (net.isIPv4(base)) {
     const ipInt = base.split('.').reduce((acc, o) => (acc << 8) | parseInt(o, 10), 0) >>> 0;
     const mask  = prefix === 0 ? 0 : (0xffffffff << (32 - prefix)) >>> 0;
-    return { family: 4, networkInt: ipInt & mask, mask };
+    return { family: 4, networkInt: (ipInt & mask) >>> 0, mask };
   }
 
   return null; // IPv6 CIDR not implemented (complex bigint math omitted for brevity)

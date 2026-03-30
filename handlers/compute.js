@@ -688,10 +688,11 @@ const CURRENCY_RATES={USD:1,EUR:0.92,GBP:0.79,JPY:149.5,CAD:1.36,AUD:1.53,CHF:0.
 
 function mathCurrencyConvert(input) {
   const {amount=1,from='USD',to='EUR'}=input;
-  const f=CURRENCY_RATES[from.toUpperCase()],t=CURRENCY_RATES[to.toUpperCase()];
-  if (!f) return { _engine: 'real',error:'Unknown currency: '+from};
-  if (!t) return { _engine: 'real',error:'Unknown currency: '+to};
-  return { _engine: 'real',amount,from:from.toUpperCase(),to:to.toUpperCase(),result:Math.round((amount/f)*t*100)/100,note:'Static rates for reference only.'};
+  const fromStr=String(from).toUpperCase(),toStr=String(to).toUpperCase();
+  const f=CURRENCY_RATES[fromStr],t=CURRENCY_RATES[toStr];
+  if (!f) return { _engine: 'real',error:'Unknown currency: '+fromStr};
+  if (!t) return { _engine: 'real',error:'Unknown currency: '+toStr};
+  return { _engine: 'real',amount,from:fromStr,to:toStr,result:Math.round((amount/f)*t*100)/100,note:'Static rates for reference only.'};
 }
 
 const UNITS={
@@ -1696,6 +1697,7 @@ function mathMatrixMultiply(input) {
   const a = input.a;
   const b = input.b;
   if (!Array.isArray(a) || !Array.isArray(b)) return { _engine: 'real', error: 'Inputs a and b must be 2D arrays' };
+  if (!a.length || !Array.isArray(a[0]) || !b.length || !Array.isArray(b[0])) return { _engine: 'real', error: 'Inputs a and b must be 2D arrays (array of arrays)' };
   const aRows = a.length, aCols = a[0].length;
   const bRows = b.length, bCols = b[0].length;
   if (aCols !== bRows) return { _engine: 'real', error: `Dimension mismatch: a is ${aRows}x${aCols}, b is ${bRows}x${bCols}; a columns must equal b rows` };
@@ -4076,10 +4078,14 @@ module.exports = {
     return { _engine: 'real', roman: r };
   },
 
-  'convert-base': ({number, from, to}) => ({
-    _engine: 'real',
-    result: parseInt(String(number), from || 10).toString(to || 16),
-  }),
+  'convert-base': ({number, from, to}) => {
+    const fromBase = parseInt(from) || 10;
+    const toBase = parseInt(to) || 16;
+    if (fromBase < 2 || fromBase > 36 || toBase < 2 || toBase > 36) return { _engine: 'real', error: 'Base must be between 2 and 36' };
+    const parsed = parseInt(String(number), fromBase);
+    if (isNaN(parsed)) return { _engine: 'real', error: 'Invalid number for the given base' };
+    return { _engine: 'real', result: parsed.toString(toBase), from: fromBase, to: toBase };
+  },
 
   'json-flatten': ({data, prefix}) => {
     const result = {};

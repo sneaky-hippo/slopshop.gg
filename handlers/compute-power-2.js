@@ -3,20 +3,33 @@ const crypto = require('crypto');
 
 const handlers = {
   // ─── BUSINESS LOGIC ───────────────────────────────────────
-  'biz-tax-calculate': ({amount, rate, inclusive}) => {
+  'biz-tax-calculate': (input) => {
+    input = input || {};
+    const amount = input.amount || input.income;
+    const rate = input.rate;
+    const inclusive = input.inclusive;
     const a=amount||100;const r=rate||0;
     if(inclusive){const net=Math.round(a/(1+r/100)*100)/100;return {_engine:'real',gross:a,net,tax:Math.round((a-net)*100)/100,rate:r,type:'inclusive'};}
     const tax=Math.round(a*r/100*100)/100;return {_engine:'real',net:a,tax,gross:Math.round((a+tax)*100)/100,rate:r,type:'exclusive'};
   },
 
-  'biz-discount-apply': ({price, discount_type, discount_value, quantity}) => {
+  'biz-discount-apply': (input) => {
+    input = input || {};
+    const price = input.price;
+    const discount_type = input.discount_type || (input.discount !== undefined ? 'percent' : undefined);
+    const discount_value = input.discount_value || input.discount;
+    const quantity = input.quantity;
     const p=price||100;const dt=discount_type||'percent';const dv=discount_value||10;const q=quantity||1;
     const subtotal=p*q;
     const discount=dt==='percent'?Math.round(subtotal*dv/100*100)/100:Math.min(dv,subtotal);
     return {_engine:'real',original:subtotal,discount,final:Math.round((subtotal-discount)*100)/100,savings_pct:Math.round(discount/subtotal*100)};
   },
 
-  'biz-shipping-estimate': ({weight_kg, distance_km, method}) => {
+  'biz-shipping-estimate': (input) => {
+    input = input || {};
+    const weight_kg = input.weight_kg || input.weight;
+    const distance_km = input.distance_km || input.distance;
+    const method = input.method;
     const w=weight_kg||1;const d=distance_km||100;const m=method||'standard';
     const rates={express:{base:15,per_kg:3,per_km:0.02,days:'1-2'},standard:{base:5,per_kg:1.5,per_km:0.01,days:'3-5'},economy:{base:2,per_kg:0.8,per_km:0.005,days:'7-14'}};
     const r=rates[m]||rates.standard;

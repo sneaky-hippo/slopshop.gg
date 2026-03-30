@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0",
   "name": "Slopshop",
-  "description": "The protocol layer of intelligence. 1272 real APIs, multi-LLM orchestration (Claude+GPT+Grok+DeepSeek+Ollama), agent organizations, free persistent memory, Universal Model Mesh, Memory 2.0 GraphRAG, Marketplace, Safety Layer.",
+  "description": "The protocol layer of intelligence. 1255 real APIs, multi-LLM orchestration (Claude+GPT+Grok+DeepSeek+Ollama), agent organizations, free persistent memory, Universal Model Mesh, Memory 2.0 GraphRAG, Marketplace, Safety Layer.",
   "url": "https://slopshop.gg",
   "api_base": "https://slopshop.gg/v1",
   "documentation": "https://slopshop.gg/docs",
@@ -14,7 +14,7 @@
   "signup_credits": 500,
   "pricing": "credit-based, transparent per-API cost",
   "key_features": [
-    "1272 real API endpoints across 78 categories",
+    "1255 real API endpoints across 78 categories",
     "Multi-LLM: Claude Opus, GPT-4.1, Grok-3, DeepSeek, Ollama local models",
     "Agent organizations: launch 30-agent teams in one command",
     "Free persistent memory (survives sessions, model swaps, restarts)",

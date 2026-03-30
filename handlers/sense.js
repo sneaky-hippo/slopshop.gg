@@ -470,7 +470,8 @@ async function analyzeErrorFingerprint(input) {
 // ---------------------------------------------------------------------------
 async function analyzeCsvSummary(input) {
   input = input || {};
-  const data = input.data || '';
+  const raw = input.data || input.csv || '';
+  const data = typeof raw === 'string' ? raw : JSON.stringify(raw);
   const lines = data.split('\n').filter(l => l.trim());
   if (lines.length < 2) return { _engine: 'real', columns: [], rows: 0, columns_count: 0 };
 

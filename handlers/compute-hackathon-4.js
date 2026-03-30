@@ -282,7 +282,9 @@ const handlers = {
   },
 
   // ─── PATTERN ANALYSIS ────────────────────────────────────
-  'workflow-rhythm-score': ({timestamps}) => {
+  'workflow-rhythm-score': (input) => {
+    input = input || {};
+    const timestamps = input.timestamps || (Array.isArray(input.events) ? input.events.map(e => e.ts || e.timestamp || e) : input.events);
     const ts=timestamps||[];
     if(ts.length<2) return {_engine:'real', rhythm:'insufficient_data'};
     const intervals=ts.slice(1).map((t,i)=>new Date(t)-new Date(ts[i]));

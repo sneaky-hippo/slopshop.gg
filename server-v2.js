@@ -831,7 +831,7 @@ app.use((req, res, next) => {
 
   next();
 });
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname), { maxAge: 0, etag: false, lastModified: true }));
 
 // Enforce HTTPS in production
 if (process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT) {
@@ -2425,7 +2425,7 @@ function getCacheKey(slug, body) {
     const k = keys[i];
     if (k === 'mode' || k === 'trace' || k === 'agent_mode' || k === 'session_id') continue;
     const v = body[k];
-    keyStr += ':' + k + '=' + (typeof v === 'string' ? (v.length > 64 ? v.slice(0, 64) : v) : String(v));
+    keyStr += ':' + k + '=' + (typeof v === 'string' ? (v.length > 64 ? v.slice(0, 64) : v) : (typeof v === 'object' ? JSON.stringify(v).slice(0, 128) : String(v)));
   }
   return slug + ':' + fnv1a(keyStr);
 }

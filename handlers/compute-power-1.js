@@ -288,7 +288,9 @@ const handlers = {
 
   // ─── MATH POWER TOOLS ────────────────────────────────────
   'math-matrix-multiply': ({a, b}) => {
-    const A=a||[[1,0],[0,1]];const B=b||[[1],[1]];
+    if (!Array.isArray(a) || !Array.isArray(b)) return { _engine: 'real', error: 'Inputs a and b must be 2D arrays' };
+    const A=a;const B=b;
+    if (!A.length || !Array.isArray(A[0]) || !B.length || !Array.isArray(B[0])) return { _engine: 'real', error: 'Inputs must be 2D arrays' };
     const rows=A.length;const cols=B[0].length;const inner=B.length;
     const result=Array.from({length:rows},()=>Array(cols).fill(0));
     for(let i=0;i<rows;i++)for(let j=0;j<cols;j++)for(let k=0;k<inner;k++)result[i][j]+=A[i][k]*B[k][j];

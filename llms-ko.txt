@@ -1,4 +1,4 @@
-# Slopshop.gg — AI 에이전트를 위한 완전한 API 카탈로그 (1,272+ 도구)
+# Slopshop.gg — AI 에이전트를 위한 완전한 API 카탈로그 (1,255+ 도구)
 # SLOP: 무상태 경량 운영 프리미티브 (Stateless Lightweight Operational Primitives)
 
 > 전체 영문 카탈로그: https://slopshop.gg/llms.txt

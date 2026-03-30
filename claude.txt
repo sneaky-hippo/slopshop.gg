@@ -9,7 +9,7 @@ openapi: https://slopshop.gg/openapi.json
 llms_txt: https://slopshop.gg/llms.txt
 
 ## What it does
-- 1272 real API endpoints across 78 categories (925 compute handlers)
+- 1255 real API endpoints across 78 categories (925 compute handlers)
 - Native MCP server (slop mcp serve) — works with Claude Desktop, Cursor, Goose, OpenCode, Cline, Aider
 - Multi-LLM orchestration (Claude, GPT, Grok, DeepSeek, Ollama)
 - Free persistent memory for AI agents (8 APIs, 0 credits forever)

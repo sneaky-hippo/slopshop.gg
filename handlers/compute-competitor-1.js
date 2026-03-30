@@ -30,7 +30,9 @@ const handlers = {
     return {_engine:'real', valid:errors.length===0, errors, error_count:errors.length, data:d};
   },
 
-  'schema-generate-from-sample': ({samples}) => {
+  'schema-generate-from-sample': (input) => {
+    input = input || {};
+    const samples = input.samples || (input.sample ? [input.sample] : undefined);
     const ss = samples || [{}];
     const schema = {type:'object', properties:{}, required:[]};
     const allKeys = new Set();
@@ -164,7 +166,11 @@ const handlers = {
     return {_engine:'real', rows:result, count:result.length, columns:headers};
   },
 
-  'data-join': ({left, right, left_key, right_key, join_type}) => {
+  'data-join': (input) => {
+    input = input || {};
+    const left = input.left; const right = input.right;
+    const left_key = input.left_key || input.on; const right_key = input.right_key || input.on;
+    const join_type = input.join_type;
     const l = left||[]; const r = right||[]; const lk = left_key||'id'; const rk = right_key||'id';
     const jt = join_type || 'inner';
     const rMap = {};
@@ -227,7 +233,12 @@ const handlers = {
   },
 
   // ─── WORKFLOW ENGINE PRIMITIVES ───────────────────────────
-  'workflow-state-machine': ({states, transitions, current_state, event}) => {
+  'workflow-state-machine': (input) => {
+    input = input || {};
+    const states = input.states;
+    const transitions = input.transitions;
+    const current_state = input.current_state || input.current;
+    const event = input.event;
     const ss = states||['idle','running','done','error'];
     const ts = transitions||[{from:'idle',event:'start',to:'running'},{from:'running',event:'complete',to:'done'},{from:'running',event:'fail',to:'error'}];
     const curr = current_state||ss[0]; const evt = event||'';
@@ -237,7 +248,9 @@ const handlers = {
     return {_engine:'real', previous_state:curr, event:evt, current_state:newState, transitioned:!!match, available_events:available, all_states:ss};
   },
 
-  'dag-topological-sort': ({tasks}) => {
+  'dag-topological-sort': (input) => {
+    input = input || {};
+    const tasks = input.tasks || input.edges;
     const ts = tasks||[{id:'a',deps:[]},{id:'b',deps:['a']},{id:'c',deps:['a']},{id:'d',deps:['b','c']}];
     const graph = {}; const inDeg = {};
     ts.forEach(t => { graph[t.id]=t.deps||[]; inDeg[t.id]=0; });

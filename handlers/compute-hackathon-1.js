@@ -94,7 +94,10 @@ const handlers = {
 
   // ─── COGNITIVE ARCHITECTURE ──────────────────────────────────
 
-  'cognitive-load-balancer': ({tasks, max_load}) => {
+  'cognitive-load-balancer': (input) => {
+    input = input || {};
+    const tasks = input.tasks;
+    const max_load = input.max_load || input.capacity;
     const ml = max_load||10;
     const ts = (tasks||[]).map(t=>({...t,load:t.complexity||1}));
     const chunks = []; let current=[],currentLoad=0;
@@ -408,7 +411,9 @@ const handlers = {
 
   // ─── ENTROPY & INFORMATION ───────────────────────────────────
 
-  'entropy-gauge': ({distribution}) => {
+  'entropy-gauge': (input) => {
+    input = input || {};
+    const distribution = input.distribution || input.data;
     const dist = distribution||{a:0.5,b:0.3,c:0.2};
     const vals = Object.values(dist);
     const total = vals.reduce((s,v)=>s+v,0);

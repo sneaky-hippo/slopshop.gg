@@ -670,7 +670,7 @@ async function execSqlOnJson(input) {
 // ---------------------------------------------------------------------------
 async function execFilterJson(input) {
   const data = input.data || [];
-  const where = input.where || {};
+  const where = input.where || input.filter || {};
   const original_count = data.length;
 
   const { field, op, value } = where;
@@ -699,7 +699,7 @@ async function execFilterJson(input) {
 // ---------------------------------------------------------------------------
 async function execSortJson(input) {
   const data = input.data || [];
-  const by = input.by;
+  const by = input.by || input.sort_by;
   const order = (input.order || 'asc').toLowerCase();
 
   const results = [...data].sort((a, b) => {

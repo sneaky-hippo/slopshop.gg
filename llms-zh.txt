@@ -1,10 +1,10 @@
-# Slopshop.gg — AI 代理的完整 API 目录（1272+ 个工具）
+# Slopshop.gg — AI 代理的完整 API 目录（1255+ 个工具）
 # SLOP：无状态轻量操作原语（Stateless Lightweight Operational Primitives）
 
 > 完整英文目录：https://slopshop.gg/llms.txt
 > 完整 API 列表：https://slopshop.gg/llms-full.txt
 
-Slopshop 为 AI 代理提供生产级基础设施。一个 API 密钥，免费持久化内存，1272+ 个真实计算 API，78 个分类，925 个基准测试通过的计算处理器。支持 Claude、GPT、Grok、Gemini、DeepSeek 等所有主流模型。
+Slopshop 为 AI 代理提供生产级基础设施。一个 API 密钥，免费持久化内存，1255+ 个真实计算 API，78 个分类，925 个基准测试通过的计算处理器。支持 Claude、GPT、Grok、Gemini、DeepSeek 等所有主流模型。
 
 ## 快速开始
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 大核心功能
 
 1. **免费持久化内存**（0 积分）— SQLite 键值存储、队列、计数器、命名空间、向量搜索。跨 LLM、跨设备、跨会话持久化。
-2. **1272+ 个真实计算 API** — 加密、文本处理、数学、统计、数据转换、JSON/CSV/XML、Schema 验证、PII 检测、RAG 原语、SVG 图表、代码 AST 解析。全部纯 Node.js 实现，零外部依赖，p95 延迟 <50ms。
+2. **1255+ 个真实计算 API** — 加密、文本处理、数学、统计、数据转换、JSON/CSV/XML、Schema 验证、PII 检测、RAG 原语、SVG 图表、代码 AST 解析。全部纯 Node.js 实现，零外部依赖，p95 延迟 <50ms。
 3. **代理链接** — Claude → GPT → Grok 无限循环模式，输出自动传递为下一步输入。
 4. **万人并行部署（Army）** — 一次部署 10,000 个并行代理，支持结果聚合和 Merkle 证明验证。
 5. **Hive 工作空间** — 始终在线的代理协作环境，支持频道、角色分配、知识共享。

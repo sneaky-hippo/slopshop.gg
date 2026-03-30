@@ -385,7 +385,7 @@ const handlers = {
   'cooperation-stability-index': ({cooperation_payoff, defection_payoff, rounds_remaining}) => {
     const coop=cooperation_payoff||3; const defect=defection_payoff||5; const rounds=rounds_remaining||10;
     const temptation=Math.round(defect/Math.max(coop,0.01)*100)/100;
-    const shadow_of_future=Math.round(1-1/Math.max(rounds,1)*100)/100;
+    const shadow_of_future=Math.round((1-1/Math.max(rounds,1))*100)/100;
     const will_cooperate=shadow_of_future>temptation/3;
     return {_engine:'real', temptation_ratio:temptation, shadow_of_future, rounds_remaining:rounds, prediction:will_cooperate?'cooperate':'defect', nash_equilibrium:defect>coop?'defect-defect':'cooperate-cooperate'};
   },
