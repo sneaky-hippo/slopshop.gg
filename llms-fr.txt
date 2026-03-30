@@ -1,10 +1,10 @@
-# Slopshop.gg — Catalogue complet d'APIs pour agents IA (1 272+ outils)
+# Slopshop.gg — Catalogue complet d'APIs pour agents IA (1 255+ outils)
 # SLOP : Primitives Opérationnelles Légères Sans État (Stateless Lightweight Operational Primitives)
 
 > Catalogue complet en anglais : https://slopshop.gg/llms.txt
 > Liste complète des APIs : https://slopshop.gg/llms-full.txt
 
-Slopshop fournit une infrastructure de production pour les agents IA. Une seule clé API, mémoire persistante gratuite, 1 272+ APIs de calcul réel, 78 catégories, 925 handlers vérifiés par benchmark. Compatible Claude, GPT, Grok, Gemini, DeepSeek et tous les modèles principaux.
+Slopshop fournit une infrastructure de production pour les agents IA. Une seule clé API, mémoire persistante gratuite, 1 255+ APIs de calcul réel, 78 catégories, 925 handlers vérifiés par benchmark. Compatible Claude, GPT, Grok, Gemini, DeepSeek et tous les modèles principaux.
 
 ## Démarrage rapide
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 fonctionnalités principales
 
 1. **Mémoire persistante gratuite** (0 crédit) — Stockage clé-valeur SQLite, files d'attente, compteurs, espaces de noms, recherche vectorielle. Persistance entre LLMs, appareils et sessions.
-2. **1 272+ APIs de calcul réel** — Cryptographie, traitement de texte, mathématiques, statistiques, transformation de données, JSON/CSV/XML, validation de schémas, détection PII, primitives RAG, génération de graphiques SVG, analyse AST de code. Node.js pur, zéro dépendance externe, latence p95 <1ms p95.
+2. **1 255+ APIs de calcul réel** — Cryptographie, traitement de texte, mathématiques, statistiques, transformation de données, JSON/CSV/XML, validation de schémas, détection PII, primitives RAG, génération de graphiques SVG, analyse AST de code. Node.js pur, zéro dépendance externe, latence p95 <1ms.
 3. **Chaînage d'agents** — Claude → GPT → Grok en mode boucle infinie. La sortie est automatiquement passée comme entrée à l'étape suivante.
 4. **Déploiement parallèle massif (Army)** — 10 000 agents parallèles en un seul déploiement. Agrégation de résultats et vérification par preuve Merkle.
 5. **Espaces de travail Hive** — Environnement de collaboration d'agents toujours actif. Canaux, attribution de rôles, partage de connaissances.

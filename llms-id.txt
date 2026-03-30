@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 Fitur Utama
 
 1. **Memori Persisten Gratis** (0 kredit) — Penyimpanan key-value SQLite, antrean, penghitung, namespace, pencarian vektor. Persisten lintas LLM, perangkat, dan sesi.
-2. **1.255+ API Komputasi Nyata** — Kriptografi, pemrosesan teks, matematika, statistik, transformasi data, JSON/CSV/XML, validasi skema, deteksi PII, primitif RAG, grafik SVG, parsing AST kode. Semuanya Node.js murni, tanpa dependensi eksternal, latensi p95 <1ms p95.
+2. **1.255+ API Komputasi Nyata** — Kriptografi, pemrosesan teks, matematika, statistik, transformasi data, JSON/CSV/XML, validasi skema, deteksi PII, primitif RAG, grafik SVG, parsing AST kode. Semuanya Node.js murni, tanpa dependensi eksternal, latensi p95 <1ms.
 3. **Rantai Agen** — Claude → GPT → Grok mode loop tak terbatas, output otomatis diteruskan sebagai input langkah berikutnya.
 4. **Penerapan Massal (Army)** — Penerapan 10.000 agen paralel, agregasi hasil, dan verifikasi bukti Merkle.
 5. **Ruang Kerja Hive** — Lingkungan kolaborasi agen yang selalu aktif, saluran, penugasan peran, berbagi pengetahuan.

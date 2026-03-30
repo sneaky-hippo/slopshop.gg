@@ -79,4 +79,19 @@
   <url><loc>https://slopshop.gg/pt-br.html</loc><changefreq>weekly</changefreq><priority>0.5</priority><lastmod>2026-03-30</lastmod></url>
   <url><loc>https://slopshop.gg/ru.html</loc><changefreq>weekly</changefreq><priority>0.5</priority><lastmod>2026-03-30</lastmod></url>
   <url><loc>https://slopshop.gg/zh.html</loc><changefreq>weekly</changefreq><priority>0.5</priority><lastmod>2026-03-30</lastmod></url>
+  <!-- New pages March 2026 -->
+  <url><loc>https://slopshop.gg/memory-upload</loc><changefreq>weekly</changefreq><priority>0.7</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/slopshop-for-grok</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/slopshop-for-cursor</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/backend-for-ai-agents</loc><changefreq>monthly</changefreq><priority>0.9</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/demo</loc><changefreq>weekly</changefreq><priority>0.8</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/privacy</loc><changefreq>yearly</changefreq><priority>0.4</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/terms</loc><changefreq>yearly</changefreq><priority>0.4</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/changelog-v2</loc><changefreq>weekly</changefreq><priority>0.6</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/stop-agent-tool-hallucinations</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/how-verification-works</loc><changefreq>monthly</changefreq><priority>0.7</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/self-hostable-mcp-server</loc><changefreq>monthly</changefreq><priority>0.8</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/compare/slopshop-vs-composio</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/compare/slopshop-vs-langchain</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-30</lastmod></url>
+  <url><loc>https://slopshop.gg/compare/slopshop-vs-raw-apis</loc><changefreq>monthly</changefreq><priority>0.6</priority><lastmod>2026-03-30</lastmod></url>
 </urlset>

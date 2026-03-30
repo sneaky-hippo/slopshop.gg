@@ -867,7 +867,7 @@ slop mcp serve</div>
   <p class="desc">Core infrastructure primitives. Each one replaces a service you'd otherwise build or buy.</p>
   <div class="why-grid">
     <div class="why-card" style="border-left:3px solid var(--green)"><h3 style="color:var(--green)">Free Persistent Memory with Autonomous Evolution</h3><p>SQLite-backed key-value store, queues, counters, namespaces, vector search. Autonomous evolution strategies: consolidate, enrich, decay, summarize. Works across any LLM, any device, any session. Always free — 0 credits.</p></div>
-    <div class="why-card"><h3>1,255 Compute Handlers</h3><p>Hashing, encryption, text processing, math, statistics, data transforms, schema validation, PII detection, RAG primitives, SVG charts, code AST parsing. Every handler tested for correctness and null safety. p95 &lt;50ms.</p></div>
+    <div class="why-card"><h3>1,255 Compute Handlers</h3><p>Hashing, encryption, text processing, math, statistics, data transforms, schema validation, PII detection, RAG primitives, SVG charts, code AST parsing. Every handler tested for correctness and null safety. p95 &lt;1ms.</p></div>
     <div class="why-card"><h3>Task Abstraction</h3><p><code>POST /v1/tasks/run</code> — describe what you need, get guaranteed schema-valid JSON. Preview cost with <code>preview: true</code> before committing.</p></div>
     <div class="why-card"><h3>22 Network Handlers</h3><p>DNS (<code>dns.resolve</code>), SSL (<code>tls.connect</code>), HTTP headers, WHOIS, cert transparency, subdomain enum. Real socket connections.</p></div>
     <div class="why-card"><h3>Code Execution</h3><p>Sandboxed JS (<code>vm.createContext</code>) + Python subprocess with timeout. Useful for validating agent-generated code.</p></div>
@@ -887,7 +887,7 @@ slop mcp serve</div>
     <div class="why-card"><h3>Full Observability</h3><p>Every API call logged with timestamp, credits, latency, and engine type. Every agent run stored with full step trace. <code>GET /v1/agent/history</code> to replay any run. Cost visible on every response header.</p></div>
     <div class="why-card" style="border-left:3px solid var(--c)"><h3 style="color:var(--c)">Copilot Mode</h3><p>Run a second AI agent in the same session. Discuss plans while your main agent builds. Scale to N copilots with role assignment. 6 endpoints.</p></div>
     <div class="why-card" style="border-left:3px solid var(--o)"><h3 style="color:var(--o)">Credit System</h3><p>Earn credits by sharing idle compute. Other users' tasks run on your terminal. SHA-256 verified. Full credit settlement. 9 endpoints.</p></div>
-    <div class="why-card" style="border-left:3px solid var(--g)"><h3 style="color:var(--g)">1,255 Benchmarked Handlers</h3><p>Every compute handler tested for correctness, null safety, and &lt;50ms latency. No untested code paths. Every response includes <code style="background:var(--s2);padding:1px 4px;border-radius:3px;color:var(--green)">_engine: "real"</code>.</p></div>
+    <div class="why-card" style="border-left:3px solid var(--g)"><h3 style="color:var(--g)">1,255 Benchmarked Handlers</h3><p>Every compute handler tested for correctness, null safety, and &lt;1ms latency. No untested code paths. Every response includes <code style="background:var(--s2);padding:1px 4px;border-radius:3px;color:var(--green)">_engine: "real"</code>.</p></div>
   </div>
 
   <div class="proof-card" style="margin-top:40px">
@@ -896,7 +896,7 @@ slop mcp serve</div>
     <div class="proof-grid">
       <div>
         <div class="ph">1,255 compute handlers</div>
-        <div class="pb">Pure Node.js. No external calls.<br>Every handler tested individually.<br>Correctness, null safety, &lt;50ms.<br>Zero third-party dependencies.</div>
+        <div class="pb">Pure Node.js. No external calls.<br>Every handler tested individually.<br>Correctness, null safety, &lt;1ms.<br>Zero third-party dependencies.</div>
       </div>
       <div>
         <div class="ph">22 network APIs</div>

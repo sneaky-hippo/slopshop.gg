@@ -1,10 +1,10 @@
-# Slopshop.gg — Komplett API-katalog for AI-agenter (1 272+ verktyg)
+# Slopshop.gg — Komplett API-katalog for AI-agenter (1 255+ verktyg)
 # SLOP: Tillstandslosa Latta Operativa Primitiver (Stateless Lightweight Operational Primitives)
 
 > Fullstandig engelsk katalog: https://slopshop.gg/llms.txt
 > Fullstandig API-lista: https://slopshop.gg/llms-full.txt
 
-Slopshop tillhandahaller produktionsinfrastruktur for AI-agenter. En API-nyckel, gratis persistent minneslagring, 1 272+ riktiga beraknings-API:er, 78 kategorier, 925 benchmarkverifierade hanterare. Kompatibel med Claude, GPT, Grok, Gemini, DeepSeek och alla stora modeller.
+Slopshop tillhandahaller produktionsinfrastruktur for AI-agenter. En API-nyckel, gratis persistent minneslagring, 1 255+ riktiga beraknings-API:er, 78 kategorier, 925 benchmarkverifierade hanterare. Kompatibel med Claude, GPT, Grok, Gemini, DeepSeek och alla stora modeller.
 
 ## Snabbstart
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 Karnfunktioner
 
 1. **Gratis persistent minne** (0 krediter) — SQLite nyckel-varde-lagring, koer, rakneverk, namnrymder, vektorsokning. Bestandigt over LLM:er, enheter och sessioner.
-2. **1 272+ riktiga beraknings-API:er** — Kryptografi, textbearbetning, matematik, statistik, datatransformation, JSON/CSV/XML, schemavalidering, PII-detektering, RAG-primitiver, SVG-diagram, kod-AST-parsning. Ren Node.js, noll externa beroenden, p95 latens <1ms p95.
+2. **1 255+ riktiga beraknings-API:er** — Kryptografi, textbearbetning, matematik, statistik, datatransformation, JSON/CSV/XML, schemavalidering, PII-detektering, RAG-primitiver, SVG-diagram, kod-AST-parsning. Ren Node.js, noll externa beroenden, p95 latens <1ms p95.
 3. **Agentkedjor** — Claude → GPT → Grok oandlig loop-lage, utdata skickas automatiskt som indata till nasta steg.
 4. **Massutplacering (Army)** — Utplacera 10 000 parallella agenter, resultatsammanstallning och Merkle-bevisverifiering.
 5. **Hive-arbetsytor** — Alltid aktiv samarbetsmiljo for agenter, kanaler, rolltilldelning, kunskapsdelning.
