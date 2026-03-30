@@ -14,27 +14,14 @@
     },
     {
       "source": "/(.*).html",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400" }
-      ]
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, s-maxage=3600, stale-while-revalidate=86400" }]
     },
-    {
-      "source": "/sitemap.xml",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=3600" },
-        { "key": "Content-Type", "value": "application/xml" }
-      ]
-    },
-    {
-      "source": "/llms.txt",
-      "headers": [
-        { "key": "Cache-Control", "value": "public, max-age=3600" }
-      ]
-    }
+    { "source": "/sitemap.xml", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }] },
+    { "source": "/llms.txt", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }] }
   ],
-  "redirects": [
-    { "source": "/v1/:path*", "destination": "https://slopshop-production.up.railway.app/v1/:path*", "permanent": false },
-    { "source": "/zapier/:path*", "destination": "https://slopshop-production.up.railway.app/zapier/:path*", "permanent": false },
-    { "source": "/.well-known/:path*", "destination": "https://slopshop-production.up.railway.app/.well-known/:path*", "permanent": false }
+  "rewrites": [
+    { "source": "/v1/:path*", "destination": "https://slopshop-production.up.railway.app/v1/:path*" },
+    { "source": "/zapier/:path*", "destination": "https://slopshop-production.up.railway.app/zapier/:path*" },
+    { "source": "/.well-known/:path*", "destination": "https://slopshop-production.up.railway.app/.well-known/:path*" }
   ]
 }
