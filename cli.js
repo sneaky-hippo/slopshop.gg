@@ -6880,33 +6880,40 @@ async function main() {
   // and the command isn't signup, help, or version
   if (!fs.existsSync(CONFIG_FILE) && cmd && !['signup', 'help', 'version', '-v', '--version', '-h', '--help'].includes(cmd)) {
     console.log(`
-  ${C.bold}\u2554\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2557${C.reset}
-  ${C.bold}\u2551${C.reset}           ${C.bold}Welcome to Slopshop CLI${C.reset}            ${C.bold}\u2551${C.reset}
-  ${C.bold}\u2551${C.reset}     ${dim('The standalone CLI for AI agents')}         ${C.bold}\u2551${C.reset}
-  ${C.bold}\u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d${C.reset}
+  ${C.red}        ____  __    ____  ____ ${C.reset}
+  ${C.red}       / ___\\/ /   / __ \\/ __ \\${C.reset}
+  ${C.red}       \\__ \\/ /   / / / / /_/ /${C.reset}
+  ${C.red}      ___/ / /___/ /_/ / ____/ ${C.reset}
+  ${C.red}     /____/_____/\\____/_/      ${C.reset}
+  ${dim('     slopshop.gg')} ${C.bold}v${PKG_VERSION}${C.reset}
+  ${dim('     the missing backend for AI agents')}
 
   ${bold('Get started in 30 seconds:')}
 
-  1. ${cyan('slop signup')}                         Create free account (500 credits)
-  2. ${cyan('slop "hash hello world"')}              Natural language → auto-routes
-  3. ${cyan('slop "remember goal: ship v1"')}         Store to persistent memory (free)
-  4. ${cyan('slop mcp serve')}                       Start MCP server (Cursor/Claude)
-  5. ${cyan('slop help')}                            See all 70+ commands
-
-  ${dim('Free persistent memory forever. 925 real compute handlers.')}
-  ${dim('Works inside Claude Code, Cursor, Goose, Cline, OpenCode, Aider.')}
+  1. ${cyan('slop signup')}                         500 free credits
+  2. ${cyan('slop "hash hello world"')}              natural language routing
+  3. ${cyan('slop "remember goal: ship v1"')}         free persistent memory
+  4. ${cyan('slop mcp serve')}                       Claude Code, Cursor, Goose
+  5. ${cyan('slop help')}                            70+ commands
 `);
   }
 
   if (!cmd || cmd === '--help' || cmd === '-h') {
     // First-run: show onboarding if no key configured
     if (!cmd && !API_KEY && !jsonMode) {
-      console.log(`\n  ${C.red}${C.bold}SLOPSHOP${C.reset} v${PKG_VERSION} ${dim('— the missing CLI for AI agents')}\n`);
+      console.log(`
+  ${C.red}        ____  __    ____  ____ ${C.reset}
+  ${C.red}       / ___\\/ /   / __ \\/ __ \\${C.reset}
+  ${C.red}       \\__ \\/ /   / / / / /_/ /${C.reset}
+  ${C.red}      ___/ / /___/ /_/ / ____/ ${C.reset}
+  ${C.red}     /____/_____/\\____/_/      ${C.reset}
+  ${dim('     slopshop.gg')} ${C.bold}v${PKG_VERSION}${C.reset}
+`);
       console.log(`  ${bold('Quick start:')}`);
-      console.log(`    1. ${cyan('slop signup')}                          Create free account (500 credits)`);
-      console.log(`    2. ${cyan('slop "hash hello world"')}                Natural language routing`);
-      console.log(`    3. ${cyan('slop "remember goal: ship v1"')}          Free persistent memory`);
-      console.log(`    4. ${cyan('slop research "AI agents"')}              Multi-LLM research\n`);
+      console.log(`    1. ${cyan('slop signup')}                          500 free credits`);
+      console.log(`    2. ${cyan('slop "hash hello world"')}                natural language routing`);
+      console.log(`    3. ${cyan('slop "remember goal: ship v1"')}          free persistent memory`);
+      console.log(`    4. ${cyan('slop mcp serve')}                        Claude Code, Cursor, Goose\n`);
       console.log(`  ${bold('Already have a key?')}`);
       console.log(`    ${cyan('slop key set sk-slop-YOUR-KEY')}\n`);
       console.log(`  ${dim('Run')} ${cyan('slop help')} ${dim('for all 42 commands.')}\n`);
