@@ -934,6 +934,85 @@ body {
     </div>
   </div>
 
+
+  <!-- API KEY INPUT -->
+  <div class="row">
+    <div class="section-label">API Key</div>
+    <div class="card" style="padding:16px 20px">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <label for="apiKeyInput" style="font-size:0.72rem;color:var(--muted);white-space:nowrap">Your API Key:</label>
+        <input type="password" id="apiKeyInput" placeholder="sk-slop-..." style="flex:1;min-width:240px;font-family:'JetBrains Mono',monospace;font-size:0.78rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);outline:none" oninput="localStorage.setItem('slopshop_key',this.value)">
+        <button onclick="document.getElementById('apiKeyInput').type=document.getElementById('apiKeyInput').type==='password'?'text':'password'" style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;padding:6px 12px;border-radius:6px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);cursor:pointer">Show/Hide</button>
+      </div>
+      <p style="font-size:0.63rem;color:var(--muted2);margin-top:8px">Used for Memory Explorer, North Star, and Credits sections below. Stored in localStorage only.</p>
+    </div>
+  </div>
+
+  <!-- ROW 6: MEMORY EXPLORER -->
+  <div class="row">
+    <div class="section-label">Memory Explorer</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-label">Search Your Memory</div>
+        <div style="display:flex;gap:8px;margin-bottom:14px">
+          <input type="text" id="memSearchInput" placeholder="Search your memory..." style="flex:1;font-family:'JetBrains Mono',monospace;font-size:0.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);outline:none">
+          <button onclick="searchMemory()" style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;padding:8px 16px;border-radius:6px;border:1px solid var(--green);background:rgba(34,197,94,0.1);color:var(--green);cursor:pointer;white-space:nowrap">Search</button>
+        </div>
+        <div id="memSearchResults" style="max-height:280px;overflow-y:auto">
+          <div style="font-size:0.72rem;color:var(--muted2);font-style:italic">Enter a query and click Search</div>
+        </div>
+        <div style="margin-top:14px">
+          <a href="/memory-upload" style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;font-weight:700;padding:8px 16px;border-radius:6px;border:1px solid var(--cyan);background:rgba(6,182,212,0.1);color:var(--cyan);text-decoration:none;display:inline-block">Upload to Memory</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Recent Memory Keys</div>
+        <div id="memKeysList" style="max-height:320px;overflow-y:auto">
+          <div style="font-size:0.72rem;color:var(--muted2);font-style:italic">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 7: NORTH STAR -->
+  <div class="row">
+    <div class="section-label">North Star</div>
+    <div class="card">
+      <div class="card-label">Set Your North Star</div>
+      <p style="font-size:0.72rem;color:var(--muted);margin-bottom:12px">Define your one-sentence goal. Triggers a research swarm and stores findings in memory.</p>
+      <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+        <input type="text" id="northStarInput" placeholder="e.g. building an open-source AI messaging platform" style="flex:1;min-width:240px;font-family:'JetBrains Mono',monospace;font-size:0.75rem;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:8px 12px;color:var(--text);outline:none">
+        <button onclick="setNorthStar()" style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;padding:8px 16px;border-radius:6px;border:1px solid var(--accent);background:rgba(239,68,68,0.1);color:var(--accent);cursor:pointer;white-space:nowrap">Set North Star</button>
+      </div>
+      <div id="northStarResult" style="display:none;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:14px;font-size:0.75rem;color:var(--text);line-height:1.6;max-height:300px;overflow-y:auto"></div>
+      <div style="margin-top:14px">
+        <button onclick="runDailyIntel()" style="font-family:'JetBrains Mono',monospace;font-size:0.65rem;font-weight:700;padding:8px 16px;border-radius:6px;border:1px solid var(--purple);background:rgba(168,85,247,0.1);color:var(--purple);cursor:pointer">Run Daily Intelligence</button>
+        <span id="dailyIntelStatus" style="font-size:0.65rem;color:var(--muted2);margin-left:10px"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 8: CREDITS & USAGE -->
+  <div class="row">
+    <div class="section-label">Credits &amp; Usage</div>
+    <div class="grid-2">
+      <div class="card">
+        <div class="card-label">Current Balance</div>
+        <div class="card-value" id="creditsBalance" style="color:var(--amber)">--</div>
+        <div class="card-sub">credits remaining</div>
+        <div style="margin-top:14px">
+          <a href="/pricing" style="font-family:'JetBrains Mono',monospace;font-size:0.68rem;font-weight:700;padding:8px 16px;border-radius:6px;border:1px solid var(--amber);background:rgba(245,158,11,0.1);color:var(--amber);text-decoration:none;display:inline-block">Buy Credits</a>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-label">Recent API Calls</div>
+        <div id="recentCallsList" style="max-height:260px;overflow-y:auto">
+          <div style="font-size:0.72rem;color:var(--muted2);font-style:italic">Loading...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
 </main>
 
 <script>
@@ -1324,6 +1403,169 @@ body {
     offlineOverlay.classList.remove('visible');
     poll().finally(scheduleNext);
   };
+
+
+
+  // ===== DASHBOARD EXTENSIONS =====
+  function getApiKey() {
+    var el = document.getElementById('apiKeyInput');
+    return el ? el.value.trim() : '';
+  }
+
+  // Restore saved key on load
+  (function() {
+    var saved = localStorage.getItem('slopshop_key');
+    if (saved) {
+      var el = document.getElementById('apiKeyInput');
+      if (el) el.value = saved;
+    }
+    loadMemoryKeys();
+    loadCreditsBalance();
+    loadRecentCalls();
+  })();
+
+  // Memory search
+  window.searchMemory = async function() {
+    var key = getApiKey();
+    if (!key) { alert('Enter your API key above first.'); return; }
+    var query = document.getElementById('memSearchInput').value.trim();
+    if (!query) return;
+    var el = document.getElementById('memSearchResults');
+    el.innerHTML = '<div style="font-size:0.72rem;color:var(--muted2)">Searching...</div>';
+    try {
+      var res = await fetch(BASE_URL + '/v1/memory-search', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query: query })
+      });
+      var data = await res.json();
+      var results = data.data || data.results || [];
+      if (!results.length) {
+        el.innerHTML = '<div style="font-size:0.72rem;color:var(--muted2);font-style:italic">No results found.</div>';
+        return;
+      }
+      el.innerHTML = results.map(function(r) {
+        return '<div style="padding:8px 0;border-bottom:1px solid var(--border);font-size:0.72rem">' +
+          '<div style="color:var(--cyan);font-weight:600">' + (r.key || r.id || 'unknown') + '</div>' +
+          '<div style="color:var(--muted);margin-top:2px">' + String(r.value || r.content || JSON.stringify(r)).substring(0, 200) + '</div>' +
+        '</div>';
+      }).join('');
+    } catch(e) {
+      el.innerHTML = '<div style="font-size:0.72rem;color:var(--red)">Error: ' + e.message + '</div>';
+    }
+  };
+
+  // Memory keys list
+  async function loadMemoryKeys() {
+    var key = getApiKey();
+    var el = document.getElementById('memKeysList');
+    if (!key) { el.innerHTML = '<div style="font-size:0.72rem;color:var(--muted2);font-style:italic">Enter API key to load memory keys</div>'; return; }
+    try {
+      var res = await fetch(BASE_URL + '/v1/memory-list', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({})
+      });
+      var data = await res.json();
+      var keys = data.data || data.keys || [];
+      if (!keys.length) {
+        el.innerHTML = '<div style="font-size:0.72rem;color:var(--muted2);font-style:italic">No memory keys found.</div>';
+        return;
+      }
+      el.innerHTML = keys.slice(0, 50).map(function(k) {
+        var label = typeof k === 'string' ? k : (k.key || k.id || JSON.stringify(k));
+        return '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:0.72rem;color:var(--text)">' + label + '</div>';
+      }).join('');
+    } catch(e) {
+      el.innerHTML = '<div style="font-size:0.72rem;color:var(--muted2);font-style:italic">Could not load keys</div>';
+    }
+  }
+
+  // North Star
+  window.setNorthStar = async function() {
+    var key = getApiKey();
+    if (!key) { alert('Enter your API key above first.'); return; }
+    var goal = document.getElementById('northStarInput').value.trim();
+    if (!goal) return;
+    var el = document.getElementById('northStarResult');
+    el.style.display = 'block';
+    el.innerHTML = '<span style="color:var(--muted2)">Setting North Star...</span>';
+    try {
+      var res = await fetch(BASE_URL + '/v1/northstar/set', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ goal: goal })
+      });
+      var data = await res.json();
+      el.innerHTML = '<div style="color:var(--green);font-weight:700;margin-bottom:6px">North Star set.</div>' +
+        '<div style="color:var(--muted)">' + (data.summary || data.message || JSON.stringify(data.data || data)) + '</div>';
+    } catch(e) {
+      el.innerHTML = '<span style="color:var(--red)">Error: ' + e.message + '</span>';
+    }
+  };
+
+  window.runDailyIntel = async function() {
+    var key = getApiKey();
+    if (!key) { alert('Enter your API key above first.'); return; }
+    var status = document.getElementById('dailyIntelStatus');
+    status.textContent = 'Running daily intelligence...';
+    status.style.color = 'var(--purple)';
+    try {
+      var res = await fetch(BASE_URL + '/v1/hive/daily-intelligence', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mode: 'light' })
+      });
+      var data = await res.json();
+      status.textContent = 'Done! ' + (data.message || 'Results stored in memory.');
+      status.style.color = 'var(--green)';
+    } catch(e) {
+      status.textContent = 'Error: ' + e.message;
+      status.style.color = 'var(--red)';
+    }
+  };
+
+  // Credits balance
+  async function loadCreditsBalance() {
+    var key = getApiKey();
+    var el = document.getElementById('creditsBalance');
+    if (!key) { el.textContent = '--'; return; }
+    try {
+      var res = await fetch(BASE_URL + '/v1/credits/balance', {
+        headers: { 'Authorization': 'Bearer ' + key }
+      });
+      var data = await res.json();
+      el.textContent = (data.balance != null ? data.balance : (data.data && data.data.balance != null ? data.data.balance : '--'));
+    } catch(e) {
+      el.textContent = '--';
+    }
+  }
+
+  // Recent calls
+  async function loadRecentCalls() {
+    var key = getApiKey();
+    var el = document.getElementById('recentCallsList');
+    if (!key) { el.innerHTML = '<div style="font-size:0.72rem;color:var(--muted2);font-style:italic">Enter API key to load recent calls</div>'; return; }
+    try {
+      var res = await fetch(BASE_URL + '/v1/dashboard', {
+        headers: { 'Authorization': 'Bearer ' + key }
+      });
+      var data = await res.json();
+      var calls = data.recent_calls || data.calls || data.activity || [];
+      if (!calls.length) {
+        el.innerHTML = '<div style="font-size:0.72rem;color:var(--muted2);font-style:italic">No recent calls</div>';
+        return;
+      }
+      el.innerHTML = calls.slice(0, 15).map(function(c) {
+        return '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:0.70rem;display:flex;justify-content:space-between">' +
+          '<span style="color:var(--cyan)">' + (c.api || c.slug || c.endpoint || 'unknown') + '</span>' +
+          '<span style="color:var(--amber)">' + (c.credits != null ? c.credits + 'cr' : '') + '</span>' +
+        '</div>';
+      }).join('');
+    } catch(e) {
+      el.innerHTML = '<div style="font-size:0.72rem;color:var(--muted2);font-style:italic">Could not load recent calls</div>';
+    }
+  }
 
   // ===== INIT =====
   poll().finally(scheduleNext);

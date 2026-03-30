@@ -221,6 +221,9 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a class="sb-link" href="#dream-tiers">Dream Tiers</a>
       <a class="sb-link" href="#agent-templates-library">Agent Templates</a>
       <a class="sb-link" href="#ecosystem-integrations">Ecosystem Integrations</a>
+      <a class="sb-link" href="#northstar">North Star</a>
+      <a class="sb-link" href="#daily-intelligence">Daily Intelligence</a>
+      <a class="sb-link" href="#error-codes">Error Codes &amp; Refunds</a>
       <a class="sb-link" href="#self-hosting">Self-Hosting</a>
     </div>
     <div class="sb-divider"></div>
@@ -1745,6 +1748,66 @@ docker run -p 3000:3000 \
         <tr><td><code>SLOPSHOP_SECRET</code></td><td>No</td><td>Secret for JWT signing and key generation</td></tr>
         <tr><td><code>DEMO_CREDITS</code></td><td>No</td><td>Credits for demo key (default: 100)</td></tr>
         <tr><td><code>RATE_LIMIT</code></td><td>No</td><td>Max requests per minute per key (default: 60)</td></tr>
+      </tbody>
+    </table>
+
+
+    <!-- NORTH STAR -->
+    <h2 id="northstar">North Star</h2>
+    <p>The North Star API lets your agent define a single guiding goal. Setting it triggers a research swarm, stores findings in memory, and returns a summary.</p>
+
+    <h3>Set North Star</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/northstar/set \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"goal": "building an open-source AI messaging platform"}'</code></pre></div>
+
+    <p><strong>Response:</strong> Triggers a research swarm, stores results in memory, and returns a findings summary with sources and next steps.</p>
+
+    <h3>Get Current North Star</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/northstar \
+  -H "Authorization: Bearer sk-slop-your-key-here"</code></pre></div>
+    <p>Returns the current North Star goal for your account.</p>
+
+    <!-- DAILY HIVE INTELLIGENCE -->
+    <h2 id="daily-intelligence">Daily Hive Intelligence</h2>
+    <p>Run automated research on your North Star goal. Results are posted to your Hive workspace and stored in memory.</p>
+
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/hive/daily-intelligence \
+  -H "Authorization: Bearer sk-slop-your-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"mode": "medium", "hive_id": "optional-hive-id"}'</code></pre></div>
+
+    <table class="doc-table">
+      <thead><tr><th>Mode</th><th>Credits</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>light</code></td><td>20</td><td>Quick scan &mdash; top headlines and basic research on your North Star</td></tr>
+        <tr><td><code>medium</code></td><td>35</td><td>Deeper analysis with multiple sources, competitor tracking, trend detection</td></tr>
+        <tr><td><code>deep</code></td><td>75</td><td>Full research report with citations, market analysis, and actionable recommendations</td></tr>
+      </tbody>
+    </table>
+    <p>Results are automatically posted to your Hive channel and stored in memory for later retrieval.</p>
+
+    <!-- ERROR CODES & REFUNDS -->
+    <h2 id="error-codes">Error Codes &amp; Refunds</h2>
+    <p>Slopshop uses consistent error codes across all 1,255 endpoints. Credits are automatically refunded when a handler errors &mdash; you only pay for successful calls.</p>
+
+    <h3>Auto-Refund Policy</h3>
+    <p>If an API handler throws an error after credits are deducted, those credits are <strong>automatically refunded</strong> to your account. You will never be charged for a failed call. The refund is instant and reflected in your balance immediately.</p>
+
+    <h3>Rate Limits</h3>
+    <p>All API keys are rate-limited to <strong>120 requests per minute</strong>. If you hit the limit, wait 30 seconds before retrying. The <code>rate_limited</code> error includes a <code>retry_after</code> field in seconds.</p>
+
+    <h3>Common Error Codes</h3>
+    <table class="doc-table">
+      <thead><tr><th>Code</th><th>HTTP Status</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td><code>missing_fields</code></td><td>400</td><td>Required fields are missing from the request body. Check the API schema for required parameters.</td></tr>
+        <tr><td><code>insufficient_credits</code></td><td>402</td><td>Your account does not have enough credits for this call. Purchase more at <a href="/pricing">/pricing</a>.</td></tr>
+        <tr><td><code>rate_limited</code></td><td>429</td><td>Too many requests. Wait for <code>retry_after</code> seconds (typically 30s) before retrying.</td></tr>
+        <tr><td><code>api_not_found</code></td><td>404</td><td>The requested API slug does not exist. Check <a href="/tools">/tools</a> for the full catalog.</td></tr>
+        <tr><td><code>unauthorized</code></td><td>401</td><td>Missing or invalid API key. Include <code>Authorization: Bearer YOUR_KEY</code> in headers.</td></tr>
+        <tr><td><code>handler_error</code></td><td>500</td><td>Internal handler failure. Credits are auto-refunded. Report persistent errors to <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a>.</td></tr>
       </tbody>
     </table>
 
