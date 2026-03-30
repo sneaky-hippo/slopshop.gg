@@ -2119,16 +2119,18 @@ function promptSecret(question) {
 // AUTH COMMANDS
 // ============================================================
 
-async function cmdSignup() {
-  if (!quiet && !jsonMode) console.log(`\n  ${bold('Sign up for Slopshop')}\n`);
+async function cmdSignup(overrideArgs) {
+  if (!quiet && !jsonMode) console.log(`\n  ${bold('Create your Slopshop account')}\n`);
 
-  // Support non-interactive mode for AI agents: slop signup --email x --password y
-  const emailIdx = process.argv.indexOf('--email');
-  const passIdx = process.argv.indexOf('--password');
-  const email = emailIdx >= 0 ? process.argv[emailIdx + 1] : await prompt('  Email: ');
+  // Accept args from caller (onboarding) or parse from process.argv
+  const argSrc = overrideArgs || process.argv;
+  const emailIdx = Array.isArray(overrideArgs) ? overrideArgs.indexOf('--email') : process.argv.indexOf('--email');
+  const passIdx  = Array.isArray(overrideArgs) ? overrideArgs.indexOf('--password') : process.argv.indexOf('--password');
+  const argAt = (src, idx) => idx >= 0 ? src[idx + 1] : null;
+
+  const email = argAt(argSrc, emailIdx) || await prompt('  Email: ');
   if (!email) die('Email is required.');
-
-  const password = passIdx >= 0 ? process.argv[passIdx + 1] : await promptSecret('  Password: ');
+  const password = argAt(argSrc, passIdx) || await promptSecret('  Password (min 8 chars): ');
   if (!password) die('Password is required.');
 
   if (!quiet && !jsonMode) console.log(dim('  Creating account...'));
@@ -2142,63 +2144,58 @@ async function cmdSignup() {
     if (jsonMode) {
       console.log(JSON.stringify(d, null, 2));
       if (apiKey) {
-        const cfg = loadConfig();
-        cfg.api_key = apiKey;
-        cfg.email = email;
-        cfg.base_url = BASE_URL;
-        saveConfig(cfg);
+        const cfg = loadConfig(); cfg.api_key = apiKey; cfg.email = email; cfg.base_url = BASE_URL; saveConfig(cfg);
       }
       return;
     }
 
     if (apiKey) {
       const maskedKey = apiKey.slice(0, 8) + '...' + apiKey.slice(-4);
-      const cfg = loadConfig();
-      cfg.api_key = apiKey;
-      cfg.email = email;
-      cfg.base_url = BASE_URL;
-      saveConfig(cfg);
+      const cfg = loadConfig(); cfg.api_key = apiKey; cfg.email = email; cfg.base_url = BASE_URL; saveConfig(cfg);
 
-      if (quiet) {
-        console.log(`email: ${email}`);
-        console.log(`api_key: ${apiKey}`);
-        console.log(`credits: ${credits}`);
-        return;
-      }
+      if (quiet) { console.log(`email: ${email}`); console.log(`api_key: ${apiKey}`); console.log(`credits: ${credits}`); return; }
 
-      const W = 43;
+      const W = 45;
       console.log('');
-      console.log(`  \u250c${ '\u2500'.repeat(W)}\u2510`);
-      console.log(`  \u2502  ${green('\u2713')} Account created${' '.repeat(W - 20)}\u2502`);
+      console.log(`  \u250c${'\u2500'.repeat(W)}\u2510`);
+      console.log(`  \u2502  ${green('\u2713')} Account created!${' '.repeat(W - 22)}\u2502`);
       console.log(`  \u2502${' '.repeat(W)}\u2502`);
       console.log(`  \u2502  Email:    ${email}${' '.repeat(Math.max(W - 13 - email.length, 0))}\u2502`);
       console.log(`  \u2502  API Key:  ${maskedKey}${' '.repeat(Math.max(W - 13 - maskedKey.length, 0))}\u2502`);
-      console.log(`  \u2502  Credits:  ${credits.toLocaleString()} (free)${' '.repeat(Math.max(W - 21 - credits.toLocaleString().length, 0))}\u2502`);
+      console.log(`  \u2502  Credits:  ${credits.toLocaleString()} free${' '.repeat(Math.max(W - 19 - credits.toLocaleString().length, 0))}\u2502`);
       console.log(`  \u2502${' '.repeat(W)}\u2502`);
-      console.log(`  \u2502  Key saved to ~/.slopshop/config.json${' '.repeat(W - 40)}\u2502`);
-      console.log(`  \u2502${' '.repeat(W)}\u2502`);
-      console.log(`  \u2502  Next: ${cyan('slop call crypto-hash-sha256 \\\\')}${' '.repeat(Math.max(W - 42, 0))}\u2502`);
-      console.log(`  \u2502        ${dim('--text "hello world"')}${' '.repeat(Math.max(W - 28, 0))}\u2502`);
-      console.log(`  \u2514${ '\u2500'.repeat(W)}\u2518`);
+      console.log(`  \u2502  Saved to ~/.slopshop/config.json${' '.repeat(W - 36)}\u2502`);
+      console.log(`  \u2514${'\u2500'.repeat(W)}\u2518`);
       console.log('');
+
+      // Seed memory with user profile so memory is tied to their email
+      await seedUserMemory(email, apiKey);
+
+      return { email, apiKey, credits, isNew: true };
     } else {
       console.log(`\n  ${green('Account created!')}  Welcome to Slopshop.\n`);
     }
   } catch (err) {
+    // If account already exists, offer to log in instead
+    if (err.body?.error?.code === 'email_exists' || err.message?.includes('exists')) {
+      console.log(`\n  ${yellow('Account already exists.')} Logging you in instead...\n`);
+      return cmdLogin(overrideArgs);
+    }
     handleError(err);
   }
 }
 
-async function cmdLogin() {
+async function cmdLogin(overrideArgs) {
   if (!quiet && !jsonMode) console.log(`\n  ${bold('Log in to Slopshop')}\n`);
 
-  // Support non-interactive mode: slop login --email x --password y
-  const emailIdx = process.argv.indexOf('--email');
-  const passIdx = process.argv.indexOf('--password');
-  const email = emailIdx >= 0 ? process.argv[emailIdx + 1] : await prompt('  Email: ');
-  if (!email) die('Email is required.');
+  const emailIdx = Array.isArray(overrideArgs) ? overrideArgs.indexOf('--email') : process.argv.indexOf('--email');
+  const passIdx  = Array.isArray(overrideArgs) ? overrideArgs.indexOf('--password') : process.argv.indexOf('--password');
+  const argSrc = overrideArgs || process.argv;
+  const argAt = (src, idx) => idx >= 0 ? src[idx + 1] : null;
 
-  const password = passIdx >= 0 ? process.argv[passIdx + 1] : await promptSecret('  Password: ');
+  const email = argAt(argSrc, emailIdx) || await prompt('  Email: ');
+  if (!email) die('Email is required.');
+  const password = argAt(argSrc, passIdx) || await promptSecret('  Password: ');
   if (!password) die('Password is required.');
 
   if (!quiet && !jsonMode) console.log(dim('  Logging in...'));
@@ -2207,35 +2204,28 @@ async function cmdLogin() {
     const res = await request('POST', '/v1/auth/login', { email, password }, false);
     const d = res.data;
     const apiKey = d.api_key || d.key || d.token;
+    const credits = d.credits || d.balance || 0;
 
     if (jsonMode) {
       console.log(JSON.stringify(d, null, 2));
-      if (apiKey) {
-        const cfg = loadConfig();
-        cfg.api_key = apiKey;
-        cfg.email = email;
-        cfg.base_url = BASE_URL;
-        saveConfig(cfg);
-      }
+      if (apiKey) { const cfg = loadConfig(); cfg.api_key = apiKey; cfg.email = email; cfg.base_url = BASE_URL; saveConfig(cfg); }
       return;
     }
 
     if (apiKey) {
-      const cfg = loadConfig();
-      cfg.api_key = apiKey;
-      cfg.email = email;
-      cfg.base_url = BASE_URL;
-      saveConfig(cfg);
+      const cfg = loadConfig(); cfg.api_key = apiKey; cfg.email = email; cfg.base_url = BASE_URL; saveConfig(cfg);
 
-      if (quiet) {
-        console.log(`email: ${email}`);
-        console.log(`api_key: ${apiKey}`);
-        return;
-      }
+      if (quiet) { console.log(`email: ${email}`); console.log(`api_key: ${apiKey}`); return; }
 
-      console.log(`\n  ${green('\u2713')} ${bold('Logged in!')}  Welcome back, ${email}`);
+      console.log(`\n  ${green('\u2713')} ${bold('Welcome back,')} ${email}`);
+      if (credits) console.log(`  ${dim('Balance:')} ${green(credits.toLocaleString())} credits`);
       console.log(dim(`  Key saved to ${CONFIG_FILE}`));
-      console.log(`\n  Next: ${cyan('slop balance')}  or  ${cyan('slop call <api-slug>')}\n`);
+      console.log('');
+
+      // Re-seed memory profile with email on each login
+      await seedUserMemory(email, apiKey);
+
+      return { email, apiKey, credits, isNew: false };
     } else {
       console.log(`\n  ${green('Logged in!')}  Welcome back.\n`);
     }
@@ -6273,6 +6263,7 @@ async function cmdInteractive() {
           case 'doctor': await cmdDoctor(); break;
           case 'hive': await cmdHive(args); break;
           case 'quickstart': case 'start': case 'tutorial': await cmdQuickstart(); break;
+          case 'dream': await cmdDream(args); break;
           case 'live': await cmdLive(args); break;
           case 'batch': await cmdBatch(args); break;
           case 'watch': await cmdWatch(args); break;
@@ -6793,14 +6784,18 @@ async function cmdMarketplace(args) {
 // ============================================================
 // QUICKSTART — Interactive guided tutorial
 // ============================================================
-async function cmdQuickstart() {
-  console.log(`\n  ${bold('Slopshop Quickstart')} ${dim('\u2014 6 steps, 2 minutes')}\n`);
+async function cmdQuickstart(authCtx) {
+  const userEmail = authCtx?.email || loadConfig().email || null;
+  const isNew = authCtx?.isNew ?? true;
+  const greeting = isNew ? 'Let\'s make sure everything works.' : 'Welcome back — let\'s verify your setup.';
+  console.log(`\n  ${bold('Slopshop Quickstart')} ${dim('\u2014 ' + greeting)}\n`);
 
   // Step 1: Health check
   console.log(`  ${bold('Step 1/6:')} Checking connection...`);
   try {
     const health = await request('GET', '/v1/health', null, false);
-    console.log(`  ${green('\u2713')} Server: ${health.data?.version || 'ok'} (${health.data?.apis || '925+'} APIs)`);
+    const apis = health.data?.apis || health.data?.detail?.handlers || '1,328';
+    console.log(`  ${green('\u2713')} Server healthy \u2014 ${bold(apis)} APIs ready`);
     progressBar(1, 6, 20, 'Step 1/6');
     console.log('');
   } catch (e) {
@@ -6808,52 +6803,62 @@ async function cmdQuickstart() {
     return;
   }
 
-  // Step 2: First API call (free - uuid)
-  console.log(`  ${bold('Step 2/6:')} Making your first API call...`);
+  // Step 2: First API call
+  console.log(`  ${bold('Step 2/6:')} Your first API call...`);
   console.log(`  ${dim('\u2192 slop call crypto-uuid')}`);
   try {
     const uuid = await request('POST', '/v1/crypto-uuid', {});
-    console.log(`  ${green('\u2713')} Generated: ${cyan((uuid.data?.uuid || uuid.data?.data?.uuid || JSON.stringify(uuid.data).slice(0, 36)))}`);
+    const val = uuid.data?.data?.uuid || uuid.data?.uuid;
+    console.log(`  ${green('\u2713')} UUID: ${cyan(val || JSON.stringify(uuid.data).slice(0,36))}`);
     progressBar(2, 6, 20, 'Step 2/6');
     console.log('');
   } catch (e) {
     console.log(`  ${red('\u2717')} ${e.message}\n`);
   }
 
-  // Step 3: Memory (free)
-  console.log(`  ${bold('Step 3/6:')} Storing in persistent memory (free forever)...`);
-  console.log(`  ${dim('\u2192 slop call memory-set --key hello --value world')}`);
+  // Step 3: Memory tied to email
+  console.log(`  ${bold('Step 3/6:')} Persistent memory${userEmail ? ' (tied to ' + userEmail + ')' : ''}...`);
+  console.log(`  ${dim('\u2192 slop call memory-set --key goal --value "ship v1"')}`);
   try {
-    await request('POST', '/v1/memory-set', { key: 'quickstart-hello', value: 'world' });
-    const mem = await request('POST', '/v1/memory-get', { key: 'quickstart-hello' });
-    console.log(`  ${green('\u2713')} Stored & retrieved: ${cyan('"world"')}`);
+    const goalKey = userEmail ? 'user:goal' : 'quickstart-goal';
+    await request('POST', '/v1/memory-set', { key: goalKey, value: 'ship v1', namespace: userEmail ? 'profile' : 'default', tags: 'goal' });
+    const mem = await request('POST', '/v1/memory-get', { key: goalKey, namespace: userEmail ? 'profile' : 'default' });
+    const stored = mem.data?.data?.value || mem.data?.value || 'ship v1';
+    console.log(`  ${green('\u2713')} Stored: ${cyan('"' + stored + '"')} ${userEmail ? dim('(namespace: profile)') : ''}`);
     progressBar(3, 6, 20, 'Step 3/6');
     console.log('');
   } catch (e) {
     console.log(`  ${red('\u2717')} ${e.message}\n`);
   }
 
-  // Step 4: Search tools
-  console.log(`  ${bold('Step 4/6:')} Searching 925 tools...`);
-  console.log(`  ${dim('\u2192 slop search "hash data"')}`);
+  // Step 4: Natural language routing
+  console.log(`  ${bold('Step 4/6:')} Natural language routing...`);
+  console.log(`  ${dim('\u2192 slop "hash the string hello"')}`);
   try {
-    const search = await request('GET', '/v1/tools/search?q=hash+data&limit=3');
-    const tools = search.data?.results || search.data || [];
-    for (const t of (Array.isArray(tools) ? tools : []).slice(0, 3)) {
-      console.log(`  ${dim('\u2022')} ${cyan(t.slug)} \u2014 ${(t.description || '').slice(0, 60)}`);
-    }
+    const routed = await request('POST', '/v1/route', { query: 'hash the string hello' });
+    const slug = routed.data?.recommended || routed.data?.data?.recommended;
+    const conf = routed.data?.confidence || routed.data?.data?.confidence || 0;
+    console.log(`  ${green('\u2713')} Routed to: ${cyan(slug)} ${dim('(' + Math.round(conf * 100) + '% confidence)')}`);
     progressBar(4, 6, 20, 'Step 4/6');
     console.log('');
   } catch (e) {
-    console.log(`  ${dim('\u2022 Search available at:')} ${cyan('slop search "<query>"')}\n`);
+    console.log(`  ${dim('\u2022 Natural language routing available at:')} ${cyan('slop "<your task>"')}\n`);
   }
 
-  // Step 5: Chain
+  // Step 5: Pipe two APIs
   console.log(`  ${bold('Step 5/6:')} Chaining two APIs...`);
-  console.log(`  ${dim('\u2192 slop pipe text-reverse crypto-hash-sha256 --text "hello"')}`);
-  console.log(`  ${green('\u2713')} Pipe reverses text \u2192 hashes the result`);
-  progressBar(5, 6, 20, 'Step 5/6');
-  console.log('');
+  console.log(`  ${dim('\u2192 slop pipe text-slugify crypto-hash-sha256 --text "Hello World"')}`);
+  try {
+    const step1 = await request('POST', '/v1/text-slugify', { text: 'Hello World' });
+    const slug1 = step1.data?.data?.slug || step1.data?.slug || 'hello-world';
+    const step2 = await request('POST', '/v1/crypto-hash-sha256', { input: slug1 });
+    const hash = step2.data?.data?.hash || step2.data?.hash || '';
+    console.log(`  ${green('\u2713')} "Hello World" \u2192 slugify \u2192 ${cyan('"' + slug1 + '"')} \u2192 sha256 \u2192 ${cyan(hash.slice(0, 16) + '...')}`);
+    progressBar(5, 6, 20, 'Step 5/6');
+    console.log('');
+  } catch (e) {
+    console.log(`  ${red('\u2717')} ${e.message}\n`);
+  }
 
   // Step 6: System resource check
   console.log(`  ${bold('Step 6/6:')} System resource check...\n`);
@@ -6945,13 +6950,244 @@ async function cmdQuickstart() {
   console.log('');
 
   // Summary
-  console.log(`  ${bold('You\'re ready!')} Here\'s what to try next:\n`);
-  console.log(`  ${cyan('slop doctor')}              Check your full setup`);
-  console.log(`  ${cyan('slop benchmark')}           Measure API latency`);
-  console.log(`  ${cyan('slop mcp serve')}           Start MCP server for Goose/Cursor/Cline`);
-  console.log(`  ${cyan('slop agents start 8')}      Launch local Ollama agent pool`);
-  console.log(`  ${cyan('slop interactive')}         Enter interactive REPL mode`);
-  console.log(`  ${cyan('slop call --help <slug>')}  Get help on any API\n`);
+  console.log(`  ${bold('\u2713 You\'re set up!')} Here\'s what to try next:\n`);
+  console.log(`  ${cyan('slop call <slug>')}                  Call any of 1,328 APIs`);
+  console.log(`  ${cyan('slop "your task in plain english"')}  Natural language routing`);
+  console.log(`  ${cyan('slop pipe a b c --text=input')}       Chain APIs together`);
+  console.log(`  ${cyan('slop mcp serve')}                    Use in Claude Code / Cursor`);
+  console.log(`  ${cyan('slop dream on "your goal"')}         Grow memory while away`);
+  console.log(`  ${cyan('slop help')}                         All 70+ commands\n`);
+
+  // Offer Dream setup
+  if (process.stdin.isTTY && !quiet && !jsonMode) {
+    console.log(`  ${bold('Dream engine')} ${dim('— slop researches topics while you sleep and builds your memory.')}`);
+    const dreamChoice = await prompt(`  ${dim('Set up a dream topic now?')} [y/N]: `);
+    if (dreamChoice && (dreamChoice.toLowerCase() === 'y' || dreamChoice.toLowerCase() === 'yes')) {
+      const topic = await prompt(`  ${dim('What should slop learn about while you\'re away?')}\n  Topic: `);
+      if (topic && topic.trim()) {
+        console.log('');
+        await cmdDream(['on', topic.trim()]);
+      }
+    } else {
+      console.log(`\n  ${dim('Start dreaming anytime with:')} ${cyan('slop dream on "your topic"')}\n`);
+    }
+  }
+}
+
+// ============================================================
+// SEED USER MEMORY — tie memory to email on every login/signup
+// ============================================================
+async function seedUserMemory(email, apiKey) {
+  // Temporarily set the API key so memory calls authenticate
+  const prevKey = API_KEY;
+  // eslint-disable-next-line no-global-assign
+  if (!API_KEY) API_KEY = apiKey;
+  try {
+    const now = new Date().toISOString();
+    await request('POST', '/v1/memory-set', { key: 'user:email', value: email, namespace: 'profile', tags: 'identity,auth' });
+    await request('POST', '/v1/memory-set', { key: 'user:last_login', value: now, namespace: 'profile', tags: 'identity,auth' });
+    // Only set joined date once (don't overwrite)
+    try {
+      const existing = await request('POST', '/v1/memory-get', { key: 'user:joined', namespace: 'profile' });
+      if (!existing.data?.value) {
+        await request('POST', '/v1/memory-set', { key: 'user:joined', value: now, namespace: 'profile', tags: 'identity' });
+      }
+    } catch (_) {
+      await request('POST', '/v1/memory-set', { key: 'user:joined', value: now, namespace: 'profile', tags: 'identity' });
+    }
+  } catch (_) { /* non-fatal — memory seeding is best-effort */ }
+  if (!prevKey) API_KEY = prevKey;
+}
+
+// ============================================================
+// DREAM — background memory growth while you're away
+// ============================================================
+async function cmdDream(args) {
+  requireKey();
+  const sub = args[0];
+
+  // slop dream  (no subcommand — show status dashboard)
+  if (!sub || sub === 'status' || sub === 'list') {
+    try {
+      const res = await request('GET', '/v1/dream/subscriptions');
+      const subs = res.data?.subscriptions || [];
+      if (jsonMode) return console.log(JSON.stringify(res.data, null, 2));
+      console.log(`\n  ${bold('Dream')} ${dim('— background memory growth while you\'re away')}\n`);
+      if (subs.length === 0) {
+        console.log(`  ${dim('No active dreams.')}`);
+        console.log(`  Start one: ${cyan('slop dream on "<your goal or topic>"')}\n`);
+      } else {
+        for (const s of subs) {
+          const active = s.active ? green('●') : dim('○');
+          console.log(`  ${active} ${cyan(s.topic || s.id)}`);
+          console.log(`    ${dim('tier:')} ${s.tier || 'basic'}  ${dim('every')} ${s.interval_hours}h  ${dim('id:')} ${s.id}`);
+        }
+        console.log('');
+        console.log(`  ${cyan('slop dream review')}       See insights from last cycle`);
+        console.log(`  ${cyan('slop dream off <id>')}     Pause a dream\n`);
+      }
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  // slop dream on "<topic>" [--tier basic|standard|advanced] [--every 2h]
+  if (sub === 'on' || sub === 'subscribe' || sub === 'start') {
+    const topicParts = [];
+    let tier = 'basic', intervalHours = null;
+    for (let i = 1; i < args.length; i++) {
+      if (args[i] === '--tier' && args[i+1]) { tier = args[i+1]; i++; }
+      else if (args[i] === '--every' && args[i+1]) {
+        const v = args[i+1]; i++;
+        intervalHours = v.endsWith('h') ? parseFloat(v) : v.endsWith('m') ? parseFloat(v)/60 : parseFloat(v);
+      } else if (args[i].startsWith('--tier=')) { tier = args[i].slice(7); }
+      else if (args[i].startsWith('--every=')) {
+        const v = args[i].slice(8);
+        intervalHours = v.endsWith('h') ? parseFloat(v) : v.endsWith('m') ? parseFloat(v)/60 : parseFloat(v);
+      } else if (!args[i].startsWith('--')) { topicParts.push(args[i]); }
+    }
+    const topic = topicParts.join(' ').replace(/^["']|["']$/g, '').trim();
+    if (!topic) {
+      console.log(`\n  Usage: ${cyan('slop dream on "your topic or goal"')}`);
+      console.log(`  Example: ${cyan('slop dream on "AI agent frameworks"')}`);
+      console.log(`  Tiers: ${dim('basic (2h), standard (1h), advanced (30m), deep (15m)')}\n`);
+      return;
+    }
+    try {
+      const body = { topic, tier };
+      if (intervalHours) body.interval_hours = intervalHours;
+      const res = await request('POST', '/v1/dream/subscribe', body);
+      const d = res.data;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${green('\u2713')} Dream started: ${bold(topic)}`);
+      console.log(`  ${dim('Tier:')}     ${d.tier || tier} — ${d.research_tier?.description || ''}`);
+      console.log(`  ${dim('Schedule:')} every ${d.interval || intervalHours + 'h'}`);
+      console.log(`  ${dim('Cost:')}     ~${d.estimated_daily_cost || '?'} credits/day`);
+      console.log(`  ${dim('ID:')}       ${d.id}`);
+      console.log('');
+      console.log(`  While you\'re away, ${bold('slop')} will research "${topic}"`);
+      console.log(`  and build your memory. Check back with:`);
+      console.log(`  ${cyan('slop dream review')}\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  // slop dream review [--limit N]
+  if (sub === 'review' || sub === 'inbox' || sub === 'results') {
+    try {
+      const limit = parseInt((args.find(a => a.startsWith('--limit=')) || '').replace('--limit=','') || '10');
+      const res = await request('GET', '/v1/dream/review');
+      const items = res.data?.pending || res.data?.results || res.data?.insights || [];
+      if (jsonMode) return console.log(JSON.stringify(res.data, null, 2));
+      console.log(`\n  ${bold('Dream inbox')} ${dim(`— insights while you were away`)}\n`);
+      if (!items.length) {
+        console.log(`  ${dim('No new insights yet.')}`);
+        console.log(`  Dreams run on a schedule — check back in a few hours.\n`);
+      } else {
+        for (const item of items.slice(0, limit)) {
+          console.log(`  ${cyan('\u25b6')} ${bold(item.topic || item.title || 'Insight')}`);
+          if (item.summary || item.content) {
+            const txt = (item.summary || item.content || '').slice(0, 200);
+            console.log(`    ${dim(txt)}${txt.length >= 200 ? '...' : ''}`);
+          }
+          if (item.created || item.ts) console.log(`    ${dim(new Date(item.created || item.ts).toLocaleString())}`);
+          console.log('');
+        }
+        console.log(`  ${cyan('slop dream deploy')}    Push insights into your memory`);
+        console.log(`  ${cyan('slop dream dismiss')}   Discard without saving\n`);
+      }
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  // slop dream deploy — push pending insights to memory
+  if (sub === 'deploy' || sub === 'apply') {
+    try {
+      const res = await request('POST', '/v1/dream/deploy');
+      if (jsonMode) return console.log(JSON.stringify(res.data, null, 2));
+      const count = res.data?.deployed || res.data?.count || 0;
+      console.log(`\n  ${green('\u2713')} ${count} insight(s) added to your memory\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  // slop dream off <id>  — pause a subscription
+  if (sub === 'off' || sub === 'pause' || sub === 'cancel' || sub === 'stop') {
+    const id = args[1];
+    if (!id) {
+      // List and let user pick
+      const res = await request('GET', '/v1/dream/subscriptions');
+      const subs = res.data?.subscriptions || [];
+      if (!subs.length) { console.log(`\n  ${dim('No active dreams to pause.')}\n`); return; }
+      console.log(`\n  ${bold('Active dreams:')}\n`);
+      subs.forEach((s, i) => console.log(`  ${dim(i+1 + '.')} ${s.topic} ${dim('('+s.id+')')}`));
+      const choice = await prompt('\n  Enter ID to pause: ');
+      if (!choice) return;
+      const res2 = await request('DELETE', '/v1/dream/subscribe/' + choice.trim());
+      console.log(`\n  ${green('\u2713')} Dream paused\n`);
+      return;
+    }
+    try {
+      await request('DELETE', '/v1/dream/subscribe/' + id);
+      if (jsonMode) return;
+      console.log(`\n  ${green('\u2713')} Dream paused: ${id}\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  // slop dream run "<topic>"  — run one cycle immediately
+  if (sub === 'run' || sub === 'now' || sub === 'trigger') {
+    const topic = args.slice(1).join(' ').replace(/^["']|["']$/g, '').trim();
+    console.log(`\n  ${dim(`Running dream cycle${topic ? ' for: ' + topic : ''}...`)}\n`);
+    try {
+      // subscribe then immediately trigger (dream runs hourly but we can force one)
+      const body = { topic: topic || 'my goals and interests', tier: 'basic' };
+      const res = await request('POST', '/v1/dream/subscribe', body);
+      console.log(`  ${green('\u2713')} Dream queued — results will appear in ${cyan('slop dream review')} within 1h`);
+      console.log(`  ${dim('ID: ' + res.data.id)}\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  console.log(`\n  ${bold('slop dream')} — memory growth while you\'re away\n`);
+  console.log(`  ${cyan('slop dream on "<topic>"')}     Start dreaming on a topic`);
+  console.log(`  ${cyan('slop dream list')}              Show active dreams`);
+  console.log(`  ${cyan('slop dream review')}            See what was learned`);
+  console.log(`  ${cyan('slop dream deploy')}            Push insights to memory`);
+  console.log(`  ${cyan('slop dream off <id>')}          Pause a dream\n`);
+}
+
+// ============================================================
+// ONBOARDING WIZARD — auto-runs on first use
+// ============================================================
+async function cmdOnboard() {
+  console.log('');
+  console.log(`  ${bold('Welcome to Slopshop')} \u2014 the self-hostable MCP agent runtime.`);
+  console.log(`  ${dim('1,328 real APIs. Persistent memory. Dream engine. MCP-native.')}`);
+  console.log('');
+
+  // Ask: new account or existing?
+  const choice = await prompt(`  ${bold('New here?')} [${cyan('y')} to create account / ${dim('n')} to log in]: `);
+  const isNew = !choice || choice.toLowerCase() === 'y' || choice.toLowerCase() === 'yes';
+  console.log('');
+
+  let authResult;
+  if (isNew) {
+    authResult = await cmdSignup();
+  } else {
+    authResult = await cmdLogin();
+  }
+
+  if (!authResult?.apiKey) {
+    // Auth succeeded but returned without result object — still proceed
+    const cfg = loadConfig();
+    if (!cfg.api_key) return; // Auth failed
+    authResult = { email: cfg.email, apiKey: cfg.api_key, isNew };
+  }
+
+  // Pause then launch quickstart
+  console.log(`  ${dim('Launching quickstart...')}\n`);
+  await new Promise(r => setTimeout(r, 800));
+  await cmdQuickstart(authResult);
 }
 
 // ============================================================
@@ -6978,25 +7214,26 @@ async function main() {
     args = [...aliasedArgs.slice(1), ...args];
   }
 
-  // First-run welcome experience: show if no config file exists
-  // and the command isn't signup, help, or version
-  if (!fs.existsSync(CONFIG_FILE) && cmd && !['signup', 'help', 'version', '-v', '--version', '-h', '--help'].includes(cmd)) {
-    console.log(`
-  ${printLogo()}
+  // First-run auto-onboarding: no config + TTY → launch wizard automatically
+  const noConfig = !fs.existsSync(CONFIG_FILE);
+  const skipOnboard = ['signup', 'login', 'help', 'version', '-v', '--version', '-h', '--help', 'key', 'config'];
+  if (noConfig && process.stdin.isTTY && !jsonMode && !quiet && !(cmd && skipOnboard.includes(cmd))) {
+    await cmdOnboard();
+    return;
+  }
 
-  ${bold('Get started in 30 seconds:')}
-
-  1. ${cyan('slop signup')}                         500 free credits
-  2. ${cyan('slop "hash hello world"')}              natural language routing
-  3. ${cyan('slop "remember goal: ship v1"')}         free persistent memory
-  4. ${cyan('slop mcp serve')}                       Claude Code, Cursor, Goose
-  5. ${cyan('slop help')}                            70+ commands
-`);
+  // No config + non-interactive (piped/CI): show terse hint
+  if (noConfig && cmd && !skipOnboard.includes(cmd)) {
+    console.log(`  ${dim('No config found. Run')} ${cyan('slop signup')} ${dim('to create an account.')}`);
   }
 
   if (!cmd || cmd === '--help' || cmd === '-h') {
     // First-run: show onboarding if no key configured
     if (!cmd && !API_KEY && !jsonMode) {
+      if (process.stdin.isTTY) {
+        await cmdOnboard();
+        return;
+      }
       console.log(`
   ${C.red}        ____  __    ____  ____ ${C.reset}
   ${C.red}       / ___\\/ /   / __ \\/ __ \\${C.reset}
@@ -7008,11 +7245,10 @@ async function main() {
       console.log(`  ${bold('Quick start:')}`);
       console.log(`    1. ${cyan('slop signup')}                          500 free credits`);
       console.log(`    2. ${cyan('slop "hash hello world"')}                natural language routing`);
-      console.log(`    3. ${cyan('slop "remember goal: ship v1"')}          free persistent memory`);
+      console.log(`    3. ${cyan('slop dream on "your topic"')}             memory growth while away`);
       console.log(`    4. ${cyan('slop mcp serve')}                        Claude Code, Cursor, Goose\n`);
       console.log(`  ${bold('Already have a key?')}`);
       console.log(`    ${cyan('slop key set sk-slop-YOUR-KEY')}\n`);
-      console.log(`  ${dim('Run')} ${cyan('slop help')} ${dim('for all 42 commands.')}\n`);
       return;
     }
     cmdHelp();
@@ -7111,8 +7347,9 @@ async function main() {
       break;
     }
     case 'quickstart': case 'start': case 'tutorial': await cmdQuickstart(); break;
-    case 'upgrade':     await cmdUpgrade();         break;
-    case 'completions': cmdCompletions(args);       break;
+    case 'dream':       await cmdDream(args);          break;
+    case 'upgrade':     await cmdUpgrade();            break;
+    case 'completions': cmdCompletions(args);          break;
     case 'voice':   await cmdVoice(args);  break;
     case 'simulate': await cmdSimulate(args); break;
     case 'snapshot': await cmdSnapshot(args); break;
@@ -7356,6 +7593,24 @@ async function cmdNatural(cmd, args) {
   if (/^(find|search|look for|what tools?|which api|how do i)\s+(.+)/i.test(fullInput)) {
     const query = fullInput.replace(/^(?:find|search|look for|what tools?|which api|how do i)\s+/i, '');
     return cmdSearch([query]);
+  }
+
+  // Dream — background memory growth
+  if (/^(dream|learn|study|research)\s+(about\s+|on\s+)?(.+)/i.test(fullInput)) {
+    const topic = fullInput.replace(/^(?:dream|learn|study|research)\s+(?:about\s+|on\s+)?/i, '').replace(/^['"]|['"]$/g, '');
+    return cmdDream(['on', topic]);
+  }
+  if (/^(what did i miss|catch me up|what happened|my dream (inbox|review)|dream review|dream inbox)/i.test(lower)) {
+    return cmdDream(['review']);
+  }
+  if (/^(deploy|apply|commit)\s+(all\s+)?(dream\s+)?(insights?|research|learnings?)/i.test(lower)) {
+    return cmdDream(['deploy']);
+  }
+  if (/^(stop|cancel|pause)\s+(dream|background research|all dreams?)/i.test(lower)) {
+    return cmdDream(['list']);
+  }
+  if (/^(my\s+)?(dreams?|subscriptions?|what('s| is) (running|active))/i.test(lower)) {
+    return cmdDream(['list']);
   }
 
   // Research / North Star
