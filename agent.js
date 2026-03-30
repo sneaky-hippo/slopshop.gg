@@ -124,7 +124,7 @@ module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, au
         if (match) {
           const steps = JSON.parse(match[0]);
           if (Array.isArray(steps) && steps.length > 0 && steps[0].api) {
-            return { steps: steps.slice(0, 3), plan_model: plan.model, model: result?._model || 'llm' };
+            return { steps: steps.slice(0, 3), model: result?._model || 'llm' };
           }
         }
       } catch (e) { /* LLM planning failed, fall through to keyword */ }

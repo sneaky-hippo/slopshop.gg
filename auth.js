@@ -106,7 +106,9 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
 
     // Referral bonus
     if (req.body.referral_code) {
-      const referrer = db.prepare('SELECT key FROM api_keys WHERE key LIKE ?').get(req.body.referral_code + '%');
+      const rc = req.body.referral_code;
+      if (!/^sk-slop-[0-9a-f]{8,}$/.test(rc)) { /* invalid format, skip */ }
+      const referrer = rc && /^sk-slop-[0-9a-f]{8,}$/.test(rc) ? db.prepare('SELECT key FROM api_keys WHERE key LIKE ?').get(rc + '%') : null;
       if (referrer) {
         const referrerAcct = apiKeys.get(referrer.key);
         if (referrerAcct) { referrerAcct.balance += 500; persistKey(referrer.key); }

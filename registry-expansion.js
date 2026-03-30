@@ -501,7 +501,7 @@ module.exports = {
       cat: 'Memory',
       name: 'Unlock Memory Key',
       desc: 'Release an optimistic lock acquired via memory-lock. Only the original owner can release the lock. Returns confirmation or error if not the lock owner.',
-      credits: 0,
+      credits: 1,
       tier: 'compute'
     },
 

@@ -365,7 +365,7 @@ db.exec(`
 db.exec(`CREATE TABLE IF NOT EXISTS schedule_runs (id INTEGER PRIMARY KEY AUTOINCREMENT, schedule_id TEXT NOT NULL, api_key TEXT NOT NULL, ran_at INTEGER NOT NULL, status TEXT NOT NULL, error TEXT, credits_used INTEGER DEFAULT 0)`);
 db.exec(`CREATE INDEX IF NOT EXISTS idx_schedule_runs_id ON schedule_runs(schedule_id)`);
 db.exec(`CREATE TABLE IF NOT EXISTS reputation (rater TEXT, rated TEXT, score INTEGER, context TEXT, ts INTEGER)`);
-db.exec(`CREATE TABLE IF NOT EXISTS sessions (id TEXT PRIMARY KEY, api_key TEXT, state TEXT, step INTEGER DEFAULT 0, ts INTEGER)`);
+db.exec(`CREATE TABLE IF NOT EXISTS agent_sessions (id TEXT PRIMARY KEY, api_key TEXT, state TEXT, step INTEGER DEFAULT 0, ts INTEGER)`);
 db.exec(`CREATE TABLE IF NOT EXISTS branches (id TEXT PRIMARY KEY, parent_id TEXT, api_key TEXT, label TEXT, state TEXT, ts INTEGER)`);
 db.exec(`CREATE TABLE IF NOT EXISTS failure_journal (id INTEGER PRIMARY KEY AUTOINCREMENT, api_key TEXT, api TEXT, error_type TEXT, error_message TEXT, input_summary TEXT, ts INTEGER)`);
 db.exec(`CREATE TABLE IF NOT EXISTS ab_tests (id TEXT PRIMARY KEY, api_key TEXT, name TEXT, variant_a TEXT, variant_b TEXT, results_a TEXT DEFAULT '[]', results_b TEXT DEFAULT '[]', ts INTEGER)`);
@@ -1622,6 +1622,9 @@ app.post('/v1/credits/transfer', auth, BODY_LIMIT_AUTH, (req, res) => {
   const { to_key, amount, note } = req.body;
   if (!to_key || !amount || amount <= 0) {
     return res.status(400).json({ error: { code: 'invalid_transfer', message: 'Provide to_key (recipient API key) and amount (positive number)' } });
+  }
+  if (to_key === req.apiKey) {
+    return res.status(400).json({ error: { code: 'self_transfer', message: 'Cannot transfer credits to yourself.' } });
   }
   if (amount > req.acct.balance) {
     return res.status(402).json({ error: { code: 'insufficient_credits', have: req.acct.balance, need: amount } });
@@ -4185,18 +4188,18 @@ app.post('/v1/swarm/consensus', auth, async (req, res) => {
 app.post('/v1/sessions/save', auth, (req, res) => {
   const { session_id, state } = req.body;
   const id = session_id || 'sess-' + crypto.randomUUID().slice(0,12);
-  db.prepare('INSERT OR REPLACE INTO sessions (id, api_key, state, step, ts) VALUES (?, ?, ?, COALESCE((SELECT step FROM sessions WHERE id = ?), 0) + 1, ?)').run(id, req.apiKey, JSON.stringify(state), id, Date.now());
+  db.prepare('INSERT OR REPLACE INTO agent_sessions (id, api_key, state, step, ts) VALUES (?, ?, ?, COALESCE((SELECT step FROM agent_sessions WHERE id = ?), 0) + 1, ?)').run(id, req.apiKey, JSON.stringify(state), id, Date.now());
   res.json({ ok: true, session_id: id });
 });
 
 app.get('/v1/sessions/:id', auth, (req, res) => {
-  const row = db.prepare('SELECT * FROM sessions WHERE id = ? AND api_key = ?').get(req.params.id, req.apiKey);
+  const row = db.prepare('SELECT * FROM agent_sessions WHERE id = ? AND api_key = ?').get(req.params.id, req.apiKey);
   if (!row) return res.status(404).json({ error: { code: 'session_not_found' } });
   res.json({ session_id: row.id, state: JSON.parse(row.state), step: row.step, last_saved: new Date(row.ts).toISOString() });
 });
 
 app.get('/v1/sessions', auth, (req, res) => {
-  const rows = db.prepare('SELECT id, step, ts FROM sessions WHERE api_key = ? ORDER BY ts DESC LIMIT 50').all(req.apiKey);
+  const rows = db.prepare('SELECT id, step, ts FROM agent_sessions WHERE api_key = ? ORDER BY ts DESC LIMIT 50').all(req.apiKey);
   res.json({ sessions: rows, count: rows.length });
 });
 
@@ -6139,6 +6142,27 @@ app.post('/v1/hive/:id/invite', auth, (req, res) => {
 app.get('/v1/hives', auth, (req, res) => {
   const hives = db.prepare('SELECT id, name, created FROM hives WHERE api_key = ? OR members LIKE ? ORDER BY created DESC').all(req.apiKey, '%' + req.apiKey.slice(0, 12) + '%');
   res.json({ hives, count: hives.length });
+});
+
+// GET /v1/hive — alias for /v1/hives
+app.get('/v1/hive', auth, (req, res) => {
+  const hives = db.prepare('SELECT id, name, created FROM hives WHERE api_key = ? OR members LIKE ? ORDER BY created DESC').all(req.apiKey, '%' + req.apiKey.slice(0, 12) + '%');
+  res.json({ hives, count: hives.length });
+});
+
+// GET /v1/hive/:id/members — list members of a hive
+app.get('/v1/hive/:id/members', auth, (req, res) => {
+  const hive = db.prepare('SELECT * FROM hives WHERE id = ?').get(req.params.id);
+  if (!hive) return res.status(404).json({ error: { code: 'hive_not_found' } });
+  const members = hive.members ? JSON.parse(hive.members) : [];
+  res.json({ hive_id: req.params.id, members, count: members.length });
+});
+
+// GET /v1/hive/:id/activity — get recent activity for a hive
+app.get('/v1/hive/:id/activity', auth, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  const rows = db.prepare('SELECT * FROM hive_messages WHERE hive_id = ? ORDER BY ts DESC LIMIT ?').all(req.params.id, limit);
+  res.json({ hive_id: req.params.id, activity: rows, count: rows.length });
 });
 
 // ===== SUPERPOWER ENDPOINTS =====
@@ -8702,6 +8726,34 @@ app.post('/v1/keys/set-budget', auth, (req, res) => {
   res.json({ ok: true, key: key.slice(0, 15) + '...', budget_monthly, message: 'Budget cap set on key.' });
 });
 
+// GET /v1/keys — List all API keys owned by the authenticated key
+app.get('/v1/keys', auth, (req, res) => {
+  const acct = req.acct;
+  const rows = db.prepare('SELECT key, id, balance, tier, created, max_credits FROM api_keys WHERE id = ? OR key = ? ORDER BY created DESC').all(acct.id, req.apiKey);
+  const keys = rows.map(r => ({
+    key_prefix: r.key.slice(0, 15) + '...',
+    id: r.id,
+    balance: r.balance,
+    tier: r.tier,
+    created: new Date(r.created).toISOString(),
+    budget_monthly: r.max_credits || null
+  }));
+  res.json({ keys, count: keys.length });
+});
+
+// POST /v1/keys/create — Create a sub-key linked to this account
+app.post('/v1/keys/create', auth, (req, res) => {
+  const { label, tier, budget_monthly } = req.body;
+  const key = 'sk-slop-' + crypto.randomBytes(12).toString('hex');
+  const id = crypto.randomUUID();
+  const now = Date.now();
+  const subAcct = { id, balance: 0, created: now, auto_reload: false, tier: tier || 'compute', label: label || 'Sub-key', max_credits: budget_monthly || null, parent_key: req.apiKey };
+  apiKeys.set(key, subAcct);
+  apiKeysByHash.set(hashApiKey(key), { acct: subAcct, plaintextKey: key });
+  dbInsertKey.run(key, id, 0, tier || 'compute', now, hashApiKey(key), keyPrefix(key));
+  res.status(201).json({ ok: true, key, id, label: label || 'Sub-key', tier: tier || 'compute', balance: 0, created: new Date(now).toISOString() });
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // 4. WEBHOOK MANAGEMENT
 // ═══════════════════════════════════════════════════════════════════════════
@@ -9716,6 +9768,7 @@ app.post('/v1/route', auth, (req, res) => {
     { patterns: ['base64 decode','decode base64','from base64'], slugs: ['crypto-base64-decode'], boost: 18 },
     { patterns: ['jwt','json web token','decode jwt','parse jwt','inspect jwt'], slugs: ['crypto-jwt-decode'], boost: 20 },
     { patterns: ['sign jwt','create jwt','generate jwt'], slugs: ['crypto-jwt-sign'], boost: 20 },
+    { patterns: ['generate password','create password','random password','new password','secure password','strong password'], slugs: ['crypto-password-generate'], boost: 24 },
     { patterns: ['password hash','hash password','bcrypt','pbkdf2'], slugs: ['crypto-password-hash'], boost: 18 },
     { patterns: ['random bytes','random hex','random string','secure random'], slugs: ['crypto-random-bytes'], boost: 15 },
     // Text processing
@@ -9764,7 +9817,7 @@ app.post('/v1/route', auth, (req, res) => {
     { patterns: ['validate iban','iban valid'], slugs: ['validate-iban'], boost: 22 },
     { patterns: ['validate json','json valid','parse json'], slugs: ['validate-json'], boost: 20 },
     // Date / time
-    { patterns: ['current date','what date','today date','now','current time'], slugs: ['date-now'], boost: 22 },
+    { patterns: ['current date','what date','today date','now','current time','what day is it','what day today','what is today'], slugs: ['date-now'], boost: 22 },
     { patterns: ['format date','date format','convert date'], slugs: ['date-format'], boost: 22 },
     { patterns: ['parse date','read date string'], slugs: ['date-parse'], boost: 22 },
     { patterns: ['business days','working days','weekday'], slugs: ['date-business-days'], boost: 22 },
@@ -9773,18 +9826,19 @@ app.post('/v1/route', auth, (req, res) => {
     { patterns: ['unix timestamp','epoch','convert timestamp'], slugs: ['date-to-unix'], boost: 20 },
     // Network
     { patterns: ['dns lookup','dns resolve','lookup domain'], slugs: ['net-dns-lookup'], boost: 22 },
-    { patterns: ['http check','is site up','check url status','ping url'], slugs: ['net-http-check'], boost: 22 },
+    { patterns: ['http check','is site up','is site down','check url status','ping url','website up','site status','check if site'], slugs: ['net-http-check'], boost: 22 },
     { patterns: ['ssl check','certificate valid','https check'], slugs: ['net-ssl-check'], boost: 22 },
     { patterns: ['ping','icmp ping','is host alive'], slugs: ['net-ping'], boost: 22 },
     { patterns: ['http headers','response headers','get headers'], slugs: ['net-http-headers'], boost: 20 },
-    { patterns: ['ip geolocation','where is ip','ip location'], slugs: ['net-ip-geo'], boost: 22 },
+    { patterns: ['ip geolocation','where is ip','ip location','ip address located','geolocate ip','ip geo','locate ip'], slugs: ['net-ip-geo'], boost: 22 },
     { patterns: ['whois','domain owner','registrar'], slugs: ['net-whois'], boost: 22 },
     // Data transform
     { patterns: ['csv','csv to json','parse csv','convert csv'], slugs: ['data-csv-to-json'], boost: 22 },
     { patterns: ['json to csv','convert json to csv'], slugs: ['data-json-to-csv'], boost: 22 },
     { patterns: ['xml','parse xml','xml to json'], slugs: ['data-xml-to-json'], boost: 22 },
     { patterns: ['yaml','parse yaml','yaml to json'], slugs: ['data-yaml-to-json'], boost: 22 },
-    { patterns: ['zip','compress','gzip','deflate'], slugs: ['data-zip'], boost: 18 },
+    { patterns: ['compress file','gzip file','deflate compress','compress with gzip','gzip compress','gunzip','decompress gzip'], slugs: ['data-compress'], boost: 20 },
+    { patterns: ['zip array','interleave arrays','zip two arrays','array zip'], slugs: ['data-zip'], boost: 18 },
     { patterns: ['flatten','flatten json','flatten object','flatten array'], slugs: ['data-flatten'], boost: 20 },
     { patterns: ['json diff','object diff','compare json'], slugs: ['data-json-diff'], boost: 20 },
     { patterns: ['json schema','validate schema'], slugs: ['data-json-schema-validate'], boost: 20 },
