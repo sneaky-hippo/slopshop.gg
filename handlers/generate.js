@@ -384,7 +384,9 @@ async function execJavascript(input) {
   let error = null;
 
   try {
-    const script = new vm.Script(code, { filename: 'exec.js' });
+    // Wrap in IIFE if code contains 'return' (bare return is invalid in script context)
+    const wrapped = code.includes('return ') || code.includes('return;') ? `(function(){${code}})()` : code;
+    const script = new vm.Script(wrapped, { filename: 'exec.js' });
     result = script.runInContext(context, { timeout });
     // Serialize if needed
     if (result !== undefined && typeof result === 'object') {
@@ -828,8 +830,8 @@ async function execUniqueJson(input) {
 // 20. exec-jq
 // ---------------------------------------------------------------------------
 async function execJq(input) {
-  const data = input.data;
-  const query = (input.query || '.').trim();
+  const data = input.data || input.json;
+  const query = (input.query || input.filter || input.expression || '.').trim();
 
   // Evaluate jq-like expressions
   function evalQuery(q, ctx) {

@@ -185,7 +185,8 @@ const handlers = {
     input = input || {};
     const cash_flows = input.cash_flows || input.cashflows;
     const discount_rate = input.discount_rate || input.rate;
-    const cf=cash_flows||[-1000,300,400,500,600]; const r=discount_rate||0.1;
+    const cf=cash_flows||input.cashFlows||[-1000,300,400,500,600]; const rawR=discount_rate||0.1;
+    const r = rawR > 1 ? rawR / 100 : rawR; // treat 10 as 10%, not 1000%
     const npv=cf.reduce((sum,cf,t)=>sum+cf/Math.pow(1+r,t),0);
     return {_engine:'real', npv:Math.round(npv*100)/100, cash_flows:cf, discount_rate:r, periods:cf.length, profitable:npv>0};
   },
@@ -204,9 +205,9 @@ const handlers = {
 
   'finance-break-even': (input) => {
     input = input || {};
-    const fixed_costs = input.fixed_costs;
-    const price_per_unit = input.price_per_unit || input.price;
-    const variable_cost_per_unit = input.variable_cost_per_unit || input.variable_cost;
+    const fixed_costs = input.fixed_costs || input.fixedCosts;
+    const price_per_unit = input.price_per_unit || input.pricePerUnit || input.price;
+    const variable_cost_per_unit = input.variable_cost_per_unit || input.costPerUnit || input.variable_cost;
     const fc=fixed_costs||10000;const p=price_per_unit||50;const vc=variable_cost_per_unit||20;
     const units=Math.ceil(fc/(p-vc));
     const revenue=units*p;

@@ -237,7 +237,8 @@ function textReverse(input) {
 }
 
 function textCaseConvert(input) {
-  const { text: _text, to = 'lower' } = input;
+  const { text: _text, to: _to, case: _case } = input;
+  const to = _to || _case || 'lower';
   const text = _text || '';
   let result;
   const words = () => text.toLowerCase().replace(/[^a-z0-9\s]/g,' ').trim().split(/\s+/);
@@ -4036,8 +4037,10 @@ module.exports = {
   // ─── DATA & CONVERSION (NEW 100) ─────────────────────────────────────────────
 
   'convert-temperature': ({value, from, to}) => {
-    let c = from === 'f' ? (value - 32) * 5 / 9 : from === 'k' ? value - 273.15 : value;
-    const out = to === 'f' ? c * 9 / 5 + 32 : to === 'k' ? c + 273.15 : c;
+    const f = (s) => (s||'').toLowerCase().charAt(0); // normalize to c/f/k
+    const fr = f(from), tr = f(to);
+    let c = fr === 'f' ? (value - 32) * 5 / 9 : fr === 'k' ? value - 273.15 : value;
+    const out = tr === 'f' ? c * 9 / 5 + 32 : tr === 'k' ? c + 273.15 : c;
     return { _engine: 'real', result: Math.round(out * 100) / 100, from, to };
   },
 

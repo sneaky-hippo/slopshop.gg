@@ -792,7 +792,7 @@ module.exports = {
 
   // ===== ORCH PARALLEL =====
   'orch-parallel': async (input) => {
-    const calls = input.calls || [];
+    const calls = input.calls || input.tasks || [];
 
     function callLocal(slug, inp) {
       return new Promise((resolve, reject) => {
@@ -813,7 +813,7 @@ module.exports = {
     }
 
     const start = Date.now();
-    const results = await Promise.all(calls.map(c => callLocal(c.api, c.input || {}).catch(e => ({ error: e.message }))));
+    const results = await Promise.all(calls.map(c => callLocal(c.api || c.slug, c.input || c.body || {}).catch(e => ({ error: e.message }))));
     return { _engine: 'real', results, timing_ms: Date.now() - start };
   },
 
