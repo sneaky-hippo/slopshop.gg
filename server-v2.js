@@ -3280,13 +3280,20 @@ app.post('/v1/memory/upload', auth, async (req, res) => {
     .filter(e => e.value.length >= 10)
     .map(e => ({ ...e, value: e.value.slice(0, 10000) }));
 
-  // Store all entries
+  // Store all entries via internal HTTP call (respects API key scoping)
   let stored = 0;
+  const storeEntry = (key, value, tags) => new Promise(resolve => {
+    const data = JSON.stringify({ namespace: ns, key, value, tags });
+    const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-set', method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data), 'Authorization': req.headers.authorization },
+      timeout: 5000
+    }, res2 => { let b = ''; res2.on('data', c => b += c); res2.on('end', () => resolve(res2.statusCode === 200)); });
+    r.on('error', () => resolve(false));
+    r.write(data); r.end();
+  });
   for (const entry of compressed) {
-    try {
-      allHandlers['memory-set']({ namespace: ns, key: entry.key, value: entry.value, tags: 'import,upload' + (filename ? ',' + filename : '') });
-      stored++;
-    } catch(e) { /* skip failed entries */ }
+    const ok = await storeEntry(entry.key, entry.value, 'import,upload' + (filename ? ',' + filename : ''));
+    if (ok) stored++;
   }
 
   res.json({
