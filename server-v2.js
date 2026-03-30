@@ -4348,12 +4348,14 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
   // Extend timeout for army operations (parallel agents take time)
   req.setTimeout(120000);
   res.setTimeout(120000);
-  const { task, tool, input, agents, verify } = req.body;
-  if (!task && !tool) return res.status(400).json({ error: { code: 'missing_task', message: 'Provide task (natural language) or tool (slug) + input' } });
+  const { task, tool, slug, input, agents, count, verify } = req.body;
+  const effectiveTool = tool || slug || (task && allHandlers[task] ? task : null);
+  const effectiveTask = effectiveTool ? null : task;
+  if (!effectiveTask && !effectiveTool) return res.status(400).json({ error: { code: 'missing_task', message: 'Provide tool (slug) + input, or task (natural language)' } });
 
-  const n = Math.min(agents || 10, 1000); // Cap at 1000 agents per deploy
+  const n = Math.min(agents || count || 10, 1000); // Cap at 1000 agents per deploy
   const id = 'army-' + crypto.randomUUID().slice(0, 12);
-  const creditsPerAgent = tool ? (API_DEFS[tool]?.credits || 1) : 1;
+  const creditsPerAgent = effectiveTool ? (API_DEFS[effectiveTool]?.credits || 1) : 1;
   const totalCredits = n * creditsPerAgent;
 
   if (req.acct.balance < totalCredits) {
@@ -4362,10 +4364,10 @@ app.post('/v1/army/deploy', auth, BODY_LIMIT_ARMY, async (req, res) => {
 
   const startTime = Date.now();
   const results = [];
-  const handler = tool ? allHandlers[tool] : null;
+  const handler = effectiveTool ? allHandlers[effectiveTool] : null;
 
-  if (tool && !handler) {
-    return res.status(404).json({ error: { code: 'tool_not_found', slug: tool, hint: 'Use GET /v1/tools to browse available tools' } });
+  if (effectiveTool && !handler) {
+    return res.status(404).json({ error: { code: 'tool_not_found', slug: effectiveTool, hint: 'Use GET /v1/tools to browse available tools' } });
   }
 
   // For large armies (>20 agents), respond immediately and execute in background
@@ -4613,7 +4615,7 @@ app.post('/v1/agent/simulate', auth, async (req, res) => {
   if (!task && !tool) return res.status(400).json({ error: { code: 'missing_task', message: 'Provide task (natural language) or tool (slug) + input' } });
 
   const n = Math.min(agents || 10, 1000);
-  const creditsPerAgent = tool ? (API_DEFS[tool]?.credits || 1) : 1;
+  const creditsPerAgent = effectiveTool ? (API_DEFS[effectiveTool]?.credits || 1) : 1;
   const totalCredits = n * creditsPerAgent;
   const handler = tool ? allHandlers[tool] : null;
 
@@ -8131,7 +8133,51 @@ app.post('/v1/chain/queue', auth, (req, res) => {
 
 // 3b. Execute chain — actually runs each step's LLM call and advances automatically
 app.post('/v1/chain/run', auth, async (req, res) => {
-  const { chain_id, max_steps, max_iterations } = req.body;
+  const { chain_id, steps: inlineSteps, max_steps, max_iterations, loop: inlineLoop } = req.body;
+
+  // Support inline execution (no pre-creation needed)
+  if (inlineSteps && Array.isArray(inlineSteps) && inlineSteps.length > 0) {
+    const ctx = {};
+    const results = [];
+    const maxExec = Math.min(max_steps || inlineSteps.length, 20);
+    const iterations = inlineLoop ? Math.min(max_iterations || 3, 10) : 1;
+
+    for (let iter = 0; iter < iterations; iter++) {
+      for (let i = 0; i < Math.min(inlineSteps.length, maxExec); i++) {
+        const step = inlineSteps[i];
+        const slug = step.slug || step.tool;
+        const stepInput = step.input || {};
+        // Substitute {{prev.*}} references
+        const resolvedInput = {};
+        for (const [k, v] of Object.entries(stepInput)) {
+          if (typeof v === 'string' && v.startsWith('{{prev.')) {
+            const field = v.slice(7, -2);
+            resolvedInput[k] = ctx[field];
+          } else { resolvedInput[k] = v; }
+        }
+
+        try {
+          const handler = allHandlers[slug];
+          if (handler) {
+            const result = await Promise.resolve(handler(resolvedInput));
+            results.push({ step: i, slug, result, iteration: iter });
+            // Update context with result fields
+            if (result && typeof result === 'object') Object.assign(ctx, result);
+            ctx.prev = result;
+          } else if (step.prompt) {
+            const llm = allHandlers['llm-think'];
+            if (llm) {
+              const result = await llm({ prompt: step.prompt, context: JSON.stringify(ctx).slice(0, 2000) });
+              results.push({ step: i, type: 'llm', result, iteration: iter });
+              if (result) ctx.prev = result;
+            }
+          }
+        } catch(e) { results.push({ step: i, slug, error: e.message, iteration: iter }); }
+      }
+    }
+    return res.json({ ok: true, inline: true, results, context: ctx, iterations, steps_executed: results.length });
+  }
+
   const chain = db.prepare('SELECT * FROM agent_chains WHERE id = ?').get(chain_id);
   if (!chain) return res.status(404).json({ error: { code: 'chain_not_found' } });
 
