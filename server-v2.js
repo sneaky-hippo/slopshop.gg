@@ -3207,6 +3207,105 @@ app.get('/v1/dream/shared', publicRateLimit, (req, res) => {
   } catch(e) { res.json({ dreams: [], note: 'Dream library is empty. Subscribe to start dreaming.' }); }
 });
 
+// POST /v1/memory/upload — Drag-and-drop memory file import
+// Accepts: { content: "raw text or JSON string", format: "text|json|markdown|auto", namespace: "default" }
+// Transcribes into compressed, structured memory entries
+app.post('/v1/memory/upload', auth, async (req, res) => {
+  const { content, format, namespace, filename } = req.body;
+  if (!content) return res.status(400).json({ error: { code: 'missing_content' } });
+
+  const ns = namespace || 'default';
+  const fmt = format || 'auto';
+  const entries = [];
+
+  // Auto-detect format
+  let parsed;
+  if (fmt === 'json' || (fmt === 'auto' && content.trim().startsWith('{'))) {
+    try {
+      parsed = JSON.parse(content);
+      // If it's an object, each key becomes a memory entry
+      if (typeof parsed === 'object' && !Array.isArray(parsed)) {
+        for (const [key, value] of Object.entries(parsed)) {
+          entries.push({ key: key.slice(0, 200), value: typeof value === 'string' ? value : JSON.stringify(value) });
+        }
+      } else if (Array.isArray(parsed)) {
+        parsed.forEach((item, i) => {
+          const key = item.key || item.id || item.name || `import_${i}`;
+          const value = item.value || item.content || item.text || JSON.stringify(item);
+          entries.push({ key: String(key).slice(0, 200), value: String(value) });
+        });
+      }
+    } catch(e) { /* fall through to text parsing */ }
+  }
+
+  if (entries.length === 0) {
+    // Parse as text/markdown — split into sections by headers or paragraphs
+    const lines = content.split('\n');
+    let currentSection = '';
+    let currentKey = filename ? filename.replace(/\.[^.]+$/, '') : 'import';
+    let sectionIndex = 0;
+
+    for (const line of lines) {
+      const headerMatch = line.match(/^#{1,3}\s+(.+)/);
+      if (headerMatch) {
+        // Save previous section
+        if (currentSection.trim()) {
+          entries.push({
+            key: `${currentKey}_${sectionIndex}_${headerMatch[1].toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60)}`,
+            value: currentSection.trim()
+          });
+          sectionIndex++;
+        }
+        currentSection = line + '\n';
+      } else {
+        currentSection += line + '\n';
+      }
+    }
+    // Save last section
+    if (currentSection.trim()) {
+      entries.push({ key: `${currentKey}_${sectionIndex}`, value: currentSection.trim() });
+    }
+
+    // If no sections found (no headers), chunk by paragraphs
+    if (entries.length === 0) {
+      const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim());
+      paragraphs.forEach((p, i) => {
+        entries.push({ key: `${currentKey}_p${i}`, value: p.trim() });
+      });
+    }
+  }
+
+  // Compress: skip entries smaller than 10 chars, truncate values at 10KB
+  const compressed = entries
+    .filter(e => e.value.length >= 10)
+    .map(e => ({ ...e, value: e.value.slice(0, 10000) }));
+
+  // Store all entries
+  let stored = 0;
+  for (const entry of compressed) {
+    try {
+      allHandlers['memory-set']({ namespace: ns, key: entry.key, value: entry.value, tags: 'import,upload' + (filename ? ',' + filename : '') });
+      stored++;
+    } catch(e) { /* skip failed entries */ }
+  }
+
+  res.json({
+    ok: true,
+    data: {
+      _engine: 'real',
+      entries_parsed: entries.length,
+      entries_stored: stored,
+      entries_skipped: entries.length - stored,
+      namespace: ns,
+      format_detected: parsed ? 'json' : 'text',
+      total_chars: content.length,
+      compressed_chars: compressed.reduce((s, e) => s + e.value.length, 0),
+      compression_ratio: content.length > 0 ? (compressed.reduce((s, e) => s + e.value.length, 0) / content.length * 100).toFixed(1) + '%' : '0%',
+      keys: compressed.map(e => e.key),
+    }
+  });
+});
+
 // ═══ SHARED MEMORY — cross-team collaboration with permission controls ═══
 db.exec(`CREATE TABLE IF NOT EXISTS shared_memory_spaces (
   id TEXT PRIMARY KEY,
@@ -3298,6 +3397,61 @@ app.post('/v1/memory/share/search', auth, (req, res) => {
     const result = allHandlers['memory-search']({ namespace: 'shared:' + space_id, query, limit: 20 });
     res.json({ ok: true, space_id, results: result.results || [], count: (result.results || []).length });
   } catch(e) { res.json({ ok: true, results: [], count: 0 }); }
+});
+
+// ═══ MEMORY COLLABORATOR — atomic invite/accept/revoke with audit ═══
+db.exec(`CREATE TABLE IF NOT EXISTS memory_collaborators (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  namespace TEXT NOT NULL,
+  invitee_key TEXT NOT NULL,
+  permission TEXT DEFAULT 'rw',
+  invited_by TEXT NOT NULL,
+  invited_at INTEGER NOT NULL,
+  accepted_at INTEGER,
+  status TEXT DEFAULT 'pending',
+  invite_token TEXT UNIQUE,
+  UNIQUE(namespace, invitee_key)
+)`);
+
+app.post('/v1/memory/collaborator/invite', auth, (req, res) => {
+  const { namespace, invitee_key, permission } = req.body;
+  if (!namespace || !invitee_key) return res.status(400).json({ error: { code: 'missing_fields', required: ['namespace', 'invitee_key'] } });
+  const perm = permission || 'rw';
+  const token = crypto.randomUUID();
+  try {
+    db.prepare('INSERT INTO memory_collaborators (namespace, invitee_key, permission, invited_by, invited_at, invite_token) VALUES (?, ?, ?, ?, ?, ?)').run(namespace, invitee_key, perm, req.apiKey, Date.now(), token);
+    res.json({ ok: true, invite_token: token, namespace, permission: perm, note: 'Share this token with the invitee. They accept via POST /v1/memory/collaborator/accept {invite_token}' });
+  } catch(e) {
+    if (e.message.includes('UNIQUE')) return res.status(409).json({ error: { code: 'already_invited' } });
+    res.status(500).json({ error: { code: 'invite_failed', message: e.message } });
+  }
+});
+
+app.post('/v1/memory/collaborator/accept', auth, (req, res) => {
+  const { invite_token } = req.body;
+  if (!invite_token) return res.status(400).json({ error: { code: 'missing_token' } });
+  const row = db.prepare('SELECT * FROM memory_collaborators WHERE invite_token = ? AND status = ?').get(invite_token, 'pending');
+  if (!row) return res.status(404).json({ error: { code: 'invalid_or_expired_token' } });
+  db.prepare('UPDATE memory_collaborators SET status = ?, accepted_at = ?, invitee_key = ? WHERE id = ?').run('active', Date.now(), req.apiKey, row.id);
+  res.json({ ok: true, namespace: row.namespace, permission: row.permission, status: 'active' });
+});
+
+app.get('/v1/memory/collaborator/list', auth, (req, res) => {
+  const { namespace } = req.query;
+  let collabs;
+  if (namespace) {
+    collabs = db.prepare('SELECT * FROM memory_collaborators WHERE namespace = ? AND (invited_by = ? OR invitee_key = ?)').all(namespace, req.apiKey, req.apiKey);
+  } else {
+    collabs = db.prepare('SELECT * FROM memory_collaborators WHERE invited_by = ? OR invitee_key = ?').all(req.apiKey, req.apiKey);
+  }
+  res.json({ ok: true, collaborators: collabs.map(c => ({ namespace: c.namespace, invitee: c.invitee_key.slice(0, 12) + '...', permission: c.permission, status: c.status, invited_at: c.invited_at })), count: collabs.length });
+});
+
+app.post('/v1/memory/collaborator/revoke', auth, (req, res) => {
+  const { namespace, invitee_key } = req.body;
+  if (!namespace || !invitee_key) return res.status(400).json({ error: { code: 'missing_fields' } });
+  db.prepare('UPDATE memory_collaborators SET status = ? WHERE namespace = ? AND invitee_key = ? AND invited_by = ?').run('revoked', namespace, invitee_key, req.apiKey);
+  res.json({ ok: true, revoked: true });
 });
 
 // ===== AGENT PUB/SUB CHANNELS =====

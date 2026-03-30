@@ -470,6 +470,17 @@ curl -X POST https://slopshop.gg/v1/memory-search \
         <div class="callout-icon">&#129504;</div>
         <p><strong>8 free memory APIs:</strong> memory-set, memory-get, memory-search, memory-list, memory-delete, memory-stats, memory-namespace-list, counter-get. Plus free semantic search via <code style="background:var(--gg);color:var(--g)">memory-vector-search</code>. Your agent accumulates state at zero cost.</p>
       </div>
+
+      <h3 style="font-family:var(--mono);font-size:0.9rem;font-weight:700;margin:24px 0 12px">4. Upload a file to memory</h3>
+      <p class="desc">Import Markdown, text, JSON, or code files directly into your agent's memory. Content is chunked and made searchable instantly.</p>
+      <div class="code-block">
+        <div class="code-header"><span class="lang">bash &mdash; memory upload</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+        <pre><code><span class="hl-comment"># Import a file into memory (content is chunked + indexed)</span>
+curl -X POST https://slopshop.gg/v1/memory/upload \
+  -H <span class="hl-str">"Authorization: Bearer YOUR_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"content":"# My Project\n\n## Goals\nBuild the best agent backend...", "namespace":"my-project"}'</span></code></pre>
+      </div>
     </section>
 
     <!-- STEP 4: RUN AN AGENT TASK -->

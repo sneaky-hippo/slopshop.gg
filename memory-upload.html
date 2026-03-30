@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Memory Upload | Slopshop — Import Files to Agent Memory</title>
+<meta name="description" content="Drag and drop any file to import it into your agent's persistent memory. Supports text, JSON, markdown, code. Free forever.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',monospace;background:#0a0a0a;color:#e5e5e5;min-height:100vh}
+.nav{max-width:1200px;margin:0 auto;padding:16px 32px;display:flex;align-items:center;justify-content:space-between}
+.nav a{color:#a1a1aa;text-decoration:none;font-size:14px;margin-left:24px}
+.nav a:hover{color:#fff}
+.logo{font-weight:800;font-size:20px;color:#fff;text-decoration:none}
+.hero{text-align:center;padding:60px 32px 40px}
+.hero h1{font-size:48px;font-weight:800;background:linear-gradient(135deg,#ff3333,#ff6b35,#00d4ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.hero p{margin-top:16px;font-size:18px;color:#a1a1aa;max-width:600px;margin-left:auto;margin-right:auto}
+.container{max-width:800px;margin:0 auto;padding:0 32px 80px}
+.drop-zone{border:2px dashed #333;border-radius:16px;padding:60px 40px;text-align:center;cursor:pointer;transition:all 0.2s;position:relative}
+.drop-zone:hover,.drop-zone.active{border-color:#ff3333;background:rgba(255,51,51,0.05)}
+.drop-zone h3{font-size:24px;margin-bottom:12px}
+.drop-zone p{color:#a1a1aa;font-size:14px}
+.drop-zone input{display:none}
+.icon{font-size:48px;margin-bottom:16px;display:block}
+.config{margin-top:24px;display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.config label{font-size:13px;color:#a1a1aa;display:block;margin-bottom:4px}
+.config input,.config select{width:100%;padding:10px 12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:14px;font-family:monospace}
+.config input:focus,.config select:focus{outline:none;border-color:#ff3333}
+.btn{display:inline-block;padding:12px 32px;background:#ff3333;color:#fff;border:none;border-radius:8px;font-size:16px;font-weight:600;cursor:pointer;margin-top:24px;font-family:monospace;transition:background 0.2s}
+.btn:hover{background:#cc2929}
+.btn:disabled{opacity:0.5;cursor:not-allowed}
+.result{margin-top:32px;background:#111;border:1px solid #222;border-radius:12px;padding:24px;display:none}
+.result.show{display:block}
+.result h3{font-size:18px;margin-bottom:12px;color:#00d4ff}
+.result pre{background:#0a0a0a;padding:16px;border-radius:8px;font-size:13px;overflow-x:auto;max-height:400px;overflow-y:auto;border:1px solid #1a1a1a}
+.stat{display:inline-block;background:#1a1a1a;padding:6px 14px;border-radius:20px;margin:4px;font-size:13px}
+.stat b{color:#ff3333}
+.preview{margin-top:16px;background:#0a0a0a;padding:16px;border-radius:8px;max-height:200px;overflow-y:auto;font-size:12px;color:#666;white-space:pre-wrap;border:1px solid #1a1a1a}
+.footer{background:#111;padding:24px;text-align:center;font-size:13px;color:#666;border-top:1px solid #1a1a1a}
+.footer p{margin:4px 0}
+.manual{margin-top:32px;background:#111;border:1px solid #222;border-radius:12px;padding:24px}
+.manual h3{font-size:16px;margin-bottom:12px;color:#ff6b35}
+.manual textarea{width:100%;height:150px;background:#0a0a0a;border:1px solid #222;border-radius:8px;color:#e5e5e5;padding:12px;font-family:monospace;font-size:13px;resize:vertical}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <a href="/" class="logo">slopshop</a>
+  <div>
+    <a href="/docs">Docs</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/getting-started">Get Started</a>
+    <a href="/dashboard">Dashboard</a>
+  </div>
+</nav>
+
+<div class="hero">
+  <h1>Import Memory</h1>
+  <p>Drag and drop any file — text, JSON, markdown, code — and it becomes structured agent memory. Free forever.</p>
+</div>
+
+<div class="container">
+  <div class="drop-zone" id="dropZone">
+    <span class="icon">📁</span>
+    <h3>Drop your file here</h3>
+    <p>or click to browse — .txt, .json, .md, .csv, .yaml, .js, .py, .env</p>
+    <input type="file" id="fileInput" accept=".txt,.json,.md,.csv,.yaml,.yml,.js,.py,.ts,.env,.toml,.xml,.html">
+  </div>
+
+  <div class="config">
+    <div>
+      <label>API Key</label>
+      <input type="password" id="apiKey" placeholder="sk-slop-..." value="">
+    </div>
+    <div>
+      <label>Namespace</label>
+      <input type="text" id="namespace" placeholder="my-project" value="default">
+    </div>
+    <div>
+      <label>Format</label>
+      <select id="format">
+        <option value="auto">Auto-detect</option>
+        <option value="text">Plain text</option>
+        <option value="json">JSON</option>
+        <option value="markdown">Markdown</option>
+      </select>
+    </div>
+    <div>
+      <label>File Preview</label>
+      <div id="fileInfo" style="padding:10px;background:#1a1a1a;border-radius:8px;font-size:13px;color:#666;min-height:38px">No file selected</div>
+    </div>
+  </div>
+
+  <div class="manual">
+    <h3>Or paste content directly</h3>
+    <textarea id="pasteContent" placeholder="Paste your memory content here...&#10;&#10;# Project Goals&#10;Build the best agent backend...&#10;&#10;## Architecture&#10;Express + SQLite + 4 LLM providers..."></textarea>
+  </div>
+
+  <div style="text-align:center">
+    <button class="btn" id="uploadBtn" onclick="upload()">Upload to Memory</button>
+  </div>
+
+  <div class="result" id="result">
+    <h3>Import Complete</h3>
+    <div id="stats"></div>
+    <pre id="resultJson"></pre>
+  </div>
+</div>
+
+<div class="footer">
+  <p style="font-family:monospace;color:#fff">Slopshop is a self-hostable backend for AI agents: real tools, persistent memory, one execution layer.</p>
+  <p>78 categories · 1,255 handlers · 925 self-hostable pure-compute · 8 core memory APIs free forever · 500 free credits on signup</p>
+  <p>memory-set · memory-get · memory-search · memory-list · memory-delete · memory-stats · memory-namespace-list · counter-get — always 0 credits</p>
+</div>
+
+<script>
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+let selectedFile = null;
+let fileContent = '';
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('active'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('active'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('active');
+  handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => handleFile(e.target.files[0]));
+
+function handleFile(file) {
+  if (!file) return;
+  selectedFile = file;
+  document.getElementById('fileInfo').innerHTML = `<b>${file.name}</b> (${(file.size/1024).toFixed(1)} KB)`;
+
+  const reader = new FileReader();
+  reader.onload = e => {
+    fileContent = e.target.result;
+    // Auto-detect format
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'json') document.getElementById('format').value = 'json';
+    else if (ext === 'md') document.getElementById('format').value = 'markdown';
+    else document.getElementById('format').value = 'auto';
+  };
+  reader.readAsText(file);
+}
+
+async function upload() {
+  const btn = document.getElementById('uploadBtn');
+  const key = document.getElementById('apiKey').value.trim();
+  const ns = document.getElementById('namespace').value.trim() || 'default';
+  const fmt = document.getElementById('format').value;
+  const paste = document.getElementById('pasteContent').value.trim();
+  const content = fileContent || paste;
+
+  if (!key) return alert('Enter your API key');
+  if (!content) return alert('Drop a file or paste content first');
+
+  btn.disabled = true;
+  btn.textContent = 'Uploading...';
+
+  try {
+    const resp = await fetch('/v1/memory/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
+      body: JSON.stringify({ content, format: fmt, namespace: ns, filename: selectedFile?.name })
+    });
+    const data = await resp.json();
+
+    const resultDiv = document.getElementById('result');
+    resultDiv.classList.add('show');
+
+    if (data.ok) {
+      const d = data.data;
+      document.getElementById('stats').innerHTML = `
+        <span class="stat"><b>${d.entries_stored}</b> entries stored</span>
+        <span class="stat"><b>${d.format_detected}</b> format</span>
+        <span class="stat"><b>${d.compression_ratio}</b> compression</span>
+        <span class="stat"><b>${(d.total_chars/1024).toFixed(1)}KB</b> input</span>
+        <span class="stat">namespace: <b>${d.namespace}</b></span>
+      `;
+      document.getElementById('resultJson').textContent = JSON.stringify(data, null, 2);
+    } else {
+      document.getElementById('stats').innerHTML = '<span class="stat" style="color:red">Error</span>';
+      document.getElementById('resultJson').textContent = JSON.stringify(data, null, 2);
+    }
+  } catch(e) {
+    alert('Upload failed: ' + e.message);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Upload to Memory';
+  }
+}
+</script>
+
+</body>
+</html>

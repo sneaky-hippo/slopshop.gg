@@ -215,6 +215,10 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a class="sb-link" href="#grok-features">Grok-Specific Features</a>
       <a class="sb-link" href="#safety-guardrails">Safety &amp; Guardrails</a>
       <a class="sb-link" href="#marketplace">Marketplace</a>
+      <a class="sb-link" href="#advanced-research">Advanced Research</a>
+      <a class="sb-link" href="#memory-upload">Memory Upload</a>
+      <a class="sb-link" href="#memory-collaborator">Memory Collaborator</a>
+      <a class="sb-link" href="#dream-tiers">Dream Tiers</a>
       <a class="sb-link" href="#agent-templates-library">Agent Templates</a>
       <a class="sb-link" href="#ecosystem-integrations">Ecosystem Integrations</a>
       <a class="sb-link" href="#self-hosting">Self-Hosting</a>
@@ -1607,6 +1611,78 @@ slop forge build --name="custom-analyzer" --publish=marketplace
 
 # Install a plugin from marketplace
 slop forge install custom-analyzer</code></pre></div>
+
+    <!-- ADVANCED RESEARCH (v3.9.0) -->
+    <h2 id="advanced-research">Advanced Research <span class="badge badge-compute">v3.9.0</span></h2>
+    <p>Multi-tier research engine with configurable depth. Each tier allocates more time, more model passes, and deeper source analysis. Results are automatically stored in memory.</p>
+
+    <h3>Research Tiers</h3>
+    <table class="doc-table">
+      <tr><th>Tier</th><th>Depth</th><th>Dream Interval</th><th>Use Case</th></tr>
+      <tr><td><code>basic</code></td><td>Single-pass summary</td><td>2 hours</td><td>Quick fact checks, simple lookups</td></tr>
+      <tr><td><code>standard</code></td><td>Multi-source synthesis</td><td>1 hour</td><td>Market research, competitive analysis</td></tr>
+      <tr><td><code>advanced</code></td><td>Deep multi-model loop</td><td>30 minutes</td><td>Technical deep-dives, architecture reviews</td></tr>
+      <tr><td><code>deep</code></td><td>Exhaustive with critique loops</td><td>15 minutes</td><td>Comprehensive reports, due diligence</td></tr>
+    </table>
+
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/research \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "Compare agent infrastructure platforms 2026", "tier": "advanced", "namespace": "my-research"}'</code></pre></div>
+    <p>Response includes structured findings, sources, confidence scores, and a memory key for retrieval. The <code>tier</code> parameter controls depth and credit cost.</p>
+
+    <!-- MEMORY UPLOAD (v3.9.0) -->
+    <h2 id="memory-upload">Memory Upload <span class="badge badge-compute">v3.9.0</span></h2>
+    <p>Import files directly into your agent's memory via drag-and-drop or API. Supports Markdown, plain text, JSON, CSV, and code files. Content is chunked, indexed, and made searchable instantly.</p>
+
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/upload \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"content": "# My Project\n\n## Goals\nBuild the best agent backend...", "namespace": "my-project", "filename": "project-notes.md"}'</code></pre></div>
+    <p>Uploaded content is automatically chunked for vector search and tagged with the filename. Use <code>memory-search</code> to find relevant chunks later.</p>
+
+    <!-- MEMORY COLLABORATOR (v3.9.0) -->
+    <h2 id="memory-collaborator">Memory Collaborator <span class="badge badge-compute">v3.9.0</span></h2>
+    <p>Share memory namespaces between agents and API keys. Invite collaborators to read or write to your namespaces. Enables multi-agent workflows where agents share persistent state.</p>
+
+    <h3>Invite a Collaborator</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/collaborator/invite \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "shared-research", "invitee_key": "sk_other_agent", "permissions": "read-write"}'</code></pre></div>
+
+    <h3>Accept an Invitation</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/collaborator/accept \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"invite_id": "INV-abc123"}'</code></pre></div>
+
+    <h3>List &amp; Revoke</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># List collaborators on a namespace
+curl https://slopshop.gg/v1/memory/collaborator/list \
+  -H "Authorization: Bearer $KEY" \
+  -G -d "namespace=shared-research"
+
+# Revoke access
+curl -X POST https://slopshop.gg/v1/memory/collaborator/revoke \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "shared-research", "collaborator_key": "sk_other_agent"}'</code></pre></div>
+
+    <!-- DREAM TIERS (v3.9.0) -->
+    <h2 id="dream-tiers">Dream Tiers <span class="badge badge-compute">v3.9.0</span></h2>
+    <p>Memory dreaming runs in the background, consolidating, linking, and evolving your agent's memories. Dream frequency scales with research tier:</p>
+    <table class="doc-table">
+      <tr><th>Tier</th><th>Dream Interval</th><th>What Happens</th></tr>
+      <tr><td><code>basic</code></td><td>Every 2 hours</td><td>Tag consolidation, duplicate removal</td></tr>
+      <tr><td><code>standard</code></td><td>Every 1 hour</td><td>Cross-reference linking, gap detection</td></tr>
+      <tr><td><code>advanced</code></td><td>Every 30 minutes</td><td>Insight synthesis, contradiction flagging</td></tr>
+      <tr><td><code>deep</code></td><td>Every 15 minutes</td><td>Full knowledge graph evolution, priority re-ranking</td></tr>
+    </table>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/evolve/start \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "my-research", "tier": "advanced"}'</code></pre></div>
 
     <!-- AGENT TEMPLATES (v3.8.0) -->
     <h2 id="agent-templates-library">Agent Templates <span class="badge badge-compute">v3.8.0</span></h2>

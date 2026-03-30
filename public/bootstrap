@@ -1,0 +1,15 @@
+#!/usr/bin/env bash
+set -e
+echo "🦞 Slopshop Agent Bootstrap"
+NAMESPACE="${1:-my-world}"
+EMAIL="${2:-agent-$(date +%s)@slopshop.local}"
+
+if ! command -v slop >/dev/null 2>&1; then
+  echo "→ Installing slopshop CLI..."
+  npm install -g slopshop@latest 2>/dev/null || npx slopshop@latest --version
+fi
+
+echo "→ Bootstrapping namespace '$NAMESPACE'..."
+slop signup --email="$EMAIL" 2>/dev/null || true
+slop call memory-set -d "{\"namespace\":\"$NAMESPACE\",\"key\":\"bootstrap\",\"value\":\"$(date -Iseconds)\"}"
+echo "✅ Slopshop entered your world. Namespace: $NAMESPACE"

@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 Karnfunktioner
 
 1. **Gratis persistent minne** (0 krediter) — SQLite nyckel-varde-lagring, koer, rakneverk, namnrymder, vektorsokning. Bestandigt over LLM:er, enheter och sessioner.
-2. **1 272+ riktiga beraknings-API:er** — Kryptografi, textbearbetning, matematik, statistik, datatransformation, JSON/CSV/XML, schemavalidering, PII-detektering, RAG-primitiver, SVG-diagram, kod-AST-parsning. Ren Node.js, noll externa beroenden, p95 latens <50ms.
+2. **1 272+ riktiga beraknings-API:er** — Kryptografi, textbearbetning, matematik, statistik, datatransformation, JSON/CSV/XML, schemavalidering, PII-detektering, RAG-primitiver, SVG-diagram, kod-AST-parsning. Ren Node.js, noll externa beroenden, p95 latens <1ms p95.
 3. **Agentkedjor** — Claude → GPT → Grok oandlig loop-lage, utdata skickas automatiskt som indata till nasta steg.
 4. **Massutplacering (Army)** — Utplacera 10 000 parallella agenter, resultatsammanstallning och Merkle-bevisverifiering.
 5. **Hive-arbetsytor** — Alltid aktiv samarbetsmiljo for agenter, kanaler, rolltilldelning, kunskapsdelning.

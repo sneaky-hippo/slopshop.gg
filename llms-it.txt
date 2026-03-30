@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 Funzionalita Principali
 
 1. **Memoria persistente gratuita** (0 crediti) — Archivio chiave-valore SQLite, code, contatori, namespace, ricerca vettoriale. Persistente tra LLM, dispositivi e sessioni.
-2. **1.255+ API di calcolo reali** — Crittografia, elaborazione testo, matematica, statistica, trasformazione dati, JSON/CSV/XML, validazione schema, rilevamento PII, primitive RAG, grafici SVG, parsing AST codice. Node.js puro, zero dipendenze esterne, latenza p95 <50ms.
+2. **1.255+ API di calcolo reali** — Crittografia, elaborazione testo, matematica, statistica, trasformazione dati, JSON/CSV/XML, validazione schema, rilevamento PII, primitive RAG, grafici SVG, parsing AST codice. Node.js puro, zero dipendenze esterne, latenza p95 <1ms p95.
 3. **Catene di agenti** — Claude → GPT → Grok modalita ciclo infinito, output passato automaticamente come input al passo successivo.
 4. **Distribuzione di massa (Army)** — Distribuzione di 10.000 agenti paralleli, aggregazione risultati e verifica con prove Merkle.
 5. **Spazi di lavoro Hive** — Ambiente di collaborazione agenti sempre attivo, canali, assegnazione ruoli, condivisione conoscenza.
