@@ -1136,7 +1136,9 @@ async function senseDnsPropagation(input) {
   const results = await Promise.all(resolvers.map(resolver => new Promise(resolve => {
     const r = new dns.Resolver();
     r.setServers([resolver]);
+    const timer = setTimeout(() => resolve({ resolver, addresses: [], error: 'timeout' }), 5000);
     r.resolve4(domain, (err, addresses) => {
+      clearTimeout(timer);
       if (err) resolve({ resolver, addresses: [], error: err.message });
       else resolve({ resolver, addresses });
     });

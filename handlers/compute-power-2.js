@@ -346,20 +346,24 @@ const handlers = {
     return {_engine:'real',task:t,subtasks:subtasks.slice(0,ms),count:Math.min(subtasks.length,ms)};
   },
 
-  'task-prioritize': ({tasks}) => {
-    const ts=tasks||[];
-    const scored=ts.map(t=>({...t,
-      urgency_score:t.deadline?Math.max(0,10-Math.round((new Date(t.deadline)-Date.now())/86400000)):5,
-      impact_score:t.impact||5,
-      effort_score:10-(t.effort||5),
-      total:0
-    }));
+  'task-prioritize': (input) => {
+    const ts=input.tasks||input.items||[];
+    const scored=ts.map(t=>{
+      const task=typeof t==='string'?{name:t}:t;
+      return {...task,
+        urgency_score:task.deadline?Math.max(0,10-Math.round((new Date(task.deadline)-Date.now())/86400000)):5,
+        impact_score:task.impact||5,
+        effort_score:10-(task.effort||5),
+        total:0
+      };
+    });
     scored.forEach(t=>t.total=t.urgency_score*0.4+t.impact_score*0.4+t.effort_score*0.2);
     return {_engine:'real',prioritized:scored.sort((a,b)=>b.total-a.total),count:scored.length};
   },
 
-  'task-estimate': ({description, complexity}) => {
-    const c=complexity||'medium';
+  'task-estimate': (input) => {
+    const description=input.description||input.task||input.text||'';
+    const c=input.complexity||'medium';
     const estimates={trivial:{min:5,likely:15,max:30},easy:{min:15,likely:30,max:60},medium:{min:30,likely:120,max:240},hard:{min:120,likely:480,max:960},extreme:{min:480,likely:1440,max:2880}};
     const e=estimates[c]||estimates.medium;
     const pert=Math.round((e.min+4*e.likely+e.max)/6);
@@ -367,9 +371,10 @@ const handlers = {
   },
 
   // ─── DATA & CONVERSION UTILITIES ────────────────────────
-  'data-csv-to-json': ({csv, delimiter, has_header}) => {
-    const d=delimiter||',';const hh=has_header!==false;
-    const lines=(csv||'').split('\n').filter(l=>l.trim());
+  'data-csv-to-json': (input) => {
+    const csv=input.csv||input.data||(typeof input.text==='string'?input.text:'');
+    const d=input.delimiter||',';const hh=input.has_header!==false;
+    const lines=(typeof csv==='string'?csv:'').split('\n').filter(l=>l.trim());
     if(!lines.length)return {_engine:'real',rows:[],count:0};
     const headers=hh?lines[0].split(d).map(h=>h.trim()):lines[0].split(d).map((_,i)=>'col_'+i);
     const dataLines=hh?lines.slice(1):lines;
@@ -377,18 +382,21 @@ const handlers = {
     return {_engine:'real',rows,count:rows.length,columns:headers};
   },
 
-  'data-json-to-csv': ({data, columns}) => {
-    const d=data||[];if(!d.length)return {_engine:'real',csv:'',count:0};
+  'data-json-to-csv': (input) => {
+    const data=input.data||input.json||input.rows||[];
+    const columns=input.columns;
+    const d=Array.isArray(data)?data:[];if(!d.length)return {_engine:'real',csv:'',count:0};
     const cols=columns||Object.keys(d[0]);
     const header=cols.join(',');
     const rows=d.map(r=>cols.map(c=>{const v=String(r[c]||'');return v.includes(',')?'"'+v+'"':v;}).join(','));
     return {_engine:'real',csv:header+'\n'+rows.join('\n'),count:d.length,columns:cols};
   },
 
-  'data-flatten-object': ({obj, delimiter}) => {
-    const sep=delimiter||'.';
+  'data-flatten-object': (input) => {
+    const obj=input.obj||input.json||input.data||input.object||{};
+    const sep=input.delimiter||'.';
     const flatten=(o,prefix='')=>{const result={};for(const [k,v] of Object.entries(o||{})){const key=prefix?prefix+sep+k:k;if(v&&typeof v==='object'&&!Array.isArray(v))Object.assign(result,flatten(v,key));else result[key]=v;}return result;};
-    const flat=flatten(obj||{});
+    const flat=flatten(obj);
     return {_engine:'real',flattened:flat,keys:Object.keys(flat).length,max_depth:Math.max(...Object.keys(flat).map(k=>k.split(sep).length))};
   },
 
