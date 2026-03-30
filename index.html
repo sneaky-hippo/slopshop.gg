@@ -6,8 +6,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="dns-prefetch" href="https://slopshop-production.up.railway.app">
-<title>Slopshop — The Missing Backend for AI Agents</title>
-<meta name="description" content="Slopshop gives AI agents tools, persistent memory, scheduling, and execution in one platform. Use it from MCP, API, or CLI to build useful agent workflows.">
+<title>Slopshop — The Self-Hostable MCP Agent Runtime OS for the Computer-Use Era</title>
+<meta name="description" content="The Self-Hostable MCP Agent Runtime OS for the Computer-Use Era. 1,303 real tools, free evolving memory, NIST-aligned agent identity, computer use backend, visual DAG workflows, and Army-scale orchestration. One API key.">
 <meta name="keywords" content="AI agent tools, agent API, MCP tools, agent memory, agent scheduling, agent execution, tool server, developer tools, slopshop, credit-based API, self-hostable, Claude tools, LLM tools, autonomous agent, function calling, AI agent platform">
 <link rel="canonical" href="https://slopshop.gg/">
 <link rel="alternate" hreflang="en" href="https://slopshop.gg/">
@@ -490,20 +490,23 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
      /____/_____/\____/_/
 <span style="color:var(--t4);font-size:0.5em;letter-spacing:0.15em">  S T A T E L E S S · L I G H T W E I G H T
   O P E R A T I N G · P R I M I T I V E S</span>
-<span style="color:var(--t3);font-size:0.45em">          slopshop.gg  v0.1-alpha</span></pre>
+<span style="color:var(--t3);font-size:0.45em">          slopshop.gg  v3.7.0 · MCP Agent Runtime OS</span></pre>
 
-    <h1><span class="white">The backend</span> <span class="accent">your agents need.</span></h1>
-    <p class="sub" style="max-width:560px">
-      Tools, persistent memory, scheduling, and execution — one platform, one API key. Connect from MCP, API, or CLI.
+    <div class="hero-tag">&#x26A1; MCP Agent Runtime OS &middot; Computer-Use Era</div>
+
+    <h1><span class="white">Claude controls the screen.</span><br><span class="accent">Slopshop runs the brain.</span></h1>
+    <p class="sub" style="max-width:640px">
+      The self-hostable MCP Agent Runtime OS for the Computer-Use Era. <b>Free evolving memory</b>, 1,303 deterministic tools, zero-trust agent identity, visual DAG workflows, and Army-scale orchestration — while Claude handles the desktop. NIST-aligned. Self-hostable. One API key.
     </p>
 
     <div class="hero-ctas" style="margin-top:32px">
       <a href="/signup" class="cta-primary">Start Free</a>
       <a href="/getting-started" class="cta-secondary">See Quickstart</a>
+      <a href="/docs#agent-runtime-os" class="cta-secondary" style="border-color:rgba(167,139,250,0.3);color:var(--o)">Runtime OS Docs &#x2197;</a>
     </div>
 
     <div style="text-align:center;margin-top:16px;font-size:0.68rem;color:var(--t3);font-family:var(--mono)">
-      500 free credits &middot; No subscription required &middot; MCP + API + CLI &middot; Free core memory APIs
+      500 free credits &middot; NIST-aligned identity &middot; MCP + API + CLI &middot; Free evolving memory &middot; Self-hostable forever
     </div>
 
     <!-- Install commands -->
@@ -513,6 +516,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop signup')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop signup</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># 500 free credits</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;hash hello world with sha256&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "hash hello world with sha256"</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># natural language routing</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop mcp serve')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop mcp serve</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Claude Code, Cursor, Goose</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'curl -X POST slopshop.gg/v1/identity/issue -H &quot;Authorization: Bearer $KEY&quot; -d &apos;{&quot;agent_id&quot;:&quot;my-agent&quot;,&quot;capabilities&quot;:[&quot;tools&quot;]}&apos;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop identity issue --agent my-agent</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># NIST identity</span></div>
       </div>
     </div>
   </div>
@@ -563,6 +567,27 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
       <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">POST /v1/schedules
   {"slug":"sense-url-tech-stack","interval":"6h",
    "body":{"url":"https://competitor.com"}}</div>
+    </div>
+
+    <!-- Computer Use Backend -->
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--v);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s;position:relative" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="position:absolute;top:16px;right:16px;background:var(--vg);border:1px solid rgba(129,140,248,0.2);color:var(--v);padding:2px 8px;border-radius:99px;font-size:0.58rem;font-weight:600;font-family:var(--mono)">NEW v3.7</div>
+      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--v);margin-bottom:10px">Computer Use Backend</div>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">While Claude clicks and types on your desktop, Slopshop persists memory across sessions, records actions, runs pixel-diff verification, and gates on human approval.</p>
+      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">POST /v1/computer-use/session/start
+  {"name":"organize-downloads","task":"batch resize images"}
+POST /v1/computer-use/screenshot  # OCR + pixel-diff
+POST /v1/computer-use/replay      # export Python/JSON</div>
+    </div>
+
+    <!-- Agent Identity -->
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--r);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s;position:relative" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="position:absolute;top:16px;right:16px;background:var(--rg);border:1px solid rgba(6,182,212,0.2);color:var(--r2);padding:2px 8px;border-radius:99px;font-size:0.58rem;font-weight:600;font-family:var(--mono)">NIST</div>
+      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--r);margin-bottom:10px">Agent Identity</div>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">SPIFFE/SVID tokens, Agent Name Service (ANS) registry, reputation scoring (0–10), A2A typed messaging. Zero-trust identity for production multi-agent systems.</p>
+      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">POST /v1/identity/issue  # SVID JWT
+POST /v1/ans/register    # discovery
+POST /v1/reputation/signal {"signal":"success"}</div>
     </div>
 
   </div>
@@ -779,9 +804,13 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
           <div style="font-family:var(--mono);font-size:1.2rem;font-weight:600;color:var(--g)">Free</div>
           <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">Core Memory</div>
         </div>
-        <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center">
+        <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center;border-right:1px solid var(--b)">
           <div style="font-family:var(--mono);font-size:1.2rem;font-weight:600;color:var(--c)">&lt;1ms</div>
           <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">p95 Handler</div>
+        </div>
+        <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center">
+          <div style="font-family:var(--mono);font-size:1.2rem;font-weight:600;color:var(--v)">NIST</div>
+          <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">Aligned</div>
         </div>
       </div>
     </div>
