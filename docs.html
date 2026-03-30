@@ -219,6 +219,11 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a class="sb-link" href="#memory-upload">Memory Upload</a>
       <a class="sb-link" href="#memory-collaborator">Memory Collaborator</a>
       <a class="sb-link" href="#dream-tiers">Dream Tiers</a>
+      <a class="sb-link" href="#dream-engine">Dream Engine v4.0 ✨</a>
+      <a class="sb-link" href="#research-engine">Research Engine</a>
+      <a class="sb-link" href="#state-management">State Management</a>
+      <a class="sb-link" href="#files-api">Files API</a>
+      <a class="sb-link" href="#schedule-management">Schedule Management v4.0</a>
       <a class="sb-link" href="#agent-templates-library">Agent Templates</a>
       <a class="sb-link" href="#ecosystem-integrations">Ecosystem Integrations</a>
       <a class="sb-link" href="#northstar">North Star</a>
@@ -257,7 +262,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
 <span style="color:#52525b"> S T A T E L E S S · L I G H T W E I G H T
  O P E R A T I N G · P R I M I T I V E S</span>
 
-<span style="color:#3f3f46;font-size:0.9em">        slopshop.gg  v0.1-alpha</span></pre>
+<span style="color:#3f3f46;font-size:0.9em">        slopshop.gg  v4.0 · AI Agent OS</span></pre>
     </div>
 
     <!-- GETTING STARTED -->
@@ -1767,6 +1772,171 @@ curl -X POST https://slopshop.gg/v1/memory/collaborator/revoke \
   -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" \
   -d '{"namespace": "my-research", "tier": "advanced"}'</code></pre></div>
+
+    <!-- DREAM ENGINE v4.0 -->
+    <h2 id="dream-engine">Dream Engine v4.0 <span class="badge badge-compute">v4.0</span></h2>
+    <p>The Dream Engine is Slopshop's background research and insight system. It runs scheduled research tasks, synthesizes insights from your data, and surfaces actionable intelligence — all while you sleep. Subscribe to topics, trigger manual runs, share insights, and deploy them into your agent's memory.</p>
+
+    <h3>Subscribe to a Research Topic</h3>
+    <p>Subscribe your agent to a topic and Slopshop will research it on a schedule. Supports natural language intervals.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/dream/subscribe \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"topic": "AI agent infrastructure trends", "schedule": "daily"}'
+
+# schedule options: "hourly", "daily", "every 30 minutes", "every 6 hours", etc.
+
+# CLI shorthand
+slop dream subscribe "AI agent infrastructure" --schedule daily</code></pre></div>
+
+    <h3>List Your Dream Insights</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>GET /v1/dream/insights
+Authorization: Bearer $KEY
+
+# Returns all dreams for your API key with status, topic, and insight content</code></pre></div>
+
+    <h3>Manually Trigger Research</h3>
+    <p>Don't wait for the scheduler — trigger a dream run immediately.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/dream/run \
+  -H "Authorization: Bearer $KEY"
+
+# Runs in background via setImmediate, returns immediately</code></pre></div>
+
+    <h3>Share a Dream</h3>
+    <p>Mark a dream insight as publicly shareable. Shared dreams appear in <code>GET /v1/dream/shared</code> (only explicitly shared dreams — no security leaks).</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/dream/share/dream_abc123 \
+  -H "Authorization: Bearer $KEY"
+
+# GET /v1/dream/shared — returns only dreams with shared: true</code></pre></div>
+
+    <h3>Deploy / Dismiss Insights</h3>
+    <p>Deploy insights into your agent memory, or dismiss them. Supports bulk operations.</p>
+    <div class="code-block"><div class="code-header"><span>Endpoints</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Deploy a single insight
+POST /v1/dream/deploy  {"dream_id": "dream_abc123"}
+
+# Deploy multiple by insight IDs
+POST /v1/dream/deploy  {"insight_ids": ["dream_abc123", "dream_xyz456"]}
+
+# Deploy all pending insights
+POST /v1/dream/deploy  {"deploy_all": true}
+
+# Dismiss (same pattern)
+POST /v1/dream/dismiss  {"dream_id": "dream_abc123"}
+POST /v1/dream/dismiss  {"insight_ids": [...]}
+POST /v1/dream/dismiss  {"dismiss_all": true}</code></pre></div>
+
+    <h3>Manage Subscriptions</h3>
+    <div class="code-block"><div class="code-header"><span>Endpoints</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>GET  /v1/dream/subscriptions          — List all subscriptions
+GET  /v1/dream/subscriptions/:id      — Get single subscription
+PATCH /v1/dream/subscribe/:id         — Update interval or active status
+DELETE /v1/dream/unsubscribe/:id      — Remove a subscription</code></pre></div>
+
+    <!-- RESEARCH ENGINE -->
+    <h2 id="research-engine">Research Engine <span class="badge badge-compute">v4.0</span></h2>
+    <p>Run deep research on any topic and automatically persist results to memory for future retrieval. Combine with the Dream Engine for scheduled research workflows.</p>
+
+    <h3>Run Research</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/research \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "latest MCP agent frameworks 2026", "depth": "deep"}'
+
+# Results are automatically stored in memory namespace 'research'</code></pre></div>
+
+    <h3>Research History</h3>
+    <p>Retrieve your past research results. Returns the last 20 by default, sorted by recency.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>GET /v1/research/history?limit=20
+Authorization: Bearer $KEY
+
+# Returns stored research results from memory namespace 'research'</code></pre></div>
+
+    <!-- STATE MANAGEMENT -->
+    <h2 id="state-management">State Management <span class="badge badge-compute">v4.0</span></h2>
+    <p>Persistent key-value state for your agents, isolated per API key. Supports atomic increment for counters and rate tracking.</p>
+
+    <h3>Set / Get State</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Set state
+curl -X POST https://slopshop.gg/v1/state/my-counter \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"value": 0}'
+
+# Get state
+GET /v1/state/my-counter</code></pre></div>
+
+    <h3>List All State Keys</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>GET /v1/state
+Authorization: Bearer $KEY
+
+# Returns all state key-value pairs for your API key</code></pre></div>
+
+    <h3>Atomic Increment</h3>
+    <p>Increment a numeric state value atomically. Safe for concurrent agent use.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/state/page-views/increment \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"by": 1}'
+
+# by is optional, defaults to 1
+# Returns: {"key": "page-views", "value": 42, "previous": 41}</code></pre></div>
+
+    <!-- FILES API -->
+    <h2 id="files-api">Files API <span class="badge badge-compute">v4.0</span></h2>
+    <p>Upload, download, manage, and search files within Slopshop. Full CRUD including rename, copy, and full-text search.</p>
+
+    <h3>Upload a File</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/files/upload \
+  -H "Authorization: Bearer $KEY" \
+  -F "file=@report.pdf"</code></pre></div>
+
+    <h3>List &amp; Search Files</h3>
+    <div class="code-block"><div class="code-header"><span>Endpoints</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>GET /v1/files                    — List all files
+GET /v1/files?search=report      — Search by filename
+GET /v1/files?tag=research       — Filter by tag
+GET /v1/files/search?q=report    — Full-text search endpoint</code></pre></div>
+
+    <h3>File Operations</h3>
+    <div class="code-block"><div class="code-header"><span>Endpoints</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Delete
+DELETE /v1/files/:id
+
+# Rename
+POST /v1/files/:id/rename
+{"filename": "new-report.pdf"}
+
+# Copy
+POST /v1/files/:id/copy
+{"filename": "report-copy.pdf"}   # optional new filename</code></pre></div>
+
+    <!-- SCHEDULE MANAGEMENT v4.0 -->
+    <h2 id="schedule-management">Schedule Management v4.0 <span class="badge badge-compute">v4.0</span></h2>
+    <p>Create, manage, and monitor scheduled agent tasks with full run history, pause/resume controls, and manual triggers. Credits are deducted per run and persisted to your balance.</p>
+
+    <h3>Create a Schedule</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/schedules \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Daily report",
+    "cron": "0 9 * * *",
+    "task": "crypto-hash-sha256",
+    "input": {"data": "daily-seed"}
+  }'</code></pre></div>
+
+    <h3>Get a Single Schedule</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>GET /v1/schedules/:id
+Authorization: Bearer $KEY</code></pre></div>
+
+    <h3>Run History</h3>
+    <p>Every schedule run is logged to the <code>schedule_runs</code> table with timestamp, status, error (if any), and credits used.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>GET /v1/schedules/:id/history?limit=50
+Authorization: Bearer $KEY
+
+# Returns: [{ran_at, status, credits_used, error}, ...]</code></pre></div>
+
+    <h3>Pause / Resume / Trigger</h3>
+    <div class="code-block"><div class="code-header"><span>Endpoints</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>POST /v1/schedules/:id/pause    — Disable schedule (sets enabled=false)
+POST /v1/schedules/:id/resume   — Re-enable schedule
+POST /v1/schedules/:id/trigger  — Run immediately (sets next_run to now)</code></pre></div>
 
     <!-- AGENT TEMPLATES (v3.8.0) -->
     <h2 id="agent-templates-library">Agent Templates <span class="badge badge-compute">v3.8.0</span></h2>
