@@ -272,5 +272,110 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey) {
     res.json({ revoked: targetKey, status: 'deleted' });
   });
 
-  console.log('  🔐 Auth: signup, login, rotate-key, me, create-scoped-key, keys, revoke-key');
+  // ═══ SESSION-BASED AUTH — for web dashboard (cookie + ephemeral token) ═══
+  db.exec(`CREATE TABLE IF NOT EXISTS sessions (
+    token TEXT PRIMARY KEY,
+    api_key TEXT NOT NULL,
+    user_id TEXT NOT NULL,
+    email TEXT,
+    created INTEGER NOT NULL,
+    expires INTEGER NOT NULL,
+    ip TEXT
+  )`);
+
+  // POST /v1/auth/session — Create a web session from API key or email+password
+  // Returns a session token that can be used as Bearer OR set as cookie
+  app.post('/v1/auth/session', (req, res) => {
+    const { email, password, api_key } = req.body;
+    let user, key;
+
+    if (api_key) {
+      // Auth via API key
+      user = findUserByKey(api_key);
+      key = api_key;
+    } else if (email && password) {
+      // Auth via email+password
+      user = dbGetUser.get(email);
+      if (!user) return res.status(401).json({ error: { code: 'invalid_credentials' } });
+      const hash = hashPassword(password, user.salt);
+      const hashBuf = Buffer.from(hash);
+      const storedBuf = Buffer.from(user.password_hash);
+      if (hashBuf.length !== storedBuf.length || !crypto.timingSafeEqual(hashBuf, storedBuf)) {
+        return res.status(401).json({ error: { code: 'invalid_credentials' } });
+      }
+      key = user.api_key;
+    } else {
+      // Check Bearer header
+      const auth = req.headers.authorization;
+      if (auth && auth.startsWith('Bearer ')) {
+        key = auth.slice(7);
+        user = findUserByKey(key);
+      }
+    }
+
+    if (!user || !key) return res.status(401).json({ error: { code: 'auth_required', message: 'Provide email+password, api_key, or Bearer token' } });
+
+    const sessionToken = 'sess-' + crypto.randomBytes(32).toString('hex');
+    const now = Date.now();
+    const expires = now + 7 * 24 * 3600000; // 7 days
+
+    db.prepare('INSERT INTO sessions (token, api_key, user_id, email, created, expires, ip) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+      sessionToken, key, user.id, user.email, now, expires, req.ip
+    );
+
+    // Set cookie for web dashboard
+    res.cookie('slop_session', sessionToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production' || !!process.env.RAILWAY_ENVIRONMENT,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 3600000,
+      path: '/',
+    });
+
+    res.json({
+      ok: true,
+      session_token: sessionToken,
+      expires_in: '7 days',
+      user: { id: user.id, email: user.email },
+      balance: apiKeys.get(key)?.balance || 0,
+      note: 'Use this token as Bearer header OR it is set as httpOnly cookie for dashboard.',
+    });
+  });
+
+  // GET /v1/auth/session — Check current session
+  app.get('/v1/auth/session', (req, res) => {
+    const token = req.cookies?.slop_session || (req.headers.authorization?.startsWith('Bearer sess-') ? req.headers.authorization.slice(7) : null);
+    if (!token) return res.status(401).json({ error: { code: 'no_session' } });
+
+    const session = db.prepare('SELECT * FROM sessions WHERE token = ? AND expires > ?').get(token, Date.now());
+    if (!session) return res.status(401).json({ error: { code: 'session_expired' } });
+
+    const user = findUserByKey(session.api_key);
+    const acct = apiKeys.get(session.api_key);
+
+    res.json({
+      ok: true,
+      user: user ? { id: user.id, email: user.email } : null,
+      balance: acct?.balance || 0,
+      tier: acct?.tier || 'free',
+      session_expires: session.expires,
+    });
+  });
+
+  // POST /v1/auth/logout — Destroy session
+  app.post('/v1/auth/logout', (req, res) => {
+    const token = req.cookies?.slop_session || (req.headers.authorization?.startsWith('Bearer sess-') ? req.headers.authorization.slice(7) : null);
+    if (token) {
+      db.prepare('DELETE FROM sessions WHERE token = ?').run(token);
+      res.clearCookie('slop_session');
+    }
+    res.json({ ok: true, logged_out: true });
+  });
+
+  // Clean expired sessions periodically
+  setInterval(() => {
+    try { db.prepare('DELETE FROM sessions WHERE expires < ?').run(Date.now()); } catch(e) {}
+  }, 3600000); // every hour
+
+  console.log('  🔐 Auth: signup, login, rotate-key, me, create-scoped-key, keys, revoke-key, session, logout');
 };

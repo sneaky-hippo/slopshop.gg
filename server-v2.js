@@ -53,6 +53,7 @@ app.use(cors({
   maxAge: 86400,
 }));
 app.use(express.json({ limit: '1mb' })); // 1MB max request body
+app.use(require('cookie-parser')()); // Session cookies for dashboard
 // Ensure req.body is always an object (prevents destructuring crashes if body is null/undefined)
 app.use((req, res, next) => { if (!req.body || typeof req.body !== 'object') req.body = {}; next(); });
 app.set('trust proxy', 1); // trust Railway/Vercel proxy for IP
@@ -738,7 +739,17 @@ log.info('API keys initialized', { dbKeys: keyCount, memoryKeys: apiKeys.size })
 // Migration path: once all keys are rotated/re-issued, drop the plaintext 'key' column.
 
 function auth(req, res, next) {
-  const h = req.headers.authorization;
+  let h = req.headers.authorization;
+
+  // Session cookie fallback for web dashboard
+  if ((!h || !h.startsWith('Bearer ')) && req.cookies?.slop_session) {
+    const sessToken = req.cookies.slop_session;
+    try {
+      const sess = db.prepare('SELECT * FROM sessions WHERE token = ? AND expires > ?').get(sessToken, Date.now());
+      if (sess) h = 'Bearer ' + sess.api_key;
+    } catch(e) {}
+  }
+
   if (!h || !h.startsWith('Bearer ')) {
     log.warn('Auth failure: missing or malformed header', { ip: req.ip, path: req.path });
     return res.status(401).json({ error: { code: 'auth_required', message: 'Set Authorization: Bearer <key>', demo_key: 'sk-slop-demo-key-12345678', signup: 'POST /v1/auth/signup' } });
@@ -3066,6 +3077,162 @@ app.get('/v1/research/tiers', publicRateLimit, (req, res) => {
     deepseek: 'Chinese-web research (小红书, 知乎, 微信, B站)',
     openai: 'Broad internet research & creative connections',
   }});
+});
+
+// ═══ NORTH STAR — one-sentence goal triggers research swarm ═══
+
+// POST /v1/northstar/set — Set your North Star goal
+app.post('/v1/northstar/set', auth, async (req, res) => {
+  const { goal, namespace } = req.body;
+  if (!goal) return res.status(400).json({ error: { code: 'missing_goal', message: 'Tell us your North Star in one sentence' } });
+
+  const ns = namespace || 'northstar';
+
+  // Store the goal
+  try {
+    const storeData = JSON.stringify({ key: 'northstar_goal', value: goal, namespace: ns, tags: 'northstar,goal' });
+    await new Promise((resolve, reject) => {
+      const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-set', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(storeData), 'Authorization': req.headers.authorization }, timeout: 5000
+      }, res2 => { let b = ''; res2.on('data', c => b += c); res2.on('end', () => resolve(b)); });
+      r.on('error', reject); r.write(storeData); r.end();
+    });
+  } catch(e) {}
+
+  // Trigger initial lightweight research
+  let research = null;
+  try {
+    research = await executeResearch(goal, { tier: 'basic', context: '', timeframe: 'recent' });
+  } catch(e) { research = { error: e.message }; }
+
+  // Store research results
+  try {
+    const resData = JSON.stringify({ key: 'northstar_initial_research', value: JSON.stringify(research), namespace: ns, tags: 'northstar,research' });
+    await new Promise((resolve) => {
+      const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-set', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(resData), 'Authorization': req.headers.authorization }, timeout: 10000
+      }, res2 => { let b = ''; res2.on('data', c => b += c); res2.on('end', () => resolve(b)); });
+      r.on('error', () => resolve(null)); r.write(resData); r.end();
+    });
+  } catch(e) {}
+
+  res.json({
+    ok: true,
+    data: {
+      _engine: 'real',
+      goal,
+      namespace: ns,
+      research_summary: research ? {
+        providers_used: research.providers_used || 0,
+        findings_count: (research.findings || []).length,
+        total_chars: research.total_chars || 0,
+      } : null,
+      next_steps: [
+        'View findings: POST /v1/memory-get {key: "northstar_initial_research", namespace: "' + ns + '"}',
+        'Set up daily research: POST /v1/dream/subscribe {topic: "' + goal.slice(0, 50) + '", tier: "standard"}',
+        'View dashboard: /dashboard',
+      ],
+      credits_used: research ? (research.credits_used || 20) : 0,
+    }
+  });
+});
+
+// GET /v1/northstar — Get current North Star
+app.get('/v1/northstar', auth, async (req, res) => {
+  try {
+    const getData = JSON.stringify({ key: 'northstar_goal', namespace: 'northstar' });
+    const result = await new Promise((resolve) => {
+      const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-get', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(getData), 'Authorization': req.headers.authorization }, timeout: 5000
+      }, res2 => { let b = ''; res2.on('data', c => b += c); res2.on('end', () => { try { resolve(JSON.parse(b)); } catch(e) { resolve(null); } }); });
+      r.on('error', () => resolve(null)); r.write(getData); r.end();
+    });
+    const goal = result?.data?.value;
+    res.json({ ok: true, data: { goal: goal || null, set: !!goal, namespace: 'northstar' } });
+  } catch(e) {
+    res.json({ ok: true, data: { goal: null, set: false } });
+  }
+});
+
+// POST /v1/hive/daily-intelligence — Run daily intelligence cycle
+app.post('/v1/hive/daily-intelligence', auth, async (req, res) => {
+  const { mode, hive_id } = req.body;
+  const tier = mode === 'deep' ? 'deep' : mode === 'medium' ? 'standard' : 'basic';
+  const tierConfig = RESEARCH_TIERS[tier];
+
+  if (req.acct.balance < tierConfig.credits) {
+    return res.status(402).json({ error: { code: 'insufficient_credits', need: tierConfig.credits, have: req.acct.balance, modes: { light: '20cr', medium: '35cr', deep: '75cr' } } });
+  }
+
+  // Get North Star goal
+  let goal = 'general market intelligence';
+  try {
+    const getData = JSON.stringify({ key: 'northstar_goal', namespace: 'northstar' });
+    const result = await new Promise((resolve) => {
+      const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-get', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(getData), 'Authorization': req.headers.authorization }, timeout: 5000
+      }, res2 => { let b = ''; res2.on('data', c => b += c); res2.on('end', () => { try { resolve(JSON.parse(b)); } catch(e) { resolve(null); } }); });
+      r.on('error', () => resolve(null)); r.write(getData); r.end();
+    });
+    if (result?.data?.value) goal = result.data.value;
+  } catch(e) {}
+
+  // Deduct credits
+  req.acct.balance -= tierConfig.credits;
+  persistKey(req.apiKey);
+
+  // Run research
+  const research = await executeResearch(goal + ' — daily intelligence update: what changed in the last 24 hours?', {
+    tier, timeframe: 'last 24 hours', context: ''
+  });
+
+  // Store in memory
+  const briefKey = 'daily_brief_' + new Date().toISOString().split('T')[0];
+  try {
+    const storeData = JSON.stringify({ key: briefKey, value: JSON.stringify({
+      date: new Date().toISOString(),
+      mode,
+      goal,
+      findings: research.findings,
+      providers_used: research.providers_used,
+      credits_used: tierConfig.credits,
+    }), namespace: 'northstar', tags: 'daily-brief,intelligence' });
+    await new Promise((resolve) => {
+      const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-set', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(storeData), 'Authorization': req.headers.authorization }, timeout: 5000
+      }, res2 => { let b = ''; res2.on('data', c => b += c); res2.on('end', () => resolve(b)); });
+      r.on('error', () => resolve(null)); r.write(storeData); r.end();
+    });
+  } catch(e) {}
+
+  // Post to Hive if hive_id provided
+  if (hive_id) {
+    try {
+      const hiveData = JSON.stringify({ channel: 'research', message: `Daily ${mode || 'light'} intelligence brief for: "${goal.slice(0, 100)}"\n\nProviders used: ${research.providers_used}\nFindings: ${(research.findings || []).length}\n\n${(research.findings || []).map(f => `[${f.provider}] ${(f.response || '').slice(0, 200)}`).join('\n\n')}` });
+      await new Promise((resolve) => {
+        const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/hive/' + hive_id + '/send', method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(hiveData), 'Authorization': req.headers.authorization }, timeout: 5000
+        }, res2 => { let b = ''; res2.on('data', c => b += c); res2.on('end', () => resolve(b)); });
+        r.on('error', () => resolve(null)); r.write(hiveData); r.end();
+      });
+    } catch(e) {}
+  }
+
+  res.json({
+    ok: true,
+    data: {
+      _engine: 'real',
+      mode: mode || 'light',
+      goal,
+      brief_key: briefKey,
+      providers_used: research.providers_used || 0,
+      findings_count: (research.findings || []).length,
+      total_chars: research.total_chars || 0,
+      credits_used: tierConfig.credits,
+      hive_posted: !!hive_id,
+      retrieve: `POST /v1/memory-get {key: "${briefKey}", namespace: "northstar"}`,
+    }
+  });
 });
 
 // ===== DREAM SUBSCRIPTIONS — agents pay to dream, building shared knowledge =====
@@ -10636,6 +10803,283 @@ app.get('/v1/exchange/list', auth, (req, res) => {
     res.json({ ok: true, nodes: suppliers.map(s => ({ id: s.id, capabilities: JSON.parse(s.capabilities || '[]'), status: s.status, last_heartbeat: s.last_heartbeat })), count: suppliers.length, _engine: 'real' });
   } catch(e) { res.json({ ok: true, nodes: [], count: 0, _engine: 'real' }); }
 });
+// ═══ NATURAL LANGUAGE ROUTER — "slop anything" ═══
+app.post('/v1/query', auth, async (req, res) => {
+  const { query, q, text, debug } = req.body;
+  const input = query || q || text;
+  if (!input) return res.status(400).json({ error: { code: 'missing_query' } });
+
+  // Stage 1: Fast exact-match (is this a known slug?)
+  const slugMatch = input.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
+  if (allHandlers[slugMatch]) {
+    try {
+      const result = await Promise.resolve(allHandlers[slugMatch](req.body));
+      return res.json({ ok: true, data: { _engine: 'real', routed_to: slugMatch, method: 'exact_match', ...result } });
+    } catch(e) {}
+  }
+
+  // Stage 2: Keyword-based intent classification
+  const q_lower = input.toLowerCase();
+  const intents = [
+    { match: /hash|sha256|sha512|md5|encrypt|decrypt/i, slug: q_lower.includes('decrypt') ? 'crypto-decrypt-aes' : q_lower.includes('md5') ? 'crypto-hash-md5' : q_lower.includes('512') ? 'crypto-hash-sha512' : 'crypto-hash-sha256', extract: { text: input.replace(/hash|sha256|sha512|md5|encrypt|decrypt|with|using|the|word/gi, '').trim() } },
+    { match: /word count|count words|how many words/i, slug: 'text-word-count', extract: { text: input.replace(/word count|count words|how many words|in/gi, '').trim() } },
+    { match: /reverse|backwards/i, slug: 'text-reverse', extract: { text: input.replace(/reverse|backwards|the text|the string/gi, '').trim() } },
+    { match: /validate email|check email|is .* email/i, slug: 'validate-email-syntax', extract: { email: (input.match(/[\w.+-]+@[\w-]+\.[\w.]+/) || [''])[0] || input.replace(/validate|check|is|email|a valid/gi, '').trim() } },
+    { match: /uuid|unique id|generate id/i, slug: 'crypto-uuid', extract: {} },
+    { match: /random number|random int/i, slug: 'crypto-random-int', extract: { min: 1, max: 100 } },
+    { match: /password|generate pass/i, slug: 'crypto-password-generate', extract: { length: 16 } },
+    { match: /factorial/i, slug: 'math-factorial', extract: { n: parseInt(input.match(/\d+/)?.[0] || '5') } },
+    { match: /prime|is .* prime/i, slug: 'math-prime-check', extract: { number: parseInt(input.match(/\d+/)?.[0] || '7') } },
+    { match: /fibonacci|fib/i, slug: 'math-fibonacci', extract: { n: parseInt(input.match(/\d+/)?.[0] || '10') } },
+    { match: /evaluate|calculate|compute|math/i, slug: 'math-evaluate', extract: { expression: input.replace(/evaluate|calculate|compute|math|what is|the result of/gi, '').trim() } },
+    { match: /sentiment|how.*feel|positive.*negative/i, slug: 'ml-sentiment', extract: { text: input } },
+    { match: /summarize|summary|tldr/i, slug: 'llm-summarize', extract: { text: input.replace(/summarize|summary|tldr/gi, '').trim() } },
+    { match: /translate/i, slug: 'llm-translate', extract: { text: input } },
+    { match: /memory.*set|store.*memory|remember/i, slug: 'memory-set', extract: { key: 'auto_' + Date.now().toString(36), value: input } },
+    { match: /memory.*get|recall|what.*remember/i, slug: 'memory-search', extract: { query: input.replace(/memory|get|recall|what do you|remember|about/gi, '').trim() } },
+    { match: /research|investigate|find out/i, slug: '_research', extract: { topic: input.replace(/research|investigate|find out about/gi, '').trim() } },
+    { match: /dream|sleep|overnight/i, slug: '_dream', extract: { topic: input } },
+    { match: /north star|goal|mission/i, slug: '_northstar', extract: { goal: input.replace(/set|my|north star|goal|mission|is/gi, '').trim() } },
+  ];
+
+  for (const intent of intents) {
+    if (intent.match.test(q_lower)) {
+      // Special routing for meta-commands
+      if (intent.slug === '_research') {
+        try {
+          const result = await executeResearch(intent.extract.topic, { tier: 'basic' });
+          req.acct.balance -= 20; persistKey(req.apiKey);
+          return res.json({ ok: true, data: { _engine: 'real', routed_to: 'research', method: 'nl_router', ...result } });
+        } catch(e) { return res.status(500).json({ error: { message: e.message } }); }
+      }
+      if (intent.slug === '_northstar' || intent.slug === '_dream') {
+        // Forward to appropriate endpoint
+        return res.json({ ok: true, data: { _engine: 'real', routed_to: intent.slug, suggestion: `Use POST /v1/northstar/set or POST /v1/dream/subscribe for this`, input: intent.extract } });
+      }
+
+      try {
+        const handler = allHandlers[intent.slug];
+        if (handler) {
+          const result = await Promise.resolve(handler(intent.extract));
+          return res.json({ ok: true, data: { _engine: 'real', routed_to: intent.slug, method: 'nl_intent', ...result } });
+        }
+      } catch(e) {}
+    }
+  }
+
+  // Stage 3: Fuzzy tool search fallback
+  const searchResults = [];
+  const words = input.toLowerCase().split(/\s+/);
+  for (const [slug, def] of Object.entries(API_DEFS)) {
+    const score = words.filter(w => slug.includes(w) || (def.name || '').toLowerCase().includes(w) || (def.desc || '').toLowerCase().includes(w)).length;
+    if (score > 0) searchResults.push({ slug, score, name: def.name });
+  }
+  searchResults.sort((a, b) => b.score - a.score);
+
+  if (searchResults.length > 0 && searchResults[0].score >= 2) {
+    const best = searchResults[0];
+    try {
+      const handler = allHandlers[best.slug];
+      if (handler) {
+        const result = await Promise.resolve(handler(req.body));
+        return res.json({ ok: true, data: { _engine: 'real', routed_to: best.slug, method: 'fuzzy_match', confidence: best.score, ...result } });
+      }
+    } catch(e) {}
+  }
+
+  // Stage 4: Return suggestions
+  res.json({
+    ok: true,
+    data: {
+      _engine: 'real',
+      routed_to: null,
+      method: 'no_match',
+      query: input,
+      suggestions: searchResults.slice(0, 5).map(s => ({ slug: s.slug, name: s.name, confidence: s.score })),
+      hint: 'Try being more specific, or use POST /v1/{slug} directly'
+    }
+  });
+});
+
+// ═══ WORKFLOW ENGINE — Turing-complete visual builder backend ═══
+db.exec(`CREATE TABLE IF NOT EXISTS workflows (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  owner_key TEXT NOT NULL,
+  nodes TEXT NOT NULL DEFAULT '[]',
+  edges TEXT NOT NULL DEFAULT '[]',
+  settings TEXT DEFAULT '{}',
+  version INTEGER DEFAULT 1,
+  created INTEGER NOT NULL,
+  updated INTEGER NOT NULL
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS workflow_runs (
+  id TEXT PRIMARY KEY,
+  workflow_id TEXT NOT NULL,
+  input TEXT,
+  output TEXT,
+  trace TEXT DEFAULT '[]',
+  status TEXT DEFAULT 'pending',
+  credits_used INTEGER DEFAULT 0,
+  started_at INTEGER,
+  completed_at INTEGER
+)`);
+
+// CRUD
+app.post('/v1/workflows', auth, (req, res) => {
+  const { name, nodes, edges, settings } = req.body;
+  if (!name) return res.status(400).json({ error: { code: 'missing_name' } });
+  const id = 'wf-' + crypto.randomUUID().slice(0, 12);
+  db.prepare('INSERT INTO workflows (id, name, owner_key, nodes, edges, settings, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+    id, name, req.apiKey, JSON.stringify(nodes || []), JSON.stringify(edges || []), JSON.stringify(settings || {}), Date.now(), Date.now()
+  );
+  res.status(201).json({ ok: true, workflow_id: id, name });
+});
+
+app.get('/v1/workflows', auth, (req, res) => {
+  const wfs = db.prepare('SELECT id, name, version, created, updated FROM workflows WHERE owner_key = ?').all(req.apiKey);
+  res.json({ ok: true, workflows: wfs, count: wfs.length });
+});
+
+app.get('/v1/workflows/:id', auth, (req, res) => {
+  const wf = db.prepare('SELECT * FROM workflows WHERE id = ? AND owner_key = ?').get(req.params.id, req.apiKey);
+  if (!wf) return res.status(404).json({ error: { code: 'not_found' } });
+  res.json({ ok: true, ...wf, nodes: JSON.parse(wf.nodes), edges: JSON.parse(wf.edges), settings: JSON.parse(wf.settings) });
+});
+
+// Execute workflow
+app.post('/v1/workflows/:id/run', auth, async (req, res) => {
+  const wf = db.prepare('SELECT * FROM workflows WHERE id = ? AND owner_key = ?').get(req.params.id, req.apiKey);
+  if (!wf) return res.status(404).json({ error: { code: 'not_found' } });
+
+  const nodes = JSON.parse(wf.nodes);
+  const edges = JSON.parse(wf.edges);
+  const settings = JSON.parse(wf.settings);
+  const input = req.body.input || {};
+  const dryRun = req.body.dry_run === true;
+
+  const runId = 'run-' + crypto.randomUUID().slice(0, 12);
+  const trace = [];
+  const state = new Map();
+  state.set('input', input);
+  let totalCredits = 0;
+
+  // Topological sort
+  const inDegree = {};
+  const adjList = {};
+  nodes.forEach(n => { inDegree[n.id] = 0; adjList[n.id] = []; });
+  edges.forEach(e => { if (adjList[e.source]) { adjList[e.source].push(e.target); inDegree[e.target] = (inDegree[e.target] || 0) + 1; } });
+  const queue = Object.keys(inDegree).filter(k => inDegree[k] === 0);
+  const order = [];
+  while (queue.length > 0) {
+    const node = queue.shift();
+    order.push(node);
+    (adjList[node] || []).forEach(next => { inDegree[next]--; if (inDegree[next] === 0) queue.push(next); });
+  }
+
+  if (!dryRun) {
+    db.prepare('INSERT INTO workflow_runs (id, workflow_id, input, status, started_at) VALUES (?, ?, ?, ?, ?)').run(runId, wf.id, JSON.stringify(input), 'running', Date.now());
+  }
+
+  // Execute in topological order
+  for (const nodeId of order) {
+    const node = nodes.find(n => n.id === nodeId);
+    if (!node || node.type === 'start' || node.type === 'end') continue;
+
+    const stepStart = Date.now();
+    let stepResult = null;
+    let stepCredits = 0;
+
+    if (node.type === 'handler' && node.data?.handler) {
+      const handler = allHandlers[node.data.handler];
+      if (handler) {
+        const handlerDef = API_DEFS[node.data.handler];
+        stepCredits = handlerDef?.credits || 1;
+        if (!dryRun) {
+          try { stepResult = await Promise.resolve(handler(node.data.params || {})); } catch(e) { stepResult = { error: e.message }; }
+        }
+      }
+    } else if (node.type === 'llm') {
+      stepCredits = 10;
+      if (!dryRun && allHandlers['llm-think']) {
+        try { stepResult = await allHandlers['llm-think']({ prompt: node.data?.prompt || '' }); } catch(e) { stepResult = { error: e.message }; }
+      }
+    }
+
+    totalCredits += stepCredits;
+    state.set(nodeId, stepResult);
+    trace.push({ node_id: nodeId, type: node.type, handler: node.data?.handler, credits: stepCredits, latency_ms: Date.now() - stepStart, result_preview: JSON.stringify(stepResult).slice(0, 200) });
+
+    // Budget guard
+    if (settings.maxCredits && totalCredits > settings.maxCredits) {
+      trace.push({ node_id: nodeId, type: 'budget_guard', message: 'Stopped: exceeded maxCredits ' + settings.maxCredits });
+      break;
+    }
+  }
+
+  if (!dryRun) {
+    req.acct.balance -= totalCredits;
+    persistKey(req.apiKey);
+    db.prepare('UPDATE workflow_runs SET output = ?, trace = ?, status = ?, credits_used = ?, completed_at = ? WHERE id = ?').run(
+      JSON.stringify(state.get(order[order.length - 1])), JSON.stringify(trace), 'completed', totalCredits, Date.now(), runId
+    );
+  }
+
+  res.json({
+    ok: true,
+    data: {
+      _engine: 'real',
+      run_id: dryRun ? null : runId,
+      dry_run: dryRun,
+      workflow_id: wf.id,
+      nodes_executed: trace.length,
+      total_credits: totalCredits,
+      trace,
+      output: dryRun ? null : state.get(order[order.length - 1]),
+    }
+  });
+});
+
+// Get run history
+app.get('/v1/workflows/:id/runs', auth, (req, res) => {
+  const runs = db.prepare('SELECT id, status, credits_used, started_at, completed_at FROM workflow_runs WHERE workflow_id = ? ORDER BY started_at DESC LIMIT 50').all(req.params.id);
+  res.json({ ok: true, runs, count: runs.length });
+});
+
+// Get specific run trace (for replay debugger)
+app.get('/v1/workflows/runs/:runId', auth, (req, res) => {
+  const run = db.prepare('SELECT * FROM workflow_runs WHERE id = ?').get(req.params.runId);
+  if (!run) return res.status(404).json({ error: { code: 'run_not_found' } });
+  res.json({ ok: true, ...run, input: JSON.parse(run.input || '{}'), output: JSON.parse(run.output || 'null'), trace: JSON.parse(run.trace || '[]') });
+});
+
+// ═══ BUDGET GUARDRAILS ═══
+db.exec('CREATE TABLE IF NOT EXISTS budget_settings (api_key TEXT PRIMARY KEY, daily_limit INTEGER, monthly_limit INTEGER, alert_threshold INTEGER, created INTEGER)');
+
+app.post('/v1/budget/set', auth, (req, res) => {
+  const { daily_limit, monthly_limit, alert_threshold } = req.body;
+  db.prepare('INSERT OR REPLACE INTO budget_settings (api_key, daily_limit, monthly_limit, alert_threshold, created) VALUES (?, ?, ?, ?, ?)').run(
+    req.apiKey, daily_limit || 0, monthly_limit || 0, alert_threshold || 50, Date.now()
+  );
+  res.json({ ok: true, daily_limit, monthly_limit, alert_threshold });
+});
+
+app.get('/v1/budget', auth, (req, res) => {
+  const budget = db.prepare('SELECT * FROM budget_settings WHERE api_key = ?').get(req.apiKey);
+  const todaySpend = db.prepare("SELECT COALESCE(SUM(credits), 0) as total FROM audit_log WHERE key_prefix LIKE ? AND ts > ?").get(req.apiKey.slice(0, 12) + '%', new Date().toISOString().split('T')[0]);
+  res.json({
+    ok: true,
+    balance: req.acct.balance,
+    daily_limit: budget?.daily_limit || 0,
+    monthly_limit: budget?.monthly_limit || 0,
+    alert_threshold: budget?.alert_threshold || 50,
+    today_spent: todaySpend?.total || 0,
+    forecast_days: req.acct.balance > 0 && todaySpend?.total > 0 ? Math.floor(req.acct.balance / todaySpend.total) : null,
+  });
+});
+
+
+
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
   const def = apiMap.get(req.params.slug);
