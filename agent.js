@@ -15,6 +15,9 @@ const https = require('https');
 
 module.exports = function mountAgent(app, allHandlers, API_DEFS, db, apiKeys, auth) {
 
+  // LLM handler for planning and summarization (null when no API key configured)
+  const llmHandler = allHandlers['llm-think'] || allHandlers['llm-generate'] || null;
+
   // Build a compact tool index for the LLM
   const toolIndex = Object.entries(API_DEFS).map(([slug, d]) =>
     `${slug}: ${d.desc} [${d.credits}cr]`

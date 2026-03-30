@@ -763,6 +763,43 @@ const API_DEFS = {
   'search-levenshtein': { cat: 'Text Processing', name: 'Levenshtein Distance', desc: 'Compute the Levenshtein edit distance between two strings.', credits: 0, tier: 'compute' },
   'ml-sentiment': { cat: 'Analyze', name: 'ML Sentiment', desc: 'Word-based sentiment analysis returning positive/negative/neutral with score.', credits: 0, tier: 'compute' },
   'validate-url': { cat: 'Validation', name: 'Validate URL', desc: 'Check if a URL is valid and parse its components.', credits: 0, tier: 'compute' },
+
+  // ── Alias slugs: crypto ──────────────────────────────────────────────────────
+  'crypto-hash-sha1': { cat: 'Crypto & Security', name: 'SHA1 Hash', desc: 'Compute SHA1 hash of input data.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
+  'crypto-hmac-sha256': { cat: 'Crypto & Security', name: 'HMAC-SHA256', desc: 'Compute HMAC-SHA256 of data with a secret key.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
+  'crypto-aes-encrypt': { cat: 'Crypto & Security', name: 'AES Encrypt', desc: 'AES-256-GCM encrypt data with a key.', credits: CREDIT_COSTS.simple, tier: 'compute' },
+  'crypto-aes-decrypt': { cat: 'Crypto & Security', name: 'AES Decrypt', desc: 'AES-256-GCM decrypt data with a key.', credits: CREDIT_COSTS.simple, tier: 'compute' },
+  'crypto-base64-encode': { cat: 'Crypto & Security', name: 'Base64 Encode', desc: 'Encode a string to base64.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
+  'crypto-base64-decode': { cat: 'Crypto & Security', name: 'Base64 Decode', desc: 'Decode a base64 string.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
+
+  // ── Alias slugs: text ────────────────────────────────────────────────────────
+  'text-slug': { cat: 'Text Processing', name: 'Text Slug', desc: 'Convert text to a URL-friendly slug.', credits: 0, tier: 'compute' },
+  'text-levenshtein': { cat: 'Text Processing', name: 'Levenshtein Distance', desc: 'Compute edit distance between two strings.', credits: 0, tier: 'compute' },
+  'text-sentiment': { cat: 'Text Processing', name: 'Sentiment Analysis', desc: 'Detect positive/negative/neutral sentiment in text.', credits: 0, tier: 'compute' },
+  'text-redact-pii': { cat: 'Text Processing', name: 'Redact PII', desc: 'Detect and redact personally identifiable information from text.', credits: CREDIT_COSTS.simple, tier: 'compute' },
+  'text-summarize-extractive': { cat: 'Text Processing', name: 'Extractive Summarize', desc: 'Summarize text by extracting the most important sentences.', credits: CREDIT_COSTS.simple, tier: 'compute' },
+
+  // ── Alias slugs: math ────────────────────────────────────────────────────────
+  'math-round': { cat: 'Math & Numbers', name: 'Round', desc: 'Round a number to a specified number of decimal places.', credits: 0, tier: 'compute' },
+  'math-prime': { cat: 'Math & Numbers', name: 'Prime Check', desc: 'Check if a number is prime.', credits: CREDIT_COSTS.trivial, tier: 'compute' },
+
+  // ── Alias slugs: data ────────────────────────────────────────────────────────
+  'data-csv-parse': { cat: 'Data Transform', name: 'CSV Parse', desc: 'Parse CSV text into a JSON array of objects.', credits: CREDIT_COSTS.medium, tier: 'compute' },
+  'data-json-diff': { cat: 'Data Transform', name: 'JSON Diff', desc: 'Diff two JSON objects and return added/removed/changed keys.', credits: CREDIT_COSTS.medium, tier: 'compute' },
+  'data-xml-to-json': { cat: 'Data Transform', name: 'XML to JSON', desc: 'Parse XML string into a JSON object.', credits: CREDIT_COSTS.medium, tier: 'compute' },
+  'data-yaml-to-json': { cat: 'Data Transform', name: 'YAML to JSON', desc: 'Parse YAML key-value pairs into JSON.', credits: CREDIT_COSTS.medium, tier: 'compute' },
+  'data-json-to-yaml': { cat: 'Data Transform', name: 'JSON to YAML', desc: 'Convert a JSON object to YAML format.', credits: CREDIT_COSTS.medium, tier: 'compute' },
+  'data-zip-encode': { cat: 'Data Transform', name: 'Zip Encode', desc: 'Compress text using gzip and return base64.', credits: CREDIT_COSTS.simple, tier: 'compute' },
+  'data-zip-decode': { cat: 'Data Transform', name: 'Zip Decode', desc: 'Decompress gzip base64 back to original text.', credits: CREDIT_COSTS.simple, tier: 'compute' },
+
+  // ── Alias slugs: validation ──────────────────────────────────────────────────
+  'validate-email': { cat: 'Validation', name: 'Validate Email', desc: 'Validate email address format.', credits: CREDIT_COSTS.simple, tier: 'compute' },
+  'validate-ip': { cat: 'Validation', name: 'Validate IP', desc: 'Validate an IP address (v4 or v6).', credits: CREDIT_COSTS.simple, tier: 'compute' },
+  'validate-uuid': { cat: 'Validation', name: 'Validate UUID', desc: 'Check if a string is a valid UUID.', credits: 0, tier: 'compute' },
+  'validate-phone': { cat: 'Validation', name: 'Validate Phone', desc: 'Validate a phone number format.', credits: CREDIT_COSTS.simple, tier: 'compute' },
+
+  // ── Alias slugs: date ────────────────────────────────────────────────────────
+  'date-now': { cat: 'Date & Time', name: 'Date Now', desc: 'Return the current date and time in multiple formats.', credits: 0, tier: 'compute' },
 };
 
 function buildCatalog() {

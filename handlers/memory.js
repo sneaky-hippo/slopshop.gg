@@ -563,7 +563,7 @@ module.exports = function (db) {
   // -------------------------------------------------------------------------
   function counterGet(input) {
     input = input || {};
-    const { name } = input;
+    const name = input.name || input.key;
     if (!name) return { _engine: 'real', error: 'missing_required_field', required: 'name' };
     const row = stmts.counterGet.get(name);
     return { _engine: 'real', name, value: row ? row.value : 0 };

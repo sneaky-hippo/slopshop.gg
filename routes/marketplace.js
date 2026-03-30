@@ -632,9 +632,11 @@ module.exports = function (app, db, apiKeys) {
     const auth = requireAuth(req, res, apiKeys);
     if (!auth) return;
 
-    const { type, name, description, category, price_credits = 0, handler_code, manifest, slug } = req.body;
+    const { name, description, category, price_credits = 0, handler_code, manifest, slug } = req.body;
+    // type defaults to 'tool' when not provided
+    const type = (['tool', 'template', 'pack'].includes(req.body.type)) ? req.body.type : (req.body.type ? null : 'tool');
 
-    if (!type || !['tool', 'template', 'pack'].includes(type)) {
+    if (!type) {
       return err(res, 422, 'missing_field', 'type must be "tool", "template", or "pack"');
     }
     if (!name || typeof name !== 'string') return err(res, 422, 'missing_field', 'name is required');

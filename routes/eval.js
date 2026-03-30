@@ -420,11 +420,15 @@ module.exports = function (app, db, apiKeys) {
       return res.status(400).json({ error: { code: 'missing_field', message: 'tests must be a non-empty array' } });
     }
 
-    // Validate each test
+    // Normalize and validate each test
     const VALID_STATUSES = ['success', 'error'];
+    let testIdx = 0;
     for (const t of tests) {
-      if (!t.id)        return res.status(400).json({ error: { code: 'invalid_test', message: `Each test must have an id` } });
-      if (!t.tool_slug) return res.status(400).json({ error: { code: 'invalid_test', message: `Test "${t.id}" must have a tool_slug` } });
+      // Auto-generate id if missing
+      if (!t.id) t.id = `test-${++testIdx}`;
+      // Accept 'slug' as alias for 'tool_slug'
+      if (!t.tool_slug && t.slug) t.tool_slug = t.slug;
+      if (!t.tool_slug) return res.status(400).json({ error: { code: 'invalid_test', message: `Test "${t.id}" must have a tool_slug (or slug)` } });
       if (t.expected_status && !VALID_STATUSES.includes(t.expected_status)) {
         return res.status(400).json({ error: { code: 'invalid_test', message: `expected_status must be "success" or "error"` } });
       }

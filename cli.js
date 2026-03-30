@@ -161,6 +161,53 @@ function request(method, path, body, auth = true) {
     }
 
     const req = lib.request(options, (res) => {
+      // Follow HTTP redirects (3xx)
+      if (res.statusCode >= 300 && res.statusCode < 400 && res.headers.location) {
+        res.resume(); // drain the response
+        const redirectUrl = res.headers.location;
+        if (verbose) {
+          console.error(dim(`  [verbose] Redirect ${res.statusCode} -> ${redirectUrl}`));
+        }
+        let redirectParsed;
+        try { redirectParsed = new URL(redirectUrl); }
+        catch (e) { return reject(new Error(`Invalid redirect URL: ${redirectUrl}`)); }
+        const isRedirectHttps = redirectParsed.protocol === 'https:';
+        const redirectLib = isRedirectHttps ? https : http;
+        const redirectOptions = {
+          hostname: redirectParsed.hostname,
+          port: redirectParsed.port || (isRedirectHttps ? 443 : 80),
+          path: redirectParsed.pathname + redirectParsed.search,
+          method,
+          agent: isRedirectHttps ? httpsAgent : httpAgent,
+          headers: { ...options.headers },
+        };
+        if (payload) { redirectOptions.headers['Content-Length'] = Buffer.byteLength(payload); }
+        const redirectReq = redirectLib.request(redirectOptions, (redirectRes) => {
+          let rstream = redirectRes;
+          const renc = redirectRes.headers['content-encoding'];
+          if (renc === 'gzip' || renc === 'deflate') {
+            const zlib = require('zlib');
+            rstream = renc === 'gzip' ? redirectRes.pipe(zlib.createGunzip()) : redirectRes.pipe(zlib.createInflate());
+          }
+          let rdata = '';
+          rstream.on('data', (chunk) => { rdata += chunk; });
+          rstream.on('end', () => {
+            let rparsed;
+            try { rparsed = JSON.parse(rdata); } catch (e) { rparsed = { _raw: rdata }; }
+            if (redirectRes.statusCode >= 400) {
+              const msg = rparsed?.error?.message || rparsed?.message || `HTTP ${redirectRes.statusCode}`;
+              return reject(Object.assign(new Error(msg), { status: redirectRes.statusCode, body: rparsed }));
+            }
+            resolve({ status: redirectRes.statusCode, data: rparsed, headers: redirectRes.headers });
+          });
+        });
+        redirectReq.on('error', (e) => reject(e));
+        redirectReq.setTimeout(globalTimeout, () => { redirectReq.destroy(new Error(`Redirect timed out`)); });
+        if (payload) redirectReq.write(payload);
+        redirectReq.end();
+        return;
+      }
+
       // PERF: Handle gzip/deflate compressed responses
       let stream = res;
       const encoding = res.headers['content-encoding'];
@@ -7392,10 +7439,11 @@ async function cmdNatural(cmd, args) {
   if (API_KEY) {
     try {
       const r = await request('POST', '/v1/query', { query: fullInput });
-      if (r.ok && r.data?.routed_to && r.data.routed_to !== null) {
-        if (jsonMode) return console.log(JSON.stringify(r));
-        console.log(`\n  ${dim('Routed to:')} ${cyan(r.data.routed_to)} ${dim('(' + (r.data.method || 'auto') + ')')}`);
-        const d = r.data;
+      const qData = r.data?.data || r.data;
+      if ((r.data?.ok || r.status === 200) && qData?.routed_to && qData.routed_to !== null) {
+        if (jsonMode) return console.log(JSON.stringify(r.data));
+        console.log(`\n  ${dim('Routed to:')} ${cyan(qData.routed_to)} ${dim('(' + (qData.method || 'auto') + ')')}`);
+        const d = Object.assign({}, qData);
         delete d._engine; delete d.routed_to; delete d.method;
         if (Object.keys(d).length > 0) {
           console.log(`  ${JSON.stringify(d, null, 2).split('\n').map(l => '  ' + l).join('\n')}`);

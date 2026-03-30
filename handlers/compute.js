@@ -503,9 +503,9 @@ function textRot13(input) {
 
 // ─── CRYPTO & SECURITY ──────────────────────────────────────────────────────
 
-function cryptoHashSha256(input) { return { _engine: 'real',hash:crypto.createHash('sha256').update(input.text||'').digest('hex'),algorithm:'sha256'}; }
-function cryptoHashSha512(input) { return { _engine: 'real',hash:crypto.createHash('sha512').update(input.text||'').digest('hex'),algorithm:'sha512'}; }
-function cryptoHashMd5(input) { return { _engine: 'real',hash:crypto.createHash('md5').update(input.text||'').digest('hex'),algorithm:'md5'}; }
+function cryptoHashSha256(input) { return { _engine: 'real',hash:crypto.createHash('sha256').update(input.text||input.data||input.input||'').digest('hex'),algorithm:'sha256'}; }
+function cryptoHashSha512(input) { return { _engine: 'real',hash:crypto.createHash('sha512').update(input.text||input.data||input.input||'').digest('hex'),algorithm:'sha512'}; }
+function cryptoHashMd5(input) { return { _engine: 'real',hash:crypto.createHash('md5').update(input.text||input.data||input.input||'').digest('hex'),algorithm:'md5'}; }
 function cryptoHmac(input) { return { _engine: 'real',hmac:crypto.createHmac('sha256',input.secret||input.key||'').update(input.text||input.data||'').digest('hex'),algorithm:'hmac-sha256'}; }
 function cryptoUuid() { return { _engine: 'real',uuid:crypto.randomUUID()}; }
 
@@ -5077,25 +5077,438 @@ module.exports = {
 
   'route': ({task, intent, budget_credits}) => {
     const task_str = String(task || intent || '').toLowerCase();
-    const keywords = {
-      'crypto-uuid': ['uuid','id','identifier','unique'],
-      'crypto-hash-sha256': ['hash','sha256','checksum','digest'],
-      'text-count-words': ['count','words','word count'],
-      'text-summarize': ['summarize','summary','tldr'],
-      'memory-set': ['save','store','remember','persist'],
-      'memory-get': ['recall','retrieve','load','get memory'],
-      'llm-think': ['think','reason','analyze','decide','plan'],
-      'math-eval': ['math','calculate','compute','formula'],
-      'date-now': ['date','time','now','current','today'],
-      'text-translate': ['translate','language','spanish','french'],
-    };
+
+    // 100+ intent patterns covering all major API categories
+    const INTENT_MAP = [
+      // Crypto / hashing
+      { patterns: ['sha256','checksum','digest'], slug: 'crypto-hash-sha256', example: { text: 'hello world' } },
+      { patterns: ['sha512'], slug: 'crypto-hash-sha512', example: { text: 'hello world' } },
+      { patterns: ['md5'], slug: 'crypto-hash-md5', example: { text: 'hello world' } },
+      { patterns: ['hash a string','hash string','hash text','hash data'], slug: 'crypto-hash-sha256', example: { text: 'hello world' } },
+      { patterns: ['hmac'], slug: 'crypto-hmac', example: { text: 'message', key: 'secret' } },
+      { patterns: ['uuid','guid','unique id','make an id'], slug: 'crypto-uuid', example: {} },
+      { patterns: ['aes encrypt','encrypt with aes','encrypt text','encrypt data','encrypt some'], slug: 'crypto-encrypt-aes', example: { text: 'secret', key: 'key32bytes12345678901234567890ab' } },
+      { patterns: ['aes decrypt','decrypt with aes','decrypt text'], slug: 'crypto-decrypt-aes', example: { ciphertext: '...', key: 'key32bytes...', iv: '...', tag: '...' } },
+      { patterns: ['base64 encode','encode to base64','to base64'], slug: 'crypto-base64-encode', example: { text: 'hello world' } },
+      { patterns: ['base64 decode','decode base64','from base64'], slug: 'crypto-base64-decode', example: { text: 'aGVsbG8gd29ybGQ=' } },
+      { patterns: ['jwt decode','decode jwt','parse jwt','inspect jwt'], slug: 'crypto-jwt-decode', example: { token: 'eyJ...' } },
+      { patterns: ['jwt sign','sign jwt','create jwt','generate jwt'], slug: 'crypto-jwt-sign', example: { payload: { sub: 'user1' }, secret: 'mysecret' } },
+      { patterns: ['password hash','hash password','bcrypt','pbkdf2'], slug: 'crypto-password-hash', example: { password: 'mysecretpassword' } },
+      { patterns: ['random bytes','secure random','random hex'], slug: 'crypto-random-bytes', example: { length: 32 } },
+      // Text processing
+      { patterns: ['count words','word count','how many words'], slug: 'text-word-count', example: { text: 'The quick brown fox' } },
+      { patterns: ['count chars','character count','count characters'], slug: 'text-char-count', example: { text: 'Hello world' } },
+      { patterns: ['truncate','shorten text','cut off text'], slug: 'text-truncate', example: { text: 'Long text here...', max_length: 50 } },
+      { patterns: ['slugify','url slug','make a slug'], slug: 'text-slugify', example: { text: 'Hello World!' } },
+      { patterns: ['camel case','snake case','title case','convert case','change case'], slug: 'text-case-convert', example: { text: 'hello world', to: 'camelCase' } },
+      { patterns: ['reverse text','reverse string','reverse a string'], slug: 'text-reverse', example: { text: 'hello' } },
+      { patterns: ['palindrome','is palindrome','check palindrome'], slug: 'text-palindrome', example: { text: 'racecar' } },
+      { patterns: ['sentiment','positive or negative','emotion in text'], slug: 'text-sentiment', example: { text: 'I love this!' } },
+      { patterns: ['extract email','find emails','emails in text'], slug: 'text-extract-emails', example: { text: 'Contact hello@example.com' } },
+      { patterns: ['extract url','find urls','links in text'], slug: 'text-extract-urls', example: { text: 'Visit https://example.com' } },
+      { patterns: ['extract phone','find phone numbers'], slug: 'text-extract-phones', example: { text: 'Call 555-123-4567' } },
+      { patterns: ['redact pii','remove personal info','anonymize text'], slug: 'text-redact-pii', example: { text: 'John Doe at john@example.com' } },
+      { patterns: ['summarize','summary','tldr'], slug: 'text-summarize', example: { text: 'Long article...' } },
+      { patterns: ['translate','translation','convert language'], slug: 'text-translate', example: { text: 'Hello world', target: 'es' } },
+      { patterns: ['token count','count tokens'], slug: 'text-token-count', example: { text: 'Hello world' } },
+      { patterns: ['test regex','regex match','regular expression'], slug: 'text-regex-test', example: { pattern: '[0-9]+', text: 'order 42' } },
+      { patterns: ['diff text','compare text','text difference'], slug: 'text-diff', example: { a: 'hello world', b: 'hello earth' } },
+      { patterns: ['readability','reading level'], slug: 'text-readability', example: { text: 'The cat sat on the mat.' } },
+      { patterns: ['strip html','remove html tags','html to text'], slug: 'text-strip-html', example: { text: '<b>hello</b>' } },
+      { patterns: ['escape html','html escape'], slug: 'text-escape-html', example: { text: '<script>alert(1)</script>' } },
+      // Math
+      { patterns: ['calculate','evaluate expression','compute formula','math expression'], slug: 'math-eval', example: { expression: '2 + 2 * 10' } },
+      { patterns: ['fibonacci','fib sequence'], slug: 'math-fibonacci', example: { n: 10 } },
+      { patterns: ['is prime','prime number','check prime'], slug: 'math-prime', example: { n: 17 } },
+      { patterns: ['statistics','mean median','std deviation','variance','average of'], slug: 'math-stats', example: { numbers: [1,2,3,4,5] } },
+      { patterns: ['percentage','calculate percent','percent of'], slug: 'math-percentage', example: { value: 25, total: 200 } },
+      { patterns: ['mortgage','loan payment','monthly payment'], slug: 'math-mortgage', example: { principal: 300000, annual_rate: 0.065, years: 30 } },
+      { patterns: ['matrix multiply','matrix determinant','matrix math'], slug: 'math-matrix', example: { a: [[1,2],[3,4]], b: [[5,6],[7,8]], op: 'multiply' } },
+      { patterns: ['compound interest','investment return'], slug: 'math-compound-interest', example: { principal: 1000, rate: 0.07, years: 10 } },
+      { patterns: ['data forecast','trend forecast'], slug: 'data-forecast', example: { values: [10,20,30,40,50], steps: 3 } },
+      // Memory / storage
+      { patterns: ['store data','save data','remember','persist data','store in memory','write to memory'], slug: 'memory-set', example: { key: 'mykey', value: 'myvalue' } },
+      { patterns: ['retrieve data','recall','get from memory','read memory'], slug: 'memory-get', example: { key: 'mykey' } },
+      { patterns: ['list memories','all memories','show stored'], slug: 'memory-list', example: {} },
+      { patterns: ['search memory','find memory','query memory'], slug: 'memory-search', example: { query: 'search term' } },
+      { patterns: ['kv set','key value store'], slug: 'kv-set', example: { key: 'mykey', value: 'myvalue' } },
+      { patterns: ['kv get','get key value'], slug: 'kv-get', example: { key: 'mykey' } },
+      { patterns: ['push queue','enqueue','add to queue','task queue'], slug: 'queue-push', example: { queue: 'tasks', item: { task: 'do something' } } },
+      { patterns: ['counter','increment counter','count up'], slug: 'counter-increment', example: { key: 'my-counter' } },
+      // Validation
+      { patterns: ['validate email','email valid','check email format','is email valid'], slug: 'validate-email-syntax', example: { email: 'test@example.com' } },
+      { patterns: ['validate url','url valid','check url format'], slug: 'validate-url', example: { url: 'https://example.com' } },
+      { patterns: ['validate ip','ip valid','check ip address'], slug: 'net-ip-validate', example: { ip: '192.168.1.1' } },
+      { patterns: ['validate uuid','uuid valid'], slug: 'validate-uuid', example: { uuid: '550e8400-e29b-41d4-a716-446655440000' } },
+      { patterns: ['validate credit card','credit card valid','luhn check'], slug: 'validate-credit-card', example: { number: '4532015112830366' } },
+      { patterns: ['validate phone','phone valid','phone number check'], slug: 'validate-phone', example: { phone: '+1-555-123-4567' } },
+      { patterns: ['validate iban','iban valid'], slug: 'validate-iban', example: { iban: 'GB82WEST12345698765432' } },
+      { patterns: ['validate json','json valid','is valid json'], slug: 'validate-json', example: { text: '{"key": "value"}' } },
+      // Date / time
+      { patterns: ['current date','what date','today','date now','current time'], slug: 'date-now', example: { timezone: 'UTC' } },
+      { patterns: ['format date','date format','convert date format'], slug: 'date-format', example: { date: '2026-03-31', format: 'MMMM D, YYYY' } },
+      { patterns: ['parse date','read date string'], slug: 'date-parse', example: { text: 'March 31, 2026' } },
+      { patterns: ['business days','working days','weekdays between'], slug: 'date-business-days', example: { start: '2026-03-01', end: '2026-03-31' } },
+      { patterns: ['cron next','cron expression'], slug: 'date-cron-next', example: { cron: '0 9 * * 1-5' } },
+      { patterns: ['days between','time difference','date diff'], slug: 'date-diff', example: { a: '2026-01-01', b: '2026-12-31' } },
+      { patterns: ['unix timestamp','epoch time','to unix'], slug: 'date-to-unix', example: { date: '2026-03-31T00:00:00Z' } },
+      // Network
+      { patterns: ['dns lookup','dns resolve','lookup domain'], slug: 'net-dns-lookup', example: { domain: 'example.com' } },
+      { patterns: ['http check','is site up','check website','check url status'], slug: 'net-http-check', example: { url: 'https://example.com' } },
+      { patterns: ['ssl check','certificate valid','https check'], slug: 'net-ssl-check', example: { domain: 'example.com' } },
+      { patterns: ['ip geolocation','where is ip','ip location'], slug: 'net-ip-geo', example: { ip: '8.8.8.8' } },
+      { patterns: ['whois','domain registrar','domain owner'], slug: 'net-whois', example: { domain: 'example.com' } },
+      { patterns: ['get headers','http headers','response headers'], slug: 'net-http-headers', example: { url: 'https://example.com' } },
+      { patterns: ['weather','forecast','temperature','weather forecast'], slug: 'weather-report', example: {} },
+      // Data transform
+      { patterns: ['csv to json','parse csv','convert csv'], slug: 'data-csv-to-json', example: { csv: 'name,age\nAlice,30' } },
+      { patterns: ['json to csv','convert json csv'], slug: 'data-json-to-csv', example: { data: [{ name: 'Alice', age: 30 }] } },
+      { patterns: ['xml to json','parse xml','convert xml'], slug: 'data-xml-to-json', example: { xml: '<root><item>value</item></root>' } },
+      { patterns: ['yaml to json','parse yaml','convert yaml'], slug: 'data-yaml-to-json', example: { yaml: 'key: value' } },
+      { patterns: ['flatten object','flatten json','flatten nested'], slug: 'data-flatten', example: { data: { a: { b: { c: 1 } } } } },
+      { patterns: ['json diff','compare json','object diff'], slug: 'data-json-diff', example: { a: { x: 1 }, b: { x: 2 } } },
+      // Code utilities
+      { patterns: ['format sql','sql format','indent sql','beautify sql'], slug: 'code-sql-format', example: { text: 'select * from users where id=1' } },
+      { patterns: ['run sql','execute sql','sql query','run a sql','sql query on json','sql on json'], slug: 'exec-sql-on-json', example: { query: 'SELECT * FROM data WHERE age > 25', data: [{ name: 'Alice', age: 30 }] } },
+      { patterns: ['explain regex','what does regex mean'], slug: 'code-regex-explain', example: { pattern: '^[a-z]+$' } },
+      { patterns: ['compare semver','version compare','semantic version'], slug: 'code-semver-compare', example: { a: '2.1.0', b: '2.0.5' } },
+      { patterns: ['parse env','dotenv','env file'], slug: 'code-parse-env', example: { text: 'KEY=value\nFOO=bar' } },
+      { patterns: ['format json','pretty print json','json beautify'], slug: 'code-json-format', example: { text: '{"a":1}' } },
+      // LLM generation
+      { patterns: ['generate text','write text','compose text'], slug: 'llm-generate', example: { prompt: 'Write a short greeting' } },
+      { patterns: ['write blog','blog post','article draft'], slug: 'llm-blog', example: { topic: 'AI productivity tips' } },
+      { patterns: ['generate code','write code','code snippet'], slug: 'llm-code', example: { prompt: 'Write a Python function to reverse a string' } },
+      // Agent / orchestration
+      { patterns: ['chain agents','run workflow','execute pipeline'], slug: 'agent-chain', example: { steps: [{ slug: 'crypto-uuid' }] } },
+      { patterns: ['deploy army','multi agent','spawn agents','agent swarm'], slug: 'army-deploy', example: { task: 'analyze data', agents: 5 } },
+      { patterns: ['hive workspace','agent workspace','create hive'], slug: 'hive-run', example: { task: 'Research topic X' } },
+    ];
+
+    // Score each intent entry
     const scores = [];
-    for (const [slug, kws] of Object.entries(keywords)) {
-      const hits = kws.filter(k => task_str.includes(k)).length;
-      if (hits > 0) scores.push({ slug, score: hits, matched: kws.filter(k => task_str.includes(k)) });
+    for (const intent of INTENT_MAP) {
+      const hits = intent.patterns.filter(p => task_str.includes(p));
+      if (hits.length > 0) {
+        scores.push({ slug: intent.slug, score: hits.length * 10, matched: hits, example: intent.example });
+      }
     }
+
+    // Word-level fallback scoring
+    const fallbackScores = {};
+    const words = task_str.split(/\s+/).filter(w => w.length > 3);
+    for (const intent of INTENT_MAP) {
+      for (const w of words) {
+        if (intent.patterns.some(p => p.includes(w))) {
+          if (!scores.find(s => s.slug === intent.slug)) {
+            fallbackScores[intent.slug] = (fallbackScores[intent.slug] || { slug: intent.slug, score: 0, matched: [], example: intent.example });
+            fallbackScores[intent.slug].score += 2;
+          }
+        }
+      }
+    }
+    for (const s of Object.values(fallbackScores)) scores.push(s);
+
     scores.sort((a, b) => b.score - a.score);
-    const best = scores[0] || { slug: 'llm-think', score: 0, matched: ['fallback'] };
-    return { _engine: 'real', recommended: best.slug, reason: best.matched.join(', '), confidence: Math.min(best.score / 3, 1), alternatives: scores.slice(1, 4).map(s => s.slug), task };
+    const best = scores[0] || { slug: 'llm-think', score: 0, matched: ['fallback'], example: { prompt: task_str } };
+    const confidence = Math.min(Math.round(Math.min(best.score / 20, 1) * 100) / 100, 1);
+    const reason = best.matched.length > 0
+      ? 'Matched intent: ' + best.matched[0]
+      : 'Best available match for task';
+
+    return {
+      _engine: 'real',
+      recommended: best.slug,
+      confidence,
+      reason,
+      alternatives: scores.slice(1, 4).map(s => s.slug),
+      example_call: {
+        endpoint: '/v1/' + best.slug,
+        body: best.example || {},
+      },
+      task,
+    };
+  },
+
+  // ── Missing slug aliases added to fix test failures ───────────────────────
+
+  // Crypto aliases
+  'crypto-hash-sha1': (input) => {
+    const text = input.text || input.data || input.input || '';
+    return { _engine: 'real', hash: crypto.createHash('sha1').update(text).digest('hex'), algorithm: 'sha1' };
+  },
+  'crypto-aes-encrypt': (input) => {
+    const text = (input.input !== undefined && input.input !== null) ? String(input.input) : (input.data !== undefined && input.data !== null) ? String(input.data) : (input.text !== undefined && input.text !== null) ? String(input.text) : '';
+    const key = input.key || '';
+    const k = crypto.createHash('sha256').update(key).digest();
+    const iv = crypto.randomBytes(12);
+    const c = crypto.createCipheriv('aes-256-gcm', k, iv);
+    const enc = Buffer.concat([c.update(text, 'utf8'), c.final()]);
+    return { _engine: 'real', encrypted: enc.toString('hex'), iv: iv.toString('hex'), tag: c.getAuthTag().toString('hex'), algorithm: 'aes-256-gcm' };
+  },
+  'crypto-aes-decrypt': (input) => {
+    const encrypted = input.encrypted || input.input || '';
+    const iv = input.iv || '';
+    const tag = input.tag || '';
+    const key = input.key || '';
+    try {
+      const k = crypto.createHash('sha256').update(key).digest();
+      const d = crypto.createDecipheriv('aes-256-gcm', k, Buffer.from(iv, 'hex'));
+      d.setAuthTag(Buffer.from(tag, 'hex'));
+      const dec = Buffer.concat([d.update(Buffer.from(encrypted, 'hex')), d.final()]);
+      return { _engine: 'real', text: dec.toString('utf8'), decrypted: dec.toString('utf8') };
+    } catch (e) { return { _engine: 'real', error: e.message }; }
+  },
+  'crypto-base64-encode': (input) => {
+    const text = input.input || input.text || input.data || '';
+    return { _engine: 'real', encoded: Buffer.from(text, 'utf8').toString('base64'), result: Buffer.from(text, 'utf8').toString('base64') };
+  },
+  'crypto-base64-decode': (input) => {
+    const encoded = input.input || input.text || input.encoded || '';
+    try {
+      const decoded = Buffer.from(encoded, 'base64').toString('utf8');
+      return { _engine: 'real', decoded, result: decoded };
+    } catch (e) { return { _engine: 'real', error: 'Invalid base64 input' }; }
+  },
+
+  // Text aliases
+  'text-slug': (input) => {
+    const text = input.text || input.input || '';
+    const slug = text.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9\s-]/g, '').trim().replace(/[\s-]+/g, '-');
+    return { _engine: 'real', slug, result: slug };
+  },
+  'text-levenshtein': (input) => {
+    const s = input.a || input.text || input.source || '';
+    const t = input.b || input.target || input.compare || '';
+    const m = s.length, n = t.length;
+    const dp = Array.from({ length: m + 1 }, (_, i) => Array.from({ length: n + 1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0));
+    for (let i = 1; i <= m; i++) for (let j = 1; j <= n; j++) {
+      dp[i][j] = s[i-1] === t[j-1] ? dp[i-1][j-1] : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+    const dist = dp[m][n];
+    const maxLen = Math.max(m, n);
+    return { _engine: 'real', distance: dist, result: dist, similarity: maxLen ? Math.round((1 - dist / maxLen) * 10000) / 10000 : 1 };
+  },
+  'text-sentiment': (input) => {
+    const pos = ['good','great','love','happy','excellent','amazing','wonderful','fantastic','best','perfect','awesome','beautiful','lovely','brilliant','outstanding','superb','terrific','marvelous','delightful','pleasant','enjoy','like','nice','fine','positive'];
+    const neg = ['bad','terrible','hate','awful','horrible','worst','ugly','sad','poor','failure','broken','disgusting','dreadful','annoying','disappointing','negative','wrong','worse','painful','miserable','boring','stupid','useless','weak','lousy'];
+    const text = input.text || input.input || '';
+    const words = text.toLowerCase().split(/\s+/);
+    const p = words.filter(w => pos.includes(w)).length;
+    const n = words.filter(w => neg.includes(w)).length;
+    const total = p + n || 1;
+    const score = (p - n) / total;
+    const sentiment = p > n ? 'positive' : n > p ? 'negative' : 'neutral';
+    return { _engine: 'real', sentiment, label: sentiment, score: Math.round(score * 1000) / 1000, positive: p, negative: n, confidence: Math.abs(score) };
+  },
+  'text-redact-pii': (input) => {
+    const t = input.text || input.input || '';
+    const doRedact = input.redact !== false;
+    const patterns = [
+      { type: 'ssn', regex: /\b\d{3}-\d{2}-\d{4}\b/g, mask: '[SSN]' },
+      { type: 'credit_card', regex: /\b\d{4}[\s-]?\d{4}[\s-]?\d{4}[\s-]?\d{4}\b/g, mask: '[CARD]' },
+      { type: 'email', regex: /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g, mask: '[EMAIL]' },
+      { type: 'phone', regex: /(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/g, mask: '[PHONE]' },
+      { type: 'ip_address', regex: /\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b/g, mask: '[IP]' },
+    ];
+    const detections = [];
+    let redacted = t;
+    patterns.forEach(p => {
+      const matches = t.match(p.regex) || [];
+      matches.forEach(m => detections.push({ type: p.type, original: m, replacement: p.mask }));
+      if (doRedact) redacted = redacted.replace(p.regex, p.mask);
+    });
+    return { _engine: 'real', redacted: doRedact ? redacted : t, original: t, detections, pii_found: detections.length > 0, count: detections.length };
+  },
+  'text-summarize-extractive': (input) => {
+    const text = input.text || input.input || '';
+    const maxSentences = input.sentences || 3;
+    const sentences = text.match(/[^.!?]+[.!?]+/g) || [text];
+    if (sentences.length <= maxSentences) return { _engine: 'real', summary: text, sentences: sentences.length, method: 'full_text' };
+    const words = text.toLowerCase().split(/\s+/);
+    const freq = {};
+    words.forEach(w => { const clean = w.replace(/[^a-z]/g, ''); if (clean.length > 3) freq[clean] = (freq[clean] || 0) + 1; });
+    const scored = sentences.map(s => {
+      const ws = s.toLowerCase().split(/\s+/);
+      const score = ws.reduce((acc, w) => acc + (freq[w.replace(/[^a-z]/g, '')] || 0), 0);
+      return { s: s.trim(), score };
+    });
+    scored.sort((a, b) => b.score - a.score);
+    const top = scored.slice(0, maxSentences).map(x => x.s);
+    const ordered = sentences.filter(s => top.includes(s.trim())).map(s => s.trim());
+    const summary = ordered.join(' ');
+    return { _engine: 'real', summary, original_sentences: sentences.length, summary_sentences: ordered.length, compression_ratio: Math.round((1 - summary.length / text.length) * 100) + '%', method: 'frequency_ranking' };
+  },
+
+  // Math aliases
+  'math-round': (input) => {
+    const value = input.value !== undefined ? Number(input.value) : Number(input.number || 0);
+    const decimals = input.decimals !== undefined ? Number(input.decimals) : (input.places !== undefined ? Number(input.places) : 0);
+    const factor = Math.pow(10, decimals);
+    const result = Math.round(value * factor) / factor;
+    return { _engine: 'real', result, value, decimals };
+  },
+  'math-prime': (input) => {
+    const n = Number(input.n || input.number || input.value || 0);
+    if (n < 2) return { _engine: 'real', result: false, is_prime: false, n };
+    if (n === 2) return { _engine: 'real', result: true, is_prime: true, n };
+    if (n % 2 === 0) return { _engine: 'real', result: false, is_prime: false, n };
+    for (let i = 3; i <= Math.sqrt(n); i += 2) {
+      if (n % i === 0) return { _engine: 'real', result: false, is_prime: false, n };
+    }
+    return { _engine: 'real', result: true, is_prime: true, n };
+  },
+
+  // Data aliases
+  'data-csv-parse': (input) => {
+    const csv = input.csv || input.text || input.input || '';
+    const lines = csv.split('\n').filter(l => l.trim());
+    if (lines.length === 0) return { _engine: 'real', data: [], headers: [], count: 0 };
+    const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+    const data = lines.slice(1).map(line => {
+      const vals = line.split(',').map(v => v.trim().replace(/^["']|["']$/g, ''));
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = vals[i] !== undefined ? vals[i] : ''; });
+      return obj;
+    });
+    return { _engine: 'real', data, headers, count: data.length };
+  },
+  'data-json-diff': (input) => {
+    const a = input.a || input.before || {};
+    const b = input.b || input.after || {};
+    const added = {}, removed = {}, changed = {}, unchanged = {};
+    const allKeys = new Set([...Object.keys(a), ...Object.keys(b)]);
+    allKeys.forEach(k => {
+      if (!(k in a)) added[k] = b[k];
+      else if (!(k in b)) removed[k] = a[k];
+      else if (JSON.stringify(a[k]) !== JSON.stringify(b[k])) changed[k] = { from: a[k], to: b[k] };
+      else unchanged[k] = a[k];
+    });
+    return { _engine: 'real', added, removed, changed, unchanged, has_changes: Object.keys(added).length + Object.keys(removed).length + Object.keys(changed).length > 0 };
+  },
+  'data-xml-to-json': (input) => {
+    const xml = input.xml || input.text || input.input || '';
+    const result = {};
+    const tagRegex = /<(\w[\w.-]*)(?:\s[^>]*)?>([^<]*)<\/\1>/g;
+    let match;
+    while ((match = tagRegex.exec(xml)) !== null) {
+      const key = match[1], val = match[2].trim();
+      result[key] = (!isNaN(val) && val !== '') ? Number(val) : val;
+    }
+    const outerMatch = xml.match(/^<(\w[\w.-]*)(?:\s[^>]*)?>[\s\S]*<\/(\w[\w.-]*)>$/);
+    if (outerMatch) {
+      return { _engine: 'real', data: { [outerMatch[1]]: result }, root: outerMatch[1] };
+    }
+    return { _engine: 'real', data: result };
+  },
+  'data-yaml-to-json': (input) => {
+    const yaml = input.yaml || input.text || input.input || '';
+    const result = {};
+    const lines = yaml.split('\n');
+    for (const line of lines) {
+      if (!line.trim() || line.trim().startsWith('#')) continue;
+      const match = line.match(/^(\w[\w.-]*)\s*:\s*(.*)$/);
+      if (match) {
+        let v = match[2].trim();
+        if (v === 'true') v = true;
+        else if (v === 'false') v = false;
+        else if (v === 'null' || v === '~') v = null;
+        else if (!isNaN(v) && v !== '') v = Number(v);
+        result[match[1]] = v;
+      }
+    }
+    return { _engine: 'real', data: result };
+  },
+  'data-json-to-yaml': (input) => {
+    const obj = input.json || input.data || input.input || {};
+    const serializeVal = (v) => {
+      if (v === null) return 'null';
+      if (typeof v === 'boolean' || typeof v === 'number') return String(v);
+      if (typeof v === 'string') return v;
+      return JSON.stringify(v);
+    };
+    const lines = [];
+    const serialize = (o, indent) => {
+      if (typeof o !== 'object' || o === null) return;
+      for (const [k, v] of Object.entries(o)) {
+        if (typeof v === 'object' && v !== null && !Array.isArray(v)) {
+          lines.push(indent + k + ':');
+          serialize(v, indent + '  ');
+        } else if (Array.isArray(v)) {
+          lines.push(indent + k + ':');
+          v.forEach(item => lines.push(indent + '  - ' + serializeVal(item)));
+        } else {
+          lines.push(indent + k + ': ' + serializeVal(v));
+        }
+      }
+    };
+    serialize(obj, '');
+    const yaml = lines.join('\n');
+    return { _engine: 'real', yaml, result: yaml };
+  },
+  'data-zip-encode': (input) => {
+    const text = input.text || input.input || input.data || '';
+    try {
+      const zlib = require('zlib');
+      const compressed = zlib.gzipSync(Buffer.from(text, 'utf8'));
+      const originalSize = Buffer.byteLength(text, 'utf8');
+      return { _engine: 'real', compressed: compressed.toString('base64'), original_size: originalSize, compressed_size: compressed.length, ratio: originalSize > 0 ? Math.round((1 - compressed.length / originalSize) * 100) + '%' : '0%' };
+    } catch (e) { return { _engine: 'real', error: e.message }; }
+  },
+  'data-zip-decode': (input) => {
+    const compressed = input.compressed || input.input || input.data || '';
+    try {
+      const zlib = require('zlib');
+      const buf = Buffer.from(compressed, 'base64');
+      const decompressed = zlib.gunzipSync(buf);
+      return { _engine: 'real', text: decompressed.toString('utf8'), result: decompressed.toString('utf8'), size: decompressed.length };
+    } catch (e) { return { _engine: 'real', error: 'Invalid compressed data: ' + e.message }; }
+  },
+
+  // Validation aliases
+  'validate-email': (input) => {
+    const email = input.email || input.input || input.value || '';
+    const rfc = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+    const valid = rfc.test(email);
+    const domain = email.split('@')[1] || '';
+    return { _engine: 'real', valid, result: valid, email, domain };
+  },
+  'validate-ip': (input) => {
+    const ip = input.ip || input.input || input.value || '';
+    const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})$/.test(ip) && ip.split('.').every(o => parseInt(o) <= 255);
+    const v6 = /^([0-9a-fA-F]{0,4}:){2,7}[0-9a-fA-F]{0,4}$/.test(ip);
+    const valid = v4 || v6;
+    const parts = ip.split('.').map(Number);
+    const isPrivate = v4 && (parts[0] === 10 || (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) || (parts[0] === 192 && parts[1] === 168));
+    return { _engine: 'real', valid, result: valid, ip, version: v4 ? 4 : v6 ? 6 : null, is_private: isPrivate };
+  },
+  'validate-uuid': (input) => {
+    const uuid = input.uuid || input.input || input.value || '';
+    const valid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(uuid);
+    const version = valid ? parseInt(uuid[14]) : null;
+    return { _engine: 'real', valid, result: valid, uuid, version };
+  },
+  'validate-phone': (input) => {
+    const phone = input.phone || input.input || input.value || '';
+    const cleaned = phone.replace(/[\s()\-+]/g, '');
+    const valid = /^\d{7,15}$/.test(cleaned);
+    return { _engine: 'real', valid, result: valid, phone, cleaned };
+  },
+
+  // Date alias
+  'date-now': (input) => {
+    const now = new Date();
+    return {
+      _engine: 'real',
+      iso: now.toISOString(),
+      unix: Math.floor(now.getTime() / 1000),
+      unix_ms: now.getTime(),
+      utc: now.toUTCString(),
+      date: now.toISOString().split('T')[0],
+      time: now.toISOString().split('T')[1].split('.')[0],
+      year: now.getUTCFullYear(),
+      month: now.getUTCMonth() + 1,
+      day: now.getUTCDate(),
+      weekday: ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][now.getUTCDay()],
+    };
   },
 };

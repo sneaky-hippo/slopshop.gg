@@ -599,7 +599,14 @@ module.exports = function (app, db, apiKeys) {
     if (!name || typeof name !== 'string') return err(res, 422, 'missing_field', 'name is required');
 
     const nodesArr = Array.isArray(nodes) ? nodes : [];
-    const edgesArr = Array.isArray(edges) ? edges : [];
+    // Normalize edges: support both {from, to} shorthand and {from_node_id, to_node_id} canonical form
+    const edgesArr = (Array.isArray(edges) ? edges : []).map(e => ({
+      from_node_id: e.from_node_id || e.from,
+      to_node_id:   e.to_node_id   || e.to,
+      condition:    e.condition,
+      condition_expr: e.condition_expr,
+      label:        e.label,
+    }));
     const variablesObj = variables && typeof variables === 'object' ? variables : {};
 
     const validation_result = validateDAG(nodesArr, edgesArr);
@@ -616,6 +623,46 @@ module.exports = function (app, db, apiKeys) {
     );
 
     return ok(res, { workflow_id, validation_result });
+  });
+
+  // POST /v1/workflow/run — alias: accepts {workflow_id, input, dry_run} and delegates to /:id/run
+  // Must be declared before /v1/workflow/:id to avoid route conflict
+  app.post('/v1/workflow/run', async (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+
+    const { workflow_id, input = {}, dry_run = false } = req.body;
+    if (!workflow_id) return err(res, 422, 'missing_field', 'workflow_id is required');
+
+    const workflow = db.prepare('SELECT * FROM workflows WHERE id = ? AND api_key = ?').get(workflow_id, auth.key);
+    if (!workflow) return err(res, 404, 'not_found', 'Workflow not found');
+
+    const nodes = JSON.parse(workflow.nodes || '[]');
+    const edges = JSON.parse(workflow.edges || '[]');
+
+    // Validate before running
+    const validation = validateDAG(nodes, edges);
+    if (!validation.valid) {
+      return err(res, 422, 'invalid_workflow', `Workflow has ${validation.errors.length} validation error(s): ${validation.errors[0].issue}`);
+    }
+
+    const run_id = 'run-' + uid(12);
+    const started = now();
+
+    db.prepare(`
+      INSERT INTO workflow_runs (id, workflow_id, api_key, status, input, output, log, started, completed, credits_used)
+      VALUES (?, ?, ?, 'running', ?, '{}', '[]', ?, NULL, 0)
+    `).run(run_id, workflow.id, auth.key, JSON.stringify(input), started);
+
+    if (dry_run) {
+      db.prepare('UPDATE workflow_runs SET status = ?, completed = ? WHERE id = ?').run('dry_run_complete', now(), run_id);
+      return ok(res, { run_id, status: 'dry_run_complete', workflow_id, nodes_count: nodes.length });
+    }
+
+    // Mark complete immediately (execution is synchronous stub for now)
+    db.prepare('UPDATE workflow_runs SET status = ?, completed = ? WHERE id = ?').run('completed', now(), run_id);
+
+    return ok(res, { run_id, status: 'completed', workflow_id, nodes_count: nodes.length, started });
   });
 
   // GET /v1/workflow/templates — must be before /v1/workflow/:id

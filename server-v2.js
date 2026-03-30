@@ -8541,8 +8541,9 @@ app.post('/v1/agent/estimate', auth, (req, res) => {
 });
 
 app.post('/v1/agent/run', auth, async (req, res) => {
-  const { task, tools, max_steps, model, provider } = req.body;
-  if (!task) return res.status(400).json({ error: { code: 'task_required' } });
+  const { tools, max_steps, model, provider } = req.body;
+  const task = req.body.task || req.body.prompt;
+  if (!task) return res.status(400).json({ error: { code: 'task_required', hint: 'Provide task or prompt field' } });
 
   const steps = Math.min(max_steps || 5, 10);
   const chain = [];
@@ -8778,13 +8779,21 @@ app.post('/v1/chain/run', auth, async (req, res) => {
       for (let i = 0; i < Math.min(inlineSteps.length, maxExec); i++) {
         const step = inlineSteps[i];
         const slug = step.slug || step.tool;
-        const stepInput = step.input || {};
-        // Substitute {{prev.*}} references
+        // Merge input and input_map (input_map takes precedence)
+        const stepInput = Object.assign({}, step.input || {}, step.input_map || {});
+        // Substitute {{prev.*}} and {{ctx.*}} references
         const resolvedInput = {};
         for (const [k, v] of Object.entries(stepInput)) {
-          if (typeof v === 'string' && v.startsWith('{{prev.')) {
+          if (typeof v === 'string' && v.match(/^\{\{prev\.\w+\}\}$/)) {
             const field = v.slice(7, -2);
+            resolvedInput[k] = ctx.prev ? ctx.prev[field] : ctx[field];
+          } else if (typeof v === 'string' && v.match(/^\{\{ctx\.\w+\}\}$/)) {
+            const field = v.slice(6, -2);
             resolvedInput[k] = ctx[field];
+          } else if (typeof v === 'string' && v.includes('{{')) {
+            // Generic template substitution for embedded references
+            resolvedInput[k] = v.replace(/\{\{prev\.(\w+)\}\}/g, (_, f) => ctx.prev ? (ctx.prev[f] !== undefined ? ctx.prev[f] : ctx[f]) : ctx[f])
+                                  .replace(/\{\{ctx\.(\w+)\}\}/g, (_, f) => ctx[f] !== undefined ? ctx[f] : '');
           } else { resolvedInput[k] = v; }
         }
 
@@ -9375,36 +9384,201 @@ app.post('/v1/route', auth, (req, res) => {
 
   const lower = task.toLowerCase();
 
-  // Use the smart routing from agent.js patterns + scoring
+  // Intent-boosting map: natural language phrases -> slug boost targets
+  const INTENT_BOOSTS = [
+    // Crypto / hashing
+    { patterns: ['hash','sha256','sha512','sha1','checksum','digest','fingerprint'], slugs: ['crypto-hash-sha256','crypto-hash-sha512','crypto-hash-md5'], boost: 15 },
+    { patterns: ['md5'], slugs: ['crypto-hash-md5'], boost: 20 },
+    { patterns: ['uuid','guid','unique id','generate id'], slugs: ['crypto-uuid'], boost: 20 },
+    { patterns: ['hmac','message auth'], slugs: ['crypto-hmac'], boost: 20 },
+    { patterns: ['encrypt','aes','cipher','encipher'], slugs: ['crypto-encrypt-aes'], boost: 20 },
+    { patterns: ['decrypt','decipher','aes decrypt'], slugs: ['crypto-decrypt-aes'], boost: 20 },
+    { patterns: ['base64 encode','encode base64','to base64'], slugs: ['crypto-base64-encode'], boost: 18 },
+    { patterns: ['base64 decode','decode base64','from base64'], slugs: ['crypto-base64-decode'], boost: 18 },
+    { patterns: ['jwt','json web token','decode jwt','parse jwt','inspect jwt'], slugs: ['crypto-jwt-decode'], boost: 20 },
+    { patterns: ['sign jwt','create jwt','generate jwt'], slugs: ['crypto-jwt-sign'], boost: 20 },
+    { patterns: ['password hash','hash password','bcrypt','pbkdf2'], slugs: ['crypto-password-hash'], boost: 18 },
+    { patterns: ['random bytes','random hex','random string','secure random'], slugs: ['crypto-random-bytes'], boost: 15 },
+    // Text processing
+    { patterns: ['word count','count words','how many words'], slugs: ['text-word-count'], boost: 25 },
+    { patterns: ['char count','character count','count chars','count characters'], slugs: ['text-char-count'], boost: 25 },
+    { patterns: ['truncate','shorten text','cut text','limit text'], slugs: ['text-truncate'], boost: 20 },
+    { patterns: ['slug','url slug','kebab case from'], slugs: ['text-slugify'], boost: 20 },
+    { patterns: ['camel case','snake case','title case','uppercase','lowercase','case convert'], slugs: ['text-case-convert'], boost: 20 },
+    { patterns: ['reverse','reverse text','reverse string'], slugs: ['text-reverse'], boost: 20 },
+    { patterns: ['palindrome','is palindrome'], slugs: ['text-palindrome'], boost: 20 },
+    { patterns: ['sentiment','positive or negative','emotion analysis','tone'], slugs: ['text-sentiment'], boost: 20 },
+    { patterns: ['extract email','find email','emails in text'], slugs: ['text-extract-emails'], boost: 22 },
+    { patterns: ['extract url','find url','links in text'], slugs: ['text-extract-urls'], boost: 22 },
+    { patterns: ['extract phone','find phone','phone numbers in'], slugs: ['text-extract-phones'], boost: 22 },
+    { patterns: ['redact','pii','remove personal','anonymize'], slugs: ['text-redact-pii'], boost: 20 },
+    { patterns: ['summarize','summary','tldr','tl;dr'], slugs: ['text-summarize','llm-summarize'], boost: 18 },
+    { patterns: ['translate','translation','convert language'], slugs: ['text-translate','llm-translate'], boost: 18 },
+    { patterns: ['token count','count tokens','how many tokens'], slugs: ['text-token-count'], boost: 22 },
+    { patterns: ['regex','regular expression','test pattern'], slugs: ['text-regex-test'], boost: 18 },
+    { patterns: ['diff','compare text','text difference'], slugs: ['text-diff'], boost: 18 },
+    { patterns: ['readability','reading level','flesch'], slugs: ['text-readability'], boost: 18 },
+    // Math
+    { patterns: ['calculate','compute formula','evaluate expression','math'], slugs: ['math-eval'], boost: 18 },
+    { patterns: ['fibonacci','fib sequence'], slugs: ['math-fibonacci'], boost: 22 },
+    { patterns: ['prime','is prime','prime number'], slugs: ['math-prime'], boost: 22 },
+    { patterns: ['statistics','mean','median','standard deviation','variance'], slugs: ['math-stats'], boost: 20 },
+    { patterns: ['percentage','percent of','calculate percent'], slugs: ['math-percentage'], boost: 18 },
+    { patterns: ['mortgage','loan payment','amortize'], slugs: ['math-mortgage'], boost: 22 },
+    { patterns: ['matrix','matrix multiply','determinant'], slugs: ['math-matrix'], boost: 20 },
+    { patterns: ['compound interest','investment return','future value'], slugs: ['math-compound-interest'], boost: 20 },
+    // Memory / storage
+    { patterns: ['store','save','remember','persist','memorize','store in memory','write to memory'], slugs: ['memory-set'], boost: 22 },
+    { patterns: ['retrieve','recall','load memory','get from memory','read memory'], slugs: ['memory-get'], boost: 22 },
+    { patterns: ['list memories','all memories','show memories'], slugs: ['memory-list'], boost: 20 },
+    { patterns: ['search memory','find memory','query memory'], slugs: ['memory-search'], boost: 20 },
+    { patterns: ['kv store','key value','key-value'], slugs: ['kv-set','kv-get'], boost: 18 },
+    { patterns: ['queue','enqueue','job queue','task queue'], slugs: ['queue-push'], boost: 20 },
+    { patterns: ['counter','increment','count up','atomic counter'], slugs: ['counter-increment'], boost: 20 },
+    // Validation
+    { patterns: ['validate email','email valid','check email format'], slugs: ['validate-email-syntax','net-email-validate'], boost: 25 },
+    { patterns: ['validate url','url valid','check url'], slugs: ['validate-url'], boost: 22 },
+    { patterns: ['validate ip','ip address valid','check ip'], slugs: ['net-ip-validate'], boost: 22 },
+    { patterns: ['validate uuid','uuid valid'], slugs: ['validate-uuid'], boost: 22 },
+    { patterns: ['validate credit card','card number valid','luhn'], slugs: ['validate-credit-card'], boost: 22 },
+    { patterns: ['validate phone','phone number valid'], slugs: ['validate-phone'], boost: 22 },
+    { patterns: ['validate iban','iban valid'], slugs: ['validate-iban'], boost: 22 },
+    { patterns: ['validate json','json valid','parse json'], slugs: ['validate-json'], boost: 20 },
+    // Date / time
+    { patterns: ['current date','what date','today date','now','current time'], slugs: ['date-now'], boost: 22 },
+    { patterns: ['format date','date format','convert date'], slugs: ['date-format'], boost: 22 },
+    { patterns: ['parse date','read date string'], slugs: ['date-parse'], boost: 22 },
+    { patterns: ['business days','working days','weekday'], slugs: ['date-business-days'], boost: 22 },
+    { patterns: ['cron','cron expression','schedule next run'], slugs: ['date-cron-next'], boost: 22 },
+    { patterns: ['time difference','days between','date diff'], slugs: ['date-diff'], boost: 20 },
+    { patterns: ['unix timestamp','epoch','convert timestamp'], slugs: ['date-to-unix'], boost: 20 },
+    // Network
+    { patterns: ['dns lookup','dns resolve','lookup domain'], slugs: ['net-dns-lookup'], boost: 22 },
+    { patterns: ['http check','is site up','check url status','ping url'], slugs: ['net-http-check'], boost: 22 },
+    { patterns: ['ssl check','certificate valid','https check'], slugs: ['net-ssl-check'], boost: 22 },
+    { patterns: ['ping','icmp ping','is host alive'], slugs: ['net-ping'], boost: 22 },
+    { patterns: ['http headers','response headers','get headers'], slugs: ['net-http-headers'], boost: 20 },
+    { patterns: ['ip geolocation','where is ip','ip location'], slugs: ['net-ip-geo'], boost: 22 },
+    { patterns: ['whois','domain owner','registrar'], slugs: ['net-whois'], boost: 22 },
+    // Data transform
+    { patterns: ['csv','csv to json','parse csv','convert csv'], slugs: ['data-csv-to-json'], boost: 22 },
+    { patterns: ['json to csv','convert json to csv'], slugs: ['data-json-to-csv'], boost: 22 },
+    { patterns: ['xml','parse xml','xml to json'], slugs: ['data-xml-to-json'], boost: 22 },
+    { patterns: ['yaml','parse yaml','yaml to json'], slugs: ['data-yaml-to-json'], boost: 22 },
+    { patterns: ['zip','compress','gzip','deflate'], slugs: ['data-zip'], boost: 18 },
+    { patterns: ['flatten','flatten json','flatten object','flatten array'], slugs: ['data-flatten'], boost: 20 },
+    { patterns: ['json diff','object diff','compare json'], slugs: ['data-json-diff'], boost: 20 },
+    { patterns: ['json schema','validate schema'], slugs: ['data-json-schema-validate'], boost: 20 },
+    // Code utilities
+    { patterns: ['format sql','sql format','indent sql','beautify sql'], slugs: ['code-sql-format'], boost: 25 },
+    { patterns: ['run sql','execute sql','sql query','sql on data','sql query on','run a sql','execute a sql'], slugs: ['exec-sql-on-json'], boost: 25 },
+    { patterns: ['explain regex','regex explain','what does regex'], slugs: ['code-regex-explain'], boost: 22 },
+    { patterns: ['semver','version compare','semantic version'], slugs: ['code-semver-compare'], boost: 22 },
+    { patterns: ['parse env','dotenv','env file'], slugs: ['code-parse-env'], boost: 20 },
+    { patterns: ['format json','pretty print json','json beautify'], slugs: ['code-json-format'], boost: 20 },
+    // Generation / LLM
+    { patterns: ['generate text','write text','compose','draft','llm generate'], slugs: ['llm-generate'], boost: 18 },
+    { patterns: ['blog post','write blog','article'], slugs: ['llm-blog'], boost: 18 },
+    { patterns: ['generate code','write code','code generation'], slugs: ['llm-code'], boost: 18 },
+    { patterns: ['weather','weather forecast','temperature forecast','weather report'], slugs: ['weather-report'], boost: 25 },
+    { patterns: ['forecast data','trend forecast','number forecast','data forecast'], slugs: ['data-forecast'], boost: 20 },
+    // Agent / orchestration
+    { patterns: ['chain agents','run workflow','execute pipeline','orchestrate'], slugs: ['agent-chain'], boost: 20 },
+    { patterns: ['deploy army','multi agent','spawn agents','agent swarm'], slugs: ['army-deploy'], boost: 20 },
+    { patterns: ['hive','hive workspace','agent workspace'], slugs: ['hive-run'], boost: 20 },
+  ];
+
+  // Apply intent boosts
+  const intentBoostMap = {};
+  for (const intent of INTENT_BOOSTS) {
+    const matched = intent.patterns.some(p => lower.includes(p));
+    if (matched) {
+      for (const slug of intent.slugs) {
+        intentBoostMap[slug] = (intentBoostMap[slug] || 0) + intent.boost;
+      }
+    }
+  }
+
+  // Score all APIs
   const scored = [];
+  const stopWords = new Set(['the','and','for','are','this','that','with','from','into','your','some','will','can','how','its','have']);
+  const words = lower.split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+  const maxPossible = words.length * 4 + 3 + 30; // text + slug + compute + boost
+
   for (const [slug, def] of Object.entries(API_DEFS)) {
     const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
     let score = 0;
-    const words = lower.split(/\s+/).filter(w => w.length > 2);
-    words.forEach(w => { if (text.includes(w)) score++; if (slug.includes(w)) score += 3; });
-
-    // Boost compute tier (cheaper, faster, more reliable)
+    let matchedTerms = [];
+    words.forEach(w => {
+      if (text.includes(w)) { score++; matchedTerms.push(w); }
+      if (slug.includes(w)) { score += 3; }
+    });
     if (def.tier === 'compute') score += 2;
     if (def.credits <= 1) score += 1;
+    const intentBoost = intentBoostMap[slug] || 0;
+    score += intentBoost;
 
-    if (score > 2) {
+    if (score > 2 || intentBoost > 0) {
       scored.push({
         slug, name: def.name, description: def.desc,
         credits: def.credits, tier: def.tier, category: def.cat,
         relevance_score: score,
         has_handler: !!allHandlers[slug],
         input_schema: SCHEMAS?.[slug]?.input || null,
+        _matched_terms: matchedTerms,
+        _intent_boost: intentBoost,
       });
     }
   }
 
   scored.sort((a, b) => b.relevance_score - a.relevance_score);
+  const best = scored[0] || null;
+  const maxScore = best ? best.relevance_score : 0;
+
+  // Build example_call for the best match
+  function buildExampleCall(item) {
+    if (!item) return null;
+    const schema = SCHEMAS?.[item.slug];
+    const exampleInput = schema?.example?.input || {};
+    // Fill in required fields with sensible defaults if example is empty
+    if (Object.keys(exampleInput).length === 0 && item.input_schema) {
+      for (const [k, v] of Object.entries(item.input_schema)) {
+        if (v && v.required) {
+          if (v.type === 'string') exampleInput[k] = 'example';
+          else if (v.type === 'number') exampleInput[k] = 42;
+          else if (v.type === 'boolean') exampleInput[k] = true;
+          else if (v.type === 'array') exampleInput[k] = [];
+          else if (v.type === 'object') exampleInput[k] = {};
+        }
+      }
+    }
+    return { endpoint: '/v1/' + item.slug, body: exampleInput };
+  }
+
+  // Generate human-readable reason
+  function buildReason(item) {
+    if (!item) return 'No matching API found';
+    const parts = [];
+    if (item._intent_boost > 0) parts.push('intent keyword match');
+    if (item._matched_terms && item._matched_terms.length > 0) parts.push('matched terms: ' + [...new Set(item._matched_terms)].slice(0,3).join(', '));
+    if (item.tier === 'compute') parts.push('fast compute tier');
+    if (item.credits <= 1) parts.push('low cost');
+    return parts.length > 0 ? parts.join('; ') : 'best available match';
+  }
 
   res.json({
     ok: true,
     task,
-    recommended: scored[0] || null,
-    alternatives: scored.slice(1, 5),
+    recommended: best ? best.slug : null,
+    confidence: best ? Math.min(Math.round((best.relevance_score / Math.max(maxPossible, best.relevance_score)) * 100) / 100, 1) : 0,
+    reason: buildReason(best),
+    alternatives: scored.slice(1, 4).map(s => s.slug),
+    example_call: buildExampleCall(best),
+    _detail: best ? {
+      slug: best.slug, name: best.name, description: best.description,
+      credits: best.credits, tier: best.tier, category: best.category,
+      has_handler: best.has_handler, input_schema: best.input_schema,
+    } : null,
     total_matches: scored.length,
     _engine: 'real',
   });

@@ -297,8 +297,8 @@ module.exports = function (app, db, apiKeys) {
 
   // POST /v1/identity/verify
   app.post('/v1/identity/verify', (req, res) => {
-    const { token } = req.body;
-    if (!token) return res.status(400).json({ error: { code: 'missing_token', message: 'token is required' } });
+    const token = req.body.token || req.body.svid;
+    if (!token) return res.status(400).json({ error: { code: 'missing_token', message: 'token (or svid) is required' } });
 
     const payload = verifyToken(token);
     if (!payload) {
@@ -742,6 +742,48 @@ module.exports = function (app, db, apiKeys) {
       task,
       budget_credits: delegatePayload.budget_credits,
       created: now,
+    });
+  });
+
+  // POST /v1/a2a/send — simplified alias for /v1/a2a/message
+  // Accepts: {from_agent, to_agent, message, type} where type defaults to 'notify'
+  app.post('/v1/a2a/send', (req, res) => {
+    const { from_agent, to_agent, message, type = 'notify', priority = 5, ttl_ms } = req.body;
+
+    if (!from_agent || !to_agent) {
+      return res.status(400).json({ error: { code: 'missing_agents', message: 'from_agent and to_agent are required' } });
+    }
+
+    // Normalize type: map simple types like 'text' to 'notify'
+    const VALID_TYPES = ['request', 'response', 'delegate', 'notify'];
+    const normalizedType = VALID_TYPES.includes(type) ? type : 'notify';
+
+    const message_id = crypto.randomUUID();
+    const queued_at = Date.now();
+    const prio = Math.max(1, Math.min(10, Number(priority) || 5));
+    const payload = message !== undefined ? (typeof message === 'string' ? message : JSON.stringify(message)) : '{}';
+
+    stmts.insertMessage.run(
+      message_id,
+      from_agent,
+      to_agent,
+      normalizedType,
+      payload,
+      prio,
+      ttl_ms ? Number(ttl_ms) : null,
+      queued_at
+    );
+
+    return res.json({
+      ok: true,
+      _engine: 'real',
+      message_id,
+      queued_at,
+      status: 'pending',
+      from_agent,
+      to_agent,
+      type: normalizedType,
+      priority: prio,
     });
   });
 

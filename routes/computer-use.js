@@ -380,6 +380,97 @@ module.exports = function (app, db, apiKeys) {
     });
   });
 
+  // POST /v1/computer-use/session/:id/stop — alias for /end
+  app.post('/v1/computer-use/session/:id/stop', (req, res) => {
+    req.url = req.url.replace(/\/stop$/, '/end');
+    // Re-dispatch internally by delegating to the /end handler logic inline
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+
+    const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(req.params.id, auth.key);
+    if (!session) return res.status(404).json({ error: { code: 'not_found' } });
+
+    const now = Date.now();
+    db.prepare('UPDATE cu_sessions SET status = ?, last_action = ? WHERE id = ?').run('ended', now, session.id);
+
+    const actions = db.prepare('SELECT * FROM cu_actions WHERE session_id = ? ORDER BY id ASC').all(session.id);
+    const checkpoints = db.prepare('SELECT * FROM cu_checkpoints WHERE session_id = ? ORDER BY ts ASC').all(session.id);
+    const verifications = db.prepare('SELECT * FROM cu_verifications WHERE session_id = ?').all(session.id);
+    const passedVerifs = verifications.filter(v => v.passed).length;
+    const duration_ms = now - session.created;
+
+    const summary = {
+      session_id: session.id,
+      name: session.name,
+      total_actions: actions.length,
+      duration_ms,
+      checkpoints_count: checkpoints.length,
+      verifications_total: verifications.length,
+      verifications_passed: passedVerifs,
+      action_types: [...new Set(actions.map(a => a.action_type))],
+      ended_at: now,
+    };
+
+    const memKey = `cu:session:${session.id}`;
+    memSave(db, auth.key, memKey, { ...summary, status: 'ended' });
+    memSave(db, auth.key, `cu:session:${session.id}:summary`, summary);
+
+    res.json({
+      ok: true,
+      _engine: 'real',
+      summary,
+      total_actions: actions.length,
+      duration_ms,
+      checkpoints: checkpoints.length,
+      memory_saved: true,
+    });
+  });
+
+  // POST /v1/computer-use/session/:id/action — per-session action alias
+  // Accepts: {type, x, y, description, value, selector} and maps to the internal action store
+  app.post('/v1/computer-use/session/:id/action', (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+
+    const session_id = req.params.id;
+    const { type, action_type, x, y, description, value, selector } = req.body;
+
+    // Normalize action type: use type or action_type
+    const rawType = (action_type || type || '').toString();
+    const VALID_ACTION_TYPES_LOCAL = new Set(['click', 'type', 'scroll', 'drag', 'keypress', 'navigate', 'wait']);
+    const normalizedType = VALID_ACTION_TYPES_LOCAL.has(rawType) ? rawType : 'click';
+
+    // Normalize selector: use selector field, or build from x,y coordinates
+    const normalizedSelector = selector || (x !== undefined && y !== undefined ? `${x},${y}` : null);
+    const normalizedValue = value || description || null;
+
+    const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(session_id, auth.key);
+    if (!session) return res.status(404).json({ error: { code: 'session_not_found' } });
+
+    const now = Date.now();
+
+    const ins = db.prepare(
+      'INSERT INTO cu_actions (session_id, action_type, selector, value, screenshot_hash, result, verified, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(session_id, normalizedType, normalizedSelector, normalizedValue, null, null, 0, now);
+
+    db.prepare(
+      'UPDATE cu_sessions SET action_count = action_count + 1, last_action = ? WHERE id = ?'
+    ).run(now, session_id);
+
+    const sequenceNumber = db.prepare(
+      'SELECT COUNT(*) as cnt FROM cu_actions WHERE session_id = ?'
+    ).get(session_id).cnt;
+
+    res.json({
+      ok: true,
+      _engine: 'real',
+      action_id: ins.lastInsertRowid,
+      sequence_number: sequenceNumber,
+      session_id,
+      type: normalizedType,
+    });
+  });
+
   // GET /v1/computer-use/sessions
   app.get('/v1/computer-use/sessions', (req, res) => {
     const auth = requireAuth(req, res, apiKeys);
