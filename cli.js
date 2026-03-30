@@ -463,21 +463,29 @@ async function cmdCall(args) {
 
   requireKey();
 
-  // Parse --key value pairs (skip global flags)
+  // Parse --key value or --key=value pairs (skip global flags)
   const input = {};
   for (let i = 1; i < args.length; i++) {
     if (GLOBAL_FLAGS.includes(args[i])) continue;
-    const key = args[i];
-    const val = args[i + 1];
-    if (!key.startsWith('--')) die(`Expected --key, got: ${key}`);
-    const k = key.slice(2);
-    // Try to parse JSON values (numbers, bools, objects)
+    const arg = args[i];
+    if (!arg.startsWith('--')) die(`Expected --key, got: ${arg}`);
+    let k, val;
+    if (arg.includes('=')) {
+      // --key=value format
+      const eqIdx = arg.indexOf('=');
+      k = arg.slice(2, eqIdx);
+      val = arg.slice(eqIdx + 1);
+    } else {
+      k = arg.slice(2);
+      val = args[i + 1];
+      i++; // skip value
+    }
+    // Try to parse JSON values (numbers, bools, objects, arrays)
     try {
       input[k] = JSON.parse(val);
     } catch {
       input[k] = val;
     }
-    i++; // skip value
   }
 
   // --model flag: pass model selection for LLM APIs
@@ -541,17 +549,28 @@ async function cmdCall(args) {
 async function cmdPipe(args) {
   requireKey();
 
-  // Separate slugs from --key value pairs
+  // Separate slugs from --key value or --key=value pairs
   const slugs = [];
   const initialInput = {};
   for (let i = 0; i < args.length; i++) {
-    if (args[i].startsWith('--') && i + 1 < args.length && !args[i + 1].startsWith('--')) {
-      const k = args[i].slice(2);
-      try { initialInput[k] = JSON.parse(args[i + 1]); }
-      catch { initialInput[k] = args[i + 1]; }
-      i++; // skip value
-    } else if (!args[i].startsWith('--')) {
-      slugs.push(args[i]);
+    const arg = args[i];
+    if (arg.startsWith('--')) {
+      let k, val;
+      if (arg.includes('=')) {
+        const eqIdx = arg.indexOf('=');
+        k = arg.slice(2, eqIdx);
+        val = arg.slice(eqIdx + 1);
+      } else if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
+        k = arg.slice(2);
+        val = args[i + 1];
+        i++; // skip value
+      } else {
+        continue; // boolean flag with no value
+      }
+      try { initialInput[k] = JSON.parse(val); }
+      catch { initialInput[k] = val; }
+    } else {
+      slugs.push(arg);
     }
   }
 
