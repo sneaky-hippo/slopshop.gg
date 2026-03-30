@@ -6885,8 +6885,9 @@ async function main() {
   ${C.red}       \\__ \\/ /   / / / / /_/ /${C.reset}
   ${C.red}      ___/ / /___/ /_/ / ____/ ${C.reset}
   ${C.red}     /____/_____/\\____/_/      ${C.reset}
+  ${dim('     S T A T E L E S S . L I G H T W E I G H T')}
+  ${dim('     O P E R A T I N G . P R I M I T I V E S')}
   ${dim('     slopshop.gg')} ${C.bold}v${PKG_VERSION}${C.reset}
-  ${dim('     the missing backend for AI agents')}
 
   ${bold('Get started in 30 seconds:')}
 
