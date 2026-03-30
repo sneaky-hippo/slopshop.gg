@@ -3,6 +3,7 @@
 const http = require('http');
 const https = require('https');
 const net = require('net');
+const os = require('os');
 const crypto = require('crypto');
 
 // ---------------------------------------------------------------------------
@@ -53,6 +54,11 @@ function fetchUrl(rawUrl, { timeoutMs = 8000, method = 'GET' } = {}) {
   });
 }
 
+// Safe JSON parse – returns null on failure instead of throwing
+function safeJson(str) {
+  try { return JSON.parse(str); } catch (_) { return null; }
+}
+
 // ---------------------------------------------------------------------------
 // HTML helpers
 // ---------------------------------------------------------------------------
@@ -95,6 +101,20 @@ function extractOgMeta(html, prop) {
   return '';
 }
 
+// Compute UTC offset string from a timezone name using Intl
+function tzOffset(timezone, now) {
+  try {
+    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
+    const tzDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
+    const diffMin = Math.round((tzDate - utcDate) / 60000);
+    const sign = diffMin >= 0 ? '+' : '-';
+    const absMin = Math.abs(diffMin);
+    return `UTC${sign}${String(Math.floor(absMin / 60)).padStart(2, '0')}:${String(absMin % 60).padStart(2, '0')}`;
+  } catch (_) {
+    return 'UTC+00:00';
+  }
+}
+
 // ---------------------------------------------------------------------------
 // 1. sense-url-content
 // ---------------------------------------------------------------------------
@@ -103,12 +123,16 @@ async function senseUrlContent(input) {
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
   const start = Date.now();
-  const { body } = await fetchUrl(url, { timeoutMs: 10000 });
-  const fetch_time_ms = Date.now() - start;
-  const title = extractTitle(body);
-  const text = stripHtml(body).slice(0, 5000);
-  const word_count = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-  return { _engine: 'real', url, title, text, word_count, fetch_time_ms };
+  try {
+    const { body } = await fetchUrl(url, { timeoutMs: 10000 });
+    const fetch_time_ms = Date.now() - start;
+    const title = extractTitle(body);
+    const text = stripHtml(body).slice(0, 5000);
+    const word_count = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+    return { _engine: 'real', url, title, text, word_count, fetch_time_ms };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -118,26 +142,30 @@ async function senseUrlMeta(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
-  const { body } = await fetchUrl(url, { timeoutMs: 10000 });
-  const title = extractTitle(body);
-  const description = extractMeta(body, 'description');
-  const canonical = (() => {
-    const m = body.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)
-           || body.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i);
-    return m ? m[1] : '';
-  })();
-  return {
-    _engine: 'real',
-    url,
-    title,
-    description,
-    og: {
-      title: extractOgMeta(body, 'title'),
-      description: extractOgMeta(body, 'description'),
-      image: extractOgMeta(body, 'image'),
-    },
-    canonical,
-  };
+  try {
+    const { body } = await fetchUrl(url, { timeoutMs: 10000 });
+    const title = extractTitle(body);
+    const description = extractMeta(body, 'description');
+    const canonical = (() => {
+      const m = body.match(/<link[^>]+rel=["']canonical["'][^>]+href=["']([^"']+)["']/i)
+             || body.match(/<link[^>]+href=["']([^"']+)["'][^>]+rel=["']canonical["']/i);
+      return m ? m[1] : '';
+    })();
+    return {
+      _engine: 'real',
+      url,
+      title,
+      description,
+      og: {
+        title: extractOgMeta(body, 'title'),
+        description: extractOgMeta(body, 'description'),
+        image: extractOgMeta(body, 'image'),
+      },
+      canonical,
+    };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -147,21 +175,25 @@ async function senseUrlLinks(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
-  const { body } = await fetchUrl(url, { timeoutMs: 10000 });
-  const base = new URL(url);
-  const hrefs = [];
-  const re = /<a[^>]+href=["']([^"'#][^"']*)["']/gi;
-  let m;
-  while ((m = re.exec(body)) !== null) {
-    try {
-      const abs = new URL(m[1], url).toString();
-      hrefs.push(abs);
-    } catch (_) {/* skip malformed */}
+  try {
+    const { body } = await fetchUrl(url, { timeoutMs: 10000 });
+    const base = new URL(url);
+    const hrefs = [];
+    const re = /<a[^>]+href=["']([^"'#][^"']*)["']/gi;
+    let m;
+    while ((m = re.exec(body)) !== null) {
+      try {
+        const abs = new URL(m[1], url).toString();
+        hrefs.push(abs);
+      } catch (_) {/* skip malformed */}
+    }
+    const unique = [...new Set(hrefs)];
+    const internal = unique.filter(l => { try { return new URL(l).hostname === base.hostname; } catch { return false; } });
+    const external = unique.filter(l => { try { return new URL(l).hostname !== base.hostname; } catch { return false; } });
+    return { _engine: 'real', links: unique, internal_count: internal.length, external_count: external.length, total: unique.length };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
   }
-  const unique = [...new Set(hrefs)];
-  const internal = unique.filter(l => { try { return new URL(l).hostname === base.hostname; } catch { return false; } });
-  const external = unique.filter(l => { try { return new URL(l).hostname !== base.hostname; } catch { return false; } });
-  return { _engine: 'real', links: unique, internal_count: internal.length, external_count: external.length, total: unique.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -171,28 +203,32 @@ async function senseUrlFeed(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
-  const { body } = await fetchUrl(url, { timeoutMs: 10000 });
+  try {
+    const { body } = await fetchUrl(url, { timeoutMs: 10000 });
 
-  const isAtom = /<feed[\s>]/i.test(body);
-  const format = isAtom ? 'atom' : 'rss';
-  const itemTag = isAtom ? 'entry' : 'item';
+    const isAtom = /<feed[\s>]/i.test(body);
+    const format = isAtom ? 'atom' : 'rss';
+    const itemTag = isAtom ? 'entry' : 'item';
 
-  const items = [];
-  const itemRe = new RegExp(`<${itemTag}[\\s>]([\\s\\S]*?)<\\/${itemTag}>`, 'gi');
-  let im;
-  while ((im = itemRe.exec(body)) !== null) {
-    const chunk = im[1];
-    const titleM = chunk.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    const linkM = chunk.match(/<link[^>]*href=["']([^"']+)["']/i) || chunk.match(/<link>([\s\S]*?)<\/link>/i);
-    const dateM = chunk.match(/<(?:pubDate|updated|published)[^>]*>([\s\S]*?)<\/(?:pubDate|updated|published)>/i);
-    items.push({
-      title: titleM ? stripHtml(titleM[1]).trim() : '',
-      link: linkM ? linkM[1].trim() : '',
-      date: dateM ? dateM[1].trim() : '',
-    });
-    if (items.length >= 50) break;
+    const items = [];
+    const itemRe = new RegExp(`<${itemTag}[\\s>]([\\s\\S]*?)<\\/${itemTag}>`, 'gi');
+    let im;
+    while ((im = itemRe.exec(body)) !== null) {
+      const chunk = im[1];
+      const titleM = chunk.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      const linkM = chunk.match(/<link[^>]*href=["']([^"']+)["']/i) || chunk.match(/<link>([\s\S]*?)<\/link>/i);
+      const dateM = chunk.match(/<(?:pubDate|updated|published)[^>]*>([\s\S]*?)<\/(?:pubDate|updated|published)>/i);
+      items.push({
+        title: titleM ? stripHtml(titleM[1]).trim() : '',
+        link: linkM ? linkM[1].trim() : '',
+        date: dateM ? dateM[1].trim() : '',
+      });
+      if (items.length >= 50) break;
+    }
+    return { _engine: 'real', format, items, count: items.length };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
   }
-  return { _engine: 'real', format, items, count: items.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -202,32 +238,36 @@ async function senseUrlRobots(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
-  const base = new URL(url);
-  const robotsUrl = `${base.protocol}//${base.host}/robots.txt`;
-  const { body } = await fetchUrl(robotsUrl, { timeoutMs: 8000 });
+  try {
+    const base = new URL(url);
+    const robotsUrl = `${base.protocol}//${base.host}/robots.txt`;
+    const { body } = await fetchUrl(robotsUrl, { timeoutMs: 8000 });
 
-  const rules = [];
-  const sitemaps = [];
-  let current = null;
+    const rules = [];
+    const sitemaps = [];
+    let current = null;
 
-  for (const raw of body.split('\n')) {
-    const line = raw.split('#')[0].trim();
-    if (!line) continue;
-    const [key, ...rest] = line.split(':');
-    const val = rest.join(':').trim();
-    const k = key.trim().toLowerCase();
-    if (k === 'user-agent') {
-      current = { user_agent: val, allow: [], disallow: [] };
-      rules.push(current);
-    } else if (k === 'allow' && current) {
-      current.allow.push(val);
-    } else if (k === 'disallow' && current) {
-      current.disallow.push(val);
-    } else if (k === 'sitemap') {
-      sitemaps.push(val);
+    for (const raw of body.split('\n')) {
+      const line = raw.split('#')[0].trim();
+      if (!line) continue;
+      const [key, ...rest] = line.split(':');
+      const val = rest.join(':').trim();
+      const k = key.trim().toLowerCase();
+      if (k === 'user-agent') {
+        current = { user_agent: val, allow: [], disallow: [] };
+        rules.push(current);
+      } else if (k === 'allow' && current) {
+        current.allow.push(val);
+      } else if (k === 'disallow' && current) {
+        current.disallow.push(val);
+      } else if (k === 'sitemap') {
+        sitemaps.push(val);
+      }
     }
+    return { _engine: 'real', rules, sitemaps };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
   }
-  return { _engine: 'real', rules, sitemaps };
 }
 
 // ---------------------------------------------------------------------------
@@ -248,14 +288,7 @@ async function senseTimeNow(input) {
       hour12: false, timeZoneName: 'short',
     });
     formatted = dtf.format(now);
-
-    // Compute offset in minutes using Intl trick
-    const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
-    const tzDate = new Date(now.toLocaleString('en-US', { timeZone: timezone }));
-    const diffMin = Math.round((tzDate - utcDate) / 60000);
-    const sign = diffMin >= 0 ? '+' : '-';
-    const absMin = Math.abs(diffMin);
-    offset = `UTC${sign}${String(Math.floor(absMin / 60)).padStart(2, '0')}:${String(absMin % 60).padStart(2, '0')}`;
+    offset = tzOffset(timezone, now);
   } catch (e) {
     formatted = now.toUTCString();
     offset = 'UTC+00:00';
@@ -278,21 +311,26 @@ async function senseGithubRepo(input) {
   input = input || {};
   const repo = input.repo;
   if (!repo) return { _engine: 'real', error: 'missing_param', required: 'repo', hint: 'owner/repo format' };
-  const apiUrl = `https://api.github.com/repos/${repo}`;
-  const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
-  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "GitHub API returned " + statusCode };
-  const d = JSON.parse(body);
-  return {
-    _engine: 'real',
-    name: d.full_name,
-    description: d.description || '',
-    stars: d.stargazers_count,
-    forks: d.forks_count,
-    language: d.language || '',
-    open_issues: d.open_issues_count,
-    created_at: d.created_at,
-    updated_at: d.updated_at,
-  };
+  try {
+    const apiUrl = `https://api.github.com/repos/${repo}`;
+    const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
+    if (statusCode !== 200) return { _engine: 'real', error: 'api_error', message: `GitHub API returned ${statusCode}` };
+    const d = safeJson(body);
+    if (!d) return { _engine: 'real', error: 'parse_error', message: 'Invalid JSON from GitHub API' };
+    return {
+      _engine: 'real',
+      name: d.full_name,
+      description: d.description || '',
+      stars: d.stargazers_count,
+      forks: d.forks_count,
+      language: d.language || '',
+      open_issues: d.open_issues_count,
+      created_at: d.created_at,
+      updated_at: d.updated_at,
+    };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -302,36 +340,41 @@ async function senseNpmPackage(input) {
   input = input || {};
   const pkg = input.package;
   if (!pkg) return { _engine: 'real', error: 'missing_param', required: 'package' };
-  const encoded = encodeURIComponent(pkg).replace('%40', '@');
-  const infoUrl = `https://registry.npmjs.org/${encoded}`;
-  const { body, statusCode } = await fetchUrl(infoUrl, { timeoutMs: 8000 });
-  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "npm registry returned " + statusCode };
-  const d = JSON.parse(body);
-  const latest = d['dist-tags'] && d['dist-tags'].latest ? d['dist-tags'].latest : Object.keys(d.versions || {}).pop() || '';
-  const ver = d.versions && d.versions[latest] ? d.versions[latest] : {};
-
-  // weekly downloads from downloads API
-  let weekly_downloads = 0;
   try {
-    const dlUrl = `https://api.npmjs.org/downloads/point/last-week/${encoded}`;
-    const dlRes = await fetchUrl(dlUrl, { timeoutMs: 5000 });
-    const dlData = JSON.parse(dlRes.body);
-    weekly_downloads = dlData.downloads || 0;
-  } catch (_) {}
+    const encoded = encodeURIComponent(pkg).replace('%40', '@');
+    const infoUrl = `https://registry.npmjs.org/${encoded}`;
+    const { body, statusCode } = await fetchUrl(infoUrl, { timeoutMs: 8000 });
+    if (statusCode !== 200) return { _engine: 'real', error: 'api_error', message: `npm registry returned ${statusCode}` };
+    const d = safeJson(body);
+    if (!d) return { _engine: 'real', error: 'parse_error', message: 'Invalid JSON from npm registry' };
+    const latest = d['dist-tags'] && d['dist-tags'].latest ? d['dist-tags'].latest : Object.keys(d.versions || {}).pop() || '';
+    const ver = d.versions && d.versions[latest] ? d.versions[latest] : {};
 
-  const deps = ver.dependencies ? Object.keys(ver.dependencies).length : 0;
+    // weekly downloads from downloads API
+    let weekly_downloads = 0;
+    try {
+      const dlUrl = `https://api.npmjs.org/downloads/point/last-week/${encoded}`;
+      const dlRes = await fetchUrl(dlUrl, { timeoutMs: 5000 });
+      const dlData = safeJson(dlRes.body);
+      weekly_downloads = dlData ? (dlData.downloads || 0) : 0;
+    } catch (_) {}
 
-  return {
-    _engine: 'real',
-    name: d.name,
-    version: latest,
-    description: d.description || '',
-    weekly_downloads,
-    homepage: d.homepage || (ver.homepage || ''),
-    repository: ver.repository && ver.repository.url ? ver.repository.url : (d.repository && d.repository.url ? d.repository.url : ''),
-    license: ver.license || d.license || '',
-    dependencies_count: deps,
-  };
+    const deps = ver.dependencies ? Object.keys(ver.dependencies).length : 0;
+
+    return {
+      _engine: 'real',
+      name: d.name,
+      version: latest,
+      description: d.description || '',
+      weekly_downloads,
+      homepage: d.homepage || (ver.homepage || ''),
+      repository: ver.repository && ver.repository.url ? ver.repository.url : (d.repository && d.repository.url ? d.repository.url : ''),
+      license: ver.license || d.license || '',
+      dependencies_count: deps,
+    };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -388,6 +431,7 @@ async function senseUptimeCheck(input) {
       up: false,
       status_code: 0,
       latency_ms: Date.now() - start,
+      error: e.message,
       timestamp: new Date().toISOString(),
     };
   }
@@ -773,17 +817,21 @@ async function senseUrlTechStack(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
-  const { body } = await fetchUrl(url, { timeoutMs: 10000 });
-  const technologies = [];
-  if (/react/i.test(body)) technologies.push('React');
-  if (/vue/i.test(body)) technologies.push('Vue');
-  if (/angular/i.test(body)) technologies.push('Angular');
-  if (/\$\(|jquery/i.test(body)) technologies.push('jQuery');
-  if (/wp-content/i.test(body)) technologies.push('WordPress');
-  if (/cdn\.shopify/i.test(body)) technologies.push('Shopify');
-  if (/__next/i.test(body)) technologies.push('Next.js');
-  if (/tailwind/i.test(body)) technologies.push('Tailwind');
-  return { _engine: 'real', technologies, url };
+  try {
+    const { body } = await fetchUrl(url, { timeoutMs: 10000 });
+    const technologies = [];
+    if (/react/i.test(body)) technologies.push('React');
+    if (/vue/i.test(body)) technologies.push('Vue');
+    if (/angular/i.test(body)) technologies.push('Angular');
+    if (/\$\(|jquery/i.test(body)) technologies.push('jQuery');
+    if (/wp-content/i.test(body)) technologies.push('WordPress');
+    if (/cdn\.shopify/i.test(body)) technologies.push('Shopify');
+    if (/__next/i.test(body)) technologies.push('Next.js');
+    if (/tailwind/i.test(body)) technologies.push('Tailwind');
+    return { _engine: 'real', technologies, url };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -796,7 +844,9 @@ async function senseUrlResponseTime(input) {
   const times_ms = [];
   for (let i = 0; i < 3; i++) {
     const start = Date.now();
-    await fetchUrl(url, { timeoutMs: 10000, method: 'HEAD' });
+    try {
+      await fetchUrl(url, { timeoutMs: 10000, method: 'HEAD' });
+    } catch (_) {/* individual probe failure; still record elapsed */}
     times_ms.push(Date.now() - start);
   }
   const avg_ms = Math.round(times_ms.reduce((s, v) => s + v, 0) / times_ms.length);
@@ -812,16 +862,20 @@ async function senseUrlSitemap(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
-  const base = new URL(url);
-  const sitemapUrl = `${base.protocol}//${base.host}/sitemap.xml`;
-  const { body } = await fetchUrl(sitemapUrl, { timeoutMs: 10000 });
-  const urls = [];
-  const re = /<loc>([\s\S]*?)<\/loc>/gi;
-  let m;
-  while ((m = re.exec(body)) !== null) {
-    urls.push(m[1].trim());
+  try {
+    const base = new URL(url);
+    const sitemapUrl = `${base.protocol}//${base.host}/sitemap.xml`;
+    const { body } = await fetchUrl(sitemapUrl, { timeoutMs: 10000 });
+    const urls = [];
+    const re = /<loc>([\s\S]*?)<\/loc>/gi;
+    let m;
+    while ((m = re.exec(body)) !== null) {
+      urls.push(m[1].trim());
+    }
+    return { _engine: 'real', urls, count: urls.length };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
   }
-  return { _engine: 'real', urls, count: urls.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -832,26 +886,30 @@ async function senseRssLatest(input) {
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_param', required: 'url' };
   const count = input.count || 5;
-  const { body } = await fetchUrl(url, { timeoutMs: 10000 });
+  try {
+    const { body } = await fetchUrl(url, { timeoutMs: 10000 });
 
-  const isAtom = /<feed[\s>]/i.test(body);
-  const itemTag = isAtom ? 'entry' : 'item';
+    const isAtom = /<feed[\s>]/i.test(body);
+    const itemTag = isAtom ? 'entry' : 'item';
 
-  const items = [];
-  const itemRe = new RegExp(`<${itemTag}[\\s>]([\\s\\S]*?)<\\/${itemTag}>`, 'gi');
-  let im;
-  while ((im = itemRe.exec(body)) !== null && items.length < count) {
-    const chunk = im[1];
-    const titleM = chunk.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-    const linkM = chunk.match(/<link[^>]*href=["']([^"']+)["']/i) || chunk.match(/<link>([\s\S]*?)<\/link>/i);
-    const dateM = chunk.match(/<(?:pubDate|updated|published)[^>]*>([\s\S]*?)<\/(?:pubDate|updated|published)>/i);
-    items.push({
-      title: titleM ? stripHtml(titleM[1]).trim() : '',
-      link: linkM ? linkM[1].trim() : '',
-      date: dateM ? dateM[1].trim() : '',
-    });
+    const items = [];
+    const itemRe = new RegExp(`<${itemTag}[\\s>]([\\s\\S]*?)<\\/${itemTag}>`, 'gi');
+    let im;
+    while ((im = itemRe.exec(body)) !== null && items.length < count) {
+      const chunk = im[1];
+      const titleM = chunk.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      const linkM = chunk.match(/<link[^>]*href=["']([^"']+)["']/i) || chunk.match(/<link>([\s\S]*?)<\/link>/i);
+      const dateM = chunk.match(/<(?:pubDate|updated|published)[^>]*>([\s\S]*?)<\/(?:pubDate|updated|published)>/i);
+      items.push({
+        title: titleM ? stripHtml(titleM[1]).trim() : '',
+        link: linkM ? linkM[1].trim() : '',
+        date: dateM ? dateM[1].trim() : '',
+      });
+    }
+    return { _engine: 'real', items, count: items.length };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
   }
-  return { _engine: 'real', items, count: items.length };
 }
 
 // ---------------------------------------------------------------------------
@@ -861,46 +919,50 @@ async function senseUrlAccessibility(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
-  const { body } = await fetchUrl(url, { timeoutMs: 10000 });
-  const issues = [];
-  let checks_passed = 0;
+  try {
+    const { body } = await fetchUrl(url, { timeoutMs: 10000 });
+    const issues = [];
+    let checks_passed = 0;
 
-  // Images without alt
-  const imgs = body.match(/<img[^>]+>/gi) || [];
-  const imgsNoAlt = imgs.filter(tag => !/alt\s*=/i.test(tag));
-  if (imgsNoAlt.length > 0) {
-    issues.push(`${imgsNoAlt.length} image(s) missing alt attribute`);
-  } else {
-    checks_passed++;
+    // Images without alt
+    const imgs = body.match(/<img[^>]+>/gi) || [];
+    const imgsNoAlt = imgs.filter(tag => !/alt\s*=/i.test(tag));
+    if (imgsNoAlt.length > 0) {
+      issues.push(`${imgsNoAlt.length} image(s) missing alt attribute`);
+    } else {
+      checks_passed++;
+    }
+
+    // Headings in order (check for h1)
+    const hasH1 = /<h1[\s>]/i.test(body);
+    if (!hasH1) {
+      issues.push('No <h1> heading found');
+    } else {
+      checks_passed++;
+    }
+
+    // lang attribute
+    const hasLang = /<html[^>]+lang\s*=/i.test(body);
+    if (!hasLang) {
+      issues.push('Missing lang attribute on <html>');
+    } else {
+      checks_passed++;
+    }
+
+    // meta viewport
+    const hasViewport = /<meta[^>]+name=["']viewport["']/i.test(body);
+    if (!hasViewport) {
+      issues.push('Missing meta viewport tag');
+    } else {
+      checks_passed++;
+    }
+
+    const total_checks = 4;
+    const score = Math.round((checks_passed / total_checks) * 100);
+    return { _engine: 'real', issues, score, checks_passed };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
   }
-
-  // Headings in order (check for h1)
-  const hasH1 = /<h1[\s>]/i.test(body);
-  if (!hasH1) {
-    issues.push('No <h1> heading found');
-  } else {
-    checks_passed++;
-  }
-
-  // lang attribute
-  const hasLang = /<html[^>]+lang\s*=/i.test(body);
-  if (!hasLang) {
-    issues.push('Missing lang attribute on <html>');
-  } else {
-    checks_passed++;
-  }
-
-  // meta viewport
-  const hasViewport = /<meta[^>]+name=["']viewport["']/i.test(body);
-  if (!hasViewport) {
-    issues.push('Missing meta viewport tag');
-  } else {
-    checks_passed++;
-  }
-
-  const total_checks = 4;
-  const score = Math.round((checks_passed / total_checks) * 100);
-  return { _engine: 'real', issues, score, checks_passed };
 }
 
 // ---------------------------------------------------------------------------
@@ -924,26 +986,52 @@ async function senseWhois(input) {
 }
 
 // ---------------------------------------------------------------------------
-// 27. sense-ip-geo
+// 27. sense-ip-geo  (fixed: uses ip-api.com instead of fake range heuristic)
 // ---------------------------------------------------------------------------
-function senseIpGeo(input) {
+async function senseIpGeo(input) {
   input = input || {};
   const ip = input.ip;
   if (!ip) return { _engine: 'real', error: 'missing_param', required: 'ip' };
-  const firstOctet = parseInt(ip.split('.')[0], 10);
-  let region;
-  if (firstOctet >= 1 && firstOctet <= 50) region = 'North America';
-  else if (firstOctet >= 51 && firstOctet <= 100) region = 'Europe';
-  else if (firstOctet >= 101 && firstOctet <= 150) region = 'Asia';
-  else if (firstOctet >= 151 && firstOctet <= 200) region = 'South America';
-  else region = 'Other';
-  return { _engine: 'real', ip, region, note: 'Approximate based on IP ranges' };
+  try {
+    const { body, statusCode } = await fetchUrl(`http://ip-api.com/json/${encodeURIComponent(ip)}?fields=status,message,country,countryCode,regionName,city,zip,lat,lon,timezone,isp,org,as,query`, { timeoutMs: 6000 });
+    if (statusCode !== 200) throw new Error(`HTTP ${statusCode}`);
+    const d = safeJson(body);
+    if (!d || d.status === 'fail') {
+      return { _engine: 'real', error: 'lookup_failed', message: d ? d.message : 'Invalid JSON', ip };
+    }
+    return {
+      _engine: 'real',
+      ip: d.query,
+      country: d.country,
+      country_code: d.countryCode,
+      region: d.regionName,
+      city: d.city,
+      zip: d.zip,
+      lat: d.lat,
+      lon: d.lon,
+      timezone: d.timezone,
+      isp: d.isp,
+      org: d.org,
+      as: d.as,
+    };
+  } catch (e) {
+    // Fallback: rough continent from first octet
+    const firstOctet = parseInt((ip.split('.')[0]) || '0', 10);
+    let region;
+    if (firstOctet >= 1 && firstOctet <= 50) region = 'North America';
+    else if (firstOctet >= 51 && firstOctet <= 100) region = 'Europe';
+    else if (firstOctet >= 101 && firstOctet <= 150) region = 'Asia';
+    else if (firstOctet >= 151 && firstOctet <= 200) region = 'South America';
+    else region = 'Other';
+    return { _engine: 'real', ip, region, note: 'Approximate (geo lookup failed)', error: e.message };
+  }
 }
 
 // ---------------------------------------------------------------------------
 // 28. sense-time-zones
 // ---------------------------------------------------------------------------
-function senseTimeZones() {
+function senseTimeZones(input) {
+  input = input || {};
   const now = new Date();
   const timezones = [
     { name: 'UTC', region: 'Universal' },
@@ -954,35 +1042,58 @@ function senseTimeZones() {
     { name: 'America/Anchorage', region: 'North America' },
     { name: 'Pacific/Honolulu', region: 'North America' },
     { name: 'America/Toronto', region: 'North America' },
+    { name: 'America/Vancouver', region: 'North America' },
+    { name: 'America/Phoenix', region: 'North America' },
     { name: 'America/Sao_Paulo', region: 'South America' },
     { name: 'America/Buenos_Aires', region: 'South America' },
+    { name: 'America/Lima', region: 'South America' },
+    { name: 'America/Bogota', region: 'South America' },
+    { name: 'America/Santiago', region: 'South America' },
     { name: 'Europe/London', region: 'Europe' },
     { name: 'Europe/Paris', region: 'Europe' },
     { name: 'Europe/Berlin', region: 'Europe' },
     { name: 'Europe/Moscow', region: 'Europe' },
+    { name: 'Europe/Istanbul', region: 'Europe' },
+    { name: 'Europe/Amsterdam', region: 'Europe' },
+    { name: 'Europe/Madrid', region: 'Europe' },
+    { name: 'Europe/Rome', region: 'Europe' },
+    { name: 'Europe/Stockholm', region: 'Europe' },
     { name: 'Africa/Cairo', region: 'Africa' },
     { name: 'Africa/Lagos', region: 'Africa' },
+    { name: 'Africa/Johannesburg', region: 'Africa' },
+    { name: 'Africa/Nairobi', region: 'Africa' },
     { name: 'Asia/Dubai', region: 'Asia' },
     { name: 'Asia/Kolkata', region: 'Asia' },
+    { name: 'Asia/Dhaka', region: 'Asia' },
     { name: 'Asia/Bangkok', region: 'Asia' },
     { name: 'Asia/Singapore', region: 'Asia' },
     { name: 'Asia/Shanghai', region: 'Asia' },
+    { name: 'Asia/Hong_Kong', region: 'Asia' },
     { name: 'Asia/Tokyo', region: 'Asia' },
     { name: 'Asia/Seoul', region: 'Asia' },
+    { name: 'Asia/Karachi', region: 'Asia' },
+    { name: 'Asia/Riyadh', region: 'Asia' },
+    { name: 'Asia/Tehran', region: 'Asia' },
+    { name: 'Asia/Kathmandu', region: 'Asia' },
+    { name: 'Australia/Perth', region: 'Oceania' },
+    { name: 'Australia/Darwin', region: 'Oceania' },
+    { name: 'Australia/Adelaide', region: 'Oceania' },
     { name: 'Australia/Sydney', region: 'Oceania' },
     { name: 'Pacific/Auckland', region: 'Oceania' },
+    { name: 'Pacific/Fiji', region: 'Oceania' },
   ].map(tz => {
+    const offset = tzOffset(tz.name, now);
+    // Get current local time in this zone
+    let local_time = '';
     try {
-      const utcDate = new Date(now.toLocaleString('en-US', { timeZone: 'UTC' }));
-      const tzDate = new Date(now.toLocaleString('en-US', { timeZone: tz.name }));
-      const diffMin = Math.round((tzDate - utcDate) / 60000);
-      const sign = diffMin >= 0 ? '+' : '-';
-      const absMin = Math.abs(diffMin);
-      const offset = `UTC${sign}${String(Math.floor(absMin / 60)).padStart(2, '0')}:${String(absMin % 60).padStart(2, '0')}`;
-      return { name: tz.name, offset, region: tz.region };
-    } catch (_) {
-      return { name: tz.name, offset: 'UTC+00:00', region: tz.region };
-    }
+      local_time = new Intl.DateTimeFormat('en-US', {
+        timeZone: tz.name,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit',
+        hour12: false,
+      }).format(now);
+    } catch (_) {}
+    return { name: tz.name, offset, region: tz.region, local_time };
   });
   return { _engine: 'real', timezones, count: timezones.length };
 }
@@ -993,11 +1104,16 @@ function senseTimeZones() {
 async function senseCryptoPrice(input) {
   input = input || {};
   const coins = (input.coins || ['bitcoin', 'ethereum']).join(',');
-  const apiUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coins)}&vs_currencies=usd`;
-  const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 10000 });
-  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "CoinGecko API returned " + statusCode };
-  const prices = JSON.parse(body);
-  return { _engine: 'real', prices };
+  try {
+    const apiUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${encodeURIComponent(coins)}&vs_currencies=usd`;
+    const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 10000 });
+    if (statusCode !== 200) return { _engine: 'real', error: 'api_error', message: `CoinGecko API returned ${statusCode}` };
+    const prices = safeJson(body);
+    if (!prices) return { _engine: 'real', error: 'parse_error', message: 'Invalid JSON from CoinGecko' };
+    return { _engine: 'real', prices };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1007,12 +1123,17 @@ async function senseGithubReleases(input) {
   input = input || {};
   const repo = input.repo;
   if (!repo) return { _engine: 'real', error: 'missing_param', required: 'repo', hint: 'owner/repo format' };
-  const apiUrl = `https://api.github.com/repos/${repo}/releases?per_page=5`;
-  const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
-  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "GitHub API returned " + statusCode };
-  const data = JSON.parse(body);
-  const releases = data.map(r => ({ tag: r.tag_name, name: r.name, date: r.published_at }));
-  return { _engine: 'real', releases };
+  try {
+    const apiUrl = `https://api.github.com/repos/${repo}/releases?per_page=5`;
+    const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
+    if (statusCode !== 200) return { _engine: 'real', error: 'api_error', message: `GitHub API returned ${statusCode}` };
+    const data = safeJson(body);
+    if (!data) return { _engine: 'real', error: 'parse_error', message: 'Invalid JSON from GitHub API' };
+    const releases = data.map(r => ({ tag: r.tag_name, name: r.name, date: r.published_at }));
+    return { _engine: 'real', releases };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1022,18 +1143,26 @@ async function sensePypiPackage(input) {
   input = input || {};
   const pkg = input.package;
   if (!pkg) return { _engine: 'real', error: 'missing_param', required: 'package' };
-  const apiUrl = `https://pypi.org/pypi/${encodeURIComponent(pkg)}/json`;
-  const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
-  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "PyPI returned " + statusCode };
-  const data = JSON.parse(body);
-  const info = data.info || {};
-  return {
-    _engine: 'real',
-    name: info.name,
-    version: info.version,
-    summary: info.summary,
-    author: info.author,
-  };
+  try {
+    const apiUrl = `https://pypi.org/pypi/${encodeURIComponent(pkg)}/json`;
+    const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
+    if (statusCode !== 200) return { _engine: 'real', error: 'api_error', message: `PyPI returned ${statusCode}` };
+    const data = safeJson(body);
+    if (!data) return { _engine: 'real', error: 'parse_error', message: 'Invalid JSON from PyPI' };
+    const info = data.info || {};
+    return {
+      _engine: 'real',
+      name: info.name,
+      version: info.version,
+      summary: info.summary,
+      author: info.author,
+      license: info.license || '',
+      home_page: info.home_page || '',
+      project_urls: info.project_urls || {},
+    };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1069,30 +1198,34 @@ async function senseHttpHeadersSecurity(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_param', required: 'url' };
-  const { headers } = await fetchUrl(url, { timeoutMs: 10000, method: 'HEAD' });
-  const securityHeaders = [
-    'strict-transport-security',
-    'content-security-policy',
-    'x-frame-options',
-    'x-content-type-options',
-    'x-xss-protection',
-    'referrer-policy',
-    'permissions-policy',
-  ];
-  const present = [];
-  const missing = [];
-  for (const h of securityHeaders) {
-    if (headers[h]) present.push(h);
-    else missing.push(h);
+  try {
+    const { headers } = await fetchUrl(url, { timeoutMs: 10000, method: 'HEAD' });
+    const securityHeaders = [
+      'strict-transport-security',
+      'content-security-policy',
+      'x-frame-options',
+      'x-content-type-options',
+      'x-xss-protection',
+      'referrer-policy',
+      'permissions-policy',
+    ];
+    const present = [];
+    const missing = [];
+    for (const h of securityHeaders) {
+      if (headers[h]) present.push(h);
+      else missing.push(h);
+    }
+    const score = Math.round((present.length / securityHeaders.length) * 100);
+    let grade;
+    if (score >= 86) grade = 'A';
+    else if (score >= 71) grade = 'B';
+    else if (score >= 57) grade = 'C';
+    else if (score >= 43) grade = 'D';
+    else grade = 'F';
+    return { _engine: 'real', present, missing, score, grade };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
   }
-  const score = Math.round((present.length / securityHeaders.length) * 100);
-  let grade;
-  if (score >= 86) grade = 'A';
-  else if (score >= 71) grade = 'B';
-  else if (score >= 57) grade = 'C';
-  else if (score >= 43) grade = 'D';
-  else grade = 'F';
-  return { _engine: 'real', present, missing, score, grade };
 }
 
 // ---------------------------------------------------------------------------
@@ -1102,26 +1235,30 @@ async function senseUrlBrokenLinks(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
-  const { body } = await fetchUrl(url, { timeoutMs: 10000 });
-  const re = /<a[^>]+href=["']([^"'#][^"']*)["']/gi;
-  const links = [];
-  let m;
-  while ((m = re.exec(body)) !== null) {
-    try { links.push(new URL(m[1], url).toString()); } catch (_) {}
-  }
-  const unique = [...new Set(links)].slice(0, 10);
-  const broken = [];
-  let ok = 0;
-  await Promise.all(unique.map(async link => {
-    try {
-      const { statusCode } = await fetchUrl(link, { timeoutMs: 5000, method: 'HEAD' });
-      if (statusCode >= 400) broken.push({ url: link, status: statusCode });
-      else ok++;
-    } catch (_) {
-      broken.push({ url: link, status: 0 });
+  try {
+    const { body } = await fetchUrl(url, { timeoutMs: 10000 });
+    const re = /<a[^>]+href=["']([^"'#][^"']*)["']/gi;
+    const links = [];
+    let m;
+    while ((m = re.exec(body)) !== null) {
+      try { links.push(new URL(m[1], url).toString()); } catch (_) {}
     }
-  }));
-  return { _engine: 'real', checked: unique.length, broken, ok };
+    const unique = [...new Set(links)].slice(0, 10);
+    const broken = [];
+    let ok = 0;
+    await Promise.all(unique.map(async link => {
+      try {
+        const { statusCode } = await fetchUrl(link, { timeoutMs: 5000, method: 'HEAD' });
+        if (statusCode >= 400) broken.push({ url: link, status: statusCode });
+        else ok++;
+      } catch (_) {
+        broken.push({ url: link, status: 0 });
+      }
+    }));
+    return { _engine: 'real', checked: unique.length, broken, ok };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1158,29 +1295,33 @@ async function senseUrlPerformance(input) {
   const start = Date.now();
   let ttfb_ms = 0;
 
-  await new Promise((resolve, reject) => {
-    let parsed;
-    try { parsed = new URL(url); } catch (e) { return reject(new Error('Invalid URL')); }
-    const lib = parsed.protocol === 'https:' ? https : http;
-    const options = {
-      hostname: parsed.hostname,
-      port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
-      path: parsed.pathname + parsed.search,
-      method: 'GET',
-      timeout: 10000,
-      rejectUnauthorized: false,
-      headers: { 'User-Agent': 'Slopshop-SenseHandler/1.0' },
-    };
-    const req = lib.request(options, res => {
-      ttfb_ms = Date.now() - start;
-      res.resume();
-      res.on('end', resolve);
-      res.on('error', reject);
+  try {
+    await new Promise((resolve, reject) => {
+      let parsed;
+      try { parsed = new URL(url); } catch (e) { return reject(new Error('Invalid URL')); }
+      const lib = parsed.protocol === 'https:' ? https : http;
+      const options = {
+        hostname: parsed.hostname,
+        port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+        path: parsed.pathname + parsed.search,
+        method: 'GET',
+        timeout: 10000,
+        rejectUnauthorized: false,
+        headers: { 'User-Agent': 'Slopshop-SenseHandler/1.0' },
+      };
+      const req = lib.request(options, res => {
+        ttfb_ms = Date.now() - start;
+        res.resume();
+        res.on('end', resolve);
+        res.on('error', reject);
+      });
+      req.on('timeout', () => req.destroy(new Error('Timed out')));
+      req.on('error', reject);
+      req.end();
     });
-    req.on('timeout', () => req.destroy(new Error('Timed out')));
-    req.on('error', reject);
-    req.end();
-  });
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
+  }
 
   const total_ms = Date.now() - start;
   return { _engine: 'real', ttfb_ms, total_ms, url };
@@ -1193,10 +1334,14 @@ async function senseUrlWordCount(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
-  const { body } = await fetchUrl(url, { timeoutMs: 10000 });
-  const text = stripHtml(body);
-  const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-  return { _engine: 'real', words, url };
+  try {
+    const { body } = await fetchUrl(url, { timeoutMs: 10000 });
+    const text = stripHtml(body);
+    const words = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+    return { _engine: 'real', words, url };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1208,20 +1353,24 @@ async function senseUrlDiff(input) {
   const url_b = input.url_b;
   if (!url_a) return { _engine: 'real', error: 'missing_param', required: 'url_a' };
   if (!url_b) return { _engine: 'real', error: 'missing_param', required: 'url_b' };
-  const [resA, resB] = await Promise.all([
-    fetchUrl(url_a, { timeoutMs: 10000 }),
-    fetchUrl(url_b, { timeoutMs: 10000 }),
-  ]);
-  const textA = stripHtml(resA.body).split(/\n+/).map(l => l.trim()).filter(Boolean);
-  const textB = stripHtml(resB.body).split(/\n+/).map(l => l.trim()).filter(Boolean);
-  const setA = new Set(textA);
-  const setB = new Set(textB);
-  const added_lines = textB.filter(l => !setA.has(l)).length;
-  const removed_lines = textA.filter(l => !setB.has(l)).length;
-  const common = textA.filter(l => setB.has(l)).length;
-  const total = Math.max(textA.length, textB.length, 1);
-  const similarity = +(common / total).toFixed(4);
-  return { _engine: 'real', similarity, added_lines, removed_lines };
+  try {
+    const [resA, resB] = await Promise.all([
+      fetchUrl(url_a, { timeoutMs: 10000 }),
+      fetchUrl(url_b, { timeoutMs: 10000 }),
+    ]);
+    const textA = stripHtml(resA.body).split(/\n+/).map(l => l.trim()).filter(Boolean);
+    const textB = stripHtml(resB.body).split(/\n+/).map(l => l.trim()).filter(Boolean);
+    const setA = new Set(textA);
+    const setB = new Set(textB);
+    const added_lines = textB.filter(l => !setA.has(l)).length;
+    const removed_lines = textA.filter(l => !setB.has(l)).length;
+    const common = textA.filter(l => setB.has(l)).length;
+    const total = Math.max(textA.length, textB.length, 1);
+    const similarity = +(common / total).toFixed(4);
+    return { _engine: 'real', similarity, added_lines, removed_lines };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1231,18 +1380,23 @@ async function senseGithubUser(input) {
   input = input || {};
   const username = input.username || input.user;
   if (!username) return { _engine: 'real', error: 'missing_param', required: 'username' };
-  const apiUrl = `https://api.github.com/users/${encodeURIComponent(username)}`;
-  const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
-  if (statusCode !== 200) return { _engine: "real", error: "api_error", message: "GitHub API returned " + statusCode };
-  const d = JSON.parse(body);
-  return {
-    _engine: 'real',
-    login: d.login,
-    name: d.name,
-    bio: d.bio,
-    public_repos: d.public_repos,
-    followers: d.followers,
-  };
+  try {
+    const apiUrl = `https://api.github.com/users/${encodeURIComponent(username)}`;
+    const { body, statusCode } = await fetchUrl(apiUrl, { timeoutMs: 8000 });
+    if (statusCode !== 200) return { _engine: 'real', error: 'api_error', message: `GitHub API returned ${statusCode}` };
+    const d = safeJson(body);
+    if (!d) return { _engine: 'real', error: 'parse_error', message: 'Invalid JSON from GitHub API' };
+    return {
+      _engine: 'real',
+      login: d.login,
+      name: d.name,
+      bio: d.bio,
+      public_repos: d.public_repos,
+      followers: d.followers,
+    };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message };
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -1252,10 +1406,491 @@ async function senseUrlScreenshotText(input) {
   input = input || {};
   const url = input.url;
   if (!url) return { _engine: 'real', error: 'missing_required_field', required: 'url' };
-  const { body } = await fetchUrl(url, { timeoutMs: 10000 });
-  const text = stripHtml(body).slice(0, 5000);
-  const word_count = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
-  return { _engine: 'real', text, word_count };
+  try {
+    const { body } = await fetchUrl(url, { timeoutMs: 10000 });
+    const text = stripHtml(body).slice(0, 5000);
+    const word_count = text.trim() === '' ? 0 : text.trim().split(/\s+/).length;
+    return { _engine: 'real', text, word_count };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, url };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 41. sense-ip-info  (server's own public IP via ipify + ip-api geo)
+// ---------------------------------------------------------------------------
+async function senseIpInfo(input) {
+  input = input || {};
+  let public_ip = '';
+  try {
+    const { body } = await fetchUrl('https://api.ipify.org?format=json', { timeoutMs: 5000 });
+    const d = safeJson(body);
+    public_ip = d ? d.ip : '';
+  } catch (_) {}
+
+  let geo = {};
+  if (public_ip) {
+    try {
+      const { body } = await fetchUrl(`http://ip-api.com/json/${public_ip}?fields=country,countryCode,regionName,city,timezone,isp,org`, { timeoutMs: 5000 });
+      const d = safeJson(body);
+      if (d && d.status !== 'fail') geo = d;
+    } catch (_) {}
+  }
+
+  return {
+    _engine: 'real',
+    public_ip,
+    country: geo.country || '',
+    country_code: geo.countryCode || '',
+    region: geo.regionName || '',
+    city: geo.city || '',
+    timezone: geo.timezone || '',
+    isp: geo.isp || '',
+    org: geo.org || '',
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 42. sense-weather  (uses wttr.in JSON API — no key required)
+// ---------------------------------------------------------------------------
+async function senseWeather(input) {
+  input = input || {};
+  const location = input.city || input.location || input.q || 'New York';
+  try {
+    const encoded = encodeURIComponent(location);
+    const { body, statusCode } = await fetchUrl(`https://wttr.in/${encoded}?format=j1`, { timeoutMs: 10000 });
+    if (statusCode !== 200) return { _engine: 'real', error: 'weather_api_error', status: statusCode, location };
+    const d = safeJson(body);
+    if (!d || !d.current_condition || !d.current_condition[0]) {
+      return { _engine: 'real', error: 'parse_error', message: 'Unexpected weather API response', location };
+    }
+    const c = d.current_condition[0];
+    const area = (d.nearest_area && d.nearest_area[0]) ? d.nearest_area[0] : {};
+    const areaName = area.areaName ? area.areaName[0].value : location;
+    const country = area.country ? area.country[0].value : '';
+    return {
+      _engine: 'real',
+      location: areaName,
+      country,
+      temp_c: parseInt(c.temp_C, 10),
+      temp_f: parseInt(c.temp_F, 10),
+      feels_like_c: parseInt(c.FeelsLikeC, 10),
+      feels_like_f: parseInt(c.FeelsLikeF, 10),
+      humidity_pct: parseInt(c.humidity, 10),
+      wind_kmph: parseInt(c.windspeedKmph, 10),
+      wind_dir: c.winddir16Point,
+      visibility_km: parseInt(c.visibility, 10),
+      description: c.weatherDesc[0].value,
+      weather_code: parseInt(c.weatherCode, 10),
+      uv_index: parseInt(c.uvIndex, 10),
+      pressure_mb: parseInt(c.pressure, 10),
+    };
+  } catch (e) {
+    return { _engine: 'real', error: 'fetch_failed', message: e.message, location };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 43. sense-system-info  (basic server info — no external deps)
+// ---------------------------------------------------------------------------
+function senseSystemInfo(input) {
+  input = input || {};
+  const platform = os.platform();
+  const arch = os.arch();
+  const hostname = os.hostname();
+  const uptime_s = Math.floor(os.uptime());
+  const node_version = process.version;
+  const cpus = os.cpus();
+  const cpu_model = cpus.length > 0 ? cpus[0].model : 'unknown';
+  const cpu_count = cpus.length;
+  const total_mem_mb = Math.round(os.totalmem() / 1024 / 1024);
+  const free_mem_mb = Math.round(os.freemem() / 1024 / 1024);
+  const used_mem_mb = total_mem_mb - free_mem_mb;
+  const mem_usage_pct = +(used_mem_mb / total_mem_mb * 100).toFixed(1);
+  const load_avg = os.loadavg(); // [1m, 5m, 15m]
+
+  return {
+    _engine: 'real',
+    platform,
+    arch,
+    hostname,
+    node_version,
+    cpu_model,
+    cpu_count,
+    uptime_s,
+    uptime_human: `${Math.floor(uptime_s / 86400)}d ${Math.floor((uptime_s % 86400) / 3600)}h ${Math.floor((uptime_s % 3600) / 60)}m`,
+    total_mem_mb,
+    free_mem_mb,
+    used_mem_mb,
+    mem_usage_pct,
+    load_avg_1m: +load_avg[0].toFixed(2),
+    load_avg_5m: +load_avg[1].toFixed(2),
+    load_avg_15m: +load_avg[2].toFixed(2),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 44. sense-system-resources  (CPU %, memory, disk)
+// ---------------------------------------------------------------------------
+async function senseSystemResources(input) {
+  input = input || {};
+
+  // CPU usage: sample over 200ms
+  function getCpuUsage() {
+    return new Promise(resolve => {
+      const cpusBefore = os.cpus();
+      setTimeout(() => {
+        const cpusAfter = os.cpus();
+        let totalIdle = 0, totalTick = 0;
+        cpusAfter.forEach((cpu, i) => {
+          const before = cpusBefore[i];
+          for (const type of Object.keys(cpu.times)) {
+            totalTick += cpu.times[type] - before.times[type];
+          }
+          totalIdle += cpu.times.idle - before.times.idle;
+        });
+        const usage_pct = totalTick === 0 ? 0 : +((1 - totalIdle / totalTick) * 100).toFixed(1);
+        resolve(usage_pct);
+      }, 200);
+    });
+  }
+
+  const cpu_usage_pct = await getCpuUsage();
+
+  const total_mem_mb = Math.round(os.totalmem() / 1024 / 1024);
+  const free_mem_mb = Math.round(os.freemem() / 1024 / 1024);
+  const used_mem_mb = total_mem_mb - free_mem_mb;
+  const mem_usage_pct = +(used_mem_mb / total_mem_mb * 100).toFixed(1);
+
+  // Process memory
+  const proc = process.memoryUsage();
+  const process_rss_mb = +(proc.rss / 1024 / 1024).toFixed(1);
+  const process_heap_used_mb = +(proc.heapUsed / 1024 / 1024).toFixed(1);
+  const process_heap_total_mb = +(proc.heapTotal / 1024 / 1024).toFixed(1);
+
+  // Disk — try to read /proc/mounts or use os.tmpdir as a proxy; use statfs if available
+  let disk = null;
+  try {
+    const { execSync } = require('child_process');
+    const dfOut = execSync('df -k / 2>/dev/null || df -k .', { timeout: 3000 }).toString();
+    const lines = dfOut.trim().split('\n');
+    if (lines.length >= 2) {
+      const parts = lines[1].trim().split(/\s+/);
+      const total_kb = parseInt(parts[1], 10);
+      const used_kb = parseInt(parts[2], 10);
+      const avail_kb = parseInt(parts[3], 10);
+      disk = {
+        total_gb: +(total_kb / 1024 / 1024).toFixed(2),
+        used_gb: +(used_kb / 1024 / 1024).toFixed(2),
+        free_gb: +(avail_kb / 1024 / 1024).toFixed(2),
+        usage_pct: total_kb > 0 ? +(used_kb / total_kb * 100).toFixed(1) : 0,
+      };
+    }
+  } catch (_) {}
+
+  const result = {
+    _engine: 'real',
+    cpu_usage_pct,
+    cpu_count: os.cpus().length,
+    load_avg_1m: +os.loadavg()[0].toFixed(2),
+    memory: {
+      total_mb: total_mem_mb,
+      used_mb: used_mem_mb,
+      free_mb: free_mem_mb,
+      usage_pct: mem_usage_pct,
+    },
+    process_memory: {
+      rss_mb: process_rss_mb,
+      heap_used_mb: process_heap_used_mb,
+      heap_total_mb: process_heap_total_mb,
+    },
+  };
+  if (disk) result.disk = disk;
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// 45. sense-time-convert
+// ---------------------------------------------------------------------------
+function senseTimeConvert(input) {
+  input = input || {};
+  const datetime = input.datetime || input.time || input.date;
+  const from_tz = input.from_tz || input.from || 'UTC';
+  const to_tz = input.to_tz || input.to || 'UTC';
+
+  if (!datetime) return { _engine: 'real', error: 'missing_param', required: 'datetime' };
+
+  try {
+    // Parse the input datetime as if it's in from_tz by constructing an ISO string
+    // Strategy: use toLocaleString trick to find the UTC equivalent
+    const parsedDate = new Date(datetime);
+    if (isNaN(parsedDate.getTime())) {
+      return { _engine: 'real', error: 'invalid_datetime', message: `Cannot parse: ${datetime}` };
+    }
+
+    // Convert from_tz local time to UTC, then to to_tz
+    // Find the offset of from_tz at this moment
+    const now = parsedDate;
+
+    // Get the wall clock in from_tz and to_tz for the parsed UTC instant
+    const inFromTz = now.toLocaleString('en-US', { timeZone: from_tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const inToTz = now.toLocaleString('en-US', { timeZone: to_tz, hour12: false,
+      year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+    const fromOffset = tzOffset(from_tz, now);
+    const toOffset = tzOffset(to_tz, now);
+
+    return {
+      _engine: 'real',
+      input: datetime,
+      from_tz,
+      to_tz,
+      from_formatted: inFromTz,
+      to_formatted: inToTz,
+      from_offset: fromOffset,
+      to_offset: toOffset,
+      iso_utc: now.toISOString(),
+    };
+  } catch (e) {
+    return { _engine: 'real', error: 'conversion_failed', message: e.message };
+  }
+}
+
+// ---------------------------------------------------------------------------
+// 46. sense-date-diff
+// ---------------------------------------------------------------------------
+function senseDateDiff(input) {
+  input = input || {};
+  const a = input.date_a || input.from || input.start;
+  const b = input.date_b || input.to || input.end;
+  if (!a) return { _engine: 'real', error: 'missing_param', required: 'date_a' };
+  if (!b) return { _engine: 'real', error: 'missing_param', required: 'date_b' };
+
+  const dateA = new Date(a);
+  const dateB = new Date(b);
+  if (isNaN(dateA.getTime())) return { _engine: 'real', error: 'invalid_date', field: 'date_a', value: a };
+  if (isNaN(dateB.getTime())) return { _engine: 'real', error: 'invalid_date', field: 'date_b', value: b };
+
+  const diffMs = dateB.getTime() - dateA.getTime();
+  const abs_ms = Math.abs(diffMs);
+  const direction = diffMs >= 0 ? 'future' : 'past';
+
+  const total_minutes = Math.floor(abs_ms / 60000);
+  const total_hours = Math.floor(abs_ms / 3600000);
+  const total_days = Math.floor(abs_ms / 86400000);
+  const total_weeks = Math.floor(total_days / 7);
+
+  const years = Math.floor(total_days / 365.25);
+  const months = Math.floor((total_days % 365.25) / 30.44);
+  const days = Math.floor(total_days % 30.44);
+
+  return {
+    _engine: 'real',
+    date_a: dateA.toISOString(),
+    date_b: dateB.toISOString(),
+    direction,
+    total_days,
+    total_hours,
+    total_minutes,
+    total_weeks,
+    human: `${years > 0 ? years + 'y ' : ''}${months > 0 ? months + 'mo ' : ''}${days}d`,
+    years,
+    months,
+    days,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 47. sense-date-add
+// ---------------------------------------------------------------------------
+function senseDateAdd(input) {
+  input = input || {};
+  const date = input.date || input.datetime;
+  if (!date) return { _engine: 'real', error: 'missing_param', required: 'date' };
+
+  const base = new Date(date);
+  if (isNaN(base.getTime())) return { _engine: 'real', error: 'invalid_date', value: date };
+
+  const years = input.years || 0;
+  const months = input.months || 0;
+  const weeks = input.weeks || 0;
+  const days = input.days || 0;
+  const hours = input.hours || 0;
+  const minutes = input.minutes || 0;
+  const seconds = input.seconds || 0;
+
+  const result = new Date(base.getTime());
+  // Add years and months via setUTC methods to avoid DST issues
+  result.setUTCFullYear(result.getUTCFullYear() + years);
+  result.setUTCMonth(result.getUTCMonth() + months);
+  // Add the rest as milliseconds
+  const deltaMs = ((weeks * 7 + days) * 86400 + hours * 3600 + minutes * 60 + seconds) * 1000;
+  result.setTime(result.getTime() + deltaMs);
+
+  return {
+    _engine: 'real',
+    input: base.toISOString(),
+    added: { years, months, weeks, days, hours, minutes, seconds },
+    result: result.toISOString(),
+    unix: Math.floor(result.getTime() / 1000),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 48. sense-unix-timestamp
+// ---------------------------------------------------------------------------
+function senseUnixTimestamp(input) {
+  input = input || {};
+
+  // If 'unix' provided: convert unix → ISO
+  if (input.unix !== undefined) {
+    const ts = Number(input.unix);
+    if (isNaN(ts)) return { _engine: 'real', error: 'invalid_unix', value: input.unix };
+    const d = new Date(ts * 1000);
+    return {
+      _engine: 'real',
+      mode: 'unix_to_iso',
+      unix: ts,
+      iso: d.toISOString(),
+      utc: d.toUTCString(),
+      ms: ts * 1000,
+    };
+  }
+
+  // If 'date' or 'iso' provided: convert ISO → unix
+  const dateStr = input.date || input.iso || input.datetime;
+  if (dateStr) {
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return { _engine: 'real', error: 'invalid_date', value: dateStr };
+    return {
+      _engine: 'real',
+      mode: 'iso_to_unix',
+      iso: d.toISOString(),
+      unix: Math.floor(d.getTime() / 1000),
+      unix_ms: d.getTime(),
+    };
+  }
+
+  // No input: return current timestamp
+  const now = new Date();
+  return {
+    _engine: 'real',
+    mode: 'current',
+    iso: now.toISOString(),
+    unix: Math.floor(now.getTime() / 1000),
+    unix_ms: now.getTime(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 49. sense-calendar-week
+// ---------------------------------------------------------------------------
+function senseCalendarWeek(input) {
+  input = input || {};
+  const dateStr = input.date || new Date().toISOString();
+  const d = new Date(dateStr);
+  if (isNaN(d.getTime())) return { _engine: 'real', error: 'invalid_date', value: dateStr };
+
+  // ISO week number (Monday = first day)
+  function getISOWeek(date) {
+    const tmp = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
+    const dayOfWeek = tmp.getUTCDay() || 7; // Mon=1 ... Sun=7
+    tmp.setUTCDate(tmp.getUTCDate() + 4 - dayOfWeek); // nearest Thursday
+    const yearStart = new Date(Date.UTC(tmp.getUTCFullYear(), 0, 1));
+    return Math.ceil((((tmp - yearStart) / 86400000) + 1) / 7);
+  }
+
+  // Day of year
+  const startOfYear = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const day_of_year = Math.ceil((d.getTime() - startOfYear.getTime()) / 86400000) + 1;
+
+  const iso_week = getISOWeek(d);
+  const day_names = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const month_names = ['January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'];
+
+  const day_of_week = d.getUTCDay(); // 0=Sun
+  const quarter = Math.ceil((d.getUTCMonth() + 1) / 3);
+
+  // Days remaining in year
+  const endOfYear = new Date(Date.UTC(d.getUTCFullYear(), 11, 31));
+  const days_remaining_in_year = Math.ceil((endOfYear.getTime() - d.getTime()) / 86400000);
+
+  // Is leap year?
+  const yr = d.getUTCFullYear();
+  const is_leap_year = (yr % 4 === 0 && yr % 100 !== 0) || yr % 400 === 0;
+
+  return {
+    _engine: 'real',
+    date: d.toISOString().split('T')[0],
+    iso_week,
+    day_of_year,
+    day_of_week,
+    day_name: day_names[day_of_week],
+    month_name: month_names[d.getUTCMonth()],
+    quarter,
+    days_remaining_in_year,
+    is_leap_year,
+    year: d.getUTCFullYear(),
+    month: d.getUTCMonth() + 1,
+    day: d.getUTCDate(),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 50. sense-countdown
+// ---------------------------------------------------------------------------
+function senseCountdown(input) {
+  input = input || {};
+  const target = input.target || input.date || input.to;
+  if (!target) return { _engine: 'real', error: 'missing_param', required: 'target' };
+
+  const targetDate = new Date(target);
+  if (isNaN(targetDate.getTime())) return { _engine: 'real', error: 'invalid_date', value: target };
+
+  const now = new Date();
+  const diffMs = targetDate.getTime() - now.getTime();
+  const isPast = diffMs < 0;
+  const abs_ms = Math.abs(diffMs);
+
+  const total_seconds = Math.floor(abs_ms / 1000);
+  const total_minutes = Math.floor(total_seconds / 60);
+  const total_hours = Math.floor(total_minutes / 60);
+  const total_days = Math.floor(total_hours / 24);
+
+  const seconds = total_seconds % 60;
+  const minutes = total_minutes % 60;
+  const hours = total_hours % 24;
+  const days = total_days % 365;
+  const years = Math.floor(total_days / 365);
+
+  const parts = [];
+  if (years > 0) parts.push(`${years}y`);
+  if (days > 0) parts.push(`${days}d`);
+  if (hours > 0) parts.push(`${hours}h`);
+  if (minutes > 0) parts.push(`${minutes}m`);
+  if (seconds > 0 || parts.length === 0) parts.push(`${seconds}s`);
+
+  return {
+    _engine: 'real',
+    target: targetDate.toISOString(),
+    now: now.toISOString(),
+    is_past: isPast,
+    total_days,
+    total_hours,
+    total_minutes,
+    total_seconds,
+    years,
+    days,
+    hours,
+    minutes,
+    seconds,
+    human: (isPast ? '-' : '') + parts.join(' '),
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -1302,6 +1937,16 @@ module.exports = {
   'sense-url-diff':               senseUrlDiff,
   'sense-github-user':            senseGithubUser,
   'sense-url-screenshot-text':    senseUrlScreenshotText,
+  'sense-ip-info':                senseIpInfo,
+  'sense-weather':                senseWeather,
+  'sense-system-info':            senseSystemInfo,
+  'sense-system-resources':       senseSystemResources,
+  'sense-time-convert':           senseTimeConvert,
+  'sense-date-diff':              senseDateDiff,
+  'sense-date-add':               senseDateAdd,
+  'sense-unix-timestamp':         senseUnixTimestamp,
+  'sense-calendar-week':          senseCalendarWeek,
+  'sense-countdown':              senseCountdown,
 
   'sense-subdomains': async ({ domain }) => {
     if (!domain) return { _engine: 'real', error: 'Provide domain' };

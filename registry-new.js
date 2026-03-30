@@ -92,7 +92,7 @@ module.exports = {
       cat: 'Vision',
       name: 'Parse Data URI',
       desc: 'Parse a data URI string into its components: MIME type, encoding, and raw data. Validates the format.',
-      credits: 0,
+      credits: 1,
       tier: 'compute'
     },
 
@@ -100,7 +100,103 @@ module.exports = {
       cat: 'Vision',
       name: 'Create Data URI',
       desc: 'Create a valid data URI from raw bytes (hex or base64) and a MIME type.',
-      credits: 0,
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'vision-image-metadata': {
+      cat: 'Vision',
+      name: 'Image Metadata',
+      desc: 'Extract detailed metadata from an image: format, dimensions, color depth, EXIF presence, ICC profile. Accepts URL or base64. Uses sharp if available.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'vision-image-resize': {
+      cat: 'Vision',
+      name: 'Resize Image',
+      desc: 'Resize an image to specified dimensions. Supports cover/contain/fill fit modes. Outputs JPEG/PNG/WebP. Requires sharp.',
+      credits: 3,
+      tier: 'compute'
+    },
+
+    'vision-image-thumbnail': {
+      cat: 'Vision',
+      name: 'Generate Thumbnail',
+      desc: 'Generate a square thumbnail from an image URL or base64 input. Default 128x128. Returns base64 and data URI. Requires sharp.',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'vision-ocr': {
+      cat: 'Vision',
+      name: 'OCR — Extract Text from Image',
+      desc: 'Extract text from an image using Claude vision API (when ANTHROPIC_API_KEY is set) or a heuristic ASCII scanner as fallback. Accepts URL or base64.',
+      credits: 5,
+      tier: 'compute'
+    },
+
+    'vision-data-uri': {
+      cat: 'Vision',
+      name: 'Image to Data URI',
+      desc: 'Fetch an image from a URL or decode base64 input and return as a data URI with auto-detected MIME type.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'vision-image-compare': {
+      cat: 'Vision',
+      name: 'Compare Two Images',
+      desc: 'Compare two images (by URL or base64) and return a similarity score (0-100), perceptual hash distance, and pixel-level diff if sharp is available.',
+      credits: 3,
+      tier: 'compute'
+    },
+
+    'vision-screenshot': {
+      cat: 'Vision',
+      name: 'Screenshot URL',
+      desc: 'Take a full-page screenshot of a URL using Puppeteer. Returns PNG/JPEG base64. Requires puppeteer to be installed.',
+      credits: 10,
+      tier: 'compute'
+    },
+
+    'vision-qr-generate': {
+      cat: 'Vision',
+      name: 'Generate QR Code',
+      desc: 'Generate a real scannable QR code as SVG, PNG data URI, or ASCII art. Uses qrcode library if available, falls back to deterministic ASCII art.',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'vision-qr-decode': {
+      cat: 'Vision',
+      name: 'Decode QR Code',
+      desc: 'Decode a QR code from an image URL or base64 input. Returns the encoded data and location. Requires jsqr + sharp.',
+      credits: 3,
+      tier: 'compute'
+    },
+
+    'vision-barcode-generate': {
+      cat: 'Vision',
+      name: 'Generate Barcode',
+      desc: 'Generate a barcode (Code128, EAN13, QR, DataMatrix, etc.) as a PNG image. Requires bwip-js.',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'vision-pdf-to-image': {
+      cat: 'Vision',
+      name: 'PDF Page to Image',
+      desc: 'Convert a PDF page to a PNG/JPEG image at configurable DPI. Requires pdf2pic and GraphicsMagick/Ghostscript.',
+      credits: 5,
+      tier: 'compute'
+    },
+
+    'vision-image-describe': {
+      cat: 'Vision',
+      name: 'Describe Image (AI Vision)',
+      desc: 'Describe the contents of an image using Claude vision API. Returns detailed natural language description. Requires ANTHROPIC_API_KEY.',
+      credits: 10,
       tier: 'compute'
     },
 
@@ -172,7 +268,7 @@ module.exports = {
       cat: 'DevOps',
       name: 'Semantic Version Bump',
       desc: 'Bump a semver version string by major, minor, or patch. Supports pre-release and build metadata.',
-      credits: 0,
+      credits: 1,
       tier: 'compute'
     },
 
@@ -220,7 +316,7 @@ module.exports = {
       cat: 'Health',
       name: 'BMI Calculator',
       desc: 'Calculate Body Mass Index from height and weight. Returns BMI score, category, and healthy weight range.',
-      credits: 0,
+      credits: 1,
       tier: 'compute'
     },
 
@@ -276,7 +372,7 @@ module.exports = {
       cat: 'Memory',
       name: 'Memory Score Get',
       desc: 'Retrieve the current quality score and signal history for a memory key.',
-      credits: 0,
+      credits: 1,
       tier: 'compute'
     },
 

@@ -424,6 +424,22 @@ function slugToDesc(slug) {
   return slugToName(slug) + ' — pure compute superpower for AI agents.';
 }
 
+// Slugs already defined in registry.js, registry-expansion.js, or registry-new.js.
+// Hackathon auto-gen must NOT overwrite them (credits/name/tier are canonical there).
+const CANONICAL_SLUGS = new Set();
+try {
+  const base = require('./registry.js');
+  for (const s of Object.keys(base.API_DEFS || {})) CANONICAL_SLUGS.add(s);
+} catch (e) { /* ignore */ }
+try {
+  const exp = require('./registry-expansion.js');
+  for (const s of Object.keys(exp.EXPANSION_DEFS || {})) CANONICAL_SLUGS.add(s);
+} catch (e) { /* ignore */ }
+try {
+  const rnew = require('./registry-new.js');
+  for (const s of Object.keys(rnew.NEW_DEFS || {})) CANONICAL_SLUGS.add(s);
+} catch (e) { /* ignore */ }
+
 // Auto-generate registry entries for all extended compute handlers
 function buildHackathonDefs() {
   const files = [
@@ -438,11 +454,13 @@ function buildHackathonDefs() {
     try {
       const handlers = require('./handlers/' + file);
       for (const slug of Object.keys(handlers)) {
+        // Skip slugs already defined canonically — don't overwrite with auto-gen zeros
+        if (CANONICAL_SLUGS.has(slug)) continue;
         defs[slug] = {
           cat: categorize(slug),
           name: slugToName(slug),
           desc: slugToDesc(slug),
-          credits: 0,
+          credits: 1, // minimum trivial cost — no compute API is free
           tier: 'compute',
         };
       }

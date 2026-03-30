@@ -862,12 +862,30 @@ function enrichTimezoneInfo(input) {
 function enrichEmojiInfo(input) {
   const { emoji } = input || {};
   if (!emoji) return { _engine: 'real', error: 'missing_param', required: 'emoji', hint: 'Provide an emoji character or name to look up' };
+
+  // Direct lookup (exact emoji char key)
   const info = EMOJIS[emoji];
   if (info) return { _engine: 'real', emoji, name: info.name, category: info.category, unicode: info.unicode };
-  // Try searching by name
-  const query = emoji.toLowerCase();
+
+  // BUG FIX: emoji chars can arrive with corrupted encoding (e.g. "??" instead of "🔥").
+  // Try matching via Unicode code point: convert input codepoints to U+XXXX and match against the
+  // unicode field in each EMOJIS entry.
+  const codePoints = [];
+  for (const cp of emoji) {
+    const hex = cp.codePointAt(0).toString(16).toUpperCase().padStart(4, '0');
+    codePoints.push(`U+${hex}`);
+  }
+  const cpString = codePoints.join('');
+  const byCodepoint = Object.entries(EMOJIS).find(([, v]) =>
+    v.unicode && v.unicode.replace(/\s/g, '') === cpString
+  );
+  if (byCodepoint) return { _engine: 'real', emoji: byCodepoint[0], name: byCodepoint[1].name, category: byCodepoint[1].category, unicode: byCodepoint[1].unicode };
+
+  // Fallback: search by name (handles plain-text queries like "fire", "thumbs up")
+  const query = emoji.trim().toLowerCase();
   const found = Object.entries(EMOJIS).find(([, v]) => v.name.toLowerCase().includes(query));
   if (found) return { _engine: 'real', emoji: found[0], name: found[1].name, category: found[1].category, unicode: found[1].unicode };
+
   return { _engine: 'real', emoji, name: 'Unknown', category: 'Unknown', unicode: null };
 }
 
@@ -910,9 +928,9 @@ function enrichFileExtensionInfo(input) {
 // 21. comm-qr-url  (SVG grid approximation, hash-based)
 // ---------------------------------------------------------------------------
 function commQrUrl(input) {
-  const rawUrl = input.url || input.text || null;
+  const rawUrl = (input || {}).url || (input || {}).text || null;
   if (!rawUrl || typeof rawUrl !== 'string' || !rawUrl.trim()) {
-    return { _engine: 'error', error: 'Missing required parameter: url (string). Pass { "url": "https://example.com" }' };
+    return { _engine: 'real', error: 'missing_param', required: 'url', hint: 'Provide a URL or text string. Pass { "url": "https://example.com" }' };
   }
 
   const hash = crypto.createHash('sha256').update(rawUrl).digest('hex');
@@ -972,10 +990,10 @@ function commIcalCreate(input) {
   input = input || {};
   const { title = 'Event', start, end, location = '', description = '' } = input;
   if (!start) {
-    return { _engine: 'error', error: 'Missing required parameter: start (ISO 8601 datetime). Pass { "start": "2025-06-01T10:00:00Z", "end": "2025-06-01T11:00:00Z" }' };
+    return { _engine: 'real', error: 'missing_param', required: 'start', hint: 'Provide an ISO 8601 datetime. Pass { "start": "2025-06-01T10:00:00Z", "end": "2025-06-01T11:00:00Z" }' };
   }
   if (!end) {
-    return { _engine: 'error', error: 'Missing required parameter: end (ISO 8601 datetime). Pass { "start": "2025-06-01T10:00:00Z", "end": "2025-06-01T11:00:00Z" }' };
+    return { _engine: 'real', error: 'missing_param', required: 'end', hint: 'Provide an ISO 8601 datetime. Pass { "start": "2025-06-01T10:00:00Z", "end": "2025-06-01T11:00:00Z" }' };
   }
 
   function toIcalDate(d) {
@@ -1149,7 +1167,7 @@ function commPhoneValidate(input) {
   const phone = input.phone || input.number || input.tel || null;
   const country = input.country || null;
   if (!phone || typeof phone !== 'string' || !phone.trim()) {
-    return { _engine: 'error', error: 'Missing required parameter: phone (string). Pass { "phone": "+15551234567" }' };
+    return { _engine: 'real', error: 'missing_param', required: 'phone', hint: 'Provide a phone number string. Pass { "phone": "+15551234567" }' };
   }
   const stripped = phone.replace(/[\s\-().+]/g, '');
   const hasLetters = /[a-zA-Z]/.test(stripped);
@@ -1188,7 +1206,7 @@ function commEmailValidateDeep(input) {
   input = input || {};
   const email = input.email || input.address || null;
   if (!email || typeof email !== 'string' || !email.trim()) {
-    return { _engine: 'error', error: 'Missing required parameter: email (string). Pass { "email": "user@example.com" }' };
+    return { _engine: 'real', error: 'missing_param', required: 'email', hint: 'Provide an email address string. Pass { "email": "user@example.com" }' };
   }
   const trimmed = email.trim().toLowerCase();
   const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;

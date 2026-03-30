@@ -107,12 +107,15 @@ async function genDocLicense(input) {
 
 // ---------------------------------------------------------------------------
 // 3. gen-doc-docker-compose
+// FIX: guard against missing service.name to prevent crash
 // ---------------------------------------------------------------------------
 async function genDocDockerCompose(input) {
   const services = input.services || [];
 
   const lines = ['version: "3.9"', 'services:'];
   for (const svc of services) {
+    // BUG FIX: skip services without a name instead of crashing
+    if (!svc || typeof svc.name !== 'string' || !svc.name.trim()) continue;
     lines.push(`  ${svc.name}:`);
     if (svc.image) lines.push(`    image: ${svc.image}`);
     if (svc.ports && svc.ports.length > 0) {
@@ -408,6 +411,7 @@ async function execJavascript(input) {
 
 // ---------------------------------------------------------------------------
 // 11b. exec-python
+// FIX: execution_time_ms was set to Date.now() (epoch timestamp) not elapsed ms
 // ---------------------------------------------------------------------------
 async function execPython(input) {
   const { execFile } = require('child_process');
@@ -441,6 +445,9 @@ async function execPython(input) {
 
   fs.writeFileSync(tmpFile, code);
 
+  // BUG FIX: capture start time so execution_time_ms is elapsed ms, not epoch timestamp
+  const execStart = Date.now();
+
   function tryExec(cmd) {
     return new Promise((resolve) => {
       execFile(cmd, [tmpFile], { timeout: timeoutMs, maxBuffer: 1024 * 512, env: { PATH: process.env.PATH, HOME: '/tmp', LANG: 'en_US.UTF-8' } }, (err, stdout, stderr) => {
@@ -452,9 +459,10 @@ async function execPython(input) {
         if (err && err.killed) {
           resolve({ _engine: 'real', error: 'Timeout exceeded', timeout_ms: timeoutMs });
         } else if (err) {
-          resolve({ _engine: 'real', error: stderr || err.message, stdout: stdout || '' });
+          resolve({ _engine: 'real', error: stderr || err.message, stdout: stdout || '', execution_time_ms: Date.now() - execStart });
         } else {
-          resolve({ _engine: 'real', stdout: stdout.trim(), stderr: stderr.trim() || null, execution_time_ms: Date.now() });
+          // BUG FIX: was Date.now() (raw epoch), now correctly elapsed time
+          resolve({ _engine: 'real', stdout: stdout.trim(), stderr: stderr.trim() || null, execution_time_ms: Date.now() - execStart });
         }
       });
     });
@@ -547,6 +555,7 @@ function evalSingleCond(row, cond) {
     const vals = rawVal.replace(/^\(|\)$/g, '').split(',').map(v => v.trim().replace(/^['"]|['"]$/g, ''));
     return vals.includes(String(rowVal));
   }
+
   return true;
 }
 
@@ -669,13 +678,30 @@ async function execSqlOnJson(input) {
 
 // ---------------------------------------------------------------------------
 // 13. exec-filter-json
+// FIX: validate inputs; guard against missing field/op/value; guard non-array data
 // ---------------------------------------------------------------------------
 async function execFilterJson(input) {
   const data = input.data || [];
   const where = input.where || input.filter || {};
-  const original_count = data.length;
+  const original_count = Array.isArray(data) ? data.length : 0;
+
+  // BUG FIX: data must be an array
+  if (!Array.isArray(data)) {
+    return { _engine: 'error', error: 'Invalid parameter: data must be an array of objects.' };
+  }
 
   const { field, op, value } = where;
+
+  // BUG FIX: return validation error when filter criteria is missing/incomplete
+  if (!field || typeof field !== 'string') {
+    return { _engine: 'error', error: 'Missing required filter field: where.field (string). Example: { "where": { "field": "age", "op": ">", "value": 18 } }' };
+  }
+  if (!op || typeof op !== 'string') {
+    return { _engine: 'error', error: 'Missing required filter operator: where.op. Valid ops: >, <, >=, <=, ==, !=, contains, startsWith, endsWith' };
+  }
+  if (value === undefined || value === null) {
+    return { _engine: 'error', error: 'Missing required filter value: where.value. Provide the value to compare against.' };
+  }
 
   const results = data.filter(item => {
     const v = item[field];
@@ -698,11 +724,20 @@ async function execFilterJson(input) {
 
 // ---------------------------------------------------------------------------
 // 14. exec-sort-json
+// FIX: validate that 'by' field is provided
 // ---------------------------------------------------------------------------
 async function execSortJson(input) {
   const data = input.data || [];
   const by = input.by || input.sort_by;
   const order = (input.order || 'asc').toLowerCase();
+
+  // BUG FIX: require 'by' field
+  if (!by || typeof by !== 'string') {
+    return { _engine: 'error', error: 'Missing required parameter: by (field name to sort by). Example: { "data": [...], "by": "age", "order": "asc" }' };
+  }
+  if (!Array.isArray(data)) {
+    return { _engine: 'error', error: 'Invalid parameter: data must be an array of objects.' };
+  }
 
   const results = [...data].sort((a, b) => {
     const av = a[by], bv = b[by];
@@ -720,10 +755,19 @@ async function execSortJson(input) {
 
 // ---------------------------------------------------------------------------
 // 15. exec-group-json
+// FIX: validate that 'by' field is provided; guard non-array data
 // ---------------------------------------------------------------------------
 async function execGroupJson(input) {
   const data = input.data || [];
   const by = input.by;
+
+  // BUG FIX: require 'by' field
+  if (!by || typeof by !== 'string') {
+    return { _engine: 'error', error: 'Missing required parameter: by (field name to group by). Example: { "data": [...], "by": "category" }' };
+  }
+  if (!Array.isArray(data)) {
+    return { _engine: 'error', error: 'Invalid parameter: data must be an array of objects.' };
+  }
 
   const groups = {};
   for (const item of data) {
@@ -737,11 +781,17 @@ async function execGroupJson(input) {
 
 // ---------------------------------------------------------------------------
 // 16. exec-map-json
+// FIX: guard non-array data
 // ---------------------------------------------------------------------------
 async function execMapJson(input) {
   const data = input.data || [];
   const select = input.select || null;
   const rename = input.rename || {};
+
+  // BUG FIX: data must be an array
+  if (!Array.isArray(data)) {
+    return { _engine: 'error', error: 'Invalid parameter: data must be an array of objects.' };
+  }
 
   const results = data.map(item => {
     const fields = select || Object.keys(item);
@@ -758,11 +808,20 @@ async function execMapJson(input) {
 
 // ---------------------------------------------------------------------------
 // 17. exec-reduce-json
+// FIX: validate 'field' is provided
 // ---------------------------------------------------------------------------
 async function execReduceJson(input) {
   const data = input.data || [];
   const field = input.field;
   const operation = input.operation || 'sum';
+
+  // BUG FIX: require 'field'
+  if (!field || typeof field !== 'string') {
+    return { _engine: 'error', error: 'Missing required parameter: field (field name to reduce). Example: { "data": [...], "field": "price", "operation": "sum" }' };
+  }
+  if (!Array.isArray(data)) {
+    return { _engine: 'error', error: 'Invalid parameter: data must be an array of objects.' };
+  }
 
   const nums = data.map(item => parseFloat(item[field])).filter(v => !isNaN(v));
 
@@ -781,12 +840,21 @@ async function execReduceJson(input) {
 
 // ---------------------------------------------------------------------------
 // 18. exec-join-json
+// FIX: validate 'on' is provided; guard non-array inputs
 // ---------------------------------------------------------------------------
 async function execJoinJson(input) {
   const left = input.left || [];
   const right = input.right || [];
   const on = input.on;
   const type = (input.type || 'inner').toLowerCase();
+
+  // BUG FIX: require 'on' join key
+  if (!on || typeof on !== 'string') {
+    return { _engine: 'error', error: 'Missing required parameter: on (field name to join on). Example: { "left": [...], "right": [...], "on": "id", "type": "inner" }' };
+  }
+  if (!Array.isArray(left) || !Array.isArray(right)) {
+    return { _engine: 'error', error: 'Invalid parameter: left and right must be arrays of objects.' };
+  }
 
   const rightMap = new Map();
   for (const r of right) {
@@ -816,6 +884,10 @@ async function execUniqueJson(input) {
   const data = input.data || [];
   const by = input.by;
 
+  if (!Array.isArray(data)) {
+    return { _engine: 'error', error: 'Invalid parameter: data must be an array of objects.' };
+  }
+
   const seen = new Set();
   const results = [];
   for (const item of data) {
@@ -828,9 +900,11 @@ async function execUniqueJson(input) {
 
 // ---------------------------------------------------------------------------
 // 20. exec-jq
+// FIX: guard undefined data input
 // ---------------------------------------------------------------------------
 async function execJq(input) {
-  const data = input.data || input.json;
+  // BUG FIX: guard undefined data — was crashing with evalQuery on undefined ctx for non-identity queries
+  const data = (input.data !== undefined) ? input.data : (input.json !== undefined ? input.json : null);
   const query = (input.query || input.filter || input.expression || '.').trim();
 
   // Evaluate jq-like expressions
@@ -1070,6 +1144,697 @@ async function execJq(input) {
   return { _engine: 'real', result };
 }
 
+// ===========================================================================
+// NEW FEATURES
+// ===========================================================================
+
+// ---------------------------------------------------------------------------
+// Shared fake-data word banks (used across multiple new handlers)
+// ---------------------------------------------------------------------------
+const _FN = ['James','Mary','John','Patricia','Robert','Jennifer','Michael','Linda','William','Barbara','David','Susan','Richard','Jessica','Joseph','Sarah','Thomas','Karen','Charles','Lisa','Christopher','Nancy','Daniel','Betty','Matthew','Margaret','Anthony','Sandra','Mark','Ashley','Donald','Dorothy','Steven','Kimberly','Paul','Emily','Andrew','Donna','Joshua','Michelle','Kenneth','Carol','Kevin','Amanda','Brian','Melissa','George','Deborah','Timothy','Stephanie','Ronald','Rebecca','Edward','Sharon','Jason','Laura','Jeffrey','Cynthia','Ryan','Kathleen'];
+const _LN = ['Smith','Johnson','Williams','Brown','Jones','Garcia','Miller','Davis','Rodriguez','Martinez','Hernandez','Lopez','Gonzalez','Wilson','Anderson','Thomas','Taylor','Moore','Jackson','Martin','Lee','Perez','Thompson','White','Harris','Sanchez','Clark','Ramirez','Lewis','Robinson','Walker','Young','Allen','King','Wright','Scott','Torres','Nguyen','Hill','Flores','Green','Adams','Nelson','Baker','Hall','Rivera','Campbell','Mitchell','Carter','Roberts'];
+const _CP1 = ['Acme','Apex','Blue','Bright','Core','Delta','Eagle','Fast','Global','Green','High','Iron','Key','Lite','Mega','Neo','Nova','Open','Peak','Prime','Quick','Red','Sharp','Smart','Solar','Star','Swift','Techno','Ultra','Velo','Wave','Zen'];
+const _CP2 = ['Analytics','Bridge','Cloud','Corp','Digital','Dynamics','Edge','Engineering','Engines','Group','Hub','Inc','Innovations','Labs','Media','Networks','Partners','Pro','Sciences','Services','Solutions','Systems','Technologies','Ventures','Works'];
+const _STREETS = ['Main','Oak','Pine','Maple','Cedar','Elm','Washington','Lake','Hill','Park','River','Sunset','Forest','Meadow','Valley','Highland','Ridge','Spring','Willow','Birch'];
+const _STYPES = ['St','Ave','Blvd','Dr','Ln','Rd','Way','Ct','Pl','Terrace'];
+const _CITIES = ['Springfield','Riverside','Fairview','Madison','Georgetown','Franklin','Bristol','Clinton','Greenville','Salem','Burlington','Arlington','Manchester','Lexington','Oakland'];
+const _STATES = ['AL','AK','AZ','AR','CA','CO','CT','DE','FL','GA','HI','ID','IL','IN','IA','KS','KY','LA','ME','MD','MA','MI','MN','MS','MO','MT','NE','NV','NH','NJ','NM','NY','NC','ND','OH','OK','OR','PA','RI','SC','SD','TN','TX','UT','VT','VA','WA','WV','WI','WY'];
+const _DOMAINS = ['gmail.com','yahoo.com','outlook.com','hotmail.com','icloud.com','protonmail.com','fastmail.com','example.com'];
+const _TLDS = ['com','net','org','io','co','app','dev'];
+const _INDUSTRIES = ['Technology','Healthcare','Finance','Retail','Manufacturing','Education','Entertainment','Transportation','Energy','Consulting'];
+const _LOREM_WORDS = 'lorem ipsum dolor sit amet consectetur adipiscing elit sed do eiusmod tempor incididunt ut labore et dolore magna aliqua enim ad minim veniam quis nostrud exercitation ullamco laboris nisi aliquip commodo consequat duis aute irure reprehenderit voluptate velit esse cillum fugiat nulla pariatur excepteur sint occaecat cupidatat non proident sunt culpa qui officia deserunt mollit anim est laborum'.split(' ');
+
+function _rnd(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function _rndInt(min, max) { return Math.floor(Math.random() * (max - min + 1)) + min; }
+function _rndBytes(n) { return crypto.randomBytes(n); }
+
+// ---------------------------------------------------------------------------
+// 21. gen-fake-user — realistic fake user profile (sample/test data)
+// Clearly labeled as SAMPLE DATA — not real PII
+// ---------------------------------------------------------------------------
+async function genFakeUser(input) {
+  input = input || {};
+  const count = Math.min(parseInt(input.count, 10) || 1, 100);
+  const locale = input.locale || 'en-US';
+
+  function makeUser(index) {
+    const first = _rnd(_FN);
+    const last = _rnd(_LN);
+    const full = `${first} ${last}`;
+    const slug = (first + '.' + last + _rndInt(1, 999)).toLowerCase();
+    const email = slug + '@' + _rnd(_DOMAINS);
+    const streetNum = _rndInt(100, 9999);
+    const street = `${_rnd(_STREETS)} ${_rnd(_STYPES)}`;
+    const city = _rnd(_CITIES);
+    const state = _rnd(_STATES);
+    const zip = String(_rndInt(10000, 99999));
+    const dobYear = _rndInt(1950, 2005);
+    const dobMonth = String(_rndInt(1, 12)).padStart(2, '0');
+    const dobDay = String(_rndInt(1, 28)).padStart(2, '0');
+    const id = crypto.randomUUID();
+    // Deterministic color from name hash for avatar
+    const hash = crypto.createHash('md5').update(full).digest('hex');
+    const bg = '#' + hash.slice(0, 6);
+    const initials = first[0] + last[0];
+
+    return {
+      id,
+      firstName: first,
+      lastName: last,
+      fullName: full,
+      email,
+      username: slug,
+      dateOfBirth: `${dobYear}-${dobMonth}-${dobDay}`,
+      phone: `+1-${_rndInt(200,999)}-${_rndInt(200,999)}-${_rndInt(1000,9999)}`,
+      address: {
+        street: `${streetNum} ${street}`,
+        city,
+        state,
+        zip,
+        country: 'US',
+        full: `${streetNum} ${street}, ${city}, ${state} ${zip}, US`,
+      },
+      avatar: {
+        initials,
+        bg,
+        url: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(full)}&backgroundColor=${bg.slice(1)}`,
+      },
+      _sample: true,
+      _note: 'SAMPLE DATA — not a real person',
+    };
+  }
+
+  if (count === 1) {
+    return { _engine: 'real', ...makeUser(0) };
+  }
+  return { _engine: 'real', users: Array.from({ length: count }, (_, i) => makeUser(i)), count };
+}
+
+// ---------------------------------------------------------------------------
+// 22. gen-fake-company — realistic fake company profile (sample/test data)
+// ---------------------------------------------------------------------------
+async function genFakeCompany(input) {
+  input = input || {};
+  const count = Math.min(parseInt(input.count, 10) || 1, 100);
+
+  function makeCompany() {
+    const name = `${_rnd(_CP1)} ${_rnd(_CP2)}`;
+    const industry = _rnd(_INDUSTRIES);
+    const tld = _rnd(_TLDS);
+    const domainSlug = name.toLowerCase().replace(/\s+/g, '').replace(/[^a-z0-9]/g, '');
+    const domain = `${domainSlug}.${tld}`;
+    const founded = _rndInt(1980, 2023);
+    const employees = _rnd([5, 12, 25, 50, 120, 250, 500, 1200, 5000, 20000]);
+    const streetNum = _rndInt(100, 9999);
+    const street = `${_rnd(_STREETS)} ${_rnd(_STYPES)}`;
+    const city = _rnd(_CITIES);
+    const state = _rnd(_STATES);
+    const zip = String(_rndInt(10000, 99999));
+    const ceo = `${_rnd(_FN)} ${_rnd(_LN)}`;
+    const ticker = name.split(' ').map(w => w[0]).join('').slice(0, 4).toUpperCase();
+    const id = crypto.randomUUID();
+
+    return {
+      id,
+      name,
+      industry,
+      domain,
+      email: `contact@${domain}`,
+      website: `https://www.${domain}`,
+      founded,
+      employees,
+      ceo,
+      ticker,
+      address: {
+        street: `${streetNum} ${street}`,
+        city,
+        state,
+        zip,
+        country: 'US',
+        full: `${streetNum} ${street}, ${city}, ${state} ${zip}, US`,
+      },
+      _sample: true,
+      _note: 'SAMPLE DATA — not a real company',
+    };
+  }
+
+  if (count === 1) {
+    return { _engine: 'real', ...makeCompany() };
+  }
+  return { _engine: 'real', companies: Array.from({ length: count }, makeCompany), count };
+}
+
+// ---------------------------------------------------------------------------
+// 23. gen-test-credit-card — Luhn-valid test card numbers
+// CLEARLY labeled as TEST DATA only — follows standard test card conventions
+// ---------------------------------------------------------------------------
+async function genTestCreditCard(input) {
+  input = input || {};
+  const brand = (input.brand || 'visa').toLowerCase();
+  const count = Math.min(parseInt(input.count, 10) || 1, 20);
+
+  // Standard test card prefixes (same as Stripe/PayPal test docs)
+  const brandConfig = {
+    visa:       { prefix: '4', length: 16, name: 'Visa' },
+    mastercard: { prefix: '5', length: 16, name: 'Mastercard' },
+    amex:       { prefix: '3', length: 15, name: 'American Express' },
+    discover:   { prefix: '6011', length: 16, name: 'Discover' },
+    jcb:        { prefix: '3530', length: 16, name: 'JCB' },
+  };
+  const cfg = brandConfig[brand] || brandConfig.visa;
+
+  function luhnComplete(partial) {
+    // BUG FIX: double every second digit from right of partial (rightmost digit of partial
+    // will be at position 1 from right in the full number, so it gets doubled)
+    const digits = partial.split('').map(Number).reverse();
+    let sum = 0;
+    for (let i = 0; i < digits.length; i++) {
+      let x = digits[i];
+      if (i % 2 === 0) { x *= 2; if (x > 9) x -= 9; }
+      sum += x;
+    }
+    const check = (10 - (sum % 10)) % 10;
+    return partial + check;
+  }
+
+  function makeCard() {
+    const remaining = cfg.length - cfg.prefix.length - 1;
+    const mid = Array.from({ length: remaining }, () => _rndInt(0, 9)).join('');
+    const partial = cfg.prefix + mid;
+    const number = luhnComplete(partial);
+    // Format for display
+    const formatted = cfg.length === 15
+      ? `${number.slice(0,4)} ${number.slice(4,10)} ${number.slice(10)}`
+      : `${number.slice(0,4)} ${number.slice(4,8)} ${number.slice(8,12)} ${number.slice(12)}`;
+    const expMonth = String(_rndInt(1, 12)).padStart(2, '0');
+    const expYear = new Date().getFullYear() + _rndInt(1, 5);
+    const cvv = cfg.length === 15
+      ? String(_rndInt(100, 9999)).padStart(4, '0')
+      : String(_rndInt(100, 999)).padStart(3, '0');
+
+    return {
+      brand: cfg.name,
+      number,
+      formatted,
+      expMonth,
+      expYear: String(expYear),
+      expiry: `${expMonth}/${String(expYear).slice(-2)}`,
+      cvv,
+      _test: true,
+      _warning: 'TEST DATA ONLY — do not use for real transactions. Luhn-valid for testing payment form validation only.',
+    };
+  }
+
+  if (count === 1) {
+    return { _engine: 'real', ...makeCard() };
+  }
+  return { _engine: 'real', cards: Array.from({ length: count }, makeCard), count };
+}
+
+// ---------------------------------------------------------------------------
+// 24. gen-lorem-ipsum — configurable lorem ipsum text generator
+// Aliases: paragraphs, sentences, words modes
+// ---------------------------------------------------------------------------
+async function genLoremIpsum(input) {
+  input = input || {};
+  const mode = input.mode || input.type || 'paragraphs';
+  const count = Math.min(parseInt(input.count || input.paragraphs || input.sentences || input.words, 10) || 3, 200);
+  const wordsPerSentence = input.words_per_sentence || input.wordsPerSentence || null; // null = random 8-16
+  const sentencesPerParagraph = input.sentences_per_paragraph || input.sentencesPerParagraph || null; // null = random 4-8
+  const startWithLorem = input.start_with_lorem !== false; // default true
+
+  function makeWord() { return _rnd(_LOREM_WORDS); }
+
+  function makeSentence(wordCount) {
+    const n = wordCount || _rndInt(8, 16);
+    const words = Array.from({ length: n }, makeWord);
+    words[0] = words[0].charAt(0).toUpperCase() + words[0].slice(1);
+    return words.join(' ') + '.';
+  }
+
+  function makeParagraph(sentenceCount) {
+    const n = sentenceCount || _rndInt(4, 8);
+    return Array.from({ length: n }, () => makeSentence(wordsPerSentence)).join(' ');
+  }
+
+  let text, items;
+
+  if (mode === 'words') {
+    const words = Array.from({ length: count }, makeWord);
+    if (startWithLorem && words.length >= 2) { words[0] = 'Lorem'; words[1] = 'ipsum'; }
+    text = words.join(' ');
+    items = words;
+  } else if (mode === 'sentences') {
+    items = Array.from({ length: count }, () => makeSentence(wordsPerSentence));
+    if (startWithLorem) items[0] = 'Lorem ipsum ' + items[0].charAt(0).toLowerCase() + items[0].slice(1);
+    text = items.join(' ');
+  } else {
+    // paragraphs (default)
+    items = Array.from({ length: count }, () => makeParagraph(sentencesPerParagraph));
+    if (startWithLorem) items[0] = 'Lorem ipsum ' + items[0].charAt(0).toLowerCase() + items[0].slice(1);
+    text = items.join('\n\n');
+  }
+
+  return {
+    _engine: 'real',
+    text,
+    [mode]: items,
+    count,
+    word_count: text.split(/\s+/).length,
+    char_count: text.length,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 25. gen-color-palette — n accessible colors with hex/rgb/hsl
+// Generates a harmonious palette from a base hue with WCAG contrast check
+// ---------------------------------------------------------------------------
+async function genColorPalette(input) {
+  input = input || {};
+  const n = Math.min(parseInt(input.n || input.count || input.colors, 10) || 5, 20);
+  const scheme = input.scheme || 'analogous'; // analogous | complementary | triadic | tetradic | monochromatic | random
+  const baseHex = input.base || input.color || null;
+
+  function hexToHsl(hex) {
+    let r = parseInt(hex.slice(1, 3), 16) / 255;
+    let g = parseInt(hex.slice(3, 5), 16) / 255;
+    let b = parseInt(hex.slice(5, 7), 16) / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h, s, l = (max + min) / 2;
+    if (max === min) { h = s = 0; }
+    else {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      switch (max) {
+        case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+        case g: h = ((b - r) / d + 2) / 6; break;
+        case b: h = ((r - g) / d + 4) / 6; break;
+      }
+    }
+    return { h: Math.round(h * 360), s: Math.round(s * 100), l: Math.round(l * 100) };
+  }
+
+  function hslToHex(h, s, l) {
+    s /= 100; l /= 100;
+    const a = s * Math.min(l, 1 - l);
+    const f = n => { const k = (n + h / 30) % 12; return l - a * Math.max(Math.min(k - 3, 9 - k, 1), -1); };
+    const toHex = x => Math.round(x * 255).toString(16).padStart(2, '0');
+    return '#' + toHex(f(0)) + toHex(f(8)) + toHex(f(4));
+  }
+
+  function hslToRgb(h, s, l) {
+    const hex = hslToHex(h, s, l);
+    return {
+      r: parseInt(hex.slice(1, 3), 16),
+      g: parseInt(hex.slice(3, 5), 16),
+      b: parseInt(hex.slice(5, 7), 16),
+    };
+  }
+
+  function luminance(r, g, b) {
+    const c = [r, g, b].map(v => { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); });
+    return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+  }
+
+  function contrastRatio(hex) {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    const L = luminance(r, g, b);
+    const whiteLum = 1, blackLum = 0;
+    const wcW = (whiteLum + 0.05) / (L + 0.05);
+    const wcB = (L + 0.05) / (blackLum + 0.05);
+    return { onWhite: +wcW.toFixed(2), onBlack: +wcB.toFixed(2), bestText: wcW >= wcB ? '#000000' : '#ffffff' };
+  }
+
+  // Determine base hue
+  let baseH, baseS, baseL;
+  if (baseHex && /^#[0-9a-fA-F]{6}$/.test(baseHex)) {
+    const hsl = hexToHsl(baseHex);
+    baseH = hsl.h; baseS = hsl.s; baseL = hsl.l;
+  } else {
+    baseH = _rndInt(0, 359);
+    baseS = _rndInt(50, 80);
+    baseL = _rndInt(40, 60);
+  }
+
+  // Generate hue angles based on scheme
+  let hues;
+  if (scheme === 'complementary') {
+    hues = [baseH, (baseH + 180) % 360];
+  } else if (scheme === 'triadic') {
+    hues = [baseH, (baseH + 120) % 360, (baseH + 240) % 360];
+  } else if (scheme === 'tetradic') {
+    hues = [baseH, (baseH + 90) % 360, (baseH + 180) % 360, (baseH + 270) % 360];
+  } else if (scheme === 'monochromatic') {
+    hues = Array.from({ length: n }, (_, i) => baseH);
+  } else if (scheme === 'random') {
+    hues = Array.from({ length: n }, () => _rndInt(0, 359));
+  } else {
+    // analogous (default): evenly spaced within 60 degrees
+    const spread = Math.min(60, 360 / n);
+    hues = Array.from({ length: n }, (_, i) => (baseH + (i - Math.floor(n / 2)) * spread + 360) % 360);
+  }
+
+  // Expand to n colors
+  const palette = Array.from({ length: n }, (_, i) => {
+    const h = hues[i % hues.length];
+    const s = scheme === 'monochromatic'
+      ? Math.max(20, Math.min(90, baseS + (i - Math.floor(n / 2)) * 10))
+      : baseS + _rndInt(-10, 10);
+    const l = scheme === 'monochromatic'
+      ? Math.max(20, Math.min(80, 30 + i * (50 / Math.max(n - 1, 1))))
+      : baseL + _rndInt(-10, 10);
+    const hs = Math.max(10, Math.min(95, s));
+    const hl = Math.max(15, Math.min(85, l));
+    const hex = hslToHex(h, hs, hl);
+    const rgb = hslToRgb(h, hs, hl);
+    const contrast = contrastRatio(hex);
+    return {
+      hex,
+      rgb: `rgb(${rgb.r}, ${rgb.g}, ${rgb.b})`,
+      rgb_values: rgb,
+      hsl: `hsl(${h}, ${hs}%, ${hl}%)`,
+      hsl_values: { h, s: hs, l: hl },
+      contrast_on_white: contrast.onWhite,
+      contrast_on_black: contrast.onBlack,
+      accessible_text: contrast.bestText,
+      wcag_aa: contrast.onWhite >= 4.5 || contrast.onBlack >= 4.5,
+    };
+  });
+
+  return {
+    _engine: 'real',
+    palette,
+    count: palette.length,
+    scheme,
+    base_hue: baseH,
+    css_vars: palette.map((c, i) => `--color-${i + 1}: ${c.hex};`).join('\n'),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 26. gen-avatar-svg — SVG avatar from initials with deterministic bg color
+// Supports: name, initials, bg, fg, size, shape (circle|square|rounded)
+// ---------------------------------------------------------------------------
+async function genAvatarSvg(input) {
+  input = input || {};
+  const name = input.name || input.text || 'User';
+  const size = Math.min(parseInt(input.size, 10) || 128, 512);
+  const shape = input.shape || 'circle'; // circle | square | rounded
+  const fontSize = Math.round(size * 0.4);
+
+  // Derive initials
+  let initials = input.initials;
+  if (!initials) {
+    const parts = name.trim().split(/\s+/);
+    if (parts.length >= 2) {
+      initials = (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+    } else {
+      initials = name.slice(0, 2).toUpperCase();
+    }
+  }
+  initials = initials.slice(0, 2).toUpperCase();
+
+  // Determine bg — deterministic from name if not provided
+  let bg = input.bg || input.background || input.backgroundColor;
+  if (!bg) {
+    const hash = crypto.createHash('md5').update(name).digest('hex');
+    // Use a saturated color from hash
+    const h = parseInt(hash.slice(0, 2), 16) * 360 / 255;
+    const s = 55 + parseInt(hash.slice(2, 4), 16) % 25; // 55-80%
+    const l = 40 + parseInt(hash.slice(4, 6), 16) % 20; // 40-60%
+    bg = `hsl(${Math.round(h)},${s}%,${l}%)`;
+  }
+
+  // Determine fg — auto contrast
+  let fg = input.fg || input.color || input.foreground;
+  if (!fg) {
+    // Simple luminance check: use white for dark bg, black for light bg
+    if (bg.startsWith('#')) {
+      const r = parseInt(bg.slice(1, 3), 16);
+      const g = parseInt(bg.slice(3, 5), 16);
+      const b = parseInt(bg.slice(5, 7), 16);
+      const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      fg = lum > 0.5 ? '#000000' : '#ffffff';
+    } else {
+      fg = '#ffffff'; // default white text for hsl colors
+    }
+  }
+
+  // Shape clip
+  let clipPath;
+  if (shape === 'circle') {
+    clipPath = `<circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" />`;
+  } else if (shape === 'rounded') {
+    const r = Math.round(size * 0.2);
+    clipPath = `<rect width="${size}" height="${size}" rx="${r}" ry="${r}" />`;
+  } else {
+    clipPath = `<rect width="${size}" height="${size}" />`;
+  }
+
+  const bgShape = shape === 'circle'
+    ? `<circle cx="${size / 2}" cy="${size / 2}" r="${size / 2}" fill="${bg}" />`
+    : shape === 'rounded'
+      ? `<rect width="${size}" height="${size}" rx="${Math.round(size * 0.2)}" ry="${Math.round(size * 0.2)}" fill="${bg}" />`
+      : `<rect width="${size}" height="${size}" fill="${bg}" />`;
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+  ${bgShape}
+  <text x="50%" y="50%" dy="0.35em" text-anchor="middle" dominant-baseline="middle"
+    font-family="system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif"
+    font-size="${fontSize}" font-weight="600" fill="${fg}">${initials}</text>
+</svg>`;
+
+  return {
+    _engine: 'real',
+    svg,
+    initials,
+    bg,
+    fg,
+    size,
+    shape,
+    data_uri: `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// 27. gen-mock-api-response — generate realistic mock JSON for a given schema
+// schema: object with field: type pairs (string|number|boolean|array|object|uuid|email|name|date|url|phone)
+// ---------------------------------------------------------------------------
+async function genMockApiResponse(input) {
+  input = input || {};
+  const schema = input.schema || input.fields || {};
+  const count = Math.min(parseInt(input.count, 10) || 1, 100);
+  const wrapKey = input.wrap || input.key || null; // e.g. "data" -> { data: [...] }
+  const includeMetadata = input.meta !== false;
+
+  if (typeof schema !== 'object' || Array.isArray(schema)) {
+    return { _engine: 'error', error: 'Invalid parameter: schema must be an object mapping field names to types. Example: { "schema": { "id": "uuid", "name": "name", "age": "number", "active": "boolean" } }' };
+  }
+
+  function generateValue(type, fieldName) {
+    const t = (type || 'string').toLowerCase().trim();
+    switch (t) {
+      case 'uuid':       return crypto.randomUUID();
+      case 'id':         return crypto.randomUUID();
+      case 'name':       return `${_rnd(_FN)} ${_rnd(_LN)}`;
+      case 'firstname':
+      case 'first_name': return _rnd(_FN);
+      case 'lastname':
+      case 'last_name':  return _rnd(_LN);
+      case 'email':      return (_rnd(_FN) + '.' + _rnd(_LN) + _rndInt(1, 99) + '@' + _rnd(_DOMAINS)).toLowerCase();
+      case 'phone':      return `+1-${_rndInt(200,999)}-${_rndInt(200,999)}-${_rndInt(1000,9999)}`;
+      case 'url':        return `https://${_rnd(_CP1).toLowerCase()}${_rnd(_CP2).toLowerCase()}.${_rnd(_TLDS)}`;
+      case 'image':
+      case 'avatar':     return `https://picsum.photos/seed/${_rndInt(1,1000)}/200/200`;
+      case 'date':       return new Date(_rndInt(2018, 2026), _rndInt(0, 11), _rndInt(1, 28)).toISOString().slice(0, 10);
+      case 'datetime':   return new Date(_rndInt(Date.now() - 1e11, Date.now())).toISOString();
+      case 'timestamp':  return _rndInt(1577836800, 1735689600);
+      case 'number':
+      case 'float':      return +(_rndInt(0, 10000) + Math.random()).toFixed(2);
+      case 'int':
+      case 'integer':    return _rndInt(0, 10000);
+      case 'boolean':
+      case 'bool':       return Math.random() > 0.5;
+      case 'string':     return _rnd(_LOREM_WORDS).charAt(0).toUpperCase() + _rnd(_LOREM_WORDS).slice(1) + ' ' + _rnd(_LOREM_WORDS);
+      case 'text':       return Array.from({ length: _rndInt(3, 8) }, () => _rnd(_LOREM_WORDS)).join(' ');
+      case 'address':    return `${_rndInt(100,9999)} ${_rnd(_STREETS)} ${_rnd(_STYPES)}, ${_rnd(_CITIES)}, ${_rnd(_STATES)} ${_rndInt(10000,99999)}`;
+      case 'company':    return `${_rnd(_CP1)} ${_rnd(_CP2)}`;
+      case 'array':      return Array.from({ length: _rndInt(1, 5) }, () => _rndInt(1, 100));
+      case 'object':     return { id: crypto.randomUUID(), value: _rndInt(1, 100) };
+      case 'null':       return null;
+      default: {
+        // Try to infer from field name
+        const fn = fieldName.toLowerCase();
+        if (fn.includes('id')) return crypto.randomUUID();
+        if (fn.includes('email')) return (_rnd(_FN) + '@' + _rnd(_DOMAINS)).toLowerCase();
+        if (fn.includes('name')) return `${_rnd(_FN)} ${_rnd(_LN)}`;
+        if (fn.includes('phone')) return `+1-${_rndInt(200,999)}-${_rndInt(200,999)}-${_rndInt(1000,9999)}`;
+        if (fn.includes('url') || fn.includes('image') || fn.includes('avatar')) return `https://example.com/${fn}`;
+        if (fn.includes('date') || fn.includes('time')) return new Date().toISOString();
+        if (fn.includes('count') || fn.includes('age') || fn.includes('price') || fn.includes('amount')) return _rndInt(1, 1000);
+        if (fn.includes('active') || fn.includes('enabled') || fn.includes('verified')) return Math.random() > 0.3;
+        return _rnd(_LOREM_WORDS);
+      }
+    }
+  }
+
+  function generateRecord() {
+    const record = {};
+    for (const [field, type] of Object.entries(schema)) {
+      record[field] = generateValue(type, field);
+    }
+    return record;
+  }
+
+  const records = Array.from({ length: count }, generateRecord);
+  const result = count === 1 ? records[0] : records;
+
+  let response;
+  if (wrapKey) {
+    response = { [wrapKey]: result };
+    if (includeMetadata && count > 1) {
+      response.total = count;
+      response.page = 1;
+      response.per_page = count;
+    }
+  } else {
+    response = result;
+  }
+
+  if (includeMetadata && !wrapKey) {
+    return { _engine: 'real', data: response, count, schema_fields: Object.keys(schema) };
+  }
+  return { _engine: 'real', data: response, count, schema_fields: Object.keys(schema) };
+}
+
+// ---------------------------------------------------------------------------
+// 28. gen-test-data — generate arrays of fake records from a template
+// template: object with field: { type, min, max, values, format } pairs
+// ---------------------------------------------------------------------------
+async function genTestData(input) {
+  input = input || {};
+  const template = input.template || input.schema || input.fields || {};
+  const count = Math.min(parseInt(input.count || input.rows || input.n, 10) || 10, 1000);
+  const format = (input.format || 'array').toLowerCase(); // array | csv | ndjson
+
+  if (typeof template !== 'object' || Array.isArray(template)) {
+    return { _engine: 'error', error: 'Invalid parameter: template must be an object. Example: { "template": { "id": { "type": "sequence" }, "name": { "type": "name" }, "score": { "type": "int", "min": 0, "max": 100 } }, "count": 50 }' };
+  }
+
+  function generateField(fieldSpec, index) {
+    if (typeof fieldSpec === 'string') {
+      // Simple type string shorthand
+      fieldSpec = { type: fieldSpec };
+    }
+    const { type = 'string', min, max, values, prefix = '', suffix = '', format: fmt } = fieldSpec;
+    const t = type.toLowerCase();
+
+    // Enum/values selection
+    if (values && Array.isArray(values) && values.length > 0) {
+      return _rnd(values);
+    }
+
+    switch (t) {
+      case 'sequence':
+      case 'index':
+      case 'rownum':
+        return (min || 1) + index;
+      case 'uuid':        return crypto.randomUUID();
+      case 'name':        return `${_rnd(_FN)} ${_rnd(_LN)}`;
+      case 'first_name':
+      case 'firstname':   return _rnd(_FN);
+      case 'last_name':
+      case 'lastname':    return _rnd(_LN);
+      case 'email':       return (_rnd(_FN) + '.' + _rnd(_LN) + _rndInt(1, 99) + '@' + _rnd(_DOMAINS)).toLowerCase();
+      case 'phone':       return `+1-${_rndInt(200,999)}-${_rndInt(200,999)}-${_rndInt(1000,9999)}`;
+      case 'company':     return `${_rnd(_CP1)} ${_rnd(_CP2)}`;
+      case 'address':     return `${_rndInt(100,9999)} ${_rnd(_STREETS)} ${_rnd(_STYPES)}, ${_rnd(_CITIES)}, ${_rnd(_STATES)}`;
+      case 'city':        return _rnd(_CITIES);
+      case 'state':       return _rnd(_STATES);
+      case 'zip':         return String(_rndInt(10000, 99999));
+      case 'country':     return 'US';
+      case 'url':         return `https://${_rnd(_CP1).toLowerCase()}.${_rnd(_TLDS)}`;
+      case 'int':
+      case 'integer': {
+        const lo = min !== undefined ? min : 0;
+        const hi = max !== undefined ? max : 1000;
+        return _rndInt(lo, hi);
+      }
+      case 'float':
+      case 'number':
+      case 'decimal': {
+        const lo = min !== undefined ? min : 0;
+        const hi = max !== undefined ? max : 1000;
+        const precision = fieldSpec.precision || 2;
+        return +(lo + Math.random() * (hi - lo)).toFixed(precision);
+      }
+      case 'boolean':
+      case 'bool': {
+        const p = fieldSpec.probability !== undefined ? fieldSpec.probability : 0.5;
+        return Math.random() < p;
+      }
+      case 'date': {
+        const from = min || '2020-01-01';
+        const to = max || new Date().toISOString().slice(0, 10);
+        const s = new Date(from).getTime(), e = new Date(to).getTime();
+        const d = new Date(s + Math.random() * (e - s));
+        return d.toISOString().slice(0, 10);
+      }
+      case 'datetime': {
+        const from = min ? new Date(min).getTime() : Date.now() - 1e11;
+        const to = max ? new Date(max).getTime() : Date.now();
+        return new Date(from + Math.random() * (to - from)).toISOString();
+      }
+      case 'timestamp': {
+        const lo = min || 1577836800;
+        const hi = max || 1735689600;
+        return _rndInt(lo, hi);
+      }
+      case 'lorem':
+      case 'text': {
+        const words = min || 5;
+        return Array.from({ length: _rndInt(words, max || words * 2) }, () => _rnd(_LOREM_WORDS)).join(' ');
+      }
+      case 'word':
+      case 'string':
+      default:
+        return prefix + _rnd(_LOREM_WORDS) + suffix;
+    }
+  }
+
+  function generateRecord(index) {
+    const record = {};
+    for (const [field, spec] of Object.entries(template)) {
+      record[field] = generateField(spec, index);
+    }
+    return record;
+  }
+
+  const records = Array.from({ length: count }, (_, i) => generateRecord(i));
+
+  if (format === 'csv') {
+    const headers = Object.keys(template);
+    const csvRows = [
+      headers.join(','),
+      ...records.map(r => headers.map(h => {
+        const v = r[h];
+        const s = String(v === null || v === undefined ? '' : v);
+        return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s;
+      }).join(',')),
+    ];
+    return { _engine: 'real', csv: csvRows.join('\n'), count, columns: headers };
+  }
+
+  if (format === 'ndjson') {
+    const ndjson = records.map(r => JSON.stringify(r)).join('\n');
+    return { _engine: 'real', ndjson, count };
+  }
+
+  return { _engine: 'real', records, count, columns: Object.keys(template) };
+}
+
 // ---------------------------------------------------------------------------
 // Exports
 // ---------------------------------------------------------------------------
@@ -1095,4 +1860,19 @@ module.exports = {
   'exec-join-json':           execJoinJson,
   'exec-unique-json':         execUniqueJson,
   'exec-jq':                  execJq,
+  // New handlers
+  'gen-fake-user':            genFakeUser,
+  'gen-fake-user-profile':    genFakeUser,       // alias
+  'gen-fake-company-full':    genFakeCompany,
+  'gen-fake-company-profile': genFakeCompany,    // alias
+  'gen-test-credit-card':     genTestCreditCard,
+  'gen-lorem-ipsum':          genLoremIpsum,
+  'gen-lorem-ipsum-text':     genLoremIpsum,     // alias
+  'gen-color-palette-hsl':    genColorPalette,
+  'gen-accessible-palette':   genColorPalette,   // alias
+  'gen-avatar-svg-initials':  genAvatarSvg,
+  'gen-mock-api-response':    genMockApiResponse,
+  'gen-mock-api':             genMockApiResponse, // alias
+  'gen-test-data':            genTestData,
+  'gen-test-dataset':         genTestData,       // alias
 };

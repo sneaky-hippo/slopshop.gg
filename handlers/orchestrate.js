@@ -14,6 +14,36 @@ function ensureDir() { if (!fs.existsSync(DATA)) fs.mkdirSync(DATA, { recursive:
 function load(file, fb) { ensureDir(); try { return JSON.parse(fs.readFileSync(path.join(DATA, file), 'utf8')); } catch (e) { return fb; } }
 function save(file, d) { ensureDir(); fs.writeFileSync(path.join(DATA, file), JSON.stringify(d)); }
 
+// Shared internal caller — used by all self-referential orchestration handlers.
+// Calls the local server (same process) so it works in any environment without
+// needing to know the public hostname.
+function callLocal(slug, inp, timeoutMs) {
+  return new Promise((resolve, reject) => {
+    const data = JSON.stringify(inp || {});
+    const reqTimeout = Math.max(timeoutMs || 10000, 1000);
+    const req = http.request({
+      hostname: '127.0.0.1',
+      port: process.env.PORT || 3000,
+      path: '/v1/' + slug,
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + (process.env.ORCHESTRATE_API_KEY || 'sk-slop-demo-key-12345678'),
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(data),
+      },
+      timeout: reqTimeout,
+    }, res => {
+      let b = '';
+      res.on('data', c => b += c);
+      res.on('end', () => { try { resolve(JSON.parse(b)); } catch (e) { resolve(b); } });
+    });
+    req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
+    req.on('error', reject);
+    req.write(data);
+    req.end();
+  });
+}
+
 module.exports = {
   // ===== DELAY =====
   'orch-delay': async (input) => {
@@ -292,16 +322,18 @@ module.exports = {
     const data = input.data || input.json || {};
     const sizes = {};
     function measure(obj, prefix) {
+      if (!obj || typeof obj !== 'object') return;
       for (const [k, v] of Object.entries(obj)) {
-        const path = prefix ? `${prefix}.${k}` : k;
+        const fieldPath = prefix ? `${prefix}.${k}` : k;
         const size = JSON.stringify(v).length;
-        sizes[path] = size;
-        if (v && typeof v === 'object' && !Array.isArray(v)) measure(v, path);
+        sizes[fieldPath] = size;
+        if (v && typeof v === 'object' && !Array.isArray(v)) measure(v, fieldPath);
       }
     }
     measure(data, '');
+    const total_bytes = JSON.stringify(data).length;
     const sorted = Object.entries(sizes).sort((a, b) => b[1] - a[1]);
-    return { _engine: 'real', total_bytes: JSON.stringify(data).length, fields: sorted.slice(0, 20).map(([path, bytes]) => ({ path, bytes, pct: +(bytes / JSON.stringify(data).length * 100).toFixed(1) })) };
+    return { _engine: 'real', total_bytes, fields: sorted.slice(0, 20).map(([fieldPath, bytes]) => ({ path: fieldPath, bytes, pct: total_bytes > 0 ? +(bytes / total_bytes * 100).toFixed(1) : 0 })) };
   },
 
   'analyze-text-entities': (input) => {
@@ -757,30 +789,12 @@ module.exports = {
     const { api, input: apiInput = {}, max_retries = 3, backoff_ms = 1000 } = input;
     if (!api) return { _engine: 'real', error: 'api is required', success: false, attempts: 0 };
 
-    function callLocal(slug, inp) {
-      return new Promise((resolve, reject) => {
-        const data = JSON.stringify(inp);
-        const req = http.request({
-          hostname: 'localhost', port: process.env.PORT || 3000,
-          path: '/v1/' + slug, method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + (process.env.ORCHESTRATE_API_KEY || 'sk-slop-demo-key-12345678'), 'Content-Type': 'application/json' },
-          timeout: 10000,
-        }, res => {
-          let b = '';
-          res.on('data', c => b += c);
-          res.on('end', () => { try { resolve(JSON.parse(b)); } catch (e) { resolve(b); } });
-        });
-        req.on('error', reject);
-        req.write(data); req.end();
-      });
-    }
-
     let attempts = 0;
     let lastError;
     for (let i = 0; i < max_retries; i++) {
       attempts++;
       try {
-        const result = await callLocal(api, apiInput);
+        const result = await callLocal(api, apiInput, 10000);
         return { _engine: 'real', result, attempts, success: true };
       } catch (e) {
         lastError = e.message;
@@ -793,73 +807,40 @@ module.exports = {
   // ===== ORCH PARALLEL =====
   'orch-parallel': async (input) => {
     const calls = input.calls || input.tasks || [];
-
-    function callLocal(slug, inp) {
-      return new Promise((resolve, reject) => {
-        const data = JSON.stringify(inp);
-        const req = http.request({
-          hostname: 'localhost', port: process.env.PORT || 3000,
-          path: '/v1/' + slug, method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + (process.env.ORCHESTRATE_API_KEY || 'sk-slop-demo-key-12345678'), 'Content-Type': 'application/json' },
-          timeout: 10000,
-        }, res => {
-          let b = '';
-          res.on('data', c => b += c);
-          res.on('end', () => { try { resolve(JSON.parse(b)); } catch (e) { resolve(b); } });
-        });
-        req.on('error', reject);
-        req.write(data); req.end();
-      });
+    if (!Array.isArray(calls) || calls.length === 0) {
+      return { _engine: 'real', results: [], timing_ms: 0, error: 'calls must be a non-empty array of {api, input}' };
     }
-
     const start = Date.now();
-    const results = await Promise.all(calls.map(c => callLocal(c.api || c.slug, c.input || c.body || {}).catch(e => ({ error: e.message }))));
+    const results = await Promise.all(calls.map(c => callLocal(c.api || c.slug, c.input || c.body || {}, 10000).catch(e => ({ error: e.message }))));
     return { _engine: 'real', results, timing_ms: Date.now() - start };
   },
 
   // ===== ORCH RACE =====
   'orch-race': async (input) => {
     try {
-    input = input || {};
-    let calls = input.calls;
-    if (typeof calls === 'string') { try { calls = JSON.parse(calls); } catch(e) {} }
-    if (!Array.isArray(calls) || calls.length === 0) {
-      return { _engine: 'real', winner: null, timing_ms: 0, error: 'calls must be a non-empty array of {api, input}' };
-    }
+      input = input || {};
+      let calls = input.calls;
+      if (typeof calls === 'string') { try { calls = JSON.parse(calls); } catch (e) { /* ignore */ } }
+      if (!Array.isArray(calls) || calls.length === 0) {
+        return { _engine: 'real', winner: null, timing_ms: 0, error: 'calls must be a non-empty array of {api, input}' };
+      }
 
-    function callLocal(slug, inp) {
-      return new Promise((resolve, reject) => {
-        const timeoutMs = 5000;
-        const data = JSON.stringify(inp);
-        const req = http.request({
-          hostname: 'localhost', port: process.env.PORT || 3000,
-          path: '/v1/' + slug, method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + (process.env.ORCHESTRATE_API_KEY || 'sk-slop-demo-key-12345678'), 'Content-Type': 'application/json' },
-          timeout: timeoutMs,
-        }, res => {
-          let b = '';
-          res.on('data', c => b += c);
-          res.on('end', () => { try { resolve(JSON.parse(b)); } catch (e) { resolve(b); } });
-        });
-        req.on('timeout', () => { req.destroy(); reject(new Error('timeout')); });
-        req.on('error', reject);
-        req.write(data); req.end();
-      });
-    }
-
-    const start = Date.now();
-    const raceTimeout = new Promise((_, reject) => setTimeout(() => reject(new Error('race_timeout')), 6000));
-    let winner;
-    try {
-      winner = await Promise.race([
-        ...calls.map(c => callLocal(c.api, c.input || {}).catch(e => ({ error: e.message, api: c.api }))),
-        raceTimeout
+      const start = Date.now();
+      // Sentinel value to detect the hard timeout cleanly without relying on rejection
+      const TIMEOUT_SENTINEL = '__race_timeout__';
+      const raceTimeoutMs = input.timeout_ms || 6000;
+      const raceTimeout = new Promise(resolve => setTimeout(() => resolve(TIMEOUT_SENTINEL), raceTimeoutMs));
+      const winner = await Promise.race([
+        ...calls.map(c => callLocal(c.api || c.slug, c.input || {}, raceTimeoutMs).catch(e => ({ error: e.message, api: c.api || c.slug }))),
+        raceTimeout,
       ]);
-    } catch(e) {
-      winner = { error: e.message };
+      if (winner === TIMEOUT_SENTINEL) {
+        return { _engine: 'real', winner: null, timed_out: true, timing_ms: Date.now() - start };
+      }
+      return { _engine: 'real', winner, timed_out: false, timing_ms: Date.now() - start };
+    } catch (e) {
+      return { _engine: 'real', winner: null, timing_ms: 0, error: e.message };
     }
-    return { _engine: 'real', winner, timing_ms: Date.now() - start };
-    } catch(e) { return { _engine: 'real', winner: null, timing_ms: 0, error: e.message }; }
   },
 
   // ===== ORCH TIMEOUT =====
@@ -867,29 +848,15 @@ module.exports = {
     const { api, input: apiInput = {}, timeout_ms = 5000 } = input;
     if (!api) return { _engine: 'real', result: null, timed_out: false, timing_ms: 0, error: 'api is required' };
 
-    function callLocal(slug, inp) {
-      return new Promise((resolve, reject) => {
-        const data = JSON.stringify(inp);
-        const req = http.request({
-          hostname: 'localhost', port: process.env.PORT || 3000,
-          path: '/v1/' + slug, method: 'POST',
-          headers: { 'Authorization': 'Bearer ' + (process.env.ORCHESTRATE_API_KEY || 'sk-slop-demo-key-12345678'), 'Content-Type': 'application/json' },
-          timeout: 10000,
-        }, res => {
-          let b = '';
-          res.on('data', c => b += c);
-          res.on('end', () => { try { resolve(JSON.parse(b)); } catch (e) { resolve(b); } });
-        });
-        req.on('error', reject);
-        req.write(data); req.end();
-      });
-    }
-
     const start = Date.now();
-    const timeoutPromise = new Promise(resolve => setTimeout(() => resolve('__TIMEOUT__'), timeout_ms));
-    const result = await Promise.race([callLocal(api, apiInput).catch(e => ({ error: e.message })), timeoutPromise]);
+    const TIMEOUT_SENTINEL = '__timeout__';
+    const timeoutPromise = new Promise(resolve => setTimeout(() => resolve(TIMEOUT_SENTINEL), timeout_ms));
+    const result = await Promise.race([
+      callLocal(api, apiInput, timeout_ms).catch(e => ({ error: e.message })),
+      timeoutPromise,
+    ]);
     const timing_ms = Date.now() - start;
-    if (result === '__TIMEOUT__') return { _engine: 'real', result: null, timed_out: true, timing_ms };
+    if (result === TIMEOUT_SENTINEL) return { _engine: 'real', result: null, timed_out: true, timing_ms };
     return { _engine: 'real', result, timed_out: false, timing_ms };
   },
 
@@ -1580,5 +1547,201 @@ module.exports = {
     if (checkins[key].length > 365) checkins[key].splice(0, checkins[key].length - 365);
     save('checkins.json', checkins);
     return { _engine: 'real', checked_in: true, agent: key, date: today, streak: checkins[key].length };
+  },
+
+  // ===== ORCH FALLBACK =====
+  // Try primary tool; if it errors or returns an error field, try the fallback.
+  'orch-fallback': async (input) => {
+    const primary = input.primary || {};
+    const fallback = input.fallback || {};
+    if (!primary.api && !primary.slug) return { _engine: 'real', error: 'primary.api is required', used: null, result: null };
+    if (!fallback.api && !fallback.slug) return { _engine: 'real', error: 'fallback.api is required', used: null, result: null };
+
+    const primarySlug = primary.api || primary.slug;
+    const fallbackSlug = fallback.api || fallback.slug;
+    const start = Date.now();
+
+    let primaryResult;
+    let primaryFailed = false;
+    try {
+      primaryResult = await callLocal(primarySlug, primary.input || {}, 10000);
+      // Treat HTTP-level error responses (ok: false) as failures
+      if (primaryResult && primaryResult.ok === false) primaryFailed = true;
+      if (primaryResult && primaryResult.error && !primaryResult.ok) primaryFailed = true;
+    } catch (e) {
+      primaryResult = { error: e.message };
+      primaryFailed = true;
+    }
+
+    if (!primaryFailed) {
+      return { _engine: 'real', used: 'primary', api: primarySlug, result: primaryResult, timing_ms: Date.now() - start };
+    }
+
+    let fallbackResult;
+    try {
+      fallbackResult = await callLocal(fallbackSlug, fallback.input || {}, 10000);
+    } catch (e) {
+      fallbackResult = { error: e.message };
+    }
+    return {
+      _engine: 'real',
+      used: 'fallback',
+      api: fallbackSlug,
+      primary_error: primaryResult,
+      result: fallbackResult,
+      timing_ms: Date.now() - start,
+    };
+  },
+
+  // ===== ORCH MAP =====
+  // Apply a single tool to each item in an array, collecting all results.
+  'orch-map': async (input) => {
+    const api = input.api || input.slug;
+    if (!api) return { _engine: 'real', error: 'api is required', results: [] };
+    const items = input.items || input.array || [];
+    if (!Array.isArray(items)) return { _engine: 'real', error: 'items must be an array', results: [] };
+    if (items.length === 0) return { _engine: 'real', results: [], count: 0, timing_ms: 0 };
+
+    const concurrency = Math.min(input.concurrency || items.length, 10);
+    const start = Date.now();
+    const results = [];
+
+    // Process in batches to respect concurrency limit
+    for (let i = 0; i < items.length; i += concurrency) {
+      const batch = items.slice(i, i + concurrency);
+      const batchResults = await Promise.all(
+        batch.map((item, batchIdx) =>
+          callLocal(api, typeof item === 'object' ? item : { value: item, index: i + batchIdx }, 10000)
+            .catch(e => ({ error: e.message, item }))
+        )
+      );
+      results.push(...batchResults);
+    }
+
+    return { _engine: 'real', api, results, count: results.length, timing_ms: Date.now() - start };
+  },
+
+  // ===== ORCH REDUCE =====
+  // Run multiple tool calls and fold their results into one accumulated value.
+  // reducer strategies: 'merge' (deep merge objects), 'concat' (concat arrays),
+  // 'sum' (sum numeric fields), 'first' (return first), 'last' (return last),
+  // 'collect' (array of all results).
+  'orch-reduce': async (input) => {
+    const calls = input.calls || input.tasks || [];
+    if (!Array.isArray(calls) || calls.length === 0) {
+      return { _engine: 'real', error: 'calls must be a non-empty array of {api, input}', result: null };
+    }
+    const reducer = input.reducer || 'collect';
+    const start = Date.now();
+
+    const rawResults = await Promise.all(
+      calls.map(c => callLocal(c.api || c.slug, c.input || {}, 10000).catch(e => ({ error: e.message })))
+    );
+
+    let result;
+    switch (reducer) {
+      case 'merge': {
+        result = {};
+        for (const r of rawResults) {
+          if (r && typeof r === 'object') Object.assign(result, r.data || r);
+        }
+        break;
+      }
+      case 'concat': {
+        result = [];
+        for (const r of rawResults) {
+          const val = r && r.data ? r.data : r;
+          if (Array.isArray(val)) result.push(...val);
+          else result.push(val);
+        }
+        break;
+      }
+      case 'sum': {
+        const field = input.field || 'value';
+        result = 0;
+        for (const r of rawResults) {
+          const val = r && r.data ? r.data[field] : (r && r[field]);
+          if (typeof val === 'number') result += val;
+        }
+        break;
+      }
+      case 'first':
+        result = rawResults[0] || null;
+        break;
+      case 'last':
+        result = rawResults[rawResults.length - 1] || null;
+        break;
+      case 'collect':
+      default:
+        result = rawResults;
+        break;
+    }
+
+    return { _engine: 'real', reducer, result, call_count: calls.length, timing_ms: Date.now() - start };
+  },
+
+  // ===== ORCH CONDITION =====
+  // Evaluate a condition tool's output; branch to if_api or else_api accordingly.
+  // condition_check: field path in the result to evaluate (default: 'data.value' or 'ok')
+  // truthy_if: optional value to compare against (default: any truthy value)
+  'orch-condition': async (input) => {
+    const conditionApi = input.condition_api || input.condition?.api;
+    const ifApi = input.if_api || input.if?.api;
+    const elseApi = input.else_api || input.else?.api;
+
+    if (!conditionApi) return { _engine: 'real', error: 'condition_api is required', branch_taken: null, result: null };
+    if (!ifApi && !elseApi) return { _engine: 'real', error: 'at least if_api or else_api is required', branch_taken: null, result: null };
+
+    const start = Date.now();
+
+    // Run the condition
+    let condResult;
+    try {
+      condResult = await callLocal(conditionApi, input.condition_input || input.condition?.input || {}, 10000);
+    } catch (e) {
+      condResult = { error: e.message };
+    }
+
+    // Evaluate truthiness of the condition result
+    const checkField = input.condition_check || null;
+    let condValue;
+    if (checkField) {
+      // Dot-path traversal: e.g. "data.allowed" or "ok"
+      condValue = checkField.split('.').reduce((obj, key) => (obj && typeof obj === 'object' ? obj[key] : undefined), condResult);
+    } else {
+      // Default: truthy if ok === true OR data is truthy AND no error
+      condValue = condResult && condResult.ok !== false && !condResult.error;
+      if (condResult && condResult.data !== undefined) condValue = !!condResult.data;
+    }
+
+    // Optional: compare against a specific expected value
+    if (input.truthy_if !== undefined) condValue = condValue === input.truthy_if || String(condValue) === String(input.truthy_if);
+
+    const isTruthy = Boolean(condValue);
+    const branch = isTruthy ? 'if' : 'else';
+    const branchApi = isTruthy ? ifApi : elseApi;
+    const branchInput = isTruthy
+      ? (input.if_input || input.if?.input || {})
+      : (input.else_input || input.else?.input || {});
+
+    let branchResult = null;
+    if (branchApi) {
+      try {
+        branchResult = await callLocal(branchApi, branchInput, 10000);
+      } catch (e) {
+        branchResult = { error: e.message };
+      }
+    }
+
+    return {
+      _engine: 'real',
+      condition_api: conditionApi,
+      condition_result: condResult,
+      condition_value: condValue,
+      branch_taken: branch,
+      branch_api: branchApi || null,
+      result: branchResult,
+      timing_ms: Date.now() - start,
+    };
   },
 };

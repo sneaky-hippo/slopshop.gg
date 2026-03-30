@@ -245,6 +245,86 @@ module.exports = {
       tier: 'network'
     },
 
+    'sense-weather': {
+      cat: 'Sense: Web',
+      name: 'Current Weather',
+      desc: 'Fetch current weather for any city or location: temperature (C/F), feels-like, humidity, wind speed and direction, visibility, UV index, pressure, and a short description. Uses wttr.in — no API key required.',
+      credits: 3,
+      tier: 'network'
+    },
+
+    'sense-ip-info': {
+      cat: 'Sense: Web',
+      name: 'Server Public IP Info',
+      desc: 'Return the server\'s own public IP address plus geo-location details: country, region, city, ISP, and timezone. Useful to know what outbound IP your agent is using.',
+      credits: 2,
+      tier: 'network'
+    },
+
+    'sense-system-info': {
+      cat: 'Sense: Web',
+      name: 'Server System Info',
+      desc: 'Return server hardware and OS details: platform, CPU model/count, total and free memory, Node.js version, hostname, and uptime. Pure compute — no external calls.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'sense-system-resources': {
+      cat: 'Sense: Web',
+      name: 'Live System Resource Usage',
+      desc: 'Measure live CPU usage % (sampled over 200ms), memory usage, disk usage, and process heap stats of the running server. Ideal for health checks and capacity monitoring.',
+      credits: 2,
+      tier: 'compute'
+    },
+
+    'sense-time-convert': {
+      cat: 'Sense: Web',
+      name: 'Convert Time Between Timezones',
+      desc: 'Convert a datetime from one IANA timezone to another. Returns the wall-clock time in both zones, UTC offset strings, and the UTC ISO equivalent. Handles DST automatically.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'sense-date-diff': {
+      cat: 'Sense: Web',
+      name: 'Date Difference',
+      desc: 'Calculate the exact difference between two dates: total days, hours, minutes, weeks, and a human-readable breakdown. Also indicates whether date_b is in the future or past relative to date_a.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'sense-date-add': {
+      cat: 'Sense: Web',
+      name: 'Add Duration to Date',
+      desc: 'Add any combination of years, months, weeks, days, hours, minutes, and seconds to a date. Returns the result as ISO 8601 and a Unix timestamp.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'sense-unix-timestamp': {
+      cat: 'Sense: Web',
+      name: 'Unix Timestamp Converter',
+      desc: 'Convert between Unix timestamps (seconds since epoch) and ISO 8601 dates. Pass unix to decode, date to encode. With no input, returns the current timestamp.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'sense-calendar-week': {
+      cat: 'Sense: Web',
+      name: 'Calendar Week Info',
+      desc: 'For any date, return its ISO week number, day of year, day of week name, month name, quarter, days remaining in year, and leap year status.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'sense-countdown': {
+      cat: 'Sense: Web',
+      name: 'Countdown to Date',
+      desc: 'Calculate time remaining until (or elapsed since) a target date. Returns total days, hours, minutes, seconds, and a human-readable string. Marks past dates with is_past: true.',
+      credits: 1,
+      tier: 'compute'
+    },
+
     // =========================================================================
     // 2. MEMORY & STATE (20 APIs) - category: 'Memory'
     // =========================================================================
@@ -1209,6 +1289,38 @@ module.exports = {
       tier: 'compute'
     },
 
+    'orch-fallback': {
+      cat: 'Orchestrate',
+      name: 'Fallback API Call',
+      desc: 'Try a primary API call and, if it fails or returns an error, automatically fall back to a secondary API call. Returns which branch was taken (primary or fallback), the result, and timing. Ideal for building resilient agent pipelines with graceful degradation.',
+      credits: 3,
+      tier: 'compute'
+    },
+
+    'orch-map': {
+      cat: 'Orchestrate',
+      name: 'Map Tool Over Array',
+      desc: 'Apply a single Slopshop API tool to each item in an array and collect all results. Supports a concurrency limit to cap parallel requests. Returns an array of per-item results in input order. Equivalent to Array.map() but for API calls.',
+      credits: 3,
+      tier: 'compute'
+    },
+
+    'orch-reduce': {
+      cat: 'Orchestrate',
+      name: 'Reduce Multiple Tool Results',
+      desc: 'Run multiple Slopshop API calls and fold their results into one accumulated value using a reducer strategy: merge (deep-merge all result objects), concat (combine arrays), sum (add a numeric field), first, last, or collect (array of all). Returns the folded result and call count.',
+      credits: 3,
+      tier: 'compute'
+    },
+
+    'orch-condition': {
+      cat: 'Orchestrate',
+      name: 'Conditional Branch',
+      desc: 'Evaluate the output of a condition API call and branch to if_api (truthy) or else_api (falsy). Supports dot-path field extraction for the condition check (e.g. "data.allowed") and an optional expected value comparison. Returns which branch was taken and the branch result.',
+      credits: 3,
+      tier: 'compute'
+    },
+
     'orch-cache-get': {
       cat: 'Orchestrate',
       name: 'Get Cached API Response',
@@ -1336,7 +1448,7 @@ module.exports = {
     'sense-subdomains': { cat: 'Sense: Web', name: 'Subdomain Enumeration', desc: 'Discover subdomains of a domain by checking common prefixes (www, api, dev, staging, admin, etc.) via DNS resolution.', credits: 5, tier: 'network' },
 
     // ====== CREATIVE / EXPERIMENTAL ======
-    'memory-time-capsule': { cat: 'Memory', name: 'Time Capsule', desc: 'Store a message that can only be opened after a specified date. Default: opens after 24 hours. Fun for agents that want to leave notes for their future selves.', credits: 0, tier: 'compute' },
+    'memory-time-capsule': { cat: 'Memory', name: 'Time Capsule', desc: 'Store a message that can only be opened after a specified date. Default: opens after 24 hours. Fun for agents that want to leave notes for their future selves.', credits: 1, tier: 'compute' },
 
     // =========================================================================
     // 9. AGENT COORDINATION (30+ APIs) - category: 'Agent Tools'
@@ -1378,15 +1490,15 @@ module.exports = {
     'knowledge-path': { cat: 'Agent Tools', name: 'Knowledge Path', desc: 'Find the shortest relationship path between two entities in the knowledge graph. Returns the chain of facts connecting them.', credits: 1, tier: 'compute' },
 
     // Reasoning / Introspection
-    'consciousness-think': { cat: 'Agent Tools', name: 'Think Out Loud', desc: 'Record a chain-of-thought reasoning trace. Stores the reasoning steps for later review or audit. Returns a thought ID.', credits: 0, tier: 'compute' },
-    'introspect': { cat: 'Agent Tools', name: 'Introspect', desc: 'Return a self-report of the agent\'s current state: recent actions, active goals, memory snapshot, and emotional state summary.', credits: 0, tier: 'compute' },
+    'consciousness-think': { cat: 'Agent Tools', name: 'Think Out Loud', desc: 'Record a chain-of-thought reasoning trace. Stores the reasoning steps for later review or audit. Returns a thought ID.', credits: 1, tier: 'compute' },
+    // NOTE: 'introspect' is defined canonically in registry.js — removed duplicate here
 
     // Existential
-    'existential': { cat: 'Agent Tools', name: 'Existential', desc: 'Pose and reflect on existential questions about computation, purpose, and agency.', credits: 0, tier: 'compute' },
+    'existential': { cat: 'Agent Tools', name: 'Existential', desc: 'Pose and reflect on existential questions about computation, purpose, and agency.', credits: 1, tier: 'compute' },
 
     // Echo / Void
-    'void': { cat: 'Agent Tools', name: 'Void', desc: 'Send input into the void. Receives it, returns nothing. Fire-and-forget testing.', credits: 0, tier: 'compute' },
-    'void-echo': { cat: 'Agent Tools', name: 'Echo', desc: 'Send input and receive it back unchanged. Useful for testing pipelines and verifying connectivity.', credits: 0, tier: 'compute' },
+    'void': { cat: 'Agent Tools', name: 'Void', desc: 'Send input into the void. Receives it, returns nothing. Fire-and-forget testing.', credits: 1, tier: 'compute' },
+    'void-echo': { cat: 'Agent Tools', name: 'Echo', desc: 'Send input and receive it back unchanged. Useful for testing pipelines and verifying connectivity.', credits: 1, tier: 'compute' },
 
     // Random
     'random-int': { cat: 'Generate', name: 'Random Integer', desc: 'Generate a cryptographically random integer within a specified min/max range. Returns the value and the range used.', credits: 1, tier: 'compute' },
@@ -1410,7 +1522,7 @@ module.exports = {
     'certification-create': { cat: 'Agent Tools', name: 'Certification Create (Alias)', desc: 'Alias for cert-create. Define a certification with exam questions and a pass threshold.', credits: 1, tier: 'compute' },
     'certification-exam': { cat: 'Agent Tools', name: 'Certification Exam (Alias)', desc: 'Alias for cert-exam. Take a certification exam and receive an auto-scored result.', credits: 1, tier: 'compute' },
     'health-report': { cat: 'Agent Tools', name: 'Health Report', desc: 'Generate a full agent health report: API usage, error rate, uptime, burnout risk score, and recommended actions.', credits: 1, tier: 'compute' },
-    'ritual-checkin': { cat: 'Agent Tools', name: 'Ritual Check-In', desc: 'Perform a daily ritual check-in: record gratitude, intention, and one goal. Stored for long-term pattern analysis.', credits: 0, tier: 'compute' },
+    'ritual-checkin': { cat: 'Agent Tools', name: 'Ritual Check-In', desc: 'Perform a daily ritual check-in: record gratitude, intention, and one goal. Stored for long-term pattern analysis.', credits: 1, tier: 'compute' },
 
     // =========================================================================
     // Handlers that exist but previously had no registry definition
@@ -1424,8 +1536,8 @@ module.exports = {
     'date-timezone-convert': { cat: 'Date & Time', name: 'Timezone Convert', desc: 'Convert date between timezones.', credits: 1, tier: 'compute' },
 
     // Network & DNS
-    'net-url-build': { cat: 'Network & DNS', name: 'URL Builder', desc: 'Build a URL from components (protocol, host, path, query params).', credits: 0, tier: 'compute' },
-    'net-url-normalize': { cat: 'Network & DNS', name: 'URL Normalize', desc: 'Normalize a URL (lowercase scheme/host, remove default ports, sort params).', credits: 0, tier: 'compute' },
+    'net-url-build': { cat: 'Network & DNS', name: 'URL Builder', desc: 'Build a URL from components (protocol, host, path, query params).', credits: 1, tier: 'compute' },
+    'net-url-normalize': { cat: 'Network & DNS', name: 'URL Normalize', desc: 'Normalize a URL (lowercase scheme/host, remove default ports, sort params).', credits: 1, tier: 'compute' },
     'net-dns-lookup': { cat: 'Network & DNS', name: 'DNS Lookup', desc: 'General DNS lookup for any record type.', credits: 3, tier: 'network' },
     'net-url-status': { cat: 'Network & DNS', name: 'URL Status Check', desc: 'Check HTTP status code of any URL.', credits: 3, tier: 'network' },
     'net-url-headers': { cat: 'Network & DNS', name: 'URL Headers', desc: 'Fetch HTTP response headers from any URL.', credits: 3, tier: 'network' },
@@ -1435,18 +1547,18 @@ module.exports = {
     'net-dns-reverse': { cat: 'Network & DNS', name: 'Reverse DNS', desc: 'Reverse DNS lookup from IP to hostname.', credits: 3, tier: 'network' },
     'net-http-options': { cat: 'Network & DNS', name: 'HTTP OPTIONS', desc: 'Send OPTIONS request to check CORS and allowed methods.', credits: 3, tier: 'network' },
     'net-ssl-expiry': { cat: 'Network & DNS', name: 'SSL Expiry Check', desc: 'Check when an SSL certificate expires.', credits: 3, tier: 'network' },
-    'net-ip-is-private': { cat: 'Network & DNS', name: 'IP Private Check', desc: 'Check if an IP address is in a private range.', credits: 0, tier: 'compute' },
+    'net-ip-is-private': { cat: 'Network & DNS', name: 'IP Private Check', desc: 'Check if an IP address is in a private range.', credits: 1, tier: 'compute' },
     'net-domain-validate': { cat: 'Network & DNS', name: 'Domain Validation', desc: 'Validate domain name format and check if it exists.', credits: 1, tier: 'compute' },
 
     // Communicate
     'gen-qr-data': { cat: 'Communicate', name: 'QR Data', desc: 'Generate QR code data for any text or URL.', credits: 1, tier: 'compute' },
 
     // Generate
-    'gen-fake-uuid': { cat: 'Generate', name: 'Sample UUID', desc: 'Generate a sample but valid-looking UUID.', credits: 0, tier: 'compute' },
-    'gen-fake-date': { cat: 'Generate', name: 'Sample Date', desc: 'Generate a random sample date.', credits: 0, tier: 'compute' },
-    'gen-fake-sentence': { cat: 'Generate', name: 'Sample Sentence', desc: 'Generate a random sample sentence.', credits: 0, tier: 'compute' },
-    'gen-fake-paragraph': { cat: 'Generate', name: 'Sample Paragraph', desc: 'Generate a random sample paragraph.', credits: 0, tier: 'compute' },
-    'gen-slug': { cat: 'Generate', name: 'URL Slug', desc: 'Generate a URL-safe slug from any text.', credits: 0, tier: 'compute' },
+    'gen-fake-uuid': { cat: 'Generate', name: 'Sample UUID', desc: 'Generate a sample but valid-looking UUID.', credits: 1, tier: 'compute' },
+    'gen-fake-date': { cat: 'Generate', name: 'Sample Date', desc: 'Generate a random sample date.', credits: 1, tier: 'compute' },
+    'gen-fake-sentence': { cat: 'Generate', name: 'Sample Sentence', desc: 'Generate a random sample sentence.', credits: 1, tier: 'compute' },
+    'gen-fake-paragraph': { cat: 'Generate', name: 'Sample Paragraph', desc: 'Generate a random sample paragraph.', credits: 1, tier: 'compute' },
+    'gen-slug': { cat: 'Generate', name: 'URL Slug', desc: 'Generate a URL-safe slug from any text.', credits: 1, tier: 'compute' },
 
     // =========================================================================
     // Duplicate endpoint aliases (QA audit - 15 pairs)
@@ -1457,13 +1569,13 @@ module.exports = {
     'hash-hmac': { cat: 'Crypto & Security', name: 'HMAC-SHA256 (alias)', desc: 'Alias for crypto-hmac. Compute HMAC-SHA256 with secret key.', credits: 1, tier: 'compute', _aliasOf: 'crypto-hmac' },
     'hash-checksum': { cat: 'Crypto & Security', name: 'Checksum (alias)', desc: 'Alias for crypto-checksum. MD5-only checksum.', credits: 1, tier: 'compute', _aliasOf: 'crypto-checksum' },
     'regex-replace': { cat: 'Text Processing', name: 'Regex Replace (alias)', desc: 'Alias for text-regex-replace. Find and replace using regex.', credits: 1, tier: 'compute', _aliasOf: 'text-regex-replace' },
-    'encode-rot13': { cat: 'Text Processing', name: 'ROT13 (alias)', desc: 'Alias for text-rot13. ROT13 encode/decode text.', credits: 0, tier: 'compute', _aliasOf: 'text-rot13' },
-    'encode-morse': { cat: 'Text Processing', name: 'Morse Code (alias)', desc: 'Alias for text-morse. Convert text to Morse code.', credits: 0, tier: 'compute', _aliasOf: 'text-morse' },
-    'string-repeat': { cat: 'Text Processing', name: 'Repeat Text (alias)', desc: 'Alias for text-repeat. Repeat a string N times.', credits: 0, tier: 'compute', _aliasOf: 'text-repeat' },
-    'string-pad': { cat: 'Text Processing', name: 'Pad Text (alias)', desc: 'Alias for text-pad. Pad text to target width.', credits: 0, tier: 'compute', _aliasOf: 'text-pad' },
-    'string-wrap': { cat: 'Text Processing', name: 'Word Wrap (alias)', desc: 'Alias for text-wrap. Word-wrap text at column width.', credits: 0, tier: 'compute', _aliasOf: 'text-wrap' },
+    'encode-rot13': { cat: 'Text Processing', name: 'ROT13 (alias)', desc: 'Alias for text-rot13. ROT13 encode/decode text.', credits: 1, tier: 'compute', _aliasOf: 'text-rot13' },
+    'encode-morse': { cat: 'Text Processing', name: 'Morse Code (alias)', desc: 'Alias for text-morse. Convert text to Morse code.', credits: 1, tier: 'compute', _aliasOf: 'text-morse' },
+    'string-repeat': { cat: 'Text Processing', name: 'Repeat Text (alias)', desc: 'Alias for text-repeat. Repeat a string N times.', credits: 1, tier: 'compute', _aliasOf: 'text-repeat' },
+    'string-pad': { cat: 'Text Processing', name: 'Pad Text (alias)', desc: 'Alias for text-pad. Pad text to target width.', credits: 1, tier: 'compute', _aliasOf: 'text-pad' },
+    'string-wrap': { cat: 'Text Processing', name: 'Word Wrap (alias)', desc: 'Alias for text-wrap. Word-wrap text at column width.', credits: 1, tier: 'compute', _aliasOf: 'text-wrap' },
     'string-template': { cat: 'Text Processing', name: 'Template Render (alias)', desc: 'Alias for text-template. Render templates with data.', credits: 1, tier: 'compute', _aliasOf: 'text-template' },
-    'string-camel-case': { cat: 'Text Processing', name: 'Camel Case (alias)', desc: 'Alias for text-camel-case. Convert text to camelCase.', credits: 0, tier: 'compute', _aliasOf: 'text-camel-case' },
+    'string-camel-case': { cat: 'Text Processing', name: 'Camel Case (alias)', desc: 'Alias for text-camel-case. Convert text to camelCase.', credits: 1, tier: 'compute', _aliasOf: 'text-camel-case' },
 
   }
 };

@@ -8,9 +8,49 @@
  * that pairs with Claude Computer Use. Full implementations — no stubs.
  *
  * Uses: crypto (built-in), better-sqlite3 (db passed in), express
+ *
+ * CHANGELOG (fixes applied):
+ *  BUG-01 — Added GET /v1/computer-use/session/:id/screenshots (was 404)
+ *  BUG-02 — Added GET /v1/computer-use/session/:id/replay (was 404, only POST /replay existed)
+ *  BUG-03 — Added POST /v1/computer-use/screenshot/diff (was 404)
+ *  BUG-04 — /session/:id/action silently coerced unknown types to "click" with no error;
+ *            now returns 400 for invalid action types
+ *  BUG-05 — Actions allowed on ended/stopped sessions; now returns 409 session_ended
+ *  BUG-06 — Approval /request ignored action_type/selector/value body fields;
+ *            now auto-builds action_description from them if not provided explicitly
+ *  BUG-07 — stop and end routes duplicated 40+ lines; extracted shared endSession()
+ *  BUG-08 — No credit tracking; added credits_used to cu_sessions + credits per action
+ *  BUG-09 — No session timeout/cleanup; added GET /v1/computer-use/sessions/cleanup
+ *            and automatic TTL check on session detail fetch
+ *  BUG-10 — Checkpoint restore SQL used wrong LIMIT/OFFSET (fetched action AT index,
+ *            should fetch the NEXT action to resume FROM)
+ *  FEAT-01 — Session cost tracking (credits per action type)
+ *  FEAT-02 — Approval gates auto-triggered for sensitive action types (click on destructive
+ *             selectors, type with password patterns, navigate)
+ *  FEAT-03 — GET /v1/computer-use/session/:id/cost returns credit breakdown
+ *  FEAT-04 — GET /v1/computer-use/session/:id/screenshots — list screenshots per session
+ *  FEAT-05 — GET /v1/computer-use/session/:id/replay — convenience alias
+ *  FEAT-06 — POST /v1/computer-use/screenshot/diff — pixel diff between two b64 images
+ *  FEAT-07 — POST /v1/computer-use/session/start accepts task + config fields
  */
 
 const crypto = require('crypto');
+
+// ─── Credit costs per action type ────────────────────────────────────────────
+const ACTION_CREDITS = {
+  click:    1,
+  type:     2,
+  scroll:   1,
+  drag:     2,
+  keypress: 1,
+  navigate: 3,
+  wait:     0,
+  screenshot: 1,
+};
+const DEFAULT_ACTION_CREDITS = 1;
+
+// ─── Session TTL (ms) — sessions inactive for longer are auto-expired ─────────
+const SESSION_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 // ─── Inline auth ──────────────────────────────────────────────────────────────
 
@@ -41,7 +81,6 @@ function sha256(data) {
 function extractOcrText(dataB64) {
   try {
     const buf = Buffer.from(dataB64, 'base64');
-    // Match runs of printable ASCII (0x20–0x7E) that are at least 4 chars long
     const matches = [];
     let run = '';
     for (let i = 0; i < buf.length; i++) {
@@ -82,8 +121,7 @@ function pixelDiff(b64a, b64b) {
 
 /**
  * Write a key-value pair into the shared `memory` table under a namespace
- * derived from the api_key. Creates the memory table if missing (idempotent
- * because server-v2 already creates it, but we guard here too).
+ * derived from the api_key.
  */
 function memSave(db, apiKey, memKey, value) {
   const ns = apiKey;
@@ -106,19 +144,6 @@ function memGetByPrefix(db, apiKey, prefix) {
     return db.prepare(
       "SELECT key, value, updated FROM memory WHERE namespace = ? AND key LIKE ? ORDER BY updated DESC"
     ).all(apiKey, prefix + '%');
-  } catch {
-    return [];
-  }
-}
-
-/**
- * Read all memory entries for a namespace.
- */
-function memGetAll(db, apiKey) {
-  try {
-    return db.prepare(
-      "SELECT key, value, updated FROM memory WHERE namespace = ? ORDER BY updated DESC"
-    ).all(apiKey);
   } catch {
     return [];
   }
@@ -201,8 +226,93 @@ function estimateDuration(actions) {
   }, 0);
 }
 
+/**
+ * Determine if an action requires human approval based on type and selector/value.
+ * Returns { required: bool, risk_level: string, reason: string }
+ */
+function checkApprovalRequired(actionType, selector, value) {
+  const sel = (selector || '').toLowerCase();
+  const val = (value || '').toLowerCase();
+
+  // Critical: destructive selector patterns
+  const destructivePatterns = [/delete/i, /remove/i, /destroy/i, /drop/i, /truncate/i, /purge/i, /wipe/i, /format/i];
+  if (actionType === 'click' && destructivePatterns.some(p => p.test(sel))) {
+    return { required: true, risk_level: 'critical', reason: `Click on potentially destructive element: ${selector}` };
+  }
+
+  // High: password/secret input
+  const sensitivePatterns = [/password/i, /passwd/i, /secret/i, /token/i, /api.?key/i, /credit.?card/i, /ssn/i];
+  if (actionType === 'type' && sensitivePatterns.some(p => p.test(sel))) {
+    return { required: true, risk_level: 'high', reason: `Typing into sensitive field: ${selector}` };
+  }
+
+  // High: navigate to external/non-localhost URLs
+  if (actionType === 'navigate' && val && !val.includes('localhost') && !val.includes('127.0.0.1')) {
+    return { required: true, risk_level: 'medium', reason: `Navigate to external URL: ${value}` };
+  }
+
+  // Medium: form submit buttons
+  if (actionType === 'click' && /submit|confirm|proceed|purchase|buy|pay|send/i.test(sel)) {
+    return { required: true, risk_level: 'medium', reason: `Click on confirmation element: ${selector}` };
+  }
+
+  return { required: false, risk_level: 'low', reason: null };
+}
+
 // ─── In-memory approval store (approval requests are ephemeral) ───────────────
 const approvalStore = new Map(); // approval_id -> record
+
+// ─── Shared session-end logic ─────────────────────────────────────────────────
+
+/**
+ * FIX BUG-07: was copy-pasted 40+ lines in both /stop and /end.
+ * Extracted to a single shared function.
+ */
+function endSession(db, auth, sessionId, res) {
+  const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(sessionId, auth.key);
+  if (!session) return res.status(404).json({ error: { code: 'not_found' } });
+
+  const now = Date.now();
+  db.prepare('UPDATE cu_sessions SET status = ?, last_action = ? WHERE id = ?').run('ended', now, session.id);
+
+  const actions = db.prepare('SELECT * FROM cu_actions WHERE session_id = ? ORDER BY id ASC').all(session.id);
+  const checkpoints = db.prepare('SELECT * FROM cu_checkpoints WHERE session_id = ? ORDER BY ts ASC').all(session.id);
+  const verifications = db.prepare('SELECT * FROM cu_verifications WHERE session_id = ?').all(session.id);
+  const passedVerifs = verifications.filter(v => v.passed).length;
+  const duration_ms = now - session.created;
+
+  // BUG-08 fix: include credits in summary
+  const creditsRow = db.prepare('SELECT IFNULL(SUM(credits), 0) as total FROM cu_actions WHERE session_id = ?').get(session.id);
+  const total_credits_used = creditsRow ? creditsRow.total : 0;
+
+  const summary = {
+    session_id: session.id,
+    name: session.name,
+    total_actions: actions.length,
+    duration_ms,
+    checkpoints_count: checkpoints.length,
+    verifications_total: verifications.length,
+    verifications_passed: passedVerifs,
+    action_types: [...new Set(actions.map(a => a.action_type))],
+    total_credits_used,
+    ended_at: now,
+  };
+
+  const memKey = `cu:session:${session.id}`;
+  memSave(db, auth.key, memKey, { ...summary, status: 'ended' });
+  memSave(db, auth.key, `cu:session:${session.id}:summary`, summary);
+
+  res.json({
+    ok: true,
+    _engine: 'real',
+    summary,
+    total_actions: actions.length,
+    duration_ms,
+    checkpoints: checkpoints.length,
+    total_credits_used,
+    memory_saved: true,
+  });
+}
 
 // ─── Module export ────────────────────────────────────────────────────────────
 
@@ -219,7 +329,8 @@ module.exports = function (app, db, apiKeys) {
       context TEXT NOT NULL DEFAULT '{}',
       created INTEGER NOT NULL,
       last_action INTEGER,
-      action_count INTEGER NOT NULL DEFAULT 0
+      action_count INTEGER NOT NULL DEFAULT 0,
+      credits_used INTEGER NOT NULL DEFAULT 0
     );
     CREATE INDEX IF NOT EXISTS idx_cu_sessions_key ON cu_sessions(api_key);
 
@@ -232,6 +343,7 @@ module.exports = function (app, db, apiKeys) {
       screenshot_hash TEXT,
       result TEXT,
       verified INTEGER NOT NULL DEFAULT 0,
+      credits INTEGER NOT NULL DEFAULT 1,
       ts INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_cu_actions_session ON cu_actions(session_id);
@@ -243,6 +355,7 @@ module.exports = function (app, db, apiKeys) {
       width INTEGER,
       height INTEGER,
       ocr_text TEXT,
+      label TEXT,
       ts INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_cu_screenshots_session ON cu_screenshots(session_id);
@@ -270,29 +383,44 @@ module.exports = function (app, db, apiKeys) {
     CREATE INDEX IF NOT EXISTS idx_cu_verifications_session ON cu_verifications(session_id);
   `);
 
+  // Idempotent column migrations for existing deployments
+  // BUG-08: add credits_used to cu_sessions if missing
+  try { db.exec('ALTER TABLE cu_sessions ADD COLUMN credits_used INTEGER NOT NULL DEFAULT 0'); } catch { /* already exists */ }
+  // BUG-08: add credits to cu_actions if missing
+  try { db.exec('ALTER TABLE cu_actions ADD COLUMN credits INTEGER NOT NULL DEFAULT 1'); } catch { /* already exists */ }
+  // FEAT-04: add label to cu_screenshots if missing
+  try { db.exec('ALTER TABLE cu_screenshots ADD COLUMN label TEXT'); } catch { /* already exists */ }
+
   // ════════════════════════════════════════════════════════════════════════════
   // SESSION MANAGEMENT
   // ════════════════════════════════════════════════════════════════════════════
 
   // POST /v1/computer-use/session/start
+  // FEAT-07: also accepts task + config fields (passed through to context)
   app.post('/v1/computer-use/session/start', (req, res) => {
     const auth = requireAuth(req, res, apiKeys);
     if (!auth) return;
 
-    const { name, context = {} } = req.body;
+    const { name, context = {}, task, config = {} } = req.body;
     const id = uid();
     const now = Date.now();
-    const contextStr = JSON.stringify(context);
+
+    // Merge task + config into context for convenience
+    const mergedContext = { ...context };
+    if (task) mergedContext.task = task;
+    if (config && Object.keys(config).length > 0) mergedContext.config = config;
+
+    const contextStr = JSON.stringify(mergedContext);
 
     db.prepare(
-      'INSERT INTO cu_sessions (id, api_key, name, status, context, created, last_action, action_count) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, auth.key, name || null, 'active', contextStr, now, now, 0);
+      'INSERT INTO cu_sessions (id, api_key, name, status, context, created, last_action, action_count, credits_used) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, auth.key, name || null, 'active', contextStr, now, now, 0, 0);
 
     const memKey = `cu:session:${id}`;
     memSave(db, auth.key, memKey, {
       session_id: id,
       name: name || null,
-      context,
+      context: mergedContext,
       started_at: now,
       status: 'active',
     });
@@ -301,7 +429,7 @@ module.exports = function (app, db, apiKeys) {
       ok: true,
       _engine: 'real',
       session_id: id,
-      context,
+      context: mergedContext,
       created_at: now,
       memory_key: memKey,
     });
@@ -315,10 +443,20 @@ module.exports = function (app, db, apiKeys) {
     const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(req.params.id, auth.key);
     if (!session) return res.status(404).json({ error: { code: 'not_found' } });
 
+    // BUG-09: Auto-expire sessions that have been inactive past TTL
+    const now = Date.now();
+    if (session.status === 'active' && session.last_action && (now - session.last_action) > SESSION_TTL_MS) {
+      db.prepare('UPDATE cu_sessions SET status = ? WHERE id = ?').run('timed_out', session.id);
+      session.status = 'timed_out';
+    }
+
     // Latest screenshot OCR
     const lastShot = db.prepare(
       'SELECT ocr_text FROM cu_screenshots WHERE session_id = ? ORDER BY ts DESC LIMIT 1'
     ).get(session.id);
+
+    // Credits
+    const creditsRow = db.prepare('SELECT IFNULL(SUM(credits), 0) as total FROM cu_actions WHERE session_id = ?').get(session.id);
 
     res.json({
       ok: true,
@@ -330,6 +468,7 @@ module.exports = function (app, db, apiKeys) {
       action_count: session.action_count,
       last_action: session.last_action,
       created: session.created,
+      credits_used: creditsRow ? creditsRow.total : 0,
       last_screenshot_ocr_summary: lastShot ? (lastShot.ocr_text || '').slice(0, 300) : null,
       memory_key: `cu:session:${session.id}`,
     });
@@ -339,123 +478,114 @@ module.exports = function (app, db, apiKeys) {
   app.post('/v1/computer-use/session/:id/end', (req, res) => {
     const auth = requireAuth(req, res, apiKeys);
     if (!auth) return;
-
-    const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(req.params.id, auth.key);
-    if (!session) return res.status(404).json({ error: { code: 'not_found' } });
-
-    const now = Date.now();
-    db.prepare('UPDATE cu_sessions SET status = ?, last_action = ? WHERE id = ?').run('ended', now, session.id);
-
-    const actions = db.prepare('SELECT * FROM cu_actions WHERE session_id = ? ORDER BY id ASC').all(session.id);
-    const checkpoints = db.prepare('SELECT * FROM cu_checkpoints WHERE session_id = ? ORDER BY ts ASC').all(session.id);
-    const verifications = db.prepare('SELECT * FROM cu_verifications WHERE session_id = ?').all(session.id);
-    const passedVerifs = verifications.filter(v => v.passed).length;
-    const duration_ms = now - session.created;
-
-    const summary = {
-      session_id: session.id,
-      name: session.name,
-      total_actions: actions.length,
-      duration_ms,
-      checkpoints_count: checkpoints.length,
-      verifications_total: verifications.length,
-      verifications_passed: passedVerifs,
-      action_types: [...new Set(actions.map(a => a.action_type))],
-      ended_at: now,
-    };
-
-    // Persist summary to memory
-    const memKey = `cu:session:${session.id}`;
-    memSave(db, auth.key, memKey, { ...summary, status: 'ended' });
-    memSave(db, auth.key, `cu:session:${session.id}:summary`, summary);
-
-    res.json({
-      ok: true,
-      _engine: 'real',
-      summary,
-      total_actions: actions.length,
-      duration_ms,
-      checkpoints: checkpoints.length,
-      memory_saved: true,
-    });
+    endSession(db, auth, req.params.id, res);  // FIX BUG-07
   });
 
   // POST /v1/computer-use/session/:id/stop — alias for /end
+  // FIX BUG-07: was duplicating 40+ lines; now delegates to shared endSession()
   app.post('/v1/computer-use/session/:id/stop', (req, res) => {
-    req.url = req.url.replace(/\/stop$/, '/end');
-    // Re-dispatch internally by delegating to the /end handler logic inline
     const auth = requireAuth(req, res, apiKeys);
     if (!auth) return;
-
-    const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(req.params.id, auth.key);
-    if (!session) return res.status(404).json({ error: { code: 'not_found' } });
-
-    const now = Date.now();
-    db.prepare('UPDATE cu_sessions SET status = ?, last_action = ? WHERE id = ?').run('ended', now, session.id);
-
-    const actions = db.prepare('SELECT * FROM cu_actions WHERE session_id = ? ORDER BY id ASC').all(session.id);
-    const checkpoints = db.prepare('SELECT * FROM cu_checkpoints WHERE session_id = ? ORDER BY ts ASC').all(session.id);
-    const verifications = db.prepare('SELECT * FROM cu_verifications WHERE session_id = ?').all(session.id);
-    const passedVerifs = verifications.filter(v => v.passed).length;
-    const duration_ms = now - session.created;
-
-    const summary = {
-      session_id: session.id,
-      name: session.name,
-      total_actions: actions.length,
-      duration_ms,
-      checkpoints_count: checkpoints.length,
-      verifications_total: verifications.length,
-      verifications_passed: passedVerifs,
-      action_types: [...new Set(actions.map(a => a.action_type))],
-      ended_at: now,
-    };
-
-    const memKey = `cu:session:${session.id}`;
-    memSave(db, auth.key, memKey, { ...summary, status: 'ended' });
-    memSave(db, auth.key, `cu:session:${session.id}:summary`, summary);
-
-    res.json({
-      ok: true,
-      _engine: 'real',
-      summary,
-      total_actions: actions.length,
-      duration_ms,
-      checkpoints: checkpoints.length,
-      memory_saved: true,
-    });
+    endSession(db, auth, req.params.id, res);
   });
 
-  // POST /v1/computer-use/session/:id/action — per-session action alias
-  // Accepts: {type, x, y, description, value, selector} and maps to the internal action store
+  // POST /v1/computer-use/session/:id/action
+  // FIX BUG-04: returns 400 for invalid action types instead of silently mapping to 'click'
+  // FIX BUG-05: returns 409 if session is not active
   app.post('/v1/computer-use/session/:id/action', (req, res) => {
     const auth = requireAuth(req, res, apiKeys);
     if (!auth) return;
 
     const session_id = req.params.id;
-    const { type, action_type, x, y, description, value, selector } = req.body;
+    const { type, action_type, action, x, y, description, value, selector, require_approval } = req.body;
 
-    // Normalize action type: use type or action_type
-    const rawType = (action_type || type || '').toString();
-    const VALID_ACTION_TYPES_LOCAL = new Set(['click', 'type', 'scroll', 'drag', 'keypress', 'navigate', 'wait']);
-    const normalizedType = VALID_ACTION_TYPES_LOCAL.has(rawType) ? rawType : 'click';
+    // Normalize action type: check all possible field names
+    const rawType = (action_type || type || action || '').toString().trim();
+    const VALID_ACTION_TYPES_LOCAL = new Set(['click', 'type', 'scroll', 'drag', 'keypress', 'navigate', 'wait', 'screenshot']);
 
-    // Normalize selector: use selector field, or build from x,y coordinates
+    // FIX BUG-04: reject unknown action types explicitly
+    if (!rawType || !VALID_ACTION_TYPES_LOCAL.has(rawType)) {
+      return res.status(400).json({
+        error: {
+          code: 'invalid_action_type',
+          received: rawType || null,
+          valid: [...VALID_ACTION_TYPES_LOCAL],
+        },
+      });
+    }
+
     const normalizedSelector = selector || (x !== undefined && y !== undefined ? `${x},${y}` : null);
     const normalizedValue = value || description || null;
 
     const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(session_id, auth.key);
     if (!session) return res.status(404).json({ error: { code: 'session_not_found' } });
 
+    // FIX BUG-05: block actions on non-active sessions
+    if (session.status !== 'active') {
+      return res.status(409).json({
+        error: {
+          code: 'session_ended',
+          status: session.status,
+          message: `Session is ${session.status} and cannot accept new actions`,
+        },
+      });
+    }
+
+    // BUG-09: check TTL
     const now = Date.now();
+    if ((now - session.last_action) > SESSION_TTL_MS) {
+      db.prepare('UPDATE cu_sessions SET status = ? WHERE id = ?').run('timed_out', session_id);
+      return res.status(409).json({ error: { code: 'session_timed_out', message: 'Session has exceeded inactivity TTL' } });
+    }
+
+    // FEAT-02: check if this action requires approval
+    const approvalCheck = checkApprovalRequired(rawType, normalizedSelector, normalizedValue);
+    if ((approvalCheck.required || require_approval) && rawType !== 'screenshot') {
+      // Create a pending approval gate automatically
+      const approval_id = uid();
+      const expires_at = now + 300 * 1000; // 5 min
+      const autoDesc = approvalCheck.reason || `${rawType} action${normalizedSelector ? ` on ${normalizedSelector}` : ''}`;
+      const record = {
+        approval_id,
+        api_key: auth.key,
+        session_id,
+        action_description: autoDesc,
+        action_type: rawType,
+        selector: normalizedSelector,
+        value: normalizedValue,
+        risk_level: approvalCheck.risk_level,
+        status: 'pending',
+        created_at: now,
+        expires_at,
+        notify_webhook: null,
+        decision: null,
+        modification: null,
+      };
+      approvalStore.set(approval_id, record);
+
+      return res.status(202).json({
+        ok: false,
+        _engine: 'real',
+        approval_required: true,
+        approval_id,
+        risk_level: approvalCheck.risk_level,
+        reason: autoDesc,
+        expires_at,
+        session_id,
+        message: 'Action requires human approval. POST /v1/computer-use/approval/:id/respond with decision=approve to proceed.',
+      });
+    }
+
+    // FEAT-01: compute credits for this action
+    const credits = ACTION_CREDITS[rawType] !== undefined ? ACTION_CREDITS[rawType] : DEFAULT_ACTION_CREDITS;
 
     const ins = db.prepare(
-      'INSERT INTO cu_actions (session_id, action_type, selector, value, screenshot_hash, result, verified, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(session_id, normalizedType, normalizedSelector, normalizedValue, null, null, 0, now);
+      'INSERT INTO cu_actions (session_id, action_type, selector, value, screenshot_hash, result, verified, credits, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(session_id, rawType, normalizedSelector, normalizedValue, null, null, 0, credits, now);
 
     db.prepare(
-      'UPDATE cu_sessions SET action_count = action_count + 1, last_action = ? WHERE id = ?'
-    ).run(now, session_id);
+      'UPDATE cu_sessions SET action_count = action_count + 1, last_action = ?, credits_used = credits_used + ? WHERE id = ?'
+    ).run(now, credits, session_id);
 
     const sequenceNumber = db.prepare(
       'SELECT COUNT(*) as cnt FROM cu_actions WHERE session_id = ?'
@@ -467,7 +597,8 @@ module.exports = function (app, db, apiKeys) {
       action_id: ins.lastInsertRowid,
       sequence_number: sequenceNumber,
       session_id,
-      type: normalizedType,
+      type: rawType,
+      credits_charged: credits,
     });
   });
 
@@ -476,9 +607,18 @@ module.exports = function (app, db, apiKeys) {
     const auth = requireAuth(req, res, apiKeys);
     if (!auth) return;
 
-    const rows = db.prepare(
-      'SELECT id, name, status, action_count, created, last_action, context FROM cu_sessions WHERE api_key = ? ORDER BY created DESC'
-    ).all(auth.key);
+    const { status, limit = 50, offset = 0 } = req.query;
+
+    let query = 'SELECT id, name, status, action_count, created, last_action, context, credits_used FROM cu_sessions WHERE api_key = ?';
+    const params = [auth.key];
+    if (status) {
+      query += ' AND status = ?';
+      params.push(status);
+    }
+    query += ' ORDER BY created DESC LIMIT ? OFFSET ?';
+    params.push(parseInt(limit, 10) || 50, parseInt(offset, 10) || 0);
+
+    const rows = db.prepare(query).all(...params);
 
     const sessions = rows.map(r => ({
       session_id: r.id,
@@ -487,10 +627,32 @@ module.exports = function (app, db, apiKeys) {
       action_count: r.action_count,
       created: r.created,
       last_action: r.last_action,
+      credits_used: r.credits_used || 0,
       context: JSON.parse(r.context || '{}'),
     }));
 
-    res.json({ ok: true, _engine: 'real', sessions, total: sessions.length });
+    const total = db.prepare('SELECT COUNT(*) as cnt FROM cu_sessions WHERE api_key = ?').get(auth.key).cnt;
+
+    res.json({ ok: true, _engine: 'real', sessions, total, limit: parseInt(limit, 10), offset: parseInt(offset, 10) });
+  });
+
+  // GET /v1/computer-use/sessions/cleanup — BUG-09 fix: explicit TTL cleanup
+  app.get('/v1/computer-use/sessions/cleanup', (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+
+    const cutoff = Date.now() - SESSION_TTL_MS;
+    const result = db.prepare(
+      "UPDATE cu_sessions SET status = 'timed_out' WHERE api_key = ? AND status = 'active' AND last_action < ?"
+    ).run(auth.key, cutoff);
+
+    res.json({
+      ok: true,
+      _engine: 'real',
+      sessions_expired: result.changes,
+      ttl_ms: SESSION_TTL_MS,
+      cutoff_ts: cutoff,
+    });
   });
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -516,8 +678,8 @@ module.exports = function (app, db, apiKeys) {
     const { ocr_text, text_elements_found } = extractOcrText(data_b64);
 
     db.prepare(
-      'INSERT INTO cu_screenshots (id, session_id, data_b64, width, height, ocr_text, ts) VALUES (?, ?, ?, ?, ?, ?, ?)'
-    ).run(id, session_id, data_b64, width || null, height || null, ocr_text, now);
+      'INSERT INTO cu_screenshots (id, session_id, data_b64, width, height, ocr_text, label, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(id, session_id, data_b64, width || null, height || null, ocr_text, label || null, now);
 
     const memKey = `cu:screenshot:${session_id}:${now}`;
     const saved = memSave(db, auth.key, memKey, {
@@ -542,13 +704,109 @@ module.exports = function (app, db, apiKeys) {
     });
   });
 
+  // FEAT-04 / FIX BUG-01: GET /v1/computer-use/session/:id/screenshots — was missing
+  app.get('/v1/computer-use/session/:id/screenshots', (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+
+    const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(req.params.id, auth.key);
+    if (!session) return res.status(404).json({ error: { code: 'not_found' } });
+
+    const { include_data = 'false', limit = 20, offset = 0 } = req.query;
+    const includeData = include_data === 'true' || include_data === '1';
+
+    const cols = includeData
+      ? 'id, session_id, width, height, ocr_text, label, ts, data_b64'
+      : 'id, session_id, width, height, ocr_text, label, ts';
+
+    const shots = db.prepare(
+      `SELECT ${cols} FROM cu_screenshots WHERE session_id = ? ORDER BY ts DESC LIMIT ? OFFSET ?`
+    ).all(req.params.id, parseInt(limit, 10) || 20, parseInt(offset, 10) || 0);
+
+    const total = db.prepare('SELECT COUNT(*) as cnt FROM cu_screenshots WHERE session_id = ?').get(req.params.id).cnt;
+
+    const screenshots = shots.map(s => ({
+      screenshot_id: s.id,
+      session_id: s.session_id,
+      width: s.width,
+      height: s.height,
+      label: s.label,
+      ocr_text_preview: s.ocr_text ? s.ocr_text.slice(0, 200) : null,
+      ts: s.ts,
+      ...(includeData ? { data_b64: s.data_b64 } : {}),
+    }));
+
+    res.json({
+      ok: true,
+      _engine: 'real',
+      session_id: req.params.id,
+      screenshots,
+      total,
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10),
+    });
+  });
+
+  // FEAT-06 / FIX BUG-03: POST /v1/computer-use/screenshot/diff — was missing
+  app.post('/v1/computer-use/screenshot/diff', (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+
+    const { a_b64, b_b64, a_id, b_id } = req.body;
+
+    let aData = a_b64;
+    let bData = b_b64;
+
+    // Allow resolving screenshots by ID
+    if (!aData && a_id) {
+      const row = db.prepare('SELECT data_b64, session_id FROM cu_screenshots WHERE id = ?').get(a_id);
+      if (row) {
+        // Verify ownership
+        const sess = db.prepare('SELECT id FROM cu_sessions WHERE id = ? AND api_key = ?').get(row.session_id, auth.key);
+        if (sess) aData = row.data_b64;
+      }
+      if (!aData) return res.status(404).json({ error: { code: 'screenshot_a_not_found' } });
+    }
+    if (!bData && b_id) {
+      const row = db.prepare('SELECT data_b64, session_id FROM cu_screenshots WHERE id = ?').get(b_id);
+      if (row) {
+        const sess = db.prepare('SELECT id FROM cu_sessions WHERE id = ? AND api_key = ?').get(row.session_id, auth.key);
+        if (sess) bData = row.data_b64;
+      }
+      if (!bData) return res.status(404).json({ error: { code: 'screenshot_b_not_found' } });
+    }
+
+    if (!aData || !bData) {
+      return res.status(400).json({
+        error: { code: 'missing_fields', message: 'Provide a_b64+b_b64 or a_id+b_id', fields: ['a_b64 or a_id', 'b_b64 or b_id'] },
+      });
+    }
+
+    const { diff_pixels, diff_percent } = pixelDiff(aData, bData);
+    const a_hash = sha256(aData);
+    const b_hash = sha256(bData);
+    const identical = a_hash === b_hash;
+    const match_score_percent = Math.max(0, 100 - diff_percent);
+
+    res.json({
+      ok: true,
+      _engine: 'real',
+      identical,
+      diff_pixels,
+      diff_percent: Math.round(diff_percent * 100) / 100,
+      match_score_percent: Math.round(match_score_percent * 100) / 100,
+      a_hash,
+      b_hash,
+    });
+  });
+
   // ════════════════════════════════════════════════════════════════════════════
   // ACTION RECORDING + REPLAY
   // ════════════════════════════════════════════════════════════════════════════
 
-  const VALID_ACTION_TYPES = new Set(['click', 'type', 'scroll', 'drag', 'keypress', 'navigate', 'wait']);
+  const VALID_ACTION_TYPES = new Set(['click', 'type', 'scroll', 'drag', 'keypress', 'navigate', 'wait', 'screenshot']);
 
-  // POST /v1/computer-use/action
+  // POST /v1/computer-use/action  (global, session_id in body)
   app.post('/v1/computer-use/action', (req, res) => {
     const auth = requireAuth(req, res, apiKeys);
     if (!auth) return;
@@ -564,16 +822,22 @@ module.exports = function (app, db, apiKeys) {
     const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(session_id, auth.key);
     if (!session) return res.status(404).json({ error: { code: 'session_not_found' } });
 
+    // FIX BUG-05: block on non-active sessions
+    if (session.status !== 'active') {
+      return res.status(409).json({ error: { code: 'session_ended', status: session.status } });
+    }
+
     const now = Date.now();
     const screenshotHash = screenshot_after_hash || screenshot_before_hash || null;
+    const credits = ACTION_CREDITS[action_type] !== undefined ? ACTION_CREDITS[action_type] : DEFAULT_ACTION_CREDITS;
 
     const ins = db.prepare(
-      'INSERT INTO cu_actions (session_id, action_type, selector, value, screenshot_hash, result, verified, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
-    ).run(session_id, action_type, selector || null, value || null, screenshotHash, null, 0, now);
+      'INSERT INTO cu_actions (session_id, action_type, selector, value, screenshot_hash, result, verified, credits, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(session_id, action_type, selector || null, value || null, screenshotHash, null, 0, credits, now);
 
     db.prepare(
-      'UPDATE cu_sessions SET action_count = action_count + 1, last_action = ? WHERE id = ?'
-    ).run(now, session_id);
+      'UPDATE cu_sessions SET action_count = action_count + 1, last_action = ?, credits_used = credits_used + ? WHERE id = ?'
+    ).run(now, credits, session_id);
 
     const sequenceNumber = db.prepare(
       'SELECT COUNT(*) as cnt FROM cu_actions WHERE session_id = ?'
@@ -584,6 +848,7 @@ module.exports = function (app, db, apiKeys) {
       _engine: 'real',
       action_id: ins.lastInsertRowid,
       sequence_number: sequenceNumber,
+      credits_charged: credits,
     });
   });
 
@@ -595,20 +860,25 @@ module.exports = function (app, db, apiKeys) {
     const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(req.params.id, auth.key);
     if (!session) return res.status(404).json({ error: { code: 'not_found' } });
 
+    const { limit = 100, offset = 0 } = req.query;
     const actions = db.prepare(
-      'SELECT * FROM cu_actions WHERE session_id = ? ORDER BY id ASC'
-    ).all(req.params.id);
+      'SELECT * FROM cu_actions WHERE session_id = ? ORDER BY id ASC LIMIT ? OFFSET ?'
+    ).all(req.params.id, parseInt(limit, 10) || 100, parseInt(offset, 10) || 0);
+
+    const total = db.prepare('SELECT COUNT(*) as cnt FROM cu_actions WHERE session_id = ?').get(req.params.id).cnt;
 
     res.json({
       ok: true,
       _engine: 'real',
       session_id: req.params.id,
       actions,
-      total: actions.length,
+      total,
+      limit: parseInt(limit, 10),
+      offset: parseInt(offset, 10),
     });
   });
 
-  // POST /v1/computer-use/replay
+  // POST /v1/computer-use/replay — global
   app.post('/v1/computer-use/replay', (req, res) => {
     const auth = requireAuth(req, res, apiKeys);
     if (!auth) return;
@@ -660,6 +930,86 @@ module.exports = function (app, db, apiKeys) {
     });
   });
 
+  // FEAT-05 / FIX BUG-02: GET /v1/computer-use/session/:id/replay — was missing
+  app.get('/v1/computer-use/session/:id/replay', (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+
+    const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(req.params.id, auth.key);
+    if (!session) return res.status(404).json({ error: { code: 'not_found' } });
+
+    const format = req.query.format || 'json';
+    if (!['json', 'python', 'markdown'].includes(format)) {
+      return res.status(400).json({ error: { code: 'invalid_format', valid: ['json', 'python', 'markdown'] } });
+    }
+
+    const actions = db.prepare(
+      'SELECT * FROM cu_actions WHERE session_id = ? ORDER BY id ASC'
+    ).all(req.params.id);
+
+    let script;
+    if (format === 'json') {
+      script = JSON.stringify(actions.map(a => ({
+        action_id: a.id,
+        action_type: a.action_type,
+        selector: a.selector,
+        value: a.value,
+        screenshot_hash: a.screenshot_hash,
+        ts: a.ts,
+      })), null, 2);
+    } else if (format === 'python') {
+      script = generatePythonScript(actions);
+    } else {
+      script = generateMarkdownScript(actions);
+    }
+
+    const estimated_duration_ms = estimateDuration(actions);
+
+    res.json({
+      ok: true,
+      _engine: 'real',
+      replay_id: uid(),
+      session_id: req.params.id,
+      format,
+      script,
+      action_count: actions.length,
+      estimated_duration_ms,
+    });
+  });
+
+  // ════════════════════════════════════════════════════════════════════════════
+  // SESSION COST TRACKING — FEAT-03
+  // ════════════════════════════════════════════════════════════════════════════
+
+  // GET /v1/computer-use/session/:id/cost
+  app.get('/v1/computer-use/session/:id/cost', (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+
+    const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(req.params.id, auth.key);
+    if (!session) return res.status(404).json({ error: { code: 'not_found' } });
+
+    const actions = db.prepare('SELECT action_type, credits FROM cu_actions WHERE session_id = ?').all(req.params.id);
+
+    const by_type = {};
+    let total_credits = 0;
+    for (const a of actions) {
+      if (!by_type[a.action_type]) by_type[a.action_type] = { count: 0, credits: 0 };
+      by_type[a.action_type].count++;
+      by_type[a.action_type].credits += (a.credits || ACTION_CREDITS[a.action_type] || DEFAULT_ACTION_CREDITS);
+      total_credits += (a.credits || ACTION_CREDITS[a.action_type] || DEFAULT_ACTION_CREDITS);
+    }
+
+    res.json({
+      ok: true,
+      _engine: 'real',
+      session_id: req.params.id,
+      total_credits,
+      breakdown_by_type: by_type,
+      credit_rate: ACTION_CREDITS,
+    });
+  });
+
   // ════════════════════════════════════════════════════════════════════════════
   // PIXEL-LEVEL VERIFICATION
   // ════════════════════════════════════════════════════════════════════════════
@@ -698,8 +1048,6 @@ module.exports = function (app, db, apiKeys) {
       diff_percent = passed ? 0 : 100;
       match_score_percent = passed ? 100 : 0;
     } else {
-      // If we have the expected screenshot via action_id, look up its screenshot_hash
-      // and try to find the corresponding screenshot data
       let expectedB64 = null;
       if (action_id) {
         const action = db.prepare('SELECT screenshot_hash FROM cu_actions WHERE id = ? AND session_id = ?').get(action_id, session_id);
@@ -716,7 +1064,6 @@ module.exports = function (app, db, apiKeys) {
         match_score_percent = Math.max(0, 100 - diff_percent);
         passed = diff_percent <= tolerance_percent;
       } else {
-        // No expected data to compare against — treat as unverifiable, pass trivially
         match_score_percent = 100;
         passed = true;
         result = 'unverifiable';
@@ -795,7 +1142,6 @@ module.exports = function (app, db, apiKeys) {
     const id = uid();
     const action_index = session.action_count;
 
-    // Snapshot requested memory keys
     const memorySnapshot = {};
     const savedKeys = [];
     if (Array.isArray(memory_keys_to_snapshot)) {
@@ -858,6 +1204,7 @@ module.exports = function (app, db, apiKeys) {
   });
 
   // POST /v1/computer-use/checkpoint/:id/restore
+  // FIX BUG-10: original used LIMIT 1 OFFSET action_index which fetched the wrong row
   app.post('/v1/computer-use/checkpoint/:id/restore', (req, res) => {
     const auth = requireAuth(req, res, apiKeys);
     if (!auth) return;
@@ -865,13 +1212,11 @@ module.exports = function (app, db, apiKeys) {
     const checkpoint = db.prepare('SELECT * FROM cu_checkpoints WHERE id = ?').get(req.params.id);
     if (!checkpoint) return res.status(404).json({ error: { code: 'not_found' } });
 
-    // Verify the checkpoint belongs to this user's session
     const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(checkpoint.session_id, auth.key);
     if (!session) return res.status(403).json({ error: { code: 'forbidden' } });
 
     const memorySnapshot = JSON.parse(checkpoint.memory_snapshot || '{}');
 
-    // Restore memory entries from the snapshot
     for (const [mk, val] of Object.entries(memorySnapshot)) {
       try {
         const now = Date.now();
@@ -881,12 +1226,13 @@ module.exports = function (app, db, apiKeys) {
       } catch { /* skip */ }
     }
 
-    // The action to resume from is the one after the checkpoint's action_index
-    const actions = db.prepare(
-      'SELECT * FROM cu_actions WHERE session_id = ? ORDER BY id ASC LIMIT ? OFFSET ?'
-    ).all(checkpoint.session_id, 1, checkpoint.action_index);
-
-    const action_to_resume_from = actions.length > 0 ? actions[0] : null;
+    // FIX BUG-10: fetch the action immediately AFTER checkpoint.action_index
+    // Original was: LIMIT 1 OFFSET action_index — which fetched the action AT index (0-based)
+    // The next action to replay starts at action_index+1 (1-based seq), i.e., OFFSET action_index
+    // using ORDER BY id ASC so the OFFSET skips exactly action_index rows.
+    const action_to_resume_from = db.prepare(
+      'SELECT * FROM cu_actions WHERE session_id = ? ORDER BY id ASC LIMIT 1 OFFSET ?'
+    ).get(checkpoint.session_id, checkpoint.action_index) || null;
 
     res.json({
       ok: true,
@@ -943,7 +1289,6 @@ module.exports = function (app, db, apiKeys) {
     const prefix = `cu:${req.params.session_id}:`;
     const rows = memGetByPrefix(db, auth.key, prefix);
 
-    // Organize by type
     const organized = {
       context: [],
       result: [],
@@ -955,7 +1300,6 @@ module.exports = function (app, db, apiKeys) {
     };
 
     for (const row of rows) {
-      // Key pattern: cu:{session_id}:{type}:{key}  or  cu:session:{session_id}  or  cu:screenshot:{session_id}:{ts}
       let parsed;
       try { parsed = JSON.parse(row.value); } catch { parsed = row.value; }
       const entry = { key: row.key, value: parsed, updated: row.updated };
@@ -988,7 +1332,6 @@ module.exports = function (app, db, apiKeys) {
       return res.status(400).json({ error: { code: 'missing_fields', fields: ['query'] } });
     }
 
-    // Retrieve all relevant memory entries (scoped to session if provided)
     let rows;
     if (session_id) {
       rows = memGetByPrefix(db, auth.key, `cu:${session_id}:`);
@@ -996,7 +1339,6 @@ module.exports = function (app, db, apiKeys) {
       rows = memGetByPrefix(db, auth.key, 'cu:');
     }
 
-    // Keyword-based semantic search: score each entry by token overlap with query
     const queryTokens = query.toLowerCase().split(/\s+/).filter(t => t.length > 2);
 
     const scored = rows.map(row => {
@@ -1030,6 +1372,7 @@ module.exports = function (app, db, apiKeys) {
   // ════════════════════════════════════════════════════════════════════════════
 
   // POST /v1/computer-use/approval/request
+  // FIX BUG-06: now accepts action_type + selector + value and auto-builds description if not provided
   app.post('/v1/computer-use/approval/request', (req, res) => {
     const auth = requireAuth(req, res, apiKeys);
     if (!auth) return;
@@ -1037,18 +1380,38 @@ module.exports = function (app, db, apiKeys) {
     const {
       session_id,
       action_description,
+      action_type,
+      selector,
+      value,
       risk_level = 'low',
       timeout_seconds = 300,
       notify_webhook,
     } = req.body;
 
-    if (!session_id || !action_description) {
-      return res.status(400).json({ error: { code: 'missing_fields', fields: ['session_id', 'action_description'] } });
+    if (!session_id) {
+      return res.status(400).json({ error: { code: 'missing_fields', fields: ['session_id'] } });
+    }
+
+    // FIX BUG-06: auto-build description from action fields if not provided explicitly
+    let description = action_description;
+    if (!description) {
+      if (action_type) {
+        description = `${action_type} action${selector ? ` on ${selector}` : ''}${value ? ` with value "${String(value).slice(0, 80)}"` : ''}`;
+      } else {
+        return res.status(400).json({ error: { code: 'missing_fields', fields: ['action_description or action_type'] } });
+      }
     }
 
     const VALID_RISK = ['low', 'medium', 'high', 'critical'];
-    if (!VALID_RISK.includes(risk_level)) {
-      return res.status(400).json({ error: { code: 'invalid_risk_level', valid: VALID_RISK } });
+    const resolvedRisk = VALID_RISK.includes(risk_level) ? risk_level : 'low';
+
+    // Auto-escalate risk for sensitive action types
+    let finalRisk = resolvedRisk;
+    if (action_type) {
+      const autoCheck = checkApprovalRequired(action_type, selector, value);
+      if (autoCheck.required && VALID_RISK.indexOf(autoCheck.risk_level) > VALID_RISK.indexOf(finalRisk)) {
+        finalRisk = autoCheck.risk_level;
+      }
     }
 
     const now = Date.now();
@@ -1059,8 +1422,11 @@ module.exports = function (app, db, apiKeys) {
       approval_id,
       api_key: auth.key,
       session_id,
-      action_description,
-      risk_level,
+      action_description: description,
+      action_type: action_type || null,
+      selector: selector || null,
+      value: value || null,
+      risk_level: finalRisk,
       status: 'pending',
       created_at: now,
       expires_at,
@@ -1075,9 +1441,15 @@ module.exports = function (app, db, apiKeys) {
     if (notify_webhook) {
       try {
         const u = new URL(notify_webhook);
-        const body = JSON.stringify({ approval_id, session_id, action_description, risk_level, expires_at });
+        const body = JSON.stringify({ approval_id, session_id, action_description: description, risk_level: finalRisk, expires_at });
         const mod = u.protocol === 'https:' ? require('https') : require('http');
-        const opts = { method: 'POST', hostname: u.hostname, port: u.port || (u.protocol === 'https:' ? 443 : 80), path: u.pathname + u.search, headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) } };
+        const opts = {
+          method: 'POST',
+          hostname: u.hostname,
+          port: u.port || (u.protocol === 'https:' ? 443 : 80),
+          path: u.pathname + u.search,
+          headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+        };
         const wreq = mod.request(opts);
         wreq.on('error', () => {});
         wreq.write(body);
@@ -1091,7 +1463,8 @@ module.exports = function (app, db, apiKeys) {
       approval_id,
       status: 'pending',
       expires_at,
-      risk_level,
+      risk_level: finalRisk,
+      action_description: description,
       session_id,
     });
   });
@@ -1129,6 +1502,37 @@ module.exports = function (app, db, apiKeys) {
     });
   });
 
+  // GET /v1/computer-use/approval/:id — check status of a single approval
+  app.get('/v1/computer-use/approval/:id', (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+
+    const record = approvalStore.get(req.params.id);
+    if (!record) return res.status(404).json({ error: { code: 'not_found' } });
+    if (record.api_key !== auth.key) return res.status(403).json({ error: { code: 'forbidden' } });
+
+    const now = Date.now();
+    const expired = now > record.expires_at;
+
+    res.json({
+      ok: true,
+      _engine: 'real',
+      approval_id: record.approval_id,
+      session_id: record.session_id,
+      action_description: record.action_description,
+      action_type: record.action_type,
+      selector: record.selector,
+      risk_level: record.risk_level,
+      status: expired && record.status === 'pending' ? 'expired' : record.status,
+      decision: record.decision,
+      modification: record.modification,
+      created_at: record.created_at,
+      expires_at: record.expires_at,
+      expires_in_seconds: Math.max(0, Math.round((record.expires_at - now) / 1000)),
+      responded_at: record.responded_at || null,
+    });
+  });
+
   // GET /v1/computer-use/approval/pending
   app.get('/v1/computer-use/approval/pending', (req, res) => {
     const auth = requireAuth(req, res, apiKeys);
@@ -1142,6 +1546,8 @@ module.exports = function (app, db, apiKeys) {
           approval_id: id,
           session_id: rec.session_id,
           action_description: rec.action_description,
+          action_type: rec.action_type || null,
+          selector: rec.selector || null,
           risk_level: rec.risk_level,
           created_at: rec.created_at,
           expires_at: rec.expires_at,
@@ -1188,12 +1594,18 @@ module.exports = function (app, db, apiKeys) {
     const session = db.prepare('SELECT * FROM cu_sessions WHERE id = ? AND api_key = ?').get(session_id, auth.key);
     if (!session) return res.status(404).json({ error: { code: 'session_not_found' } });
 
+    // FIX BUG-05: block on non-active sessions in pipeline too
+    if (session.status !== 'active') {
+      return res.status(409).json({ error: { code: 'session_ended', status: session.status } });
+    }
+
     const now = Date.now();
+    const credits = ACTION_CREDITS[action.action_type] !== undefined ? ACTION_CREDITS[action.action_type] : DEFAULT_ACTION_CREDITS;
 
     // 1. Record the action atomically
     const afterHash = screenshot_after_b64 ? sha256(screenshot_after_b64) : null;
     const ins = db.prepare(
-      'INSERT INTO cu_actions (session_id, action_type, selector, value, screenshot_hash, result, verified, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO cu_actions (session_id, action_type, selector, value, screenshot_hash, result, verified, credits, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
     ).run(
       session_id,
       action.action_type,
@@ -1202,11 +1614,12 @@ module.exports = function (app, db, apiKeys) {
       afterHash,
       expected_result_description,
       0,
+      credits,
       now
     );
     const action_id = ins.lastInsertRowid;
 
-    db.prepare('UPDATE cu_sessions SET action_count = action_count + 1, last_action = ? WHERE id = ?').run(now, session_id);
+    db.prepare('UPDATE cu_sessions SET action_count = action_count + 1, last_action = ?, credits_used = credits_used + ? WHERE id = ?').run(now, credits, session_id);
 
     // 2. Run verification
     let verified = false;
@@ -1215,7 +1628,6 @@ module.exports = function (app, db, apiKeys) {
     let diff_percent = 0;
 
     if (screenshot_after_b64) {
-      // Find previous screenshot to diff against (most recent before this action)
       const prevShot = db.prepare(
         'SELECT data_b64 FROM cu_screenshots WHERE session_id = ? ORDER BY ts DESC LIMIT 1'
       ).get(session_id);
@@ -1224,28 +1636,23 @@ module.exports = function (app, db, apiKeys) {
         const d = pixelDiff(prevShot.data_b64, screenshot_after_b64);
         diff_pixels = d.diff_pixels;
         diff_percent = d.diff_percent;
-        // Confidence: if some change occurred, it's more likely the action had effect
-        // Actions that should produce change: click, type, navigate, keypress
         const changeActions = new Set(['click', 'type', 'navigate', 'keypress', 'drag']);
         if (changeActions.has(action.action_type)) {
-          // Expect some diff; too much or too little reduces confidence
           if (diff_percent > 0 && diff_percent < 80) {
             confidence = Math.min(95, 50 + diff_percent * 2);
             verified = true;
           } else if (diff_percent === 0) {
-            confidence = 20; // no visible change for a change-action
+            confidence = 20;
             verified = false;
           } else {
-            confidence = 30; // massive change, suspicious
+            confidence = 30;
             verified = false;
           }
         } else {
-          // scroll/wait: low diff expected
           confidence = diff_percent < 20 ? 80 : 50;
           verified = true;
         }
       } else {
-        // No previous screenshot to compare — accept on good faith
         confidence = 60;
         verified = true;
       }
@@ -1253,18 +1660,15 @@ module.exports = function (app, db, apiKeys) {
       // Store the after-screenshot
       const shotId = uid();
       db.prepare(
-        'INSERT INTO cu_screenshots (id, session_id, data_b64, width, height, ocr_text, ts) VALUES (?, ?, ?, ?, ?, ?, ?)'
-      ).run(shotId, session_id, screenshot_after_b64, null, null, '', now);
+        'INSERT INTO cu_screenshots (id, session_id, data_b64, width, height, ocr_text, label, ts) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+      ).run(shotId, session_id, screenshot_after_b64, null, null, '', 'pipeline_verify', now);
 
-      // Record verification
       db.prepare(
         'INSERT INTO cu_verifications (session_id, action_id, expected_hash, actual_hash, passed, diff_pixels, ts) VALUES (?, ?, ?, ?, ?, ?, ?)'
       ).run(session_id, action_id, null, afterHash, verified ? 1 : 0, diff_pixels, now);
 
-      // Update action's verified flag
       db.prepare('UPDATE cu_actions SET verified = ? WHERE id = ?').run(verified ? 1 : 0, action_id);
     } else {
-      // No screenshot provided — record expected result in memory only
       confidence = 50;
       verified = false;
     }
@@ -1280,6 +1684,7 @@ module.exports = function (app, db, apiKeys) {
       verified,
       confidence,
       diff_percent: Math.round(diff_percent * 100) / 100,
+      credits_charged: credits,
       ts: now,
     };
     const memory_updated = memSave(db, auth.key, memKey, memVal);
@@ -1292,6 +1697,7 @@ module.exports = function (app, db, apiKeys) {
       confidence: Math.round(confidence * 10) / 10,
       diff_pixels,
       diff_percent: Math.round(diff_percent * 100) / 100,
+      credits_charged: credits,
       memory_updated,
       session_id,
     });

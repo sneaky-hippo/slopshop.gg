@@ -586,6 +586,16 @@ const SCHEMAS = {
     output: { chain: 'object[]', final_url: 'string' },
     example: { input: { url: 'http://github.com' }, output: { chain: [{ url: 'http://github.com', status: 301 }], final_url: 'https://github.com' } },
   },
+  'net-http-get': {
+    input: { url: { type: 'string', required: true }, headers: { type: 'object', description: 'Optional extra request headers' }, max_body: { type: 'number', description: 'Max response body bytes to return (default 4096)' } },
+    output: { status_code: 'number', ok: 'boolean', headers: 'object', body: 'string', timing_ms: 'number' },
+    example: { input: { url: 'https://httpbin.org/get' }, output: { status_code: 200, ok: true } },
+  },
+  'net-http-post': {
+    input: { url: { type: 'string', required: true }, body: { type: 'any', description: 'Request body (object serialized as JSON, or string)' }, headers: { type: 'object', description: 'Optional extra request headers' }, max_body: { type: 'number', description: 'Max response body bytes to return (default 4096)' } },
+    output: { status_code: 'number', ok: 'boolean', headers: 'object', body: 'string', timing_ms: 'number' },
+    example: { input: { url: 'https://httpbin.org/post', body: { test: 1 } }, output: { status_code: 200, ok: true } },
+  },
   'net-ssl-check': {
     input: { domain: { type: 'string', required: true } },
     output: { subject: 'string', issuer: 'string', valid_from: 'string', valid_to: 'string', days_remaining: 'number' },
@@ -606,10 +616,40 @@ const SCHEMAS = {
     output: { contains: 'boolean' },
     example: { input: { ip: '10.0.1.5', cidr: '10.0.0.0/8' }, output: { contains: true } },
   },
+  'net-ip-geolocation': {
+    input: { ip: { type: 'string', required: true } },
+    output: { country: 'string', region: 'string', city: 'string', latitude: 'number', longitude: 'number', isp: 'string', asn: 'string' },
+    example: { input: { ip: '8.8.8.8' }, output: { country: 'United States', city: 'Mountain View', isp: 'AS15169 Google LLC' } },
+  },
+  'net-ping': {
+    input: { host: { type: 'string', required: true }, ports: { type: 'array', description: 'TCP ports to probe (default [80, 443])' }, timeout_ms: { type: 'number', description: 'Probe timeout in ms (max 10000, default 5000)' } },
+    output: { reachable: 'boolean', probes: 'object[]' },
+    example: { input: { host: 'google.com' }, output: { reachable: true, probes: [{ port: 80, open: true, latency_ms: 12 }] } },
+  },
+  'net-port-scan': {
+    input: { host: { type: 'string', required: true }, ports: { type: 'array', description: 'List of TCP ports to scan (default: common ports, max 50)' }, timeout_ms: { type: 'number', description: 'Per-port timeout in ms (max 10000, default 3000)' } },
+    output: { open: 'object[]', closed: 'object[]', scanned: 'number', open_count: 'number' },
+    example: { input: { host: 'google.com', ports: [80, 443, 22] }, output: { open_count: 2, open: [{ port: 80 }, { port: 443 }] } },
+  },
   'net-url-parse': {
     input: { url: { type: 'string', description: 'URL to parse', required: true } },
     output: { protocol: 'string', hostname: 'string', pathname: 'string', params: 'object' },
     example: { input: { url: 'https://slopshop.gg/v1/tools?limit=10' }, output: { hostname: 'slopshop.gg' } },
+  },
+  'net-url-expand': {
+    input: { url: { type: 'string', required: true, description: 'Shortened or redirect URL to expand' } },
+    output: { original_url: 'string', final_url: 'string', was_redirected: 'boolean', hops: 'number', chain: 'object[]' },
+    example: { input: { url: 'https://bit.ly/3abc123' }, output: { final_url: 'https://example.com/long-path', was_redirected: true, hops: 2 } },
+  },
+  'net-robots-txt': {
+    input: { url: { type: 'string', description: 'Domain or URL to fetch robots.txt for', required: true } },
+    output: { found: 'boolean', groups: 'object[]', sitemaps: 'string[]', wildcard_disallow: 'string[]' },
+    example: { input: { url: 'https://google.com' }, output: { found: true, sitemaps: ['https://www.google.com/sitemap.xml'] } },
+  },
+  'net-sitemap': {
+    input: { url: { type: 'string', description: 'Domain or URL to fetch sitemap for', required: true }, max_urls: { type: 'number', description: 'Max URLs to return (default 100)' } },
+    output: { found: 'boolean', sitemap_type: 'string', url_count: 'number', urls: 'object[]' },
+    example: { input: { url: 'https://slopshop.gg' }, output: { found: true, url_count: 42, sitemap_type: 'urlset' } },
   },
 
   // === LLM APIs (all have same basic schema but different descriptions) ===
