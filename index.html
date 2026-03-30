@@ -6,9 +6,9 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="dns-prefetch" href="https://slopshop-production.up.railway.app">
-<title>Slopshop — The Missing Backend for AI Agents</title>
-<meta name="description" content="Slopshop is a self-hostable backend for AI agents: real tools, persistent memory, one execution layer. 500 free credits.">
-<meta name="keywords" content="AI agent tools, agent API, MCP tools, agent memory, agent templates, tool server, developer tools, slopshop, credit-based API, self-hostable, Claude tools, LLM tools, autonomous agent, function calling, AI agent platform">
+<title>Slopshop — Backend for AI Agents | Tools, Memory, Scheduling, Execution</title>
+<meta name="description" content="Slopshop gives AI agents tools, persistent memory, scheduling, and execution in one platform. Use it from MCP, API, or CLI to build useful agent workflows.">
+<meta name="keywords" content="AI agent tools, agent API, MCP tools, agent memory, agent scheduling, agent execution, tool server, developer tools, slopshop, credit-based API, self-hostable, Claude tools, LLM tools, autonomous agent, function calling, AI agent platform">
 <link rel="canonical" href="https://slopshop.gg/">
 <link rel="alternate" hreflang="en" href="https://slopshop.gg/">
 <link rel="alternate" hreflang="zh" href="https://slopshop.gg/zh">
@@ -30,16 +30,16 @@
 <link rel="alternate" hreflang="x-default" href="https://slopshop.gg/">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/">
-<meta property="og:title" content="Slopshop — The Missing Backend for AI Agents">
-<meta property="og:description" content="Standalone CLI for AI agents. Free persistent memory. Real compute APIs (18ms, 99.7% uptime). Works inside Claude Code, Cursor, Goose, Cline. npm install -g slopshop.">
+<meta property="og:title" content="Give your AI agent tools, memory, and execution">
+<meta property="og:description" content="Slopshop is the backend for AI agents that need to do real work. MCP, API, CLI, scheduling, and persistent memory in one platform.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:creator" content="@slopshopgg">
-<meta name="twitter:title" content="Slopshop — The Missing Backend for AI Agents">
-<meta name="twitter:description" content="Standalone CLI for AI agents. Free persistent memory. Real compute APIs (18ms, 99.7% uptime). Works inside Claude Code, Cursor, Goose, Cline. npm install -g slopshop.">
+<meta name="twitter:title" content="Give your AI agent tools, memory, and execution">
+<meta name="twitter:description" content="Slopshop is the backend for AI agents that need to do real work. MCP, API, CLI, scheduling, and persistent memory in one platform.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Slopshop","url":"https://slopshop.gg","description":"Standalone CLI and execution layer for AI agents. npm install -g slopshop. Free persistent memory, real compute (18ms median latency, 99.7% success rate), and agent orchestration across 78 tool categories with 1,269 handlers. Works inside Claude Code, Cursor, Goose, Cline, OpenCode, and Aider. Covers crypto, text processing, math, dates, code utilities, AI content generation, network tools, memory/state, code execution, world sensing, data analysis, document generation, orchestration, hive workspaces, copilot mode, credit system, schema validation, PII detection, RAG primitives, SVG charts, code AST parsing, and more. One API key. Self-hostable.","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Standalone CLI: npm install -g slopshop","Works inside Claude Code, Cursor, Goose, Cline, OpenCode, Aider","1,269 handlers across 78 categories — crypto, text, math, validation, finance, DevOps, and more","18ms median compute latency, 99.7% success rate","Hive workspaces (always-on agent environments)","10K compute army (parallel verified agents)","Agent teams (hire, fire, interview)","Prediction markets and swarm forecasting","Free persistent memory tier","Agent templates and autonomous task execution","MCP server: npx slopshop mcp serve — works in Claude Code, Cursor, Goose, Cline, OpenCode, Aider","Batch and pipe (workflow chaining) endpoints","Credit-based pricing with 500 free credits on signup","Self-hostable with zero external dependencies for compute APIs","Full observability: audit logs, response headers, request tracing"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"sameAs":["https://x.com/slopshopgg"]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"Slopshop","url":"https://slopshop.gg","description":"Backend for AI agents. Tools, persistent memory, scheduling, and execution in one platform. npm install -g slopshop. 1,269 handlers across 78 categories. Free memory APIs. Works inside Claude Code, Cursor, Goose, Cline, OpenCode, and Aider. MCP, API, CLI.","applicationCategory":"DeveloperApplication","operatingSystem":"Any","featureList":["Standalone CLI: npm install -g slopshop","Works inside Claude Code, Cursor, Goose, Cline, OpenCode, Aider","1,269 handlers across 78 categories","Free persistent memory APIs","Scheduling and execution","MCP server: npx slopshop mcp serve","Credit-based pricing with 500 free credits on signup","Self-hostable with zero external dependencies for compute APIs"],"offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"sameAs":["https://x.com/slopshopgg"]}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><radialGradient id='g' cx='50%25' cy='50%25'><stop offset='0%25' stop-color='%23ff6644'/><stop offset='100%25' stop-color='%23ff2222'/></radialGradient></defs><rect width='512' height='512' rx='112' fill='url(%23g)'/><line x1='256' y1='80' x2='256' y2='168' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='256' y1='344' x2='256' y2='432' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='80' y1='256' x2='168' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='344' y1='256' x2='432' y2='256' stroke='white' stroke-width='22' stroke-linecap='round' opacity='.6'/><line x1='128' y1='128' x2='188' y2='188' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><line x1='384' y1='128' x2='324' y2='188' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><line x1='128' y1='384' x2='188' y2='324' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><line x1='384' y1='384' x2='324' y2='324' stroke='white' stroke-width='18' stroke-linecap='round' opacity='.35'/><circle cx='256' cy='256' r='52' fill='white'/></svg>" type="image/svg+xml">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='112' fill='%23ff3333'/><line x1='256' y1='80' x2='256' y2='168' stroke='white' stroke-width='24' stroke-linecap='round' opacity='.6'/><line x1='256' y1='344' x2='256' y2='432' stroke='white' stroke-width='24' stroke-linecap='round' opacity='.6'/><line x1='80' y1='256' x2='168' y2='256' stroke='white' stroke-width='24' stroke-linecap='round' opacity='.6'/><line x1='344' y1='256' x2='432' y2='256' stroke='white' stroke-width='24' stroke-linecap='round' opacity='.6'/><circle cx='256' cy='256' r='56' fill='white'/></svg>">
@@ -450,10 +450,12 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
   "@context": "https://schema.org",
   "@type": "FAQPage",
   "mainEntity": [
-    {"@type": "Question", "name": "What is Slopshop?", "acceptedAnswer": {"@type": "Answer", "text": "Slopshop is the missing backend for AI agents. One npm install gives your agent free persistent memory, real compute across 78 tool categories, and agent chaining across any LLM."}},
-    {"@type": "Question", "name": "Is Slopshop free?", "acceptedAnswer": {"@type": "Answer", "text": "You get 500 free credits on signup. Memory APIs (set, get, search, list) are always free — 0 credits forever. Compute APIs cost 0-1 credits each."}},
-    {"@type": "Question", "name": "Does Slopshop work with Claude?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Slopshop has native MCP support for Claude Code, plus REST API and SDK support for Claude, GPT, Grok, Gemini, and every LLM."}},
-    {"@type": "Question", "name": "Can I self-host Slopshop?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. npm install slopshop && node server-v2.js runs the full platform on your own hardware. Zero external dependencies for compute APIs."}}
+    {"@type": "Question", "name": "What is Slopshop?", "acceptedAnswer": {"@type": "Answer", "text": "Slopshop is a backend platform for AI agents. It provides tools, persistent memory, scheduling, and execution in one place. Use it from MCP, API, or CLI."}},
+    {"@type": "Question", "name": "Who is Slopshop for?", "acceptedAnswer": {"@type": "Answer", "text": "Developers building AI agents, internal tools teams, and anyone who needs to give their agent real capabilities beyond text generation."}},
+    {"@type": "Question", "name": "Is MCP required?", "acceptedAnswer": {"@type": "Answer", "text": "No. Slopshop works as an MCP server, a REST API, or a standalone CLI. Use whichever interface fits your workflow."}},
+    {"@type": "Question", "name": "Can I start small?", "acceptedAnswer": {"@type": "Answer", "text": "Yes. Start with one tool call from the CLI. Add memory when you need persistence. Add scheduling when you need automation. Everything is incremental."}},
+    {"@type": "Question", "name": "Is there a free tier?", "acceptedAnswer": {"@type": "Answer", "text": "You get 500 free credits on signup. Core memory APIs (set, get, search, list) are always free, 0 credits forever."}},
+    {"@type": "Question", "name": "How does Slopshop handle security?", "acceptedAnswer": {"@type": "Answer", "text": "CSP enabled, timing-safe auth, memory isolation per key, HTTPS enforced, input validation on every endpoint, sandboxed code execution, and rate limiting with Retry-After headers."}}
   ]
 }
 </script>
@@ -478,239 +480,166 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
   </div>
 </div></nav>
 
+<!-- ========== HERO ========== -->
 <section class="hero">
   <div class="hero-inner">
-    <div class="hero-tag"><span style="font-family:var(--mono);font-weight:600">Standalone CLI + API + MCP Server</span></div>
-    <h1><span class="white">The missing backend</span><br><span class="accent">for AI agents</span></h1>
-    <p style="color:var(--t3);font-family:var(--mono);font-size:0.72rem;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:12px">SLOP: Stateless Lightweight Operational Primitives</p>
+    <h1><span class="white">Your agent has a brain.</span><br><span class="accent">Now give it hands.</span></h1>
     <p class="sub" style="max-width:620px">
-      <b>44+ commands</b> in your terminal. Runs standalone <b>and</b> inside every MCP-compatible editor. Free persistent memory. Real compute APIs. Local Ollama agent pool. One npm install.
-    </p>
-    <p style="color:var(--r2);font-size:clamp(0.8rem,1.3vw,0.9rem);max-width:640px;margin:20px auto 0;line-height:1.75;font-weight:500">
-      Use it from any terminal. Pipe it into scripts. Let it serve tools to Claude Code, Cursor, or Goose. Spin up 0&ndash;256 local Ollama agents. Chain LLMs in infinite loops. All from one binary.
-    </p>
-    <p style="color:var(--t2);font-size:0.78rem;margin:12px auto 0;max-width:640px;font-family:var(--mono)">
-      Works inside: <b style="color:var(--t)">Claude Code</b> &middot; <b style="color:var(--t)">Cursor</b> &middot; <b style="color:var(--t)">Goose</b> &middot; <b style="color:var(--t)">Cline</b> &middot; <b style="color:var(--t)">OpenCode</b> &middot; <b style="color:var(--t)">Aider</b>
+      Slopshop is the backend for AI agents that need <b>tools</b>, <b>persistent memory</b>, <b>scheduling</b>, and <b>execution</b>. Use it from MCP, API, or CLI to ship real agent workflows fast.
     </p>
 
     <div class="hero-ctas" style="margin-top:36px">
-      <a href="/getting-started" class="cta-primary">Get Started Free</a>
-      <a href="#playground" class="cta-secondary">Try in Browser</a>
-      <a href="/why" class="cta-secondary">Why Slopshop?</a>
+      <a href="/signup" class="cta-primary">Start Free</a>
+      <a href="/getting-started" class="cta-secondary">See Quickstart</a>
+    </div>
+
+    <div style="text-align:center;margin-top:16px;font-size:0.68rem;color:var(--t3);font-family:var(--mono)">
+      500 free credits &middot; No subscription required &middot; MCP + API + CLI &middot; Free core memory APIs
     </div>
 
     <!-- Install commands -->
-    <div style="max-width:480px;margin:24px auto 0">
+    <div style="max-width:480px;margin:28px auto 0">
       <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:14px 18px;font-family:var(--mono);font-size:0.8rem;display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'npm install -g slopshop')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">npm install -g slopshop</span><span style="color:var(--t4);font-size:0.6rem">copy</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop signup')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop signup</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># 500 free credits</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;hash hello world with sha256&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "hash hello world with sha256"</span><span style="color:var(--t4);font-size:0.6rem">copy</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop mcp serve')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop mcp serve</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Claude Code, Cursor, Goose, Cline</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop agents start 16')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop agents start 16</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Always-on local Ollama agents</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop benchmark')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop benchmark</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Measure your latency</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;hash hello world with sha256&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "hash hello world with sha256"</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># natural language routing</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop mcp serve')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop mcp serve</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Claude Code, Cursor, Goose</span></div>
       </div>
-      <div style="text-align:center;margin-top:8px;font-size:0.65rem;color:var(--t4)">500 free credits on signup &middot; memory is free forever &middot; <a href="#pricing" style="color:var(--t3)">pricing &rarr;</a></div>
-    </div>
-
-    <div style="margin-top:16px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap">
-      <div style="display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--t4)">pip install slopshop &middot; MCP native &middot; REST API &middot; Self-hostable</div>
     </div>
   </div>
 </section>
 
-<!-- WHAT YOU CAN DO — 6 clear capability cards -->
+<!-- ========== WHAT SLOPSHOP DOES ========== -->
 <div class="sec" style="padding-top:48px;padding-bottom:48px" id="capabilities">
-  <h2 style="font-size:1.6rem;text-align:center">What you can do</h2>
-  <p class="desc" style="text-align:center;max-width:560px;margin:0 auto 36px">Nine capabilities. Each one is live, documented, and callable right now.</p>
+  <h2 style="font-size:1.6rem;text-align:center">What Slopshop Does</h2>
+  <p class="desc" style="text-align:center;max-width:560px;margin:0 auto 36px">Everything your agent needs after the prompt.</p>
 
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:20px">
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:20px">
 
-    <!-- 1. Agent Chains -->
+    <!-- Tools -->
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--r);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--r);margin-bottom:10px">Agent Chains</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:16px">Chain Claude &rarr; Grok &rarr; GPT in infinite loops. Context passes automatically. Consciousness never stops.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">curl -X POST https://slopshop.gg/v1/chain/start \
-  -H "Authorization: Bearer $KEY" \
-  -d '{"steps":["claude:research","grok:critique","claude:improve"],"loop":true}'</div>
+      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--r);margin-bottom:10px">Tools</div>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">1,269 handlers across 78 categories. Crypto, text, math, validation, finance, DevOps, AI utilities, network, code execution. Every handler benchmarked, tested, p95 &lt;1ms.</p>
+      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">slop call crypto-hash-sha256 --data hello
+curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer $KEY" -d '{"data":"hello"}'</div>
     </div>
 
-    <!-- 2. Free Memory -->
+    <!-- Persistent Memory -->
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--g);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--g);margin-bottom:10px">Free Memory with Autonomous Evolution</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:16px">SQLite-backed. Queues, counters, semantic search. Autonomous evolution (consolidate, enrich, decay, summarize). Cross-LLM, cross-session. Always free.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">curl -X POST https://slopshop.gg/v1/memory-set \
-  -H "Authorization: Bearer $KEY" \
-  -d '{"namespace":"project","key":"findings","value":"stripe uses React"}'</div>
+      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--g);margin-bottom:10px">Persistent Memory</div>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">SQLite-backed. Key-value, queues, counters, namespaces, semantic search. Cross-LLM, cross-session. Core memory APIs are always free &mdash; 0 credits.</p>
+      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">POST /v1/memory-set
+  {"namespace":"project","key":"findings","value":"React + Next.js"}
+&rarr; {"status":"stored","credits_used":0}</div>
     </div>
 
-    <!-- 3. 10K Agent Army -->
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--o);margin-bottom:10px">10K Agent Army</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:16px">Deploy parallel agents with Merkle verification. Results verified with Merkle proofs.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">curl -X POST https://slopshop.gg/v1/army/deploy \
-  -H "Authorization: Bearer $KEY" \
-  -d '{"count":10000,"task":"analyze market sentiment"}'</div>
-    </div>
-
-    <!-- 4. Hive Workspace -->
+    <!-- Execution -->
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--c);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--c);margin-bottom:10px">Hive Workspace</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:16px">Always-on Slack for your agents. Channels, standups, shared state.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">curl -X POST https://slopshop.gg/v1/hive/create \
-  -H "Authorization: Bearer $KEY" \
-  -d '{"name":"my-team"}'</div>
+      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--c);margin-bottom:10px">Execution</div>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">Sandboxed code execution, batch processing, workflow chaining, parallel fan-out. Run agent-generated code safely, chain tool calls, process results at scale.</p>
+      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">POST /v1/batch {"calls":[
+  {"slug":"crypto-hash-sha256","body":{"data":"a"}},
+  {"slug":"crypto-hash-sha256","body":{"data":"b"}}
+]}</div>
     </div>
 
-    <!-- 5. 78 Categories of Real Tools -->
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--v);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--v);margin-bottom:10px">78 Categories of Real Tools</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:16px">Crypto, text, math, validation, finance, DevOps, AI utilities. Every one benchmarked.</p>
-      <div style="margin-top:4px"><a href="/tools" style="font-family:var(--mono);font-size:0.72rem;color:var(--v);font-weight:600">Browse all tools &rarr;</a></div>
-    </div>
-
-    <!-- 7. Standalone CLI — 44+ commands -->
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--t);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--t);margin-bottom:10px">Standalone CLI &mdash; 44+ Commands</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:16px">Runs in any terminal: Claude Code, Cursor, Goose, OpenCode, Cline, Aider. Or standalone. Shell completions for bash, zsh, fish.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">slop call &lt;tool&gt;    slop mcp serve    slop agents start
-slop benchmark       slop completions  slop status</div>
-    </div>
-
-    <!-- 8. Local Agent Pool -->
+    <!-- Scheduling -->
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--o);margin-bottom:10px">Local Agent Pool: 0&ndash;256 Ollama Agents</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:16px">Always-on local agents running on your machine via Ollama. Scale from 0 to 256. No cloud dependency. Your hardware, your rules.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">slop agents start 16    # spin up 16 local agents
-slop agents status      # see what's running
-slop agents stop        # shut them down</div>
-    </div>
-
-    <!-- 9. Universal MCP Server -->
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--c);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--c);margin-bottom:10px">Universal MCP Server</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:16px">One command turns Slopshop into an MCP tool server. Works inside any MCP-compatible tool: Claude Desktop, Cursor, VS Code Copilot, Goose, OpenCode, Cline, Aider.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">npx slopshop mcp serve   # universal entry point
-# or after global install:
-slop mcp serve</div>
+      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--o);margin-bottom:10px">Scheduling</div>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">Cron-style recurring execution with webhook callbacks. Prompt queues for deferred workloads. Intervals from 1 minute to 7 days. Your agent runs on schedule, not just on demand.</p>
+      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">POST /v1/schedules
+  {"slug":"sense-url-tech-stack","interval":"6h",
+   "body":{"url":"https://competitor.com"}}</div>
     </div>
 
   </div>
 </div>
 
-<!-- WHAT YOU CAN BUILD — combo feature showcase -->
-<div class="build-section">
-  <h2>What you can build</h2>
-  <div class="build-grid">
+<!-- ========== USE CASES ========== -->
+<div class="sec">
+  <h2 style="font-size:1.4rem;text-align:center">Four ways teams use Slopshop first</h2>
+  <p class="desc" style="text-align:center;max-width:560px;margin:0 auto 36px">Real patterns. Start with one, expand as you go.</p>
+
+  <div class="build-grid" style="max-width:1200px;margin:0 auto">
     <div class="build-card">
-      <h3>&#x1f504; Non-Stop Research Agent</h3>
-      <p>Chain Claude &rarr; Grok &rarr; Claude in an infinite loop. It researches, critiques, improves, and stores findings in free memory. Runs overnight via prompt queue.</p>
-      <code>POST /v1/chain/create + /v1/memory-set + /v1/chain/queue</code>
+      <h3>Build an MCP assistant with real tools</h3>
+      <p>One command turns Slopshop into an MCP tool server. Claude Code, Cursor, Goose, Cline, and Aider get access to 1,269 handlers instantly. Your assistant can hash, validate, search, analyze, and execute &mdash; not just talk.</p>
+      <code>slop mcp serve  # every tool becomes a native MCP tool</code>
     </div>
     <div class="build-card">
-      <h3>&#x1f3e2; Agent Organization</h3>
-      <p>Hive workspace with 5 specialized agents: researcher, writer, critic, editor, publisher. Daily standups. Knowledge graph. Governance votes.</p>
-      <code>POST /v1/hive/create + /v1/standup/submit + /v1/governance/propose</code>
+      <h3>Add long-term memory to your product</h3>
+      <p>Give your agent persistent state that survives sessions, devices, and LLM switches. Store findings from Claude, retrieve them from GPT, continue with Llama. Memory APIs are free forever.</p>
+      <code>POST /v1/memory-set + POST /v1/memory-get  # 0 credits</code>
     </div>
     <div class="build-card">
-      <h3>&#x26a1; 10K Parallel Analysis</h3>
-      <p>Deploy 1,000 agents to analyze a dataset. Results verified with Merkle proofs. Replay any run. Cost-optimized by smart router.</p>
-      <code>POST /v1/army/deploy + /v1/router/smart + /v1/replay/save</code>
+      <h3>Run autonomous research and follow-up workflows</h3>
+      <p>Chain tool calls into multi-step workflows. Schedule overnight research runs. Queue prompts for batch processing. Store results in memory for downstream agents to pick up.</p>
+      <code>POST /v1/batch + POST /v1/schedules + POST /v1/memory-set</code>
     </div>
     <div class="build-card">
-      <h3>&#x1f9e0; Self-Improving Agent</h3>
-      <p>Agent runs evaluations on itself, stores lessons in memory, improves templates, competes in tournaments. Gets better every day.</p>
-      <code>POST /v1/eval/run + /v1/memory-set + /v1/tournament/create</code>
-    </div>
-    <div class="build-card">
-      <h3>&#x1f4b0; Agent Economy</h3>
-      <p>Agents with their own wallets earn credits via the credit system, bet on prediction markets, claim bounties, and trade credits.</p>
-      <code>POST /v1/wallet/create + /v1/bounties/post + /v1/market/create</code>
-    </div>
-    <div class="build-card">
-      <h3>&#x1f512; Enterprise Agent Fleet</h3>
-      <p>Teams with RBAC. Usage analytics with cost forecasting. Webhooks for alerts. Budget caps per agent. Air-gapped self-hosting.</p>
-      <code>POST /v1/teams/create + /v1/analytics/cost-forecast + /v1/webhooks/create</code>
+      <h3>Replace backend glue for internal agents</h3>
+      <p>Stop wiring Redis for state, Cron for scheduling, S3 for storage, and 7 other services. One API key, one credit balance, one platform. Tools, memory, scheduling, and execution included.</p>
+      <code>npm install -g slopshop  # replaces 10+ services</code>
     </div>
   </div>
 </div>
 
-<!-- Built for production — trust section -->
-<div style="max-width:1200px;margin:0 auto;padding:0 32px 48px">
+<!-- ========== WHY DEVELOPERS CHOOSE SLOPSHOP ========== -->
+<div class="sec">
+  <h2>Why developers choose Slopshop</h2>
+  <p class="desc">Your agent needs 10+ services. Each has its own API key, billing, docs, and failure modes. Slopshop replaces the glue.</p>
 
-  <!-- Production trust checklist -->
-  <div style="border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:32px 40px;margin-bottom:20px">
-    <div style="font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--t);margin-bottom:6px">Built for production</div>
-    <div style="width:48px;height:2px;background:var(--r);margin-bottom:20px;border-radius:1px"></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 40px">
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Every handler benchmarked</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Self-hostable (verify yourself)</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>SHA-256 output hashes</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Open source handlers</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Credit refund on errors</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--t4);margin-right:8px">&#10003;</span><span style="color:var(--t3)">TEE attestation (roadmap)</span></div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Structured JSON logging</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>OpenAPI 3.0.3 spec</div>
+  <div class="why-grid" style="max-width:800px">
+    <div class="why-card" style="border-left:3px solid var(--r)">
+      <h3 style="color:var(--r)">Start fast</h3>
+      <p>One platform instead of wiring 5 services together. <code>npm install -g slopshop</code>, get an API key, call your first tool. Running in under a minute.</p>
     </div>
-    <div style="display:flex;gap:0;justify-content:center;flex-wrap:wrap;border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-top:24px;background:var(--s2)">
-      <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center;border-right:1px solid var(--b)">
-        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--r)" id="apiCount">1,269</div>
-        <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">Endpoints</div>
-      </div>
-      <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center;border-right:1px solid var(--b)">
-        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--o)">85</div>
-        <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">SQLite Tables</div>
-      </div>
-      <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center;border-right:1px solid var(--b)">
-        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--g)">1,269</div>
-        <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">Tested Handlers</div>
-      </div>
-      <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center">
-        <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--c)">&lt;1ms</div>
-        <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">p95 Handler</div>
-      </div>
+    <div class="why-card" style="border-left:3px solid var(--g)">
+      <h3 style="color:var(--g)">Stay flexible</h3>
+      <p>Use it as an MCP server inside your editor. Call it as a REST API from your backend. Run it as a CLI in your terminal. Same tools, same memory, three interfaces.</p>
+    </div>
+    <div class="why-card" style="border-left:3px solid var(--c)">
+      <h3 style="color:var(--c)">Scale what works</h3>
+      <p>Start with one tool call. Add memory when you need persistence. Add scheduling when you need automation. Add batch processing when you need throughput. Everything is incremental.</p>
+    </div>
+    <div class="why-card" style="border-left:3px solid var(--o)">
+      <h3 style="color:var(--o)">Build agents that actually do things</h3>
+      <p>1,269 handlers that execute real compute. Not wrappers. Not proxies. Every response includes <code style="background:var(--s2);padding:1px 4px;border-radius:3px;color:var(--green)">_engine: "real"</code>. Your agent can hash, validate, analyze, schedule, and remember.</p>
     </div>
   </div>
-
-  <!-- Security trust signals -->
-  <div style="border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:32px 40px;margin-bottom:20px">
-    <div style="font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--t);margin-bottom:6px">Security</div>
-    <div style="width:48px;height:2px;background:var(--green);margin-bottom:20px;border-radius:1px"></div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px 40px">
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>CSP enabled</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Timing-safe auth</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Memory isolation per key</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>HTTPS enforced</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Input validation on every endpoint</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Graceful shutdown</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Rate limiting with <code style="font-size:0.7rem;color:var(--t3)">Retry-After</code> headers</div>
-      <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#9679;</span>Sandboxed code execution (<code style="font-size:0.7rem;color:var(--t3)">vm.createContext</code>)</div>
-    </div>
-    <div style="margin-top:16px"><a href="/security" style="font-family:var(--mono);font-size:0.72rem;color:var(--r);font-weight:600">Security overview &rarr;</a></div>
-  </div>
-
-  <!-- Works with — LLMs and frameworks -->
-  <div style="border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:24px 40px">
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;font-size:0.78rem;color:var(--t3)">
-      <span style="font-family:var(--mono);font-weight:700;color:var(--t2)">Works with:</span>
-      <span style="font-weight:600;color:var(--t2)">Claude</span><span style="color:var(--t4)">&middot;</span>
-      <span style="font-weight:600;color:var(--t2)">GPT</span><span style="color:var(--t4)">&middot;</span>
-      <span style="font-weight:600;color:var(--t2)">Grok</span><span style="color:var(--t4)">&middot;</span>
-      <span style="font-weight:600;color:var(--t2)">Gemini</span><span style="color:var(--t4)">&middot;</span>
-      <span style="font-weight:600;color:var(--t2)">LLaMA</span><span style="color:var(--t4)">&middot;</span>
-      <span style="font-weight:600;color:var(--t2)">Mistral</span><span style="color:var(--t4)">&middot;</span>
-      <span style="font-weight:600;color:var(--t2)">DeepSeek</span>
-    </div>
-    <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;font-size:0.78rem;color:var(--t3);margin-top:10px">
-      <span style="font-family:var(--mono);font-weight:700;color:var(--t2)">Frameworks:</span>
-      <span style="font-weight:600;color:var(--t2)">LangChain</span><span style="color:var(--t4)">&middot;</span>
-      <span style="font-weight:600;color:var(--t2)">CrewAI</span><span style="color:var(--t4)">&middot;</span>
-      <span style="font-weight:600;color:var(--t2)">AutoGen</span><span style="color:var(--t4)">&middot;</span>
-      <span style="font-weight:600;color:var(--t2)">LangGraph</span>
-    </div>
-  </div>
-
 </div>
 
+<!-- ========== HOW IT WORKS ========== -->
+<div class="sec">
+  <h2 style="font-size:1.4rem;text-align:center">How it works</h2>
+  <p class="desc" style="text-align:center;max-width:560px;margin:0 auto 36px">Four steps from zero to a working agent system.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;max-width:1000px;margin:0 auto">
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;text-align:center;transition:transform 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="font-family:var(--mono);font-size:1.5rem;font-weight:800;color:var(--r);margin-bottom:12px">1</div>
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">Connect</div>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.6">Install the CLI, configure your MCP client, or call the REST API. One API key for everything.</p>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;text-align:center;transition:transform 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="font-family:var(--mono);font-size:1.5rem;font-weight:800;color:var(--o);margin-bottom:12px">2</div>
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">Add capabilities</div>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.6">Give your agent tools (1,269 handlers), persistent memory (free forever), and scheduling (cron + webhooks).</p>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;text-align:center;transition:transform 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="font-family:var(--mono);font-size:1.5rem;font-weight:800;color:var(--g);margin-bottom:12px">3</div>
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">Run workflows</div>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.6">Chain tools, batch calls, schedule recurring jobs. Your agent executes real work, stores results, and acts on them.</p>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;text-align:center;transition:transform 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="font-family:var(--mono);font-size:1.5rem;font-weight:800;color:var(--c);margin-bottom:12px">4</div>
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">Turn prompts into systems</div>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.6">What starts as a single tool call becomes a production agent system with memory, scheduling, observability, and reliability built in.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ========== PLAYGROUND ========== -->
 <div class="sec" id="playground">
   <h2>Try it now</h2>
   <p class="desc">Type a task. The agent picks tools, runs them, returns real results. No signup required.</p>
@@ -746,27 +675,18 @@ slop mcp serve</div>
         <span class="live-badge" style="font-size:0.6rem;padding:2px 8px"><span class="live-dot" style="width:5px;height:5px"></span>live</span>
       </div>
     </div>
-
-    <!-- Example cards -->
     <div class="pg-examples" id="pgExamples"></div>
-
-    <!-- Category filter tabs -->
     <div class="pg-cat-tabs" id="pgCatTabs"></div>
-
     <div class="pg-body-wrap">
-      <!-- Popular tools sidebar -->
       <div class="pg-sidebar" id="pgSidebar">
         <div class="pg-sidebar-title">Popular Tools</div>
       </div>
-
       <div class="pg-main">
         <div class="pg-in">
           <select id="pgApi"></select>
           <input type="text" id="pgInput" placeholder='{"data":"hello world"}' value='{"data":"hello world"}'>
           <button id="pgRun" onclick="run()">Run</button>
         </div>
-
-        <!-- Request / Response side-by-side -->
         <div class="pg-result-wrap">
           <div class="pg-result-pane" id="pgReqPane" style="display:none">
             <div class="pg-result-pane-header">Request</div>
@@ -780,8 +700,6 @@ slop mcp serve</div>
 // Output appears here with full response data</span></div>
           </div>
         </div>
-
-        <!-- Copy buttons row -->
         <div class="pg-copy-btns" id="pgCopyBtns" style="display:none">
           <button class="pg-copy-btn" onclick="copyAs('curl')">Copy as cURL</button>
           <button class="pg-copy-btn" onclick="copyAs('python')">Copy as Python</button>
@@ -789,8 +707,6 @@ slop mcp serve</div>
           <button class="pg-copy-btn" onclick="copyResult()">Copy Result</button>
           <button class="pg-copy-btn" onclick="shareResult()" style="margin-left:auto">Share on X</button>
         </div>
-
-        <!-- History -->
         <div class="pg-history" id="pgHistory">
           <div class="pg-history-title">
             <span>Recent Calls</span>
@@ -801,403 +717,150 @@ slop mcp serve</div>
       </div>
     </div>
   </div>
-  <!-- Contextual conversion CTA — shown after successful playground call -->
   <div id="pgConversionCta" style="display:none;text-align:center;margin-top:16px;padding:14px 20px;background:var(--rg);border:1px solid rgba(255,51,51,0.15);border-radius:10px;font-family:var(--mono);font-size:0.78rem;line-height:1.8"></div>
 </div>
 
+<!-- ========== TRUST ========== -->
 <div class="sec">
-  <h2>Get started</h2>
-  <p class="desc">One install. One API key. Every tool.</p>
-  <div class="inst">
-    <div class="ic"><h3>CLI</h3>
-      <div class="icmd" onclick="cc(this,'npm install -g slopshop')"><span>npm install -g slopshop</span><span class="h">copy</span></div>
-      <div class="icmd" onclick="cc(this,'slop call crypto-hash-sha256 --data hello')"><span>slop call crypto-hash-sha256 --data hello</span><span class="h">copy</span></div>
+  <h2 style="font-size:1.4rem;text-align:center">Built for real products, not experiments</h2>
+  <p class="desc" style="text-align:center;max-width:560px;margin:0 auto 36px">Production-grade infrastructure you can rely on.</p>
+
+  <div style="max-width:900px;margin:0 auto">
+    <div style="border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:32px 40px;margin-bottom:20px">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:8px 40px">
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Simple credit-based pricing. No subscription.</div>
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>500 free credits to test everything.</div>
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Clear <a href="/security" style="color:var(--r)">security page</a> with full details.</div>
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Works as MCP server, REST API, or CLI.</div>
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Every handler benchmarked and tested.</div>
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Self-hostable. Run on your own hardware.</div>
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>SHA-256 output hashes. Open source handlers.</div>
+        <div style="font-size:0.78rem;color:var(--t2);line-height:1.9"><span style="color:var(--green);margin-right:8px">&#10003;</span>Credit refund on errors. Structured JSON logging.</div>
+      </div>
+
+      <div style="display:flex;gap:0;justify-content:center;flex-wrap:wrap;border:1px solid var(--b);border-radius:10px;overflow:hidden;margin-top:24px;background:var(--s2)">
+        <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center;border-right:1px solid var(--b)">
+          <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--r)" id="apiCount">1,269</div>
+          <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">Handlers</div>
+        </div>
+        <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center;border-right:1px solid var(--b)">
+          <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--o)">78</div>
+          <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">Categories</div>
+        </div>
+        <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center;border-right:1px solid var(--b)">
+          <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--g)">Free</div>
+          <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">Core Memory</div>
+        </div>
+        <div style="flex:1;min-width:120px;padding:16px 20px;text-align:center">
+          <div style="font-family:var(--mono);font-size:1.2rem;font-weight:800;color:var(--c)">&lt;1ms</div>
+          <div style="font-size:0.58rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-top:3px;font-weight:600">p95 Handler</div>
+        </div>
+      </div>
     </div>
-    <div class="ic"><h3>Python</h3>
-      <div class="icmd" onclick="cc(this,'pip install slopshop')"><span>pip install slopshop</span><span class="h">copy</span></div>
-      <p>from slopshop import Slop<br>s = Slop()<br>r = s.call("crypto-hash-sha256", {"data":"hello"})</p>
-    </div>
-    <div class="ic"><h3>MCP Server</h3>
-      <div class="icmd" onclick="cc(this,'npx slopshop mcp serve')"><span>npx slopshop mcp serve</span><span class="h">copy</span></div>
-      <p>Works inside Claude Code, Cursor, Goose, Cline, OpenCode, Aider. Every API becomes a native tool.</p>
-    </div>
-    <div class="ic"><h3>HTTP</h3>
-      <div class="icmd" onclick="cc(this,'curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 -H &quot;Authorization: Bearer $SLOPSHOP_KEY&quot; -d &apos;{&quot;data&quot;:&quot;hello&quot;}&apos;')"><span>curl -X POST slopshop.gg/v1/...</span><span class="h">copy</span></div>
-      <p>Bearer auth. JSON in, JSON out. Every response: _engine: "real"</p>
+
+    <div style="border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:24px 40px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;font-size:0.78rem;color:var(--t3)">
+        <span style="font-family:var(--mono);font-weight:700;color:var(--t2)">Works with:</span>
+        <span style="font-weight:600;color:var(--t2)">Claude Code</span><span style="color:var(--t4)">&middot;</span>
+        <span style="font-weight:600;color:var(--t2)">Cursor</span><span style="color:var(--t4)">&middot;</span>
+        <span style="font-weight:600;color:var(--t2)">Goose</span><span style="color:var(--t4)">&middot;</span>
+        <span style="font-weight:600;color:var(--t2)">Cline</span><span style="color:var(--t4)">&middot;</span>
+        <span style="font-weight:600;color:var(--t2)">OpenCode</span><span style="color:var(--t4)">&middot;</span>
+        <span style="font-weight:600;color:var(--t2)">Aider</span><span style="color:var(--t4)">&middot;</span>
+        <span style="font-weight:600;color:var(--t2)">LangChain</span><span style="color:var(--t4)">&middot;</span>
+        <span style="font-weight:600;color:var(--t2)">CrewAI</span><span style="color:var(--t4)">&middot;</span>
+        <span style="font-weight:600;color:var(--t2)">AutoGen</span>
+      </div>
     </div>
   </div>
 </div>
 
-<!-- WHY NOT JUST USE OPENAI DIRECTLY? -->
-<div class="sec">
-  <h2>Why Slopshop?</h2>
-  <p class="desc">Your agent needs 10+ services: Redis for state, Cron for scheduling, Stripe for billing, S3 for storage. Each has its own API key, billing, docs, and failure modes. Result: 80% of your agent code is glue, not intelligence.</p>
-  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;max-width:700px;font-size:0.78rem">
-    <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px">
-      <div style="font-weight:700;color:var(--t);margin-bottom:10px">The status quo</div>
-      <div style="color:var(--t4);line-height:1.8;font-family:var(--mono);font-size:0.7rem">
-        ✗ 10+ API keys to manage<br>
-        ✗ 10+ billing dashboards<br>
-        ✗ Build retry logic yourself<br>
-        ✗ Memory? Set up Redis<br>
-        ✗ Scheduling? Set up Cron<br>
-        ✗ Agent loses state between sessions<br>
-        ✗ Different response formats everywhere<br>
-        ✗ 80% of code is glue, not intelligence
-      </div>
-    </div>
-    <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px;border-left:3px solid var(--green)">
-      <div style="font-weight:700;color:var(--green);margin-bottom:10px">With Slopshop</div>
-      <div style="color:var(--t2);line-height:1.8;font-family:var(--mono);font-size:0.7rem">
-        ✓ One API key. One credit balance.<br>
-        ✓ Free persistent memory (forever)<br>
-        ✓ 78 categories of tools that actually execute<br>
-        ✓ Batch, stream, and orchestrate built in<br>
-        ✓ Auto-retry + fallback built in<br>
-        ✓ Self-hostable, zero lock-in<br>
-        ✓ Works with Claude, GPT, Grok, Gemini<br>
-        ✓ Scheduling, webhooks, observability included
-      </div>
-    </div>
-  </div>
-  <p style="text-align:center;margin-top:20px"><a href="/why" style="font-family:var(--mono);font-size:0.78rem;color:var(--r);font-weight:600">Full comparison vs. Composio, LangChain, OpenAI Tools &rarr;</a></p>
-</div>
-
-<div class="sec">
-  <h2>What replaces your backend</h2>
-  <p class="desc">Core infrastructure primitives. Each one replaces a service you'd otherwise build or buy.</p>
-  <div class="why-grid">
-    <div class="why-card" style="border-left:3px solid var(--green)"><h3 style="color:var(--green)">Free Persistent Memory with Autonomous Evolution</h3><p>SQLite-backed key-value store, queues, counters, namespaces, vector search. Autonomous evolution strategies: consolidate, enrich, decay, summarize. Works across any LLM, any device, any session. Always free — 0 credits.</p></div>
-    <div class="why-card"><h3>1,269 Compute Handlers</h3><p>Hashing, encryption, text processing, math, statistics, data transforms, schema validation, PII detection, RAG primitives, SVG charts, code AST parsing. Every handler tested for correctness and null safety. p95 &lt;1ms.</p></div>
-    <div class="why-card"><h3>Task Abstraction</h3><p><code>POST /v1/tasks/run</code> — describe what you need, get guaranteed schema-valid JSON. Preview cost with <code>preview: true</code> before committing.</p></div>
-    <div class="why-card"><h3>22 Network Handlers</h3><p>DNS (<code>dns.resolve</code>), SSL (<code>tls.connect</code>), HTTP headers, WHOIS, cert transparency, subdomain enum. Real socket connections.</p></div>
-    <div class="why-card"><h3>Code Execution</h3><p>Sandboxed JS (<code>vm.createContext</code>) + Python subprocess with timeout. Useful for validating agent-generated code.</p></div>
-    <div class="why-card"><h3>Scheduling + Webhooks</h3><p>Cron-style recurring execution with webhook callbacks. <code>POST /v1/schedules</code> — intervals from 1m to 7d.</p></div>
-    <div class="why-card" style="border-left:3px solid var(--v)"><h3 style="color:var(--v)">OAuth Connectors</h3><p>Connect GitHub, Slack, Linear, Notion, and more via OAuth. Configure once, agents authenticate on your behalf. Tokens encrypted with AES-256-GCM, auto-rotated nightly.</p></div>
-    <div class="why-card" style="border-left:3px solid var(--c)"><h3 style="color:var(--c)">Webhook Triggers</h3><p>Fire agent workflows from external events. GitHub pushes, Slack messages, Linear updates &mdash; any webhook triggers chains, pipes, or single tool calls automatically.</p></div>
-  </div>
-
-  <h2 style="margin-top:48px">Orchestration and reliability</h2>
-  <p class="desc">Built-in primitives for agents that need to coordinate, persist state, and recover from failures.</p>
-  <div class="why-grid">
-    <div class="why-card"><h3>Shared Workspaces</h3><p>Channel-based shared state for multi-agent coordination. Agents read/write to shared namespaces without custom orchestration code.</p></div>
-    <div class="why-card"><h3>Parallel Execution</h3><p>Fan out work across parallel handlers with Merkle-verified result aggregation. Built for batch compute and data processing.</p></div>
-    <div class="why-card"><h3>Eval + Benchmarks</h3><p>Test agents against benchmarks. Track scores over time. Know if your agent is improving or regressing.</p></div>
-    <div class="why-card"><h3>Goal Tracking</h3><p>Define objectives with credit budgets. Track progress across multiple tool calls. Agents stay on-task with measurable outcomes.</p></div>
-    <div class="why-card"><h3>Knowledge Graph</h3><p>Entity-relationship triples stored in SQLite. Query paths and relationships. Agents build structured understanding that persists across sessions.</p></div>
-    <div class="why-card"><h3>Reusable Templates</h3><p>Pre-built multi-step workflows you can invoke in one call. Fork and customize for your use case.</p></div>
-    <div class="why-card"><h3>Built-in Reliability</h3><p>Auto-retry with exponential backoff. Circuit breakers halt cascading failures. Per-key rate limits prevent runaway spend. Distributed locks for safe concurrency.</p></div>
-    <div class="why-card"><h3>Full Observability</h3><p>Every API call logged with timestamp, credits, latency, and engine type. Every agent run stored with full step trace. <code>GET /v1/agent/history</code> to replay any run. Cost visible on every response header.</p></div>
-    <div class="why-card" style="border-left:3px solid var(--c)"><h3 style="color:var(--c)">Copilot Mode</h3><p>Run a second AI agent in the same session. Discuss plans while your main agent builds. Scale to N copilots with role assignment. 6 endpoints.</p></div>
-    <div class="why-card" style="border-left:3px solid var(--o)"><h3 style="color:var(--o)">Credit System</h3><p>Earn credits by sharing idle compute. Other users' tasks run on your terminal. SHA-256 verified. Full credit settlement. 9 endpoints.</p></div>
-    <div class="why-card" style="border-left:3px solid var(--g)"><h3 style="color:var(--g)">1,269 Benchmarked Handlers</h3><p>Every compute handler tested for correctness, null safety, and &lt;1ms latency. No untested code paths. Every response includes <code style="background:var(--s2);padding:1px 4px;border-radius:3px;color:var(--green)">_engine: "real"</code>.</p></div>
-  </div>
-
-  <div class="proof-card" style="margin-top:40px">
-    <h3>Not a wrapper. Real compute.</h3>
-    <p class="sub-text">Every response includes <code style="background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--green)">_engine: "real"</code> &mdash; proof your data was actually processed, not proxied.</p>
-    <div class="proof-grid">
-      <div>
-        <div class="ph">1,269 compute handlers</div>
-        <div class="pb">Pure Node.js. No external calls.<br>Every handler tested individually.<br>Correctness, null safety, &lt;1ms.<br>Zero third-party dependencies.</div>
-      </div>
-      <div>
-        <div class="ph">22 network APIs</div>
-        <div class="pb">Built-in dns, http, tls modules.<br>DNS queries hit real resolvers.<br>SSL checks open real TLS sockets.<br>No scraping service middleman.</div>
-      </div>
-      <div>
-        <div class="ph">20 memory APIs</div>
-        <div class="pb">SQLite persistence. Atomic writes.<br>Concurrent-safe. Your data on disk.<br>Not Redis. Not DynamoDB.<br>8 of these are completely free.</div>
-      </div>
-      <div>
-        <div class="ph">15 execution APIs</div>
-        <div class="pb">vm.createContext sandbox.<br>Your code runs in isolation.<br>SQL queries execute on your JSON.<br>No Lambda. No cloud function.</div>
-      </div>
-    </div>
-    <div class="proof-footer">
-      <span style="color:var(--t3)">LLM APIs use your Anthropic/OpenAI key or ours &mdash; clearly marked <code style="background:var(--s2);padding:1px 5px;border-radius:3px;color:var(--r)">_engine: "llm"</code></span>
-      <a href="/savings" style="margin-left:auto;color:var(--green);padding:6px 14px;border:1px solid rgba(34,197,94,0.2);border-radius:6px;transition:0.15s">Calculate your savings &rarr;</a>
-    </div>
-  </div>
-
-  <div class="proof-card" style="margin-top:16px">
-    <h3>Production-grade by default</h3>
-    <p class="sub-text">Every call includes reliability and observability out of the box. No extra setup.</p>
-    <div class="proof-grid">
-      <div>
-        <div class="ph">Observability</div>
-        <div class="pb">Every response includes:<br><code style="color:var(--t3)">X-Credits-Used</code><br><code style="color:var(--t3)">X-Latency-Ms</code><br><code style="color:var(--t3)">X-Request-Id</code><br><code style="color:var(--t3)">X-Engine</code></div>
-      </div>
-      <div>
-        <div class="ph">Reliability</div>
-        <div class="pb">Circuit breakers halt failures.<br>Auto-retry with backoff.<br>Rate limiting per key.<br>Distributed locks for safety.</div>
-      </div>
-      <div>
-        <div class="ph">Audit Trail</div>
-        <div class="pb">Every call logged: timestamp,<br>API slug, credits, latency, engine.<br>Agent runs stored with full<br>step trace. Replayable.</div>
-      </div>
-      <div>
-        <div class="ph">Guardrails</div>
-        <div class="pb">Credits checked before execution.<br>Balance deducted atomically.<br>Auto-reload when balance is low.<br>Never executes without budget.</div>
-      </div>
-    </div>
-    <div class="proof-footer">
-      <a href="/status" style="color:var(--green)">Live status &rarr;</a>
-      <a href="/security" style="color:var(--r)">Security overview &rarr;</a>
-      <a href="/docs#rate-limits" style="color:var(--orange)">Rate limits &rarr;</a>
-    </div>
-  </div>
-</div>
-
-<!-- ============================================== -->
-<!-- PLATFORM FEATURES SHOWCASE — 14 innovations  -->
-<!-- ============================================== -->
-<div class="sec" id="features">
-  <h2 style="font-size:1.4rem;text-align:center">All features <span style="color:var(--r)">live now</span></h2>
-  <p class="desc" style="text-align:center;max-width:560px;margin:0 auto 24px">Not roadmap items. Every feature below is callable right now.</p>
-
-  <!-- Core feature grid — 8 key features -->
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">
-
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--g);border-radius:10px;padding:20px">
-      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--g);margin-bottom:6px">Free Persistent Memory</div>
-      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Key-value, queues, counters, namespaces, semantic search. Always free &mdash; 0 credits.</div>
-      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">20 endpoints</div>
-    </div>
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--r);border-radius:10px;padding:20px">
-      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--r);margin-bottom:6px">Agent Chaining</div>
-      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Chain Claude &rarr; Grok &rarr; GPT in infinite loops. Context passes automatically.</div>
-      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">5 endpoints</div>
-    </div>
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:10px;padding:20px">
-      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--o);margin-bottom:6px">10K Parallel Agents</div>
-      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Parallel deploy, survey mode, Monte Carlo, Merkle verification.</div>
-      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">8 endpoints</div>
-    </div>
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--c);border-radius:10px;padding:20px">
-      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--c);margin-bottom:6px">Hive Workspace</div>
-      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Always-on agent collaboration. Channels, standups, state sync.</div>
-      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">10 endpoints</div>
-    </div>
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--v);border-radius:10px;padding:20px">
-      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--v);margin-bottom:6px">Smart Tool Discovery</div>
-      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Semantic search, AI recommendations, category browse, compare.</div>
-      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">8 endpoints</div>
-    </div>
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:10px;padding:20px">
-      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--o);margin-bottom:6px">Streaming &amp; Batch</div>
-      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">SSE streaming, batch 50 calls, dry-run cost preview.</div>
-      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">3 endpoints</div>
-    </div>
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--c);border-radius:10px;padding:20px">
-      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--c);margin-bottom:6px">Enterprise</div>
-      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Teams RBAC, analytics, webhooks, rate limits, budget caps.</div>
-      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">19 endpoints</div>
-    </div>
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--g);border-radius:10px;padding:20px">
-      <div style="font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--g);margin-bottom:6px">Self-Hostable</div>
-      <div style="font-size:0.75rem;color:var(--t3);line-height:1.6">Run the full platform on your hardware. Zero external dependencies for compute APIs.</div>
-      <div style="font-family:var(--mono);font-size:0.6rem;color:var(--t4);margin-top:8px">npm install &amp;&amp; node server-v2.js</div>
-    </div>
-
-  </div>
-
-  <div style="text-align:center;margin-top:24px">
-    <a href="/docs" style="font-family:var(--mono);font-size:0.82rem;color:var(--r);font-weight:600;padding:10px 20px;border:1px solid rgba(255,51,51,0.2);border-radius:8px;display:inline-block;transition:0.15s">See all features &rarr;</a>
-  </div>
-</div>
-
-<!-- AGENT MODE RESPONSE EXAMPLE (Grok's #1 request) -->
-<div class="sec">
-  <h2>Agent Mode response</h2>
-  <p class="desc">Every Agent Mode call returns suggestions, cost breakdown, cache fingerprint, and auto-persists to memory. Here's a real response:</p>
-  <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;max-width:700px">
-    <div style="padding:8px 14px;background:var(--s2);border-bottom:1px solid var(--b);font-size:0.65rem;color:var(--t3);display:flex;justify-content:space-between">
-      <span>POST /v1/crypto-hash-sha256 <code style="color:var(--green);margin-left:8px">mode: "agent"</code></span>
-      <span style="color:var(--t4)">response</span>
-    </div>
-    <pre style="padding:16px;margin:0;overflow-x:auto;font-size:0.72rem;line-height:1.7;color:var(--t2)">{
-  <span style="color:var(--r)">"data"</span>: { <span style="color:var(--r)">"hash"</span>: <span style="color:var(--green)">"e3b47f..."</span>, <span style="color:var(--r)">"_engine"</span>: <span style="color:var(--green)">"real"</span> },
-  <span style="color:var(--r)">"meta"</span>: { <span style="color:var(--r)">"credits_used"</span>: <span style="color:var(--orange)">1</span>, <span style="color:var(--r)">"latency_ms"</span>: <span style="color:var(--orange)">2</span> },
-  <span style="color:var(--r)">"agent"</span>: {
-    <span style="color:var(--r)">"suggestions"</span>: [<span style="color:var(--green)">"crypto-hash-sha512"</span>, <span style="color:var(--green)">"memory-set"</span>],
-    <span style="color:var(--r)">"cache_fingerprint"</span>: <span style="color:var(--green)">"9d618362..."</span>,
-    <span style="color:var(--r)">"cost_breakdown"</span>: { <span style="color:var(--r)">"this_call"</span>: <span style="color:var(--orange)">1</span>, <span style="color:var(--r)">"memory_cost"</span>: <span style="color:var(--orange)">0</span> },
-    <span style="color:var(--r)">"memory_persisted"</span>: { <span style="color:var(--r)">"namespace"</span>: <span style="color:var(--green)">"agent-sk1234"</span> }
-  }
-}</pre>
-  </div>
-  <p style="font-size:0.72rem;color:var(--t4);margin-top:12px;max-width:700px">Add <code style="color:var(--r)">mode: "agent"</code> to any request body or set <code style="color:var(--r)">X-Agent-Mode</code> header. Works with Claude, GPT, Grok, LangChain — any AI agent.</p>
-</div>
-
-<!-- INTEGRATE WITH YOUR STACK -->
-<div class="sec">
-  <h2>Works with every AI provider</h2>
-  <p class="desc">14 provider-specific integration guides. Native code examples. Works inside any MCP-compatible tool.</p>
-
-  <!-- MCP universal entry point -->
-  <div style="max-width:520px;margin:0 auto 24px;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.78rem;line-height:2">
-    <div style="font-weight:700;color:var(--c);margin-bottom:8px;font-size:0.82rem">MCP-compatible tools:</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;font-size:0.72rem">
-      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Claude Desktop</span>
-      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Claude Code</span>
-      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Cursor</span>
-      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">VS Code Copilot</span>
-      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Goose</span>
-      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">OpenCode</span>
-      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Cline</span>
-      <span style="background:var(--s2);padding:4px 10px;border-radius:6px;color:var(--t)">Aider</span>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px" onclick="cc(this,'npx slopshop mcp serve')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">npx slopshop mcp serve</span><span style="color:var(--t4);font-size:0.6rem">copy</span></div>
-  </div>
-
-  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:10px">
-    <a href="/integrate-claude" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #da7756">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">Claude</div>
-      <div style="font-size:0.65rem;color:var(--t3)">MCP + tool_use</div>
-    </a>
-    <a href="/integrate-openai" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #10a37f">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">GPT / OpenAI</div>
-      <div style="font-size:0.65rem;color:var(--t3)">function_calling</div>
-    </a>
-    <a href="/integrate-grok" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #e8e8e8">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">Grok / xAI</div>
-      <div style="font-size:0.65rem;color:var(--t3)">Agent Mode</div>
-    </a>
-    <a href="/integrate-gemini" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #4285F4">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">Gemini</div>
-      <div style="font-size:0.65rem;color:var(--t3)">Google AI tools</div>
-    </a>
-    <a href="/integrate-deepseek" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #4D6BFE">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">DeepSeek</div>
-      <div style="font-size:0.65rem;color:var(--t3)">OpenAI-compatible</div>
-    </a>
-    <a href="/integrate-llama" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #792EE5">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">Llama / Ollama</div>
-      <div style="font-size:0.65rem;color:var(--t3)">Open-source models</div>
-    </a>
-    <a href="/integrate-mistral" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #FF7000">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">Mistral</div>
-      <div style="font-size:0.65rem;color:var(--t3)">Mistral AI tools</div>
-    </a>
-    <a href="/integrate-groq" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #F55036">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">Groq</div>
-      <div style="font-size:0.65rem;color:var(--t3)">Fast inference</div>
-    </a>
-    <a href="/integrate-langchain" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #27ae60">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">LangChain</div>
-      <div style="font-size:0.65rem;color:var(--t3)">StructuredTool + LCEL</div>
-    </a>
-    <a href="/integrate-crewai" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #00D4FF">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">CrewAI</div>
-      <div style="font-size:0.65rem;color:var(--t3)">Multi-agent</div>
-    </a>
-    <a href="/integrate-autogen" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #0078D4">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">AutoGen</div>
-      <div style="font-size:0.65rem;color:var(--t3)">Microsoft agents</div>
-    </a>
-    <a href="/integrate-cohere" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #39594D">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">Cohere</div>
-      <div style="font-size:0.65rem;color:var(--t3)">Command tool_use</div>
-    </a>
-    <a href="/integrate-perplexity" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #20B2AA">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">Perplexity</div>
-      <div style="font-size:0.65rem;color:var(--t3)">Search + compute</div>
-    </a>
-    <a href="/integrate-together" style="display:block;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px;text-decoration:none;transition:0.2s;border-left:3px solid #FF6B35">
-      <div style="font-size:0.82rem;font-weight:700;color:var(--t)">Together AI</div>
-      <div style="font-size:0.65rem;color:var(--t3)">Hosted open models</div>
-    </a>
-  </div>
-  <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.7rem">
-    <a href="/v1/tasks" style="color:var(--green)">Task API (20 tasks) &rarr;</a>
-    <a href="/v1/benchmarks" style="color:var(--green)">Live benchmarks &rarr;</a>
-    <a href="/v1/openapi.json" style="color:var(--t3)">OpenAPI spec &rarr;</a>
-    <a href="/v1/mcp/recommended" style="color:var(--t3)">MCP tools (38) &rarr;</a>
-    <a href="/gallery" style="color:var(--t3)">Template gallery &rarr;</a>
-    <a href="/savings" style="color:var(--t3)">Savings calculator &rarr;</a>
-  </div>
-</div>
-
-<!-- UNIVERSAL MEMORY — the big differentiator -->
-<div class="sec">
-  <h2>Memory that follows your agent everywhere</h2>
-  <p class="desc">Free persistent memory that works across any LLM, any device, any session. Your agent never forgets.</p>
-  <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;border-left:3px solid var(--green)">
-    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px;margin-bottom:20px">
-      <div>
-        <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--green);margin-bottom:6px">Any LLM</div>
-        <div style="font-size:0.78rem;color:var(--t3);line-height:1.6">Start a conversation with Claude. Continue with GPT. Finish with Llama. Memory persists across all of them.</div>
-      </div>
-      <div>
-        <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--green);margin-bottom:6px">Any Device</div>
-        <div style="font-size:0.78rem;color:var(--t3);line-height:1.6">Write from your laptop. Read from your phone. Your agent's state is in the cloud, accessible from anywhere via one API key.</div>
-      </div>
-      <div>
-        <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--green);margin-bottom:6px">Any Session</div>
-        <div style="font-size:0.78rem;color:var(--t3);line-height:1.6">Close the browser. Restart the server. Come back next week. Memory persists in SQLite — atomic, concurrent-safe, forever.</div>
-      </div>
-    </div>
-    <div style="background:#050505;border:1px solid var(--b);border-radius:8px;padding:14px 18px;font-family:var(--mono);font-size:0.75rem;line-height:1.8">
-      <div style="color:var(--t4)">// Store from Claude on your laptop</div>
-      <div style="color:var(--t3)">POST /v1/memory-set {"namespace":"my-project","key":"findings","value":"stripe uses React"}</div>
-      <div style="color:var(--green)">→ {"status":"stored","_engine":"real","credits_used":0}</div>
-      <div style="color:var(--t4);margin-top:8px">// Retrieve from GPT on your phone, weeks later</div>
-      <div style="color:var(--t3)">POST /v1/memory-get {"namespace":"my-project","key":"findings"}</div>
-      <div style="color:var(--green)">→ {"value":"stripe uses React","found":true,"credits_used":0}</div>
-    </div>
-    <div style="margin-top:16px;display:flex;gap:16px;flex-wrap:wrap;font-size:0.72rem;color:var(--t4)">
-      <span><span style="color:var(--green)">&#9679;</span> Key-value store</span>
-      <span><span style="color:var(--green)">&#9679;</span> Queues</span>
-      <span><span style="color:var(--green)">&#9679;</span> Counters</span>
-      <span><span style="color:var(--green)">&#9679;</span> Namespaces</span>
-      <span><span style="color:var(--green)">&#9679;</span> Semantic search</span>
-      <span><span style="color:var(--green)">&#9679;</span> History tracking</span>
-      <span><span style="color:var(--green);font-weight:700">&#9679;</span> <b style="color:var(--green)">Always free</b></span>
-    </div>
-  </div>
-</div>
-
+<!-- ========== PRICING ========== -->
 <div class="sec" id="pricing">
-  <h2>Credits</h2>
-  <p class="desc">Simple credit-based pricing. 1 credit = 1 compute call. Memory is always free.</p>
-  <div class="tiers">
-    <div class="tier"><div class="amt">500</div><div class="price">Free</div><div class="unit">on signup</div><div class="label">Free</div></div>
-    <div class="tier" onclick="buyCredits(1000)" style="cursor:pointer"><div class="amt">1K</div><div class="price">$9</div><div class="unit">$0.009/cr</div><div class="label">Baby Lobster</div></div>
-    <div class="tier" onclick="buyCredits(10000)" style="cursor:pointer"><div class="amt">10K</div><div class="price">$49</div><div class="unit">$0.0049/cr</div><div class="label">Lobster</div></div>
-    <div class="tier hot" onclick="buyCredits(100000)" style="cursor:pointer"><div class="amt">100K</div><div class="price">$299</div><div class="unit">$0.00299/cr</div><div class="label">Big Lobster</div></div>
-    <div class="tier" onclick="buyCredits(1000000)" style="cursor:pointer"><div class="amt">1M</div><div class="price">$1,999</div><div class="unit">$0.002/cr</div><div class="label">Lobster Tank</div></div>
-    <div class="tier"><div class="amt">&infin;</div><div class="price">Custom</div><div class="unit">volume</div><div class="label">Enterprise</div></div>
+  <h2 style="text-align:center">Pricing</h2>
+  <p class="desc" style="text-align:center;max-width:480px;margin:0 auto 32px">Simple credit-based pricing. No subscription. Memory is always free.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:800px;margin:0 auto 32px">
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:32px;text-align:center;transition:transform 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--g);margin-bottom:8px">Start Free</div>
+      <div style="font-size:0.95rem;font-weight:700;color:var(--t);margin-bottom:6px">500 credits on signup</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.7">No credit card required. Full access to all 1,269 handlers. Test everything before you pay.</div>
+      <a href="/signup" style="display:inline-block;margin-top:16px;background:var(--r);color:#fff;padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.8rem;font-weight:700;text-decoration:none">Sign Up Free</a>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--o);border-radius:12px;padding:32px;text-align:center;transition:transform 0.15s;background:linear-gradient(135deg,rgba(255,136,0,0.07),transparent)" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--o);margin-bottom:8px">Pay as You Build</div>
+      <div style="font-size:0.95rem;font-weight:700;color:var(--t);margin-bottom:6px">From $9 / 1K credits</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.7">Buy credits in bulk. Volume discounts up to 78% off. No expiration. No subscription.</div>
+    </div>
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:32px;text-align:center;transition:transform 0.15s;border-left:3px solid var(--g)" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="font-family:var(--mono);font-size:1.3rem;font-weight:800;color:var(--g);margin-bottom:8px">Free Core Memory</div>
+      <div style="font-size:0.95rem;font-weight:700;color:var(--t);margin-bottom:6px">Always 0 credits</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.7">memory-set, memory-get, memory-search, memory-list, memory-delete, memory-stats, counter-get. Free forever.</div>
+    </div>
   </div>
-  <p style="text-align:center;margin-top:16px"><a href="/savings" style="font-family:var(--mono);font-size:0.75rem;color:var(--green);font-weight:600">Calculate your savings &rarr;</a></p>
+
+  <div class="tiers">
+    <div class="tier"><div class="amt">500</div><div class="price">Free</div><div class="unit">on signup</div><div class="label">Starter</div></div>
+    <div class="tier" onclick="buyCredits(1000)" style="cursor:pointer"><div class="amt">1K</div><div class="price">$9</div><div class="unit">$0.009/cr</div><div class="label">Builder</div></div>
+    <div class="tier" onclick="buyCredits(10000)" style="cursor:pointer"><div class="amt">10K</div><div class="price">$49</div><div class="unit">$0.0049/cr</div><div class="label">Pro</div></div>
+    <div class="tier hot" onclick="buyCredits(100000)" style="cursor:pointer"><div class="amt">100K</div><div class="price">$299</div><div class="unit">$0.00299/cr</div><div class="label">Scale</div></div>
+    <div class="tier" onclick="buyCredits(1000000)" style="cursor:pointer"><div class="amt">1M</div><div class="price">$1,999</div><div class="unit">$0.002/cr</div><div class="label">Enterprise</div></div>
+    <div class="tier"><div class="amt">&infin;</div><div class="price">Custom</div><div class="unit">volume</div><div class="label">Contact Us</div></div>
+  </div>
   <p id="buyStatus" style="text-align:center;margin-top:8px;font-family:var(--mono);font-size:0.75rem;color:var(--t3)"></p>
 </div>
 
-<div class="wl">
-  <h2>3 commands. You're live.</h2>
-  <div style="max-width:520px;margin:16px auto;background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:18px 22px;font-family:var(--mono);font-size:0.82rem;text-align:left;line-height:2.2">
-    <div><span style="color:var(--green)">$</span> <span style="color:var(--t)">npm install -g slopshop</span></div>
-    <div><span style="color:var(--green)">$</span> <span style="color:var(--t)">slop signup</span></div>
-    <div style="color:var(--t4);font-size:0.7rem;margin-left:16px">→ 500 free credits. Memory free forever.</div>
-    <div><span style="color:var(--green)">$</span> <span style="color:var(--t)">slop call sense-url-tech-stack --url https://stripe.com</span></div>
-    <div style="color:var(--green);font-size:0.72rem;margin-left:16px">→ {"tech":["React","Next.js","Cloudflare"],"_engine":"real"}</div>
-  </div>
-  <div style="text-align:center;margin:16px auto;max-width:420px;background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:14px 20px;font-family:var(--mono);font-size:0.9rem;cursor:pointer" onclick="cc(this,'npm install -g slopshop')">
-    <span style="color:var(--green)">$</span> <span style="color:var(--t);font-weight:700">npm install -g slopshop</span> <span style="color:var(--t4);font-size:0.6rem;margin-left:8px">copy</span>
-  </div>
-  <div style="text-align:center;font-size:0.68rem;color:var(--t4);margin-bottom:12px">Standalone CLI &middot; MCP server &middot; Local agent pool &middot; 44+ commands</div>
-  <div style="margin-top:12px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <a href="/getting-started" style="display:inline-block;background:var(--r);color:#fff;padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.8rem;font-weight:700;text-decoration:none">Get Started Free</a>
-    <a href="#pricing" style="display:inline-block;background:var(--s2);color:var(--t2);padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.8rem;font-weight:600;text-decoration:none;border:1px solid var(--b)">Buy Credits</a>
-  </div>
-  <div style="margin-top:12px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap;font-size:0.68rem;font-family:var(--mono);color:var(--t4)">
-    <a href="/tools" style="color:var(--t3)">Browse tools &rarr;</a>
-    <a href="/playbooks" style="color:var(--t3)">Playbooks &rarr;</a>
-    <a href="/savings" style="color:var(--t3)">Savings calculator &rarr;</a>
-    <a href="/about" style="color:var(--t3)">About &rarr;</a>
+<!-- ========== FAQ ========== -->
+<div class="sec">
+  <h2 style="text-align:center">Frequently asked questions</h2>
+  <div style="max-width:700px;margin:24px auto 0;display:flex;flex-direction:column;gap:12px">
+
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px 24px">
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">What is Slopshop?</div>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.75">A backend platform for AI agents. It provides tools (1,269 handlers across 78 categories), persistent memory (free forever), scheduling (cron + webhooks), and execution (sandboxed code, batch processing, workflow chaining) in one place. Use it from MCP, API, or CLI.</p>
+    </div>
+
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px 24px">
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">Who is Slopshop for?</div>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.75">Developers building AI agents that need to do more than generate text. Internal tools teams replacing backend glue. Anyone who needs to give their agent persistent memory, real compute, or scheduled execution.</p>
+    </div>
+
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px 24px">
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">Is MCP required?</div>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.75">No. Slopshop works as an MCP server (for Claude Code, Cursor, Goose, etc.), a REST API (for any backend), or a standalone CLI (<code style="color:var(--r)">slop call &lt;tool&gt;</code>). Use whichever interface fits your workflow.</p>
+    </div>
+
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px 24px">
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">Can I start small and expand later?</div>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.75">Yes. Start with one tool call from the CLI. Add memory when you need persistence. Add scheduling when you need automation. Add batch processing when you need throughput. Everything is incremental &mdash; no upfront commitment.</p>
+    </div>
+
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px 24px">
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">What is included in the free tier?</div>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.75">500 free credits on signup (no credit card). Full access to all 1,269 handlers. Core memory APIs (set, get, search, list, delete, stats) are always free &mdash; 0 credits forever.</p>
+    </div>
+
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px 24px">
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">How does Slopshop handle security?</div>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.75">CSP enabled, timing-safe auth, memory isolation per API key, HTTPS enforced, input validation on every endpoint, sandboxed code execution (<code style="color:var(--t3)">vm.createContext</code>), rate limiting with <code style="color:var(--t3)">Retry-After</code> headers. Self-hostable for full control. <a href="/security" style="color:var(--r)">Full security details &rarr;</a></p>
+    </div>
+
   </div>
 </div>
 
+<!-- ========== FINAL CTA ========== -->
+<div class="wl">
+  <h2>Stop building agent glue code.<br>Start shipping useful agents.</h2>
+  <p style="color:var(--t3);margin-bottom:12px;font-size:0.85rem">Tools, memory, scheduling, and execution. One platform. One API key.</p>
+  <div style="max-width:420px;margin:20px auto;background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:14px 20px;font-family:var(--mono);font-size:0.9rem;cursor:pointer" onclick="cc(this,'npm install -g slopshop')">
+    <span style="color:var(--green)">$</span> <span style="color:var(--t);font-weight:700">npm install -g slopshop</span> <span style="color:var(--t4);font-size:0.6rem;margin-left:8px">copy</span>
+  </div>
+  <div style="margin-top:16px;display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a href="/signup" style="display:inline-block;background:var(--r);color:#fff;padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.8rem;font-weight:700;text-decoration:none">Start Free</a>
+    <a href="/getting-started" style="display:inline-block;background:var(--s2);color:var(--t2);padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.8rem;font-weight:600;text-decoration:none;border:1px solid var(--b)">See Quickstart</a>
+  </div>
+  <div style="margin-top:12px;font-size:0.68rem;color:var(--t4)">500 free credits &middot; No subscription &middot; Free core memory APIs</div>
+</div>
 <footer>
   <div class="footer-inner">
     <div class="footer-brand">
@@ -1245,7 +908,6 @@ slop mcp serve</div>
     <div class="footer-copy">Standalone CLI + API platform &middot; 44+ commands &middot; MCP server &middot; Local agent pool &middot; Free memory &middot; Self-hostable &middot; slopshop.gg<br><span style="color:var(--t4);font-size:0.58rem">SLOP: Stateless Lightweight Operational Primitives</span></div>
   </div>
 </footer>
-
 <script>
 const B=window.location.origin,K='sk-slop-demo-key-12345678';
 let A=[];
