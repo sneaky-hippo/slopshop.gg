@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>All API Tools | Slopshop — APIs for AI Agents</title>
-<meta name="description" content="Browse all 78 tool categories on slopshop.gg. Search, filter by category, tier, and cost. Memory APIs are free. One API key for every tool.">
+<title>Tools | Slopshop — Backend for AI Agents</title>
+<meta name="description" content="Browse 1,269 tools across 78 categories — tools, persistent memory, scheduling, and execution for AI agents.">
 <meta name="keywords" content="AI agent tools, API catalog, agent API, MCP tools, slopshop, 78 categories of tools, developer tools">
 <link rel="canonical" href="https://slopshop.gg/tools">
 <meta property="og:type" content="website">
@@ -226,14 +226,18 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 </div>
 
 <div class="stats-line">
-  <span class="stat-txt" id="statsLine">Loading&hellip;</span>
+  <span class="stat-txt" id="statsLine">Browse 1,269 tools across 78 categories. Search by keyword, category, or use case.</span>
   <div class="view-toggle">
     <button class="vbtn on" id="btnGrid" onclick="setView('grid')" title="Grid view">&#9783; Grid</button>
     <button class="vbtn" id="btnList" onclick="setView('list')" title="List view">&#9776; List</button>
   </div>
 </div>
 
-<div class="main" id="catalog"></div>
+<div class="main" id="catalog">
+  <noscript>
+    <div class="empty"><p>Browse 1,269 tools across 78 categories. Search by keyword, category, or use case.</p></div>
+  </noscript>
+</div>
 
 <footer>
   <div class="f-brand"><svg width="24" height="24" viewBox="0 0 40 40" style="vertical-align:middle;margin-right:6px"><rect width="40" height="40" rx="8" fill="#ff3333"/><path d="M14 10c-3 0-4 2-4 4v4c0 2-1 3-3 3 2 0 3 1 3 3v4c0 2 1 4 4 4" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/><path d="M26 10c3 0 4 2 4 4v4c0 2 1 3 3 3-2 0-3 1-3 3v4c0 2-1 4-4 4" stroke="white" stroke-width="2.5" stroke-linecap="round" fill="none"/><circle cx="20" cy="21" r="2.5" fill="white"/></svg><span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>

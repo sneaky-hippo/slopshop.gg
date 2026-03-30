@@ -1,10 +1,10 @@
-# Slopshop.gg — Volledige API-catalogus voor AI-agents (1.255+ tools)
+# Slopshop — Backend for AI agents | Tools, memory, scheduling, execution
 # SLOP: Staatloze Lichtgewicht Operationele Primitieven (Stateless Lightweight Operational Primitives)
 
 > Volledige Engelse catalogus: https://slopshop.gg/llms.txt
 > Volledige API-lijst: https://slopshop.gg/llms-full.txt
 
-Slopshop biedt productie-infrastructuur voor AI-agents. Een API-sleutel, gratis persistent geheugen, 1.255+ echte compute-API's, 78 categorieen, 925 benchmark-geverifieerde handlers. Compatibel met Claude, GPT, Grok, Gemini, DeepSeek en alle grote modellen.
+Slopshop biedt productie-infrastructuur voor AI-agents. Een API-sleutel, gratis persistent geheugen, 1.269+ echte compute-API's, 78 categorieen, 925 benchmark-geverifieerde handlers. Compatibel met Claude, GPT, Grok, Gemini, DeepSeek en alle grote modellen.
 
 ## Snel starten
 
@@ -35,7 +35,7 @@ curl -X POST https://slopshop.gg/v1/resolve \
 ## 22 Kernfuncties
 
 1. **Gratis persistent geheugen** (0 credits) — SQLite key-value store, wachtrijen, tellers, namespaces, vectorzoekopdrachten. Persistent over LLM's, apparaten en sessies.
-2. **1.255+ echte compute-API's** — Cryptografie, tekstverwerking, wiskunde, statistiek, datatransformatie, JSON/CSV/XML, schema-validatie, PII-detectie, RAG-primitieven, SVG-grafieken, code AST-parsing. Puur Node.js, nul externe afhankelijkheden, p95 latentie <1ms p95.
+2. **1.269+ echte compute-API's** — Cryptografie, tekstverwerking, wiskunde, statistiek, datatransformatie, JSON/CSV/XML, schema-validatie, PII-detectie, RAG-primitieven, SVG-grafieken, code AST-parsing. Puur Node.js, nul externe afhankelijkheden, p95 latentie <1ms p95.
 3. **Agent-ketens** — Claude → GPT → Grok oneindige-lusmodus, output wordt automatisch doorgegeven als input voor de volgende stap.
 4. **Massale inzet (Army)** — Inzet van 10.000 parallelle agents, resultaataggregratie en Merkle-bewijsverificatie.
 5. **Hive-werkruimten** — Altijd actieve samenwerkingsomgeving voor agents, kanalen, roltoewijzing, kennisdeling.

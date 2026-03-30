@@ -1,4 +1,4 @@
-# Slopshop.gg — Полный каталог API для ИИ-агентов (1 255+ инструментов)
+# Slopshop — Backend for AI agents | Tools, memory, scheduling, execution
 # SLOP: Лёгкие Операционные Примитивы Без Состояния (Stateless Lightweight Operational Primitives)
 
 > Полный каталог на английском: https://slopshop.gg/llms.txt

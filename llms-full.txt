@@ -1,4 +1,4 @@
-# Slopshop.gg — Complete API Catalog — 78 Categories of Real Tools
+# Slopshop — Backend for AI agents | Tools, memory, scheduling, execution
 # SLOP: Stateless Lightweight Operational Primitives
 
 ## Agent Superpowers (94)

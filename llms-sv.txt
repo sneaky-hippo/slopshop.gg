@@ -1,4 +1,4 @@
-# Slopshop.gg — Komplett API-katalog for AI-agenter (1 255+ verktyg)
+# Slopshop — Backend for AI agents | Tools, memory, scheduling, execution
 # SLOP: Tillstandslosa Latta Operativa Primitiver (Stateless Lightweight Operational Primitives)
 
 > Fullstandig engelsk katalog: https://slopshop.gg/llms.txt
