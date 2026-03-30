@@ -381,6 +381,33 @@ module.exports = function (app, db, apiKeys) {
   // EVALUATION FRAMEWORK
   // ═══════════════════════════════════════════════════════════════════════════
 
+  // GET /v1/eval — Discovery / stats
+  app.get('/v1/eval', (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+    try {
+      const suiteCount = db.prepare('SELECT COUNT(*) as c FROM eval_suites WHERE api_key = ?').get(auth.key).c;
+      const runCount = db.prepare('SELECT COUNT(*) as c FROM eval_runs WHERE api_key = ?').get(auth.key).c;
+      const lastRun = db.prepare('SELECT score, status, completed FROM eval_runs WHERE api_key = ? ORDER BY started DESC LIMIT 1').get(auth.key);
+      ok(res, { suites: suiteCount, runs: runCount, last_run: lastRun || null, features: ['suite_create', 'run_benchmark', 'model_routing', 'leaderboard'] });
+    } catch (e) { res.status(500).json({ error: { code: 'eval_error', message: e.message } }); }
+  });
+
+  // GET /v1/eval/list — List eval suites (also /v1/eval/suites)
+  const listEvalSuites = (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+    try {
+      const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+      const offset = parseInt(req.query.offset) || 0;
+      const suites = db.prepare('SELECT id, name, description, created FROM eval_suites WHERE api_key = ? ORDER BY created DESC LIMIT ? OFFSET ?').all(auth.key, limit, offset);
+      const total = db.prepare('SELECT COUNT(*) as c FROM eval_suites WHERE api_key = ?').get(auth.key).c;
+      ok(res, { suites, pagination: { total, limit, offset, has_more: offset + limit < total } });
+    } catch (e) { res.status(500).json({ error: { code: 'eval_list_error', message: e.message } }); }
+  };
+  app.get('/v1/eval/list', listEvalSuites);
+  app.get('/v1/eval/suites', listEvalSuites);
+
   // POST /v1/eval/suite/create — Create test suite
   app.post('/v1/eval/suite/create', (req, res) => {
     const auth = requireAuth(req, res, apiKeys);
