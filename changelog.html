@@ -148,6 +148,92 @@ footer .footer-right a:hover{color:var(--t2);text-decoration:none}
   <!-- Timeline -->
   <div class="timeline">
 
+    <!-- v3.7.0 -->
+    <div class="version-entry major" id="v3.7.0">
+      <div class="version-header">
+        <span class="version-number">v3.7.0</span>
+        <span class="version-date">March 31, 2026</span>
+        <span class="version-label label-major">Major</span>
+      </div>
+
+      <div class="change-section">Agent Runtime OS — Computer-Use Era</div>
+
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>Agent Identity (NIST-aligned)</strong> — SPIFFE/SVID JWT tokens, Agent Name Service (ANS) registry, reputation scoring (rolling 0–10 weighted average: success +0.1, failure −0.3, error −0.5, timeout −0.2), A2A typed message passing, org management. <code>POST /v1/identity/issue</code></span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>Computer Use Backend</strong> — Session recording with full action audit, screenshot OCR + pixel-diff verification, replay export (JSON/Python pyautogui/Markdown), human approval gates, checkpoint/restore, cross-session memory persistence. <code>POST /v1/computer-use/session/start</code></span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>MCP Gateway + Policy Engine</strong> — Proxy with authorization propagation, HMAC-SHA256 signed manifest, session affinity, policy CRUD (5 condition types: tool_slug_matches, credit_over, agent_id_matches, time_range, tier_check), governance proposals + voting, SIEM/ECS audit export. <code>GET /v1/gateway/manifest</code></span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>Observability Dashboard</strong> — Distributed traces, p95/p99 latency, cost attribution per tool/agent, ROI calculator, budget alerts, agent health scores (4-component model), status page + incident management. <code>GET /v1/observe/dashboard</code></span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>Visual DAG Workflow Builder</strong> — Kahn's topological sort, DFS cycle detection, conditional branching (pure string parser, no eval), human-in-loop gates, dry-run mode, 10 pre-built templates. <code>GET /v1/workflow/templates</code></span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>Tool Marketplace</strong> — 15 seed listings (5 free, 5 paid 10–50 credits, 3 templates, 2 packs), 70/30 revenue share, handler code security scan (16 dangerous-pattern regex blocks), review system. <code>GET /v1/marketplace</code></span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>Eval Suite + Model Routing</strong> — Test suite CRUD, standard benchmark (5/5 · score 100 · grade A), model routing with round-robin/cost-optimized/performance/balanced strategies. <code>POST /v1/eval/benchmark</code></span>
+      </div>
+
+      <div class="change-section">New Tool Handlers (36 slugs across 6 categories)</div>
+
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>Vision (12)</strong> — <code>vision-base64-info</code>, <code>vision-extract-text</code> (OCR), <code>vision-image-hash</code>, <code>vision-screenshot-diff</code>, <code>vision-color-palette</code>, <code>vision-text-boxes</code>, <code>vision-metadata-strip</code>, <code>gen-qr-text</code>, <code>audio-duration-estimate</code>, <code>file-magic-detect</code>, <code>data-uri-parse</code>, <code>data-uri-create</code></span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>Finance (5)</strong> — <code>finance-compound-interest</code>, <code>finance-mortgage-calc</code>, <code>finance-dcf-simple</code>, <code>finance-portfolio-return</code>, <code>finance-risk-score</code> &nbsp;·&nbsp; <strong>DevOps (5)</strong> — <code>devops-docker-analyze</code>, <code>devops-k8s-validate</code>, <code>devops-semver-bump</code>, <code>devops-log-parse</code>, <code>devops-env-validate</code></span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>Legal (2)</strong> — <code>legal-contract-scan</code>, <code>legal-gdpr-scan</code> &nbsp;·&nbsp; <strong>Health (2)</strong> — <code>health-bmi-calc</code>, <code>health-medication-schedule</code> &nbsp;·&nbsp; <strong>Marketing (3)</strong> — <code>marketing-headline-score</code>, <code>marketing-ab-test-calc</code>, <code>seo-keyword-density</code></span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-feature">Feature</span>
+        <span class="change-text"><strong>Memory 2.0 (7)</strong> — <code>memory-score-update</code>, <code>memory-score-get</code>, <code>memory-drift-detect</code>, <code>memory-cluster</code>, <code>memory-knowledge-graph</code>, <code>memory-timeline</code>, <code>memory-importance-rank</code> &nbsp;·&nbsp; <strong>Smart Router</strong> — <code>POST /v1/route</code> intent-based API selector</span>
+      </div>
+
+      <div class="change-section">Security Fixes</div>
+
+      <div class="change-item">
+        <span class="tag tag-security">Security</span>
+        <span class="change-text"><strong>Linear GraphQL injection fixed</strong> — Moved from string interpolation to parameterized <code>variables: {}</code>.</span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-security">Security</span>
+        <span class="change-text"><strong>S3 upload real implementation</strong> — Native AWS Signature V4 via Node.js <code>crypto</code>. No AWS SDK. Credentials never logged.</span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-security">Security</span>
+        <span class="change-text"><strong>orchestrate.js demo key</strong> — Reads <code>ORCHESTRATE_API_KEY</code> env var instead of hardcoded key.</span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-fix">Fix</span>
+        <span class="change-text"><strong>Hive /status</strong> — Fixed 500 error from non-existent <code>hive_members</code> table; reads <code>hives.members</code> JSON column directly.</span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-fix">Fix</span>
+        <span class="change-text"><strong>Memory history alias</strong> — <code>memory-history</code> returns both <code>versions</code> and <code>history</code> fields + <code>count</code> for compatibility.</span>
+      </div>
+      <div class="change-item">
+        <span class="tag tag-fix">Fix</span>
+        <span class="change-text"><strong>Search response</strong> — <code>/v1/tools/search</code> now includes <code>_engine: "real"</code>, <code>count</code>, and <code>search_time_ms</code>.</span>
+      </div>
+    </div>
+
     <!-- v3.3.0 -->
     <div class="version-entry major" id="v3.3.0">
       <div class="version-header">
