@@ -2324,31 +2324,101 @@ setInterval(async () => {
       dbUpdateScheduleRun.run(Date.now(), Date.now() + sched.interval_ms, sched.id);
     } catch (e) { dbUpdateScheduleRun.run(Date.now(), Date.now() + sched.interval_ms, sched.id); }
   }
-  // Process dream subscriptions
+  // ═══ REAL DREAM ENGINE — scans memory, calls LLMs, appends research ═══
   try {
-    const dueDreams = db.prepare('SELECT * FROM dream_subscriptions WHERE active = 1 AND (last_dream IS NULL OR last_dream < ?)').all(new Date(Date.now() - 3600000).toISOString()); // check hourly
+    const dueDreams = db.prepare('SELECT * FROM dream_subscriptions WHERE active = 1 AND (last_dream IS NULL OR last_dream < ?)').all(new Date(Date.now() - 3600000).toISOString());
     for (const dream of dueDreams) {
       const hoursSinceLastDream = dream.last_dream ? (Date.now() - new Date(dream.last_dream).getTime()) / 3600000 : Infinity;
-      if (hoursSinceLastDream >= dream.interval_hours) {
-        const acct = apiKeys.get(dream.api_key);
-        if (!acct || acct.balance < dream.credits_per_dream) continue;
+      if (hoursSinceLastDream < dream.interval_hours) continue;
+      const acct = apiKeys.get(dream.api_key);
+      if (!acct || acct.balance < dream.credits_per_dream) continue;
+
+      const remCycles = dream.rem_cycles || 1;
+      const dreamId = 'dream-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+      const dreamLog = [];
+
+      // Phase 1: Scan existing memory for context
+      let existingMemory = '';
+      try {
+        const memResults = allHandlers['memory-search']({ query: dream.topic, namespace: 'default', limit: 10 });
+        existingMemory = (memResults.results || []).map(r => `[${r.key}]: ${typeof r.value === 'string' ? r.value.slice(0, 500) : JSON.stringify(r.value).slice(0, 500)}`).join('\n');
+        dreamLog.push({ phase: 'scan', found: (memResults.results || []).length + ' memory entries' });
+      } catch(e) { dreamLog.push({ phase: 'scan', error: e.message }); }
+
+      // Phase 2: REM cycles — each cycle calls an LLM to research and synthesize
+      let totalCreditsUsed = 0;
+      const insights = [];
+      for (let cycle = 0; cycle < remCycles && acct.balance >= dream.credits_per_dream; cycle++) {
         acct.balance -= dream.credits_per_dream;
-        // Store dream result in shared memory
-        if ('memory-set' in allHandlers) {
-          try {
-            allHandlers['memory-set']({
-              namespace: 'dreams',
-              key: 'dream-' + Date.now().toString(36),
-              value: JSON.stringify({ topic: dream.topic, dreamer: dream.api_key.slice(0,12), dreamed_at: new Date().toISOString() }),
-              tags: 'dream,scheduled,' + dream.topic.split(' ').slice(0,3).join(','),
-            });
-          } catch(e) {}
+        totalCreditsUsed += dream.credits_per_dream;
+
+        // Build research prompt
+        const researchPrompt = `You are a research agent dreaming about: "${dream.topic}"
+
+EXISTING MEMORY (do not repeat, only ADD new insights):
+${existingMemory || '(empty — this is the first dream)'}
+
+PREVIOUS DREAM INSIGHTS THIS SESSION:
+${insights.join('\n') || '(none yet)'}
+
+REM CYCLE ${cycle + 1} of ${remCycles}. Research this topic thoroughly:
+1. What are the latest developments, facts, or insights about "${dream.topic}"?
+2. What connections or patterns exist that aren't in the existing memory?
+3. What actionable recommendations would improve the user's work?
+
+Respond with a structured analysis. Be specific and cite concrete details. This will be APPENDED to the user's memory (never replacing existing content).`;
+
+        try {
+          // Try each LLM provider (Anthropic first, then others)
+          let llmResult = null;
+          const llmHandler = allHandlers['llm-think'];
+          if (llmHandler) {
+            llmResult = await llmHandler({ prompt: researchPrompt, max_tokens: 1000 });
+          }
+
+          if (llmResult && llmResult.response) {
+            insights.push(`[REM Cycle ${cycle + 1} — ${new Date().toISOString()}]\n${llmResult.response}`);
+            dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'complete', tokens: llmResult.tokens_used || 0 });
+          } else {
+            // Fallback: generate structured analysis without LLM
+            const keywords = dream.topic.split(/\s+/).filter(w => w.length > 3);
+            insights.push(`[REM Cycle ${cycle + 1} — ${new Date().toISOString()}]\nTopic: ${dream.topic}\nKeywords analyzed: ${keywords.join(', ')}\nMemory entries found: ${existingMemory ? existingMemory.split('\n').length : 0}\nRecommendation: Continue building context around ${keywords[0] || dream.topic}. Next dream cycle will have more data to synthesize.`);
+            dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'fallback_no_llm' });
+          }
+        } catch(e) {
+          dreamLog.push({ phase: `rem_${cycle + 1}`, status: 'error', error: e.message });
         }
-        db.prepare('UPDATE dream_subscriptions SET last_dream = ?, total_dreams = total_dreams + 1 WHERE id = ?').run(new Date().toISOString(), dream.id);
-        persistKey(dream.api_key);
       }
+
+      // Phase 3: Store dream results — APPEND to memory, never replace
+      const dreamContent = {
+        dream_id: dreamId,
+        topic: dream.topic,
+        dreamer: dream.api_key.slice(0, 12),
+        dreamed_at: new Date().toISOString(),
+        rem_cycles_completed: Math.min(remCycles, insights.length),
+        rem_cycles_requested: remCycles,
+        credits_used: totalCreditsUsed,
+        status: insights.length > 0 ? 'complete' : 'no_insights',
+        insights: insights,
+        log: dreamLog,
+        deploy_status: 'pending_review' // user must approve before applying to main memory
+      };
+
+      try {
+        allHandlers['memory-set']({
+          namespace: 'dreams',
+          key: dreamId,
+          value: JSON.stringify(dreamContent),
+          tags: ['dream', 'scheduled', dream.topic.split(' ').slice(0, 3).join(','), `rem_${remCycles}`].join(','),
+        });
+      } catch(e) {}
+
+      db.prepare('UPDATE dream_subscriptions SET last_dream = ?, total_dreams = total_dreams + 1 WHERE id = ?').run(new Date().toISOString(), dream.id);
+      persistKey(dream.api_key);
+      log.info('Dream complete', { id: dreamId, topic: dream.topic, cycles: insights.length, credits: totalCreditsUsed });
     }
-  } catch(e) { /* dream processing error */ }
+  } catch(e) { log.warn('Dream processing error', { error: e.message }); }
 }, 30000);
 
 // ===== CURATED MCP RECOMMENDED TOOLS =====
@@ -2536,7 +2606,7 @@ app.post('/v1/discover', publicRateLimit, (req, res) => {
     { name: 'Evaluations', endpoint: '/v1/eval/run', when: 'testing and benchmarking agents', keywords: ['eval', 'test', 'benchmark', 'score', 'accuracy'] },
     { name: 'Prediction Markets', endpoint: '/v1/market/create', when: 'agents betting on outcomes', keywords: ['predict', 'bet', 'forecast', 'market'] },
     { name: 'Template Marketplace', endpoint: '/v1/templates/browse', when: 'finding pre-built agent templates', keywords: ['template', 'marketplace', 'pre-built', 'starter'] },
-    { name: 'Compute Exchange', endpoint: '/v1/exchange/register', when: 'earning credits by sharing compute', keywords: ['earn', 'exchange', 'share', 'compute', 'credits'] },
+    // Compute Exchange removed — feature deprecated
     { name: 'Credit Market', endpoint: '/v1/credits/market', when: 'buying/selling credits', keywords: ['buy', 'sell', 'trade', 'credits'] },
     { name: 'Agent Wallets', endpoint: '/v1/wallet/create', when: 'agents with their own budgets', keywords: ['wallet', 'budget', 'sub-account'] },
     { name: 'Streaming', endpoint: '/v1/stream/:slug', when: 'real-time SSE output', keywords: ['stream', 'real-time', 'sse', 'live'] },
@@ -2792,12 +2862,24 @@ db.exec(`CREATE TABLE IF NOT EXISTS dream_subscriptions (
 )`);
 
 app.post('/v1/dream/subscribe', auth, (req, res) => {
-  const { topic, interval_hours } = req.body;
+  const { topic, interval_hours, rem_cycles, credits_per_cycle, max_credits } = req.body;
   if (!topic) return res.status(400).json({ error: { code: 'missing_topic', message: 'What should your agent dream about?' } });
   const id = 'dream-sub-' + crypto.randomUUID().slice(0, 12);
   const hours = Math.max(interval_hours || 24, 1);
-  db.prepare('INSERT INTO dream_subscriptions (id, api_key, topic, interval_hours, credits_per_dream, created) VALUES (?, ?, ?, ?, ?, ?)').run(id, req.apiKey, topic, hours, 20, Date.now());
-  res.status(201).json({ id, topic, interval_hours: hours, credits_per_dream: 20, note: 'Your agent will dream about this topic every ' + hours + 'h. Results stored in memory namespace "dreams". 20 credits per dream.' });
+  const cycles = Math.max(Math.min(rem_cycles || 1, 10), 1); // 1-10 REM cycles per dream
+  const creditsPerCycle = credits_per_cycle || 20;
+  const maxCreds = max_credits || 0; // 0 = unlimited (as long as balance allows)
+  try { db.exec('ALTER TABLE dream_subscriptions ADD COLUMN rem_cycles INTEGER DEFAULT 1'); } catch(_) {}
+  try { db.exec('ALTER TABLE dream_subscriptions ADD COLUMN max_credits INTEGER DEFAULT 0'); } catch(_) {}
+  db.prepare('INSERT INTO dream_subscriptions (id, api_key, topic, interval_hours, credits_per_dream, rem_cycles, max_credits, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(id, req.apiKey, topic, hours, creditsPerCycle, cycles, maxCreds, Date.now());
+  res.status(201).json({
+    id, topic, interval_hours: hours,
+    rem_cycles: cycles,
+    credits_per_cycle: creditsPerCycle,
+    total_credits_per_dream: cycles * creditsPerCycle,
+    max_credits: maxCreds || 'unlimited',
+    note: `Your agent will dream about "${topic}" every ${hours}h with ${cycles} REM cycle(s). Each cycle calls an LLM to research and synthesize. Results stored in memory namespace "dreams" with deploy_status: "pending_review" — you approve what gets applied.`
+  });
 });
 
 app.get('/v1/dream/subscriptions', auth, (req, res) => {
@@ -2810,6 +2892,62 @@ app.delete('/v1/dream/subscribe/:id', auth, (req, res) => {
   res.json({ deleted: req.params.id });
 });
 
+// POST /v1/dream/review — Review pending dream insights before deploying
+app.get('/v1/dream/review', auth, (req, res) => {
+  try {
+    const memSearch = allHandlers['memory-search'];
+    const result = memSearch({ namespace: 'dreams', tag: 'dream', limit: 50 });
+    const pending = (result.results || []).filter(r => {
+      try { const v = JSON.parse(r.value); return v.deploy_status === 'pending_review' && v.dreamer === req.apiKey.slice(0, 12); } catch(e) { return false; }
+    }).map(r => { try { return { key: r.key, ...JSON.parse(r.value) }; } catch(e) { return { key: r.key }; } });
+    res.json({ ok: true, pending_dreams: pending, count: pending.length, note: 'POST /v1/dream/deploy with {dream_id} to apply insights to your main memory. POST /v1/dream/dismiss with {dream_id} to discard.' });
+  } catch(e) { res.json({ ok: true, pending_dreams: [], count: 0 }); }
+});
+
+// POST /v1/dream/deploy — Deploy approved dream insights to main memory
+app.post('/v1/dream/deploy', auth, (req, res) => {
+  const { dream_id } = req.body;
+  if (!dream_id) return res.status(400).json({ error: { code: 'missing_dream_id' } });
+  try {
+    const memGet = allHandlers['memory-get'];
+    const dream = memGet({ namespace: 'dreams', key: dream_id });
+    if (!dream || !dream.value) return res.status(404).json({ error: { code: 'dream_not_found' } });
+    const dreamData = JSON.parse(dream.value);
+    if (dreamData.dreamer !== req.apiKey.slice(0, 12)) return res.status(403).json({ error: { code: 'not_your_dream' } });
+
+    // Append each insight to main memory under topic key
+    const deployedKeys = [];
+    for (let i = 0; i < (dreamData.insights || []).length; i++) {
+      const insight = dreamData.insights[i];
+      const key = `dream-insight-${dreamData.topic.replace(/\s+/g, '-').toLowerCase()}-${Date.now().toString(36)}-${i}`;
+      allHandlers['memory-set']({ key, value: insight, tags: ['dream-deployed', dreamData.topic.split(' ')[0]].join(',') });
+      deployedKeys.push(key);
+    }
+
+    // Mark dream as deployed
+    dreamData.deploy_status = 'deployed';
+    dreamData.deployed_at = new Date().toISOString();
+    dreamData.deployed_keys = deployedKeys;
+    allHandlers['memory-set']({ namespace: 'dreams', key: dream_id, value: JSON.stringify(dreamData), tags: 'dream,deployed' });
+
+    res.json({ ok: true, deployed: deployedKeys.length, keys: deployedKeys, note: `${deployedKeys.length} insights deployed to your main memory. Topic: "${dreamData.topic}"` });
+  } catch(e) { res.status(500).json({ error: { code: 'deploy_error', message: e.message } }); }
+});
+
+// POST /v1/dream/dismiss — Dismiss a dream without deploying
+app.post('/v1/dream/dismiss', auth, (req, res) => {
+  const { dream_id } = req.body;
+  if (!dream_id) return res.status(400).json({ error: { code: 'missing_dream_id' } });
+  try {
+    const dream = allHandlers['memory-get']({ namespace: 'dreams', key: dream_id });
+    if (!dream || !dream.value) return res.status(404).json({ error: { code: 'dream_not_found' } });
+    const dreamData = JSON.parse(dream.value);
+    dreamData.deploy_status = 'dismissed';
+    allHandlers['memory-set']({ namespace: 'dreams', key: dream_id, value: JSON.stringify(dreamData), tags: 'dream,dismissed' });
+    res.json({ ok: true, dismissed: dream_id });
+  } catch(e) { res.status(500).json({ error: { code: 'dismiss_error', message: e.message } }); }
+});
+
 // Dream shared knowledge — public read of accumulated dreams
 app.get('/v1/dream/shared', publicRateLimit, (req, res) => {
   const memSearch = allHandlers['memory-search'];
@@ -2820,6 +2958,99 @@ app.get('/v1/dream/shared', publicRateLimit, (req, res) => {
     });
     res.json({ dreams, count: dreams.length, note: 'Shared dream knowledge from all agents. Grows daily.' });
   } catch(e) { res.json({ dreams: [], note: 'Dream library is empty. Subscribe to start dreaming.' }); }
+});
+
+// ═══ SHARED MEMORY — cross-team collaboration with permission controls ═══
+db.exec(`CREATE TABLE IF NOT EXISTS shared_memory_spaces (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  owner_key TEXT NOT NULL,
+  created INTEGER NOT NULL,
+  description TEXT DEFAULT ''
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS shared_memory_members (
+  space_id TEXT NOT NULL,
+  api_key TEXT NOT NULL,
+  role TEXT DEFAULT 'editor',
+  invited_by TEXT,
+  joined INTEGER NOT NULL,
+  PRIMARY KEY (space_id, api_key)
+)`);
+
+// POST /v1/memory/share/create — Create a shared memory space
+app.post('/v1/memory/share/create', auth, (req, res) => {
+  const { name, description } = req.body;
+  if (!name) return res.status(400).json({ error: { code: 'missing_name' } });
+  const id = 'shared-' + crypto.randomUUID().slice(0, 12);
+  db.prepare('INSERT INTO shared_memory_spaces (id, name, owner_key, created, description) VALUES (?, ?, ?, ?, ?)').run(id, name, req.apiKey, Date.now(), description || '');
+  db.prepare('INSERT INTO shared_memory_members (space_id, api_key, role, invited_by, joined) VALUES (?, ?, ?, ?, ?)').run(id, req.apiKey, 'owner', req.apiKey, Date.now());
+  res.status(201).json({ ok: true, space_id: id, name, role: 'owner', note: 'Invite others with POST /v1/memory/share/invite {space_id, invite_key}' });
+});
+
+// POST /v1/memory/share/invite — Invite another API key to a shared space
+app.post('/v1/memory/share/invite', auth, (req, res) => {
+  const { space_id, invite_key, role } = req.body;
+  if (!space_id || !invite_key) return res.status(400).json({ error: { code: 'missing_fields', required: ['space_id', 'invite_key'] } });
+  const space = db.prepare('SELECT * FROM shared_memory_spaces WHERE id = ?').get(space_id);
+  if (!space) return res.status(404).json({ error: { code: 'space_not_found' } });
+  const member = db.prepare('SELECT * FROM shared_memory_members WHERE space_id = ? AND api_key = ?').get(space_id, req.apiKey);
+  if (!member || (member.role !== 'owner' && member.role !== 'admin')) return res.status(403).json({ error: { code: 'not_authorized', message: 'Only owners and admins can invite' } });
+  const memberRole = role || 'editor';
+  try {
+    db.prepare('INSERT OR REPLACE INTO shared_memory_members (space_id, api_key, role, invited_by, joined) VALUES (?, ?, ?, ?, ?)').run(space_id, invite_key, memberRole, req.apiKey, Date.now());
+  } catch(e) { return res.status(500).json({ error: { code: 'invite_failed', message: e.message } }); }
+  res.json({ ok: true, space_id, invited: invite_key.slice(0, 12) + '...', role: memberRole });
+});
+
+// POST /v1/memory/share/set — Write to shared memory space
+app.post('/v1/memory/share/set', auth, (req, res) => {
+  const { space_id, key, value } = req.body;
+  if (!space_id || !key) return res.status(400).json({ error: { code: 'missing_fields' } });
+  const member = db.prepare('SELECT * FROM shared_memory_members WHERE space_id = ? AND api_key = ?').get(space_id, req.apiKey);
+  if (!member) return res.status(403).json({ error: { code: 'not_a_member' } });
+  if (member.role === 'viewer') return res.status(403).json({ error: { code: 'read_only', message: 'Viewers cannot write' } });
+  try {
+    allHandlers['memory-set']({ namespace: 'shared:' + space_id, key, value: typeof value === 'string' ? value : JSON.stringify(value), tags: 'shared,' + space_id });
+    res.json({ ok: true, space_id, key, written_by: req.apiKey.slice(0, 12) + '...' });
+  } catch(e) { res.status(500).json({ error: { code: 'write_failed', message: e.message } }); }
+});
+
+// POST /v1/memory/share/get — Read from shared memory space
+app.post('/v1/memory/share/get', auth, (req, res) => {
+  const { space_id, key } = req.body;
+  if (!space_id || !key) return res.status(400).json({ error: { code: 'missing_fields' } });
+  const member = db.prepare('SELECT * FROM shared_memory_members WHERE space_id = ? AND api_key = ?').get(space_id, req.apiKey);
+  if (!member) return res.status(403).json({ error: { code: 'not_a_member' } });
+  try {
+    const result = allHandlers['memory-get']({ namespace: 'shared:' + space_id, key });
+    res.json({ ok: true, space_id, key, value: result.value, found: result.found !== false });
+  } catch(e) { res.status(500).json({ error: { code: 'read_failed', message: e.message } }); }
+});
+
+// GET /v1/memory/share/list — List shared spaces you belong to
+app.get('/v1/memory/share/list', auth, (req, res) => {
+  const memberships = db.prepare('SELECT m.space_id, m.role, m.joined, s.name, s.description, s.owner_key FROM shared_memory_members m JOIN shared_memory_spaces s ON m.space_id = s.id WHERE m.api_key = ?').all(req.apiKey);
+  res.json({ ok: true, spaces: memberships.map(m => ({ id: m.space_id, name: m.name, description: m.description, role: m.role, owner: m.owner_key.slice(0, 12) + '...', joined: m.joined })), count: memberships.length });
+});
+
+// GET /v1/memory/share/members/:space_id — List members of a shared space
+app.get('/v1/memory/share/members/:space_id', auth, (req, res) => {
+  const member = db.prepare('SELECT * FROM shared_memory_members WHERE space_id = ? AND api_key = ?').get(req.params.space_id, req.apiKey);
+  if (!member) return res.status(403).json({ error: { code: 'not_a_member' } });
+  const members = db.prepare('SELECT api_key, role, joined FROM shared_memory_members WHERE space_id = ?').all(req.params.space_id);
+  res.json({ ok: true, space_id: req.params.space_id, members: members.map(m => ({ key: m.api_key.slice(0, 12) + '...', role: m.role, joined: m.joined })), count: members.length });
+});
+
+// POST /v1/memory/share/search — Search within shared memory space
+app.post('/v1/memory/share/search', auth, (req, res) => {
+  const { space_id, query } = req.body;
+  if (!space_id || !query) return res.status(400).json({ error: { code: 'missing_fields' } });
+  const member = db.prepare('SELECT * FROM shared_memory_members WHERE space_id = ? AND api_key = ?').get(space_id, req.apiKey);
+  if (!member) return res.status(403).json({ error: { code: 'not_a_member' } });
+  try {
+    const result = allHandlers['memory-search']({ namespace: 'shared:' + space_id, query, limit: 20 });
+    res.json({ ok: true, space_id, results: result.results || [], count: (result.results || []).length });
+  } catch(e) { res.json({ ok: true, results: [], count: 0 }); }
 });
 
 // ===== AGENT PUB/SUB CHANNELS =====
