@@ -185,14 +185,7 @@ setInterval(() => {
 }, 300000);
 
 // Background cleanup: expired TTL memory entries + expired shared spaces (runs every 10 min)
-// Module-level cleanup statements (avoid GC finalizer crashes from inline db.prepare)
-const _dbGetExpiredMem = db.prepare("SELECT namespace, key FROM memory WHERE ttl > 0 AND (created + ttl * 1000) < ?");
-const _dbDelExpiredMem = db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?');
-const _dbDelExpiredMemTx = db.transaction(rows => { for (const r of rows) _dbDelExpiredMem.run(r.namespace, r.key); });
-const _dbGetExpiredSpaces = db.prepare('SELECT id FROM shared_memory_spaces WHERE expires_at IS NOT NULL AND expires_at < ?');
-const _dbDelSpaceMembers = db.prepare('DELETE FROM shared_memory_members WHERE space_id = ?');
-const _dbDelSpaceMemory = db.prepare("DELETE FROM memory WHERE namespace = ?");
-const _dbDelSpace = db.prepare('DELETE FROM shared_memory_spaces WHERE id = ?');
+// Note: prepared statements are declared after db is initialized (below, after line ~317)
 
 setInterval(() => {
   try {
@@ -315,6 +308,15 @@ db.pragma('temp_store = MEMORY'); // PERF: temp tables in memory, not disk
 db.pragma(`mmap_size = ${IS_RAILWAY ? 0 : 268435456}`); // disable mmap on Railway to save RSS
 db.pragma('page_size = 8192'); // PERF: 8KB pages (better for large tables, only works on new DBs)
 log.info('Database initialized', { path: DB_PATH, tables: db.prepare("SELECT count(*) as c FROM sqlite_master WHERE type='table'").get().c });
+
+// Module-level cleanup statements (must be after db is initialized — TDZ-safe)
+const _dbGetExpiredMem = db.prepare("SELECT namespace, key FROM memory WHERE ttl > 0 AND (created + ttl * 1000) < ?");
+const _dbDelExpiredMem = db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?');
+const _dbDelExpiredMemTx = db.transaction(rows => { for (const r of rows) _dbDelExpiredMem.run(r.namespace, r.key); });
+const _dbGetExpiredSpaces = db.prepare('SELECT id FROM shared_memory_spaces WHERE expires_at IS NOT NULL AND expires_at < ?');
+const _dbDelSpaceMembers = db.prepare('DELETE FROM shared_memory_members WHERE space_id = ?');
+const _dbDelSpaceMemory = db.prepare("DELETE FROM memory WHERE namespace = ?");
+const _dbDelSpace = db.prepare('DELETE FROM shared_memory_spaces WHERE id = ?');
 
 // Schema migration: drop tables with stale columns so route modules recreate them correctly
 // Safe: all DROP TABLE IF EXISTS — only removes tables that exist with wrong schema
