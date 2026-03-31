@@ -1585,7 +1585,7 @@ app.get('/v1/health', (_, res) => {
   try { const row = db.prepare("SELECT COUNT(*) as cnt FROM sqlite_master WHERE type='table'").get(); sqliteTableCount = row?.cnt || 76; } catch (e) {}
   res.json({
     status: 'healthy',
-    version: '3.7.0',
+    version: '3.7.1',
     platform: 'Slopshop — The Living Agentic Backend OS',
     headline: 'Dream Engine + Multiplayer Memory. Backends that dream, teams that share intelligence.',
     apis: apiCount,
@@ -11520,7 +11520,7 @@ app.get('/v1/status/dashboard', (req, res) => {
   res.json({
     ok: true,
     status: 'operational',
-    version: '3.7.0',
+    version: '3.7.1',
     uptime_seconds: uptime,
     uptime_human: Math.floor(uptime / 3600) + 'h ' + Math.floor((uptime % 3600) / 60) + 'm',
     apis: apiCount,
@@ -11694,7 +11694,7 @@ app.get('/v1/docs/overview', (req, res) => {
   }
   res.json({
     ok: true,
-    version: '3.7.0',
+    version: '3.7.1',
     total_apis: Object.keys(API_DEFS).length,
     categories: Object.entries(categories).map(([name, data]) => ({ name, count: data.count, sample_apis: data.apis.slice(0, 3) })),
     llm_providers: ['anthropic (Claude)', 'openai (GPT)', 'grok (xAI)', 'deepseek', 'ollama (local)'],
