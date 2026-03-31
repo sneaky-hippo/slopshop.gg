@@ -415,7 +415,12 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
   .cta-primary,.cta-secondary{width:100%;justify-content:center;padding:14px;font-size:0.82rem}
   .proof-card{padding:16px}
   .agent-box{margin:0 -14px 24px;border-radius:8px}
-}
+
+  .tc{display:none}
+  .build-grid{grid-template-columns:1fr;gap:12px}
+  .sec[style*="padding-top:80px"]{padding-top:40px!important}
+  .sec[style*="padding-bottom:72px"]{padding-bottom:36px!important}
+  pre[aria-label]{font-size:clamp(0.38rem,1.3vw,1.2rem)!important}}
 @media(max-width:400px){
   .hero h1{font-size:2rem;letter-spacing:0.01em}
   .hero .sub{font-size:0.8rem}
@@ -520,11 +525,11 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
     <div style="max-width:520px;margin:28px auto 0">
       <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:14px 18px;font-family:var(--mono);font-size:0.8rem;display:flex;flex-direction:column;gap:8px">
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'npm install -g slopshop && slop start')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">npm install -g slopshop &amp;&amp; slop start</span><span style="color:var(--t4);font-size:0.6rem">copy</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop signup')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop signup</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># guided setup + API keys + 500 free credits</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop mcp serve')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop mcp serve</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Claude Code, Cursor, Goose, Cline</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;remember my project uses React + Next.js&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "remember my project uses React + Next.js"</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># free persistent memory</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;synthesize my project notes tonight&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "synthesize my project notes tonight"</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Dream Engine: overnight synthesis</span></div>
-        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;share this workspace with my team for a week&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "share this workspace with my team for a week"</span> <span style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Multiplayer Memory</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop signup')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop signup</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># guided setup + API keys + 500 free credits</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop mcp serve')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop mcp serve</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Claude Code, Cursor, Goose, Cline</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;remember my project uses React + Next.js&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "remember my project uses React + Next.js"</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># free persistent memory</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;synthesize my project notes tonight&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "synthesize my project notes tonight"</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Dream Engine: overnight synthesis</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;share this workspace with my team for a week&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "share this workspace with my team for a week"</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Multiplayer Memory</span></div>
       </div>
     </div>
   </div>
@@ -582,7 +587,7 @@ GET  /v1/northstar        # research swarm on your goal</div>
     <!-- Pillar 2: The Hands -->
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--r);border-radius:14px;padding:32px;position:relative;transition:transform 0.2s,box-shadow 0.2s" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.3)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
       <div style="font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--r);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px;display:flex;align-items:center;gap:6px"><span style="background:var(--rg);padding:2px 8px;border-radius:4px">THE HANDS</span></div>
-      <h3 style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--t);margin-bottom:10px;letter-spacing:-0.02em">1,303 Tools + Computer Use</h3>
+      <h3 style="font-family:var(--mono);font-size:1.05rem;font-weight:800;color:var(--t);margin-bottom:10px;letter-spacing:-0.02em">1,400+ Tools + Computer Use</h3>
       <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:16px">Deterministic tools across 82 categories: crypto, text, math, network, code, finance, DevOps, legal, health, and more. Intelligent NL router, pixel-perfect computer-use backend with human approval, and batch/pipe execution.</p>
       <div style="display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:0.72rem;color:var(--t3)">
         <div><span style="color:var(--r);margin-right:6px">✓</span> 925 self-hostable pure-compute handlers</div>
@@ -624,15 +629,6 @@ POST /v1/schedules  {"slug":"research","interval":"6h"}</div>
 
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:24px">
 
-    <!-- Tools -->
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--r);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--r);margin-bottom:10px">Tools</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">1,303 handlers across 82 categories. Crypto, text, math, validation, finance, DevOps, AI utilities, network, code execution. Every handler benchmarked, tested, p95 &lt;1ms.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">slop call crypto-hash-sha256 --data hello
-curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
-  -H "Authorization: Bearer $KEY" -d '{"data":"hello"}'</div>
-    </div>
-
     <!-- Persistent Memory -->
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--g);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
       <div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--g);margin-bottom:10px">Persistent Memory</div>
@@ -641,6 +637,49 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
   {"namespace":"project","key":"findings","value":"React + Next.js"}
 &rarr; {"status":"stored","credits_used":0}</div>
     </div>
+
+
+    <!-- Dream Engine -->
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--g);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s;position:relative" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--g)">Dream Engine</div><span style="background:var(--gg);color:var(--g);padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:0.55rem;font-weight:700">MEMORY</span></div>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">REM-cycle memory synthesis. Your agent's memories are automatically synthesized, compressed, and evolved overnight — patterns emerge that no single conversation would find.</p>
+      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">slop "synthesize my project notes tonight"
+POST /v1/memory/dream/start
+  {"namespace":"project","strategy":"synthesize"}</div>
+    </div>
+
+
+    <!-- Multiplayer Memory -->
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--v);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s;position:relative" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--v)">Multiplayer Memory</div><span style="background:var(--vg);color:var(--v);padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:0.55rem;font-weight:700">TEAMS</span></div>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">Shared memory spaces with collaborator invites. Real-time team intelligence — your whole team's agents share knowledge, findings, and context in one living namespace.</p>
+      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">slop "share this workspace with my team for a week"
+POST /v1/memory/share/create
+  {"name":"team-research","retention":"weekly"}</div>
+    </div>
+
+  </div>
+</div>
+
+    <!-- Planet Research -->
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s;position:relative" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--o)">Planet Research</div><span style="background:rgba(249,115,22,0.1);color:var(--o);padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:0.55rem;font-weight:700">NEW</span></div>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">5-provider global intelligence: Grok/X (EN + 日本語), DeepSeek (小红书/知乎), Yandex (Яндекс/VK), OpenAI, and Claude synthesis. Cross-synthesis for planet tier. 30-min cache.</p>
+      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">POST /v1/research
+  {"topic":"AI trends","tier":"planet"}
+→ Grok/X · DeepSeek · Yandex · Claude</div>
+    </div>
+
+
+    <!-- Tools -->
+    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--r);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
+      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--r);margin-bottom:10px">Tools</div>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">1,400+ handlers across 82 categories. Crypto, text, math, validation, finance, DevOps, AI utilities, network, code execution. Every handler benchmarked, tested, p95 &lt;1ms.</p>
+      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">slop call crypto-hash-sha256 --data hello
+curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
+  -H "Authorization: Bearer $KEY" -d '{"data":"hello"}'</div>
+    </div>
+
 
     <!-- Execution -->
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--c);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
@@ -652,6 +691,7 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
 ]}</div>
     </div>
 
+
     <!-- Scheduling -->
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
       <div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--o);margin-bottom:10px">Scheduling</div>
@@ -661,10 +701,10 @@ curl -X POST slopshop.gg/v1/crypto-hash-sha256 \
    "body":{"url":"https://competitor.com"}}</div>
     </div>
 
+
     <!-- Computer Use Backend -->
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--v);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s;position:relative" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="position:absolute;top:16px;right:16px;background:var(--vg);border:1px solid rgba(129,140,248,0.2);color:var(--v);padding:2px 8px;border-radius:99px;font-size:0.58rem;font-weight:600;font-family:var(--mono)">NEW v3.7</div>
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--v);margin-bottom:10px">Computer Use Backend</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px"><div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--v)">Computer Use Backend</div><span style="background:var(--vg);color:var(--v);padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:0.55rem;font-weight:700">v3.7</span></div>
       <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">While Claude clicks and types on your desktop, Slopshop persists memory across sessions, records actions, runs pixel-diff verification, and gates on human approval.</p>
       <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">POST /v1/computer-use/session/start
   {"name":"organize-downloads","task":"batch resize images"}
@@ -672,35 +712,6 @@ POST /v1/computer-use/screenshot  # OCR + pixel-diff
 POST /v1/computer-use/replay      # export Python/JSON</div>
     </div>
 
-    <!-- Planet Research -->
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s;position:relative" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="position:absolute;top:16px;right:16px;background:rgba(249,115,22,0.1);border:1px solid rgba(249,115,22,0.2);color:var(--o);padding:2px 8px;border-radius:99px;font-size:0.58rem;font-weight:600;font-family:var(--mono)">NEW</div>
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--o);margin-bottom:10px">Planet Research</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">5-provider global intelligence: Grok/X (EN + 日本語), DeepSeek (小红书/知乎), Yandex (Яндекс/VK), OpenAI, and Claude synthesis. Cross-synthesis for planet tier. 30-min cache.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">POST /v1/research
-  {"topic":"AI trends","tier":"planet"}
-→ Grok/X · DeepSeek · Yandex · Claude</div>
-    </div>
-
-    <!-- Dream Engine -->
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--g);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s;position:relative" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="position:absolute;top:16px;right:16px;background:var(--gg);border:1px solid rgba(52,211,153,0.2);color:var(--g);padding:2px 8px;border-radius:99px;font-size:0.58rem;font-weight:600;font-family:var(--mono)">NORTH STAR</div>
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--g);margin-bottom:10px">Dream Engine</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">REM-cycle memory synthesis. Your agent's memories are automatically synthesized, compressed, and evolved overnight — patterns emerge that no single conversation would find.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">slop "synthesize my project notes tonight"
-POST /v1/memory/dream/start
-  {"namespace":"project","strategy":"synthesize"}</div>
-    </div>
-
-    <!-- Multiplayer Memory -->
-    <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--v);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s;position:relative" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-      <div style="position:absolute;top:16px;right:16px;background:var(--vg);border:1px solid rgba(129,140,248,0.2);color:var(--v);padding:2px 8px;border-radius:99px;font-size:0.58rem;font-weight:600;font-family:var(--mono)">NORTH STAR</div>
-      <div style="font-family:var(--mono);font-size:1.05rem;font-weight:600;color:var(--v);margin-bottom:10px">Multiplayer Memory</div>
-      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:12px">Shared memory spaces with collaborator invites. Real-time team intelligence — your whole team's agents share knowledge, findings, and context in one living namespace.</p>
-      <div style="background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.68rem;color:var(--o);line-height:1.6;overflow-x:auto;white-space:pre">slop "share this workspace with my team for a week"
-POST /v1/memory/share/create
-  {"name":"team-research","retention":"weekly"}</div>
-    </div>
 
   </div>
 </div>
@@ -817,7 +828,7 @@ POST /v1/memory-search
   <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:1200px;margin:0 auto">
     <div class="build-card">
       <h3>MCP assistant with real tools</h3>
-      <p>One command gives Claude, Cursor, Goose, or Cline access to 1,303 handlers. Your assistant can hash, validate, search, and execute.</p>
+      <p>One command gives Claude, Cursor, Goose, or Cline access to 1,400+ handlers. Your assistant can hash, validate, search, and execute.</p>
       <code>slop mcp serve</code>
     </div>
     <div class="build-card">
@@ -897,7 +908,7 @@ POST /v1/memory-search
     <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;text-align:center;transition:transform 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
       <div style="font-family:var(--mono);font-size:1.5rem;font-weight:600;color:var(--o);margin-bottom:12px">2</div>
       <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">Add capabilities</div>
-      <p style="font-size:0.78rem;color:var(--t3);line-height:1.6">Give your agent tools (1,303 handlers), persistent memory (free forever), and scheduling (cron + webhooks).</p>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.6">Give your agent tools (1,400+ handlers), persistent memory (free forever), and scheduling (cron + webhooks).</p>
     </div>
     <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:28px;text-align:center;transition:transform 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
       <div style="font-family:var(--mono);font-size:1.5rem;font-weight:600;color:var(--g);margin-bottom:12px">3</div>
@@ -1065,7 +1076,7 @@ POST /v1/memory-search
     <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:32px;text-align:center;transition:transform 0.15s" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
       <div style="font-family:var(--mono);font-size:1.3rem;font-weight:600;color:var(--g);margin-bottom:8px">Start Free</div>
       <div style="font-size:0.95rem;font-weight:700;color:var(--t);margin-bottom:6px">500 credits on signup</div>
-      <div style="font-size:0.75rem;color:var(--t3);line-height:1.7">No credit card required. Full access to all 1,303 handlers. Test everything before you pay.</div>
+      <div style="font-size:0.75rem;color:var(--t3);line-height:1.7">No credit card required. Full access to all 1,400+ handlers. Test everything before you pay.</div>
       <a href="/signup" style="display:inline-block;margin-top:16px;background:var(--r);color:#fff;padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.8rem;font-weight:700;text-decoration:none">Sign Up Free</a>
     </div>
     <div style="background:var(--s1);border:1px solid var(--o);border-radius:12px;padding:32px;text-align:center;transition:transform 0.15s;background:linear-gradient(135deg,rgba(255,136,0,0.07),transparent)" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
@@ -1128,7 +1139,7 @@ POST /v1/memory-search
 
     <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px 24px">
       <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:8px">What is included in the free tier?</div>
-      <p style="font-size:0.78rem;color:var(--t3);line-height:1.75">500 free credits on signup (no credit card). Full access to all 1,303 handlers. Core memory APIs (set, get, search, list, delete, stats) are always free &mdash; 0 credits forever.</p>
+      <p style="font-size:0.78rem;color:var(--t3);line-height:1.75">500 free credits on signup (no credit card). Full access to all 1,400+ handlers. Core memory APIs (set, get, search, list, delete, stats) are always free &mdash; 0 credits forever.</p>
     </div>
 
     <div style="background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px 24px">
@@ -1511,7 +1522,7 @@ init();
 </script>
 <div style="background:#18181b;padding:24px;text-align:center;font-size:13px;color:#a1a1aa;border-top:1px solid #27272a">
   <p style="font-family:monospace;color:white">Slopshop is a self-hostable backend for AI agents: real tools, persistent memory, one execution layer.</p>
-  <p style="margin-top:8px">82 categories · 1,303 handlers · 925 self-hostable pure-compute · 8 core memory APIs free forever · 500 free credits on signup</p>
+  <p style="margin-top:8px">82 categories · 1,400+ handlers · 925 self-hostable pure-compute · 8 core memory APIs free forever · 500 free credits on signup</p>
   <p>memory-set · memory-get · memory-search · memory-list · memory-delete · memory-stats · memory-namespace-list · counter-get — always 0 credits</p>
 </div>
 </body>
