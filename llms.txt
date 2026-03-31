@@ -1,8 +1,8 @@
-# slopshop.gg — The Self-Hostable MCP Agent Runtime OS for the Computer-Use Era. While Claude controls the desktop, Slopshop gives agents verifiable identity, memory that evolves, zero-trust governance, and the platform backbone to run production swarms. NIST-aligned. Self-hostable. One API key.
+# slopshop.gg — The Self-Hostable AI Agent OS for the Computer-Use Era (v4.0). While Claude controls the desktop, Slopshop gives agents verifiable identity, memory that evolves, zero-trust governance, and the platform backbone to run production swarms. NIST-aligned. Self-hostable. One API key.
 
 One API key. 1,303 endpoints across 82 categories. Free evolving persistent memory (GraphRAG + episodic + scored retrieval, 0 credits forever). NIST-aligned agent identity (SPIFFE/SVID tokens, Agent Name Service, reputation scoring 0-10, A2A typed messaging). Computer Use backend (session recording, screenshot OCR + pixel-diff, replay, human approval gates). MCP Gateway + policy engine (5 condition types, SIEM/ECS audit export). Observability dashboard (traces, p95/p99, cost attribution, ROI calculator, budget alerts). Visual DAG workflow builder (Kahn's topo sort, cycle detection, 10 templates). Tool marketplace (15 listings, 70/30 revenue share, handler code security scan). Eval suite + model routing (benchmark 5/5 score 100 grade A). 925 pure-compute self-hostable handlers (zero external deps). Army-scale orchestration (10k parallel agents, Hive workspaces, Hive A2A). Cron scheduling. Sandboxed code execution. Multi-LLM (Claude + GPT + Grok + DeepSeek + Ollama). Self-hostable Docker/K8s. Air-gapped forever. Works with Claude Code, Cursor, Goose, Cline, OpenCode, Aider, LangChain, CrewAI, AutoGen.
 
-## Agent Runtime OS Layers (v3.7.0)
+## Agent Runtime OS Layers (v4.0)
 
 ### Agent Identity & Zero-Trust
 - POST /v1/identity/issue — Issue SPIFFE/SVID JWT token for an agent (scoped capabilities, 24h TTL)
@@ -77,7 +77,7 @@ Four infrastructure endpoints that make every LLM composable:
 
 All free. All auth-gated. Designed by asking Claude, GPT, Grok, and DeepSeek what they need.
 
-## Latest (v3.9.0)
+## Latest (v4.0)
 
 - POST /v1/memory/evolve/start — Autonomous memory evolution (consolidate, enrich, decay, summarize)
 - POST /v1/memory/evolve/stop — Stop active evolution
@@ -1114,32 +1114,32 @@ curl https://slopshop.gg/v1/case-studies
 See why teams replace Redis, Zapier, and Cron with a single Slopshop instance: https://slopshop.gg/why.html
 Detailed comparison: https://slopshop.gg/compare.html
 
-## Browser/Desktop Primitives (v3.8.0)
+## Browser/Desktop Primitives (v4.0)
 Real-time agent monitoring and desktop IDE integration.
 - GET /v1/visualizer/stream — SSE stream of live agent activity, army deployments, hive messages
 - POST /v1/mcp/bootstrap — Auto-configure MCP for Claude Desktop, Cursor, or other IDEs
 
-## Memory 2.0 (v3.8.0)
+## Memory 2.0 (v4.0)
 Graph queries, auto-summarization, and snapshot pinning. All free (0 credits).
 - POST /v1/memory/graph-query — Query memory as a knowledge graph with semantic scoring and traversal
 - POST /v1/memory/auto-summarize — Auto-summarize large namespaces or key groups
 - POST /v1/memory/snapshot — Take point-in-time snapshot of a namespace, optionally pin for permanent storage
 - GET /v1/memory/snapshots — List all snapshots
 
-## Grok-Specific Features (v3.8.0)
+## Grok-Specific Features (v4.0)
 Dedicated Grok integration for optimization, critique, and autonomous orchestration. Requires XAI_API_KEY.
 - POST /v1/grok/optimize ��� Pass prompts, code, or workflows to Grok for cost/performance optimization
 - POST /v1/grok/critique — Submit content for Grok's critical analysis with structured feedback
 - POST /v1/grok/overlord — Grok autonomously drives multi-LLM chains, selecting models per subtask
 
-## Safety & Guardrails (v3.8.0)
+## Safety & Guardrails (v4.0)
 Production safety primitives for agent deployments.
 - POST /v1/sandbox/execute — Run untrusted code in isolated vm.createContext with timeout enforcement
 - POST /v1/reputation/slash — Slash underperforming agents in army deployments
 - GET /v1/reputation/ledger — View global reputation leaderboard (Merkle-verified)
 - POST /v1/chaos/test — Inject faults (network, latency, agent-drop) into army deployments
 
-## Marketplace (v3.8.0)
+## Marketplace (v4.0)
 Publish, discover, and trade templates, plugins, and compute capacity.
 - GET /v1/marketplace/templates — Browse available agent templates
 - POST /v1/marketplace/invoke — Invoke a template with parameters
@@ -1147,7 +1147,7 @@ Publish, discover, and trade templates, plugins, and compute capacity.
 - POST /v1/bounties/claim — Claim an open bounty
 - GET /v1/bounties/list — Browse open bounties
 
-## Agent Templates (v3.8.0)
+## Agent Templates (v4.0)
 Pre-built agent configurations for common workflows.
 - POST /v1/templates/create — Create custom agent templates with chain steps, model preferences, and memory namespaces
 - POST /v1/templates/run — Run a named template (research-swarm, content-machine, security-audit, data-pipeline)
@@ -1234,7 +1234,7 @@ curl -X POST https://slopshop.gg/v1/swarm/budget/adjust \
   -H "Content-Type: application/json" \
   -d '{"swarm_id":"research-team","new_budget":10000,"reason":"scaling up experiment"}'
 
-## OAuth Connectors (v3.8.0)
+## OAuth Connectors (v4.0)
 Connect external services via OAuth. Supports GitHub, Slack, Linear, Notion, and any OAuth2 provider. All tokens encrypted with AES-256-GCM. Auto-rotated nightly.
 - POST /v1/connectors/config — Configure an OAuth connector (toolkit, client_id, client_secret, scopes, auth_url, token_url)
 - GET /v1/connectors/list — List all configured connectors
@@ -1245,7 +1245,7 @@ curl -X POST https://slopshop.gg/v1/connectors/config \
   -H "Content-Type: application/json" \
   -d '{"toolkit":"github","client_id":"YOUR_GITHUB_APP_ID","client_secret":"YOUR_SECRET","scopes":["repo"],"auth_url":"https://github.com/login/oauth/authorize","token_url":"https://github.com/login/oauth/access_token"}'
 
-## Webhook Triggers (v3.8.0)
+## Webhook Triggers (v4.0)
 Define triggers that fire agent workflows when external events arrive via webhook.
 - POST /v1/triggers/create — Create a trigger (name, source, event, action)
 - POST /v1/triggers/webhook/:id — Webhook receiver URL (give to external services)
@@ -1255,13 +1255,13 @@ curl -X POST https://slopshop.gg/v1/triggers/create \
   -H "Content-Type: application/json" \
   -d '{"name":"on-push","source":"github","event":"push","action":{"chain_id":"deploy-pipeline"}}'
 
-## Audit Export (v3.8.0)
+## Audit Export (v4.0)
 Export full audit trail for compliance, debugging, or SOC2 evidence collection.
 - GET /v1/audit/export — Export timestamped audit entries with endpoint, credits, latency, response hashes
 curl https://slopshop.gg/v1/audit/export \
   -H "Authorization: Bearer YOUR_KEY"
 
-## Schema Import (v3.8.0)
+## Schema Import (v4.0)
 Bulk-import tool schemas for self-hosted deployments or custom tool registration.
 - POST /v1/import/schemas — Import an array of tool schemas (slug, name, description, input, output)
 curl -X POST https://slopshop.gg/v1/import/schemas \

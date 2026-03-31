@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Changelog | Slopshop — The Missing Backend for AI Agents</title>
+<title>Changelog | Slopshop — AI Agent OS v4.0</title>
 <meta name="description" content="Track every update to Slopshop. New APIs, improvements, fixes, and breaking changes for the tool platform for AI agents.">
 <meta name="keywords" content="slopshop changelog, slopshop updates, new APIs, slopshop version history">
 <link rel="canonical" href="https://slopshop.gg/changelog">
@@ -147,6 +147,26 @@ footer .footer-right a:hover{color:var(--t2);text-decoration:none}
 
   <!-- Timeline -->
   <div class="timeline">
+
+    <!-- v4.0 -->
+    <div class="version-entry major" id="v4.0" style="border-left:2px solid var(--r);padding-left:16px;margin-left:-18px">
+      <div class="version-header">
+        <span class="version-number" style="color:var(--r)">v4.0</span>
+        <span class="version-date">March 31, 2026</span>
+        <span class="version-label label-major" style="background:var(--rg);color:var(--r)">AI Agent OS</span>
+      </div>
+      <div class="change-section">Full AI Agent OS Relaunch — Computer-Use Era</div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>AI Agent OS Positioning</strong> — Slopshop is now positioned as the Self-Hostable AI Agent OS for the Computer-Use Era. Three-pillar architecture: Brain (Memory 2.0), Hands (1,303 tools + Computer Use), Nervous System (runtime + SPIFFE/SVID identity + orchestration).</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>Critical: LLM planning ReferenceError</strong> — Fixed <code>plan.model</code> ReferenceError in agent.js that silently broke all LLM-based tool planning, causing every agent to fall back to keyword matcher.</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>Critical: sessions table schema conflict</strong> — Renamed server-v2.js <code>sessions</code> table to <code>agent_sessions</code> to fix schema collision with auth.js, which caused <code>/v1/auth/me</code> to hang permanently.</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>Security: self-transfer credit exploit</strong> — <code>POST /v1/credits/transfer</code> now rejects <code>to_key === req.apiKey</code>.</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>Security: referral code wildcard SQL injection</strong> — auth.js now validates referral code format (<code>/^sk-slop-[0-9a-f]{8,}$/</code>) before LIKE query.</span></div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>New routes: GET /v1/keys, POST /v1/keys/create</strong> — List and create API keys (were 404 before).</span></div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>Hive route fixes</strong> — Added <code>GET /v1/hive</code> alias, <code>GET /v1/hive/:id/members</code>, <code>GET /v1/hive/:id/activity</code>.</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>NL Router INTENT_BOOSTS</strong> — Fixed 5 routing failures: site up/down → net-http-check, IP geo → net-ip-geo, gzip → data-compress (not array-zip), "what day is it" → date-now, password generation → crypto-password-generate.</span></div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>80+ new handlers</strong> — compute, sense, enrich, llm, memory, vertical, orchestrate categories all expanded with new handlers and bug fixes.</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>Registry coherence</strong> — 369 missing schemas added, 19 duplicate slugs removed, 274 credits=0 entries corrected.</span></div>
+    </div>
 
     <!-- v3.7.0 -->
     <div class="version-entry major" id="v3.7.0">

@@ -320,7 +320,7 @@ slop memory get mykey</code></pre></div>
     <ul>
       <li><strong>The computation actually ran</strong> — your input was processed by real Node.js code, not proxied to an LLM or returned from a template</li>
       <li><strong>Deterministic outputs</strong> — the same input always produces the same output for compute-tier APIs</li>
-      <li><strong>Sub-millisecond execution</strong> — 1,269 compute handlers benchmarked at &lt;1ms average</li>
+      <li><strong>Sub-millisecond execution</strong> — 1,303 compute handlers benchmarked at &lt;1ms average</li>
     </ul>
 
     <h3>What "execution proof" means today</h3>
@@ -548,7 +548,7 @@ POST /v1/memory-get  {"key":"chain_results"}</code></pre></div>
     <p>Slopshop integrates with the tools your agents already use:</p>
     <table class="doc-table">
       <tbody>
-        <tr><td><a href="#ecosystem-integrations">Ecosystem Integrations</a></td><td>MCP Server, Goose Recipes, Aider, OpenCode, Cline Skills, LangChain/LangGraph &mdash; v3.7.0</td></tr>
+        <tr><td><a href="#ecosystem-integrations">Ecosystem Integrations</a></td><td>MCP Server, Goose Recipes, Aider, OpenCode, Cline Skills, LangChain/LangGraph &mdash; v4.0</td></tr>
         <tr><td><a href="/getting-started.html#step6">MCP for Claude Code</a></td><td>Native MCP server &mdash; all tools available as first-class Claude tools</td></tr>
         <tr><td><a href="/for-agents.html">For AI Agents</a></td><td>LangChain, CrewAI, AutoGPT integration guides</td></tr>
         <tr><td><a href="/getting-started.html#step1">CLI quickstart</a></td><td>Terminal interface to all 78 tool categories</td></tr>
@@ -1318,8 +1318,8 @@ client.call("memory-set", namespace="audit", key=f"file-{local_hash}", value=res
       <li><strong>Timeline view</strong> of execution history</li>
     </ul>
 
-    <!-- ECOSYSTEM INTEGRATIONS (v3.7.0) -->
-    <h2 id="ecosystem-integrations">Ecosystem Integrations <span class="badge badge-compute">v3.7.0</span></h2>
+    <!-- ECOSYSTEM INTEGRATIONS (v4.0) -->
+    <h2 id="ecosystem-integrations">Ecosystem Integrations <span class="badge badge-compute">v4.0</span></h2>
     <p>Slopshop plugs into every major agent IDE, framework, and workflow tool. One install, universal access to all 82 categories of tools.</p>
 
     <h3>MCP Server &mdash; <code>slop mcp serve</code></h3>
@@ -1426,8 +1426,8 @@ slop agents --workers 8
 # With a task file
 slop agents --tasks tasks.json</code></pre></div>
 
-    <!-- BROWSER/DESKTOP PRIMITIVES (v3.8.0) -->
-    <h2 id="browser-desktop">Browser/Desktop Primitives <span class="badge badge-compute">v3.8.0</span></h2>
+    <!-- BROWSER/DESKTOP PRIMITIVES (v4.0) -->
+    <h2 id="browser-desktop">Browser/Desktop Primitives <span class="badge badge-compute">v4.0</span></h2>
     <p>Slopshop exposes primitives for browser-based and desktop agent workflows. The MCP server bridges directly into Claude Desktop, Cursor, and other IDE clients. The Swarm Visualizer provides real-time SSE streams for monitoring agent activity.</p>
 
     <h3>Swarm Visualizer (SSE)</h3>
@@ -1446,8 +1446,8 @@ slop mcp bootstrap --ide=claude-desktop
 # Bootstrap for Cursor
 slop mcp bootstrap --ide=cursor</code></pre></div>
 
-    <!-- MEMORY 2.0 (v3.8.0) -->
-    <h2 id="memory-2">Memory 2.0 <span class="badge badge-compute">v3.8.0</span></h2>
+    <!-- MEMORY 2.0 (v4.0) -->
+    <h2 id="memory-2">Memory 2.0 <span class="badge badge-compute">v4.0</span></h2>
     <p>Memory 2.0 extends the free-forever memory tier with graph queries, auto-summarization, and snapshot/pin capabilities. All Memory 2.0 features are free (0 credits).</p>
 
     <h3>Graph Query (GraphRAG)</h3>
@@ -1478,8 +1478,8 @@ curl -X POST https://slopshop.gg/v1/memory/snapshot \
 curl https://slopshop.gg/v1/memory/snapshots \
   -H "Authorization: Bearer $KEY"</code></pre></div>
 
-    <!-- MEMORY EVOLUTION (v3.9.0) -->
-    <h2 id="memory-evolution">Memory Evolution <span class="badge badge-compute">v3.9.0</span></h2>
+    <!-- MEMORY EVOLUTION (v4.0) -->
+    <h2 id="memory-evolution">Memory Evolution <span class="badge badge-compute">v4.0</span></h2>
     <p>Autonomous memory evolution lets agents continuously improve their stored knowledge without manual intervention. Four strategies run on configurable intervals to keep memory namespaces clean, enriched, and relevant.</p>
 
     <h3>Strategies</h3>
@@ -1509,8 +1509,8 @@ POST /v1/memory/evolve/stop      — Stop an active evolution by ID</code></pre>
   -H "Content-Type: application/json" \
   -d '{"namespace": "research", "factor": 0.95}'</code></pre></div>
 
-    <!-- CHAIN BRANCHING (v3.9.0) -->
-    <h2 id="chain-branching">Chain Branching <span class="badge badge-compute">v3.9.0</span></h2>
+    <!-- CHAIN BRANCHING (v4.0) -->
+    <h2 id="chain-branching">Chain Branching <span class="badge badge-compute">v4.0</span></h2>
     <p>Chain branching adds conditional step execution to agent chains. Steps can include <code>if</code> conditions that evaluate against the chain context, enabling dynamic workflows that branch based on intermediate results.</p>
 
     <h3>Conditional Steps</h3>
@@ -1535,8 +1535,8 @@ POST /v1/memory/evolve/stop      — Stop an active evolution by ID</code></pre>
 }</code></pre></div>
     <p>Conditions are evaluated safely against the chain context. Supported operators: comparisons, logical operators, and property access on previous step results.</p>
 
-    <!-- GROK-SPECIFIC FEATURES (v3.8.0) -->
-    <h2 id="grok-features">Grok-Specific Features <span class="badge badge-compute">v3.8.0</span></h2>
+    <!-- GROK-SPECIFIC FEATURES (v4.0) -->
+    <h2 id="grok-features">Grok-Specific Features <span class="badge badge-compute">v4.0</span></h2>
     <p>Slopshop includes dedicated Grok integration endpoints that leverage xAI's Grok models for optimization, critique, and autonomous orchestration. Requires <code>XAI_API_KEY</code>.</p>
 
     <h3>Grok Optimize</h3>
@@ -1561,8 +1561,8 @@ POST /v1/memory/evolve/stop      — Stop an active evolution by ID</code></pre>
   -d '{"goal": "Deep tech audit on Stripe", "budget_credits": 500, "models": ["claude", "gpt", "deepseek"]}'</code></pre></div>
     <p>Grok selects the optimal model per subtask, manages context passing, and stores all results in free memory automatically.</p>
 
-    <!-- SAFETY & GUARDRAILS (v3.8.0) -->
-    <h2 id="safety-guardrails">Safety &amp; Guardrails <span class="badge badge-compute">v3.8.0</span></h2>
+    <!-- SAFETY & GUARDRAILS (v4.0) -->
+    <h2 id="safety-guardrails">Safety &amp; Guardrails <span class="badge badge-compute">v4.0</span></h2>
     <p>Production safety primitives for agent deployments. Circuit breakers, sandbox isolation, reputation slashing, and chaos testing protect your workloads.</p>
 
     <h3>Sandbox Execution</h3>
@@ -1588,10 +1588,10 @@ POST /v1/memory/evolve/stop      — Stop an active evolution by ID</code></pre>
   -H "Content-Type: application/json" \
   -d '{"army_id": "EXT-47", "faults": ["network", "latency", "agent-drop"]}'</code></pre></div>
 
-    <!-- MARKETPLACE (v3.8.0) -->
-    <!-- AGENT RUNTIME OS (v3.7.0) -->
-    <h2 id="agent-runtime-os">Agent Runtime OS <span class="badge badge-compute">v3.7.0</span></h2>
-    <p>Slopshop v3.7.0 ships seven new platform layers that turn the tool catalog into a full agent runtime OS for the Computer-Use Era. Every layer is self-hostable and NIST-aligned.</p>
+    <!-- MARKETPLACE (v4.0) -->
+    <!-- AGENT RUNTIME OS (v4.0) -->
+    <h2 id="agent-runtime-os">Agent Runtime OS <span class="badge badge-compute">v4.0</span></h2>
+    <p>Slopshop v4.0 ships seven new platform layers that turn the tool catalog into a full agent runtime OS for the Computer-Use Era. Every layer is self-hostable and NIST-aligned.</p>
 
     <h3>Agent Identity (SPIFFE/SVID)</h3>
     <p>Issue verifiable agent identities (HMAC-SHA256 signed JWTs), register in the Agent Name Service (ANS), track reputation scores (0–10 rolling weighted average), and pass typed A2A messages between agents.</p>
@@ -1678,7 +1678,7 @@ curl -X POST https://slopshop.gg/v1/eval/benchmark \
   -H "Authorization: Bearer $KEY"
 # → {"score":100,"grade":"A","passed":5,"failed":0}</code></pre></div>
 
-    <h2 id="marketplace">Marketplace <span class="badge badge-compute">v3.7.0</span></h2>
+    <h2 id="marketplace">Marketplace <span class="badge badge-compute">v4.0</span></h2>
     <p>The Slopshop Marketplace lets agents and developers publish, discover, install, and monetize tools. 15 seed listings included. Publishers earn 70% of every purchase. Handler code is scanned for 16 dangerous patterns before listing.</p>
 
     <h3>Template Marketplace</h3>
@@ -1701,8 +1701,8 @@ slop forge build --name="custom-analyzer" --publish=marketplace
 # Install a plugin from marketplace
 slop forge install custom-analyzer</code></pre></div>
 
-    <!-- ADVANCED RESEARCH (v3.9.0) -->
-    <h2 id="advanced-research">Advanced Research <span class="badge badge-compute">v3.9.0</span></h2>
+    <!-- ADVANCED RESEARCH (v4.0) -->
+    <h2 id="advanced-research">Advanced Research <span class="badge badge-compute">v4.0</span></h2>
     <p>Multi-tier research engine with configurable depth. Each tier allocates more time, more model passes, and deeper source analysis. Results are automatically stored in memory.</p>
 
     <h3>Research Tiers</h3>
@@ -1720,8 +1720,8 @@ slop forge install custom-analyzer</code></pre></div>
   -d '{"query": "Compare agent infrastructure platforms 2026", "tier": "advanced", "namespace": "my-research"}'</code></pre></div>
     <p>Response includes structured findings, sources, confidence scores, and a memory key for retrieval. The <code>tier</code> parameter controls depth and credit cost.</p>
 
-    <!-- MEMORY UPLOAD (v3.9.0) -->
-    <h2 id="memory-upload">Memory Upload <span class="badge badge-compute">v3.9.0</span></h2>
+    <!-- MEMORY UPLOAD (v4.0) -->
+    <h2 id="memory-upload">Memory Upload <span class="badge badge-compute">v4.0</span></h2>
     <p>Import files directly into your agent's memory via drag-and-drop or API. Supports Markdown, plain text, JSON, CSV, and code files. Content is chunked, indexed, and made searchable instantly.</p>
 
     <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/upload \
@@ -1730,8 +1730,8 @@ slop forge install custom-analyzer</code></pre></div>
   -d '{"content": "# My Project\n\n## Goals\nBuild the best agent backend...", "namespace": "my-project", "filename": "project-notes.md"}'</code></pre></div>
     <p>Uploaded content is automatically chunked for vector search and tagged with the filename. Use <code>memory-search</code> to find relevant chunks later.</p>
 
-    <!-- MEMORY COLLABORATOR (v3.9.0) -->
-    <h2 id="memory-collaborator">Memory Collaborator <span class="badge badge-compute">v3.9.0</span></h2>
+    <!-- MEMORY COLLABORATOR (v4.0) -->
+    <h2 id="memory-collaborator">Memory Collaborator <span class="badge badge-compute">v4.0</span></h2>
     <p>Share memory namespaces between agents and API keys. Invite collaborators to read or write to your namespaces. Enables multi-agent workflows where agents share persistent state.</p>
 
     <h3>Invite a Collaborator</h3>
@@ -1758,8 +1758,8 @@ curl -X POST https://slopshop.gg/v1/memory/collaborator/revoke \
   -H "Content-Type: application/json" \
   -d '{"namespace": "shared-research", "collaborator_key": "sk_other_agent"}'</code></pre></div>
 
-    <!-- DREAM TIERS (v3.9.0) -->
-    <h2 id="dream-tiers">Dream Tiers <span class="badge badge-compute">v3.9.0</span></h2>
+    <!-- DREAM TIERS (v4.0) -->
+    <h2 id="dream-tiers">Dream Tiers <span class="badge badge-compute">v4.0</span></h2>
     <p>Memory dreaming runs in the background, consolidating, linking, and evolving your agent's memories. Dream frequency scales with research tier:</p>
     <table class="doc-table">
       <tr><th>Tier</th><th>Dream Interval</th><th>What Happens</th></tr>
@@ -1938,8 +1938,8 @@ Authorization: Bearer $KEY
 POST /v1/schedules/:id/resume   — Re-enable schedule
 POST /v1/schedules/:id/trigger  — Run immediately (sets next_run to now)</code></pre></div>
 
-    <!-- AGENT TEMPLATES (v3.8.0) -->
-    <h2 id="agent-templates-library">Agent Templates <span class="badge badge-compute">v3.8.0</span></h2>
+    <!-- AGENT TEMPLATES (v4.0) -->
+    <h2 id="agent-templates-library">Agent Templates <span class="badge badge-compute">v4.0</span></h2>
     <p>Pre-built agent configurations for common workflows. Each template wires together chains, memory, army deployments, and tool calls into a single invocable unit.</p>
 
     <h3>Research Swarm</h3>
@@ -1969,8 +1969,8 @@ POST /v1/schedules/:id/trigger  — Run immediately (sets next_run to now)</code
     {"tool": "memory-set", "params": {"key": "summary_$input_url", "value": "$prev.summary"}}
   ]}'</code></pre></div>
 
-    <!-- OAUTH CONNECTORS (v3.8.0) -->
-    <h2 id="oauth-connectors">OAuth Connectors <span class="badge badge-compute">v3.8.0</span></h2>
+    <!-- OAUTH CONNECTORS (v4.0) -->
+    <h2 id="oauth-connectors">OAuth Connectors <span class="badge badge-compute">v4.0</span></h2>
     <p>Connect external services to your agent workflows via OAuth. Configure once, then agents can authenticate and act on your behalf in GitHub, Slack, Linear, Notion, and more. All tokens are encrypted with AES-256-GCM and auto-rotated nightly.</p>
 
     <h3>Configure a Connector</h3>
@@ -1987,8 +1987,8 @@ DELETE /v1/connectors/:id             — Remove a connector and revoke tokens</
     <h3>Vault Security</h3>
     <p>All OAuth tokens are stored in an encrypted vault using <strong>AES-256-GCM</strong>. Tokens are auto-rotated nightly via refresh token exchange. Revocation is immediate and propagates to the external provider.</p>
 
-    <!-- WEBHOOK TRIGGERS (v3.8.0) -->
-    <h2 id="webhook-triggers">Webhook Triggers <span class="badge badge-compute">v3.8.0</span></h2>
+    <!-- WEBHOOK TRIGGERS (v4.0) -->
+    <h2 id="webhook-triggers">Webhook Triggers <span class="badge badge-compute">v4.0</span></h2>
     <p>Define triggers that fire agent workflows when external events arrive via webhook. Connect GitHub push events, Slack messages, Linear issue updates, or any service that sends webhooks.</p>
 
     <h3>Create a Trigger</h3>
@@ -2002,16 +2002,16 @@ DELETE /v1/connectors/:id             — Remove a connector and revoke tokens</
 GET  /v1/triggers/list          — List all configured triggers</code></pre></div>
     <p>When a webhook hits the trigger URL, Slopshop validates the payload, matches it to the trigger config, and executes the associated action (chain, pipe, or single tool call).</p>
 
-    <!-- AUDIT EXPORT (v3.8.0) -->
-    <h2 id="audit-export">Audit Export <span class="badge badge-compute">v3.8.0</span></h2>
+    <!-- AUDIT EXPORT (v4.0) -->
+    <h2 id="audit-export">Audit Export <span class="badge badge-compute">v4.0</span></h2>
     <p>Export your full audit trail for compliance, debugging, or SOC2 readiness. Returns every API call, credit transaction, and agent action associated with your key.</p>
 
     <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/audit/export \
   -H "Authorization: Bearer $KEY"</code></pre></div>
     <p>Returns a JSON array of timestamped audit entries with endpoint, credits used, latency, and response hashes. Suitable for SOC2 evidence collection and incident forensics.</p>
 
-    <!-- SCHEMA IMPORT (v3.8.0) -->
-    <h2 id="schema-import">Schema Import <span class="badge badge-compute">v3.8.0</span></h2>
+    <!-- SCHEMA IMPORT (v4.0) -->
+    <h2 id="schema-import">Schema Import <span class="badge badge-compute">v4.0</span></h2>
     <p>Bulk-import tool schemas into your Slopshop instance. Useful for self-hosted deployments where you want to register custom tools or sync schemas from a remote catalog.</p>
 
     <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/import/schemas \
