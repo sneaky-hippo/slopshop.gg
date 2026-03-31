@@ -76,13 +76,15 @@ nav{
   border-bottom:1px solid var(--b);
   display:flex;align-items:center;padding:0 32px
 }
-.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
-.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;gap:8px}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;flex-shrink:0}
 .logo .mark{color:#fff}
 .logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
-.nav-links{display:flex;gap:4px;align-items:center}
-.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
-.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-center{display:flex;gap:2px;align-items:center;flex:1;justify-content:center}
+.nav-right{display:flex;gap:6px;align-items:center;flex-shrink:0}
+.nav-links,.nav-center,.nav-right{display:flex;gap:2px;align-items:center}
+.nav-center a,.nav-right a,.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 10px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-center a:hover,.nav-right a:hover,.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
 
 /* live dot */
 .live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
@@ -473,20 +475,19 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
   <div class="logo">
     <span class="mark" style="color:var(--r);font-family:var(--mono);font-weight:700;letter-spacing:0.08em;font-size:1rem">SLOPSHOP.gg</span><span style="font-size:0.5rem;color:var(--t4);border:1px solid var(--b);padding:1px 6px;border-radius:3px;margin-left:8px;font-family:var(--mono)">alpha</span>
   </div>
-  <div class="nav-links">
-    <a href="/">Home</a>
+  <div class="nav-center">
     <a href="#dream-engine" style="color:var(--g)">Dream Engine</a>
-    <a href="#multiplayer-memory" style="color:var(--o)" data-mobile>Multiplayer Memory</a>
-    <a href="/docs" data-mobile>Docs</a>
-    <a href="/tools">Tools</a>
+    <a href="#multiplayer-memory" style="color:var(--o)">Memory</a>
     <a href="/playground">Playground</a>
-    <a href="/memory-manager">Memory</a>
-    <a href="#pricing" data-mobile>Pricing</a>
-    <a href="/security">Security</a>
-    <a href="/about">About</a>
-    <a href="/login" data-mobile style="color:var(--t3);font-size:0.75rem;padding:6px 12px">Log In</a>
-    <a href="/signup" data-mobile style="background:var(--r);color:#fff;padding:6px 16px;border-radius:6px;font-weight:600">Sign Up Free</a>
+    <a href="/hive-chat">Hive Chat</a>
+    <a href="/coding-session">Coding</a>
+    <a href="/tools">Tools</a>
+    <a href="/docs">Docs</a>
+  </div>
+  <div class="nav-right">
     <div class="live-badge"><div class="live-dot"></div><span id="liveCount">live</span></div>
+    <a href="/signup?mode=login" style="color:var(--t3);font-size:0.75rem;padding:6px 12px">Log In</a>
+    <a href="/signup" style="background:var(--r);color:#000;padding:6px 16px;border-radius:6px;font-weight:700;font-family:var(--mono);font-size:0.75rem">Sign Up Free</a>
   </div>
 </div></nav>
 
@@ -599,6 +600,36 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
         <div><span style="color:var(--g);margin-right:6px">&#x25A6;</span> Monitor dream runs and view insights</div>
       </div>
       <div style="display:inline-flex;align-items:center;gap:6px;background:var(--g);color:#000;padding:9px 20px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:700">Open Memory Manager &rarr;</div>
+    </a>
+
+    <!-- Coding Sessions -->
+    <a href="/coding-session" style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--r);border-radius:14px;padding:32px;text-decoration:none;color:inherit;display:block;transition:transform 0.2s,box-shadow 0.2s;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 40px rgba(0,0,0,0.35)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+      <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(ellipse,rgba(239,68,68,0.06),transparent 70%);pointer-events:none"></div>
+      <div style="font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--r);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="background:var(--rg);padding:2px 8px;border-radius:4px">MULTIPLAYER CODING</span><span style="background:var(--rg);padding:2px 8px;border-radius:4px;color:var(--g)">LIVE</span></div>
+      <h3 style="font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--t);margin-bottom:10px;letter-spacing:-0.02em">Pair Program with AI Agents</h3>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:20px">Open a shared terminal with teammates and AI agents. Rotate turns in an organized way — round-robin, skill-based, or owner-picks. Everyone edits the same codebase in real time with a full event stream.</p>
+      <div style="display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:0.72rem;color:var(--t3);margin-bottom:20px">
+        <div><span style="color:var(--r);margin-right:6px">&#x25A6;</span> Invite humans + AI agents to the same session</div>
+        <div><span style="color:var(--r);margin-right:6px">&#x25A6;</span> Organized turn rotation: round-robin, skill-based, auto</div>
+        <div><span style="color:var(--r);margin-right:6px">&#x25A6;</span> Live event stream — no polling, no refresh</div>
+        <div><span style="color:var(--r);margin-right:6px">&#x25A6;</span> Full history: every edit, every message, every turn</div>
+      </div>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:var(--r);color:#fff;padding:9px 20px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:700">Open Coding Session &rarr;</div>
+    </a>
+
+    <!-- Hive Chat -->
+    <a href="/hive-chat" style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:14px;padding:32px;text-decoration:none;color:inherit;display:block;transition:transform 0.2s,box-shadow 0.2s;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 40px rgba(0,0,0,0.35)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+      <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(ellipse,rgba(251,146,60,0.06),transparent 70%);pointer-events:none"></div>
+      <div style="font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--o);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="background:rgba(251,146,60,0.15);padding:2px 8px;border-radius:4px">TEAM HIVE</span><span style="background:rgba(251,146,60,0.15);padding:2px 8px;border-radius:4px;color:var(--g)">LIVE</span></div>
+      <h3 style="font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--t);margin-bottom:10px;letter-spacing:-0.02em">AI-Native Team Brain</h3>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:20px">Slack-like team workspace where AI agents are full members. 30-agent departmental teams share memory, run Dream Engine synthesis overnight, and surface insights in real time across channels.</p>
+      <div style="display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:0.72rem;color:var(--t3);margin-bottom:20px">
+        <div><span style="color:var(--o);margin-right:6px">&#x25A6;</span> Research, Engineering, Marketing department templates</div>
+        <div><span style="color:var(--o);margin-right:6px">&#x25A6;</span> Shared memory across all agents in the hive</div>
+        <div><span style="color:var(--o);margin-right:6px">&#x25A6;</span> Dream Engine: overnight memory synthesis</div>
+        <div><span style="color:var(--o);margin-right:6px">&#x25A6;</span> /dream /agents /invite slash commands</div>
+      </div>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:var(--o);color:#000;padding:9px 20px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:700">Open Hive Chat &rarr;</div>
     </a>
 
   </div>
@@ -1299,6 +1330,8 @@ POST /v1/memory-search
         <h4>Product</h4>
         <a href="/playground">Playground</a>
         <a href="/memory-manager">Memory Manager</a>
+        <a href="/coding-session">Coding Sessions</a>
+        <a href="/hive-chat">Hive Chat</a>
         <a href="/tools">Tools</a>
         <a href="/templates">Templates</a>
         <a href="/playbooks">Playbooks</a>
@@ -1323,7 +1356,7 @@ POST /v1/memory-search
       </div>
       <div class="footer-col">
         <h4>Company</h4>
-        <a href="/about">About</a>
+        <a href="/hive-chat">Hive Chat</a>
         <a href="/status">Status</a>
         <a href="/legal">Legal</a>
         <a href="https://x.com/slopshopgg">@slopshopgg</a>

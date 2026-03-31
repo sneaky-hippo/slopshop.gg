@@ -281,21 +281,30 @@ svg.arrows{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:
   <h1 class="landing-h1">Build <span class="acc-indigo">Dream Engine</span><br>workflows <span class="acc-cyan">visually</span></h1>
   <p class="landing-sub">Drag nodes onto the canvas. Connect them. Hit Run. Real API calls — no code, no friction. Memory synthesis, team spaces, and AI transforms in minutes.</p>
   <div class="connect-card">
-    <div class="connect-card-title">Enter your API key to start building</div>
-    <div class="connect-row">
-      <div class="api-key-wrap">
-        <input type="password" id="apiKeyInput" placeholder="sk-slop-..." autocomplete="off" spellcheck="false">
-        <button class="toggle-key" id="toggleKey" title="Show key">&#128065;</button>
-      </div>
+    <div class="connect-card-title">Sign in to start building</div>
+    <div class="connect-row" style="flex-direction:column;gap:8px">
+      <input type="email" id="loginEmail" placeholder="you@example.com" autocomplete="email" style="font-family:var(--mono);font-size:0.82rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:10px 13px;border-radius:8px;width:100%;outline:none;box-sizing:border-box">
+      <input type="password" id="loginPassword" placeholder="••••••••" autocomplete="current-password" style="font-family:var(--mono);font-size:0.82rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:10px 13px;border-radius:8px;width:100%;outline:none;box-sizing:border-box">
       <button class="btn-connect" id="connectBtn">
         <span class="spinner" id="connectSpinner" style="display:none"></span>
-        &#9889; Connect
+        &#9889; Sign In
       </button>
     </div>
     <div class="connect-status">
       <div class="status-dot" id="statusDot"></div>
       <span class="status-label" id="statusLabel">Not connected</span>
     </div>
+    <div style="text-align:center;margin-top:10px;font-size:0.78rem;color:var(--t3)">No account? <a href="/signup?from=/playground" style="color:var(--v);text-decoration:none;font-weight:600">Sign up free &rarr;</a></div>
+    <details style="margin-top:12px;font-size:0.72rem">
+      <summary style="cursor:pointer;color:var(--t4);user-select:none">Developer? Use API key directly</summary>
+      <div class="connect-row" style="margin-top:8px">
+        <div class="api-key-wrap">
+          <input type="password" id="apiKeyInput" placeholder="sk-slop-..." autocomplete="off" spellcheck="false">
+          <button class="toggle-key" id="toggleKey" title="Show key">&#128065;</button>
+        </div>
+        <button class="btn-connect" id="devConnectBtn" style="padding:0 14px;min-width:auto">Use Key</button>
+      </div>
+    </details>
   </div>
   <div class="sample-preview">
     <span class="sp-node">&#128270; Memory Search</span>
@@ -564,25 +573,80 @@ const $statusDot = document.getElementById('statusDot');
 const $statusLbl = document.getElementById('statusLabel');
 const $connSpn   = document.getElementById('connectSpinner');
 
-const savedKey = localStorage.getItem('slop_api_key');
-if (savedKey) $apiKey.value = savedKey;
+const savedKey = localStorage.getItem('slopshop_api_key') || localStorage.getItem('slop_api_key');
+if (savedKey) {
+  // Auto-connect if key exists
+  (async () => {
+    $connSpn.style.display = 'inline-block';
+    setStatus('connecting');
+    try {
+      apiKey = savedKey;
+      const res = await apiCall('POST', '/memory-list', { namespace: '__ping__', limit: 1 });
+      if (typeof res.credits === 'number') totalCreds = res.credits;
+      setStatus('on', 'Connected');
+      showApp();
+    } catch (err) {
+      apiKey = '';
+      setStatus('err', 'Session expired');
+    } finally {
+      $connSpn.style.display = 'none';
+    }
+  })();
+}
 
 document.getElementById('toggleKey').addEventListener('click', () => {
   $apiKey.type = $apiKey.type === 'password' ? 'text' : 'password';
 });
 
-$apiKey.addEventListener('keydown', e => { if (e.key === 'Enter') $connBtn.click(); });
-
+// Email/password login
 $connBtn.addEventListener('click', async () => {
-  const key = $apiKey.value.trim();
-  if (!key) { toast('Enter an API key first', 'warn'); return; }
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  if (!email || !password) { toast('Email and password required', 'warn'); return; }
   $connBtn.disabled = true;
   $connSpn.style.display = 'inline-block';
   setStatus('connecting');
   try {
+    const lr = await fetch('/v1/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const ld = await lr.json();
+    if (!lr.ok) throw Object.assign(new Error(ld.error?.message || 'Login failed'), { status: lr.status });
+    const key = ld.api_key;
+    apiKey = key;
+    localStorage.setItem('slopshop_api_key', key);
+    const res = await apiCall('POST', '/memory-list', { namespace: '__ping__', limit: 1 });
+    if (typeof res.credits === 'number') totalCreds = res.credits;
+    setStatus('on', 'Connected');
+    showApp();
+    toast('Signed in — start building!', 'success');
+  } catch (err) {
+    apiKey = '';
+    if (err.status === 401) {
+      setStatus('err', 'Wrong email or password');
+      toast('Wrong email or password', 'error');
+    } else {
+      setStatus('err', 'Connection failed');
+      toast('Connection failed: ' + err.message, 'error');
+    }
+  } finally {
+    $connBtn.disabled = false;
+    $connSpn.style.display = 'none';
+  }
+});
+
+// Developer raw key fallback
+document.getElementById('devConnectBtn').addEventListener('click', async () => {
+  const key = $apiKey.value.trim();
+  if (!key) { toast('Enter an API key first', 'warn'); return; }
+  document.getElementById('devConnectBtn').disabled = true;
+  setStatus('connecting');
+  try {
     apiKey = key;
     const res = await apiCall('POST', '/memory-list', { namespace: '__ping__', limit: 1 });
-    localStorage.setItem('slop_api_key', key);
+    localStorage.setItem('slopshop_api_key', key);
     if (typeof res.credits === 'number') totalCreds = res.credits;
     setStatus('on', 'Connected');
     showApp();
@@ -597,8 +661,7 @@ $connBtn.addEventListener('click', async () => {
       toast('Connection failed: ' + err.message, 'error');
     }
   } finally {
-    $connBtn.disabled = false;
-    $connSpn.style.display = 'none';
+    document.getElementById('devConnectBtn').disabled = false;
   }
 });
 

@@ -313,15 +313,27 @@ tr.expand-row td{padding:0}
     <p class="sub">Browse, search, and edit your agent's stored knowledge. Create shared memory spaces for teams. Run Dream Engine synthesis to evolve what your agent knows.</p>
 
     <div class="connect-card">
-      <label for="api-key-input">API Key</label>
+      <label>Email</label>
+      <div class="key-row" style="margin-bottom:8px">
+        <input type="email" id="login-email" placeholder="you@example.com" autocomplete="email" style="flex:1;font-family:var(--mono);font-size:0.84rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:10px 13px;border-radius:8px;outline:none">
+      </div>
+      <label>Password</label>
       <div class="key-row">
-        <input type="password" id="api-key-input" placeholder="sk-slop-xxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
-        <button class="btn btn-cyan" id="connect-btn" onclick="connectWithKey()">
+        <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password" style="flex:1;font-family:var(--mono);font-size:0.84rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:10px 13px;border-radius:8px;outline:none">
+        <button class="btn btn-cyan" id="connect-btn" onclick="connectWithLogin()">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-          Connect
+          Sign In
         </button>
       </div>
       <div class="connect-err" id="connect-err"></div>
+      <div style="text-align:center;margin-top:10px;font-size:0.78rem;color:var(--t3)">No account? <a href="/signup?from=/memory-manager" style="color:var(--c1);text-decoration:none;font-weight:600">Sign up free &rarr;</a></div>
+      <details style="margin-top:10px;font-size:0.72rem">
+        <summary style="cursor:pointer;color:var(--t3);user-select:none">Developer? Use API key directly</summary>
+        <div class="key-row" style="margin-top:8px">
+          <input type="password" id="api-key-input" placeholder="sk-slop-xxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false" style="flex:1">
+          <button class="btn btn-cyan btn-sm" onclick="connectWithKey()">Use Key</button>
+        </div>
+      </details>
     </div>
 
     <div class="features">
@@ -649,9 +661,41 @@ async function apiSafe(method, path, body) {
 }
 
 // ── CONNECT / DISCONNECT ─────────────────────────────────────────────────────
+async function connectWithLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  const errEl = document.getElementById('connect-err');
+  errEl.style.display = 'none';
+  if (!email || !password) { errEl.textContent = 'Email and password required.'; errEl.style.display = 'block'; return; }
+  const btn = document.getElementById('connect-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner spinner-sm"></div> Signing in...';
+  try {
+    const r = await fetch(BASE + '/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error?.message || 'Login failed');
+    const key = d.api_key;
+    apiKey = key;
+    localStorage.setItem('slopshop_api_key', key);
+    localStorage.setItem(LS_KEY, key);
+    showDashboard(key);
+  } catch (e) {
+    errEl.textContent = e.message;
+    errEl.style.display = 'block';
+    apiKey = '';
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Sign In';
+  }
+}
+
 async function connectWithKey() {
   const input = document.getElementById('api-key-input');
-  const key = input.value.trim();
+  const key = input ? input.value.trim() : '';
   const errEl = document.getElementById('connect-err');
   errEl.style.display = 'none';
   if (!key) { errEl.textContent = 'Please enter an API key.'; errEl.style.display = 'block'; return; }
@@ -712,9 +756,8 @@ function disconnect() {
 
 // Auto-connect from localStorage
 window.addEventListener('DOMContentLoaded', () => {
-  const saved = localStorage.getItem(LS_KEY);
+  const saved = localStorage.getItem('slopshop_api_key') || localStorage.getItem(LS_KEY);
   if (saved) {
-    document.getElementById('api-key-input').value = saved;
     apiKey = saved;
     showDashboard(saved);
   }

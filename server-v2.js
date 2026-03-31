@@ -2241,6 +2241,8 @@ try { require('./routes/gateway')(app, db, apiKeys); } catch (e) { console.warn(
 try { require('./routes/eval')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: eval -', e.message); }
 try { require('./routes/workflow-builder')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: workflow-builder -', e.message); }
 try { require('./routes/marketplace')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: marketplace -', e.message); }
+try { require('./routes/coding-session')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: coding-session -', e.message); }
+try { require('./routes/chat-session-auth')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: chat-session-auth -', e.message); }
 // ============================
 
 // ===== PIPE ENDPOINTS (run / create / gallery) =====

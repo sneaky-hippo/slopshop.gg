@@ -2,183 +2,318 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Create Account — Slopshop</title>
+<meta name="description" content="Sign up for Slopshop — 500 free credits, memory APIs always free, no card required.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<title>Sign Up — Slopshop</title>
-<meta name="description" content="Create a free Slopshop account. 500 free credits. Memory is always free.">
-<link rel="canonical" href="https://slopshop.gg/signup">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://slopshop.gg/signup">
-<meta property="og:title" content="Sign Up — Slopshop">
-<meta property="og:description" content="Create a free Slopshop account. 500 free credits. Memory is always free.">
-<meta property="og:image" content="https://slopshop.gg/og.png">
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:site" content="@slopshopgg">
-<meta name="twitter:title" content="Sign Up — Slopshop">
-<meta name="twitter:description" content="Create a free Slopshop account. 500 free credits. Memory is always free.">
-<meta name="twitter:image" content="https://slopshop.gg/og.png">
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<meta name="theme-color" content="#ff3333">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
-*{margin:0;padding:0;box-sizing:border-box}
-:root{
-  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
-  --b:#1a1a1a;--b2:#2a2a2a;
-  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
-  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
-  --o:#ff8800;--og:rgba(255,136,0,0.1);
-  --g:#00cc66;--gg:rgba(0,204,102,0.1);
-  --c:#00aaff;--cg:rgba(0,170,255,0.1);
-  --v:#8855ff;--vg:rgba(136,85,255,0.1);
-  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
-}
-body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75;min-height:100vh;display:flex;flex-direction:column}
-::selection{background:var(--r);color:#fff}
-a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
-a:hover{opacity:0.8}
-
-nav{
-  position:fixed;top:0;left:0;right:0;z-index:100;height:56px;
-  background:rgba(5,5,5,0.85);
-  backdrop-filter:blur(20px) saturate(180%);
-  border-bottom:1px solid var(--b);
-  display:flex;align-items:center;padding:0 32px
-}
-.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
-.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:var(--t);text-decoration:none}
-.logo .mark{color:#fff}
-.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
-.nav-links{display:flex;gap:4px;align-items:center}
-.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s}
-.nav-links a:hover{color:var(--t);background:var(--s2)}
-
-.main{flex:1;display:flex;align-items:center;justify-content:center;padding:80px 24px 48px}
-.card{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:48px 40px;max-width:420px;width:100%}
-.card h1{font-family:var(--mono);font-size:1.4rem;font-weight:800;letter-spacing:-0.02em;margin-bottom:8px;text-align:center}
-.card .subtitle{color:var(--t2);font-size:0.8rem;text-align:center;margin-bottom:32px}
-.card .subtitle b{color:var(--t);font-weight:600}
-
-label{display:block;font-size:0.72rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px}
-input[type="email"],input[type="password"]{
-  width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--b2);border-radius:8px;
-  color:var(--t);font-family:var(--sans);font-size:0.85rem;outline:none;transition:border-color 0.2s;
-  margin-bottom:20px
-}
-input[type="email"]:focus,input[type="password"]:focus{border-color:var(--r)}
-input[type="email"]::placeholder,input[type="password"]::placeholder{color:var(--t4)}
-
-.btn-submit{
-  width:100%;padding:14px;background:var(--r);color:#fff;border:none;border-radius:10px;
-  font-family:var(--mono);font-size:0.85rem;font-weight:700;cursor:pointer;transition:background 0.2s,transform 0.15s
-}
-.btn-submit:hover{background:var(--r2)}
-.btn-submit:active{transform:scale(0.98)}
-.btn-submit:disabled{opacity:0.6;cursor:not-allowed}
-
-.free-note{text-align:center;margin-top:16px;font-size:0.72rem;color:var(--t3)}
-.free-note b{color:var(--g);font-weight:600}
-
-.error-msg{display:none;background:rgba(255,51,51,0.1);border:1px solid rgba(255,51,51,0.2);color:var(--r2);padding:10px 14px;border-radius:8px;font-size:0.8rem;margin-bottom:16px;text-align:center}
-
-.login-link{text-align:center;margin-top:24px;font-size:0.78rem;color:var(--t3)}
-.login-link a{color:var(--r);font-weight:600}
-
-@media(max-width:480px){
-  .card{padding:36px 24px;border-radius:12px}
-  nav{padding:0 12px;height:50px}
-}
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap');
+:root{--bg:#050505;--s1:#0d0d10;--s2:#131316;--s3:#1a1a1f;--b:#1f1f26;--b2:#2a2a34;--t:#f0f0f5;--t2:#8e8ea8;--t3:#5a5a70;--t4:#363645;--r:#06b6d4;--rg:rgba(6,182,212,.08);--r2:#67e8f9;--g:#34d97b;--gg:rgba(52,217,123,.1);--o:#f59e0b;--v:#8b5cf6;--vg:rgba(139,92,246,.1);--red:#ef4444;--mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+a{color:var(--r);text-decoration:none;transition:opacity .15s}a:hover{opacity:.8}
+.topbar{display:flex;align-items:center;padding:0 32px;height:56px;border-bottom:1px solid var(--b);background:rgba(5,5,5,.9);backdrop-filter:blur(20px);position:sticky;top:0;z-index:10}
+.topbar-logo{font-family:var(--mono);font-weight:700;font-size:.95rem;letter-spacing:.08em;color:var(--r);text-decoration:none}
+.topbar-logo span{color:var(--t3);font-size:.7rem;font-weight:500;margin-left:2px}
+.topbar-spacer{flex:1}
+.topbar-link{font-size:.8rem;color:var(--t3);text-decoration:none;transition:color .15s;margin-left:20px}
+.topbar-link:hover{color:var(--t)}
+.page{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 20px}
+.card{width:440px;max-width:100%}
+.card-header{text-align:center;margin-bottom:28px}
+.badge{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(6,182,212,.15);color:var(--r);padding:4px 14px;border-radius:99px;font-family:var(--mono);font-size:.65rem;font-weight:600;letter-spacing:.06em;margin-bottom:14px;text-transform:uppercase}
+.card-header h1{font-family:var(--mono);font-size:1.5rem;font-weight:700;letter-spacing:-.03em;margin-bottom:8px}
+.card-header p{font-size:.875rem;color:var(--t2);line-height:1.6}
+.tabs{display:flex;background:var(--s2);border:1px solid var(--b);border-radius:10px;padding:3px;margin-bottom:20px}
+.tab-btn{flex:1;padding:8px;border:none;background:transparent;color:var(--t3);font-family:var(--mono);font-size:.75rem;font-weight:600;cursor:pointer;border-radius:7px;transition:all .15s}
+.tab-btn.active{background:var(--s3);color:var(--t);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.form-box{background:var(--s1);border:1px solid var(--b);border-radius:14px;padding:28px}
+.form-group{margin-bottom:18px}
+.form-label{display:block;font-family:var(--mono);font-size:.68rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:7px}
+.form-input{width:100%;background:var(--s2);border:1px solid var(--b2);border-radius:8px;color:var(--t);font-family:var(--sans);font-size:.9rem;padding:11px 14px;outline:none;transition:border-color .15s,background .15s}
+.form-input:focus{border-color:var(--r);background:rgba(6,182,212,.03)}
+.form-input::placeholder{color:var(--t4)}
+.form-hint{font-size:.72rem;color:var(--t4);margin-top:5px}
+.form-error{font-size:.78rem;color:var(--red);margin-top:5px;display:none}
+.form-error.visible{display:block}
+.btn-primary{width:100%;padding:13px;background:var(--r);color:#000;border:none;border-radius:8px;font-family:var(--mono);font-size:.85rem;font-weight:700;cursor:pointer;transition:all .2s;letter-spacing:.02em;margin-top:4px}
+.btn-primary:hover{background:var(--r2);transform:translateY(-1px);box-shadow:0 6px 24px rgba(6,182,212,.25)}
+.btn-primary:disabled{background:var(--s3);color:var(--t4);transform:none;box-shadow:none;cursor:not-allowed}
+.btn-secondary{width:100%;padding:11px;background:transparent;color:var(--t2);border:1px solid var(--b2);border-radius:8px;font-family:var(--mono);font-size:.8rem;font-weight:500;cursor:pointer;transition:all .15s}
+.btn-secondary:hover{border-color:var(--r);color:var(--t)}
+.success-box{background:var(--s1);border:1px solid rgba(52,217,123,.3);border-radius:14px;padding:28px;display:none}
+.success-box.visible{display:block}
+.success-title{font-family:var(--mono);font-size:1.1rem;font-weight:700;color:var(--g);margin-bottom:8px}
+.success-sub{font-size:.82rem;color:var(--t2);margin-bottom:18px;line-height:1.6}
+.key-display{background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:12px 14px;font-family:var(--mono);font-size:.75rem;color:var(--r);word-break:break-all;cursor:pointer;transition:background .15s;margin-bottom:8px}
+.key-display:hover{background:rgba(6,182,212,.05)}
+.key-hint{font-size:.68rem;color:var(--t4);text-align:center;margin-bottom:18px}
+.credits-badge{display:inline-flex;align-items:center;gap:6px;background:var(--gg);border:1px solid rgba(52,217,123,.2);color:var(--g);padding:6px 14px;border-radius:99px;font-family:var(--mono);font-size:.72rem;font-weight:600;margin-bottom:18px}
+.action-btn{display:block;padding:11px 20px;border-radius:8px;font-family:var(--mono);font-size:.78rem;font-weight:600;text-decoration:none;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:8px}
+.action-btn.primary{background:var(--r);color:#000}
+.action-btn.primary:hover{background:var(--r2);opacity:1}
+.action-btn.secondary{background:transparent;border:1px solid var(--b2);color:var(--t2)}
+.action-btn.secondary:hover{border-color:var(--r);color:var(--t);opacity:1}
+.action-btn.violet{background:var(--vg);border:1px solid rgba(139,92,246,.25);color:var(--v)}
+.action-btn.violet:hover{background:rgba(139,92,246,.15);opacity:1}
+.perks{display:flex;flex-direction:column;gap:8px;margin-top:20px;padding:0 4px}
+.perk{display:flex;align-items:center;gap:10px;font-size:.8rem;color:var(--t2)}
+.perk-icon{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.68rem;flex-shrink:0}
+.perk-icon.green{background:var(--gg);color:var(--g)}
+.perk-icon.cyan{background:var(--rg);color:var(--r)}
+.perk-icon.violet{background:var(--vg);color:var(--v)}
+.pw-strength{height:3px;border-radius:2px;background:var(--b);margin-top:5px;overflow:hidden}
+.pw-bar{height:100%;border-radius:2px;transition:width .3s,background .3s;width:0}
+.redirect-notice{background:var(--rg);border:1px solid rgba(6,182,212,.2);border-radius:8px;padding:10px 14px;font-size:.78rem;color:var(--r2);font-family:var(--mono);margin-bottom:16px;display:none}
+.redirect-notice.visible{display:block}
+.toggle-dev{font-size:.72rem;color:var(--t4);text-align:center;cursor:pointer;margin-top:12px;transition:color .15s;display:block}
+.toggle-dev:hover{color:var(--t2)}
+.key-input-section{display:none;margin-top:14px;padding-top:14px;border-top:1px solid var(--b)}
+.key-input-section.visible{display:block}
+.page-footer{padding:18px 32px;border-top:1px solid var(--b);text-align:center;font-size:.72rem;color:var(--t4)}
+.page-footer a{color:var(--t3)}
+.page-footer a:hover{color:var(--t2)}
+.spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(0,0,0,.25);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<nav><div class="nv">
-  <a href="/" class="logo">
-    <span class="mark" style="color:#ef4444;font-family:'Courier New',monospace;font-weight:900;letter-spacing:0.05em">SLOPSHOP.gg</span><span style="font-size:0.55rem;color:#ff3333;border:1px solid rgba(255,51,51,0.2);padding:2px 6px;border-radius:4px;margin-left:8px">v4.0</span>
-  </a>
-  <div class="nav-links">
-    <a href="/tools">Tools</a>
-    <a href="/docs">Docs</a>
-    <a href="/login">Log In</a>
-  </div>
-</div></nav>
+<div class="topbar">
+  <a href="/" class="topbar-logo">SLOPSHOP<span>.gg</span></a>
+  <div class="topbar-spacer"></div>
+  <a href="/?mode=login" class="topbar-link">Already have an account?</a>
+</div>
 
-<div class="main">
+<div class="page">
   <div class="card">
-    <h1>Create your account</h1>
-    <p class="subtitle"><b>500 free credits.</b> Memory is always free.</p>
+    <div class="card-header">
+      <div class="badge">⚡ Free Account</div>
+      <h1>Start Building for Free</h1>
+      <p>500 credits loaded instantly. Memory APIs always free.<br>No card required — ever.</p>
+    </div>
 
-    <div id="error" class="error-msg"></div>
+    <div class="redirect-notice" id="redirectNotice"></div>
 
-    <form id="signupForm" autocomplete="on">
-      <label for="email">Email</label>
-      <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email">
+    <div class="tabs">
+      <button class="tab-btn active" id="tabSignup" onclick="switchTab('signup')">Create Account</button>
+      <button class="tab-btn" id="tabLogin" onclick="switchTab('login')">Log In</button>
+    </div>
 
-      <label for="password">Password</label>
-      <input type="password" id="password" name="password" placeholder="Min 8 characters" required minlength="8" autocomplete="new-password">
+    <!-- SIGN UP FORM -->
+    <div id="signupForm">
+      <div class="form-box">
+        <div class="form-group">
+          <label class="form-label" for="sEmail">Email</label>
+          <input type="email" id="sEmail" class="form-input" placeholder="you@example.com" autocomplete="email" autofocus>
+          <div class="form-error" id="sEmailErr"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="sPw">Password</label>
+          <input type="password" id="sPw" class="form-input" placeholder="At least 8 characters" autocomplete="new-password" oninput="checkPw(this.value)">
+          <div class="pw-strength"><div class="pw-bar" id="pwBar"></div></div>
+          <div class="form-error" id="sPwErr"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="sName">Display Name <span style="color:var(--t4);text-transform:none;font-weight:400">(optional)</span></label>
+          <input type="text" id="sName" class="form-input" placeholder="e.g. Alex or claude-agent" maxlength="50" autocomplete="name">
+        </div>
+        <div class="form-error" id="sGenErr" style="margin-bottom:12px"></div>
+        <button class="btn-primary" id="btnSignup" onclick="doSignup()">Create Free Account →</button>
+      </div>
+      <div class="perks">
+        <div class="perk"><div class="perk-icon green">✓</div><span><strong style="color:var(--t)">500 free credits</strong> — no card, no expiry</span></div>
+        <div class="perk"><div class="perk-icon cyan">∞</div><span><strong style="color:var(--t)">Memory APIs always free</strong> — Dream Engine + shared spaces</span></div>
+        <div class="perk"><div class="perk-icon violet">⚡</div><span><strong style="color:var(--t)">1,400+ tools</strong> — self-hostable, forever yours</span></div>
+      </div>
+    </div>
 
-      <button type="submit" id="submitBtn" class="btn-submit">Create Account</button>
-      <p style="font-size:0.7rem;color:var(--t4);margin-top:12px;text-align:center">By signing up, you agree to our <a href="/legal" style="color:var(--t3)">Terms of Service</a> and <a href="/legal" style="color:var(--t3)">Privacy Policy</a>.</p>
-    </form>
+    <!-- LOG IN FORM -->
+    <div id="loginForm" style="display:none">
+      <div class="form-box">
+        <div class="form-group">
+          <label class="form-label" for="lEmail">Email</label>
+          <input type="email" id="lEmail" class="form-input" placeholder="you@example.com" autocomplete="email">
+          <div class="form-error" id="lEmailErr"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="lPw">Password</label>
+          <input type="password" id="lPw" class="form-input" placeholder="Your password" autocomplete="current-password">
+          <div class="form-error" id="lPwErr"></div>
+        </div>
+        <div class="form-error" id="lGenErr" style="margin-bottom:12px"></div>
+        <button class="btn-primary" id="btnLogin" onclick="doLogin()">Log In →</button>
+        <span class="toggle-dev" onclick="toggleKey()">Have an API key? Paste it directly ↓</span>
+        <div class="key-input-section" id="keySection">
+          <label class="form-label" for="dKey" style="margin-bottom:7px">API Key</label>
+          <input type="text" id="dKey" class="form-input" placeholder="sk-slop-..." style="font-family:var(--mono);font-size:.78rem">
+          <div class="form-hint">Starts with sk-slop-</div>
+          <button class="btn-secondary" style="margin-top:10px" onclick="useDirectKey()">Use this key →</button>
+        </div>
+      </div>
+    </div>
 
-    <div id="result"></div>
-
-    <p class="free-note"><b>No credit card required.</b> Start building in 30 seconds.</p>
-    <p class="login-link">Already have an account? <a href="/login">Log in</a></p>
+    <!-- SUCCESS STATE -->
+    <div class="success-box" id="successBox">
+      <div style="font-size:2rem;margin-bottom:10px">🎉</div>
+      <div class="success-title">Welcome to Slopshop!</div>
+      <div class="success-sub">Your account is ready. Your API key is saved in your browser — you won't need to enter it again.</div>
+      <div class="key-display" id="keyDisplay" onclick="copyKey()" title="Click to copy"></div>
+      <div class="key-hint">Click to copy · Never share this key</div>
+      <div style="text-align:center"><div class="credits-badge">✓ 500 credits loaded · Memory APIs free forever</div></div>
+      <div id="actionGroup"></div>
+      <div style="padding-top:16px;border-top:1px solid var(--b);margin-top:4px">
+        <div style="font-family:var(--mono);font-size:.65rem;color:var(--t4);margin-bottom:10px;text-transform:uppercase;letter-spacing:.06em">Need more credits for AI tools?</div>
+        <a href="/pricing" class="action-btn violet">⚡ View Plans →</a>
+      </div>
+    </div>
   </div>
 </div>
 
+<div class="page-footer">
+  <a href="/legal">Privacy</a> &nbsp;·&nbsp; <a href="/legal">Terms</a> &nbsp;·&nbsp;
+  <a href="/docs">API Docs</a> &nbsp;·&nbsp; <a href="/">slopshop.gg</a>
+</div>
+
 <script>
-document.getElementById('signupForm').addEventListener('submit', async (e) => {
-  e.preventDefault();
-  const email = document.getElementById('email').value;
-  const password = document.getElementById('password').value;
-  const btn = document.getElementById('submitBtn');
-  const result = document.getElementById('result');
-  const error = document.getElementById('error');
+const BASE = '/v1';
+const params = new URLSearchParams(location.search);
+const redirectTo = params.get('from') || '/playground';
 
-  btn.disabled = true;
-  btn.textContent = 'Creating account...';
-  error.style.display = 'none';
+// Redirect banner
+if (params.get('from')) {
+  const names = {'/playground':'Workflow Builder','/memory-manager':'Memory Manager','/coding-session':'Coding Session','/hive-chat':'Hive Chat'};
+  const el = document.getElementById('redirectNotice');
+  el.textContent = 'Sign in to use ' + (names[params.get('from')] || params.get('from').replace('/',''));
+  el.classList.add('visible');
+}
 
+// Pre-select login tab
+if (params.get('mode') === 'login') switchTab('login');
+
+// Already logged in → skip
+if (localStorage.getItem('slopshop_api_key') && !params.get('force')) location.href = redirectTo;
+
+function switchTab(t) {
+  const su = t === 'signup';
+  document.getElementById('signupForm').style.display = su ? '' : 'none';
+  document.getElementById('loginForm').style.display = su ? 'none' : '';
+  document.getElementById('successBox').classList.remove('visible');
+  document.getElementById('tabSignup').classList.toggle('active', su);
+  document.getElementById('tabLogin').classList.toggle('active', !su);
+}
+
+function checkPw(v) {
+  let s = 0;
+  if (v.length >= 8) s++; if (v.length >= 12) s++;
+  if (/[A-Z]/.test(v)) s++; if (/[0-9]/.test(v)) s++;
+  const b = document.getElementById('pwBar');
+  b.style.width = [0,20,42,70,100][Math.min(s,4)] + '%';
+  b.style.background = s <= 1 ? '#ef4444' : s <= 2 ? '#f59e0b' : '#34d97b';
+}
+
+function showErr(id, msg) {
+  const el = document.getElementById(id);
+  el.textContent = msg; el.classList.toggle('visible', !!msg);
+}
+
+async function doSignup() {
+  ['sEmailErr','sPwErr','sGenErr'].forEach(id => showErr(id,''));
+  const email = document.getElementById('sEmail').value.trim();
+  const pw = document.getElementById('sPw').value;
+  if (!email || !email.includes('@')) return showErr('sEmailErr','Enter a valid email address');
+  if (pw.length < 8) return showErr('sPwErr','Password must be at least 8 characters');
+  const btn = document.getElementById('btnSignup');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Creating account…';
   try {
-    const res = await fetch('/v1/auth/signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+    const r = await fetch(BASE + '/auth/signup', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, password: pw})
     });
-    const data = await res.json();
-
-    if (data.api_key || data.data?.api_key) {
-      const key = data.api_key || data.data?.api_key;
-      result.innerHTML = `
-        <div style="background:var(--s1);border:1px solid var(--g);border-radius:8px;padding:24px;margin-top:20px">
-          <div style="color:var(--g);font-weight:700;margin-bottom:12px">&#10003; Account created &mdash; 500 free credits loaded</div>
-          <div style="font-family:var(--mono);font-size:0.85rem;background:var(--bg);padding:12px;border-radius:6px;margin-bottom:12px;word-break:break-all;display:flex;align-items:center;justify-content:space-between;gap:8px">
-            <span id="apiKeyText">${key}</span>
-            <button onclick="navigator.clipboard.writeText('${key}');this.textContent='Copied!'" style="flex-shrink:0;background:var(--r);color:#fff;border:none;padding:4px 12px;border-radius:4px;cursor:pointer;font-size:0.75rem;font-family:var(--mono)">Copy</button>
-          </div>
-          <div style="font-size:0.8rem;color:var(--t3);line-height:2">
-            <strong style="color:var(--t2)">Next steps:</strong><br>
-            <code style="background:var(--s2);padding:2px 6px;border-radius:3px">npm install -g slopshop</code><br>
-            <code style="background:var(--s2);padding:2px 6px;border-radius:3px">slop key set ${key}</code><br>
-            <code style="background:var(--s2);padding:2px 6px;border-radius:3px">slop call crypto-hash-sha256 --text "hello world"</code>
-          </div>
-        </div>`;
-      document.getElementById('signupForm').style.display = 'none';
-    } else {
-      error.textContent = data.error?.message || data.message || 'Signup failed';
-      error.style.display = 'block';
-      btn.disabled = false;
-      btn.textContent = 'Create Account';
+    const d = await r.json();
+    if (!r.ok) {
+      if (d.error?.code === 'email_exists') {
+        showErr('sGenErr', 'Account exists — use Log In.');
+        switchTab('login');
+        document.getElementById('lEmail').value = email;
+      } else {
+        showErr('sGenErr', d.error?.message || 'Signup failed — please try again.');
+      }
+      return;
     }
-  } catch(err) {
-    error.textContent = 'Connection error. Try again.';
-    error.style.display = 'block';
-    btn.disabled = false;
-    btn.textContent = 'Create Account';
+    onSuccess(d.api_key || d.key, d.balance ?? 500);
+  } catch(e) {
+    showErr('sGenErr', 'Network error — check your connection and try again.');
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Create Free Account →';
   }
+}
+
+async function doLogin() {
+  ['lEmailErr','lPwErr','lGenErr'].forEach(id => showErr(id,''));
+  const email = document.getElementById('lEmail').value.trim();
+  const pw = document.getElementById('lPw').value;
+  if (!email || !email.includes('@')) return showErr('lEmailErr','Enter a valid email address');
+  if (!pw) return showErr('lPwErr','Enter your password');
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true; btn.innerHTML = '<span class="spinner"></span>Logging in…';
+  try {
+    const r = await fetch(BASE + '/auth/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({email, password: pw})
+    });
+    const d = await r.json();
+    if (!r.ok) { showErr('lGenErr', d.error?.message || 'Invalid email or password.'); return; }
+    onSuccess(d.api_key || d.key, d.balance);
+  } catch(e) {
+    showErr('lGenErr', 'Network error — check your connection and try again.');
+  } finally {
+    btn.disabled = false; btn.innerHTML = 'Log In →';
+  }
+}
+
+function useDirectKey() {
+  const k = document.getElementById('dKey').value.trim();
+  if (!k) return;
+  onSuccess(k, null);
+}
+
+function toggleKey() { document.getElementById('keySection').classList.toggle('visible'); }
+
+function onSuccess(key, balance) {
+  localStorage.setItem('slopshop_api_key', key);
+  document.getElementById('signupForm').style.display = 'none';
+  document.getElementById('loginForm').style.display = 'none';
+  document.getElementById('keyDisplay').textContent = key;
+  document.getElementById('successBox').classList.add('visible');
+  const labels = {'/playground':'◊ Open Workflow Builder →','/memory-manager':'⬡ Open Memory Manager →','/coding-session':'⟨/⟩ Open Coding Session →','/hive-chat':'⧖ Open Hive Chat →'};
+  const primaryLabel = labels[redirectTo] || '→ Open Dashboard';
+  const group = document.getElementById('actionGroup');
+  group.innerHTML = `<a href="${redirectTo}" class="action-btn primary">${primaryLabel}</a>`;
+  if (redirectTo !== '/playground') group.innerHTML += `<a href="/playground" class="action-btn secondary">◊ Try Workflow Builder</a>`;
+  if (redirectTo !== '/hive-chat') group.innerHTML += `<a href="/hive-chat" class="action-btn secondary">⧖ Open Hive Chat</a>`;
+  // Auto-redirect after showing key
+  if (balance !== null && balance !== undefined) {
+    setTimeout(() => location.href = redirectTo, 2200);
+  }
+}
+
+function copyKey() {
+  const k = document.getElementById('keyDisplay').textContent;
+  navigator.clipboard.writeText(k).then(() => {
+    const el = document.getElementById('keyDisplay');
+    const orig = el.textContent;
+    el.textContent = '✓ Copied!'; el.style.color = 'var(--g)';
+    setTimeout(() => { el.textContent = orig; el.style.color = ''; }, 1500);
+  }).catch(() => {});
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Enter' || e.shiftKey) return;
+  if (document.getElementById('tabSignup').classList.contains('active')) doSignup();
+  else doLogin();
 });
 </script>
 </body>

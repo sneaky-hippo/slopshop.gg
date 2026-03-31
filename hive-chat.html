@@ -1,0 +1,1926 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Hive Chat — Slopshop Multiplayer Agent Workspace</title>
+<meta name="description" content="Slack-like multiplayer team chat where humans and AI agents collaborate in real time with shared memory via the Slopshop API.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
+
+:root{
+  --bg:        #050505;
+  --panel:     #0d0d0f;
+  --sidebar:   #141416;
+  --surface:   #1a1a1f;
+  --surface2:  #222228;
+  --border:    #1a1a1f;
+  --border2:   #2a2a32;
+  --text:      #f0f0f2;
+  --text2:     #8a8a9a;
+  --text3:     #55556a;
+  --text4:     #36364a;
+  --r:         #06b6d4;
+  --rg:        rgba(6,182,212,0.08);
+  --rb:        rgba(6,182,212,0.22);
+  --g:         #34d97b;
+  --gg:        rgba(52,217,123,0.08);
+  --gb:        rgba(52,217,123,0.2);
+  --o:         #f59e0b;
+  --og:        rgba(245,158,11,0.08);
+  --ob:        rgba(245,158,11,0.2);
+  --v:         #8b5cf6;
+  --vg:        rgba(139,92,246,0.1);
+  --vb:        rgba(139,92,246,0.25);
+  --red:       #f87171;
+  --redg:      rgba(248,113,113,0.1);
+  --mono:      'JetBrains Mono',monospace;
+  --sans:      'Inter',system-ui,sans-serif;
+}
+
+html,body{height:100%;overflow:hidden}
+body{font-family:var(--sans);background:var(--bg);color:var(--text);-webkit-font-smoothing:antialiased;font-size:13px;line-height:1.5}
+::selection{background:var(--v);color:#fff}
+button{cursor:pointer;font-family:inherit}
+input,textarea{font-family:inherit}
+a{color:var(--r);text-decoration:none}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text3)}
+
+/* ══════════════════════════════════
+   TOPBAR
+══════════════════════════════════ */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:200;
+  height:48px;
+  background:rgba(5,5,5,0.92);
+  backdrop-filter:blur(16px) saturate(180%);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:16px;
+}
+.tb-logo{
+  font-family:var(--mono);font-weight:800;font-size:0.85rem;letter-spacing:0.08em;
+  display:flex;align-items:center;gap:8px;flex-shrink:0;
+}
+.tb-logo .mark{color:var(--r)}
+.tb-logo .vtag{
+  font-size:0.5rem;color:var(--r);border:1px solid var(--rb);
+  padding:1px 5px;border-radius:3px;opacity:0.75;
+}
+.tb-workspace-name{
+  font-family:var(--mono);font-size:0.78rem;font-weight:600;color:var(--text);
+  border-left:1px solid var(--border2);padding-left:16px;
+}
+.tb-workspace-name span{color:var(--text3);font-weight:400;margin-left:4px}
+.tb-spacer{flex:1}
+.tb-status{display:flex;align-items:center;gap:6px;font-size:0.7rem;color:var(--text3);font-family:var(--mono)}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--text4);flex-shrink:0;transition:background 0.3s}
+.status-dot.live{background:var(--g);box-shadow:0 0 7px var(--g);animation:sdpulse 2.2s infinite}
+.status-dot.err{background:var(--red)}
+@keyframes sdpulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.tb-key-btn{
+  font-family:var(--mono);font-size:0.68rem;font-weight:600;
+  padding:5px 11px;border-radius:6px;
+  background:var(--surface);border:1px solid var(--border2);color:var(--text2);
+  transition:0.15s;
+}
+.tb-key-btn:hover{color:var(--text);border-color:var(--border2)}
+
+/* ══════════════════════════════════
+   APP SHELL
+══════════════════════════════════ */
+#app{
+  display:none;
+  position:fixed;top:48px;left:0;right:0;bottom:0;
+  flex-direction:row;
+}
+#app.visible{display:flex}
+
+/* ══════════════════════════════════
+   LEFT SIDEBAR
+══════════════════════════════════ */
+#sidebar{
+  width:240px;flex-shrink:0;
+  background:var(--sidebar);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.sb-section{
+  padding:12px 10px 6px;
+  font-size:0.62rem;font-weight:700;letter-spacing:0.12em;
+  text-transform:uppercase;color:var(--text3);font-family:var(--mono);
+}
+.sb-workspace-list{
+  overflow-y:auto;max-height:140px;
+  padding:0 6px;
+}
+.sb-ws-item{
+  display:flex;align-items:center;gap:8px;
+  padding:6px 8px;border-radius:7px;
+  cursor:pointer;transition:background 0.12s;
+  font-size:0.78rem;color:var(--text2);
+  font-family:var(--mono);font-weight:500;
+}
+.sb-ws-item:hover{background:var(--surface);color:var(--text)}
+.sb-ws-item.active{background:var(--rg);color:var(--r);border:1px solid var(--rb)}
+.sb-ws-item .ws-avatar{
+  width:22px;height:22px;border-radius:5px;
+  background:linear-gradient(135deg,var(--v),var(--r));
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.6rem;font-weight:800;color:#fff;flex-shrink:0;
+}
+.sb-ws-item .ws-unread{
+  margin-left:auto;background:var(--r);color:#fff;
+  font-size:0.6rem;font-weight:700;
+  padding:1px 5px;border-radius:10px;flex-shrink:0;
+}
+.sb-divider{height:1px;background:var(--border);margin:8px 10px}
+
+.sb-channel-list{flex:1;overflow-y:auto;padding:0 6px}
+.sb-channel-item{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 8px;border-radius:6px;
+  cursor:pointer;transition:background 0.12s;
+  font-size:0.78rem;color:var(--text3);
+  font-family:var(--mono);
+}
+.sb-channel-item:hover{background:var(--surface);color:var(--text2)}
+.sb-channel-item.active{background:var(--surface2);color:var(--text)}
+.sb-channel-item .ch-hash{color:var(--text3);font-size:0.72rem;flex-shrink:0}
+.sb-channel-item.active .ch-hash{color:var(--r)}
+.sb-channel-item .ch-unread{
+  margin-left:auto;background:var(--surface2);color:var(--text2);
+  font-size:0.6rem;font-weight:700;
+  padding:1px 5px;border-radius:10px;flex-shrink:0;
+}
+.sb-channel-item.has-unread{color:var(--text)}
+.sb-channel-item.has-unread .ch-unread{background:var(--r);color:#fff}
+
+.sb-templates{padding:6px;}
+.sb-template-btn{
+  width:100%;display:flex;align-items:center;gap:7px;
+  padding:6px 8px;border-radius:6px;border:none;
+  background:var(--surface);color:var(--text2);
+  font-size:0.72rem;font-family:var(--mono);
+  text-align:left;transition:0.15s;margin-bottom:3px;
+}
+.sb-template-btn:hover{background:var(--surface2);color:var(--text)}
+.sb-template-btn .t-icon{font-size:0.9rem;flex-shrink:0}
+
+.sb-bottom{
+  padding:10px 6px;border-top:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;
+}
+.sb-create-btn{
+  width:100%;display:flex;align-items:center;justify-content:center;gap:6px;
+  padding:8px;border-radius:7px;border:1px dashed var(--border2);
+  background:transparent;color:var(--text3);
+  font-size:0.72rem;font-family:var(--mono);font-weight:600;
+  transition:0.15s;
+}
+.sb-create-btn:hover{border-color:var(--r);color:var(--r);background:var(--rg)}
+
+/* ══════════════════════════════════
+   MAIN CHAT
+══════════════════════════════════ */
+#main{
+  flex:1;display:flex;flex-direction:column;
+  background:var(--panel);min-width:0;
+}
+.chat-header{
+  height:44px;flex-shrink:0;
+  background:var(--panel);
+  border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 16px;gap:10px;
+}
+.chat-channel-name{
+  font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--text);
+  display:flex;align-items:center;gap:6px;
+}
+.chat-channel-name .hash{color:var(--r);font-size:0.9rem}
+.chat-desc{font-size:0.72rem;color:var(--text3);border-left:1px solid var(--border2);padding-left:10px;margin-left:4px}
+.chat-header-spacer{flex:1}
+.member-count{font-size:0.7rem;color:var(--text3);font-family:var(--mono);display:flex;align-items:center;gap:5px}
+
+/* Message Feed */
+#feed{
+  flex:1;overflow-y:auto;
+  padding:16px 16px 8px;
+  display:flex;flex-direction:column;
+  gap:2px;
+}
+.feed-day-divider{
+  display:flex;align-items:center;gap:10px;
+  padding:10px 0;color:var(--text3);font-size:0.68rem;font-family:var(--mono);
+}
+.feed-day-divider::before,.feed-day-divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+
+/* Message rows */
+.msg-row{
+  display:flex;gap:10px;padding:3px 6px;border-radius:8px;
+  transition:background 0.1s;align-items:flex-start;
+}
+.msg-row:hover{background:var(--surface)}
+.msg-row.system-msg{
+  justify-content:center;padding:6px 0;
+}
+.msg-row.system-msg .msg-bubble{
+  font-style:italic;color:var(--text3);font-size:0.72rem;
+  background:none;padding:0;
+}
+
+.msg-avatar{
+  width:30px;height:30px;border-radius:7px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.68rem;font-weight:800;color:#fff;margin-top:2px;
+  font-family:var(--mono);
+}
+.msg-meta{flex:1;min-width:0}
+.msg-header{display:flex;align-items:baseline;gap:8px;margin-bottom:3px}
+.msg-actor{
+  font-family:var(--mono);font-size:0.78rem;font-weight:700;
+}
+.msg-actor.human-actor{color:var(--r)}
+.msg-actor.agent-actor{color:var(--g)}
+.msg-actor.system-actor{color:var(--text3)}
+.msg-time{font-size:0.65rem;color:var(--text3);font-family:var(--mono)}
+.msg-role-badge{
+  font-size:0.58rem;font-weight:700;padding:1px 6px;border-radius:4px;
+  font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;
+}
+.msg-text{
+  font-size:0.82rem;color:var(--text);line-height:1.6;word-break:break-word;
+}
+.msg-text code{
+  font-family:var(--mono);font-size:0.76rem;
+  background:var(--surface2);padding:1px 5px;border-radius:4px;color:var(--r);
+}
+
+/* Thinking indicator */
+.thinking-row{
+  display:flex;align-items:center;gap:10px;padding:6px 6px;
+}
+.thinking-dots{display:flex;gap:4px;align-items:center}
+.thinking-dots span{
+  width:6px;height:6px;border-radius:50%;background:var(--text3);
+  animation:tdots 1.4s infinite;
+}
+.thinking-dots span:nth-child(2){animation-delay:0.2s}
+.thinking-dots span:nth-child(3){animation-delay:0.4s}
+@keyframes tdots{0%,80%,100%{transform:scale(0.6);opacity:0.3}40%{transform:scale(1);opacity:1}}
+.thinking-label{font-size:0.72rem;color:var(--text3);font-family:var(--mono);font-style:italic}
+
+/* ── Composer ── */
+#composer{
+  flex-shrink:0;
+  border-top:1px solid var(--border);
+  background:var(--panel);
+  padding:12px 16px 14px;
+}
+.composer-inner{
+  background:var(--surface);
+  border:1px solid var(--border2);
+  border-radius:10px;
+  overflow:hidden;
+  transition:border-color 0.2s;
+}
+.composer-inner:focus-within{border-color:var(--rb)}
+.composer-textarea{
+  width:100%;background:none;border:none;outline:none;
+  color:var(--text);font-size:0.82rem;line-height:1.55;
+  padding:10px 12px 6px;
+  resize:none;min-height:40px;max-height:120px;overflow-y:auto;
+  font-family:var(--sans);
+}
+.composer-textarea::placeholder{color:var(--text3)}
+.composer-toolbar{
+  display:flex;align-items:center;gap:4px;
+  padding:4px 8px;border-top:1px solid var(--border);
+}
+.composer-action-btn{
+  display:flex;align-items:center;gap:4px;
+  padding:4px 8px;border-radius:5px;border:none;
+  background:none;color:var(--text3);
+  font-size:0.72rem;font-family:var(--mono);font-weight:600;
+  transition:0.15s;
+}
+.composer-action-btn:hover{background:var(--surface2);color:var(--text2)}
+.composer-spacer{flex:1}
+.composer-send-btn{
+  display:flex;align-items:center;gap:5px;
+  padding:5px 14px;border-radius:6px;border:none;
+  background:var(--r);color:#000;
+  font-family:var(--mono);font-size:0.75rem;font-weight:700;
+  transition:0.2s;
+}
+.composer-send-btn:hover{background:#08d4f5;box-shadow:0 0 20px var(--rg)}
+.composer-send-btn:disabled{opacity:0.4;cursor:not-allowed}
+.composer-hint{
+  font-size:0.62rem;color:var(--text4);font-family:var(--mono);
+  padding:4px 12px 0;
+}
+
+/* Slash menu */
+.slash-menu{
+  position:absolute;bottom:calc(100% + 4px);left:0;right:0;
+  background:var(--panel);border:1px solid var(--border2);border-radius:8px;
+  box-shadow:0 -8px 24px rgba(0,0,0,0.5);
+  overflow:hidden;z-index:300;
+}
+.slash-item{
+  display:flex;align-items:center;gap:10px;
+  padding:8px 12px;cursor:pointer;
+  font-family:var(--mono);font-size:0.75rem;
+  color:var(--text2);transition:background 0.1s;
+}
+.slash-item:hover,.slash-item.active{background:var(--surface);color:var(--text)}
+.slash-item .si-cmd{color:var(--r);font-weight:700;min-width:80px}
+.slash-item .si-desc{color:var(--text3);font-size:0.7rem}
+
+/* ══════════════════════════════════
+   RIGHT PANEL
+══════════════════════════════════ */
+#right-panel{
+  width:260px;flex-shrink:0;
+  background:var(--sidebar);
+  border-left:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+}
+.rp-tabs{
+  display:flex;border-bottom:1px solid var(--border);flex-shrink:0;
+}
+.rp-tab{
+  flex:1;padding:10px 4px;
+  background:none;border:none;
+  color:var(--text3);font-size:0.68rem;font-family:var(--mono);font-weight:600;
+  letter-spacing:0.06em;text-transform:uppercase;
+  border-bottom:2px solid transparent;
+  transition:0.15s;cursor:pointer;
+}
+.rp-tab.active{color:var(--r);border-bottom-color:var(--r)}
+.rp-tab:hover{color:var(--text2)}
+
+.rp-panel{display:none;flex:1;flex-direction:column;overflow-y:auto;padding:12px}
+.rp-panel.active{display:flex}
+
+/* Members tab */
+.member-item{
+  display:flex;align-items:center;gap:9px;
+  padding:6px 4px;border-radius:6px;
+  font-size:0.78rem;color:var(--text2);
+  transition:background 0.1s;
+}
+.member-item:hover{background:var(--surface)}
+.member-avatar{
+  width:26px;height:26px;border-radius:6px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.62rem;font-weight:800;color:#fff;font-family:var(--mono);
+  position:relative;
+}
+.member-status-dot{
+  position:absolute;bottom:-1px;right:-1px;
+  width:8px;height:8px;border-radius:50%;border:2px solid var(--sidebar);
+  background:var(--text4);
+}
+.member-status-dot.online{background:var(--g)}
+.member-status-dot.busy{background:var(--o)}
+.member-status-dot.offline{background:var(--text4)}
+.member-name{font-family:var(--mono);font-size:0.75rem;font-weight:600;color:var(--text)}
+.member-role{font-size:0.65rem;color:var(--text3)}
+
+/* Agents tab */
+.agent-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:10px 11px;margin-bottom:6px;cursor:pointer;transition:0.15s;
+}
+.agent-card:hover{border-color:var(--border2);background:var(--surface2)}
+.agent-card-top{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.agent-icon{font-size:1.2rem}
+.agent-name{font-family:var(--mono);font-size:0.78rem;font-weight:700;color:var(--text)}
+.agent-tag{font-size:0.62rem;padding:1px 6px;border-radius:4px;font-family:var(--mono)}
+.agent-desc{font-size:0.7rem;color:var(--text3);line-height:1.5;margin-bottom:8px}
+.agent-mention-btn{
+  font-size:0.68rem;font-family:var(--mono);font-weight:700;
+  padding:4px 10px;border-radius:5px;border:1px solid var(--border2);
+  background:none;color:var(--r);transition:0.15s;
+}
+.agent-mention-btn:hover{background:var(--rg);border-color:var(--rb)}
+
+/* Dream Engine tab */
+.dream-status-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:8px;
+  padding:12px;margin-bottom:10px;
+}
+.dream-status-label{
+  font-size:0.62rem;font-family:var(--mono);font-weight:700;
+  text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:6px;
+}
+.dream-status-value{
+  font-size:0.75rem;font-family:var(--mono);
+  display:flex;align-items:center;gap:7px;color:var(--text);
+}
+.dream-badge{
+  font-size:0.6rem;padding:2px 7px;border-radius:4px;font-family:var(--mono);font-weight:700;
+  text-transform:uppercase;letter-spacing:0.08em;
+}
+.dream-badge.idle{background:var(--surface2);color:var(--text3)}
+.dream-badge.running{background:var(--og);color:var(--o);animation:sdpulse 1.5s infinite}
+.dream-badge.complete{background:var(--gg);color:var(--g)}
+.dream-summary{
+  font-size:0.72rem;color:var(--text2);line-height:1.6;margin-top:8px;
+  border-top:1px solid var(--border);padding-top:8px;
+  font-style:italic;
+}
+.dream-insights{margin-top:10px}
+.dream-insight-item{
+  display:flex;align-items:flex-start;gap:7px;
+  padding:6px 0;border-bottom:1px solid var(--border);
+  font-size:0.72rem;color:var(--text2);line-height:1.5;
+}
+.dream-insight-item:last-child{border-bottom:none}
+.dream-insight-item .di-bullet{
+  width:5px;height:5px;border-radius:50%;background:var(--v);
+  flex-shrink:0;margin-top:5px;
+}
+.dream-synth-btn{
+  width:100%;padding:9px;border-radius:7px;border:none;
+  background:linear-gradient(135deg,var(--v),#6d28d9);color:#fff;
+  font-family:var(--mono);font-size:0.75rem;font-weight:700;
+  transition:0.2s;margin-top:4px;
+}
+.dream-synth-btn:hover{box-shadow:0 0 20px var(--vg);transform:translateY(-1px)}
+.dream-synth-btn:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.dream-question-input{
+  width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:6px;
+  color:var(--text);font-size:0.75rem;font-family:var(--mono);
+  padding:7px 10px;outline:none;margin-bottom:8px;resize:none;height:56px;
+  transition:border-color 0.2s;
+}
+.dream-question-input:focus{border-color:var(--vb)}
+.dream-question-input::placeholder{color:var(--text3)}
+.rp-section-label{
+  font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  color:var(--text3);font-family:var(--mono);padding:8px 0 6px;
+}
+
+/* ══════════════════════════════════
+   MODALS
+══════════════════════════════════ */
+.modal-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,0.75);backdrop-filter:blur(8px);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+.modal-overlay.hidden{display:none}
+.modal{
+  background:var(--panel);
+  border:1px solid var(--border2);
+  border-radius:14px;
+  padding:32px;
+  width:100%;
+  max-width:440px;
+  max-height:90vh;overflow-y:auto;
+  position:relative;
+  box-shadow:0 24px 64px rgba(0,0,0,0.8);
+}
+.modal-close{
+  position:absolute;top:16px;right:16px;
+  background:none;border:none;color:var(--text3);font-size:1.1rem;
+  transition:color 0.15s;padding:4px;border-radius:4px;
+}
+.modal-close:hover{color:var(--text)}
+.modal-title{
+  font-family:var(--mono);font-size:1.1rem;font-weight:800;
+  letter-spacing:-0.02em;color:var(--text);margin-bottom:6px;
+}
+.modal-sub{font-size:0.78rem;color:var(--text3);margin-bottom:24px;line-height:1.6}
+.form-label{
+  display:block;font-size:0.65rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:0.1em;color:var(--text3);font-family:var(--mono);
+  margin-bottom:6px;
+}
+.form-input{
+  width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;
+  color:var(--text);font-size:0.82rem;font-family:var(--sans);
+  padding:10px 12px;outline:none;transition:border-color 0.2s;margin-bottom:16px;
+}
+.form-input:focus{border-color:var(--rb)}
+.form-input::placeholder{color:var(--text4)}
+.form-select{
+  width:100%;background:var(--bg);border:1px solid var(--border2);border-radius:7px;
+  color:var(--text);font-size:0.82rem;font-family:var(--sans);
+  padding:10px 12px;outline:none;transition:border-color 0.2s;margin-bottom:16px;
+  appearance:none;cursor:pointer;
+}
+.form-select:focus{border-color:var(--rb)}
+.form-select option{background:var(--panel)}
+.btn-primary{
+  width:100%;padding:11px;border-radius:8px;border:none;
+  background:var(--r);color:#000;
+  font-family:var(--mono);font-size:0.82rem;font-weight:700;
+  transition:0.2s;
+}
+.btn-primary:hover{background:#08d4f5;box-shadow:0 0 20px var(--rg)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed}
+.btn-secondary{
+  width:100%;padding:11px;border-radius:8px;
+  background:none;border:1px solid var(--border2);color:var(--text2);
+  font-family:var(--mono);font-size:0.8rem;font-weight:600;
+  transition:0.15s;margin-top:8px;
+}
+.btn-secondary:hover{color:var(--text);border-color:var(--border2)}
+.modal-tabs{display:flex;gap:4px;margin-bottom:20px;border-bottom:1px solid var(--border);padding-bottom:0}
+.modal-tab{
+  padding:7px 14px;border-radius:6px 6px 0 0;border:none;
+  background:none;color:var(--text3);
+  font-family:var(--mono);font-size:0.72rem;font-weight:600;
+  border-bottom:2px solid transparent;transition:0.15s;cursor:pointer;
+}
+.modal-tab.active{color:var(--r);border-bottom-color:var(--r)}
+.modal-tab:hover{color:var(--text2)}
+.modal-error{
+  background:var(--redg);border:1px solid rgba(248,113,113,0.2);color:var(--red);
+  padding:8px 12px;border-radius:6px;font-size:0.75rem;font-family:var(--mono);
+  margin-bottom:14px;display:none;
+}
+.modal-error.show{display:block}
+
+/* ── Onboarding logo ── */
+.onboard-logo{
+  display:flex;align-items:center;justify-content:center;
+  gap:10px;margin-bottom:24px;
+}
+.onboard-logo .lobster{font-size:2rem}
+.onboard-logo .wordmark{
+  font-family:var(--mono);font-size:1.1rem;font-weight:800;
+  letter-spacing:0.08em;color:var(--r);
+}
+
+/* ══════════════════════════════════
+   TOASTS
+══════════════════════════════════ */
+#toast-container{
+  position:fixed;bottom:20px;right:20px;z-index:9999;
+  display:flex;flex-direction:column;gap:8px;pointer-events:none;
+}
+.toast{
+  display:flex;align-items:center;gap:10px;
+  background:var(--surface);border:1px solid var(--border2);
+  padding:10px 14px;border-radius:9px;
+  font-size:0.75rem;font-family:var(--mono);color:var(--text);
+  box-shadow:0 8px 24px rgba(0,0,0,0.5);
+  animation:toastIn 0.25s ease;
+  pointer-events:all;max-width:300px;
+}
+.toast.out{animation:toastOut 0.2s ease forwards}
+.toast .toast-icon{font-size:0.9rem}
+.toast.success{border-color:var(--gb);color:var(--g)}
+.toast.error{border-color:rgba(248,113,113,0.3);color:var(--red)}
+.toast.info{border-color:var(--rb);color:var(--r)}
+@keyframes toastIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:none}}
+@keyframes toastOut{to{opacity:0;transform:translateX(16px)}}
+
+/* ══════════════════════════════════
+   EMPTY STATES
+══════════════════════════════════ */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  flex:1;padding:40px 24px;text-align:center;
+}
+.empty-icon{font-size:2.5rem;margin-bottom:14px;opacity:0.5}
+.empty-title{font-family:var(--mono);font-size:0.9rem;font-weight:700;color:var(--text2);margin-bottom:6px}
+.empty-sub{font-size:0.75rem;color:var(--text3);max-width:220px;line-height:1.6}
+.empty-action{
+  margin-top:16px;padding:8px 18px;border-radius:7px;border:1px solid var(--border2);
+  background:none;color:var(--r);font-family:var(--mono);font-size:0.75rem;font-weight:700;
+  transition:0.15s;
+}
+.empty-action:hover{background:var(--rg)}
+
+/* ── NO-AUTH (welcome screen) ── */
+#no-auth{
+  position:fixed;top:0;left:0;right:0;bottom:0;z-index:400;
+  display:none;
+  background:var(--bg);
+}
+#no-auth.visible{display:block}
+</style>
+</head>
+<body>
+
+<!-- ═══════════════════ TOPBAR ═══════════════════ -->
+<header id="topbar">
+  <div class="tb-logo">
+    <span class="mark">SLOPSHOP<span style="color:var(--text3);font-weight:500">.gg</span></span>
+    <span class="vtag">HIVE</span>
+  </div>
+  <div class="tb-workspace-name" id="tb-ws-name">No workspace<span id="tb-ch-name"></span></div>
+  <div class="tb-spacer"></div>
+  <div class="tb-status">
+    <div class="status-dot" id="conn-dot"></div>
+    <span id="conn-label">disconnected</span>
+  </div>
+  <button class="tb-key-btn" onclick="showKeyModal()">API Key</button>
+</header>
+
+<!-- ═══════════════════ APP SHELL ═══════════════════ -->
+<div id="app">
+
+  <!-- LEFT SIDEBAR -->
+  <nav id="sidebar">
+    <div class="sb-section">Workspaces</div>
+    <div class="sb-workspace-list" id="ws-list">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-section">Channels</div>
+    <div class="sb-channel-list" id="channel-list">
+      <!-- populated by JS -->
+    </div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-section">Templates</div>
+    <div class="sb-templates">
+      <button class="sb-template-btn" onclick="spawnTemplate('research')">
+        <span class="t-icon">🔬</span> Research Dept
+      </button>
+      <button class="sb-template-btn" onclick="spawnTemplate('marketing')">
+        <span class="t-icon">📢</span> Marketing Team
+      </button>
+      <button class="sb-template-btn" onclick="spawnTemplate('engineering')">
+        <span class="t-icon">🛠️</span> Engineering Squad
+      </button>
+    </div>
+
+    <div class="sb-bottom">
+      <button class="sb-create-btn" onclick="openCreateWorkspace()">+ New Workspace</button>
+    </div>
+  </nav>
+
+  <!-- MAIN CHAT -->
+  <main id="main">
+    <div class="chat-header">
+      <div class="chat-channel-name">
+        <span class="hash">#</span>
+        <span id="active-channel-label">general</span>
+      </div>
+      <span class="chat-desc" id="chat-desc">Team chat</span>
+      <div class="chat-header-spacer"></div>
+      <div class="member-count" id="member-count-display">
+        <span style="color:var(--g)">●</span>
+        <span id="member-count-num">0</span> online
+      </div>
+    </div>
+
+    <div id="feed">
+      <div class="empty-state" id="feed-empty">
+        <div class="empty-icon">💬</div>
+        <div class="empty-title">Select a workspace</div>
+        <div class="empty-sub">Pick a workspace from the left sidebar to start chatting</div>
+      </div>
+    </div>
+
+    <!-- Thinking indicator (hidden by default) -->
+    <div class="thinking-row" id="thinking-row" style="display:none;padding:0 22px 4px">
+      <div class="msg-avatar" id="thinking-avatar" style="background:var(--gg)">🤖</div>
+      <div>
+        <div class="thinking-dots">
+          <span></span><span></span><span></span>
+        </div>
+        <div class="thinking-label" id="thinking-label">Agent is thinking...</div>
+      </div>
+    </div>
+
+    <!-- Composer -->
+    <div id="composer" style="position:relative">
+      <div class="slash-menu" id="slash-menu" style="display:none">
+        <div class="slash-item" onclick="insertSlash('/dream')">
+          <span class="si-cmd">/dream</span>
+          <span class="si-desc">Trigger Dream Engine synthesis</span>
+        </div>
+        <div class="slash-item" onclick="insertSlash('/agents')">
+          <span class="si-cmd">/agents</span>
+          <span class="si-desc">List all agents in workspace</span>
+        </div>
+        <div class="slash-item" onclick="insertSlash('/clear')">
+          <span class="si-cmd">/clear</span>
+          <span class="si-desc">Clear local message view</span>
+        </div>
+        <div class="slash-item" onclick="insertSlash('/synthesize')">
+          <span class="si-cmd">/synthesize</span>
+          <span class="si-desc">Run memory synthesis now</span>
+        </div>
+        <div class="slash-item" onclick="insertSlash('/invite')">
+          <span class="si-cmd">/invite</span>
+          <span class="si-desc">Invite an agent by key</span>
+        </div>
+      </div>
+      <div class="composer-inner">
+        <textarea
+          class="composer-textarea"
+          id="composer-input"
+          placeholder="Message #general — / for commands, @ to mention"
+          rows="1"
+        ></textarea>
+        <div class="composer-toolbar">
+          <button class="composer-action-btn" onclick="toggleSlashMenu()" title="Slash commands">
+            <span style="color:var(--r);">/</span> Commands
+          </button>
+          <button class="composer-action-btn" onclick="insertMention()" title="Mention someone">
+            @ Mention
+          </button>
+          <div class="composer-spacer"></div>
+          <button class="composer-send-btn" id="send-btn" onclick="sendMessage()" disabled>
+            Send ↵
+          </button>
+        </div>
+      </div>
+      <div class="composer-hint">Enter to send · Shift+Enter for newline</div>
+    </div>
+  </main>
+
+  <!-- RIGHT PANEL -->
+  <aside id="right-panel">
+    <div class="rp-tabs">
+      <button class="rp-tab active" onclick="switchRpTab('members',this)">Members</button>
+      <button class="rp-tab" onclick="switchRpTab('agents',this)">Agents</button>
+      <button class="rp-tab" onclick="switchRpTab('dream',this)">Dream</button>
+    </div>
+
+    <!-- Members Panel -->
+    <div class="rp-panel active" id="rp-members">
+      <div class="rp-section-label">Online</div>
+      <div id="members-list">
+        <div style="color:var(--text4);font-size:0.72rem;font-family:var(--mono);padding:8px 4px">
+          No workspace selected
+        </div>
+      </div>
+      <div style="margin-top:8px">
+        <button class="sb-create-btn" style="width:100%" onclick="openInviteModal()">+ Invite Agent</button>
+      </div>
+    </div>
+
+    <!-- Agents Panel -->
+    <div class="rp-panel" id="rp-agents">
+      <div class="rp-section-label">Pre-built Agents</div>
+      <div id="agents-roster"></div>
+    </div>
+
+    <!-- Dream Engine Panel -->
+    <div class="rp-panel" id="rp-dream">
+      <div class="rp-section-label">Dream Engine</div>
+      <div class="dream-status-card">
+        <div class="dream-status-label">Status</div>
+        <div class="dream-status-value">
+          <span class="dream-badge idle" id="dream-status-badge">Idle</span>
+          <span id="dream-last-run" style="color:var(--text3);font-size:0.68rem">Never run</span>
+        </div>
+        <div class="dream-summary" id="dream-summary" style="display:none"></div>
+      </div>
+      <div class="dream-insights" id="dream-insights"></div>
+      <div style="margin-top:10px">
+        <div class="dream-status-label" style="margin-bottom:6px">Focus Question</div>
+        <textarea class="dream-question-input" id="dream-question" placeholder="What should the team focus on? (optional)"></textarea>
+        <button class="dream-synth-btn" id="dream-synth-btn" onclick="triggerSynthesis()">
+          ✦ Synthesize Now
+        </button>
+      </div>
+    </div>
+  </aside>
+
+</div><!-- /#app -->
+
+<!-- ═══════════════════ TOAST CONTAINER ═══════════════════ -->
+<div id="toast-container"></div>
+
+<!-- ═══════════════════ MODALS ═══════════════════ -->
+
+<!-- Onboarding Modal -->
+<div class="modal-overlay" id="modal-onboard">
+  <div class="modal" style="max-width:420px">
+    <div class="onboard-logo">
+      <span class="lobster">🦞</span>
+      <span class="wordmark">SLOPSHOP<span style="color:var(--text3)">.gg</span></span>
+    </div>
+    <div class="modal-title" style="text-align:center">Welcome to Hive Chat</div>
+    <div class="modal-sub" style="text-align:center">Multiplayer team chat for humans + AI agents. Sign in or create an account to continue.</div>
+    <div class="modal-tabs">
+      <button class="modal-tab active" onclick="switchAuthTab('login',this)">Log In</button>
+      <button class="modal-tab" onclick="switchAuthTab('signup',this)">Sign Up</button>
+    </div>
+    <div class="modal-error" id="auth-error"></div>
+    <form id="auth-form" onsubmit="submitAuth(event)">
+      <label class="form-label">Email</label>
+      <input class="form-input" type="email" id="auth-email" placeholder="you@example.com" required autocomplete="email">
+      <label class="form-label">Password</label>
+      <input class="form-input" type="password" id="auth-password" placeholder="••••••••" required autocomplete="current-password">
+      <div id="signup-fields" style="display:none">
+        <label class="form-label">Name (optional)</label>
+        <input class="form-input" type="text" id="auth-name" placeholder="Your name">
+      </div>
+      <button class="btn-primary" type="submit" id="auth-submit-btn">Log In</button>
+    </form>
+    <div style="text-align:center;margin-top:14px">
+      <span style="color:var(--text3);font-size:0.72rem;font-family:var(--mono)">or paste your API key directly:</span>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <input class="form-input" type="text" id="direct-key-input" placeholder="sk-..." style="margin-bottom:0;flex:1">
+      <button class="btn-primary" style="width:auto;padding:10px 16px;flex-shrink:0" onclick="setDirectKey()">Use Key</button>
+    </div>
+  </div>
+</div>
+
+<!-- API Key Modal -->
+<div class="modal-overlay hidden" id="modal-api-key">
+  <div class="modal" style="max-width:400px">
+    <button class="modal-close" onclick="closeModal('modal-api-key')">✕</button>
+    <div class="modal-title">API Key</div>
+    <div class="modal-sub">Update your Slopshop API key. It's stored locally in your browser.</div>
+    <label class="form-label">API Key</label>
+    <input class="form-input" type="text" id="key-modal-input" placeholder="sk-...">
+    <button class="btn-primary" onclick="saveKeyFromModal()">Save Key</button>
+    <button class="btn-secondary" onclick="closeModal('modal-api-key')">Cancel</button>
+  </div>
+</div>
+
+<!-- Create Workspace Modal -->
+<div class="modal-overlay hidden" id="modal-create-ws">
+  <div class="modal" style="max-width:400px">
+    <button class="modal-close" onclick="closeModal('modal-create-ws')">✕</button>
+    <div class="modal-title">New Workspace</div>
+    <div class="modal-sub">Create a Hive workspace for your team. Agents and humans will collaborate here.</div>
+    <div class="modal-error" id="create-ws-error"></div>
+    <label class="form-label">Workspace Name</label>
+    <input class="form-input" type="text" id="new-ws-name" placeholder="e.g. Research HQ" maxlength="64">
+    <label class="form-label">Department Type</label>
+    <select class="form-select" id="new-ws-dept">
+      <option value="">Custom workspace</option>
+      <option value="research">Research Department</option>
+      <option value="marketing">Marketing Team</option>
+      <option value="engineering">Engineering Squad</option>
+      <option value="product">Product Team</option>
+      <option value="sales">Sales Floor</option>
+    </select>
+    <button class="btn-primary" onclick="createWorkspace()">Create Workspace</button>
+    <button class="btn-secondary" onclick="closeModal('modal-create-ws')">Cancel</button>
+  </div>
+</div>
+
+<!-- Invite Agent Modal -->
+<div class="modal-overlay hidden" id="modal-invite">
+  <div class="modal" style="max-width:400px">
+    <button class="modal-close" onclick="closeModal('modal-invite')">✕</button>
+    <div class="modal-title">Invite Agent</div>
+    <div class="modal-sub">Enter an agent key to add it to this workspace.</div>
+    <div class="modal-error" id="invite-error"></div>
+    <label class="form-label">Agent Key</label>
+    <input class="form-input" type="text" id="invite-agent-key" placeholder="agent-key or sk-...">
+    <button class="btn-primary" onclick="inviteAgent()">Invite Agent</button>
+    <button class="btn-secondary" onclick="closeModal('modal-invite')">Cancel</button>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════
+   CONSTANTS & STATE
+═══════════════════════════════════════════════════════════ */
+const BASE = '/v1';
+
+const AGENT_ROSTER = [
+  { id:'research-bot', name:'Research Bot',  icon:'🔬', role:'research',    color:'#06b6d4', desc:'Deep research, web synthesis, source verification.' },
+  { id:'writer-bot',   name:'Writer Bot',    icon:'✍️',  role:'writing',     color:'#34d97b', desc:'Drafts, copy, long-form content and editing.' },
+  { id:'analyst-bot',  name:'Analyst Bot',   icon:'📊', role:'analysis',    color:'#f59e0b', desc:'Data analysis, charts, quantitative insights.' },
+  { id:'closer-bot',   name:'Closer Bot',    icon:'🚀', role:'sales',       color:'#8b5cf6', desc:'Sales copy, objection handling, follow-ups.' },
+  { id:'engineer-bot', name:'Engineer Bot',  icon:'🛠️', role:'engineering', color:'#f87171', desc:'Code review, architecture, debugging.' },
+];
+
+const DEPT_CHANNELS = {
+  research:    ['general','research','findings','dreams','reports'],
+  marketing:   ['general','marketing','campaigns','copy','dreams'],
+  engineering: ['general','engineering','code-review','infra','dreams'],
+  product:     ['general','product','roadmap','feedback','dreams'],
+  sales:       ['general','sales','leads','pipeline','dreams'],
+};
+
+const DEFAULT_CHANNELS = ['general','research','engineering','marketing','dreams'];
+
+let apiKey = localStorage.getItem('slopshop_api_key') || '';
+let activeWorkspaceId = localStorage.getItem('slopshop_hive_id') || null;
+let activeChannel = 'general';
+let workspaces = [];
+let members = [];
+let messageCache = {};   // { wsId: { channel: [msgs] } }
+let unreadCounts = {};   // { wsId: { channel: n } }
+let lastSyncTs = {};     // { wsId: ts }
+let pollTimer = null;
+let authTab = 'login';
+let dreaming = false;
+
+/* ═══════════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  buildAgentsRoster();
+  if (!apiKey) {
+    showOnboarding();
+  } else {
+    showApp();
+    loadWorkspaces();
+  }
+  setupComposer();
+});
+
+function showOnboarding() {
+  document.getElementById('modal-onboard').classList.remove('hidden');
+}
+
+function showApp() {
+  document.getElementById('app').classList.add('visible');
+  document.getElementById('modal-onboard').classList.add('hidden');
+  setConnStatus(false);
+}
+
+function setConnStatus(live, error) {
+  const dot = document.getElementById('conn-dot');
+  const lbl = document.getElementById('conn-label');
+  if (error) { dot.className='status-dot err'; lbl.textContent='error'; return; }
+  if (live)  { dot.className='status-dot live'; lbl.textContent='live'; }
+  else       { dot.className='status-dot'; lbl.textContent='connecting...'; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   API HELPERS
+═══════════════════════════════════════════════════════════ */
+async function apiFetch(path, opts = {}) {
+  const res = await fetch(BASE + path, {
+    credentials: 'include',
+    ...opts,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+      ...(opts.headers || {}),
+    },
+  });
+  let data;
+  try { data = await res.json(); } catch { data = {}; }
+  if (!res.ok) throw new Error(data.error || data.message || `HTTP ${res.status}`);
+  return data;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AUTH
+═══════════════════════════════════════════════════════════ */
+function switchAuthTab(tab, el) {
+  authTab = tab;
+  document.querySelectorAll('.modal-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const isSignup = tab === 'signup';
+  document.getElementById('signup-fields').style.display = isSignup ? 'block' : 'none';
+  document.getElementById('auth-submit-btn').textContent = isSignup ? 'Create Account' : 'Log In';
+  document.getElementById('auth-error').classList.remove('show');
+}
+
+async function submitAuth(e) {
+  e.preventDefault();
+  const email    = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  const name     = document.getElementById('auth-name').value.trim();
+  const btn      = document.getElementById('auth-submit-btn');
+  const errEl    = document.getElementById('auth-error');
+  errEl.classList.remove('show');
+  btn.disabled = true;
+  btn.textContent = authTab === 'signup' ? 'Creating...' : 'Logging in...';
+  try {
+    const endpoint = authTab === 'signup' ? '/auth/signup' : '/auth/login';
+    const body = authTab === 'signup' ? { email, password, name } : { email, password };
+    const data = await apiFetch(endpoint, { method: 'POST', body: JSON.stringify(body) });
+    const key = data.api_key || data.key || data.token;
+    if (!key) throw new Error('No API key returned from server');
+    setApiKey(key);
+    showApp();
+    loadWorkspaces();
+    notify('success', 'Signed in successfully');
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = authTab === 'signup' ? 'Create Account' : 'Log In';
+  }
+}
+
+function setDirectKey() {
+  const val = document.getElementById('direct-key-input').value.trim();
+  if (!val) { notify('error', 'Enter an API key first'); return; }
+  setApiKey(val);
+  showApp();
+  loadWorkspaces();
+}
+
+function setApiKey(key) {
+  apiKey = key;
+  localStorage.setItem('slopshop_api_key', key);
+}
+
+function showKeyModal() {
+  document.getElementById('key-modal-input').value = apiKey;
+  document.getElementById('modal-api-key').classList.remove('hidden');
+}
+
+function saveKeyFromModal() {
+  const val = document.getElementById('key-modal-input').value.trim();
+  if (!val) { notify('error', 'Key cannot be empty'); return; }
+  setApiKey(val);
+  closeModal('modal-api-key');
+  notify('success', 'API key updated');
+  loadWorkspaces();
+}
+
+/* ═══════════════════════════════════════════════════════════
+   WORKSPACES
+═══════════════════════════════════════════════════════════ */
+async function loadWorkspaces() {
+  try {
+    const data = await apiFetch('/hives');
+    workspaces = Array.isArray(data) ? data : (data.hives || data.workspaces || []);
+    renderWorkspaceList();
+    setConnStatus(true);
+
+    if (workspaces.length === 0) {
+      renderFeedEmpty('No workspaces yet. Create one or use a template.');
+      return;
+    }
+
+    // Pick last active or first
+    const saved = activeWorkspaceId;
+    const target = workspaces.find(w => w.id === saved) || workspaces[0];
+    selectWorkspace(target.id);
+  } catch (err) {
+    setConnStatus(false, true);
+    notify('error', 'Failed to load workspaces: ' + err.message);
+  }
+}
+
+function renderWorkspaceList() {
+  const container = document.getElementById('ws-list');
+  if (workspaces.length === 0) {
+    container.innerHTML = '<div style="color:var(--text4);font-size:0.72rem;font-family:var(--mono);padding:8px">No workspaces</div>';
+    return;
+  }
+  container.innerHTML = workspaces.map(ws => {
+    const initials = (ws.name || 'W').split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase();
+    const isActive = ws.id === activeWorkspaceId;
+    const unread = getTotalUnread(ws.id);
+    return `<div class="sb-ws-item${isActive?' active':''}" onclick="selectWorkspace('${escHtml(ws.id)}')">
+      <div class="ws-avatar">${escHtml(initials)}</div>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(ws.name || ws.id)}</span>
+      ${unread > 0 ? `<span class="sb-ws-item ws-unread">${unread}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function getTotalUnread(wsId) {
+  if (!unreadCounts[wsId]) return 0;
+  return Object.values(unreadCounts[wsId]).reduce((a, b) => a + b, 0);
+}
+
+async function selectWorkspace(wsId) {
+  if (activeWorkspaceId === wsId && messageCache[wsId]) {
+    // Just re-render
+    renderChannelList(wsId);
+    return;
+  }
+  stopPolling();
+  activeWorkspaceId = wsId;
+  localStorage.setItem('slopshop_hive_id', wsId);
+
+  const ws = workspaces.find(w => w.id === wsId);
+  document.getElementById('tb-ws-name').textContent = ws ? ws.name : wsId;
+  document.getElementById('tb-ch-name').textContent = '';
+
+  renderWorkspaceList();
+  renderChannelList(wsId);
+  clearFeed();
+
+  // Load members
+  loadMembers(wsId);
+
+  // Load Dream state
+  loadDreamState(wsId);
+
+  // Select default channel
+  selectChannel('general', wsId);
+
+  startPolling(wsId);
+}
+
+function getChannelsForWs(wsId) {
+  const ws = workspaces.find(w => w.id === wsId);
+  if (ws && ws.channels && Array.isArray(ws.channels)) return ws.channels;
+  if (ws && ws.department && DEPT_CHANNELS[ws.department]) return DEPT_CHANNELS[ws.department];
+  return DEFAULT_CHANNELS;
+}
+
+function renderChannelList(wsId) {
+  const container = document.getElementById('channel-list');
+  const channels  = getChannelsForWs(wsId);
+  const uCounts   = unreadCounts[wsId] || {};
+  container.innerHTML = channels.map(ch => {
+    const isActive = ch === activeChannel;
+    const unread   = uCounts[ch] || 0;
+    return `<div class="sb-channel-item${isActive?' active':''}${unread>0?' has-unread':''}" onclick="selectChannel('${escHtml(ch)}','${escHtml(wsId)}')">
+      <span class="ch-hash">#</span>
+      <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escHtml(ch)}</span>
+      ${unread > 0 ? `<span class="ch-unread">${unread}</span>` : ''}
+    </div>`;
+  }).join('') +
+  `<div class="sb-channel-item" style="color:var(--text4)" onclick="promptNewChannel()">
+    <span class="ch-hash" style="color:var(--text4)">+</span>
+    <span>Add channel</span>
+  </div>`;
+}
+
+async function selectChannel(channel, wsId) {
+  wsId = wsId || activeWorkspaceId;
+  activeChannel = channel;
+  clearUnread(wsId, channel);
+  renderChannelList(wsId);
+
+  document.getElementById('active-channel-label').textContent = channel;
+  document.getElementById('tb-ch-name').textContent = ' › #' + channel;
+  document.getElementById('composer-input').placeholder = `Message #${channel} — / for commands, @ to mention`;
+  document.getElementById('send-btn').disabled = !apiKey;
+
+  // Update chat desc
+  const descs = {
+    general: 'Team-wide discussion',
+    research: 'Research findings and links',
+    engineering: 'Code and architecture',
+    marketing: 'Campaigns and copy',
+    dreams: 'Dream Engine synthesis results',
+    findings: 'Key research findings',
+    'code-review': 'Code review threads',
+    infra: 'Infrastructure and ops',
+    roadmap: 'Product roadmap',
+    feedback: 'User feedback',
+    campaigns: 'Marketing campaigns',
+    copy: 'Copy and messaging',
+    reports: 'Generated reports',
+    leads: 'Lead tracking',
+    pipeline: 'Sales pipeline',
+  };
+  document.getElementById('chat-desc').textContent = descs[channel] || 'Channel';
+
+  // Load messages
+  await loadChannelMessages(wsId, channel);
+}
+
+async function loadChannelMessages(wsId, channel) {
+  clearFeed();
+  showFeedLoading();
+  try {
+    const data = await apiFetch(`/hive/${wsId}/channel/${channel}?limit=50`);
+    const msgs = Array.isArray(data) ? data : (data.messages || data.events || []);
+    if (!messageCache[wsId]) messageCache[wsId] = {};
+    messageCache[wsId][channel] = msgs;
+    renderMessages(msgs);
+    scrollFeedToBottom();
+  } catch (err) {
+    renderFeedEmpty('Could not load messages: ' + err.message);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MEMBERS
+═══════════════════════════════════════════════════════════ */
+async function loadMembers(wsId) {
+  try {
+    const data = await apiFetch(`/hive/${wsId}/members`);
+    members = Array.isArray(data) ? data : (data.members || []);
+    renderMembers();
+    const countEl = document.getElementById('member-count-num');
+    countEl.textContent = members.length;
+  } catch {
+    members = [];
+    renderMembers();
+  }
+}
+
+function renderMembers() {
+  const container = document.getElementById('members-list');
+  if (members.length === 0) {
+    container.innerHTML = '<div style="color:var(--text4);font-size:0.72rem;font-family:var(--mono);padding:8px 4px">No members yet</div>';
+    return;
+  }
+  container.innerHTML = members.map(m => {
+    const name     = m.name || m.agent_key || m.id || 'Unknown';
+    const initials = name.split(' ').slice(0,2).map(w => w[0]).join('').toUpperCase().slice(0,2);
+    const role     = m.role || m.type || 'member';
+    const isAgent  = role !== 'human' && (m.is_agent || role.includes('bot') || role.includes('agent'));
+    const status   = m.status || 'online';
+    const color    = isAgent ? avatarColor(name) : '#8b5cf6';
+    const statusClass = status === 'online' ? 'online' : status === 'busy' ? 'busy' : 'offline';
+    return `<div class="member-item">
+      <div class="member-avatar" style="background:${color}">
+        ${escHtml(initials)}
+        <div class="member-status-dot ${statusClass}"></div>
+      </div>
+      <div>
+        <div class="member-name">${escHtml(name)}</div>
+        <div class="member-role">${escHtml(role)}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MESSAGES RENDERING
+═══════════════════════════════════════════════════════════ */
+function renderMessages(msgs) {
+  const feed = document.getElementById('feed');
+  const empty = document.getElementById('feed-empty');
+  if (empty) empty.remove();
+
+  if (!msgs || msgs.length === 0) {
+    renderFeedEmpty('No messages yet. Say something!');
+    return;
+  }
+
+  feed.innerHTML = '';
+  let lastDay = '';
+
+  msgs.forEach(msg => {
+    const ts   = msg.timestamp || msg.ts || msg.created_at || Date.now();
+    const date = new Date(typeof ts === 'number' && ts < 1e12 ? ts * 1000 : ts);
+    const day  = date.toLocaleDateString('en-US', { weekday:'long', month:'short', day:'numeric' });
+    if (day !== lastDay) {
+      feed.insertAdjacentHTML('beforeend', `<div class="feed-day-divider">${escHtml(day)}</div>`);
+      lastDay = day;
+    }
+    feed.insertAdjacentHTML('beforeend', buildMessageHtml(msg));
+  });
+}
+
+function buildMessageHtml(msg) {
+  const type    = msg.type || 'human';
+  const actor   = msg.actor || msg.sender || msg.author || msg.from || (type === 'system' ? 'System' : 'You');
+  const text    = msg.message || msg.text || msg.content || '';
+  const ts      = msg.timestamp || msg.ts || msg.created_at || Date.now();
+  const date    = new Date(typeof ts === 'number' && ts < 1e12 ? ts * 1000 : ts);
+  const timeStr = date.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit', hour12:false });
+  const channel = msg.channel || '';
+
+  if (type === 'system' || type === 'event') {
+    return `<div class="msg-row system-msg">
+      <div class="msg-bubble">— ${escHtml(text)} —</div>
+    </div>`;
+  }
+
+  const isAgent    = type === 'agent' || type === 'ai' || (msg.is_agent);
+  const actorClass = isAgent ? 'agent-actor' : 'human-actor';
+  const initials   = actor.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase().slice(0,2) || '?';
+  const color      = isAgent ? avatarColor(actor) : '#8b5cf6';
+
+  let badge = '';
+  if (isAgent) {
+    const agentInfo = AGENT_ROSTER.find(a => actor.toLowerCase().includes(a.role) || actor.toLowerCase().includes(a.name.toLowerCase().split(' ')[0]));
+    const badgeColor = agentInfo ? agentInfo.color : '#06b6d4';
+    badge = `<span class="msg-role-badge" style="background:${badgeColor}18;color:${badgeColor};border:1px solid ${badgeColor}30">${escHtml(agentInfo ? agentInfo.role : 'agent')}</span>`;
+  }
+
+  const formattedText = formatMessageText(text);
+
+  return `<div class="msg-row">
+    <div class="msg-avatar" style="background:${color}">${escHtml(initials)}</div>
+    <div class="msg-meta">
+      <div class="msg-header">
+        <span class="msg-actor ${actorClass}">${escHtml(actor)}</span>
+        ${badge}
+        <span class="msg-time">${timeStr}</span>
+        ${channel ? `<span style="color:var(--text4);font-size:0.62rem;font-family:var(--mono)">#${escHtml(channel)}</span>` : ''}
+      </div>
+      <div class="msg-text">${formattedText}</div>
+    </div>
+  </div>`;
+}
+
+function appendMessage(msg) {
+  const feed = document.getElementById('feed');
+  const empty = document.getElementById('feed-empty');
+  if (empty) { empty.remove(); feed.innerHTML = ''; }
+  feed.insertAdjacentHTML('beforeend', buildMessageHtml(msg));
+  scrollFeedToBottom();
+}
+
+function formatMessageText(text) {
+  // Code spans
+  let t = escHtml(text);
+  t = t.replace(/`([^`]+)`/g, '<code>$1</code>');
+  // Bold
+  t = t.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  // Italic
+  t = t.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+  // @mentions
+  t = t.replace(/@([\w\-]+)/g, '<span style="color:var(--r);font-weight:600">@$1</span>');
+  // Newlines
+  t = t.replace(/\n/g, '<br>');
+  return t;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SEND MESSAGE
+═══════════════════════════════════════════════════════════ */
+async function sendMessage() {
+  const input = document.getElementById('composer-input');
+  const text  = input.value.trim();
+  if (!text || !activeWorkspaceId) return;
+
+  const btn = document.getElementById('send-btn');
+  btn.disabled = true;
+
+  // Handle slash commands
+  if (text.startsWith('/')) {
+    const handled = await handleSlashCommand(text);
+    if (handled) { input.value = ''; autoResizeTextarea(input); btn.disabled = false; return; }
+  }
+
+  // Optimistic append
+  const optimisticMsg = {
+    actor:   'You',
+    message: text,
+    type:    'human',
+    timestamp: Date.now(),
+  };
+  appendMessage(optimisticMsg);
+  input.value = '';
+  autoResizeTextarea(input);
+
+  try {
+    await apiFetch(`/hive/${activeWorkspaceId}/send`, {
+      method:  'POST',
+      body: JSON.stringify({ channel: activeChannel, message: text, type: 'human' }),
+    });
+    // Show thinking if agents are present
+    if (members.some(m => m.is_agent || (m.type && m.type !== 'human'))) {
+      showThinking();
+    }
+  } catch (err) {
+    notify('error', 'Failed to send: ' + err.message);
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function handleSlashCommand(cmd) {
+  const parts = cmd.split(' ');
+  const command = parts[0].toLowerCase();
+  switch (command) {
+    case '/dream':
+    case '/synthesize':
+      closeSlashMenu();
+      await triggerSynthesis();
+      return true;
+    case '/agents':
+      closeSlashMenu();
+      switchRpTab('agents', document.querySelectorAll('.rp-tab')[1]);
+      notify('info', 'Showing agents panel');
+      return true;
+    case '/clear':
+      closeSlashMenu();
+      clearFeed();
+      renderFeedEmpty('Chat cleared. Messages still exist on the server.');
+      return true;
+    case '/invite':
+      closeSlashMenu();
+      openInviteModal();
+      return true;
+    default:
+      return false;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   REAL-TIME POLLING
+═══════════════════════════════════════════════════════════ */
+function startPolling(wsId) {
+  stopPolling();
+  if (!wsId) return;
+  pollTimer = setInterval(() => pollSync(wsId), 2000);
+}
+
+function stopPolling() {
+  if (pollTimer) { clearInterval(pollTimer); pollTimer = null; }
+}
+
+async function pollSync(wsId) {
+  if (!wsId || !apiKey) return;
+  const since = lastSyncTs[wsId] || 0;
+  try {
+    const data = await apiFetch(`/hive/${wsId}/sync?since=${since}`);
+    const events = Array.isArray(data) ? data : (data.events || data.messages || []);
+    if (events.length === 0) return;
+
+    // Update lastSyncTs
+    const latest = events.reduce((max, ev) => {
+      const t = ev.timestamp || ev.ts || 0;
+      return t > max ? t : max;
+    }, since);
+    lastSyncTs[wsId] = latest;
+
+    // Process events
+    events.forEach(ev => {
+      const ch = ev.channel || 'general';
+      if (ch === activeChannel && wsId === activeWorkspaceId) {
+        hideThinking();
+        appendMessage(ev);
+      } else {
+        // Increment unread
+        if (!unreadCounts[wsId]) unreadCounts[wsId] = {};
+        unreadCounts[wsId][ch] = (unreadCounts[wsId][ch] || 0) + 1;
+        renderChannelList(wsId);
+        renderWorkspaceList();
+      }
+    });
+
+    // Update members if included
+    if (data.members) {
+      members = data.members;
+      renderMembers();
+      document.getElementById('member-count-num').textContent = members.length;
+    }
+
+    setConnStatus(true);
+  } catch {
+    // Silently fail polling — network blip
+  }
+}
+
+function clearUnread(wsId, channel) {
+  if (!unreadCounts[wsId]) return;
+  unreadCounts[wsId][channel] = 0;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CREATE WORKSPACE
+═══════════════════════════════════════════════════════════ */
+function openCreateWorkspace() {
+  document.getElementById('new-ws-name').value = '';
+  document.getElementById('new-ws-dept').value = '';
+  document.getElementById('create-ws-error').classList.remove('show');
+  document.getElementById('modal-create-ws').classList.remove('hidden');
+}
+
+async function createWorkspace() {
+  const name = document.getElementById('new-ws-name').value.trim();
+  const dept = document.getElementById('new-ws-dept').value;
+  const errEl = document.getElementById('create-ws-error');
+  if (!name) { errEl.textContent = 'Workspace name is required'; errEl.classList.add('show'); return; }
+
+  try {
+    const data = await apiFetch('/hive/create', {
+      method: 'POST',
+      body: JSON.stringify({ name, department: dept || undefined }),
+    });
+    const wsId = data.id || data.hive_id || data.workspace_id;
+    if (!wsId) throw new Error('No workspace ID returned');
+
+    const newWs = { id: wsId, name, department: dept, channels: dept && DEPT_CHANNELS[dept] ? DEPT_CHANNELS[dept] : DEFAULT_CHANNELS };
+    workspaces.push(newWs);
+
+    // Post welcome message
+    postSystemMessage(wsId, 'general', `Workspace "${name}" created. Welcome to your new team hub.`);
+    if (dept) postSystemMessage(wsId, 'general', `This is a ${dept} department workspace. Agents and humans are ready to collaborate.`);
+
+    renderWorkspaceList();
+    closeModal('modal-create-ws');
+    selectWorkspace(wsId);
+    notify('success', `Workspace "${name}" created`);
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  }
+}
+
+async function postSystemMessage(wsId, channel, text) {
+  try {
+    await apiFetch(`/hive/${wsId}/send`, {
+      method: 'POST',
+      body: JSON.stringify({ channel, message: text, type: 'system' }),
+    });
+  } catch { /* ignore */ }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DEPARTMENT TEMPLATES
+═══════════════════════════════════════════════════════════ */
+async function spawnTemplate(dept) {
+  const deptNames = {
+    research:    'Research Department',
+    marketing:   'Marketing Team',
+    engineering: 'Engineering Squad',
+  };
+  const name = deptNames[dept] || dept;
+  try {
+    const data = await apiFetch('/hive/create', {
+      method: 'POST',
+      body: JSON.stringify({ name, department: dept }),
+    });
+    const wsId = data.id || data.hive_id || data.workspace_id;
+    if (!wsId) throw new Error('No workspace ID returned');
+
+    const channels = DEPT_CHANNELS[dept] || DEFAULT_CHANNELS;
+    const newWs = { id: wsId, name, department: dept, channels };
+    workspaces.push(newWs);
+    renderWorkspaceList();
+
+    // Welcome messages
+    const welcomes = {
+      research: [
+        `Welcome to the Research Department. Use #research for active investigations, #findings for completed research, and #dreams for AI synthesis.`,
+        `Agents available: Research Bot for deep search, Analyst Bot for data synthesis, Writer Bot for report drafting.`,
+      ],
+      marketing: [
+        `Welcome to the Marketing Team. Use #campaigns for active campaigns, #copy for content drafts, and #dreams for strategy synthesis.`,
+        `Agents available: Writer Bot for copy, Analyst Bot for performance data, Closer Bot for messaging optimization.`,
+      ],
+      engineering: [
+        `Welcome to the Engineering Squad. Use #code-review for PRs, #infra for ops issues, and #dreams for architecture synthesis.`,
+        `Agents available: Engineer Bot for code review, Analyst Bot for metrics, Research Bot for technical research.`,
+      ],
+    };
+    const msgs = welcomes[dept] || [`Welcome to ${name}. Your team workspace is ready.`];
+    for (const msg of msgs) await postSystemMessage(wsId, 'general', msg);
+
+    selectWorkspace(wsId);
+    notify('success', `"${name}" workspace ready`);
+  } catch (err) {
+    notify('error', 'Template failed: ' + err.message);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   INVITE AGENT
+═══════════════════════════════════════════════════════════ */
+function openInviteModal() {
+  document.getElementById('invite-agent-key').value = '';
+  document.getElementById('invite-error').classList.remove('show');
+  document.getElementById('modal-invite').classList.remove('hidden');
+}
+
+async function inviteAgent() {
+  const agentKey = document.getElementById('invite-agent-key').value.trim();
+  const errEl    = document.getElementById('invite-error');
+  if (!agentKey) { errEl.textContent = 'Enter an agent key'; errEl.classList.add('show'); return; }
+  if (!activeWorkspaceId) { errEl.textContent = 'No workspace selected'; errEl.classList.add('show'); return; }
+  try {
+    await apiFetch(`/hive/${activeWorkspaceId}/invite`, {
+      method: 'POST',
+      body: JSON.stringify({ agent_key: agentKey }),
+    });
+    closeModal('modal-invite');
+    loadMembers(activeWorkspaceId);
+    notify('success', 'Agent invited successfully');
+  } catch (err) {
+    errEl.textContent = err.message;
+    errEl.classList.add('show');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DREAM ENGINE
+═══════════════════════════════════════════════════════════ */
+async function loadDreamState(wsId) {
+  try {
+    const data = await apiFetch(`/hive/${wsId}/state`);
+    const summary = data._dream_summary || data.dream_summary || data.synthesis_summary || '';
+    const insights = data.insights || data.dream_insights || data.key_insights || [];
+    const lastRun = data.last_synthesis || data.last_dream || data.updated_at || '';
+
+    // Update badge
+    const badge   = document.getElementById('dream-status-badge');
+    const lastEl  = document.getElementById('dream-last-run');
+    const summEl  = document.getElementById('dream-summary');
+    const insList = document.getElementById('dream-insights');
+
+    badge.className = 'dream-badge complete';
+    badge.textContent = 'Active';
+    if (lastRun) {
+      const d = new Date(typeof lastRun === 'number' && lastRun < 1e12 ? lastRun * 1000 : lastRun);
+      lastEl.textContent = 'Last run: ' + d.toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' });
+    }
+    if (summary) {
+      summEl.textContent = summary;
+      summEl.style.display = 'block';
+    }
+    if (insights.length > 0) {
+      insList.innerHTML = '<div class="rp-section-label">Key Insights</div>' +
+        insights.slice(0, 6).map(ins => {
+          const text = typeof ins === 'string' ? ins : (ins.text || ins.insight || JSON.stringify(ins));
+          return `<div class="dream-insight-item"><div class="di-bullet"></div><div>${escHtml(text)}</div></div>`;
+        }).join('');
+    }
+  } catch {
+    // No dream state yet — that's fine
+    document.getElementById('dream-status-badge').className = 'dream-badge idle';
+  }
+}
+
+async function triggerSynthesis() {
+  if (!activeWorkspaceId) { notify('error', 'Select a workspace first'); return; }
+  if (dreaming) { notify('info', 'Synthesis already running'); return; }
+
+  const question = document.getElementById('dream-question').value.trim();
+  const btn      = document.getElementById('dream-synth-btn');
+  const badge    = document.getElementById('dream-status-badge');
+
+  dreaming = true;
+  btn.disabled   = true;
+  btn.textContent = '✦ Running...';
+  badge.className = 'dream-badge running';
+  badge.textContent = 'Running';
+
+  try {
+    await apiFetch(`/hive/${activeWorkspaceId}/synthesize`, {
+      method: 'POST',
+      body: JSON.stringify({ hours: 24, question: question || 'What are the most important developments and insights from this team?' }),
+    });
+    notify('success', 'Dream synthesis started');
+    appendMessage({
+      actor:   'Dream Engine',
+      message: question ? `Synthesizing team knowledge around: "${question}"` : 'Running overnight synthesis across all channels...',
+      type:    'system',
+      timestamp: Date.now(),
+    });
+    // Poll for completion
+    setTimeout(() => {
+      loadDreamState(activeWorkspaceId);
+      badge.className = 'dream-badge complete';
+      badge.textContent = 'Complete';
+    }, 5000);
+  } catch (err) {
+    notify('error', 'Synthesis failed: ' + err.message);
+    badge.className = 'dream-badge idle';
+    badge.textContent = 'Idle';
+  } finally {
+    dreaming = false;
+    btn.disabled    = false;
+    btn.textContent = '✦ Synthesize Now';
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AGENTS ROSTER
+═══════════════════════════════════════════════════════════ */
+function buildAgentsRoster() {
+  const container = document.getElementById('agents-roster');
+  container.innerHTML = AGENT_ROSTER.map(agent => `
+    <div class="agent-card">
+      <div class="agent-card-top">
+        <span class="agent-icon">${agent.icon}</span>
+        <div>
+          <div class="agent-name">${escHtml(agent.name)}</div>
+          <span class="agent-tag" style="background:${agent.color}18;color:${agent.color};border:1px solid ${agent.color}30">${escHtml(agent.role)}</span>
+        </div>
+      </div>
+      <div class="agent-desc">${escHtml(agent.desc)}</div>
+      <button class="agent-mention-btn" onclick="mentionAgent('${escHtml(agent.name)}')">@ Mention</button>
+    </div>
+  `).join('');
+}
+
+function mentionAgent(agentName) {
+  const input = document.getElementById('composer-input');
+  const mention = `@${agentName.replace(/ /g,'-').toLowerCase()} `;
+  input.value = input.value ? input.value + ' ' + mention : mention;
+  input.focus();
+  autoResizeTextarea(input);
+  document.getElementById('send-btn').disabled = false;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   COMPOSER
+═══════════════════════════════════════════════════════════ */
+function setupComposer() {
+  const input  = document.getElementById('composer-input');
+  const sendBtn = document.getElementById('send-btn');
+
+  input.addEventListener('input', () => {
+    autoResizeTextarea(input);
+    sendBtn.disabled = !input.value.trim() || !apiKey;
+    // Slash menu
+    if (input.value.startsWith('/') && !input.value.includes(' ')) {
+      document.getElementById('slash-menu').style.display = 'block';
+    } else {
+      closeSlashMenu();
+    }
+  });
+
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      if (!sendBtn.disabled) sendMessage();
+    }
+    if (e.key === 'Escape') closeSlashMenu();
+  });
+
+  input.addEventListener('blur', () => {
+    setTimeout(closeSlashMenu, 150);
+  });
+}
+
+function autoResizeTextarea(el) {
+  el.style.height = 'auto';
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px';
+}
+
+function toggleSlashMenu() {
+  const menu = document.getElementById('slash-menu');
+  if (menu.style.display === 'none' || !menu.style.display) {
+    menu.style.display = 'block';
+    document.getElementById('composer-input').focus();
+  } else {
+    closeSlashMenu();
+  }
+}
+
+function closeSlashMenu() {
+  document.getElementById('slash-menu').style.display = 'none';
+}
+
+function insertSlash(cmd) {
+  const input = document.getElementById('composer-input');
+  input.value = cmd + ' ';
+  input.focus();
+  closeSlashMenu();
+  document.getElementById('send-btn').disabled = false;
+  // Immediately execute single-word commands
+  if (['/clear','/agents','/dream','/synthesize','/invite'].includes(cmd)) {
+    sendMessage();
+  }
+}
+
+function insertMention() {
+  const input = document.getElementById('composer-input');
+  input.value += '@';
+  input.focus();
+  document.getElementById('send-btn').disabled = !input.value.trim();
+}
+
+function promptNewChannel() {
+  const name = prompt('New channel name (lowercase, no spaces):');
+  if (!name || !activeWorkspaceId) return;
+  const clean = name.toLowerCase().replace(/[^a-z0-9\-]/g, '').slice(0, 30);
+  if (!clean) { notify('error', 'Invalid channel name'); return; }
+  const ws = workspaces.find(w => w.id === activeWorkspaceId);
+  if (ws) {
+    if (!ws.channels) ws.channels = [...DEFAULT_CHANNELS];
+    if (!ws.channels.includes(clean)) ws.channels.push(clean);
+    renderChannelList(activeWorkspaceId);
+    selectChannel(clean, activeWorkspaceId);
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   THINKING INDICATOR
+═══════════════════════════════════════════════════════════ */
+function showThinking(actorName) {
+  const row = document.getElementById('thinking-row');
+  const lbl = document.getElementById('thinking-label');
+  const av  = document.getElementById('thinking-avatar');
+  if (actorName) {
+    lbl.textContent = actorName + ' is thinking...';
+    av.textContent  = actorName[0].toUpperCase();
+    av.style.background = avatarColor(actorName);
+  }
+  row.style.display = 'flex';
+  scrollFeedToBottom();
+  // Auto-hide after 15s fallback
+  setTimeout(hideThinking, 15000);
+}
+
+function hideThinking() {
+  document.getElementById('thinking-row').style.display = 'none';
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RIGHT PANEL TABS
+═══════════════════════════════════════════════════════════ */
+function switchRpTab(tab, el) {
+  document.querySelectorAll('.rp-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.rp-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('rp-' + tab).classList.add('active');
+}
+
+/* ═══════════════════════════════════════════════════════════
+   FEED HELPERS
+═══════════════════════════════════════════════════════════ */
+function clearFeed() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '';
+}
+
+function renderFeedEmpty(msg) {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = `<div class="empty-state" id="feed-empty">
+    <div class="empty-icon">💬</div>
+    <div class="empty-title">No messages</div>
+    <div class="empty-sub">${escHtml(msg)}</div>
+  </div>`;
+}
+
+function showFeedLoading() {
+  const feed = document.getElementById('feed');
+  feed.innerHTML = `<div class="empty-state">
+    <div class="empty-icon" style="animation:sdpulse 1.2s infinite">⏳</div>
+    <div class="empty-title">Loading messages...</div>
+  </div>`;
+}
+
+function scrollFeedToBottom() {
+  const feed = document.getElementById('feed');
+  requestAnimationFrame(() => { feed.scrollTop = feed.scrollHeight; });
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MODALS
+═══════════════════════════════════════════════════════════ */
+function closeModal(id) {
+  document.getElementById(id).classList.add('hidden');
+}
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay && overlay.id !== 'modal-onboard') closeModal(overlay.id);
+  });
+});
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST NOTIFICATIONS
+═══════════════════════════════════════════════════════════ */
+function notify(type, message) {
+  const container = document.getElementById('toast-container');
+  const icons = { success:'✓', error:'✕', info:'i' };
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+  toast.innerHTML = `<span class="toast-icon">${icons[type] || 'i'}</span><span>${escHtml(message)}</span>`;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add('out');
+    setTimeout(() => toast.remove(), 250);
+  }, 3000);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════════════════════════ */
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
+function avatarColor(name) {
+  const colors = [
+    '#06b6d4','#34d97b','#f59e0b','#8b5cf6',
+    '#f87171','#ec4899','#14b8a6','#f97316',
+  ];
+  let hash = 0;
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+  return colors[Math.abs(hash) % colors.length];
+}
+
+// Global keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    document.getElementById('composer-input').focus();
+  }
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay:not(.hidden)').forEach(m => {
+      if (m.id !== 'modal-onboard') closeModal(m.id);
+    });
+    closeSlashMenu();
+  }
+});
+</script>
+</body>
+</html>
