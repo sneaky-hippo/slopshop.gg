@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Slopshop in Claude Code — 1,400+ MCP Tools for Claude</title>
+<meta name="description" content="Deploy Slopshop as a first-class MCP server inside Claude Code. 1,400+ battle-tested tools — memory, Dream Engine, crypto, network, code execution — available as native Claude tools in 30 seconds.">
+<meta name="keywords" content="claude code mcp, claude mcp server, slopshop mcp, model context protocol claude, mcp tools claude code, claude code tools">
+<link rel="canonical" href="https://slopshop.gg/integrate-claude-code">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/integrate-claude-code">
+<meta property="og:title" content="Slopshop in Claude Code — 1,400+ MCP Tools for Claude">
+<meta property="og:description" content="Deploy Slopshop as a first-class MCP server inside Claude Code. 1,400+ battle-tested tools available as native Claude tools in 30 seconds.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop in Claude Code — 1,400+ MCP Tools for Claude">
+<meta name="twitter:description" content="Add 1,400+ battle-tested tools to Claude Code via MCP. Memory, Dream Engine, crypto, network, code execution — all native.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><defs><linearGradient id='g' x1='0' y1='0' x2='1' y2='1'><stop offset='0%25' stop-color='%23ff4444'/><stop offset='100%25' stop-color='%23cc2222'/></linearGradient></defs><rect width='512' height='512' rx='96' fill='url(%23g)'/><path d='M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><path d='M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56' stroke='white' stroke-width='28' stroke-linecap='round' stroke-linejoin='round' fill='none' opacity='.95'/><circle cx='256' cy='268' r='24' fill='white'/></svg>" type="image/svg+xml">
+<meta name="theme-color" content="#06b6d4">
+
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop in Claude Code","description":"Deploy Slopshop as a first-class MCP server inside Claude Code. 1,400+ battle-tested tools available as native Claude tools in 30 seconds.","url":"https://slopshop.gg/integrate-claude-code","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"},"about":{"@type":"SoftwareApplication","name":"Slopshop","applicationCategory":"DeveloperApplication"}}</script>
+
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090b;--s1:#111113;--s2:#18181b;--s3:#27272a;
+  --b:#1e1e22;--b2:#27272a;
+  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+  --r:#06b6d4;--o:#a78bfa;--g:#34d399;--v:#818cf8;
+  --rg:rgba(6,182,212,0.08);--og:rgba(167,139,250,0.1);
+  --gg:rgba(52,211,153,0.1);--vg:rgba(129,140,248,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#000}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(9,9,11,0.88);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:#fff;text-decoration:none}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-cta{background:var(--r);color:#000!important;font-weight:700!important;padding:6px 14px!important;border-radius:6px!important;font-family:var(--mono)!important;font-size:0.73rem!important}
+.nav-cta:hover{background:#22d3ee;opacity:1!important}
+
+/* HERO */
+.hero{padding:136px 32px 80px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 0%,rgba(6,182,212,0.07),transparent 60%)}
+.hero-inner{max-width:1100px;margin:0 auto;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;background:var(--rg);border:1px solid rgba(6,182,212,0.22);color:var(--r);padding:5px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;margin-bottom:28px;font-family:var(--mono)}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero h1{font-family:var(--mono);font-size:clamp(2.4rem,5.5vw,4rem);font-weight:800;letter-spacing:-0.03em;line-height:1.06;margin-bottom:24px}
+.hero h1 .accent{color:var(--r)}
+.hero h1 .dim{color:var(--t4)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:580px;margin:0 auto;line-height:1.85;font-weight:400}
+.hero .sub b{color:var(--t);font-weight:600}
+
+.stats{display:flex;gap:40px;justify-content:center;flex-wrap:wrap;margin:48px 0;padding:32px 0;border-top:1px solid var(--b);border-bottom:1px solid var(--b)}
+.stat{text-align:center;padding:0 8px}
+.stat .n{font-family:var(--mono);font-size:1.7rem;font-weight:800;letter-spacing:-0.03em}
+.stat .l{font-size:0.6rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.14em;margin-top:6px;font-weight:600}
+.stat:nth-child(1) .n{color:var(--r)}
+.stat:nth-child(2) .n{color:var(--g)}
+.stat:nth-child(3) .n{color:var(--o)}
+.stat:nth-child(4) .n{color:var(--v)}
+
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:24px}
+.cta-primary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:700;background:var(--r);color:#000;text-decoration:none;transition:box-shadow 0.2s,transform 0.15s}
+.cta-primary:hover{box-shadow:0 0 28px rgba(6,182,212,0.35);transform:translateY(-1px);opacity:1;color:#000}
+.cta-secondary{display:inline-flex;align-items:center;gap:6px;padding:12px 28px;border-radius:10px;font-family:var(--mono);font-size:0.82rem;font-weight:500;background:transparent;color:var(--t2);border:1px solid var(--b2);text-decoration:none;transition:color 0.15s,border-color 0.15s}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+
+/* LAYOUT */
+.sec{max-width:1100px;margin:0 auto;padding:80px 32px}
+.sec-label{font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--r);text-transform:uppercase;letter-spacing:0.18em;margin-bottom:12px}
+.sec h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
+.sec .desc{color:var(--t3);font-size:0.88rem;margin-bottom:40px;line-height:1.75;max-width:640px}
+.divider{border:none;border-top:1px solid var(--b);margin:0}
+
+/* STEPS */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:40px}
+.step{background:var(--s1);border:1px solid var(--b);border-radius:14px;padding:28px;transition:border-color 0.2s,transform 0.15s;position:relative}
+.step:hover{border-color:var(--b2);transform:translateY(-2px)}
+.step-num{font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--r);text-transform:uppercase;letter-spacing:0.16em;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.step-num .num-badge{background:var(--rg);border:1px solid rgba(6,182,212,0.2);color:var(--r);width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800}
+.step h3{font-family:var(--mono);font-size:0.88rem;font-weight:700;margin-bottom:10px;color:var(--t)}
+.step p{font-size:0.8rem;color:var(--t3);line-height:1.75;margin-bottom:14px}
+
+/* CODE BLOCKS */
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-bottom:24px}
+.code-header{background:var(--s2);padding:10px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .fname{font-family:var(--mono);font-size:0.7rem;color:var(--r);font-weight:600}
+.code-header .lang-badge{font-family:var(--mono);font-size:0.62rem;color:var(--t3);background:var(--s3);padding:2px 8px;border-radius:4px;font-weight:500}
+.code-body{padding:20px 22px;font-family:var(--mono);font-size:0.78rem;line-height:1.85;overflow-x:auto;color:var(--t2)}
+.code-body pre{white-space:pre}
+
+/* INLINE CMD */
+.cmd-row{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-family:var(--mono);font-size:0.75rem;margin-bottom:12px;transition:border-color 0.15s}
+.cmd-row:hover{border-color:var(--b2)}
+.cmd-row .prompt{color:var(--t4);flex-shrink:0}
+.cmd-row .cmd-text{color:var(--g);flex:1}
+
+/* COPY BUTTON */
+.copy-btn{background:var(--s3);border:1px solid var(--b2);color:var(--t3);font-family:var(--mono);font-size:0.65rem;font-weight:600;padding:5px 12px;border-radius:6px;cursor:pointer;transition:background 0.15s,color 0.15s,border-color 0.15s;white-space:nowrap;flex-shrink:0}
+.copy-btn:hover{background:var(--b2);color:var(--t);border-color:rgba(255,255,255,0.15)}
+.copy-btn.copied{background:var(--gg);border-color:rgba(52,211,153,0.3);color:var(--g)}
+
+/* WHAT YOU UNLOCK GRID */
+.unlock-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:40px}
+.unlock-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:22px;transition:transform 0.15s,border-color 0.2s}
+.unlock-card:hover{transform:translateY(-2px);border-color:var(--b2)}
+.unlock-card .uc-icon{font-size:1.3rem;margin-bottom:10px}
+.unlock-card h3{font-family:var(--mono);font-size:0.82rem;font-weight:700;margin-bottom:8px;color:var(--t)}
+.unlock-card p{font-size:0.75rem;color:var(--t3);line-height:1.65;margin-bottom:10px}
+.unlock-card .tool-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tool-chip{font-family:var(--mono);font-size:0.62rem;background:var(--s2);border:1px solid var(--b);color:var(--t3);padding:2px 8px;border-radius:4px}
+.unlock-card:nth-child(1){border-left:3px solid var(--g)}
+.unlock-card:nth-child(2){border-left:3px solid var(--r)}
+.unlock-card:nth-child(3){border-left:3px solid var(--o)}
+.unlock-card:nth-child(4){border-left:3px solid var(--v)}
+.unlock-card:nth-child(5){border-left:3px solid #f97316}
+.unlock-card:nth-child(6){border-left:3px solid #ec4899}
+
+/* COMPAT ROW */
+.compat-row{display:flex;gap:10px;flex-wrap:wrap;align-items:stretch;margin-bottom:32px}
+.compat-chip{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px 20px;display:flex;align-items:center;gap:10px;flex:1;min-width:140px;transition:border-color 0.2s}
+.compat-chip:hover{border-color:var(--b2)}
+.compat-chip .cc-logo{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0}
+.compat-chip .cc-name{font-family:var(--mono);font-size:0.78rem;font-weight:700;color:var(--t)}
+.compat-chip .cc-sub{font-size:0.68rem;color:var(--t3);margin-top:1px}
+.compat-chip.active{border-color:rgba(6,182,212,0.3);background:rgba(6,182,212,0.04)}
+.compat-chip.active .cc-name{color:var(--r)}
+
+/* AUTO-SETUP SECTION */
+.setup-box{background:var(--s1);border:1px solid var(--b);border-radius:14px;padding:36px;display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+.setup-box .setup-left h3{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:12px}
+.setup-box .setup-left p{color:var(--t3);font-size:0.83rem;line-height:1.8;margin-bottom:16px}
+.setup-box .setup-left ul{color:var(--t3);font-size:0.8rem;line-height:1.9;padding-left:18px;margin-bottom:0}
+.setup-box .setup-left ul li{margin-bottom:4px}
+.setup-box .setup-left ul li span{color:var(--g);font-weight:600;font-family:var(--mono)}
+
+/* LOCAL INSTALL */
+.local-block{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px;margin-bottom:16px}
+.local-block .local-label{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--o);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:14px}
+.local-block p{font-size:0.8rem;color:var(--t3);line-height:1.75;margin-bottom:14px}
+
+/* CTA BANNER */
+.cta-banner{background:linear-gradient(135deg,rgba(6,182,212,0.07),rgba(6,182,212,0.02));border:1px solid rgba(6,182,212,0.18);border-radius:16px;padding:56px 48px;text-align:center;margin:40px 0;position:relative;overflow:hidden}
+.cta-banner::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 50% 0%,rgba(6,182,212,0.06),transparent 70%);pointer-events:none}
+.cta-banner h2{font-family:var(--mono);font-size:1.6rem;font-weight:800;margin-bottom:12px;letter-spacing:-0.02em;position:relative}
+.cta-banner h2 .accent{color:var(--r)}
+.cta-banner p{color:var(--t3);margin-bottom:32px;font-size:0.9rem;max-width:520px;margin-left:auto;margin-right:auto;position:relative;line-height:1.8}
+
+/* FOOTER */
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1100px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:48px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+
+/* JSON SYNTAX HIGHLIGHT */
+.jk{color:#93c5fd}
+.jv{color:var(--g)}
+.js{color:var(--o)}
+.jn{color:#fb923c}
+.jc{color:var(--t4)}
+.jp{color:var(--r)}
+
+/* INLINE CODE */
+code{font-family:var(--mono);font-size:0.8em;background:var(--s2);padding:2px 6px;border-radius:4px;color:var(--o)}
+
+/* NOTE BOX */
+.note{background:var(--s2);border:1px solid var(--b2);border-left:3px solid var(--r);border-radius:8px;padding:14px 16px;font-size:0.78rem;color:var(--t3);margin-bottom:20px;line-height:1.75}
+.note strong{color:var(--t);font-weight:600}
+
+/* RESPONSIVE */
+@media(max-width:900px){
+  .unlock-grid{grid-template-columns:1fr 1fr}
+  .setup-box{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .nav-links a{font-size:0.65rem;padding:4px 6px}
+  .nav-links a:nth-child(n+4){display:none}
+  .hero{padding:80px 16px 48px}
+  .hero h1{font-size:clamp(2rem,10vw,2.8rem)}
+  .sec{padding:48px 16px}
+  .steps{grid-template-columns:1fr;gap:10px}
+  .unlock-grid{grid-template-columns:1fr 1fr}
+  .compat-row{flex-direction:column}
+  .footer-grid{grid-template-columns:1fr;gap:24px}
+  .cta-banner{padding:32px 20px}
+  .stats{gap:20px}
+}
+@media(max-width:480px){
+  .unlock-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo">
+    <svg width="24" height="24" viewBox="0 0 512 512" style="flex-shrink:0"><defs><linearGradient id="navG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#navG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+    <span>SLOPSHOP</span><span class="gg">.GG</span>
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/tools">Tools</a>
+    <a href="/docs">Docs</a>
+    <a href="/#pricing">Pricing</a>
+    <a href="/playground">Playground</a>
+    <a href="/signup" class="nav-cta">Sign Up Free</a>
+  </div>
+</div></nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">
+      <div class="live-dot"></div>
+      MCP Server &nbsp;&middot;&nbsp; Claude Code &nbsp;&middot;&nbsp; 1,400+ Tools &nbsp;&middot;&nbsp; Dream Engine
+    </div>
+
+    <h1>Slopshop in<br><span class="accent">Claude Code</span></h1>
+
+    <p class="sub">
+      <b>Add 1,400+ battle-tested tools to Claude Code in 30 seconds.</b><br>
+      Memory, Dream Engine, crypto, network, code execution &mdash; all as native tools.<br>
+      One JSON snippet. Claude already knows how to use them.
+    </p>
+
+    <div class="stats">
+      <div class="stat"><div class="n">1,400+</div><div class="l">Native Tools</div></div>
+      <div class="stat"><div class="n">30s</div><div class="l">To Deploy</div></div>
+      <div class="stat"><div class="n">MCP</div><div class="l">Protocol</div></div>
+      <div class="stat"><div class="n">0</div><div class="l">Extra Config</div></div>
+    </div>
+
+    <div class="hero-ctas">
+      <a href="/signup" class="cta-primary">Get Your API Key &rarr;</a>
+      <a href="/docs" class="cta-secondary">View Docs</a>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- QUICKSTART STEPS -->
+<section class="sec">
+  <div class="sec-label">Quickstart</div>
+  <h2>Three steps. Claude has 1,400 real tools.</h2>
+  <p class="desc">The fastest path from zero to a Claude that can hash data, query memory, dream-synthesize knowledge, and run code &mdash; all in the same conversation.</p>
+
+  <div class="steps">
+    <!-- Step 1 -->
+    <div class="step">
+      <div class="step-num">
+        <span class="num-badge">1</span>
+        Step 01 &mdash; API Key
+      </div>
+      <h3>Get your Slopshop key</h3>
+      <p>Create a free account at slopshop.gg. Your API key starts with <code>sk-slop-</code>. Free tier includes memory, crypto, and network tools with no credit card required.</p>
+      <a href="/signup" class="cta-primary" style="font-size:0.75rem;padding:9px 18px">Create Free Account &rarr;</a>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="step">
+      <div class="step-num">
+        <span class="num-badge">2</span>
+        Step 02 &mdash; Configure
+      </div>
+      <h3>Add to settings.json</h3>
+      <p>Open <code>~/.claude/settings.json</code> and add the <code>mcpServers</code> block. Claude Code reads this at startup and registers all tools automatically.</p>
+      <div class="cmd-row" id="cmd-npx">
+        <span class="prompt">$</span>
+        <span class="cmd-text">npx -y slopshop slopshop-mcp</span>
+        <button class="copy-btn" onclick="copy(this,'npx -y slopshop slopshop-mcp')">Copy</button>
+      </div>
+    </div>
+
+    <!-- Step 3 -->
+    <div class="step">
+      <div class="step-num">
+        <span class="num-badge">3</span>
+        Step 03 &mdash; Launch
+      </div>
+      <h3>Restart Claude Code &amp; ask</h3>
+      <p>Restart Claude Code. The tools auto-register. Try it immediately:</p>
+      <div class="cmd-row" style="margin-top:8px">
+        <span class="prompt" style="color:var(--o)">&gt;</span>
+        <span class="cmd-text" style="color:var(--t2)">Hash "hello" with SHA256</span>
+      </div>
+      <div class="cmd-row">
+        <span class="prompt" style="color:var(--o)">&gt;</span>
+        <span class="cmd-text" style="color:var(--t2)">Store this context in memory</span>
+      </div>
+      <div class="cmd-row">
+        <span class="prompt" style="color:var(--o)">&gt;</span>
+        <span class="cmd-text" style="color:var(--t2)">Start a Dream Engine cycle</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main JSON config block -->
+  <div class="sec-label" style="margin-top:48px">Settings Config</div>
+  <h2 style="margin-bottom:8px">Add to ~/.claude/settings.json</h2>
+  <p class="desc">This is the full configuration block. Paste it into your settings file (merge with existing content if you already have other MCP servers configured).</p>
+
+  <div class="code-block">
+    <div class="code-header">
+      <span class="fname">~/.claude/settings.json</span>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span class="lang-badge">JSON</span>
+        <button class="copy-btn" id="copy-main-json" onclick="copyBlock('main-json-pre',this)">Copy</button>
+      </div>
+    </div>
+    <div class="code-body">
+<pre id="main-json-pre"><span class="jc">{</span>
+  <span class="jk">"mcpServers"</span><span class="jc">: {</span>
+    <span class="jk">"slopshop"</span><span class="jc">: {</span>
+      <span class="jk">"command"</span><span class="jc">:</span> <span class="jv">"npx"</span><span class="jc">,</span>
+      <span class="jk">"args"</span><span class="jc">:</span> <span class="jc">[</span><span class="jv">"-y"</span><span class="jc">,</span> <span class="jv">"slopshop"</span><span class="jc">,</span> <span class="jv">"slopshop-mcp"</span><span class="jc">],</span>
+      <span class="jk">"env"</span><span class="jc">: {</span>
+        <span class="jk">"SLOPSHOP_KEY"</span><span class="jc">:</span> <span class="js">"sk-slop-xxx"</span>
+      <span class="jc">}</span>
+    <span class="jc">}</span>
+  <span class="jc">}</span>
+<span class="jc">}</span></pre>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Tip:</strong> Replace <code>sk-slop-xxx</code> with your actual API key from <a href="/signup" style="color:var(--r)">slopshop.gg/signup</a>. If you already have a <code>mcpServers</code> block, just add the <code>"slopshop"</code> entry inside it alongside your other servers.
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- LOCAL INSTALL ALTERNATIVE -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Alternative</div>
+  <h2>Local install (global npm)</h2>
+  <p class="desc">If you prefer a globally installed binary rather than npx, install once and point Claude Code directly at the server file.</p>
+
+  <div class="local-block">
+    <div class="local-label">Option A &mdash; Global npm install</div>
+    <p>Install slopshop globally so <code>slopshop-mcp</code> is available as a binary on your PATH.</p>
+    <div class="cmd-row">
+      <span class="prompt">$</span>
+      <span class="cmd-text">npm install -g slopshop</span>
+      <button class="copy-btn" onclick="copy(this,'npm install -g slopshop')">Copy</button>
+    </div>
+    <p style="margin-top:4px">Then use this settings block instead:</p>
+    <div class="code-block" style="margin-bottom:0">
+      <div class="code-header">
+        <span class="fname">~/.claude/settings.json (global binary)</span>
+        <button class="copy-btn" onclick="copyBlock('local-json-pre',this)">Copy</button>
+      </div>
+      <div class="code-body">
+<pre id="local-json-pre"><span class="jc">{</span>
+  <span class="jk">"mcpServers"</span><span class="jc">: {</span>
+    <span class="jk">"slopshop"</span><span class="jc">: {</span>
+      <span class="jk">"command"</span><span class="jc">:</span> <span class="jv">"slopshop-mcp"</span><span class="jc">,</span>
+      <span class="jk">"env"</span><span class="jc">: {</span>
+        <span class="jk">"SLOPSHOP_KEY"</span><span class="jc">:</span> <span class="js">"sk-slop-xxx"</span>
+      <span class="jc">}</span>
+    <span class="jc">}</span>
+  <span class="jc">}</span>
+<span class="jc">}</span></pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="local-block" style="margin-top:16px">
+    <div class="local-label">Option B &mdash; Direct node path (self-hosted)</div>
+    <p>Clone the repo or point at a local checkout. Useful for customisation or air-gapped environments.</p>
+    <div class="code-block" style="margin-bottom:0">
+      <div class="code-header">
+        <span class="fname">~/.claude/settings.json (local path)</span>
+        <button class="copy-btn" onclick="copyBlock('path-json-pre',this)">Copy</button>
+      </div>
+      <div class="code-body">
+<pre id="path-json-pre"><span class="jc">{</span>
+  <span class="jk">"mcpServers"</span><span class="jc">: {</span>
+    <span class="jk">"slopshop"</span><span class="jc">: {</span>
+      <span class="jk">"command"</span><span class="jc">:</span> <span class="jv">"node"</span><span class="jc">,</span>
+      <span class="jk">"args"</span><span class="jc">:</span> <span class="jc">[</span><span class="js">"/path/to/slopshop/mcp-server.js"</span><span class="jc">],</span>
+      <span class="jk">"env"</span><span class="jc">: {</span>
+        <span class="jk">"SLOPSHOP_KEY"</span><span class="jc">:</span> <span class="js">"sk-slop-xxx"</span><span class="jc">,</span>
+        <span class="jk">"SLOPSHOP_BASE"</span><span class="jc">:</span> <span class="js">"https://slopshop.gg"</span>
+      <span class="jc">}</span>
+    <span class="jc">}</span>
+  <span class="jc">}</span>
+<span class="jc">}</span></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- WHAT YOU UNLOCK -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">What You Get</div>
+  <h2>1,400+ tools Claude can actually call</h2>
+  <p class="desc">Every tool is a real computation with real results &mdash; not a hallucinated function. Claude calls them as native MCP tools and gets verified outputs back.</p>
+
+  <div class="unlock-grid">
+    <div class="unlock-card">
+      <div class="uc-icon">&#129504;</div>
+      <h3>Memory &amp; Dream Engine</h3>
+      <p>Persistent agent memory with REM-cycle synthesis. Store, retrieve, and evolve knowledge across sessions. The crown jewel.</p>
+      <div class="tool-chips">
+        <span class="tool-chip">slop-memory-set</span>
+        <span class="tool-chip">slop-memory-get</span>
+        <span class="tool-chip">slop-dream-start</span>
+        <span class="tool-chip">slop-dream-status</span>
+        <span class="tool-chip">slop-memory-share</span>
+      </div>
+    </div>
+
+    <div class="unlock-card">
+      <div class="uc-icon">&#128274;</div>
+      <h3>Crypto &amp; Hashing</h3>
+      <p>SHA-256, MD5, bcrypt, HMAC, UUID generation, base64, hex encode/decode, random bytes. All client-side compute.</p>
+      <div class="tool-chips">
+        <span class="tool-chip">slop-crypto-hash-sha256</span>
+        <span class="tool-chip">slop-crypto-hash-md5</span>
+        <span class="tool-chip">slop-crypto-hmac</span>
+        <span class="tool-chip">slop-crypto-uuid</span>
+        <span class="tool-chip">slop-encode-base64</span>
+      </div>
+    </div>
+
+    <div class="unlock-card">
+      <div class="uc-icon">&#127760;</div>
+      <h3>Network &amp; DNS</h3>
+      <p>DNS lookups, SSL certificate inspection, HTTP fetch with custom headers, IP geolocation, port scanning, WHOIS.</p>
+      <div class="tool-chips">
+        <span class="tool-chip">slop-dns-lookup</span>
+        <span class="tool-chip">slop-ssl-check</span>
+        <span class="tool-chip">slop-http-fetch</span>
+        <span class="tool-chip">slop-ip-geo</span>
+        <span class="tool-chip">slop-whois</span>
+      </div>
+    </div>
+
+    <div class="unlock-card">
+      <div class="uc-icon">&#129302;</div>
+      <h3>LLM Utilities</h3>
+      <p>Token counting, prompt scoring, summarisation, entity extraction, sentiment analysis, embedding similarity.</p>
+      <div class="tool-chips">
+        <span class="tool-chip">slop-llm-token-count</span>
+        <span class="tool-chip">slop-llm-summarize</span>
+        <span class="tool-chip">slop-llm-extract</span>
+        <span class="tool-chip">slop-llm-sentiment</span>
+        <span class="tool-chip">slop-llm-think</span>
+      </div>
+    </div>
+
+    <div class="unlock-card">
+      <div class="uc-icon">&#9881;</div>
+      <h3>Code Execution</h3>
+      <p>Run Python, evaluate JavaScript expressions, parse JSON/YAML/TOML, regex matching, AST analysis, lint checks.</p>
+      <div class="tool-chips">
+        <span class="tool-chip">slop-code-run-python</span>
+        <span class="tool-chip">slop-code-eval-js</span>
+        <span class="tool-chip">slop-parse-json</span>
+        <span class="tool-chip">slop-regex-match</span>
+        <span class="tool-chip">slop-parse-yaml</span>
+      </div>
+    </div>
+
+    <div class="unlock-card">
+      <div class="uc-icon">&#10024;</div>
+      <h3>Dream Engine</h3>
+      <p>REM-cycle memory consolidation. Schedule overnight knowledge synthesis, snapshot branching, Bayesian memory scoring, episodic chains.</p>
+      <div class="tool-chips">
+        <span class="tool-chip">slop-dream-schedule</span>
+        <span class="tool-chip">slop-memory-snapshot</span>
+        <span class="tool-chip">slop-memory-decay</span>
+        <span class="tool-chip">slop-memory-cluster</span>
+        <span class="tool-chip">slop-knowledge-graph</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>82 categories total.</strong> The six above are highlights. You also get: text processing, math, data transforms, CSV/Excel parsing, image hashing, QR codes, PDF generation, templating, time/date utilities, diff &amp; patch, agent identity, observability, workflow DAGs, marketplace tools, and much more. <a href="/tools" style="color:var(--r)">Browse all tools &rarr;</a>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- WORKS EVERYWHERE -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Compatibility</div>
+  <h2>Works everywhere MCP is supported</h2>
+  <p class="desc">Slopshop implements the Model Context Protocol spec. Any MCP-compatible editor or agent shell gets your 1,400 tools automatically.</p>
+
+  <div class="compat-row">
+    <div class="compat-chip active">
+      <div class="cc-logo" style="background:rgba(6,182,212,0.12)">
+        <svg width="18" height="18" viewBox="0 0 100 100" fill="none"><path d="M50 10C27.9 10 10 27.9 10 50s17.9 40 40 40 40-17.9 40-40S72.1 10 50 10zm0 72c-17.7 0-32-14.3-32-32s14.3-32 32-32 32 14.3 32 32-14.3 32-32 32z" fill="#06b6d4"/><circle cx="50" cy="50" r="12" fill="#06b6d4"/></svg>
+      </div>
+      <div>
+        <div class="cc-name">Claude Code</div>
+        <div class="cc-sub">~/.claude/settings.json</div>
+      </div>
+    </div>
+
+    <div class="compat-chip">
+      <div class="cc-logo" style="background:rgba(129,140,248,0.1)">
+        <svg width="18" height="18" viewBox="0 0 100 100"><rect x="15" y="15" width="70" height="70" rx="10" fill="none" stroke="#818cf8" stroke-width="8"/><rect x="30" y="35" width="40" height="6" rx="3" fill="#818cf8"/><rect x="30" y="50" width="28" height="6" rx="3" fill="#818cf8"/></svg>
+      </div>
+      <div>
+        <div class="cc-name">Cursor</div>
+        <div class="cc-sub">MCP config panel</div>
+      </div>
+    </div>
+
+    <div class="compat-chip">
+      <div class="cc-logo" style="background:rgba(52,211,153,0.1)">
+        <svg width="18" height="18" viewBox="0 0 100 100"><path d="M20 50L50 20L80 50L50 80Z" fill="none" stroke="#34d399" stroke-width="8"/><circle cx="50" cy="50" r="10" fill="#34d399"/></svg>
+      </div>
+      <div>
+        <div class="cc-name">VS Code</div>
+        <div class="cc-sub">MCP extension</div>
+      </div>
+    </div>
+
+    <div class="compat-chip">
+      <div class="cc-logo" style="background:rgba(167,139,250,0.1)">
+        <svg width="18" height="18" viewBox="0 0 100 100"><path d="M50 15l25 20v30L50 85 25 65V35z" fill="none" stroke="#a78bfa" stroke-width="8"/></svg>
+      </div>
+      <div>
+        <div class="cc-name">Goose</div>
+        <div class="cc-sub">block.goose.ai</div>
+      </div>
+    </div>
+
+    <div class="compat-chip">
+      <div class="cc-logo" style="background:rgba(249,115,22,0.1)">
+        <svg width="18" height="18" viewBox="0 0 100 100"><circle cx="50" cy="50" r="32" fill="none" stroke="#f97316" stroke-width="8"/><path d="M35 50h30M50 35v30" stroke="#f97316" stroke-width="8" stroke-linecap="round"/></svg>
+      </div>
+      <div>
+        <div class="cc-name">Cline</div>
+        <div class="cc-sub">VS Code extension</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="note">
+    <strong>Claude Code is first-class.</strong> The <code>slopshop-mcp</code> binary and <code>npx -y slopshop slopshop-mcp</code> one-liner are optimised for Claude Code's settings format. All other MCP hosts use the same JSON config shape.
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- AUTO-CONFIGURE SECTION -->
+<section class="sec" style="padding-top:64px">
+  <div class="sec-label">Auto-Configure</div>
+  <h2>One command. Zero manual edits.</h2>
+  <p class="desc">If you have a local checkout, <code>setup-mcp.js</code> reads your environment, finds Claude Code's settings file, and writes the correct config automatically.</p>
+
+  <div class="setup-box">
+    <div class="setup-left">
+      <h3>What setup-mcp.js does</h3>
+      <p>Run it once from your slopshop directory. It auto-detects your OS, locates <code>~/.claude/settings.json</code>, and merges the slopshop MCP block without overwriting your existing config.</p>
+      <ul>
+        <li><span>Finds</span> ~/.claude/settings.json on Mac, Linux &amp; Windows</li>
+        <li><span>Creates</span> the .claude directory if it doesn't exist</li>
+        <li><span>Merges</span> slopshop config without clobbering other servers</li>
+        <li><span>Picks up</span> SLOPSHOP_KEY from your environment automatically</li>
+        <li><span>Idempotent</span> &mdash; safe to re-run; updates the path if it changed</li>
+      </ul>
+    </div>
+
+    <div class="setup-right">
+      <div class="code-block" style="margin-bottom:0">
+        <div class="code-header">
+          <span class="fname">terminal</span>
+          <button class="copy-btn" onclick="copyBlock('setup-pre',this)">Copy</button>
+        </div>
+        <div class="code-body">
+<pre id="setup-pre"><span style="color:var(--t4)"># Set your key first</span>
+<span style="color:var(--g)">export</span> <span style="color:var(--t2)">SLOPSHOP_KEY</span>=<span style="color:var(--o)">sk-slop-xxx</span>
+
+<span style="color:var(--t4)"># Auto-configure Claude Code</span>
+<span style="color:var(--g)">node</span> <span style="color:var(--t2)">setup-mcp.js</span></pre>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;padding:14px 16px;background:var(--bg);border:1px solid var(--b);border-radius:8px;font-family:var(--mono);font-size:0.72rem;line-height:1.9;color:var(--t3)">
+        <div style="color:var(--t4);margin-bottom:4px"># Output</div>
+        <div style="color:var(--g)">Slopshop MCP Setup</div>
+        <div>Found existing Claude Code settings.</div>
+        <div>Merged slopshop MCP config.</div>
+        <div style="color:var(--g)">Done. Restart Claude Code to activate.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- FOOTER CTA -->
+<section class="sec" style="padding-top:64px">
+  <div class="cta-banner">
+    <h2>Give Claude Code <span class="accent">1,400+ real tools</span></h2>
+    <p>Memory that persists. A Dream Engine that synthesises. Crypto, network, code execution &mdash; all callable from inside any Claude Code conversation. One JSON block away.</p>
+    <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;position:relative">
+      <a href="/signup" class="cta-primary" style="font-size:0.85rem;padding:14px 32px">Get your API key &rarr;</a>
+      <a href="/tools" class="cta-secondary">Browse All Tools</a>
+      <a href="/docs" class="cta-secondary">Read the Docs</a>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:32px;flex-wrap:wrap;justify-content:center;margin-top:28px">
+    <a href="/mcp-tools-for-claude" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&rarr; MCP Tools Guide</a>
+    <a href="/slopshop-for-cursor" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&rarr; Slopshop for Cursor</a>
+    <a href="/getting-started" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&rarr; Getting Started</a>
+    <a href="/docs" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&rarr; Full Docs</a>
+    <a href="/self-hostable-mcp-server" style="color:var(--t3);font-size:0.78rem;font-family:var(--mono)">&rarr; Self-Host MCP</a>
+  </div>
+</section>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 512 512"><defs><linearGradient id="fG" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#ff4444"/><stop offset="100%" stop-color="#cc2222"/></linearGradient></defs><rect width="512" height="512" rx="96" fill="url(#fG)"/><path d="M192 96c-40 0-56 24-56 56v72c0 28-16 44-40 44 24 0 40 16 40 44v72c0 32 16 56 56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><path d="M320 96c40 0 56 24 56 56v72c0 28 16 44 40 44-24 0-40 16-40 44v72c0 32-16 56-56 56" stroke="white" stroke-width="28" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity=".95"/><circle cx="256" cy="268" r="24" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/templates">Templates</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/playground">Playground</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/docs">Docs</a>
+        <a href="/getting-started">Getting Started</a>
+        <a href="/security">Security</a>
+        <a href="/changelog">Changelog</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="/status">Status</a>
+        <a href="/legal">Legal</a>
+        <a href="https://x.com/slopshopgg">@slopshopgg</a>
+      </div>
+    </div>
+    <div class="footer-copy">The tool layer for AI agents &middot; 1,400+ tools &middot; Dream Engine &middot; Multiplayer Memory &middot; slopshop.gg</div>
+  </div>
+</footer>
+
+<script>
+function copy(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.classList.remove('copied');
+    }, 2000);
+  }).catch(() => {
+    // Fallback for older browsers
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.classList.remove('copied');
+    }, 2000);
+  });
+}
+
+function copyBlock(id, btn) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const text = el.innerText || el.textContent;
+  copy(btn, text);
+}
+</script>
+</body>
+</html>
