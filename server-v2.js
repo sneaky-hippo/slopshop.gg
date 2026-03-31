@@ -20046,6 +20046,15 @@ const server = app.listen(PORT, () => {
   } catch(_) {}
 });
 
+// Memory growth monitor — logs every 15s to help diagnose Railway crashes
+if (IS_RAILWAY) {
+  const _memStart = Date.now();
+  setInterval(() => {
+    const m = process.memoryUsage();
+    console.log(JSON.stringify({ level: 'info', msg: 'mem_monitor', rss_mb: Math.round(m.rss/1024/1024), heap_used_mb: Math.round(m.heapUsed/1024/1024), heap_total_mb: Math.round(m.heapTotal/1024/1024), uptime_s: Math.round((Date.now()-_memStart)/1000), ts: new Date().toISOString() }));
+  }, 15000);
+}
+
 function gracefulShutdown(signal) {
   console.log(`\n${signal} received. Shutting down gracefully...`);
   try { flushDirtyKeys(); } catch(_) {}

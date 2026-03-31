@@ -5,5 +5,3 @@ builder = "NIXPACKS"
 startCommand = "node --max-old-space-size=300 server-v2.js"
 restartPolicyType = "ALWAYS"
 restartPolicyMaxRetries = 10
-healthcheckPath = "/v1/health"
-healthcheckTimeout = 120
