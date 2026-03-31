@@ -20068,7 +20068,17 @@ const server = app.listen(PORT, () => {
   // Check for previous crash logs (handled in watchdog block below since DB_PATH is available)
 });
 
-// Memory growth watchdog — samples every 5s, writes to {dataDir}/mem.log on Railway
+// Startup alive probes — every 1s for first 15s to pinpoint crash window
+if (IS_RAILWAY) {
+  let _probeN = 1;
+  const _probeInterval = setInterval(() => {
+    const m = process.memoryUsage();
+    process.stdout.write('ALIVE t=' + _probeN + ' rss=' + Math.round(m.rss/1024/1024) + '\n');
+    if (++_probeN > 15) clearInterval(_probeInterval);
+  }, 1000);
+}
+
+// Memory growth watchdog — samples every 3s, writes to {dataDir}/mem.log on Railway
 if (IS_RAILWAY) {
   const _memStart = Date.now();
   const _fs = require('fs');
