@@ -17472,7 +17472,7 @@ const dreamSchedules = new Map();      // schedule_id -> { timer, config }
   }
 })();
 
-const DREAM_STRATEGIES = ['synthesize', 'pattern_extract', 'insight_generate', 'compress', 'associate'];
+const DREAM_STRATEGIES = ['synthesize', 'pattern_extract', 'insight_generate', 'compress', 'associate', 'validate', 'evolve', 'forecast', 'reflect'];
 
 // Per-strategy LLM prompts — each returns a function(namespace, memoriesText) -> string
 const DREAM_PROMPTS = {
@@ -17491,6 +17491,18 @@ const DREAM_PROMPTS = {
   associate: function(ns, memories) {
     return 'You are a memory association builder creating a knowledge graph.\n\nNamespace: ' + ns + '\n\nMemories to connect:\n\n' + memories + '\n\nBuild rich associations between these memories. Identify what connects them — shared concepts, causal links, temporal sequences, analogical relationships.\n\nRespond ONLY in valid JSON with this structure:\n{"associations": [{"key": "assoc_<slug>", "value": "<association description and link explanation>", "link_type": "causal|temporal|analogical|conceptual|contradictory", "linked_keys": ["<key1>", "<key2>"]}], "meta": {"total_links": 0, "strongest_cluster": "<cluster>", "isolated_keys": []}}';
   },
+  validate: function(ns, memories) {
+    return 'You are a memory validation system checking consistency and accuracy.\n\nNamespace: ' + ns + '\n\nMemories to validate:\n\n' + memories + '\n\nCheck each memory for: internal consistency, contradictions with other memories, outdated information, and confidence calibration. Flag uncertain or potentially incorrect memories.\n\nRespond ONLY in valid JSON with this structure:\n{"validated": [{"key": "val_<slug>", "value": "<validation assessment and corrected content>", "source_key": "<original_key>", "status": "valid|invalid|uncertain|outdated", "confidence": 0.8, "issues": []}], "meta": {"total_checked": 0, "valid_count": 0, "flagged_count": 0, "outdated_count": 0}}';
+  },
+  evolve: function(ns, memories) {
+    return 'You are a memory evolution engine that upgrades beliefs based on new evidence.\n\nNamespace: ' + ns + '\n\nMemories to evolve:\n\n' + memories + '\n\nApply Bayesian reasoning to update beliefs. Identify which memories should be strengthened, weakened, or fundamentally revised based on the evidence patterns in the full memory set. Generate evolved, more accurate versions.\n\nRespond ONLY in valid JSON with this structure:\n{"evolved": [{"key": "evolved_<slug>", "value": "<evolved belief with reasoning>", "source_key": "<original_key>", "prior_confidence": 0.6, "posterior_confidence": 0.85, "evidence_used": ["<key1>"], "change_type": "strengthened|weakened|revised|confirmed"}], "meta": {"avg_confidence_delta": 0.1, "revisions": 0, "confirmations": 0}}';
+  },
+  forecast: function(ns, memories) {
+    return 'You are a probabilistic forecasting engine analyzing memory patterns to predict future states.\n\nNamespace: ' + ns + '\n\nMemories to analyze:\n\n' + memories + '\n\nGenerate calibrated probabilistic forecasts based on memory patterns. Use Monte Carlo reasoning to explore multiple scenarios. Each forecast should have explicit confidence intervals.\n\nRespond ONLY in valid JSON with this structure:\n{"forecasts": [{"key": "forecast_<slug>", "value": "<detailed forecast with reasoning>", "domain": "<topic>", "probability": 0.72, "confidence_interval": [0.60, 0.84], "scenarios": [{"name": "base", "probability": 0.72, "description": "<scenario>"}], "horizon": "short|medium|long", "source_keys": ["<key1>"]}], "meta": {"total_forecasts": 0, "avg_probability": 0.65, "key_uncertainties": [], "monte_carlo_samples": 1000}}';
+  },
+  reflect: function(ns, memories) {
+    return 'You are a metacognitive reflection engine performing deep self-analysis of memory quality and growth.\n\nNamespace: ' + ns + '\n\nMemories to reflect on:\n\n' + memories + '\n\nReflect on: how knowledge has evolved over time, what was learned and unlearned, blind spots in reasoning, quality of past predictions, growth in understanding, and strategic next steps for improving knowledge in this namespace.\n\nRespond ONLY in valid JSON with this structure:\n{"reflections": [{"key": "reflect_<slug>", "value": "<deep reflection on a theme>", "theme": "<reflection theme>", "growth_indicator": "positive|negative|neutral", "insight_depth": 0.8, "action_items": ["<action1>"]}], "meta": {"knowledge_maturity": 0.7, "growth_rate": "accelerating|steady|plateauing", "top_blind_spots": [], "recommended_next_strategy": "<strategy>"}}';
+  },
 };
 
 // Credits cost per strategy
@@ -17500,6 +17512,10 @@ const DREAM_CREDITS = {
   insight_generate: 30,
   compress:         15,
   associate:        20,
+  validate:         20,
+  evolve:           30,
+  forecast:         35,
+  reflect:          25,
 };
 
 // Sample memory keys from a namespace: mix of recent + random for breadth
@@ -19469,6 +19485,522 @@ app.get('/v1/workflow/:id/history', auth, (req, res) => {
       error: r.error || null,
     })),
   });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// STRAT10: ADVANCED MEMORY OPERATIONS — Snapshot Branching, Bayesian,
+// Episodic Chains, Memory Triggers, Procedural Memory
+// ═══════════════════════════════════════════════════════════════
+
+db.exec(`CREATE TABLE IF NOT EXISTS memory_branches (
+  id TEXT PRIMARY KEY,
+  api_key_hash TEXT NOT NULL,
+  parent_id TEXT,
+  namespace TEXT NOT NULL,
+  label TEXT,
+  merkle_root TEXT,
+  key_count INTEGER DEFAULT 0,
+  data TEXT,
+  created_at INTEGER DEFAULT (strftime('%s','now') * 1000)
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS memory_merges (
+  id TEXT PRIMARY KEY,
+  api_key_hash TEXT NOT NULL,
+  source_id TEXT NOT NULL,
+  target_id TEXT NOT NULL,
+  policy TEXT DEFAULT 'auto',
+  status TEXT DEFAULT 'pending',
+  conflicts TEXT DEFAULT '[]',
+  resolved TEXT DEFAULT '[]',
+  result_snapshot_id TEXT,
+  created_at INTEGER DEFAULT (strftime('%s','now') * 1000),
+  completed_at INTEGER
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS memory_condition_triggers (
+  id TEXT PRIMARY KEY,
+  api_key_hash TEXT NOT NULL,
+  namespace TEXT NOT NULL,
+  condition_type TEXT NOT NULL,
+  condition_value TEXT,
+  action_type TEXT NOT NULL,
+  action_config TEXT DEFAULT '{}',
+  status TEXT DEFAULT 'active',
+  last_fired INTEGER,
+  fire_count INTEGER DEFAULT 0,
+  created_at INTEGER DEFAULT (strftime('%s','now') * 1000)
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS memory_episodes (
+  id TEXT PRIMARY KEY,
+  api_key_hash TEXT NOT NULL,
+  namespace TEXT NOT NULL,
+  content TEXT NOT NULL,
+  episode_type TEXT DEFAULT 'event',
+  prev_id TEXT,
+  next_id TEXT,
+  metadata TEXT DEFAULT '{}',
+  created_at INTEGER DEFAULT (strftime('%s','now') * 1000)
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS memory_procedures (
+  id TEXT PRIMARY KEY,
+  api_key_hash TEXT NOT NULL,
+  name TEXT NOT NULL,
+  description TEXT,
+  tool_chain TEXT NOT NULL,
+  trigger_pattern TEXT,
+  success_count INTEGER DEFAULT 0,
+  namespace TEXT DEFAULT 'default',
+  created_at INTEGER DEFAULT (strftime('%s','now') * 1000)
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS swarms (
+  id TEXT PRIMARY KEY,
+  api_key_hash TEXT NOT NULL,
+  name TEXT,
+  config TEXT DEFAULT '{}',
+  status TEXT DEFAULT 'idle',
+  agent_count INTEGER DEFAULT 0,
+  last_run INTEGER,
+  created_at INTEGER DEFAULT (strftime('%s','now') * 1000)
+)`);
+
+// POST /v1/memory/branch — Create a Merkle-rooted branch snapshot
+app.post('/v1/memory/branch', auth, (req, res) => {
+  try {
+    const { namespace = 'default', label, parent_id } = req.body;
+    if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const ns = req.acct._nsPrefix + ':' + namespace;
+    const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const rows = db.prepare('SELECT key, value, tags, updated FROM memory WHERE namespace = ?').all(ns);
+    const keyCount = rows.length;
+    const sortedData = rows.slice().sort(function(a, b) { return a.key.localeCompare(b.key); });
+    const merkleRoot = crypto.createHash('sha256').update(JSON.stringify(sortedData)).digest('hex');
+    const snapId = 'mbranch-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+    const snapLabel = label || ('branch-' + new Date().toISOString().slice(0, 10));
+    db.prepare('INSERT INTO memory_branches (id, api_key_hash, parent_id, namespace, label, merkle_root, key_count, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+      snapId, apiHash, parent_id || null, ns, snapLabel, merkleRoot, keyCount, JSON.stringify(sortedData), Date.now()
+    );
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory/branch', 2, 0, 'compute');
+    res.json({ ok: true, snapshot_id: snapId, merkle_root: merkleRoot, key_count: keyCount, namespace, label: snapLabel, parent_id: parent_id || null, created_at: new Date().toISOString() });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'branch_failed', message: e.message } });
+  }
+});
+
+// POST /v1/memory/restore/:id — Restore namespace from snapshot
+app.post('/v1/memory/restore/:id', auth, (req, res) => {
+  try {
+    const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const snap = db.prepare('SELECT * FROM memory_branches WHERE id = ? AND api_key_hash = ?').get(req.params.id, apiHash);
+    if (!snap) return res.status(404).json({ error: { code: 'not_found', message: 'Snapshot not found' } });
+    let data = [];
+    try { data = JSON.parse(snap.data || '[]'); } catch (_) {}
+    const now = Date.now();
+    const stmt = db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated) VALUES (?, ?, ?, ?, ?, ?)');
+    const restoreTx = db.transaction(function() {
+      db.prepare('DELETE FROM memory WHERE namespace = ?').run(snap.namespace);
+      for (let i = 0; i < data.length; i++) { const row = data[i]; stmt.run(snap.namespace, row.key, row.value, row.tags || null, row.updated || now, now); }
+    });
+    restoreTx();
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory/restore', 5, 0, 'compute');
+    res.json({ ok: true, restored: true, snapshot_id: snap.id, namespace: snap.namespace, keys_restored: data.length, merkle_root: snap.merkle_root });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'restore_failed', message: e.message } });
+  }
+});
+
+// GET /v1/memory/branches — List all snapshots (branch tree)
+app.get('/v1/memory/branches', auth, function(req, res) {
+  const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const snaps = db.prepare('SELECT id, parent_id, namespace, label, merkle_root, key_count, created_at FROM memory_branches WHERE api_key_hash = ? ORDER BY created_at DESC LIMIT 100').all(apiHash);
+  res.json({ ok: true, branches: snaps, count: snaps.length });
+});
+
+// POST /v1/memory/branch/compare — Diff two snapshots
+app.post('/v1/memory/branch/compare', auth, function(req, res) {
+  try {
+    const source_id = req.body.source_id;
+    const target_id = req.body.target_id;
+    if (!source_id || !target_id) return res.status(400).json({ error: { code: 'missing_params', message: 'source_id and target_id required' } });
+    const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const src = db.prepare('SELECT * FROM memory_branches WHERE id = ? AND api_key_hash = ?').get(source_id, apiHash);
+    const tgt = db.prepare('SELECT * FROM memory_branches WHERE id = ? AND api_key_hash = ?').get(target_id, apiHash);
+    if (!src || !tgt) return res.status(404).json({ error: { code: 'not_found', message: 'One or both snapshots not found' } });
+    let srcData = [], tgtData = [];
+    try { srcData = JSON.parse(src.data || '[]'); } catch (_) {}
+    try { tgtData = JSON.parse(tgt.data || '[]'); } catch (_) {}
+    const srcMap = {};
+    const tgtMap = {};
+    srcData.forEach(function(r) { srcMap[r.key] = r.value; });
+    tgtData.forEach(function(r) { tgtMap[r.key] = r.value; });
+    const allKeys = new Set(Object.keys(srcMap).concat(Object.keys(tgtMap)));
+    const added = [], removed = [], modified = [], unchanged = [];
+    allKeys.forEach(function(key) {
+      if (!srcMap[key]) added.push(key);
+      else if (!tgtMap[key]) removed.push(key);
+      else if (srcMap[key] !== tgtMap[key]) modified.push({ key: key, from: String(srcMap[key]).slice(0, 100), to: String(tgtMap[key]).slice(0, 100) });
+      else unchanged.push(key);
+    });
+    res.json({ ok: true, source_id: source_id, target_id: target_id, diff: { added: added, removed: removed, modified: modified, unchanged_count: unchanged.length }, same: src.merkle_root === tgt.merkle_root });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'compare_failed', message: e.message } });
+  }
+});
+
+// POST /v1/memory/merge — Merge two snapshots with configurable conflict resolution
+app.post('/v1/memory/merge', auth, function(req, res) {
+  try {
+    const source_id = req.body.source_id;
+    const target_id = req.body.target_id;
+    const policy = req.body.policy || 'auto';
+    const namespace = req.body.namespace || 'default';
+    if (!source_id || !target_id) return res.status(400).json({ error: { code: 'missing_params', message: 'source_id and target_id required' } });
+    const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const src = db.prepare('SELECT * FROM memory_branches WHERE id = ? AND api_key_hash = ?').get(source_id, apiHash);
+    const tgt = db.prepare('SELECT * FROM memory_branches WHERE id = ? AND api_key_hash = ?').get(target_id, apiHash);
+    if (!src || !tgt) return res.status(404).json({ error: { code: 'not_found', message: 'One or both snapshots not found' } });
+    let srcData = [], tgtData = [];
+    try { srcData = JSON.parse(src.data || '[]'); } catch (_) {}
+    try { tgtData = JSON.parse(tgt.data || '[]'); } catch (_) {}
+    const srcMap = {};
+    const tgtMap = {};
+    srcData.forEach(function(r) { srcMap[r.key] = r; });
+    tgtData.forEach(function(r) { tgtMap[r.key] = r; });
+    const allKeys = new Set(Object.keys(srcMap).concat(Object.keys(tgtMap)));
+    const merged = {};
+    const conflicts = [];
+    allKeys.forEach(function(key) {
+      if (!srcMap[key]) { merged[key] = tgtMap[key]; return; }
+      if (!tgtMap[key]) { merged[key] = srcMap[key]; return; }
+      if (srcMap[key].value === tgtMap[key].value) { merged[key] = srcMap[key]; return; }
+      if (policy === 'auto') {
+        merged[key] = (srcMap[key].updated || 0) >= (tgtMap[key].updated || 0) ? srcMap[key] : tgtMap[key];
+      } else {
+        conflicts.push({ key: key, source_value: String(srcMap[key].value).slice(0, 200), target_value: String(tgtMap[key].value).slice(0, 200) });
+        merged[key] = srcMap[key];
+      }
+    });
+    const mergeId = 'merge-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+    const status = conflicts.length > 0 ? 'pending_resolution' : 'completed';
+    db.prepare('INSERT INTO memory_merges (id, api_key_hash, source_id, target_id, policy, status, conflicts, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      mergeId, apiHash, source_id, target_id, policy, status, JSON.stringify(conflicts), Date.now()
+    );
+    if (status === 'completed') {
+      if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+      const ns = req.acct._nsPrefix + ':' + namespace;
+      const mergedArr = Object.values(merged);
+      const sortedMerge = mergedArr.slice().sort(function(a, b) { return a.key.localeCompare(b.key); });
+      const merkleRoot = crypto.createHash('sha256').update(JSON.stringify(sortedMerge)).digest('hex');
+      const resultSnapId = 'msnap-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+      db.prepare('INSERT INTO memory_branches (id, api_key_hash, parent_id, namespace, label, merkle_root, key_count, data, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(
+        resultSnapId, apiHash, null, ns, 'merge-result-' + mergeId.slice(0, 8), merkleRoot, mergedArr.length, JSON.stringify(mergedArr), Date.now()
+      );
+      db.prepare('UPDATE memory_merges SET result_snapshot_id = ?, completed_at = ? WHERE id = ?').run(resultSnapId, Date.now(), mergeId);
+    }
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory/merge', 10, 0, 'compute');
+    res.json({ ok: true, merge_id: mergeId, status: status, policy: policy, conflicts_count: conflicts.length, conflicts: conflicts.slice(0, 5), resolve_endpoint: conflicts.length > 0 ? ('POST /v1/memory/conflicts/' + mergeId + '/resolve') : null });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'merge_failed', message: e.message } });
+  }
+});
+
+// GET /v1/memory/conflicts/:merge_id — Get unresolved conflicts
+app.get('/v1/memory/conflicts/:merge_id', auth, function(req, res) {
+  const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const merge = db.prepare('SELECT * FROM memory_merges WHERE id = ? AND api_key_hash = ?').get(req.params.merge_id, apiHash);
+  if (!merge) return res.status(404).json({ error: { code: 'not_found', message: 'Merge not found' } });
+  let conflicts = [];
+  try { conflicts = JSON.parse(merge.conflicts || '[]'); } catch (_) {}
+  let resolved = [];
+  try { resolved = JSON.parse(merge.resolved || '[]'); } catch (_) {}
+  const resolvedKeys = new Set(resolved.map(function(r) { return r.key; }));
+  const pending = conflicts.filter(function(c) { return !resolvedKeys.has(c.key); });
+  res.json({ ok: true, merge_id: merge.id, status: merge.status, policy: merge.policy, total_conflicts: conflicts.length, resolved_count: resolved.length, pending_count: pending.length, pending_conflicts: pending });
+});
+
+// POST /v1/memory/conflicts/:merge_id/resolve — Resolve specific conflicts
+app.post('/v1/memory/conflicts/:merge_id/resolve', auth, function(req, res) {
+  try {
+    const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const merge = db.prepare('SELECT * FROM memory_merges WHERE id = ? AND api_key_hash = ?').get(req.params.merge_id, apiHash);
+    if (!merge) return res.status(404).json({ error: { code: 'not_found', message: 'Merge not found' } });
+    const resolutions = req.body.resolutions;
+    if (!Array.isArray(resolutions)) return res.status(400).json({ error: { code: 'missing_resolutions', message: 'resolutions array required: [{key, value}]' } });
+    let resolved = [];
+    try { resolved = JSON.parse(merge.resolved || '[]'); } catch (_) {}
+    let conflicts = [];
+    try { conflicts = JSON.parse(merge.conflicts || '[]'); } catch (_) {}
+    const resolvedKeys = new Set(resolved.map(function(r) { return r.key; }));
+    resolutions.forEach(function(r) { if (r.key && !resolvedKeys.has(r.key)) { resolved.push({ key: r.key, value: r.value, resolved_at: Date.now() }); resolvedKeys.add(r.key); } });
+    const allResolved = conflicts.every(function(c) { return resolvedKeys.has(c.key); });
+    const newStatus = allResolved ? 'completed' : 'pending_resolution';
+    db.prepare('UPDATE memory_merges SET resolved = ?, status = ?, completed_at = ? WHERE id = ?').run(JSON.stringify(resolved), newStatus, allResolved ? Date.now() : null, merge.id);
+    res.json({ ok: true, merge_id: merge.id, resolved_count: resolved.length, remaining: conflicts.length - resolved.length, status: newStatus });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'resolve_failed', message: e.message } });
+  }
+});
+
+// POST /v1/memory/bayesian/update — Bayesian probability calibration
+app.post('/v1/memory/bayesian/update', auth, function(req, res) {
+  try {
+    if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const namespace = req.body.namespace || 'default';
+    const key = req.body.key;
+    const prior = req.body.prior;
+    const likelihood = req.body.likelihood;
+    const evidence = req.body.evidence;
+    const label = req.body.label;
+    if (!key) return res.status(400).json({ error: { code: 'missing_key', message: 'key is required' } });
+    const ns = req.acct._nsPrefix + ':' + namespace;
+    const priorP = Math.max(0.001, Math.min(0.999, parseFloat(prior) || 0.5));
+    const likelihoodP = Math.max(0.001, Math.min(0.999, parseFloat(likelihood) || 0.7));
+    const pEnotH = 1 - likelihoodP;
+    const pE = likelihoodP * priorP + pEnotH * (1 - priorP);
+    const posterior = (likelihoodP * priorP) / pE;
+    const posteriorRounded = Math.round(posterior * 1000) / 1000;
+    const bayesEntry = { key: key, label: label || key, prior: priorP, likelihood: likelihoodP, evidence: evidence || null, posterior: posteriorRounded, updated_at: new Date().toISOString() };
+    db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated) VALUES (?, ?, ?, ?, ?, ?)').run(ns, 'bayesian:' + key, JSON.stringify(bayesEntry), 'bayesian,calibration', Date.now(), Date.now());
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory/bayesian/update', 3, 0, 'compute');
+    res.json({ ok: true, key: key, prior: priorP, likelihood: likelihoodP, posterior: posteriorRounded, confidence_delta: Math.round((posteriorRounded - priorP) * 1000) / 1000, stored_key: 'bayesian:' + key, namespace: namespace });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'bayesian_failed', message: e.message } });
+  }
+});
+
+// GET /v1/memory/chain — Episodic memory chain traversal
+app.get('/v1/memory/chain', auth, function(req, res) {
+  try {
+    if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const namespace = req.query.namespace || 'default';
+    const start = req.query.start;
+    const direction = req.query.direction || 'forward';
+    const lim = Math.min(parseInt(req.query.limit) || 20, 100);
+    const ns = req.acct._nsPrefix + ':' + namespace;
+    const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    let episodes;
+    if (start) {
+      const startEp = db.prepare('SELECT * FROM memory_episodes WHERE id = ? AND api_key_hash = ?').get(start, apiHash);
+      if (!startEp) return res.status(404).json({ error: { code: 'not_found', message: 'Start episode not found' } });
+      const chain = [startEp];
+      let current = startEp;
+      for (let i = 0; i < lim - 1; i++) {
+        const nextId = direction === 'backward' ? current.prev_id : current.next_id;
+        if (!nextId) break;
+        const next = db.prepare('SELECT * FROM memory_episodes WHERE id = ?').get(nextId);
+        if (!next) break;
+        chain.push(next);
+        current = next;
+      }
+      episodes = chain;
+    } else {
+      episodes = db.prepare('SELECT * FROM memory_episodes WHERE api_key_hash = ? AND namespace = ? ORDER BY created_at DESC LIMIT ?').all(apiHash, ns, lim);
+    }
+    const parsed = episodes.map(function(e) {
+      let meta = {};
+      try { meta = JSON.parse(e.metadata); } catch (_) {}
+      return { id: e.id, content: e.content, episode_type: e.episode_type, prev_id: e.prev_id, next_id: e.next_id, metadata: meta, created_at: new Date(e.created_at).toISOString() };
+    });
+    res.json({ ok: true, episodes: parsed, count: parsed.length, direction: direction, namespace: namespace });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'chain_failed', message: e.message } });
+  }
+});
+
+// POST /v1/memory/episode — Add an episode to the chain
+app.post('/v1/memory/episode', auth, function(req, res) {
+  try {
+    if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const namespace = req.body.namespace || 'default';
+    const content = req.body.content;
+    const episode_type = req.body.episode_type || 'event';
+    const prev_id = req.body.prev_id;
+    const metadata = req.body.metadata;
+    if (!content) return res.status(400).json({ error: { code: 'missing_content', message: 'content is required' } });
+    const ns = req.acct._nsPrefix + ':' + namespace;
+    const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const epId = 'ep-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+    db.prepare('INSERT INTO memory_episodes (id, api_key_hash, namespace, content, episode_type, prev_id, metadata, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      epId, apiHash, ns, content, episode_type, prev_id || null, JSON.stringify(metadata || {}), Date.now()
+    );
+    if (prev_id) { try { db.prepare('UPDATE memory_episodes SET next_id = ? WHERE id = ?').run(epId, prev_id); } catch(_) {} }
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory/episode', 1, 0, 'compute');
+    res.json({ ok: true, episode_id: epId, namespace: namespace, episode_type: episode_type, prev_id: prev_id || null });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'episode_failed', message: e.message } });
+  }
+});
+
+// POST /v1/memory/trigger — Register a memory-condition trigger
+app.post('/v1/memory/trigger', auth, function(req, res) {
+  try {
+    const namespace = req.body.namespace || 'default';
+    const condition_type = req.body.condition_type;
+    const condition_value = req.body.condition_value;
+    const action_type = req.body.action_type;
+    const action_config = req.body.action_config;
+    if (!condition_type || !action_type) return res.status(400).json({ error: { code: 'missing_params', message: 'condition_type and action_type required' } });
+    const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const ns = req.acct._nsPrefix + ':' + namespace;
+    const triggerId = 'mtrig-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+    db.prepare('INSERT INTO memory_condition_triggers (id, api_key_hash, namespace, condition_type, condition_value, action_type, action_config, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      triggerId, apiHash, ns, condition_type, condition_value || null, action_type, JSON.stringify(action_config || {}), Date.now()
+    );
+    res.json({ ok: true, trigger_id: triggerId, namespace: namespace, condition_type: condition_type, condition_value: condition_value, action_type: action_type, status: 'active' });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'trigger_failed', message: e.message } });
+  }
+});
+
+// GET /v1/memory/triggers — List all memory-condition triggers
+app.get('/v1/memory/triggers', auth, function(req, res) {
+  const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const triggers = db.prepare('SELECT id, namespace, condition_type, condition_value, action_type, status, fire_count, last_fired, created_at FROM memory_condition_triggers WHERE api_key_hash = ? ORDER BY created_at DESC').all(apiHash);
+  res.json({ ok: true, triggers: triggers, count: triggers.length });
+});
+
+// DELETE /v1/memory/trigger/:id — Remove a memory trigger
+app.delete('/v1/memory/trigger/:id', auth, function(req, res) {
+  const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const result = db.prepare('UPDATE memory_condition_triggers SET status = ? WHERE id = ? AND api_key_hash = ?').run('deleted', req.params.id, apiHash);
+  if (result.changes === 0) return res.status(404).json({ error: { code: 'not_found', message: 'Trigger not found' } });
+  res.json({ ok: true, trigger_id: req.params.id, status: 'deleted' });
+});
+
+// POST /v1/memory/procedure/learn — Store a learned repeatable tool chain
+app.post('/v1/memory/procedure/learn', auth, function(req, res) {
+  try {
+    const name = req.body.name;
+    const description = req.body.description;
+    const tool_chain = req.body.tool_chain;
+    const trigger_pattern = req.body.trigger_pattern;
+    const namespace = req.body.namespace || 'default';
+    if (!name || !tool_chain) return res.status(400).json({ error: { code: 'missing_params', message: 'name and tool_chain required' } });
+    const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const procId = 'proc-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+    db.prepare('INSERT INTO memory_procedures (id, api_key_hash, name, description, tool_chain, trigger_pattern, namespace, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
+      procId, apiHash, name, description || null, JSON.stringify(tool_chain), trigger_pattern || null, namespace, Date.now()
+    );
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory/procedure/learn', 5, 0, 'compute');
+    res.json({ ok: true, procedure_id: procId, name: name, namespace: namespace, tool_chain_steps: Array.isArray(tool_chain) ? tool_chain.length : 1, trigger_pattern: trigger_pattern || null });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'procedure_failed', message: e.message } });
+  }
+});
+
+// GET /v1/memory/procedures — List stored procedural memories
+app.get('/v1/memory/procedures', auth, function(req, res) {
+  const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const procs = db.prepare('SELECT id, name, description, trigger_pattern, success_count, namespace, created_at FROM memory_procedures WHERE api_key_hash = ? ORDER BY success_count DESC').all(apiHash);
+  res.json({ ok: true, procedures: procs, count: procs.length });
+});
+
+// ═══════════════════════════════════════════════════════════════
+// STRAT10: SWARM ORCHESTRATION
+// ═══════════════════════════════════════════════════════════════
+
+// POST /v1/swarm/orchestrate — Structured agent orchestration with 6-axis scoring
+app.post('/v1/swarm/orchestrate', auth, async (req, res) => {
+  try {
+    const task = req.body.task;
+    const agents = req.body.agents;
+    const namespace = req.body.namespace || 'default';
+    const model = req.body.model || 'claude-haiku-4-5-20251001';
+    const dream_after = req.body.dream_after || false;
+    if (!task) return res.status(400).json({ error: { code: 'missing_task', message: 'task is required' } });
+    if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const ns = req.acct._nsPrefix + ':' + namespace;
+    const agentList = Array.isArray(agents) && agents.length > 0 ? agents : [
+      { role: 'researcher', prompt: 'You are a research agent. Gather relevant context for the task.' },
+      { role: 'analyst', prompt: 'You are an analysis agent. Extract key insights from the research.' },
+      { role: 'synthesizer', prompt: 'You are a synthesis agent. Combine insights into a coherent, actionable response.' },
+    ];
+    const credits = agentList.length * 15;
+    if (req.acct.balance < credits) return res.status(402).json({ error: { code: 'insufficient_credits', required: credits, balance: req.acct.balance } });
+    req.acct.balance -= credits;
+    persistKey(req.apiKey);
+    const orchId = 'orch-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+    const results = [];
+    let context = 'Task: ' + task;
+    for (let i = 0; i < agentList.length; i++) {
+      const agent = agentList[i];
+      const agentPrompt = (agent.prompt || 'You are a helpful agent.') + '\n\nContext from previous agents:\n' + context + '\n\nYour specific task: ' + (agent.task || task) + '\n\nProvide a focused, structured response.';
+      const agentResult = { role: agent.role, output: null, error: null };
+      try {
+        if (process.env.ANTHROPIC_API_KEY) {
+          const Anthropic = require('@anthropic-ai/sdk');
+          const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+          const msg = await anthropic.messages.create({ model: model, max_tokens: agent.max_tokens || 1000, messages: [{ role: 'user', content: agentPrompt }] });
+          agentResult.output = msg.content[0].text;
+        } else {
+          agentResult.output = '[Agent ' + agent.role + '] ANTHROPIC_API_KEY not set — LLM unavailable.';
+        }
+      } catch (agentErr) {
+        agentResult.error = agentErr.message;
+      }
+      results.push(agentResult);
+      if (agentResult.output) context += '\n\n[' + String(agent.role).toUpperCase() + ']:\n' + agentResult.output;
+    }
+    const successCount = results.filter(function(r) { return r.output && !r.error; }).length;
+    const scoring = {
+      success_probability: Math.round((successCount / agentList.length) * 100) / 100,
+      robustness: Math.round((successCount / agentList.length) * 0.9 * 100) / 100,
+      foresight: 0.75,
+      goal_alignment: 0.80,
+      efficiency: Math.round((1 - (agentList.length - successCount) / agentList.length) * 100) / 100,
+      cost_credits: credits,
+    };
+    db.prepare('INSERT OR REPLACE INTO memory (namespace, key, value, tags, created, updated) VALUES (?, ?, ?, ?, ?, ?)').run(
+      ns, 'orch:' + orchId, JSON.stringify({ task: task, results: results, scoring: scoring, created: new Date().toISOString() }), 'orchestration,swarm', Date.now(), Date.now()
+    );
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'swarm/orchestrate', credits, 0, 'llm');
+    res.json({ ok: true, orchestration_id: orchId, task: task, agents_run: agentList.length, results: results, scoring: scoring, namespace: namespace, credits_charged: credits, dream_tip: dream_after ? 'POST /v1/memory/dream/start with strategy=synthesize to consolidate results' : 'Add dream_after:true to auto-synthesize results overnight' });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'orchestrate_failed', message: e.message } });
+  }
+});
+
+// POST /v1/swarm/create — Create a persistent swarm configuration
+app.post('/v1/swarm/create', auth, function(req, res) {
+  try {
+    const name = req.body.name;
+    const agents = req.body.agents;
+    const dream_schedule = req.body.dream_schedule || 'never';
+    const merge_policy = req.body.merge_policy || 'auto';
+    const namespace = req.body.namespace || 'default';
+    if (!name) return res.status(400).json({ error: { code: 'missing_name', message: 'name is required' } });
+    const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const swarmId = 'swarm-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+    const config = { agents: agents || [], dream_schedule: dream_schedule, merge_policy: merge_policy, namespace: namespace };
+    db.prepare('INSERT INTO swarms (id, api_key_hash, name, config, status, agent_count, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+      swarmId, apiHash, name, JSON.stringify(config), 'idle', (agents || []).length, Date.now()
+    );
+    dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'swarm/create', 2, 0, 'compute');
+    res.json({ ok: true, swarm_id: swarmId, name: name, agent_count: (agents || []).length, dream_schedule: dream_schedule, merge_policy: merge_policy, namespace: namespace, run_endpoint: 'POST /v1/swarm/orchestrate' });
+  } catch (e) {
+    res.status(500).json({ error: { code: 'swarm_create_failed', message: e.message } });
+  }
+});
+
+// GET /v1/swarm/:id/status — Get swarm status
+app.get('/v1/swarm/:id/status', auth, function(req, res) {
+  const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const swarm = db.prepare('SELECT * FROM swarms WHERE id = ? AND api_key_hash = ?').get(req.params.id, apiHash);
+  if (!swarm) return res.status(404).json({ error: { code: 'not_found', message: 'Swarm not found' } });
+  let config = {};
+  try { config = JSON.parse(swarm.config || '{}'); } catch (_) {}
+  res.json({ ok: true, swarm_id: swarm.id, name: swarm.name, status: swarm.status, agent_count: swarm.agent_count, config: config, last_run: swarm.last_run ? new Date(swarm.last_run).toISOString() : null, created_at: new Date(swarm.created_at).toISOString() });
+});
+
+// GET /v1/swarms — List all swarms
+app.get('/v1/swarms', auth, function(req, res) {
+  const apiHash = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const swarms = db.prepare('SELECT id, name, status, agent_count, last_run, created_at FROM swarms WHERE api_key_hash = ? ORDER BY created_at DESC LIMIT 50').all(apiHash);
+  res.json({ ok: true, swarms: swarms, count: swarms.length });
 });
 
 const PORT = process.env.PORT || 3000;

@@ -221,6 +221,12 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a class="sb-link" href="#memory-compression">Memory Compression</a>
       <a class="sb-link" href="#dream-tiers">Dream Tiers</a>
       <a class="sb-link" href="#dream-engine">Dream Engine ✨</a>
+      <a class="sb-link" href="#snapshot-branching">Snapshot Branching v5</a>
+      <a class="sb-link" href="#bayesian-memory">Bayesian Memory v5</a>
+      <a class="sb-link" href="#episodic-chains">Episodic Chains v5</a>
+      <a class="sb-link" href="#memory-triggers">Memory Triggers v5</a>
+      <a class="sb-link" href="#procedural-memory">Procedural Memory v5</a>
+      <a class="sb-link" href="#swarm-orchestration">Swarm Orchestration v5</a>
       <a class="sb-link" href="#research-engine">Research Engine (Planet)</a>
       <a class="sb-link" href="#state-management">State Management</a>
       <a class="sb-link" href="#files-api">Files API</a>
@@ -1829,14 +1835,18 @@ curl -X POST https://slopshop.gg/v1/memory-get \
     <h2 id="dream-engine">Dream Engine ✨ <span class="badge badge-compute">v4.0</span></h2>
     <p>The Dream Engine is Slopshop's REM-style memory consolidation system. It runs in the background, synthesizing, compressing, and evolving your agent's memory on a schedule — like a brain consolidating the day's learning overnight. Schedules are persisted to a <code>dream_schedules</code> SQLite table and survive server restarts.</p>
 
-    <h3>5 Consolidation Strategies</h3>
+    <h3>9 Consolidation Strategies</h3>
     <table class="doc-table">
-      <tr><th>Strategy</th><th>What It Does</th></tr>
-      <tr><td><code>synthesize</code></td><td>Merges related memories into unified summaries, reducing redundancy</td></tr>
-      <tr><td><code>pattern_extract</code></td><td>Identifies recurring patterns and themes across memory entries</td></tr>
-      <tr><td><code>insight_generate</code></td><td>Derives higher-order insights and connections from raw memory</td></tr>
-      <tr><td><code>compress</code></td><td>Applies zlib compression to bulky values; auto-decompresses on read</td></tr>
-      <tr><td><code>associate</code></td><td>Builds associative links between semantically related memories</td></tr>
+      <tr><th>Strategy</th><th>What It Does</th><th>Credits</th></tr>
+      <tr><td><code>synthesize</code></td><td>Merges related memories into unified summaries, reducing redundancy</td><td>25</td></tr>
+      <tr><td><code>pattern_extract</code></td><td>Identifies recurring patterns and themes across memory entries</td><td>20</td></tr>
+      <tr><td><code>insight_generate</code></td><td>Derives higher-order insights and connections from raw memory</td><td>30</td></tr>
+      <tr><td><code>compress</code></td><td>Applies zlib compression to bulky values; auto-decompresses on read</td><td>15</td></tr>
+      <tr><td><code>associate</code></td><td>Builds associative links between semantically related memories</td><td>20</td></tr>
+      <tr><td><code>validate</code> <span class="badge badge-compute">v5</span></td><td>Checks memories for consistency, contradictions, and outdated beliefs</td><td>20</td></tr>
+      <tr><td><code>evolve</code> <span class="badge badge-compute">v5</span></td><td>Bayesian belief update — strengthens, weakens, or revises beliefs based on evidence</td><td>30</td></tr>
+      <tr><td><code>forecast</code> <span class="badge badge-compute">v5</span></td><td>Monte Carlo probabilistic forecasting from memory patterns with confidence intervals</td><td>35</td></tr>
+      <tr><td><code>reflect</code> <span class="badge badge-compute">v5</span></td><td>Metacognitive self-analysis of knowledge quality, growth, blind spots, and next steps</td><td>25</td></tr>
     </table>
 
     <h3>Start a Dream Run (One-Shot)</h3>
@@ -1887,6 +1897,129 @@ POST   /v1/dream/run             — Trigger immediate topic research
 POST   /v1/dream/deploy          — Deploy insight into agent memory
 POST   /v1/dream/dismiss         — Dismiss insight
 GET    /v1/dream/subscriptions   — List subscriptions</code></pre></div>
+
+    <!-- SNAPSHOT BRANCHING -->
+    <h2 id="snapshot-branching">Snapshot Branching <span class="badge badge-compute">v5.0</span></h2>
+    <p>Versioned, Merkle-rooted checkpoints of your entire memory namespace. Fork your agent's memory state, explore alternatives, restore any prior point, or merge two diverged branches back together — like git, but for agent knowledge.</p>
+
+    <h3>Create a Branch</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/branch \
+  -H "Authorization: Bearer $SLOP_KEY" \
+  -d '{"namespace": "my-project", "label": "before-experiment-7"}'
+
+# Returns: snapshot_id, merkle_root, key_count</code></pre></div>
+
+    <h3>Restore from Branch</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/restore/mbranch-abc123 \
+  -H "Authorization: Bearer $SLOP_KEY"</code></pre></div>
+
+    <h3>Merge Two Branches</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/merge \
+  -H "Authorization: Bearer $SLOP_KEY" \
+  -d '{"source_id": "mbranch-aaa", "target_id": "mbranch-bbb", "policy": "auto"}'
+
+# policy: auto | llm-smart | human-in-loop | agent-debate</code></pre></div>
+
+    <h3>Endpoints</h3>
+    <div class="code-block"><div class="code-header"><span>Endpoints</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>POST   /v1/memory/branch                — Create Merkle-rooted branch snapshot
+POST   /v1/memory/restore/:id           — Restore namespace from branch
+GET    /v1/memory/branches              — List all branches
+POST   /v1/memory/branch/compare        — Diff two branches
+POST   /v1/memory/merge                 — Merge two branches
+GET    /v1/memory/conflicts/:merge_id   — View unresolved merge conflicts
+POST   /v1/memory/conflicts/:merge_id/resolve — Resolve conflicts manually</code></pre></div>
+
+    <!-- BAYESIAN MEMORY -->
+    <h2 id="bayesian-memory">Bayesian Memory Calibration <span class="badge badge-compute">v5.0</span></h2>
+    <p>Apply Bayesian inference to calibrate confidence in stored beliefs. Given a prior probability and observed likelihood, the system computes a posterior and stores the calibrated belief. Use this to build agents with calibrated uncertainty rather than binary true/false memory.</p>
+
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/bayesian/update \
+  -H "Authorization: Bearer $SLOP_KEY" \
+  -d '{
+    "key": "user_will_churn",
+    "prior": 0.2,
+    "likelihood": 0.8,
+    "evidence": "user_opened_cancellation_page",
+    "namespace": "crm"
+  }'
+
+# Returns: { prior: 0.2, likelihood: 0.8, posterior: 0.667, confidence_delta: 0.467 }</code></pre></div>
+
+    <!-- EPISODIC CHAINS -->
+    <h2 id="episodic-chains">Episodic Memory Chains <span class="badge badge-compute">v5.0</span></h2>
+    <p>Link memory entries into temporally ordered chains — like a timeline of agent experiences. Episodes are linked by prev_id/next_id pointers, enabling forward/backward traversal. Supports event, decision, observation, and custom episode types.</p>
+
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code># Add an episode
+curl -X POST https://slopshop.gg/v1/memory/episode \
+  -H "Authorization: Bearer $SLOP_KEY" \
+  -d '{"content": "User rejected proposal B", "episode_type": "decision", "prev_id": "ep-xyz123"}'
+
+# Traverse the chain
+GET /v1/memory/chain?namespace=project&start=ep-abc&direction=forward&limit=20</code></pre></div>
+
+    <!-- MEMORY TRIGGERS -->
+    <h2 id="memory-triggers">Memory Condition Triggers <span class="badge badge-compute">v5.0</span></h2>
+    <p>Register event-driven triggers that fire when memory conditions are met — e.g., when key count exceeds a threshold, when a specific key is written, or on a time pattern. Triggers automatically execute a configured action (dream, webhook, chain, etc.).</p>
+
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/trigger \
+  -H "Authorization: Bearer $SLOP_KEY" \
+  -d '{
+    "condition_type": "key_count_exceeds",
+    "condition_value": "100",
+    "action_type": "dream",
+    "action_config": {"strategy": "compress"},
+    "namespace": "research"
+  }'</code></pre></div>
+
+    <div class="code-block"><div class="code-header"><span>Endpoints</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>POST   /v1/memory/trigger        — Register memory-condition trigger
+GET    /v1/memory/triggers       — List all triggers
+DELETE /v1/memory/trigger/:id    — Remove a trigger</code></pre></div>
+
+    <!-- PROCEDURAL MEMORY -->
+    <h2 id="procedural-memory">Procedural Memory <span class="badge badge-compute">v5.0</span></h2>
+    <p>Store learned, repeatable tool chains as named procedures. Agents can learn what sequence of tools solved a problem, store it as a procedure, and recall it later. Procedures accumulate a success_count as they are executed, enabling agents to prioritize their most reliable strategies.</p>
+
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/procedure/learn \
+  -H "Authorization: Bearer $SLOP_KEY" \
+  -d '{
+    "name": "competitive-analysis",
+    "description": "Research competitors, extract signals, synthesize report",
+    "tool_chain": ["search-web", "extract-text", "llm-think", "memory-set"],
+    "trigger_pattern": "analyze competitors"
+  }'</code></pre></div>
+
+    <!-- SWARM ORCHESTRATION -->
+    <h2 id="swarm-orchestration">Swarm Orchestration <span class="badge badge-compute">v5.0</span></h2>
+    <p>Coordinate multiple agents on a single task with automatic context passing and 6-axis quality scoring. Each agent receives the outputs of all previous agents as context, building towards a final synthesized result. Results are stored in memory for future retrieval and dream consolidation.</p>
+
+    <h3>6-Axis Scoring</h3>
+    <table class="doc-table">
+      <tr><th>Axis</th><th>Meaning</th></tr>
+      <tr><td><code>success_probability</code></td><td>Fraction of agents that produced valid output</td></tr>
+      <tr><td><code>robustness</code></td><td>Success rate weighted by agent reliability</td></tr>
+      <tr><td><code>foresight</code></td><td>Estimated long-term value of the output</td></tr>
+      <tr><td><code>goal_alignment</code></td><td>How well the result matches the original task</td></tr>
+      <tr><td><code>efficiency</code></td><td>Output quality per credit spent</td></tr>
+      <tr><td><code>cost_credits</code></td><td>Total credits consumed</td></tr>
+    </table>
+
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/swarm/orchestrate \
+  -H "Authorization: Bearer $SLOP_KEY" \
+  -d '{
+    "task": "Research the current state of multi-agent AI frameworks",
+    "agents": [
+      {"role": "researcher", "prompt": "Find and summarize recent developments"},
+      {"role": "analyst", "prompt": "Extract key trends and gaps"},
+      {"role": "synthesizer", "prompt": "Write an actionable executive summary"}
+    ],
+    "namespace": "research",
+    "dream_after": true
+  }'</code></pre></div>
+
+    <div class="code-block"><div class="code-header"><span>Endpoints</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>POST   /v1/swarm/orchestrate     — Run structured orchestration with 6-axis scoring
+POST   /v1/swarm/create          — Create a persistent swarm configuration
+GET    /v1/swarm/:id/status      — Check swarm status
+GET    /v1/swarms                — List all swarms</code></pre></div>
 
     <!-- RESEARCH ENGINE -->
     <h2 id="research-engine">Research Engine <span class="badge badge-compute">v4.0</span></h2>

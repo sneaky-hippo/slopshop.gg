@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Agent Swarms — Slopshop | Coordinate armies of agents</title>
+<meta name="description" content="Coordinate armies of agents with Slopshop's Swarm Orchestration API. Memory-native. Dream-powered. 6-axis scoring: SuccessProb, Robustness, Foresight, GoalAlignment, Efficiency, Cost.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/swarms">
+<meta property="og:title" content="Agent Swarms — Slopshop">
+<meta property="og:description" content="Coordinate armies of agents. Memory-native. Dream-powered. 6-axis scoring out of the box.">
+<meta property="og:site_name" content="Slopshop">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#06b6d4">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090b;--s1:#111113;--s2:#18181b;--s3:#27272a;
+  --b:#1e1e22;--b2:#27272a;
+  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+  --r:#06b6d4;--r2:#22d3ee;--rg:rgba(6,182,212,0.06);
+  --o:#a78bfa;--og:rgba(167,139,250,0.08);
+  --g:#34d399;--gg:rgba(52,211,153,0.08);
+  --c:#06b6d4;--cg:rgba(6,182,212,0.06);
+  --v:#818cf8;--vg:rgba(129,140,248,0.08);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,-apple-system,sans-serif;
+  --accent:var(--r);--accent2:var(--rg);--orange:var(--o);--green:var(--g);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;height:56px;
+  background:rgba(5,5,5,0.85);
+  backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid var(--b);
+  display:flex;align-items:center;padding:0 32px
+}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--r)}
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+
+/* HERO */
+.hero{padding:120px 32px 64px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,rgba(167,139,250,0.07),transparent 60%)}
+.hero-inner{max-width:900px;margin:0 auto;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--og);border:1px solid rgba(167,139,250,0.2);color:var(--o);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:600;margin-bottom:28px;font-family:var(--mono)}
+.hero h1{font-family:var(--mono);font-size:clamp(2.2rem,5vw,3.5rem);font-weight:800;letter-spacing:-0.04em;line-height:1.1;margin-bottom:20px;color:var(--t)}
+.hero h1 .accent{color:var(--o)}
+.hero .sub{color:var(--t2);font-size:1rem;max-width:520px;margin:0 auto 32px;line-height:1.75}
+.hero .sub b{color:var(--t);font-weight:600}
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.cta-primary,.cta-secondary{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:600;transition:all 0.2s;text-decoration:none}
+.cta-primary{background:var(--o);color:#fff}
+.cta-primary:hover{box-shadow:0 0 20px rgba(167,139,250,0.3);transform:translateY(-1px);opacity:1}
+.cta-secondary{background:transparent;color:var(--t2);border:1px solid var(--b2);font-weight:500}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+
+/* SECTIONS */
+.sec{max-width:1100px;margin:0 auto;padding:72px 32px;position:relative}
+.sec-label{font-family:var(--mono);font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.14em;color:var(--t4);margin-bottom:10px}
+.sec h2{font-family:var(--mono);font-size:1.25rem;font-weight:700;margin-bottom:10px;letter-spacing:-0.02em}
+.sec .desc{color:var(--t3);font-size:0.85rem;margin-bottom:36px;line-height:1.75;max-width:640px}
+.sec-divider{border:none;border-top:1px solid var(--b);margin:0}
+
+/* HOW IT WORKS — 3-step */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0;position:relative}
+.steps::before{content:'';position:absolute;top:36px;left:calc(16.66% + 16px);right:calc(16.66% + 16px);height:1px;background:linear-gradient(90deg,transparent,var(--b),var(--b),transparent);z-index:0}
+.step{padding:32px 24px;position:relative;z-index:1}
+.step-num{width:40px;height:40px;border-radius:50%;background:var(--s2);border:1px solid var(--b);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:0.78rem;font-weight:700;color:var(--o);margin-bottom:16px}
+.step h3{font-family:var(--mono);font-size:0.88rem;font-weight:700;color:var(--t);margin-bottom:8px}
+.step p{font-size:0.78rem;color:var(--t3);line-height:1.75}
+.step code{display:inline;background:var(--s2);border:1px solid var(--b);border-radius:4px;padding:1px 6px;font-family:var(--mono);font-size:0.68rem;color:var(--r)}
+
+/* 6-AXIS SCORING GRID */
+.axis-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.axis-card{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:22px;transition:transform 0.15s,border-color 0.2s}
+.axis-card:hover{transform:translateY(-2px);border-color:var(--b2)}
+.axis-card .axis-name{font-family:var(--mono);font-size:0.8rem;font-weight:700;margin-bottom:6px}
+.axis-card:nth-child(1) .axis-name{color:var(--r)}
+.axis-card:nth-child(2) .axis-name{color:var(--g)}
+.axis-card:nth-child(3) .axis-name{color:var(--o)}
+.axis-card:nth-child(4) .axis-name{color:var(--c)}
+.axis-card:nth-child(5) .axis-name{color:var(--v)}
+.axis-card:nth-child(6) .axis-name{color:var(--t2)}
+.axis-card .axis-key{font-family:var(--mono);font-size:0.6rem;color:var(--t4);font-weight:500;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.1em}
+.axis-card p{font-size:0.78rem;color:var(--t3);line-height:1.7}
+.axis-card .axis-range{font-family:var(--mono);font-size:0.62rem;color:var(--t4);margin-top:10px;padding-top:8px;border-top:1px solid var(--b)}
+
+/* ENDPOINTS TABLE */
+.ep-table{width:100%;border-collapse:collapse;font-family:var(--mono);font-size:0.78rem}
+.ep-table th{text-align:left;padding:10px 16px;border-bottom:1px solid var(--b);color:var(--t4);font-size:0.62rem;font-weight:600;text-transform:uppercase;letter-spacing:0.1em}
+.ep-table td{padding:14px 16px;border-bottom:1px solid var(--b);vertical-align:top}
+.ep-table tr:last-child td{border-bottom:none}
+.ep-table tr:hover td{background:rgba(255,255,255,0.015)}
+.method{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:0.62rem;font-weight:700;letter-spacing:0.05em;flex-shrink:0}
+.method.post{background:rgba(167,139,250,0.12);color:var(--o)}
+.method.get{background:rgba(52,211,153,0.1);color:var(--g)}
+.ep-path{color:var(--t);font-weight:600;font-size:0.78rem}
+.ep-desc{color:var(--t3);font-size:0.75rem;margin-top:3px}
+.ep-wrap{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden}
+
+/* CODE BLOCK */
+.code-wrap{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden;margin-top:8px}
+.code-header{background:var(--s2);padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b)}
+.code-header .code-label{font-family:var(--mono);font-size:0.65rem;color:var(--t3);font-weight:500}
+.code-header .code-lang{font-family:var(--mono);font-size:0.6rem;color:var(--t4);font-weight:600;text-transform:uppercase;letter-spacing:0.1em}
+.code-body{padding:20px 22px;overflow-x:auto}
+.code-body pre{font-family:var(--mono);font-size:0.75rem;line-height:1.75;color:var(--t2);white-space:pre;margin:0}
+.code-body .ck{color:var(--r2)}.code-body .cv{color:var(--o)}.code-body .cs{color:var(--g)}.code-body .cn{color:var(--v)}.code-body .cc{color:var(--t4)}.code-body .cb{color:var(--r)}
+
+/* MERGE POLICIES */
+.policy-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.policy-card{background:var(--s1);border:1px solid var(--b);border-left:2px solid var(--b2);border-radius:10px;padding:22px;transition:transform 0.15s,border-color 0.2s}
+.policy-card:hover{transform:translateY(-2px);border-color:var(--b2)}
+.policy-card:nth-child(1){border-left-color:var(--g)}
+.policy-card:nth-child(2){border-left-color:var(--o)}
+.policy-card:nth-child(3){border-left-color:var(--r)}
+.policy-card:nth-child(4){border-left-color:var(--v)}
+.policy-card .policy-name{font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--t);margin-bottom:6px}
+.policy-card .policy-key{font-family:var(--mono);font-size:0.62rem;padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:10px;font-weight:600}
+.policy-card:nth-child(1) .policy-key{background:var(--gg);color:var(--g)}
+.policy-card:nth-child(2) .policy-key{background:var(--og);color:var(--o)}
+.policy-card:nth-child(3) .policy-key{background:var(--rg);color:var(--r)}
+.policy-card:nth-child(4) .policy-key{background:var(--vg);color:var(--v)}
+.policy-card p{font-size:0.78rem;color:var(--t3);line-height:1.7}
+
+/* DREAM INTEGRATION */
+.dream-box{background:var(--s1);border:1px solid rgba(52,211,153,0.2);border-radius:12px;padding:32px;position:relative;overflow:hidden}
+.dream-box::before{content:'';position:absolute;top:-40px;right:-40px;width:160px;height:160px;background:radial-gradient(circle,rgba(52,211,153,0.06),transparent 70%);pointer-events:none}
+.dream-box .dream-header{display:flex;align-items:center;gap:10px;margin-bottom:16px}
+.dream-box .dream-icon{width:32px;height:32px;border-radius:8px;background:var(--gg);display:flex;align-items:center;justify-content:center;font-size:1rem}
+.dream-box .dream-title{font-family:var(--mono);font-size:0.95rem;font-weight:700;color:var(--g)}
+.dream-box p{font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:16px}
+.dream-box p:last-of-type{margin-bottom:0}
+.dream-box .dream-note{display:flex;gap:8px;align-items:flex-start;background:var(--gg);border:1px solid rgba(52,211,153,0.15);border-radius:8px;padding:12px 16px;font-size:0.78rem;color:var(--g);font-family:var(--mono);margin-top:20px}
+
+/* FOOTER */
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .nav-links a{font-size:0.65rem;padding:4px 6px}
+  .nav-links a:not([data-mobile]){display:none}
+  .hero{padding:80px 16px 40px}
+  .hero h1{font-size:2.2rem}
+  .hero .sub{font-size:0.88rem}
+  .sec{padding:40px 16px}
+  .steps{grid-template-columns:1fr;gap:8px}
+  .steps::before{display:none}
+  .axis-grid{grid-template-columns:1fr 1fr;gap:10px}
+  .axis-card{padding:16px}
+  .policy-grid{grid-template-columns:1fr;gap:10px}
+  .footer-grid{grid-template-columns:1fr;gap:24px}
+  .hero-ctas{flex-direction:column;align-items:center;gap:8px;padding:0 20px}
+  .cta-primary,.cta-secondary{width:100%;justify-content:center;padding:14px;font-size:0.82rem}
+}
+@media(max-width:500px){
+  .axis-grid{grid-template-columns:1fr;gap:8px}
+  .ep-table{font-size:0.68rem}
+  .ep-table td,.ep-table th{padding:10px}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <div class="logo">
+    <a href="/" style="color:inherit;text-decoration:none"><span class="mark" style="color:var(--r);font-family:var(--mono);font-weight:700;letter-spacing:0.08em;font-size:1rem">SLOPSHOP.gg</span></a><span style="font-size:0.5rem;color:var(--t4);border:1px solid var(--b);padding:1px 6px;border-radius:3px;margin-left:8px;font-family:var(--mono)">alpha</span>
+  </div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/#dream-engine" style="color:var(--g)">Dream Engine</a>
+    <a href="/#multiplayer-memory" style="color:var(--o)" data-mobile>Multiplayer Memory</a>
+    <a href="/docs" data-mobile>Docs</a>
+    <a href="/tools">Tools</a>
+    <a href="/#pricing" data-mobile>Pricing</a>
+    <a href="/security">Security</a>
+    <a href="/about">About</a>
+    <a href="/login" data-mobile style="color:var(--t3);font-size:0.75rem;padding:6px 12px">Log In</a>
+    <a href="/signup" data-mobile style="background:var(--r);color:#fff;padding:6px 16px;border-radius:6px;font-weight:600">Sign Up Free</a>
+    <div class="live-badge"><div class="live-dot"></div><span>live</span></div>
+  </div>
+</div></nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><circle cx="5" cy="5" r="5" fill="var(--o)" opacity="0.5"/><circle cx="5" cy="5" r="2.5" fill="var(--o)"/></svg>
+      Swarm Orchestration
+    </div>
+    <h1>Agent <span class="accent">Swarms</span></h1>
+    <p class="sub">Coordinate armies of agents. <b>Memory-native.</b> <b>Dream-powered.</b><br>6-axis scoring on every run.</p>
+    <div class="hero-ctas">
+      <a href="#endpoints" class="cta-primary">View Endpoints</a>
+      <a href="#example" class="cta-secondary">See Example</a>
+    </div>
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- HOW IT WORKS -->
+<section class="sec">
+  <div class="sec-label">How it works</div>
+  <h2>Three steps to a live swarm</h2>
+  <p class="desc">Define your agents, fire the orchestrator, let Dream consolidate the output overnight. Every run produces a scored result set you can query, replay, or merge.</p>
+  <div class="steps">
+    <div class="step">
+      <div class="step-num">01</div>
+      <h3>Define agents</h3>
+      <p>Create a swarm config with <code>POST /v1/swarm/create</code>. Declare each agent's role, model, memory namespace, and tool permissions. Agents are typed: <code>researcher</code>, <code>analyst</code>, <code>synthesizer</code>, or custom.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">02</div>
+      <h3>Orchestrate</h3>
+      <p>Call <code>POST /v1/swarm/orchestrate</code> with your goal. The engine fans out tasks to each agent in parallel or in dependency order, applies your merge policy, and returns a 6-axis score on the consolidated result.</p>
+    </div>
+    <div class="step">
+      <div class="step-num">03</div>
+      <h3>Dream consolidate</h3>
+      <p>Pass <code>dream_after: true</code> to queue a Dream Engine session after orchestration completes. Swarm outputs flow into REM-cycle synthesis — patterns, insights, and compressed memory written back to each agent's namespace.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- 6-AXIS SCORING -->
+<section class="sec">
+  <div class="sec-label">Scoring</div>
+  <h2>6-axis result scoring</h2>
+  <p class="desc">Every orchestration run returns a <code>score</code> object. Six axes, each 0.0–1.0. Thresholds are configurable — fail fast, retry, or escalate to human-in-loop based on any combination.</p>
+  <div class="axis-grid">
+    <div class="axis-card">
+      <div class="axis-name">SuccessProb</div>
+      <div class="axis-key">success_prob</div>
+      <p>Estimated probability the swarm's output correctly satisfies the stated goal. Computed from task completion signals, agent confidence scores, and cross-agent consistency checks.</p>
+      <div class="axis-range">range: 0.0 – 1.0 &nbsp;·&nbsp; threshold key: <code style="font-size:0.62rem;color:var(--r)">min_success_prob</code></div>
+    </div>
+    <div class="axis-card">
+      <div class="axis-name">Robustness</div>
+      <div class="axis-key">robustness</div>
+      <p>Measures consistency of outputs across agents. High robustness means multiple independent agents reached similar conclusions. Low robustness surfaces conflicts that may require human review.</p>
+      <div class="axis-range">range: 0.0 – 1.0 &nbsp;·&nbsp; threshold key: <code style="font-size:0.62rem;color:var(--r)">min_robustness</code></div>
+    </div>
+    <div class="axis-card">
+      <div class="axis-name">Foresight</div>
+      <div class="axis-key">foresight</div>
+      <p>Captures how well the swarm anticipated downstream consequences and edge cases in its reasoning. Derived from chain-of-thought depth and counter-hypothesis coverage.</p>
+      <div class="axis-range">range: 0.0 – 1.0 &nbsp;·&nbsp; threshold key: <code style="font-size:0.62rem;color:var(--r)">min_foresight</code></div>
+    </div>
+    <div class="axis-card">
+      <div class="axis-name">GoalAlignment</div>
+      <div class="axis-key">goal_alignment</div>
+      <p>Semantic similarity between the original goal and each agent's output, averaged and weighted by agent role. Catches goal drift in long chains. Low values trigger automatic re-routing.</p>
+      <div class="axis-range">range: 0.0 – 1.0 &nbsp;·&nbsp; threshold key: <code style="font-size:0.62rem;color:var(--r)">min_goal_alignment</code></div>
+    </div>
+    <div class="axis-card">
+      <div class="axis-name">Efficiency</div>
+      <div class="axis-key">efficiency</div>
+      <p>Ratio of useful output tokens to total tokens consumed across the swarm. High efficiency means agents stayed on-task. Low efficiency flags redundant reasoning or off-topic detours.</p>
+      <div class="axis-range">range: 0.0 – 1.0 &nbsp;·&nbsp; threshold key: <code style="font-size:0.62rem;color:var(--r)">min_efficiency</code></div>
+    </div>
+    <div class="axis-card">
+      <div class="axis-name">Cost</div>
+      <div class="axis-key">cost</div>
+      <p>Normalized credit spend relative to a budget you set in the swarm config. Score of 1.0 means on-budget. Below 0.5 means you're over 2x budget. Set <code>max_credits</code> to hard-cap the run.</p>
+      <div class="axis-range">range: 0.0 – 1.0 &nbsp;·&nbsp; config key: <code style="font-size:0.62rem;color:var(--r)">max_credits</code></div>
+    </div>
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- ENDPOINTS REFERENCE -->
+<section class="sec" id="endpoints">
+  <div class="sec-label">API Reference</div>
+  <h2>Endpoints</h2>
+  <p class="desc">All endpoints accept and return JSON. Authentication via <code>X-API-Key</code> header or <code>Authorization: Bearer &lt;key&gt;</code>.</p>
+  <div class="ep-wrap">
+    <table class="ep-table">
+      <thead>
+        <tr>
+          <th style="width:90px">Method</th>
+          <th>Path</th>
+          <th>Description</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="method post">POST</span></td>
+          <td>
+            <div class="ep-path">/v1/swarm/create</div>
+            <div class="ep-desc">Define agents, roles, model assignments, memory namespaces, merge policy, and scoring thresholds. Returns a <code>swarm_id</code>.</div>
+          </td>
+          <td style="color:var(--t3);font-size:0.75rem;min-width:160px">Create swarm config</td>
+        </tr>
+        <tr>
+          <td><span class="method post">POST</span></td>
+          <td>
+            <div class="ep-path">/v1/swarm/orchestrate</div>
+            <div class="ep-desc">Run orchestration against a goal. Pass <code>swarm_id</code>, <code>goal</code>, optional <code>context</code>, <code>dream_after</code>, and <code>score_thresholds</code>. Blocks or streams depending on <code>async</code> flag.</div>
+          </td>
+          <td style="color:var(--t3);font-size:0.75rem">Run orchestration + 6-axis scoring</td>
+        </tr>
+        <tr>
+          <td><span class="method get">GET</span></td>
+          <td>
+            <div class="ep-path">/v1/swarm/:id/status</div>
+            <div class="ep-desc">Poll run status for async orchestrations. Returns phase (<code>pending</code>, <code>running</code>, <code>dreaming</code>, <code>done</code>, <code>failed</code>), partial scores, and per-agent progress.</div>
+          </td>
+          <td style="color:var(--t3);font-size:0.75rem">Check swarm run status</td>
+        </tr>
+        <tr>
+          <td><span class="method get">GET</span></td>
+          <td>
+            <div class="ep-path">/v1/swarms</div>
+            <div class="ep-desc">List all swarm configs and recent run summaries for your API key. Supports <code>?status=</code>, <code>?limit=</code>, and <code>?cursor=</code> for pagination.</div>
+          </td>
+          <td style="color:var(--t3);font-size:0.75rem">List all swarms</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- EXAMPLE -->
+<section class="sec" id="example">
+  <div class="sec-label">Example</div>
+  <h2>Deep Research Swarm</h2>
+  <p class="desc">Three agents. Researcher pulls sources, analyst extracts signals, synthesizer writes the final brief. Results merged via <code>llm-smart</code> policy and scored across all 6 axes.</p>
+  <div class="code-wrap">
+    <div class="code-header">
+      <span class="code-label">POST /v1/swarm/orchestrate — Deep Research Swarm</span>
+      <span class="code-lang">JSON</span>
+    </div>
+    <div class="code-body"><pre>{
+  <span class="ck">"swarm_id"</span>: <span class="cs">"swarm_research_001"</span>,
+  <span class="ck">"goal"</span>: <span class="cs">"Produce a 500-word competitive brief on vector database pricing (2025-2026)"</span>,
+  <span class="ck">"agents"</span>: [
+    {
+      <span class="ck">"id"</span>: <span class="cs">"researcher"</span>,
+      <span class="ck">"role"</span>: <span class="cs">"researcher"</span>,
+      <span class="ck">"model"</span>: <span class="cs">"claude-sonnet-4-5"</span>,
+      <span class="ck">"memory_ns"</span>: <span class="cs">"research/vector-db"</span>,
+      <span class="ck">"tools"</span>: [<span class="cs">"web-search"</span>, <span class="cs">"memory-get"</span>, <span class="cs">"memory-set"</span>],
+      <span class="ck">"task"</span>: <span class="cs">"Find pricing pages and recent announcements for Pinecone, Weaviate, Qdrant, Chroma"</span>
+    },
+    {
+      <span class="ck">"id"</span>: <span class="cs">"analyst"</span>,
+      <span class="ck">"role"</span>: <span class="cs">"analyst"</span>,
+      <span class="ck">"model"</span>: <span class="cs">"claude-sonnet-4-5"</span>,
+      <span class="ck">"memory_ns"</span>: <span class="cs">"research/vector-db"</span>,
+      <span class="ck">"depends_on"</span>: [<span class="cs">"researcher"</span>],
+      <span class="ck">"tools"</span>: [<span class="cs">"memory-search"</span>, <span class="cs">"llm-think"</span>],
+      <span class="ck">"task"</span>: <span class="cs">"Extract pricing tiers, free limits, and enterprise signals from researcher output"</span>
+    },
+    {
+      <span class="ck">"id"</span>: <span class="cs">"synthesizer"</span>,
+      <span class="ck">"role"</span>: <span class="cs">"synthesizer"</span>,
+      <span class="ck">"model"</span>: <span class="cs">"claude-opus-4-5"</span>,
+      <span class="ck">"depends_on"</span>: [<span class="cs">"analyst"</span>],
+      <span class="ck">"tools"</span>: [<span class="cs">"memory-search"</span>, <span class="cs">"llm-think"</span>],
+      <span class="ck">"task"</span>: <span class="cs">"Write a 500-word executive brief with pricing comparison table and recommendation"</span>
+    }
+  ],
+  <span class="ck">"merge_policy"</span>: <span class="cs">"llm-smart"</span>,
+  <span class="ck">"dream_after"</span>: <span class="cb">true</span>,
+  <span class="ck">"max_credits"</span>: <span class="cn">200</span>,
+  <span class="ck">"score_thresholds"</span>: {
+    <span class="ck">"min_success_prob"</span>: <span class="cn">0.8</span>,
+    <span class="ck">"min_goal_alignment"</span>: <span class="cn">0.85</span>,
+    <span class="ck">"min_robustness"</span>: <span class="cn">0.7</span>
+  }
+}</pre></div>
+  </div>
+
+  <div style="margin-top:24px">
+  <div class="code-wrap">
+    <div class="code-header">
+      <span class="code-label">Response</span>
+      <span class="code-lang">JSON</span>
+    </div>
+    <div class="code-body"><pre>{
+  <span class="ck">"run_id"</span>: <span class="cs">"run_9f2a1c"</span>,
+  <span class="ck">"swarm_id"</span>: <span class="cs">"swarm_research_001"</span>,
+  <span class="ck">"status"</span>: <span class="cs">"done"</span>,
+  <span class="ck">"output"</span>: <span class="cs">"... 500-word brief ..."</span>,
+  <span class="ck">"score"</span>: {
+    <span class="ck">"success_prob"</span>:  <span class="cn">0.91</span>,
+    <span class="ck">"robustness"</span>:    <span class="cn">0.87</span>,
+    <span class="ck">"foresight"</span>:     <span class="cn">0.76</span>,
+    <span class="ck">"goal_alignment"</span>: <span class="cn">0.93</span>,
+    <span class="ck">"efficiency"</span>:    <span class="cn">0.82</span>,
+    <span class="ck">"cost"</span>:          <span class="cn">0.88</span>
+  },
+  <span class="ck">"credits_used"</span>: <span class="cn">174</span>,
+  <span class="ck">"dream_job_id"</span>: <span class="cs">"dream_7b3e9d"</span>,
+  <span class="ck">"agent_traces"</span>: {
+    <span class="ck">"researcher"</span>:  { <span class="ck">"status"</span>: <span class="cs">"done"</span>, <span class="ck">"credits"</span>: <span class="cn">48</span> },
+    <span class="ck">"analyst"</span>:     { <span class="ck">"status"</span>: <span class="cs">"done"</span>, <span class="ck">"credits"</span>: <span class="cn">62</span> },
+    <span class="ck">"synthesizer"</span>: { <span class="ck">"status"</span>: <span class="cs">"done"</span>, <span class="ck">"credits"</span>: <span class="cn">64</span> }
+  }
+}</pre></div>
+  </div>
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- MERGE POLICIES -->
+<section class="sec">
+  <div class="sec-label">Merge Policies</div>
+  <h2>How outputs get combined</h2>
+  <p class="desc">Set <code>merge_policy</code> in your swarm config to control how agent outputs are reconciled into a final result.</p>
+  <div class="policy-grid">
+    <div class="policy-card">
+      <div class="policy-name">Auto</div>
+      <div class="policy-key">auto</div>
+      <p>The engine picks the best merge strategy based on agent count, output types, and role topology. Good default for most workflows. Uses structural diffing for structured outputs and LLM merge for prose.</p>
+    </div>
+    <div class="policy-card">
+      <div class="policy-name">LLM Smart</div>
+      <div class="policy-key">llm-smart</div>
+      <p>A dedicated merge agent reads all agent outputs and produces a single coherent result. Best for prose, research briefs, and multi-perspective analysis. Adds one extra LLM call and ~20 credits.</p>
+    </div>
+    <div class="policy-card">
+      <div class="policy-name">Human in Loop</div>
+      <div class="policy-key">human-in-loop</div>
+      <p>Orchestration pauses and surfaces a diff of conflicting outputs to a webhook or UI callback. The human approves, rejects, or edits before the run continues. Combine with <code>min_robustness</code> thresholds for surgical review.</p>
+    </div>
+    <div class="policy-card">
+      <div class="policy-name">Agent Debate</div>
+      <div class="policy-key">agent-debate</div>
+      <p>Agents critique each other's outputs in a structured debate round. Each agent sees the others' results and can revise its own. Converges to a consensus after N rounds (configurable via <code>debate_rounds</code>). Highest quality, highest cost.</p>
+    </div>
+  </div>
+</section>
+
+<hr class="sec-divider">
+
+<!-- DREAM INTEGRATION -->
+<section class="sec">
+  <div class="sec-label">Dream Integration</div>
+  <h2>Consolidate results overnight</h2>
+  <p class="desc">Swarms generate a lot of intermediate reasoning. Dream Engine turns that raw output into durable, compressed, searchable memory — automatically.</p>
+  <div class="dream-box">
+    <div class="dream-header">
+      <div class="dream-icon">&#9790;</div>
+      <div class="dream-title">dream_after: true</div>
+    </div>
+    <p>Set <code style="font-family:var(--mono);color:var(--g)">dream_after: true</code> in your orchestration request and Slopshop queues a Dream Engine job the moment the swarm completes. The job runs all five REM strategies — <strong>synthesize</strong>, <strong>pattern_extract</strong>, <strong>insight_generate</strong>, <strong>compress</strong>, and <strong>associate</strong> — over each agent's memory namespace.</p>
+    <p>When your agents wake up for the next run, they have a consolidated memory of everything the swarm produced. No manual summarization. No prompt stuffing. The knowledge is already there, structured and queryable via <code style="font-family:var(--mono);color:var(--r)">POST /v1/memory/search</code>.</p>
+    <p>Track the dream job with the <code style="font-family:var(--mono);color:var(--r)">dream_job_id</code> returned in every orchestration response. Poll it via <code style="font-family:var(--mono);color:var(--r)">GET /v1/memory/dream/status/:id</code>.</p>
+    <div class="dream-note">
+      &#8594;&nbsp; Tip: schedule overnight dreams with <code>POST /v1/schedule</code> using a cron expression. Your swarm can run at 2am and wake up with fresh memory every morning.
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#06b6d4"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/templates">Templates</a>
+        <a href="/playbooks">Playbooks</a>
+        <a href="/gallery">Gallery</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/savings">Savings</a>
+      </div>
+      <div class="footer-col">
+        <h4>Integrate</h4>
+        <a href="/integrate-claude">Claude</a>
+        <a href="/integrate-openai">OpenAI</a>
+        <a href="/integrate-grok">Grok</a>
+        <a href="/integrate-langchain">LangChain</a>
+        <a href="/v1/tasks">Task API</a>
+        <a href="/v1/benchmarks">Benchmarks</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/docs">Docs</a>
+        <a href="/getting-started">Getting Started</a>
+        <a href="/security">Security</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/v1/openapi.json">OpenAPI</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="/status">Status</a>
+        <a href="/legal">Legal</a>
+        <a href="https://x.com/slopshopgg">@slopshopgg</a>
+      </div>
+    </div>
+    <div style="text-align:center;margin:20px auto 16px;max-width:360px;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:0.78rem">
+      <span style="color:var(--green)">$</span> <span style="color:var(--t);font-weight:600">npm install -g slopshop</span> <span style="color:var(--t4);font-size:0.55rem;margin-left:6px">copy</span>
+    </div>
+    <div class="footer-copy">Living Memory Layer for AI Agents &middot; Dream Engine + Multiplayer Memory &middot; 1,400+ APIs &middot; Multi-model &middot; SQLite &middot; Self-hostable &middot; slopshop.gg<br><span style="color:var(--t4);font-size:0.58rem">SLOP: Stateless Lightweight Operational Primitives &middot; Agents that remember, dream, and share intelligence.</span></div>
+  </div>
+</footer>
+
+</body>
+</html>

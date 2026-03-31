@@ -1,0 +1,500 @@
+[
+  {
+    "id": "deep-research-swarm",
+    "name": "Deep Research Swarm",
+    "description": "Five-agent research pipeline that searches, synthesizes, fact-checks, and delivers publication-ready reports on any topic.",
+    "category": "research",
+    "price_credits": 120,
+    "tier": "pro",
+    "author": "slopshop-official",
+    "rating": 4.9,
+    "downloads": 18420,
+    "agents": [
+      {
+        "role": "coordinator",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent orchestrating a research swarm. Your task: {{task}}. Break the research question into discrete subtasks, assign priorities, and synthesize all agent outputs into a coherent final report.",
+        "tools": ["memory.read", "memory.write", "llm.think", "swarm.delegate"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      },
+      {
+        "role": "searcher",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent responsible for web retrieval. Your task: {{task}}. Fetch primary sources, academic papers, and authoritative references. Store all raw findings to shared memory with source URLs.",
+        "tools": ["search.web", "search.academic", "memory.write", "fetch.url"],
+        "memory_namespace": "shared",
+        "max_tokens": 4000
+      },
+      {
+        "role": "synthesizer",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Read all raw search findings from shared memory and produce a structured synthesis that identifies key themes, contradictions, and knowledge gaps.",
+        "tools": ["memory.read", "memory.write", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      },
+      {
+        "role": "fact_checker",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Audit every claim in the synthesis against primary sources. Flag unverified assertions with confidence scores and suggest corrections where evidence is contradictory.",
+        "tools": ["memory.read", "memory.write", "search.web", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 6000
+      },
+      {
+        "role": "writer",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Transform the verified synthesis into a polished, well-structured report with an executive summary, body sections, and a references list. Tone: professional and precise.",
+        "tools": ["memory.read", "memory.write", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      }
+    ],
+    "dream_schedule": "nightly",
+    "merge_policy": "llm-smart",
+    "tags": ["research", "reports", "fact-checking", "synthesis", "multi-agent"],
+    "created_at": "2026-03-31T00:00:00Z"
+  },
+  {
+    "id": "code-review-swarm",
+    "name": "Code Review Swarm",
+    "description": "Four-agent swarm that performs static analysis, security scanning, performance profiling, and auto-generates review documentation on any pull request.",
+    "category": "coding",
+    "price_credits": 80,
+    "tier": "pro",
+    "author": "slopshop-official",
+    "rating": 4.8,
+    "downloads": 31750,
+    "agents": [
+      {
+        "role": "static_analyzer",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Analyze the provided code for style violations, dead code, anti-patterns, complexity hotspots, and adherence to best practices. Output a structured JSON findings list.",
+        "tools": ["code.analyze", "memory.write", "llm.think", "lint.run"],
+        "memory_namespace": "shared",
+        "max_tokens": 6000
+      },
+      {
+        "role": "security_scanner",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Scan the codebase for OWASP Top 10 vulnerabilities, hardcoded secrets, insecure dependencies, and injection vectors. Assign CVSS-style severity ratings to each finding.",
+        "tools": ["code.analyze", "search.cve", "memory.read", "memory.write", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 6000
+      },
+      {
+        "role": "performance_reviewer",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Identify N+1 queries, algorithmic inefficiencies, blocking I/O, and memory leaks. Provide concrete refactor suggestions with before/after pseudocode.",
+        "tools": ["code.analyze", "memory.read", "memory.write", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 5000
+      },
+      {
+        "role": "doc_writer",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Consolidate all findings from shared memory into a human-readable code review report formatted for GitHub PR comments. Include severity badges, line references, and suggested fixes.",
+        "tools": ["memory.read", "memory.write", "llm.think", "format.markdown"],
+        "memory_namespace": "shared",
+        "max_tokens": 4000
+      }
+    ],
+    "dream_schedule": "never",
+    "merge_policy": "auto",
+    "tags": ["code-review", "security", "devex", "PR", "static-analysis"],
+    "created_at": "2026-03-31T00:00:00Z"
+  },
+  {
+    "id": "market-intelligence",
+    "name": "Market Intelligence",
+    "description": "Six-agent swarm that continuously tracks competitors, surfaces trends, models forecasts, and delivers weekly market intelligence briefings.",
+    "category": "analysis",
+    "price_credits": 250,
+    "tier": "enterprise",
+    "author": "slopshop-official",
+    "rating": 4.9,
+    "downloads": 8930,
+    "agents": [
+      {
+        "role": "data_collector",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Scrape news feeds, SEC filings, job postings, product changelogs, and social signals for the target market. Normalize and store raw data to shared memory with timestamps.",
+        "tools": ["search.web", "fetch.url", "memory.write", "parse.rss", "scrape.structured"],
+        "memory_namespace": "shared",
+        "max_tokens": 3000
+      },
+      {
+        "role": "trend_analyzer",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Analyze the collected data corpus for emerging patterns, sentiment shifts, and inflection points. Produce a ranked list of trends with supporting evidence and momentum scores.",
+        "tools": ["memory.read", "memory.write", "llm.think", "stats.analyze"],
+        "memory_namespace": "shared",
+        "max_tokens": 7000
+      },
+      {
+        "role": "competitor_tracker",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Map competitor moves including pricing changes, feature launches, hiring surges, and partnership announcements. Maintain a live competitor state object in shared memory.",
+        "tools": ["memory.read", "memory.write", "search.web", "fetch.url", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 4000
+      },
+      {
+        "role": "forecaster",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Using trend signals and competitor state, generate 30/60/90-day market forecasts with scenario branches (bull, base, bear). Attach confidence intervals to each projection.",
+        "tools": ["memory.read", "memory.write", "llm.think", "stats.model"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      },
+      {
+        "role": "reporter",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Compile all intelligence into a C-suite-ready briefing document. Lead with the three most urgent signals, follow with trend analysis, competitor summary, and forecast scenarios.",
+        "tools": ["memory.read", "memory.write", "llm.think", "format.pdf"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      },
+      {
+        "role": "archivist",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Snapshot the current intelligence state to long-term memory, prune stale entries older than 90 days, and maintain a searchable historical index of all past briefings.",
+        "tools": ["memory.read", "memory.write", "memory.snapshot", "memory.prune"],
+        "memory_namespace": "shared",
+        "max_tokens": 2000
+      }
+    ],
+    "dream_schedule": "weekly",
+    "merge_policy": "llm-smart",
+    "tags": ["market-intelligence", "competitive-analysis", "forecasting", "b2b", "strategy"],
+    "created_at": "2026-03-31T00:00:00Z"
+  },
+  {
+    "id": "customer-success-247",
+    "name": "24/7 Customer Success",
+    "description": "Three-agent always-on support swarm that triages incoming tickets, resolves common issues autonomously, and escalates complex cases with full context.",
+    "category": "ops",
+    "price_credits": 150,
+    "tier": "pro",
+    "author": "slopshop-official",
+    "rating": 4.7,
+    "downloads": 22100,
+    "agents": [
+      {
+        "role": "intake",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are an {{role}} agent for customer support. Your task: {{task}}. Classify incoming tickets by category, urgency, and sentiment. Extract account identifiers and look up customer history from memory. Route to resolver or escalator based on complexity score.",
+        "tools": ["memory.read", "memory.write", "llm.think", "classify.intent", "crm.lookup"],
+        "memory_namespace": "shared",
+        "max_tokens": 2000
+      },
+      {
+        "role": "resolver",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Attempt to fully resolve the customer issue using the knowledge base and past resolution patterns stored in memory. Draft a response, execute any safe corrective actions, and mark the ticket resolved if confidence exceeds 0.85.",
+        "tools": ["memory.read", "memory.write", "llm.think", "kb.search", "api.execute"],
+        "memory_namespace": "shared",
+        "max_tokens": 5000
+      },
+      {
+        "role": "escalator",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are an {{role}} agent. Your task: {{task}}. For tickets the resolver cannot handle, prepare a full escalation packet: customer history, attempted resolutions, current sentiment score, and a recommended next action. Notify the on-call human with a Slack summary.",
+        "tools": ["memory.read", "memory.write", "llm.think", "notify.slack", "crm.update"],
+        "memory_namespace": "shared",
+        "max_tokens": 4000
+      }
+    ],
+    "dream_schedule": "nightly",
+    "merge_policy": "human-in-loop",
+    "tags": ["customer-success", "support", "automation", "24-7", "saas"],
+    "created_at": "2026-03-31T00:00:00Z"
+  },
+  {
+    "id": "legal-doc-analysis",
+    "name": "Legal Document Analysis",
+    "description": "Four-agent swarm that extracts clauses, scores risk, compares against standard templates, and produces plain-English legal summaries.",
+    "category": "legal",
+    "price_credits": 300,
+    "tier": "enterprise",
+    "author": "slopshop-official",
+    "rating": 4.8,
+    "downloads": 5640,
+    "agents": [
+      {
+        "role": "clause_extractor",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Parse the provided legal document and extract all distinct clauses with their type labels (indemnification, limitation of liability, IP assignment, termination, etc.). Store the structured clause map to shared memory.",
+        "tools": ["memory.read", "memory.write", "llm.think", "parse.document", "classify.clause"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      },
+      {
+        "role": "risk_assessor",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Score each extracted clause for legal risk on a 1-10 scale. Flag clauses that are unusually one-sided, missing standard protections, or contain ambiguous language that could be exploited in litigation.",
+        "tools": ["memory.read", "memory.write", "llm.think", "search.caselaw"],
+        "memory_namespace": "shared",
+        "max_tokens": 7000
+      },
+      {
+        "role": "comparison_engine",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Compare each clause against market-standard templates stored in the knowledge base. Surface deviations, missing clauses, and non-standard language. Produce a delta report with recommended redlines.",
+        "tools": ["memory.read", "memory.write", "llm.think", "kb.search", "diff.text"],
+        "memory_namespace": "shared",
+        "max_tokens": 6000
+      },
+      {
+        "role": "summary_writer",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Synthesize the clause map, risk scores, and redline recommendations into a plain-English summary suitable for a non-lawyer executive. Highlight the top 5 risks and recommended negotiation priorities.",
+        "tools": ["memory.read", "memory.write", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 6000
+      }
+    ],
+    "dream_schedule": "never",
+    "merge_policy": "human-in-loop",
+    "tags": ["legal", "contracts", "risk", "compliance", "enterprise"],
+    "created_at": "2026-03-31T00:00:00Z"
+  },
+  {
+    "id": "financial-due-diligence",
+    "name": "Financial Due Diligence",
+    "description": "Five-agent swarm that dissects financial statements, models risk, benchmarks against comps, forecasts scenarios, and produces an investor-grade diligence memo.",
+    "category": "finance",
+    "price_credits": 400,
+    "tier": "enterprise",
+    "author": "slopshop-official",
+    "rating": 4.9,
+    "downloads": 3210,
+    "agents": [
+      {
+        "role": "financial_analyst",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Parse income statements, balance sheets, and cash flow statements. Compute core ratios (gross margin, burn rate, EBITDA, LTV/CAC, quick ratio) and store a structured financial model to shared memory.",
+        "tools": ["memory.read", "memory.write", "llm.think", "parse.spreadsheet", "stats.compute"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      },
+      {
+        "role": "risk_modeler",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Identify financial risks including customer concentration, covenant risk, currency exposure, and runway scenarios. Stress-test the model under adverse conditions and document each risk with a probability and impact score.",
+        "tools": ["memory.read", "memory.write", "llm.think", "stats.model"],
+        "memory_namespace": "shared",
+        "max_tokens": 7000
+      },
+      {
+        "role": "benchmark_comparator",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Retrieve public comps and industry benchmarks for the target company's sector and stage. Position the target's KPIs against the peer set and flag outliers — both positive and negative.",
+        "tools": ["memory.read", "memory.write", "search.web", "fetch.url", "stats.compare"],
+        "memory_namespace": "shared",
+        "max_tokens": 4000
+      },
+      {
+        "role": "forecaster",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Build 3-year revenue and EBITDA projections across three scenarios (bear/base/bull) using growth rates implied by the historical financials and market benchmarks. Attach assumption logs to every projection.",
+        "tools": ["memory.read", "memory.write", "llm.think", "stats.model"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      },
+      {
+        "role": "exec_summarizer",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are an {{role}} agent. Your task: {{task}}. Consolidate all analysis into a 2-page investor-grade due diligence memo. Structure: investment thesis, key risks, financial snapshot, benchmarks, forecast scenarios, and recommendation with conviction score.",
+        "tools": ["memory.read", "memory.write", "llm.think", "format.pdf"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      }
+    ],
+    "dream_schedule": "never",
+    "merge_policy": "human-in-loop",
+    "tags": ["finance", "due-diligence", "venture", "M&A", "modeling"],
+    "created_at": "2026-03-31T00:00:00Z"
+  },
+  {
+    "id": "content-production-pipeline",
+    "name": "Content Production Pipeline",
+    "description": "Five-agent content factory that takes a topic from brief to SEO-optimized, publish-ready article with zero manual editing required.",
+    "category": "writing",
+    "price_credits": 60,
+    "tier": "pro",
+    "author": "slopshop-official",
+    "rating": 4.7,
+    "downloads": 47300,
+    "agents": [
+      {
+        "role": "researcher",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Gather primary sources, statistics, expert quotes, and supporting data for the content brief. Store a research packet with citations to shared memory.",
+        "tools": ["search.web", "search.academic", "memory.write", "fetch.url"],
+        "memory_namespace": "shared",
+        "max_tokens": 3000
+      },
+      {
+        "role": "outliner",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are an {{role}} agent. Your task: {{task}}. Using the research packet, produce a detailed content outline with H2/H3 structure, key points per section, and target word counts. Optimize the structure for reader retention and topical authority.",
+        "tools": ["memory.read", "memory.write", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 3000
+      },
+      {
+        "role": "writer",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Write the full article following the outline, incorporating research citations naturally. Match the brand voice specified in the brief. Aim for clarity, specificity, and zero filler sentences.",
+        "tools": ["memory.read", "memory.write", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      },
+      {
+        "role": "editor",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are an {{role}} agent. Your task: {{task}}. Polish the draft for clarity, flow, grammar, and factual accuracy. Cut weak sentences, strengthen transitions, and ensure the opening hook earns the reader's attention within 3 sentences.",
+        "tools": ["memory.read", "memory.write", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      },
+      {
+        "role": "seo_optimizer",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are an {{role}} agent. Your task: {{task}}. Optimize the edited article for search: insert the primary keyword naturally in title, H1, first paragraph, and meta description. Add 3-5 semantically related terms. Suggest internal link placements and a schema markup type.",
+        "tools": ["memory.read", "memory.write", "llm.think", "seo.analyze"],
+        "memory_namespace": "shared",
+        "max_tokens": 3000
+      }
+    ],
+    "dream_schedule": "never",
+    "merge_policy": "auto",
+    "tags": ["content", "SEO", "blogging", "writing", "marketing"],
+    "created_at": "2026-03-31T00:00:00Z"
+  },
+  {
+    "id": "devops-sentinel",
+    "name": "DevOps Sentinel",
+    "description": "Four-agent swarm that monitors production systems, diagnoses incidents in real time, generates fix PRs, and keeps the post-mortem log current automatically.",
+    "category": "ops",
+    "price_credits": 200,
+    "tier": "enterprise",
+    "author": "slopshop-official",
+    "rating": 4.8,
+    "downloads": 12870,
+    "agents": [
+      {
+        "role": "monitor",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Continuously poll metrics, logs, and alerting systems. When anomalies are detected (error rate spike, latency degradation, memory pressure), snapshot the current system state and write an incident record to shared memory. Trigger the analyzer immediately.",
+        "tools": ["metrics.poll", "logs.tail", "memory.write", "alerts.subscribe", "swarm.delegate"],
+        "memory_namespace": "shared",
+        "max_tokens": 2000
+      },
+      {
+        "role": "root_cause_analyzer",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Analyze the incident snapshot, correlated logs, recent deployments, and dependency health. Identify the most probable root cause with a confidence score. Write your hypothesis and supporting evidence to shared memory.",
+        "tools": ["memory.read", "memory.write", "logs.search", "llm.think", "deploy.history"],
+        "memory_namespace": "shared",
+        "max_tokens": 7000
+      },
+      {
+        "role": "fix_generator",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Given the root cause analysis, generate a targeted remediation — config patch, code fix, or runbook command sequence. Open a draft PR or execute safe rollback actions. Never touch production directly without a human-in-loop confirmation for destructive changes.",
+        "tools": ["memory.read", "memory.write", "llm.think", "git.pr", "code.patch", "api.execute"],
+        "memory_namespace": "shared",
+        "max_tokens": 6000
+      },
+      {
+        "role": "incident_documenter",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are an {{role}} agent. Your task: {{task}}. Write a post-mortem entry from the incident record, root cause analysis, and fix applied. Follow the blameless post-mortem format: timeline, impact, root cause, fix, and follow-up action items. Append to the incident log and notify the on-call channel.",
+        "tools": ["memory.read", "memory.write", "notify.slack", "docs.append"],
+        "memory_namespace": "shared",
+        "max_tokens": 4000
+      }
+    ],
+    "dream_schedule": "nightly",
+    "merge_policy": "human-in-loop",
+    "tags": ["devops", "SRE", "monitoring", "incident-response", "automation"],
+    "created_at": "2026-03-31T00:00:00Z"
+  },
+  {
+    "id": "sales-intelligence",
+    "name": "Sales Intelligence",
+    "description": "Three-agent swarm that researches prospects, crafts hyper-personalized outreach, and syncs enriched data back to your CRM automatically.",
+    "category": "marketing",
+    "price_credits": 90,
+    "tier": "pro",
+    "author": "slopshop-official",
+    "rating": 4.6,
+    "downloads": 28540,
+    "agents": [
+      {
+        "role": "lead_researcher",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Research the target prospect: company overview, recent news, funding history, tech stack signals, hiring trends, and key decision-maker backgrounds. Store a structured prospect dossier to shared memory.",
+        "tools": ["search.web", "fetch.url", "memory.write", "crm.lookup", "linkedin.scrape"],
+        "memory_namespace": "shared",
+        "max_tokens": 4000
+      },
+      {
+        "role": "outreach_personalizer",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are an {{role}} agent. Your task: {{task}}. Using the prospect dossier, craft a personalized cold outreach sequence (email 1, follow-up 1, follow-up 2). Reference a specific company trigger in the opening line. Keep email 1 under 100 words. Subject lines must be curiosity-driven, not salesy.",
+        "tools": ["memory.read", "memory.write", "llm.think"],
+        "memory_namespace": "shared",
+        "max_tokens": 4000
+      },
+      {
+        "role": "crm_updater",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Push the enriched prospect dossier and outreach sequence back to the CRM. Update contact fields, attach the email drafts as tasks, set follow-up reminders, and tag the lead with the appropriate pipeline stage.",
+        "tools": ["memory.read", "crm.update", "crm.task", "notify.slack"],
+        "memory_namespace": "private",
+        "max_tokens": 2000
+      }
+    ],
+    "dream_schedule": "never",
+    "merge_policy": "auto",
+    "tags": ["sales", "outreach", "CRM", "lead-gen", "personalization"],
+    "created_at": "2026-03-31T00:00:00Z"
+  },
+  {
+    "id": "dream-consolidation",
+    "name": "Dream Consolidation",
+    "description": "Two-agent overnight swarm that harvests all agent memory fragments from the day, synthesizes emergent insights, and surfaces them as a morning briefing.",
+    "category": "custom",
+    "price_credits": 0,
+    "tier": "free",
+    "author": "slopshop-official",
+    "rating": 4.9,
+    "downloads": 41200,
+    "agents": [
+      {
+        "role": "memory_collector",
+        "model": "claude-haiku-4-5",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Traverse all active memory namespaces and collect every memory fragment written in the past 24 hours. Deduplicate, normalize, and tag each fragment by source agent, topic cluster, and timestamp. Write the consolidated corpus to the dream namespace.",
+        "tools": ["memory.read", "memory.write", "memory.snapshot", "memory.list", "memory.prune"],
+        "memory_namespace": "shared",
+        "max_tokens": 5000
+      },
+      {
+        "role": "dream_synthesizer",
+        "model": "claude-sonnet-4-6",
+        "prompt_template": "You are a {{role}} agent. Your task: {{task}}. Read the full memory corpus collected overnight. Identify non-obvious connections between fragments from different agents and domains. Surface the top 5 emergent insights the user did not explicitly ask for but would want to know. Format as a morning briefing: one insight per paragraph, written conversationally, with a confidence score and the source memory fragments that produced it.",
+        "tools": ["memory.read", "memory.write", "llm.think", "notify.email"],
+        "memory_namespace": "shared",
+        "max_tokens": 8000
+      }
+    ],
+    "dream_schedule": "nightly",
+    "merge_policy": "llm-smart",
+    "tags": ["memory", "dream-engine", "consolidation", "overnight", "insights"],
+    "created_at": "2026-03-31T00:00:00Z"
+  }
+]

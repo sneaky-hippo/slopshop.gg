@@ -1,0 +1,1017 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Memory SDK — @slopshop/memory | Slopshop</title>
+<meta name="description" content="The @slopshop/memory SDK for Python and Node.js. 9 memory techniques — persistent memory, Dream Engine, multiplayer memory, snapshots, Bayesian calibration, episodic chains, triggers, procedural memory, and swarm orchestration.">
+<meta name="keywords" content="slopshop memory SDK, AI agent memory, persistent memory SDK, dream engine SDK, multiplayer memory, Python AI memory, Node.js AI memory, agent SDK, slopshop">
+<link rel="canonical" href="https://slopshop.gg/sdk">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/sdk">
+<meta property="og:title" content="Memory SDK — @slopshop/memory | Slopshop">
+<meta property="og:description" content="9 memory techniques. One import. Works everywhere. Python and Node.js SDK for Slopshop's Living Memory Layer.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta property="og:site_name" content="Slopshop">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Memory SDK — @slopshop/memory | Slopshop">
+<meta name="twitter:description" content="9 memory techniques. One import. Works everywhere.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#06b6d4">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090b;--s1:#111113;--s2:#18181b;--s3:#27272a;
+  --b:#1e1e22;--b2:#27272a;
+  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+  --r:#06b6d4;--r2:#22d3ee;--rg:rgba(6,182,212,0.06);
+  --o:#a78bfa;--og:rgba(167,139,250,0.08);
+  --g:#34d399;--gg:rgba(52,211,153,0.08);
+  --c:#06b6d4;--cg:rgba(6,182,212,0.06);
+  --v:#818cf8;--vg:rgba(129,140,248,0.08);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,-apple-system,sans-serif;
+  --accent:var(--r);--accent2:var(--rg);--orange:var(--o);--green:var(--g);
+}
+
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;height:56px;
+  background:rgba(5,5,5,0.85);
+  backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid var(--b);
+  display:flex;align-items:center;padding:0 32px
+}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px}
+.logo .mark{color:#fff}
+.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--r)}
+
+/* live dot */
+.live-dot{width:7px;height:7px;background:var(--g);border-radius:50%;animation:pulse 2s infinite;flex-shrink:0}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.35}}
+.live-badge{display:flex;align-items:center;gap:6px;font-size:0.68rem;color:var(--g);font-weight:600;font-family:var(--mono);padding:4px 12px;background:var(--gg);border-radius:99px}
+
+/* HERO */
+.hero{padding:100px 32px 64px;text-align:center;position:relative;overflow:hidden;background:radial-gradient(ellipse,rgba(6,182,212,0.05),transparent 60%)}
+.hero-inner{max-width:900px;margin:0 auto;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(6,182,212,0.15);color:var(--r2);padding:5px 14px;border-radius:99px;font-size:0.72rem;font-weight:500;margin-bottom:28px;font-family:var(--mono)}
+.hero h1{font-family:var(--mono);font-size:clamp(2rem,5vw,3.4rem);font-weight:800;letter-spacing:-0.04em;line-height:1.1;margin-bottom:20px}
+.hero h1 .accent{color:var(--r)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1.05rem);max-width:560px;margin:0 auto;line-height:1.8;font-weight:400}
+.hero .sub b{color:var(--t);font-weight:600}
+
+/* INSTALL TABS */
+.install-section{max-width:860px;margin:0 auto;padding:64px 32px 0}
+.section-label{font-family:var(--mono);font-size:0.62rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:0.14em;margin-bottom:14px}
+.tab-bar{display:flex;gap:4px;margin-bottom:16px;border-bottom:1px solid var(--b);padding-bottom:0}
+.tab-btn{font-family:var(--mono);font-size:0.78rem;font-weight:600;color:var(--t3);padding:8px 20px;border-radius:6px 6px 0 0;cursor:pointer;border:1px solid transparent;border-bottom:none;transition:color 0.15s,background 0.15s;background:transparent;margin-bottom:-1px;position:relative}
+.tab-btn:hover{color:var(--t)}
+.tab-btn.active{color:var(--t);background:var(--s1);border-color:var(--b);border-bottom-color:var(--s1)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
+
+/* TERMINAL BLOCKS */
+.term{
+  background:var(--s1);
+  border:1px solid var(--b);
+  border-radius:10px;
+  overflow:hidden;
+  margin-bottom:0;
+}
+.term-header{
+  background:var(--s2);
+  padding:10px 16px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  border-bottom:1px solid var(--b);
+}
+.term-dots{display:flex;gap:6px}
+.term-dot{width:10px;height:10px;border-radius:50%}
+.term-dot.red{background:#ff5f57}
+.term-dot.yellow{background:#febc2e}
+.term-dot.green{background:#28c840}
+.term-label{font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-left:auto;font-weight:500}
+.term-body{
+  padding:18px 20px;
+  font-family:var(--mono);
+  font-size:0.8rem;
+  line-height:1.9;
+  color:var(--t2);
+}
+.term-body .prompt{color:var(--g)}
+.term-body .cmd{color:var(--t)}
+.term-body .comment{color:var(--t4)}
+.term-body .kw{color:var(--r)}
+.term-body .str{color:var(--g)}
+.term-body .fn{color:var(--o)}
+.term-body .num{color:var(--v)}
+.term-body .out{color:var(--t3);font-size:0.72rem}
+
+/* SECTIONS */
+.content-wrap{max-width:1100px;margin:0 auto;padding:0 32px 80px}
+
+.section-divider{height:1px;background:linear-gradient(90deg,transparent,rgba(6,182,212,0.12),transparent);margin:64px 0}
+
+.section-head{margin-bottom:48px}
+.section-head h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:8px;letter-spacing:-0.02em}
+.section-head p{color:var(--t3);font-size:0.85rem;max-width:540px;line-height:1.75}
+
+/* TECHNIQUE CARDS */
+.technique-grid{display:grid;gap:32px}
+
+.technique-card{
+  background:var(--s1);
+  border:1px solid var(--b);
+  border-radius:14px;
+  overflow:hidden;
+  transition:border-color 0.2s,transform 0.15s,box-shadow 0.2s;
+}
+.technique-card:hover{border-color:var(--b2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.25)}
+
+.tc-header{
+  padding:22px 28px 16px;
+  border-bottom:1px solid var(--b);
+  display:flex;
+  align-items:flex-start;
+  justify-content:space-between;
+  gap:16px;
+}
+.tc-meta{flex:1}
+.tc-num{font-family:var(--mono);font-size:0.6rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:8px}
+.tc-name{font-family:var(--mono);font-size:1rem;font-weight:800;color:var(--t);margin-bottom:6px;letter-spacing:-0.02em}
+.tc-desc{font-size:0.82rem;color:var(--t3);line-height:1.65}
+.tc-endpoint{
+  font-family:var(--mono);
+  font-size:0.65rem;
+  font-weight:600;
+  color:var(--r);
+  background:var(--rg);
+  border:1px solid rgba(6,182,212,0.15);
+  padding:5px 12px;
+  border-radius:6px;
+  white-space:nowrap;
+  flex-shrink:0;
+  align-self:flex-start;
+}
+
+.tc-body{padding:20px 28px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.tc-body.single{grid-template-columns:1fr}
+
+.code-pane{}
+.code-pane-label{font-family:var(--mono);font-size:0.6rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.lang-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:0.55rem;font-weight:700;letter-spacing:0.06em}
+.lang-badge.python{background:rgba(52,211,153,0.1);color:var(--g)}
+.lang-badge.node{background:rgba(167,139,250,0.1);color:var(--o)}
+
+pre.code-block{
+  background:var(--bg);
+  border:1px solid var(--b);
+  border-radius:8px;
+  padding:14px 16px;
+  font-family:var(--mono);
+  font-size:0.74rem;
+  line-height:1.75;
+  color:var(--t2);
+  overflow-x:auto;
+  white-space:pre;
+}
+pre.code-block .kw{color:var(--r)}
+pre.code-block .fn{color:var(--o)}
+pre.code-block .str{color:var(--g)}
+pre.code-block .num{color:var(--v)}
+pre.code-block .cm{color:var(--t4)}
+pre.code-block .var{color:var(--c)}
+
+/* QUICK START */
+.qs-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px}
+
+/* BADGE STRIP */
+.badge-strip{display:flex;gap:10px;flex-wrap:wrap;margin:32px 0 0}
+.badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:0.65rem;font-weight:600;padding:5px 12px;border-radius:99px}
+.badge.cyan{background:var(--rg);color:var(--r2);border:1px solid rgba(6,182,212,0.15)}
+.badge.green{background:var(--gg);color:var(--g);border:1px solid rgba(52,211,153,0.15)}
+.badge.purple{background:var(--og);color:var(--o);border:1px solid rgba(167,139,250,0.15)}
+
+/* SUMMARY TABLE */
+.api-table{width:100%;border-collapse:collapse;margin-top:8px}
+.api-table th{font-family:var(--mono);font-size:0.62rem;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em;text-align:left;padding:8px 12px;border-bottom:1px solid var(--b)}
+.api-table td{font-family:var(--mono);font-size:0.73rem;color:var(--t2);padding:9px 12px;border-bottom:1px solid var(--b);vertical-align:top}
+.api-table tr:last-child td{border-bottom:none}
+.api-table tr:hover td{background:var(--s2)}
+.api-table .td-name{color:var(--t);font-weight:600}
+.api-table .td-ep{color:var(--r)}
+.api-table .td-meth{color:var(--g);font-size:0.62rem}
+
+/* CTA SECTION */
+.cta-section{
+  text-align:center;
+  padding:72px 32px;
+  border-top:1px solid var(--b);
+  border-bottom:1px solid var(--b);
+  background:radial-gradient(ellipse at center,rgba(6,182,212,0.04),transparent 60%);
+}
+.cta-section h2{font-family:var(--mono);font-size:1.3rem;font-weight:700;margin-bottom:10px;letter-spacing:-0.02em}
+.cta-section p{color:var(--t3);margin-bottom:24px;font-size:0.88rem;max-width:420px;margin-left:auto;margin-right:auto}
+.hero-ctas{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+.cta-primary,.cta-secondary{display:inline-flex;align-items:center;gap:6px;padding:10px 24px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:600;transition:all 0.2s;text-decoration:none}
+.cta-primary{background:var(--r);color:#fff}
+.cta-primary:hover{box-shadow:0 0 20px rgba(6,182,212,0.25);transform:translateY(-1px);opacity:1}
+.cta-secondary{background:transparent;color:var(--t2);border:1px solid var(--b2);font-weight:500}
+.cta-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.18);opacity:1}
+
+/* FOOTER */
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.7rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.78rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-copy{font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:2}
+
+.hidden{display:none !important}
+
+@media(max-width:900px){
+  .tc-body{grid-template-columns:1fr}
+  .qs-grid{grid-template-columns:1fr}
+}
+@media(max-width:768px){
+  nav{padding:0 12px;height:50px}
+  .nav-links a{font-size:0.65rem;padding:4px 6px}
+  .nav-links a:not([data-mobile]){display:none}
+  .live-badge{font-size:0.58rem;padding:2px 6px}
+  .hero{padding:80px 16px 40px}
+  .hero h1{font-size:2rem}
+  .hero .sub{font-size:0.85rem}
+  .install-section{padding:40px 16px 0}
+  .content-wrap{padding:0 16px 48px}
+  .tc-header{flex-direction:column;gap:10px}
+  .tc-endpoint{align-self:flex-start}
+  .tc-body{padding:16px}
+  .footer-grid{grid-template-columns:1fr;gap:24px}
+}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <a href="/" class="logo" style="color:inherit;opacity:1">
+    <span style="color:var(--r);font-family:var(--mono);font-weight:700;letter-spacing:0.08em;font-size:1rem">SLOPSHOP.gg</span><span style="font-size:0.5rem;color:var(--t4);border:1px solid var(--b);padding:1px 6px;border-radius:3px;margin-left:8px;font-family:var(--mono)">alpha</span>
+  </a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/#dream-engine" style="color:var(--g)">Dream Engine</a>
+    <a href="/#multiplayer-memory" style="color:var(--o)" data-mobile>Multiplayer Memory</a>
+    <a href="/docs" data-mobile>Docs</a>
+    <a href="/tools">Tools</a>
+    <a href="/#pricing" data-mobile>Pricing</a>
+    <a href="/security">Security</a>
+    <a href="/about">About</a>
+    <a href="/login" data-mobile style="color:var(--t3);font-size:0.75rem;padding:6px 12px">Log In</a>
+    <a href="/signup" data-mobile style="background:var(--r);color:#fff;padding:6px 16px;border-radius:6px;font-weight:600">Sign Up Free</a>
+    <div class="live-badge"><div class="live-dot"></div><span>live</span></div>
+  </div>
+</div></nav>
+
+<!-- ========== HERO ========== -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-tag">&#x26A1; @slopshop/memory &nbsp;&middot;&nbsp; Python + Node.js</div>
+    <h1><span class="accent">Memory SDK</span></h1>
+    <p class="sub">9 memory techniques. One import. Works everywhere.</p>
+
+    <div class="badge-strip" style="justify-content:center;margin-top:28px">
+      <span class="badge cyan">pip install slopshop-memory</span>
+      <span class="badge purple">npm install @slopshop/memory</span>
+      <span class="badge green">&#x2713; Free memory APIs always 0 credits</span>
+    </div>
+  </div>
+</section>
+
+<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(6,182,212,0.12),transparent);max-width:600px;margin:0 auto"></div>
+
+<!-- ========== INSTALLATION ========== -->
+<div class="install-section">
+  <div class="section-label">Installation</div>
+  <div class="tab-bar" id="installTabBar">
+    <button class="tab-btn active" onclick="switchTab('install','python',this)">Python</button>
+    <button class="tab-btn" onclick="switchTab('install','node',this)">Node.js</button>
+  </div>
+
+  <div id="install-python" class="tab-pane active">
+    <div class="term">
+      <div class="term-header">
+        <div class="term-dots"><div class="term-dot red"></div><div class="term-dot yellow"></div><div class="term-dot green"></div></div>
+        <span class="term-label">bash</span>
+      </div>
+      <div class="term-body">
+        <div><span class="prompt">$</span> <span class="cmd">pip install slopshop-memory</span></div>
+        <div class="out">Successfully installed slopshop-memory-1.0.0</div>
+        <br>
+        <div><span class="prompt">$</span> <span class="cmd">python -c "import slopshop; print(slopshop.__version__)"</span></div>
+        <div class="out">1.0.0</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="install-node" class="tab-pane">
+    <div class="term">
+      <div class="term-header">
+        <div class="term-dots"><div class="term-dot red"></div><div class="term-dot yellow"></div><div class="term-dot green"></div></div>
+        <span class="term-label">bash</span>
+      </div>
+      <div class="term-body">
+        <div><span class="prompt">$</span> <span class="cmd">npm install @slopshop/memory</span></div>
+        <div class="out">added 1 package in 0.8s</div>
+        <br>
+        <div><span class="prompt">$</span> <span class="cmd">node -e "const m=require('@slopshop/memory'); console.log(m.version)"</span></div>
+        <div class="out">1.0.0</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== QUICK START ========== -->
+<div class="content-wrap" style="padding-top:56px">
+
+  <div class="section-head">
+    <h2>Quick Start</h2>
+    <p>Authenticate once. All 9 techniques share the same client instance.</p>
+  </div>
+
+  <div class="qs-grid">
+    <div>
+      <div class="code-pane-label"><span class="lang-badge python">Python</span></div>
+      <pre class="code-block"><span class="kw">from</span> <span class="var">slopshop</span> <span class="kw">import</span> <span class="fn">Memory</span>
+
+<span class="cm"># Initialize with your API key</span>
+memory = <span class="fn">Memory</span>(api_key=<span class="str">"sk-slop-..."</span>)
+
+<span class="cm"># Or read from environment</span>
+<span class="cm"># export SLOPSHOP_API_KEY=sk-slop-...</span>
+memory = <span class="fn">Memory</span>()
+
+<span class="cm"># Store your first memory</span>
+memory.<span class="fn">set</span>(<span class="str">"project_stack"</span>, <span class="str">"React + Next.js"</span>)
+
+<span class="cm"># Retrieve it any time</span>
+stack = memory.<span class="fn">get</span>(<span class="str">"project_stack"</span>)
+<span class="kw">print</span>(stack)  <span class="cm"># React + Next.js</span></pre>
+    </div>
+    <div>
+      <div class="code-pane-label"><span class="lang-badge node">Node.js</span></div>
+      <pre class="code-block"><span class="kw">import</span> { <span class="fn">Memory</span> } <span class="kw">from</span> <span class="str">'@slopshop/memory'</span>
+
+<span class="cm">// Initialize with your API key</span>
+<span class="kw">const</span> memory = <span class="kw">new</span> <span class="fn">Memory</span>({ apiKey: <span class="str">'sk-slop-...'</span> })
+
+<span class="cm">// Or read from environment</span>
+<span class="cm">// SLOPSHOP_API_KEY=sk-slop-...</span>
+<span class="kw">const</span> memory = <span class="kw">new</span> <span class="fn">Memory</span>()
+
+<span class="cm">// Store your first memory</span>
+<span class="kw">await</span> memory.<span class="fn">set</span>(<span class="str">'project_stack'</span>, <span class="str">'React + Next.js'</span>)
+
+<span class="cm">// Retrieve it any time</span>
+<span class="kw">const</span> stack = <span class="kw">await</span> memory.<span class="fn">get</span>(<span class="str">'project_stack'</span>)
+console.<span class="fn">log</span>(stack)  <span class="cm">// React + Next.js</span></pre>
+    </div>
+  </div>
+
+  <div class="section-divider"></div>
+
+  <!-- ========== 9 TECHNIQUES ========== -->
+  <div class="section-head">
+    <h2>The 9 Techniques</h2>
+    <p>Every method maps to a live API endpoint. All calls are authenticated with your API key. Free memory APIs cost 0 credits forever.</p>
+  </div>
+
+  <div class="technique-grid">
+
+    <!-- 1. Persistent Memory -->
+    <div class="technique-card">
+      <div class="tc-header">
+        <div class="tc-meta">
+          <div class="tc-num">Technique 01</div>
+          <div class="tc-name">Persistent Memory</div>
+          <div class="tc-desc">Key-value memory that survives across sessions, model reloads, and server restarts. Free forever — 0 credits per call.</div>
+        </div>
+        <div class="tc-endpoint">POST /v1/memory/set</div>
+      </div>
+      <div class="tc-body">
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge python">Python</span></div>
+          <pre class="code-block"><span class="cm"># Store any value — string, dict, list</span>
+memory.<span class="fn">set</span>(<span class="str">"user_prefs"</span>, {
+    <span class="str">"theme"</span>: <span class="str">"dark"</span>,
+    <span class="str">"lang"</span>: <span class="str">"python"</span>
+})
+
+<span class="cm"># Retrieve by key</span>
+prefs = memory.<span class="fn">get</span>(<span class="str">"user_prefs"</span>)
+<span class="kw">print</span>(prefs[<span class="str">"theme"</span>])  <span class="cm"># dark</span>
+
+<span class="cm"># Namespaced memory</span>
+memory.<span class="fn">set</span>(<span class="str">"agent_state"</span>, data,
+           namespace=<span class="str">"project-x"</span>)</pre>
+        </div>
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge node">Node.js</span></div>
+          <pre class="code-block"><span class="cm">// Store any value — string, object, array</span>
+<span class="kw">await</span> memory.<span class="fn">set</span>(<span class="str">'user_prefs'</span>, {
+  theme: <span class="str">'dark'</span>,
+  lang: <span class="str">'node'</span>
+})
+
+<span class="cm">// Retrieve by key</span>
+<span class="kw">const</span> prefs = <span class="kw">await</span> memory.<span class="fn">get</span>(<span class="str">'user_prefs'</span>)
+console.<span class="fn">log</span>(prefs.theme)  <span class="cm">// dark</span>
+
+<span class="cm">// Namespaced memory</span>
+<span class="kw">await</span> memory.<span class="fn">set</span>(<span class="str">'agent_state'</span>, data,
+  { namespace: <span class="str">'project-x'</span> })</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Dream Engine -->
+    <div class="technique-card">
+      <div class="tc-header">
+        <div class="tc-meta">
+          <div class="tc-num">Technique 02</div>
+          <div class="tc-name">Dream Engine</div>
+          <div class="tc-desc">REM-cycle memory synthesis. Your agent synthesizes, compresses, and evolves its memory on a schedule — waking up smarter every time.</div>
+        </div>
+        <div class="tc-endpoint">POST /v1/memory/dream/start</div>
+      </div>
+      <div class="tc-body">
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge python">Python</span></div>
+          <pre class="code-block"><span class="cm"># Start a dream session</span>
+session = memory.dream.<span class="fn">start</span>(
+    namespace=<span class="str">"project-x"</span>,
+    strategy=<span class="str">"synthesize"</span>
+    <span class="cm"># strategies: synthesize, pattern_extract,</span>
+    <span class="cm"># insight_generate, compress, associate</span>
+)
+<span class="kw">print</span>(session[<span class="str">"dream_id"</span>])
+
+<span class="cm"># Poll for completion</span>
+status = memory.dream.<span class="fn">status</span>(session[<span class="str">"dream_id"</span>])
+<span class="kw">print</span>(status[<span class="str">"phase"</span>])  <span class="cm"># running | done</span></pre>
+        </div>
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge node">Node.js</span></div>
+          <pre class="code-block"><span class="cm">// Start a dream session</span>
+<span class="kw">const</span> session = <span class="kw">await</span> memory.dream.<span class="fn">start</span>(
+  <span class="str">'project-x'</span>,
+  <span class="str">'synthesize'</span>
+  <span class="cm">// strategies: synthesize, pattern_extract,</span>
+  <span class="cm">// insight_generate, compress, associate</span>
+)
+console.<span class="fn">log</span>(session.dream_id)
+
+<span class="cm">// Poll for completion</span>
+<span class="kw">const</span> status = <span class="kw">await</span> memory.dream.<span class="fn">status</span>(
+  session.dream_id
+)
+console.<span class="fn">log</span>(status.phase)  <span class="cm">// running | done</span></pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Multiplayer Memory -->
+    <div class="technique-card">
+      <div class="tc-header">
+        <div class="tc-meta">
+          <div class="tc-num">Technique 03</div>
+          <div class="tc-name">Multiplayer Memory</div>
+          <div class="tc-desc">Shared memory spaces for teams. Every agent on your team reads and writes to the same intelligence space — real-time collective knowledge.</div>
+        </div>
+        <div class="tc-endpoint">POST /v1/memory/share/create</div>
+      </div>
+      <div class="tc-body">
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge python">Python</span></div>
+          <pre class="code-block"><span class="cm"># Create a shared memory space</span>
+space = memory.share.<span class="fn">create</span>(
+    name=<span class="str">"team-brain"</span>
+)
+share_id = space[<span class="str">"share_id"</span>]
+
+<span class="cm"># Invite a collaborator</span>
+memory.collaborator.<span class="fn">invite</span>(
+    share_id=share_id,
+    email=<span class="str">"teammate@company.com"</span>
+)
+
+<span class="cm"># Write to shared space</span>
+memory.share.<span class="fn">write</span>(share_id, <span class="str">"standup_notes"</span>,
+                   <span class="str">"Shipped auth today"</span>)</pre>
+        </div>
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge node">Node.js</span></div>
+          <pre class="code-block"><span class="cm">// Create a shared memory space</span>
+<span class="kw">const</span> space = <span class="kw">await</span> memory.share.<span class="fn">create</span>(
+  <span class="str">'team-brain'</span>
+)
+<span class="kw">const</span> { share_id } = space
+
+<span class="cm">// Invite a collaborator</span>
+<span class="kw">await</span> memory.collaborator.<span class="fn">invite</span>({
+  share_id,
+  email: <span class="str">'teammate@company.com'</span>
+})
+
+<span class="cm">// Write to shared space</span>
+<span class="kw">await</span> memory.share.<span class="fn">write</span>(
+  share_id, <span class="str">'standup_notes'</span>, <span class="str">'Shipped auth today'</span>
+)</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. Snapshot Branching -->
+    <div class="technique-card">
+      <div class="tc-header">
+        <div class="tc-meta">
+          <div class="tc-num">Technique 04</div>
+          <div class="tc-name">Snapshot Branching</div>
+          <div class="tc-desc">Point-in-time memory snapshots. Branch your agent's state before risky operations, then restore to any checkpoint instantly.</div>
+        </div>
+        <div class="tc-endpoint">POST /v1/memory/snapshot</div>
+      </div>
+      <div class="tc-body">
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge python">Python</span></div>
+          <pre class="code-block"><span class="cm"># Take a snapshot before risky work</span>
+snap = memory.<span class="fn">snapshot</span>(namespace=<span class="str">"project-x"</span>)
+snapshot_id = snap[<span class="str">"snapshot_id"</span>]
+
+<span class="cm"># ... do risky operations ...</span>
+memory.<span class="fn">set</span>(<span class="str">"config"</span>, experimental_data)
+
+<span class="cm"># Restore if something went wrong</span>
+memory.<span class="fn">restore</span>(snapshot_id)
+
+<span class="cm"># List all snapshots</span>
+snaps = memory.snapshot.<span class="fn">list</span>(
+    namespace=<span class="str">"project-x"</span>
+)</pre>
+        </div>
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge node">Node.js</span></div>
+          <pre class="code-block"><span class="cm">// Take a snapshot before risky work</span>
+<span class="kw">const</span> snap = <span class="kw">await</span> memory.<span class="fn">snapshot</span>(<span class="str">'project-x'</span>)
+<span class="kw">const</span> { snapshot_id } = snap
+
+<span class="cm">// ... do risky operations ...</span>
+<span class="kw">await</span> memory.<span class="fn">set</span>(<span class="str">'config'</span>, experimentalData)
+
+<span class="cm">// Restore if something went wrong</span>
+<span class="kw">await</span> memory.<span class="fn">restore</span>(snapshot_id)
+
+<span class="cm">// List all snapshots</span>
+<span class="kw">const</span> snaps = <span class="kw">await</span> memory.snapshot.<span class="fn">list</span>(
+  <span class="str">'project-x'</span>
+)</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Bayesian Calibration -->
+    <div class="technique-card">
+      <div class="tc-header">
+        <div class="tc-meta">
+          <div class="tc-num">Technique 05</div>
+          <div class="tc-name">Bayesian Calibration</div>
+          <div class="tc-desc">Probabilistic belief updating. Your agent maintains calibrated confidence scores that update with new evidence — no more stale certainty.</div>
+        </div>
+        <div class="tc-endpoint">POST /v1/memory/bayesian/update</div>
+      </div>
+      <div class="tc-body">
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge python">Python</span></div>
+          <pre class="code-block"><span class="cm"># Initialize a belief with a prior</span>
+memory.bayesian.<span class="fn">update</span>(
+    key=<span class="str">"user_prefers_dark_mode"</span>,
+    prior=<span class="num">0.5</span>,
+    likelihood=<span class="num">0.85</span>
+)
+
+<span class="cm"># Query current belief</span>
+belief = memory.bayesian.<span class="fn">get</span>(
+    <span class="str">"user_prefers_dark_mode"</span>
+)
+<span class="kw">print</span>(belief[<span class="str">"posterior"</span>])  <span class="cm"># 0.739...</span>
+
+<span class="cm"># Update again with new evidence</span>
+memory.bayesian.<span class="fn">update</span>(
+    key=<span class="str">"user_prefers_dark_mode"</span>,
+    likelihood=<span class="num">0.92</span>
+)</pre>
+        </div>
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge node">Node.js</span></div>
+          <pre class="code-block"><span class="cm">// Initialize a belief with a prior</span>
+<span class="kw">await</span> memory.bayesian.<span class="fn">update</span>({
+  key: <span class="str">'user_prefers_dark_mode'</span>,
+  prior: <span class="num">0.5</span>,
+  likelihood: <span class="num">0.85</span>
+})
+
+<span class="cm">// Query current belief</span>
+<span class="kw">const</span> belief = <span class="kw">await</span> memory.bayesian.<span class="fn">get</span>(
+  <span class="str">'user_prefers_dark_mode'</span>
+)
+console.<span class="fn">log</span>(belief.posterior)  <span class="cm">// 0.739...</span>
+
+<span class="cm">// Update with new evidence</span>
+<span class="kw">await</span> memory.bayesian.<span class="fn">update</span>({
+  key: <span class="str">'user_prefers_dark_mode'</span>,
+  likelihood: <span class="num">0.92</span>
+})</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Episodic Chains -->
+    <div class="technique-card">
+      <div class="tc-header">
+        <div class="tc-meta">
+          <div class="tc-num">Technique 06</div>
+          <div class="tc-name">Episodic Chains</div>
+          <div class="tc-desc">Sequential episode memory with automatic chaining. Build a linked timeline of agent actions, decisions, and observations for full replay.</div>
+        </div>
+        <div class="tc-endpoint">POST /v1/memory/episode</div>
+      </div>
+      <div class="tc-body">
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge python">Python</span></div>
+          <pre class="code-block"><span class="cm"># Add an episode to the chain</span>
+ep = memory.episode.<span class="fn">add</span>(
+    content=<span class="str">"Fetched user profile from API"</span>,
+    metadata={<span class="str">"tool"</span>: <span class="str">"http-get"</span>, <span class="str">"ms"</span>: <span class="num">142</span>}
+)
+
+<span class="cm"># Add the next episode (auto-linked)</span>
+memory.episode.<span class="fn">add</span>(
+    content=<span class="str">"Summarized user data with Claude"</span>,
+    prev_id=ep[<span class="str">"episode_id"</span>]
+)
+
+<span class="cm"># Retrieve the full chain</span>
+chain = memory.episode.<span class="fn">chain</span>(ep[<span class="str">"episode_id"</span>])
+<span class="kw">for</span> node <span class="kw">in</span> chain:
+    <span class="kw">print</span>(node[<span class="str">"content"</span>])</pre>
+        </div>
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge node">Node.js</span></div>
+          <pre class="code-block"><span class="cm">// Add an episode to the chain</span>
+<span class="kw">const</span> ep = <span class="kw">await</span> memory.episode.<span class="fn">add</span>({
+  content: <span class="str">'Fetched user profile from API'</span>,
+  metadata: { tool: <span class="str">'http-get'</span>, ms: <span class="num">142</span> }
+})
+
+<span class="cm">// Add the next episode (auto-linked)</span>
+<span class="kw">await</span> memory.episode.<span class="fn">add</span>({
+  content: <span class="str">'Summarized user data with Claude'</span>,
+  prev_id: ep.episode_id
+})
+
+<span class="cm">// Retrieve the full chain</span>
+<span class="kw">const</span> chain = <span class="kw">await</span> memory.episode.<span class="fn">chain</span>(
+  ep.episode_id
+)
+chain.<span class="fn">forEach</span>(node => console.<span class="fn">log</span>(node.content))</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Memory Triggers -->
+    <div class="technique-card">
+      <div class="tc-header">
+        <div class="tc-meta">
+          <div class="tc-num">Technique 07</div>
+          <div class="tc-name">Memory Triggers</div>
+          <div class="tc-desc">Reactive memory automation. Set conditions on memory keys — when the condition is met, the action fires automatically. Zero polling required.</div>
+        </div>
+        <div class="tc-endpoint">POST /v1/memory/trigger</div>
+      </div>
+      <div class="tc-body">
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge python">Python</span></div>
+          <pre class="code-block"><span class="cm"># Fire an action when a key is written</span>
+memory.trigger.<span class="fn">create</span>(
+    condition={
+        <span class="str">"key"</span>: <span class="str">"task_status"</span>,
+        <span class="str">"equals"</span>: <span class="str">"complete"</span>
+    },
+    action={
+        <span class="str">"type"</span>: <span class="str">"webhook"</span>,
+        <span class="str">"url"</span>: <span class="str">"https://myapp.com/done"</span>
+    }
+)
+
+<span class="cm"># List active triggers</span>
+triggers = memory.trigger.<span class="fn">list</span>()
+
+<span class="cm"># Remove a trigger</span>
+memory.trigger.<span class="fn">delete</span>(trigger_id)</pre>
+        </div>
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge node">Node.js</span></div>
+          <pre class="code-block"><span class="cm">// Fire an action when a key is written</span>
+<span class="kw">await</span> memory.trigger.<span class="fn">create</span>({
+  condition: {
+    key: <span class="str">'task_status'</span>,
+    equals: <span class="str">'complete'</span>
+  },
+  action: {
+    type: <span class="str">'webhook'</span>,
+    url: <span class="str">'https://myapp.com/done'</span>
+  }
+})
+
+<span class="cm">// List active triggers</span>
+<span class="kw">const</span> triggers = <span class="kw">await</span> memory.trigger.<span class="fn">list</span>()
+
+<span class="cm">// Remove a trigger</span>
+<span class="kw">await</span> memory.trigger.<span class="fn">delete</span>(triggerId)</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. Procedural Memory -->
+    <div class="technique-card">
+      <div class="tc-header">
+        <div class="tc-meta">
+          <div class="tc-num">Technique 08</div>
+          <div class="tc-name">Procedural Memory</div>
+          <div class="tc-desc">Teach your agent reusable tool chains by name. Store, recall, and execute multi-step procedures like a scripted skill — instantly replayable.</div>
+        </div>
+        <div class="tc-endpoint">POST /v1/memory/procedure/learn</div>
+      </div>
+      <div class="tc-body">
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge python">Python</span></div>
+          <pre class="code-block"><span class="cm"># Teach a named procedure</span>
+memory.procedure.<span class="fn">learn</span>(
+    name=<span class="str">"daily_standup"</span>,
+    tool_chain=[
+        {<span class="str">"tool"</span>: <span class="str">"memory-search"</span>,
+         <span class="str">"query"</span>: <span class="str">"yesterday's progress"</span>},
+        {<span class="str">"tool"</span>: <span class="str">"llm-summarize"</span>},
+        {<span class="str">"tool"</span>: <span class="str">"memory-set"</span>,
+         <span class="str">"key"</span>: <span class="str">"standup_summary"</span>}
+    ]
+)
+
+<span class="cm"># Execute by name later</span>
+result = memory.procedure.<span class="fn">run</span>(<span class="str">"daily_standup"</span>)</pre>
+        </div>
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge node">Node.js</span></div>
+          <pre class="code-block"><span class="cm">// Teach a named procedure</span>
+<span class="kw">await</span> memory.procedure.<span class="fn">learn</span>({
+  name: <span class="str">'daily_standup'</span>,
+  tool_chain: [
+    { tool: <span class="str">'memory-search'</span>,
+      query: <span class="str">"yesterday's progress"</span> },
+    { tool: <span class="str">'llm-summarize'</span> },
+    { tool: <span class="str">'memory-set'</span>,
+      key: <span class="str">'standup_summary'</span> }
+  ]
+})
+
+<span class="cm">// Execute by name later</span>
+<span class="kw">const</span> result = <span class="kw">await</span> memory.procedure.<span class="fn">run</span>(
+  <span class="str">'daily_standup'</span>
+)</pre>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. Swarm Orchestration -->
+    <div class="technique-card">
+      <div class="tc-header">
+        <div class="tc-meta">
+          <div class="tc-num">Technique 09</div>
+          <div class="tc-name">Swarm Orchestration</div>
+          <div class="tc-desc">Coordinate multiple agents in parallel on a single task. Each agent in the swarm contributes to a shared memory space — collective intelligence at scale.</div>
+        </div>
+        <div class="tc-endpoint">POST /v1/swarm/orchestrate</div>
+      </div>
+      <div class="tc-body">
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge python">Python</span></div>
+          <pre class="code-block"><span class="cm"># Orchestrate a swarm of agents</span>
+swarm = memory.swarm.<span class="fn">orchestrate</span>(
+    task=<span class="str">"Analyze Q1 user feedback and"</span>
+         <span class="str">" extract top 5 pain points"</span>,
+    agents=[
+        {<span class="str">"id"</span>: <span class="str">"researcher"</span>,  <span class="str">"model"</span>: <span class="str">"claude"</span>},
+        {<span class="str">"id"</span>: <span class="str">"analyst"</span>,    <span class="str">"model"</span>: <span class="str">"grok"</span>},
+        {<span class="str">"id"</span>: <span class="str">"synthesizer"</span>, <span class="str">"model"</span>: <span class="str">"claude"</span>}
+    ]
+)
+<span class="kw">print</span>(swarm[<span class="str">"result"</span>])</pre>
+        </div>
+        <div class="code-pane">
+          <div class="code-pane-label"><span class="lang-badge node">Node.js</span></div>
+          <pre class="code-block"><span class="cm">// Orchestrate a swarm of agents</span>
+<span class="kw">const</span> swarm = <span class="kw">await</span> memory.swarm.<span class="fn">orchestrate</span>({
+  task: <span class="str">'Analyze Q1 user feedback and'</span>
+      + <span class="str">' extract top 5 pain points'</span>,
+  agents: [
+    { id: <span class="str">'researcher'</span>,  model: <span class="str">'claude'</span> },
+    { id: <span class="str">'analyst'</span>,    model: <span class="str">'grok'</span>   },
+    { id: <span class="str">'synthesizer'</span>, model: <span class="str">'claude'</span> }
+  ]
+})
+console.<span class="fn">log</span>(swarm.result)</pre>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /technique-grid -->
+
+  <div class="section-divider"></div>
+
+  <!-- ========== API REFERENCE SUMMARY ========== -->
+  <div class="section-head">
+    <h2>API Reference Summary</h2>
+    <p>All SDK methods are thin wrappers over these REST endpoints. You can call them directly with any HTTP client using your API key as a Bearer token.</p>
+  </div>
+
+  <div class="term" style="margin-bottom:8px">
+    <div class="term-header">
+      <div class="term-dots"><div class="term-dot red"></div><div class="term-dot yellow"></div><div class="term-dot green"></div></div>
+      <span class="term-label">Base URL: https://slopshop.gg</span>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="api-table">
+        <thead>
+          <tr>
+            <th>Technique</th>
+            <th>SDK Method</th>
+            <th>Endpoint</th>
+            <th>Method</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="td-name">Persistent Memory</td>
+            <td><code style="font-family:var(--mono);font-size:0.7rem;color:var(--o)">memory.set() / memory.get()</code></td>
+            <td class="td-ep">/v1/memory/set &nbsp;/v1/memory/get</td>
+            <td class="td-meth">POST</td>
+          </tr>
+          <tr>
+            <td class="td-name">Dream Engine</td>
+            <td><code style="font-family:var(--mono);font-size:0.7rem;color:var(--o)">memory.dream.start()</code></td>
+            <td class="td-ep">/v1/memory/dream/start</td>
+            <td class="td-meth">POST</td>
+          </tr>
+          <tr>
+            <td class="td-name">Multiplayer Memory</td>
+            <td><code style="font-family:var(--mono);font-size:0.7rem;color:var(--o)">memory.share.create()</code></td>
+            <td class="td-ep">/v1/memory/share/create</td>
+            <td class="td-meth">POST</td>
+          </tr>
+          <tr>
+            <td class="td-name">Snapshot Branching</td>
+            <td><code style="font-family:var(--mono);font-size:0.7rem;color:var(--o)">memory.snapshot() / memory.restore()</code></td>
+            <td class="td-ep">/v1/memory/snapshot</td>
+            <td class="td-meth">POST</td>
+          </tr>
+          <tr>
+            <td class="td-name">Bayesian Calibration</td>
+            <td><code style="font-family:var(--mono);font-size:0.7rem;color:var(--o)">memory.bayesian.update()</code></td>
+            <td class="td-ep">/v1/memory/bayesian/update</td>
+            <td class="td-meth">POST</td>
+          </tr>
+          <tr>
+            <td class="td-name">Episodic Chains</td>
+            <td><code style="font-family:var(--mono);font-size:0.7rem;color:var(--o)">memory.episode.add() / .chain()</code></td>
+            <td class="td-ep">/v1/memory/episode</td>
+            <td class="td-meth">POST</td>
+          </tr>
+          <tr>
+            <td class="td-name">Memory Triggers</td>
+            <td><code style="font-family:var(--mono);font-size:0.7rem;color:var(--o)">memory.trigger.create()</code></td>
+            <td class="td-ep">/v1/memory/trigger</td>
+            <td class="td-meth">POST</td>
+          </tr>
+          <tr>
+            <td class="td-name">Procedural Memory</td>
+            <td><code style="font-family:var(--mono);font-size:0.7rem;color:var(--o)">memory.procedure.learn()</code></td>
+            <td class="td-ep">/v1/memory/procedure/learn</td>
+            <td class="td-meth">POST</td>
+          </tr>
+          <tr>
+            <td class="td-name">Swarm Orchestration</td>
+            <td><code style="font-family:var(--mono);font-size:0.7rem;color:var(--o)">memory.swarm.orchestrate()</code></td>
+            <td class="td-ep">/v1/swarm/orchestrate</td>
+            <td class="td-meth">POST</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div style="margin-top:10px;font-family:var(--mono);font-size:0.68rem;color:var(--t4)">Auth: <span style="color:var(--t3)">Authorization: Bearer sk-slop-...</span> &nbsp;&middot;&nbsp; Content-Type: application/json &nbsp;&middot;&nbsp; <a href="/v1/openapi.json" style="color:var(--r)">OpenAPI spec &rarr;</a></div>
+
+</div><!-- /content-wrap -->
+
+<!-- ========== CTA ========== -->
+<div class="cta-section">
+  <h2>Start building in 60 seconds.</h2>
+  <p>500 free credits on signup. Core memory APIs free forever. No card required.</p>
+  <div class="hero-ctas">
+    <a href="/signup" class="cta-primary">Get Your API Key — Free</a>
+    <a href="/docs" class="cta-secondary">Read Full Docs &#x2197;</a>
+    <a href="/" class="cta-secondary">Back to Home</a>
+  </div>
+  <div style="margin-top:20px;font-family:var(--mono);font-size:0.68rem;color:var(--t4)">
+    MCP + REST API + CLI &middot; Claude &middot; Grok &middot; DeepSeek &middot; GPT-4 &middot; SQLite &middot; Self-hostable
+  </div>
+</div>
+
+<!-- ========== FOOTER ========== -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="22" height="22" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#06b6d4"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/tools">Tools</a>
+        <a href="/templates">Templates</a>
+        <a href="/playbooks">Playbooks</a>
+        <a href="/gallery">Gallery</a>
+        <a href="/#pricing">Pricing</a>
+        <a href="/savings">Savings</a>
+      </div>
+      <div class="footer-col">
+        <h4>Integrate</h4>
+        <a href="/integrate-claude">Claude</a>
+        <a href="/integrate-openai">OpenAI</a>
+        <a href="/integrate-grok">Grok</a>
+        <a href="/integrate-langchain">LangChain</a>
+        <a href="/v1/tasks">Task API</a>
+        <a href="/v1/benchmarks">Benchmarks</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/docs">Docs</a>
+        <a href="/getting-started">Getting Started</a>
+        <a href="/security">Security</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/v1/openapi.json">OpenAPI</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="/status">Status</a>
+        <a href="/legal">Legal</a>
+        <a href="https://x.com/slopshopgg">@slopshopgg</a>
+      </div>
+    </div>
+    <div style="text-align:center;margin:20px auto 16px;max-width:360px;background:var(--bg);border:1px solid var(--b);border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:0.78rem;cursor:pointer" onclick="navigator.clipboard&&navigator.clipboard.writeText('pip install slopshop-memory')">
+      <span style="color:var(--green)">$</span> <span style="color:var(--t);font-weight:600">pip install slopshop-memory</span> <span style="color:var(--t4);font-size:0.55rem;margin-left:6px">copy</span>
+    </div>
+    <div class="footer-copy">Living Memory Layer for AI Agents &middot; Dream Engine + Multiplayer Memory &middot; 1,400+ APIs &middot; Multi-model &middot; SQLite &middot; Self-hostable &middot; slopshop.gg<br><span style="color:var(--t4);font-size:0.58rem">SLOP: Stateless Lightweight Operational Primitives &middot; Agents that remember, dream, and share intelligence.</span></div>
+  </div>
+</footer>
+
+<script>
+function switchTab(group, lang, btn) {
+  // Deactivate all tabs and panes in this group
+  document.querySelectorAll('[id^="' + group + '-"]').forEach(p => p.classList.remove('active'));
+  btn.closest('.tab-bar').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  // Activate selected
+  const pane = document.getElementById(group + '-' + lang);
+  if (pane) pane.classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+
+</body>
+</html>

@@ -154,6 +154,44 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(
 .ctable tbody td:last-child{text-align:right}
 .credit-badge{display:inline-flex;align-items:center;gap:4px;background:var(--og);color:var(--o);padding:2px 8px;border-radius:4px;font-weight:700;font-size:0.72rem}
 
+/* CALCULATOR */
+.calc-widget{background:var(--s1);border:1px solid var(--b);border-radius:14px;padding:32px 36px;margin-bottom:0}
+.calc-widget .calc-title{font-family:var(--mono);font-size:1.1rem;font-weight:800;margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.calc-widget .calc-subtitle{font-size:0.82rem;color:var(--t3);margin-bottom:28px}
+.calc-sliders{display:flex;flex-direction:column;gap:22px;margin-bottom:28px}
+.calc-slider-row{display:flex;flex-direction:column;gap:8px}
+.calc-slider-header{display:flex;justify-content:space-between;align-items:baseline}
+.calc-slider-label{font-family:var(--mono);font-size:0.78rem;font-weight:600;color:var(--t2)}
+.calc-slider-val{font-family:var(--mono);font-size:0.88rem;font-weight:800;color:var(--g)}
+.calc-slider-row input[type=range]{width:100%;height:4px;-webkit-appearance:none;appearance:none;background:var(--s3);border-radius:99px;outline:none;accent-color:var(--g);cursor:pointer}
+.calc-slider-row input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:18px;height:18px;border-radius:50%;background:var(--g);border:3px solid var(--bg);box-shadow:0 0 0 1px var(--g);cursor:pointer;transition:box-shadow 0.15s}
+.calc-slider-row input[type=range]::-webkit-slider-thumb:hover{box-shadow:0 0 0 4px rgba(0,204,102,0.2)}
+.calc-slider-row input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:var(--g);border:3px solid var(--bg);box-shadow:0 0 0 1px var(--g);cursor:pointer}
+.calc-slider-hint{font-size:0.68rem;color:var(--t4);font-family:var(--mono)}
+.calc-results{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px}
+.calc-result-card{background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:16px 18px}
+.calc-result-card .cr-label{font-family:var(--mono);font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--t4);margin-bottom:6px}
+.calc-result-card .cr-val{font-family:var(--mono);font-size:1.3rem;font-weight:800;line-height:1.1;color:var(--t)}
+.calc-result-card .cr-sub{font-size:0.68rem;color:var(--t3);margin-top:4px}
+.calc-result-card.highlight{border-color:rgba(0,204,102,0.3);background:rgba(0,204,102,0.06)}
+.calc-result-card.highlight .cr-val{color:var(--g)}
+.calc-breakdown{background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:16px 18px;margin-bottom:16px}
+.calc-breakdown .cb-title{font-family:var(--mono);font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--t4);margin-bottom:10px}
+.calc-breakdown .cb-lines{display:flex;flex-direction:column;gap:6px}
+.calc-breakdown .cb-line{display:flex;justify-content:space-between;font-family:var(--mono);font-size:0.75rem;color:var(--t3)}
+.calc-breakdown .cb-line .cb-line-num{color:var(--t2);font-weight:600}
+.calc-breakdown .cb-line.total{border-top:1px solid var(--b2);padding-top:8px;margin-top:2px;color:var(--t);font-weight:700}
+.calc-breakdown .cb-line.total .cb-line-num{color:var(--g)}
+.calc-note{font-family:var(--mono);font-size:0.7rem;color:var(--t4);display:flex;align-items:center;gap:6px}
+.calc-note::before{content:'';width:6px;height:6px;background:var(--g);border-radius:50%;flex-shrink:0}
+@media(max-width:768px){
+  .calc-widget{padding:20px 16px}
+  .calc-results{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .calc-results{grid-template-columns:1fr}
+}
+
 /* FAQ */
 .faq{display:flex;flex-direction:column;gap:8px;margin-bottom:32px}
 .faq-item{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden}
@@ -405,6 +443,72 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 <hr class="divider">
 
 <div class="sec">
+  <div class="sec-label">Calculator</div>
+  <h2>Estimate your monthly cost</h2>
+  <p class="desc">Drag the sliders to model your usage. Credits are calculated in real time.</p>
+  <div class="calc-widget">
+    <div class="calc-sliders">
+      <div class="calc-slider-row">
+        <div class="calc-slider-header">
+          <span class="calc-slider-label">API calls per day</span>
+          <span class="calc-slider-val" id="val-api">500</span>
+        </div>
+        <input type="range" id="sl-api" min="10" max="10000" step="10" value="500" oninput="calcUpdate()">
+        <span class="calc-slider-hint">Each call costs ~1 credit on average</span>
+      </div>
+      <div class="calc-slider-row">
+        <div class="calc-slider-header">
+          <span class="calc-slider-label">Dream Engine runs per week</span>
+          <span class="calc-slider-val" id="val-dream">5</span>
+        </div>
+        <input type="range" id="sl-dream" min="0" max="50" step="1" value="5" oninput="calcUpdate()">
+        <span class="calc-slider-hint">Each run = 25 credits (synthesize strategy &amp; compress memory)</span>
+      </div>
+      <div class="calc-slider-row">
+        <div class="calc-slider-header">
+          <span class="calc-slider-label">Team members (Multiplayer Memory)</span>
+          <span class="calc-slider-val" id="val-team">3</span>
+        </div>
+        <input type="range" id="sl-team" min="1" max="20" step="1" value="3" oninput="calcUpdate()">
+        <span class="calc-slider-hint">Each member = 5 credits/month (collaboration overhead)</span>
+      </div>
+    </div>
+
+    <div class="calc-results">
+      <div class="calc-result-card highlight">
+        <div class="cr-label">Credits / month</div>
+        <div class="cr-val" id="out-credits">15,515</div>
+        <div class="cr-sub">estimated usage</div>
+      </div>
+      <div class="calc-result-card" id="out-plan-card">
+        <div class="cr-label">Recommended plan</div>
+        <div class="cr-val" id="out-plan">Pro</div>
+        <div class="cr-sub" id="out-plan-sub">10K credit pack</div>
+      </div>
+      <div class="calc-result-card" id="out-cost-card">
+        <div class="cr-label">Estimated cost</div>
+        <div class="cr-val" id="out-cost">$49/mo</div>
+        <div class="cr-sub" id="out-cost-sub">billed per pack</div>
+      </div>
+    </div>
+
+    <div class="calc-breakdown">
+      <div class="cb-title">Breakdown</div>
+      <div class="cb-lines">
+        <div class="cb-line"><span id="bd-api-label">500 API calls/day &times; 30 days &times; 1 cr</span><span class="cb-line-num" id="bd-api-val">15,000 cr</span></div>
+        <div class="cb-line"><span id="bd-dream-label">5 Dream Engine runs/week &times; 4 weeks &times; 25 cr</span><span class="cb-line-num" id="bd-dream-val">500 cr</span></div>
+        <div class="cb-line"><span id="bd-team-label">3 team members &times; 5 cr/month</span><span class="cb-line-num" id="bd-team-val">15 cr</span></div>
+        <div class="cb-line total"><span>Total</span><span class="cb-line-num" id="bd-total">15,515 cr</span></div>
+      </div>
+    </div>
+
+    <p class="calc-note">Credits never expire. Unused credits roll over.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<div class="sec">
   <div class="sec-label">FAQ</div>
   <h2>Common questions</h2>
   <p class="desc">Everything you need to know about how credits and billing work.</p>
@@ -472,6 +576,65 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 </footer>
 
 <script>
+function calcUpdate(){
+  var api=parseInt(document.getElementById('sl-api').value,10);
+  var dream=parseInt(document.getElementById('sl-dream').value,10);
+  var team=parseInt(document.getElementById('sl-team').value,10);
+
+  // Live label updates
+  document.getElementById('val-api').textContent=api.toLocaleString();
+  document.getElementById('val-dream').textContent=dream;
+  document.getElementById('val-team').textContent=team;
+
+  // Component credits
+  var apiCr=api*30;
+  var dreamCr=dream*4*25;
+  var teamCr=team*5;
+  var total=apiCr+dreamCr+teamCr;
+
+  // Breakdown
+  document.getElementById('bd-api-label').textContent=api.toLocaleString()+' API calls/day \u00d7 30 days \u00d7 1 cr';
+  document.getElementById('bd-dream-label').textContent=dream+' Dream Engine run'+(dream!==1?'s':'')+'/week \u00d7 4 weeks \u00d7 25 cr';
+  document.getElementById('bd-team-label').textContent=team+' team member'+(team!==1?'s':'')+' \u00d7 5 cr/month';
+  document.getElementById('bd-api-val').textContent=apiCr.toLocaleString()+' cr';
+  document.getElementById('bd-dream-val').textContent=dreamCr.toLocaleString()+' cr';
+  document.getElementById('bd-team-val').textContent=teamCr.toLocaleString()+' cr';
+  document.getElementById('bd-total').textContent=total.toLocaleString()+' cr';
+
+  // Output: credits
+  document.getElementById('out-credits').textContent=total.toLocaleString();
+
+  // Output: plan + cost
+  var planCard=document.getElementById('out-plan-card');
+  var costCard=document.getElementById('out-cost-card');
+  var planEl=document.getElementById('out-plan');
+  var planSub=document.getElementById('out-plan-sub');
+  var costEl=document.getElementById('out-cost');
+  var costSub=document.getElementById('out-cost-sub');
+
+  planCard.style.borderColor='';planCard.style.background='';planEl.style.color='';
+  costCard.style.borderColor='';costCard.style.background='';costEl.style.color='';
+
+  if(total<=1000){
+    planEl.textContent='Free';planSub.textContent='500 credits on signup';
+    costEl.textContent='$0';costSub.textContent='no credit card needed';
+    planEl.style.color='var(--g)';planCard.style.borderColor='rgba(0,204,102,0.3)';planCard.style.background='rgba(0,204,102,0.06)';
+    costEl.style.color='var(--g)';costCard.style.borderColor='rgba(0,204,102,0.3)';costCard.style.background='rgba(0,204,102,0.06)';
+  }else if(total<=10000){
+    planEl.textContent='Pro';planSub.textContent='10K credit pack';
+    costEl.textContent='$49/mo';costSub.textContent='billed per pack';
+    planEl.style.color='var(--o)';planCard.style.borderColor='rgba(255,136,0,0.3)';planCard.style.background='rgba(255,136,0,0.06)';
+    costEl.style.color='var(--o)';costCard.style.borderColor='rgba(255,136,0,0.3)';costCard.style.background='rgba(255,136,0,0.06)';
+  }else{
+    planEl.textContent='Enterprise';planSub.textContent='custom volume pricing';
+    costEl.textContent='Custom';costSub.textContent='contact us for a quote';
+    planEl.style.color='var(--r)';planCard.style.borderColor='rgba(255,51,51,0.3)';planCard.style.background='rgba(255,51,51,0.06)';
+    costEl.style.color='var(--r)';costCard.style.borderColor='rgba(255,51,51,0.3)';costCard.style.background='rgba(255,51,51,0.06)';
+  }
+}
+// Init on load
+calcUpdate();
+
 function toggleFaq(el){
   const item=el.closest('.faq-item');
   const wasOpen=item.classList.contains('open');

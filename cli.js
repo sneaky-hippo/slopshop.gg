@@ -7369,6 +7369,21 @@ async function main() {
     case 'voice':   await cmdVoice(args);  break;
     case 'simulate': await cmdSimulate(args); break;
     case 'snapshot': await cmdSnapshot(args); break;
+    case 'branch':   await cmdBranch(args);   break;
+    case 'branches': await cmdBranch(args);   break;
+    case 'swarm':    await cmdSwarm(args);    break;
+    case 'swarms':   await cmdSwarm(args);    break;
+    case 'episode':  await cmdEpisode(args);  break;
+    case 'episodes': await cmdEpisode(args);  break;
+    case 'trigger':  await cmdTrigger(args);  break;
+    case 'triggers': await cmdTrigger(args);  break;
+    case 'procedure': await cmdProcedure(args); break;
+    case 'procedures': await cmdProcedure(args); break;
+    case 'evolve':   await cmdEvolve(args);   break;
+    case 'forecast': await cmdForecast(args); break;
+    case 'reflect':  await cmdReflect(args);  break;
+    case 'validate': await cmdValidate(args); break;
+    case 'merge':    await cmdMerge(args);    break;
     case 'guardrails': await cmdGuardrails(args); break;
     case 'template': await cmdTemplate(args); break;
     case 'marketplace': await cmdMarketplace(args); break;
@@ -7863,6 +7878,498 @@ async function cmdNatural(cmd, args) {
       console.log(`  Or:  ${cyan('slop run "' + fullInput + '"')}\n`);
     }
   }
+}
+
+// ============================================================
+// STRAT10: SNAPSHOT BRANCHING
+// ============================================================
+
+async function cmdBranch(args) {
+  requireKey();
+  const sub = args[0] || 'list';
+
+  if (sub === 'list' || sub === 'ls') {
+    try {
+      const res = await request('GET', '/v1/memory/branches');
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      const branches = d.branches || [];
+      console.log(`\n  ${bold('Memory Branches')} ${dim('— versioned snapshots of your namespaces')}\n`);
+      if (!branches.length) {
+        console.log(`  ${dim('No snapshots yet.')}`);
+        console.log(`  Create one: ${cyan('slop branch create [namespace]')}\n`);
+        return;
+      }
+      for (const b of branches) {
+        const ts = b.created_at ? new Date(b.created_at).toLocaleString() : '—';
+        console.log(`  ${green(b.id.slice(0, 16))}  ${bold(b.label || 'unlabeled')}  ${dim(b.key_count + ' keys')}  ${dim(ts)}`);
+        if (b.parent_id) console.log(`    ${dim('parent:')} ${b.parent_id.slice(0, 16)}`);
+      }
+      console.log('');
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  if (sub === 'create' || sub === 'snap' || sub === 'save') {
+    const namespace = args[1] || 'default';
+    const label = args[2] || args.find(a => a.startsWith('--label='))?.replace('--label=', '');
+    try {
+      const res = await request('POST', '/v1/memory/branch', { namespace, label });
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${green('✓')} Snapshot created`);
+      console.log(`  ${dim('ID:')}     ${bold(d.snapshot_id)}`);
+      console.log(`  ${dim('Label:')}  ${d.label}`);
+      console.log(`  ${dim('Keys:')}   ${d.key_count}`);
+      console.log(`  ${dim('Merkle:')} ${d.merkle_root?.slice(0, 16)}...`);
+      console.log(`\n  Restore with: ${cyan('slop branch restore ' + d.snapshot_id)}\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  if (sub === 'restore') {
+    const id = args[1];
+    if (!id) { console.log(`  Usage: ${cyan('slop branch restore <snapshot_id>')}\n`); return; }
+    try {
+      const res = await request('POST', '/v1/memory/restore/' + id, {});
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${green('✓')} Namespace restored from snapshot ${id.slice(0, 16)}`);
+      console.log(`  ${dim('Keys restored:')} ${d.keys_restored}`);
+      console.log(`  ${dim('Merkle root:')}   ${d.merkle_root?.slice(0, 16)}...\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  if (sub === 'compare' || sub === 'diff') {
+    const src = args[1], tgt = args[2];
+    if (!src || !tgt) { console.log(`  Usage: ${cyan('slop branch compare <source_id> <target_id>')}\n`); return; }
+    try {
+      const res = await request('POST', '/v1/memory/branch/compare', { source_id: src, target_id: tgt });
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      const diff = d.diff || {};
+      console.log(`\n  ${bold('Branch diff')} ${dim(src.slice(0, 8) + ' vs ' + tgt.slice(0, 8))}\n`);
+      console.log(`  ${green('+')} Added:    ${diff.added?.length || 0} keys`);
+      console.log(`  ${red('-')} Removed:  ${diff.removed?.length || 0} keys`);
+      console.log(`  ${cyan('~')} Modified: ${diff.modified?.length || 0} keys`);
+      console.log(`  ${dim('=')} Same:     ${diff.unchanged_count || 0} keys`);
+      console.log(`\n  ${d.same ? green('Identical Merkle roots') : red('Merkle roots differ')}\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  console.log(`\n  ${bold('slop branch')} — snapshot branching for memory namespaces\n`);
+  console.log(`  ${cyan('slop branch list')}                     List all branches`);
+  console.log(`  ${cyan('slop branch create [namespace]')}       Snapshot a namespace`);
+  console.log(`  ${cyan('slop branch restore <id>')}             Restore from snapshot`);
+  console.log(`  ${cyan('slop branch compare <src> <tgt>')}      Diff two snapshots\n`);
+}
+
+// ============================================================
+// STRAT10: MERGE
+// ============================================================
+
+async function cmdMerge(args) {
+  requireKey();
+  const sub = args[0];
+
+  if (!sub || sub === 'help') {
+    console.log(`\n  ${bold('slop merge')} — merge memory snapshots\n`);
+    console.log(`  ${cyan('slop merge <src_id> <tgt_id>')}            Auto-merge (recency wins)`);
+    console.log(`  ${cyan('slop merge <src> <tgt> --policy llm-smart')} LLM-resolved conflicts`);
+    console.log(`  ${cyan('slop merge <src> <tgt> --policy human')}    Human-in-loop conflicts`);
+    console.log(`  ${cyan('slop merge conflicts <merge_id>')}          View unresolved conflicts\n`);
+    return;
+  }
+
+  if (sub === 'conflicts') {
+    const id = args[1];
+    if (!id) { console.log(`  Usage: ${cyan('slop merge conflicts <merge_id>')}\n`); return; }
+    try {
+      const res = await request('GET', '/v1/memory/conflicts/' + id);
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${bold('Merge conflicts')} ${dim(id.slice(0, 16))}\n`);
+      console.log(`  Status: ${d.status}  Total: ${d.total_conflicts}  Resolved: ${d.resolved_count}  Pending: ${d.pending_count}\n`);
+      for (const c of (d.pending_conflicts || []).slice(0, 10)) {
+        console.log(`  ${cyan(c.key)}`);
+        console.log(`    ${dim('source:')} ${String(c.source_value).slice(0, 80)}`);
+        console.log(`    ${dim('target:')} ${String(c.target_value).slice(0, 80)}`);
+      }
+      console.log('');
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  // slop merge <src_id> <tgt_id> [--policy auto|llm-smart|human-in-loop|agent-debate]
+  const srcId = sub;
+  const tgtId = args[1];
+  if (!tgtId || tgtId.startsWith('--')) { console.log(`  Usage: ${cyan('slop merge <source_id> <target_id> [--policy auto]')}\n`); return; }
+  const policyArg = args.find(a => a.startsWith('--policy=') || a.startsWith('--policy'));
+  let policy = 'auto';
+  if (policyArg) {
+    if (policyArg.includes('=')) policy = policyArg.split('=')[1];
+    else { const idx = args.indexOf(policyArg); policy = args[idx + 1] || 'auto'; }
+    if (policy === 'human') policy = 'human-in-loop';
+    if (policy === 'llm') policy = 'llm-smart';
+  }
+  try {
+    const res = await request('POST', '/v1/memory/merge', { source_id: srcId, target_id: tgtId, policy });
+    const d = res.data || res;
+    if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+    console.log(`\n  ${green('✓')} Merge ${d.status === 'completed' ? 'complete' : 'initiated'}`);
+    console.log(`  ${dim('Merge ID:')}  ${d.merge_id}`);
+    console.log(`  ${dim('Status:')}    ${d.status}`);
+    console.log(`  ${dim('Policy:')}    ${d.policy}`);
+    console.log(`  ${dim('Conflicts:')} ${d.conflicts_count}`);
+    if (d.conflicts_count > 0) console.log(`\n  Resolve: ${cyan('slop merge conflicts ' + d.merge_id)}`);
+    console.log('');
+  } catch (e) { handleError(e); }
+}
+
+// ============================================================
+// STRAT10: SWARM ORCHESTRATION
+// ============================================================
+
+async function cmdSwarm(args) {
+  requireKey();
+  const sub = args[0] || 'list';
+
+  if (sub === 'list' || sub === 'ls') {
+    try {
+      const res = await request('GET', '/v1/swarms');
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      const swarms = d.swarms || [];
+      console.log(`\n  ${bold('Swarms')} ${dim('— persistent agent orchestration configs')}\n`);
+      if (!swarms.length) {
+        console.log(`  ${dim('No swarms yet.')}`);
+        console.log(`  Create one: ${cyan('slop swarm create "My Research Swarm"')}\n`);
+        return;
+      }
+      for (const s of swarms) {
+        const ts = s.created_at ? new Date(s.created_at).toLocaleString() : '—';
+        console.log(`  ${green(s.id.slice(0, 16))}  ${bold(s.name)}  ${dim(s.agent_count + ' agents')}  ${dim(s.status)}  ${dim(ts)}`);
+      }
+      console.log('');
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  if (sub === 'create') {
+    const name = args.slice(1).filter(a => !a.startsWith('--')).join(' ').replace(/^["']|["']$/g, '').trim();
+    if (!name) { console.log(`  Usage: ${cyan('slop swarm create "Swarm Name"')}\n`); return; }
+    try {
+      const res = await request('POST', '/v1/swarm/create', { name });
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${green('✓')} Swarm created: ${bold(d.name)}`);
+      console.log(`  ${dim('ID:')}     ${d.swarm_id}`);
+      console.log(`\n  Run it: ${cyan('slop swarm run ' + d.swarm_id + ' "your task"')}\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  if (sub === 'run' || sub === 'orchestrate') {
+    const taskParts = [];
+    let namespace = 'default', model = undefined, swarmId = undefined;
+    for (let i = 1; i < args.length; i++) {
+      if (args[i].startsWith('--ns=')) namespace = args[i].slice(5);
+      else if (args[i].startsWith('--model=')) model = args[i].slice(8);
+      else if (args[i].startsWith('--swarm=')) swarmId = args[i].slice(8);
+      else if (!args[i].startsWith('--')) taskParts.push(args[i]);
+    }
+    const task = taskParts.join(' ').replace(/^["']|["']$/g, '').trim();
+    if (!task) { console.log(`  Usage: ${cyan('slop swarm run "your task description"')}\n`); return; }
+    const body = { task, namespace };
+    if (model) body.model = model;
+    try {
+      console.log(`\n  ${dim('Orchestrating agents...')}`);
+      const res = await request('POST', '/v1/swarm/orchestrate', body);
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${green('✓')} Orchestration complete`);
+      console.log(`  ${dim('ID:')}          ${d.orchestration_id}`);
+      console.log(`  ${dim('Agents run:')}  ${d.agents_run}`);
+      console.log(`  ${dim('Credits:')}     ${d.credits_charged}`);
+      if (d.scoring) {
+        console.log(`\n  ${bold('6-axis score:')}`);
+        const s = d.scoring;
+        console.log(`  success_prob=${s.success_probability}  robustness=${s.robustness}  goal_align=${s.goal_alignment}`);
+      }
+      if (d.results) {
+        console.log(`\n  ${bold('Agent outputs:')}`);
+        for (const r of d.results) {
+          console.log(`\n  ${cyan('[' + r.role.toUpperCase() + ']')}`);
+          if (r.output) console.log('  ' + r.output.slice(0, 300).split('\n').join('\n  '));
+          if (r.error) console.log(`  ${red('error:')} ${r.error}`);
+        }
+      }
+      console.log('');
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  if (sub === 'status') {
+    const id = args[1];
+    if (!id) { console.log(`  Usage: ${cyan('slop swarm status <swarm_id>')}\n`); return; }
+    try {
+      const res = await request('GET', '/v1/swarm/' + id + '/status');
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${bold(d.name || d.swarm_id)}`);
+      console.log(`  ${dim('Status:')}  ${d.status}`);
+      console.log(`  ${dim('Agents:')}  ${d.agent_count}`);
+      console.log(`  ${dim('Last run:')} ${d.last_run || 'never'}\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  console.log(`\n  ${bold('slop swarm')} — agent swarm orchestration\n`);
+  console.log(`  ${cyan('slop swarm list')}                     List all swarms`);
+  console.log(`  ${cyan('slop swarm create "name"')}            Create a swarm config`);
+  console.log(`  ${cyan('slop swarm run "task"')}               Run 3-agent orchestration`);
+  console.log(`  ${cyan('slop swarm status <id>')}              Check swarm status\n`);
+}
+
+// ============================================================
+// STRAT10: EPISODIC MEMORY
+// ============================================================
+
+async function cmdEpisode(args) {
+  requireKey();
+  const sub = args[0] || 'list';
+
+  if (sub === 'list' || sub === 'ls' || sub === 'chain') {
+    const namespace = args.find(a => a.startsWith('--ns='))?.replace('--ns=', '') || 'default';
+    const limit = args.find(a => a.startsWith('--limit='))?.replace('--limit=', '') || '20';
+    try {
+      const res = await request('GET', '/v1/memory/chain?namespace=' + namespace + '&limit=' + limit);
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      const episodes = d.episodes || [];
+      console.log(`\n  ${bold('Episodic chain')} ${dim('— ' + namespace)}\n`);
+      if (!episodes.length) { console.log(`  ${dim('No episodes yet.')}\n`); return; }
+      for (const e of episodes) {
+        const ts = e.created_at ? new Date(e.created_at).toLocaleString() : '—';
+        console.log(`  ${dim(ts)}  ${cyan('[' + e.episode_type + ']')} ${e.content.slice(0, 100)}`);
+        if (e.prev_id || e.next_id) console.log(`    ${dim('prev:')} ${e.prev_id?.slice(0, 12) || '—'}  ${dim('next:')} ${e.next_id?.slice(0, 12) || '—'}`);
+      }
+      console.log('');
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  if (sub === 'add' || sub === 'new') {
+    const contentParts = [], metadata = {};
+    let namespace = 'default', episode_type = 'event', prev_id;
+    for (let i = 1; i < args.length; i++) {
+      if (args[i].startsWith('--ns=')) namespace = args[i].slice(5);
+      else if (args[i].startsWith('--type=')) episode_type = args[i].slice(7);
+      else if (args[i].startsWith('--prev=')) prev_id = args[i].slice(7);
+      else if (!args[i].startsWith('--')) contentParts.push(args[i]);
+    }
+    const content = contentParts.join(' ').replace(/^["']|["']$/g, '').trim();
+    if (!content) { console.log(`  Usage: ${cyan('slop episode add "content" [--type event|decision|observation]')}\n`); return; }
+    try {
+      const body = { content, namespace, episode_type };
+      if (prev_id) body.prev_id = prev_id;
+      const res = await request('POST', '/v1/memory/episode', body);
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${green('✓')} Episode added: ${bold(d.episode_id)}`);
+      console.log(`  ${dim('Type:')} ${episode_type}  ${dim('Namespace:')} ${namespace}\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  console.log(`\n  ${bold('slop episode')} — episodic memory chains\n`);
+  console.log(`  ${cyan('slop episode list')}                  List recent episodes`);
+  console.log(`  ${cyan('slop episode add "content"')}         Add an episode`);
+  console.log(`  ${cyan('slop episode add "..." --type decision')} Typed episode\n`);
+}
+
+// ============================================================
+// STRAT10: MEMORY TRIGGERS
+// ============================================================
+
+async function cmdTrigger(args) {
+  requireKey();
+  const sub = args[0] || 'list';
+
+  if (sub === 'list' || sub === 'ls') {
+    try {
+      const res = await request('GET', '/v1/memory/triggers');
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      const triggers = d.triggers || [];
+      console.log(`\n  ${bold('Memory triggers')} ${dim('— event-driven tool chains')}\n`);
+      if (!triggers.length) { console.log(`  ${dim('No triggers yet.')}\n`); return; }
+      for (const t of triggers) {
+        const status = t.status === 'active' ? green('●') : dim('○');
+        console.log(`  ${status} ${cyan(t.id.slice(0, 16))}  ${dim(t.condition_type + ' → ' + t.action_type)}  ${dim('fired:' + (t.fire_count || 0))}`);
+      }
+      console.log('');
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  if (sub === 'create' || sub === 'add') {
+    const condition_type = args[1];
+    const action_type = args[2];
+    if (!condition_type || !action_type) {
+      console.log(`  Usage: ${cyan('slop trigger create <condition_type> <action_type> [condition_value]')}`);
+      console.log(`  Example: ${cyan('slop trigger create key_count_exceeds dream "100"')}\n`);
+      return;
+    }
+    const condition_value = args[3];
+    const namespace = args.find(a => a.startsWith('--ns='))?.replace('--ns=', '') || 'default';
+    try {
+      const res = await request('POST', '/v1/memory/trigger', { condition_type, condition_value, action_type, namespace });
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${green('✓')} Trigger created: ${bold(d.trigger_id)}`);
+      console.log(`  ${dim('When:')}   ${condition_type}${condition_value ? ' = ' + condition_value : ''}`);
+      console.log(`  ${dim('Action:')} ${action_type}\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  if (sub === 'delete' || sub === 'rm' || sub === 'remove') {
+    const id = args[1];
+    if (!id) { console.log(`  Usage: ${cyan('slop trigger delete <trigger_id>')}\n`); return; }
+    try {
+      const res = await request('DELETE', '/v1/memory/trigger/' + id);
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${green('✓')} Trigger ${id.slice(0, 16)} deleted\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  console.log(`\n  ${bold('slop trigger')} — memory-condition triggers\n`);
+  console.log(`  ${cyan('slop trigger list')}                        List all triggers`);
+  console.log(`  ${cyan('slop trigger create <cond> <action>')}     Create a trigger`);
+  console.log(`  ${cyan('slop trigger delete <id>')}                Remove a trigger\n`);
+}
+
+// ============================================================
+// STRAT10: PROCEDURAL MEMORY
+// ============================================================
+
+async function cmdProcedure(args) {
+  requireKey();
+  const sub = args[0] || 'list';
+
+  if (sub === 'list' || sub === 'ls') {
+    try {
+      const res = await request('GET', '/v1/memory/procedures');
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      const procs = d.procedures || [];
+      console.log(`\n  ${bold('Procedures')} ${dim('— learned repeatable tool chains')}\n`);
+      if (!procs.length) { console.log(`  ${dim('No procedures yet.')}\n`); return; }
+      for (const p of procs) {
+        console.log(`  ${cyan(p.id.slice(0, 16))}  ${bold(p.name)}  ${dim('success:' + (p.success_count || 0))}`);
+        if (p.description) console.log(`    ${dim(p.description)}`);
+        if (p.trigger_pattern) console.log(`    ${dim('trigger:')} ${p.trigger_pattern}`);
+      }
+      console.log('');
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  if (sub === 'learn' || sub === 'add' || sub === 'create') {
+    const name = args[1]?.replace(/^["']|["']$/g, '');
+    if (!name) { console.log(`  Usage: ${cyan('slop procedure learn "name" "step1,step2,step3"')}\n`); return; }
+    const chainRaw = args[2]?.replace(/^["']|["']$/g, '') || '';
+    const tool_chain = chainRaw ? chainRaw.split(',').map(s => s.trim()) : [];
+    const description = args[3]?.replace(/^["']|["']$/g, '');
+    try {
+      const res = await request('POST', '/v1/memory/procedure/learn', { name, tool_chain, description });
+      const d = res.data || res;
+      if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+      console.log(`\n  ${green('✓')} Procedure learned: ${bold(d.procedure_id)}`);
+      console.log(`  ${dim('Name:')}  ${name}`);
+      console.log(`  ${dim('Steps:')} ${d.tool_chain_steps}\n`);
+    } catch (e) { handleError(e); }
+    return;
+  }
+
+  console.log(`\n  ${bold('slop procedure')} — procedural memory\n`);
+  console.log(`  ${cyan('slop procedure list')}                      List learned procedures`);
+  console.log(`  ${cyan('slop procedure learn "name" "s1,s2,s3"')}  Learn a tool chain\n`);
+}
+
+// ============================================================
+// STRAT10: DREAM STRATEGY SHORTCUTS
+// ============================================================
+
+async function cmdEvolve(args) {
+  requireKey();
+  const namespace = args[0] || 'default';
+  const budget = args.find(a => a.startsWith('--budget='))?.replace('--budget=', '') || '20';
+  const model = args.find(a => a.startsWith('--model='))?.replace('--model=', '') || 'claude-haiku-4-5-20251001';
+  try {
+    console.log(`\n  ${dim('Evolving memories in namespace "' + namespace + '"...')}`);
+    const res = await request('POST', '/v1/memory/dream/start', { namespace, strategy: 'evolve', budget: parseInt(budget), model });
+    const d = res.data || res;
+    if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+    console.log(`  ${green('✓')} Evolve dream started`);
+    console.log(`  ${dim('Dream ID:')} ${d.dream_id}`);
+    console.log(`  ${dim('Credits:')}  ${d.credits_charged}`);
+    console.log(`  ${dim('Poll:')}     ${cyan('slop dream status ' + d.dream_id)}\n`);
+  } catch (e) { handleError(e); }
+}
+
+async function cmdForecast(args) {
+  requireKey();
+  const namespace = args[0] || 'default';
+  const budget = args.find(a => a.startsWith('--budget='))?.replace('--budget=', '') || '20';
+  const model = args.find(a => a.startsWith('--model='))?.replace('--model=', '') || 'claude-haiku-4-5-20251001';
+  try {
+    console.log(`\n  ${dim('Generating probabilistic forecasts from namespace "' + namespace + '"...')}`);
+    const res = await request('POST', '/v1/memory/dream/start', { namespace, strategy: 'forecast', budget: parseInt(budget), model });
+    const d = res.data || res;
+    if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+    console.log(`  ${green('✓')} Forecast dream started`);
+    console.log(`  ${dim('Dream ID:')} ${d.dream_id}`);
+    console.log(`  ${dim('Credits:')}  ${d.credits_charged}`);
+    console.log(`  ${dim('Poll:')}     ${cyan('slop dream status ' + d.dream_id)}\n`);
+  } catch (e) { handleError(e); }
+}
+
+async function cmdReflect(args) {
+  requireKey();
+  const namespace = args[0] || 'default';
+  const model = args.find(a => a.startsWith('--model='))?.replace('--model=', '') || 'claude-haiku-4-5-20251001';
+  try {
+    console.log(`\n  ${dim('Reflecting on memories in namespace "' + namespace + '"...')}`);
+    const res = await request('POST', '/v1/memory/dream/start', { namespace, strategy: 'reflect', model });
+    const d = res.data || res;
+    if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+    console.log(`  ${green('✓')} Reflect dream started`);
+    console.log(`  ${dim('Dream ID:')} ${d.dream_id}`);
+    console.log(`  ${dim('Credits:')}  ${d.credits_charged}`);
+    console.log(`  ${dim('Poll:')}     ${cyan('slop dream status ' + d.dream_id)}\n`);
+  } catch (e) { handleError(e); }
+}
+
+async function cmdValidate(args) {
+  requireKey();
+  const namespace = args[0] || 'default';
+  const model = args.find(a => a.startsWith('--model='))?.replace('--model=', '') || 'claude-haiku-4-5-20251001';
+  try {
+    console.log(`\n  ${dim('Validating memories in namespace "' + namespace + '"...')}`);
+    const res = await request('POST', '/v1/memory/dream/start', { namespace, strategy: 'validate', model });
+    const d = res.data || res;
+    if (jsonMode) return console.log(JSON.stringify(d, null, 2));
+    console.log(`  ${green('✓')} Validate dream started`);
+    console.log(`  ${dim('Dream ID:')} ${d.dream_id}`);
+    console.log(`  ${dim('Credits:')}  ${d.credits_charged}`);
+    console.log(`  ${dim('Poll:')}     ${cyan('slop dream status ' + d.dream_id)}\n`);
+  } catch (e) { handleError(e); }
 }
 
 main().catch((err) => {
