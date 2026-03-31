@@ -18762,6 +18762,9 @@ db.exec(`CREATE TABLE IF NOT EXISTS staking_yields (
 const dbInsertStakingYield = db.prepare(
   'INSERT INTO staking_yields (id, stake_id, api_key, amount, source_revenue, pool_total, total_staked, compounded) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
 );
+const dbGetHourlyRevenue = db.prepare(
+  "SELECT COALESCE(SUM(credits), 0) as total_credits FROM audit_log WHERE ts >= ?"
+);
 const dbGetStakingYields = db.prepare(
   'SELECT * FROM staking_yields WHERE api_key = ? ORDER BY created_at DESC LIMIT ?'
 );
@@ -18771,9 +18774,7 @@ function runStakingYieldDistribution() {
     const oneHourAgo = new Date(Date.now() - 3600000).toISOString();
 
     // Query audit_log for last hour's total credits transacted
-    const revenueRow = db.prepare(
-      "SELECT COALESCE(SUM(credits), 0) as total_credits FROM audit_log WHERE ts >= ?"
-    ).get(oneHourAgo);
+    const revenueRow = dbGetHourlyRevenue.get(oneHourAgo);
     const hourlyRevenue = revenueRow.total_credits || 0;
 
     if (hourlyRevenue <= 0) {
@@ -18847,8 +18848,8 @@ function runStakingYieldDistribution() {
 
 // Run every hour (3600000ms)
 setInterval(runStakingYieldDistribution, 3600000);
-// Also run once on startup after a short delay
-setTimeout(runStakingYieldDistribution, 5000);
+// Also run once on startup after a short delay (skip on Railway — crash diagnostic)
+if (!IS_RAILWAY) setTimeout(runStakingYieldDistribution, 5000);
 
 // GET /v1/staking/yield-history — View yield distribution history
 app.get('/v1/staking/yield-history', auth, (req, res) => {
