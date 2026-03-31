@@ -1,5 +1,23 @@
 'use strict';
 
+const zlib = require('zlib');
+const MEM_COMPRESS_THRESHOLD = 512; // Only compress values > 512 bytes
+const MEM_COMPRESS_PREFIX = '~z~';  // Marker for compressed values
+
+function _memCompress(str) {
+  if (!str || str.length < MEM_COMPRESS_THRESHOLD) return str;
+  try {
+    return MEM_COMPRESS_PREFIX + zlib.deflateRawSync(Buffer.from(str, 'utf8'), { level: 6 }).toString('base64');
+  } catch(e) { return str; }
+}
+
+function _memDecompress(str) {
+  if (!str || !str.startsWith(MEM_COMPRESS_PREFIX)) return str;
+  try {
+    return zlib.inflateRawSync(Buffer.from(str.slice(MEM_COMPRESS_PREFIX.length), 'base64')).toString('utf8');
+  } catch(e) { return str.slice(MEM_COMPRESS_PREFIX.length) || str; }
+}
+
 // ---------------------------------------------------------------------------
 // SQLite-backed memory system — v2
 // ---------------------------------------------------------------------------
@@ -61,6 +79,9 @@ module.exports = function (db) {
   // Add version column if it doesn't exist (migration for existing installs)
   try { db.exec(`ALTER TABLE memory ADD COLUMN version INTEGER NOT NULL DEFAULT 1`); } catch (e) {}
   try { db.exec(`ALTER TABLE memory_history ADD COLUMN version INTEGER NOT NULL DEFAULT 1`); } catch (e) {}
+  // Add type column for memory taxonomy (user, feedback, project, reference)
+  try { db.exec(`ALTER TABLE memory ADD COLUMN type TEXT DEFAULT 'project'`); } catch (e) {}
+  try { db.exec(`ALTER TABLE memory ADD COLUMN locked INTEGER NOT NULL DEFAULT 0`); } catch (e) {}
 
   // -------------------------------------------------------------------------
   // Prepared statements
@@ -69,14 +90,15 @@ module.exports = function (db) {
     // memory
     memGet:    db.prepare(`SELECT * FROM memory WHERE namespace = ? AND key = ?`),
     memUpsert: db.prepare(`
-      INSERT INTO memory (namespace, key, value, tags, created, updated, ttl, version)
-      VALUES (@namespace, @key, @value, @tags, @created, @updated, @ttl, @version)
+      INSERT INTO memory (namespace, key, value, tags, created, updated, ttl, version, type)
+      VALUES (@namespace, @key, @value, @tags, @created, @updated, @ttl, @version, @type)
       ON CONFLICT(namespace, key) DO UPDATE SET
         value   = excluded.value,
         tags    = excluded.tags,
         updated = excluded.updated,
         ttl     = excluded.ttl,
-        version = excluded.version
+        version = excluded.version,
+        type    = excluded.type
     `),
     memUpdateTtl: db.prepare(`
       UPDATE memory SET ttl = @ttl, updated = @updated
@@ -92,9 +114,16 @@ module.exports = function (db) {
     `),
     memDelete: db.prepare(`DELETE FROM memory WHERE namespace = ? AND key = ?`),
     memSearch: db.prepare(`
-      SELECT key, value, tags, created, updated, ttl, version FROM memory
+      SELECT key, value, tags, created, updated, ttl, version, type FROM memory
       WHERE namespace = ?
         AND (ttl = 0 OR (created + ttl * 1000) >= ?)
+        AND (key LIKE ? ESCAPE '\\' OR value LIKE ? ESCAPE '\\' OR tags LIKE ? ESCAPE '\\')
+    `),
+    memSearchByType: db.prepare(`
+      SELECT key, value, tags, created, updated, ttl, version, type FROM memory
+      WHERE namespace = ?
+        AND (ttl = 0 OR (created + ttl * 1000) >= ?)
+        AND type = ?
         AND (key LIKE ? ESCAPE '\\' OR value LIKE ? ESCAPE '\\' OR tags LIKE ? ESCAPE '\\')
     `),
     memList: db.prepare(`
@@ -122,7 +151,7 @@ module.exports = function (db) {
         AND (ttl = 0 OR (created + ttl * 1000) >= ?)
     `),
     memAll: db.prepare(`
-      SELECT key, value, tags, ttl, created, updated, version FROM memory
+      SELECT key, value, tags, ttl, created, updated, version, type, locked FROM memory
       WHERE namespace = ?
         AND (ttl = 0 OR (created + ttl * 1000) >= ?)
     `),
@@ -241,8 +270,10 @@ module.exports = function (db) {
   // -------------------------------------------------------------------------
   function memorySet(input) {
     input = input || {};
-    const { key, value, tags = [], namespace = 'default', ttl_seconds } = input;
+    const { key, value, tags = [], namespace = 'default', ttl_seconds, type } = input;
     if (!key) return { _engine: 'real', error: 'missing_required_field', required: 'key' };
+    const VALID_TYPES = ['user', 'feedback', 'project', 'reference'];
+    const memType = (type && VALID_TYPES.includes(type)) ? type : (type ? 'project' : undefined);
     const now = Date.now();
     const existing = stmts.memGet.get(namespace, key);
     const isLive = existing && !isExpiredRow(existing, now);
@@ -261,20 +292,24 @@ module.exports = function (db) {
       ttl = Math.max(0, Number(ttl_seconds));
     }
 
+    // type: use provided value, fall back to existing, then default 'project'
+    const resolvedType = memType || (isLive && existing.type ? existing.type : 'project');
+
     const newVersion = isLive ? (existing.version || 1) + 1 : 1;
 
     stmts.memUpsert.run({
       namespace,
       key,
-      value: JSON.stringify(value),
+      value: _memCompress(JSON.stringify(value)),
       tags: JSON.stringify(Array.isArray(tags) ? tags : [tags]),
       created: isLive ? existing.created : now,
       updated: now,
       ttl,
       version: newVersion,
+      type: resolvedType,
     });
 
-    const result = { _engine: 'real', key, namespace, status: 'stored', version: newVersion };
+    const result = { _engine: 'real', key, namespace, status: 'stored', version: newVersion, type: resolvedType };
     if (ttl > 0) {
       result.ttl_seconds = ttl;
       result.expires_at = new Date((isLive ? existing.created : now) + ttl * 1000).toISOString();
@@ -299,10 +334,11 @@ module.exports = function (db) {
       _engine: 'real',
       key,
       namespace,
-      value: JSON.parse(row.value),
+      value: JSON.parse(_memDecompress(row.value)),
       found: true,
       tags: JSON.parse(row.tags),
       version: row.version || 1,
+      type: row.type || 'project',
       created: new Date(row.created).toISOString(),
       updated: new Date(row.updated).toISOString(),
     };
@@ -318,19 +354,36 @@ module.exports = function (db) {
   // -------------------------------------------------------------------------
   function memorySearch(input) {
     input = input || {};
-    const { query = '', namespace = 'default', limit = 50 } = input;
+    const { query = '', namespace = 'default', limit = 50, type } = input;
+    const VALID_TYPES = ['user', 'feedback', 'project', 'reference'];
+    const typeFilter = (type && VALID_TYPES.includes(type)) ? type : null;
     const now = Date.now();
-    const pat = likePattern(query);
-    const rows = stmts.memSearch.all(namespace, now, pat, pat, pat);
+
+    // Fetch all live rows for namespace (LIKE on compressed value column is not reliable),
+    // then decompress and filter in JS so search works correctly.
+    const allRows = typeFilter
+      ? db.prepare(`SELECT key, value, tags, updated, type FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?) AND type = ?`).all(namespace, now, typeFilter)
+      : db.prepare(`SELECT key, value, tags, updated, type FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?)`).all(namespace, now);
+
+    const pat = query.trim() ? query.trim().toLowerCase() : null;
 
     // Score and rank: count word hits weighted by frequency
-    const results = rows.map(r => {
-      const textCorpus = valueToText(r.value) + ' ' + r.key + ' ' + (r.tags || '[]');
+    const results = allRows
+    .filter(r => {
+      if (!pat) return true;
+      const decompVal = _memDecompress(r.value) || '';
+      const textCorpus = (decompVal + ' ' + r.key + ' ' + (r.tags || '[]')).toLowerCase();
+      return textCorpus.includes(pat) || scoreRelevance(pat, textCorpus) > 0;
+    })
+    .map(r => {
+      const decompVal = _memDecompress(r.value);
+      const textCorpus = valueToText(decompVal) + ' ' + r.key + ' ' + (r.tags || '[]');
       const score = query.trim() ? scoreRelevance(query, textCorpus) : 1;
       return {
         key: r.key,
-        value: JSON.parse(r.value),
+        value: JSON.parse(decompVal),
         tags: JSON.parse(r.tags),
+        type: r.type || 'project',
         score,
         updated: new Date(r.updated).toISOString(),
       };
@@ -338,7 +391,7 @@ module.exports = function (db) {
     .sort((a, b) => b.score - a.score)
     .slice(0, Number(limit));
 
-    return { _engine: 'real', results, count: results.length, query };
+    return { _engine: 'real', results, count: results.length, query, ...(typeFilter ? { type_filter: typeFilter } : {}) };
   }
 
   // -------------------------------------------------------------------------
@@ -346,7 +399,7 @@ module.exports = function (db) {
   // -------------------------------------------------------------------------
   function memoryList(input) {
     input = input || {};
-    const { namespace = 'default', tag, include_meta = false } = input;
+    const { namespace = 'default', tag, include_meta = false, limit = 100, offset = 0 } = input;
     const now = Date.now();
     let rows;
     if (tag != null) {
@@ -355,9 +408,10 @@ module.exports = function (db) {
         try { return JSON.parse(r.tags).includes(tag); } catch { return false; }
       });
     } else {
-      rows = stmts.memList.all(namespace, now);
+      rows = db.prepare("SELECT key, created, updated, length(value) AS size, tags FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?) ORDER BY updated DESC LIMIT ? OFFSET ?").all(namespace, now, Number(limit), Number(offset));
     }
 
+    const total = db.prepare("SELECT COUNT(*) as cnt FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?)").get(namespace, now).cnt;
     if (include_meta) {
       const entries = rows.map(r => ({
         key: r.key,
@@ -366,11 +420,11 @@ module.exports = function (db) {
         created: new Date(r.created).toISOString(),
         updated: new Date(r.updated).toISOString(),
       }));
-      return { _engine: 'real', entries, keys: entries.map(e => e.key), count: entries.length };
+      return { _engine: 'real', entries, keys: entries.map(e => e.key), count: entries.length, total, limit: Number(limit), offset: Number(offset), has_more: Number(offset) + entries.length < total };
     }
 
     const keys = rows.map(r => r.key);
-    return { _engine: 'real', keys, count: keys.length };
+    return { _engine: 'real', keys, count: keys.length, total, limit: Number(limit), offset: Number(offset), has_more: Number(offset) + keys.length < total };
   }
 
   // -------------------------------------------------------------------------
@@ -433,7 +487,7 @@ module.exports = function (db) {
     const doBulk = db.transaction(() => {
       for (const entry of entries) {
         try {
-          const { key, value, tags = [], ttl_seconds } = entry;
+          const { key, value, tags = [], ttl_seconds, type } = entry;
           if (!key) { failed.push({ entry, reason: 'missing key' }); continue; }
           const existing = stmts.memGet.get(namespace, key);
           const isLive = existing && !isExpiredRow(existing, now);
@@ -450,12 +504,13 @@ module.exports = function (db) {
           stmts.memUpsert.run({
             namespace,
             key,
-            value: JSON.stringify(value),
+            value: _memCompress(JSON.stringify(value)),
             tags: JSON.stringify(Array.isArray(tags) ? tags : [tags]),
             created: isLive ? existing.created : now,
             updated: now,
             ttl,
             version: newVersion,
+            type: type || (isLive && existing.type ? existing.type : 'project'),
           });
           stored.push(key);
         } catch (err) {
@@ -610,16 +665,16 @@ module.exports = function (db) {
     const doIncrement = db.transaction(() => {
       const row = stmts.memGet.get(namespace, key);
       const isLive = row && !isExpiredRow(row, now);
-      const current = (isLive && typeof JSON.parse(row.value) === 'number')
-        ? JSON.parse(row.value) : 0;
+      const parsedCurrent = isLive ? JSON.parse(_memDecompress(row.value)) : null;
+      const current = (isLive && typeof parsedCurrent === 'number') ? parsedCurrent : 0;
       const next = current + Number(by);
 
       if (isLive) {
         histRecord(namespace, key, row.value, row.version, now);
-        stmts.memUpdateValue.run({ value: JSON.stringify(next), updated: now, namespace, key });
+        stmts.memUpdateValue.run({ value: _memCompress(JSON.stringify(next)), updated: now, namespace, key });
       } else {
         stmts.memUpsert.run({
-          namespace, key, value: JSON.stringify(next),
+          namespace, key, value: _memCompress(JSON.stringify(next)),
           tags: JSON.stringify([]), created: now, updated: now, ttl: 0, version: 1,
         });
       }
@@ -642,7 +697,8 @@ module.exports = function (db) {
     const doAppend = db.transaction(() => {
       const row = stmts.memGet.get(namespace, key);
       const isLive = row && !isExpiredRow(row, now);
-      let arr = (isLive && Array.isArray(JSON.parse(row.value))) ? JSON.parse(row.value) : [];
+      const parsedArr = isLive ? JSON.parse(_memDecompress(row.value)) : null;
+      let arr = (isLive && Array.isArray(parsedArr)) ? parsedArr : [];
       arr.push(item);
       if (max_length && arr.length > Number(max_length)) {
         arr = arr.slice(arr.length - Number(max_length));
@@ -650,10 +706,10 @@ module.exports = function (db) {
 
       if (isLive) {
         histRecord(namespace, key, row.value, row.version, now);
-        stmts.memUpdateValue.run({ value: JSON.stringify(arr), updated: now, namespace, key });
+        stmts.memUpdateValue.run({ value: _memCompress(JSON.stringify(arr)), updated: now, namespace, key });
       } else {
         stmts.memUpsert.run({
-          namespace, key, value: JSON.stringify(arr),
+          namespace, key, value: _memCompress(JSON.stringify(arr)),
           tags: JSON.stringify([]), created: now, updated: now, ttl: 0, version: 1,
         });
       }
@@ -673,7 +729,7 @@ module.exports = function (db) {
     if (!key) return { _engine: 'real', error: 'missing_required_field', required: 'key' };
     const rows = stmts.histSelect.all(namespace, key, Math.min(Number(limit), 100));
     const versions = rows.map(r => ({
-      value: JSON.parse(r.value),
+      value: JSON.parse(_memDecompress(r.value)),
       timestamp: new Date(r.timestamp).toISOString(),
       version: r.version || null,
     }));
@@ -691,12 +747,13 @@ module.exports = function (db) {
     const data = {};
     const meta = {};
     for (const r of rows) {
-      data[r.key] = JSON.parse(r.value);
+      data[r.key] = JSON.parse(_memDecompress(r.value));
       if (include_meta) {
         meta[r.key] = {
           tags: JSON.parse(r.tags),
           ttl: r.ttl,
           version: r.version || 1,
+          type: r.type || 'project',
           created: new Date(r.created).toISOString(),
           updated: new Date(r.updated).toISOString(),
         };
@@ -729,12 +786,13 @@ module.exports = function (db) {
         stmts.memUpsert.run({
           namespace,
           key: k,
-          value: JSON.stringify(v),
+          value: _memCompress(JSON.stringify(v)),
           tags: existing ? existing.tags : JSON.stringify([]),
           created: existing ? existing.created : now,
           updated: now,
           ttl: existing ? existing.ttl : 0,
           version: existing ? (existing.version || 1) + 1 : 1,
+          type: existing ? (existing.type || 'project') : 'project',
         });
       }
       return { imported, skipped, overwritten };
@@ -839,7 +897,8 @@ module.exports = function (db) {
     const queryWords = query.toLowerCase().split(/\s+/).filter(w => w.length > 1);
 
     const scored = all.map(row => {
-      const valText = valueToText(row.value);
+      const decompVal = _memDecompress(row.value);
+      const valText = valueToText(decompVal);
       const text = (valText + ' ' + row.key + ' ' + (row.tags || '[]')).toLowerCase();
       const score = scoreRelevance(query, text);
 
@@ -858,7 +917,7 @@ module.exports = function (db) {
 
       return {
         key: row.key,
-        value: JSON.parse(row.value),
+        value: JSON.parse(decompVal),
         tags: JSON.parse(row.tags),
         score,
         matched_words: matchedWords,
@@ -1012,11 +1071,11 @@ module.exports = function (db) {
     stmts.memUpsert.run({
       namespace: ns,
       key: k,
-      value: JSON.stringify({
+      value: _memCompress(JSON.stringify({
         value,
         sealed_at: new Date().toISOString(),
         opens_at: new Date(openAfterMs).toISOString(),
-      }),
+      })),
       tags: JSON.stringify(['time-capsule']),
       created: now,
       updated: now,
@@ -1033,6 +1092,26 @@ module.exports = function (db) {
     };
   }
 
+
+  // -------------------------------------------------------------------------
+  // memory-bulk-get — retrieve multiple keys in one call
+  // -------------------------------------------------------------------------
+  function memoryBulkGet(input) {
+    input = input || {};
+    const { keys = [], namespace = 'default' } = input;
+    if (!Array.isArray(keys) || keys.length === 0) return { _engine: 'real', results: {}, found: 0, error: 'keys must be a non-empty array' };
+    const now = Date.now();
+    const results = {};
+    for (const key of keys.slice(0, 500)) {
+      const row = db.prepare('SELECT key, value, tags, type, locked, version FROM memory WHERE namespace = ? AND key = ?').get(namespace, key);
+      if (!row) { results[key] = null; continue; }
+      try {
+        results[key] = { value: JSON.parse(_memDecompress(row.value)), tags: JSON.parse(row.tags || '[]'), type: row.type || 'project', locked: !!row.locked, version: row.version || 1 };
+      } catch(e) { results[key] = { value: row.value, tags: [], type: row.type || 'project' }; }
+    }
+    return { _engine: 'real', results, found: Object.values(results).filter(v => v !== null).length, namespace };
+  }
+
   // -------------------------------------------------------------------------
   // Handler map
   // -------------------------------------------------------------------------
@@ -1044,6 +1123,7 @@ module.exports = function (db) {
     'memory-delete':           memoryDelete,
     'memory-expire':           memoryExpire,
     'memory-ttl-set':          memoryExpire,          // alias
+    'memory-bulk-get':         memoryBulkGet,
     'memory-bulk-set':         memoryBulkSet,
     'memory-copy':             memoryCopy,
     'memory-tag-search':       memoryTagSearch,
@@ -1114,6 +1194,104 @@ module.exports = function (db) {
         });
         return { _engine: 'real', ok: true, namespace, entries, count: entries.length };
       } catch(e) { return { _engine: 'real', ok: false, entries: [], count: 0, error: e.message }; }
+    },
+
+    // ─── MEMORY → GRAPHRAG BRIDGE ───
+    // Exports memory namespace into the knowledge_graph table as (subject, predicate, object) triples
+    'memory-to-graph': (input) => {
+      input = input || {};
+      const namespace = input.namespace || 'default';
+      const limit = Math.min(parseInt(input.limit) || 50, 200);
+      const apiKey = input.api_key || null;
+
+      const nowTs = Date.now();
+      const rows = db.prepare('SELECT key, value, tags, type FROM memory WHERE namespace = ? LIMIT ?').all(namespace, limit);
+
+      let inserted = 0;
+      const errors = [];
+      for (const row of rows) {
+        try {
+          let valStr = row.value;
+          try { const v = JSON.parse(row.value); valStr = typeof v === 'string' ? v : JSON.stringify(v); } catch(_) {}
+          const subject = namespace + '/' + row.key;
+          const object = String(valStr || '').slice(0, 500);
+          if (!subject || !object) continue;
+          db.prepare(`INSERT OR IGNORE INTO knowledge_graph (id, api_key, subject, predicate, object, confidence, ts)
+            VALUES (?, ?, ?, ?, ?, ?, ?)`)
+            .run(
+              require('crypto').randomUUID(),
+              apiKey || '',
+              subject,
+              'memory_entry',
+              object,
+              0.8,
+              Date.now()
+            );
+          inserted++;
+        } catch(e) { errors.push(row.key + ': ' + e.message); }
+      }
+      return { _engine: 'real', ok: true, namespace, rows_processed: rows.length, triples_inserted: inserted, errors: errors.slice(0, 5) };
+    },
+
+    // Scores each memory key in a namespace by importance (recency + access + tag richness + value length + lock)
+    'memory-score': (input) => {
+      input = input || {};
+      const namespace = input.namespace || 'default';
+      const now = Date.now();
+      const rows = db.prepare('SELECT key, value, tags, created, updated, ttl, locked FROM memory WHERE namespace = ? ORDER BY updated DESC LIMIT 500').all(namespace);
+      if (!rows.length) return { _engine: 'real', namespace, scored: [], total: 0 };
+
+      const maxAge = Math.max(...rows.map(r => now - r.created), 1);
+      const scored = rows.map(r => {
+        const ageDays = (now - (r.updated || r.ts || now)) / 86400000;
+        const recency = Math.exp(-0.1 * ageDays);
+        let tagRichness = 0;
+        try { tagRichness = Math.min(JSON.parse(r.tags || '[]').length * 0.1, 0.5); } catch(_) {}
+        const valueScore = Math.min((r.value || '').length / 2000, 0.3);
+        const lockBonus = r.locked ? 0.2 : 0;
+        const score = Math.round((recency * 0.4 + tagRichness + valueScore + lockBonus) * 1000) / 1000;
+        return { key: r.key, score, recency: Math.round(recency * 100) / 100, tag_richness: tagRichness, value_score: valueScore, locked: !!r.locked };
+      });
+      scored.sort((a, b) => b.score - a.score);
+      return { _engine: 'real', namespace, scored, total: scored.length, avg_score: Math.round(scored.reduce((s, r) => s + r.score, 0) / scored.length * 1000) / 1000 };
+    },
+
+    // Forgets low-scoring memories below a threshold
+    'memory-forget': (input) => {
+      input = input || {};
+      const namespace = input.namespace || 'default';
+      const threshold = parseFloat(input.threshold) || 0.1;
+      const dryRun = input.dry_run !== false;
+
+      const rows = db.prepare('SELECT key, value, tags, created, updated, locked FROM memory WHERE namespace = ? ORDER BY updated ASC').all(namespace);
+      const now = Date.now();
+      const toForget = [];
+
+      for (const r of rows) {
+        if (r.locked) continue; // never forget locked memories
+        const ageDays = (now - (r.updated || r.ts || now)) / 86400000;
+        const recency = Math.exp(-0.1 * ageDays);
+        let tagRichness = 0;
+        try { tagRichness = Math.min(JSON.parse(r.tags || '[]').length * 0.1, 0.5); } catch(_) {}
+        const valueScore = Math.min((r.value || '').length / 2000, 0.3);
+        const score = recency * 0.4 + tagRichness + valueScore;
+        if (score < threshold) toForget.push({ key: r.key, score: Math.round(score * 1000) / 1000 });
+      }
+
+      if (!dryRun && toForget.length > 0) {
+        const del = db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?');
+        const delMany = db.transaction((items) => { for (const item of items) del.run(namespace, item.key); });
+        delMany(toForget);
+      }
+
+      return {
+        _engine: 'real', namespace, threshold,
+        dry_run: dryRun,
+        would_forget: toForget.length,
+        forgotten: dryRun ? 0 : toForget.length,
+        keys: toForget.slice(0, 20).map(k => k.key),
+        note: dryRun ? 'Set dry_run:false to actually delete' : `Deleted ${toForget.length} low-score memories`,
+      };
     },
 
     // ─── CONTEXT SESSION (aggregate session context for agents) ───

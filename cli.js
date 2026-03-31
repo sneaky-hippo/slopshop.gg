@@ -6952,11 +6952,13 @@ async function cmdQuickstart(authCtx) {
 
   // Summary
   console.log(`  ${bold('\u2713 You\'re set up!')} Here\'s what to try next:\n`);
-  console.log(`  ${cyan('slop call <slug>')}                  Call any of 1,328 APIs`);
+  console.log(`  ${cyan('slop call <slug>')}                  Call any of 1,400+ APIs`);
   console.log(`  ${cyan('slop "your task in plain english"')}  Natural language routing`);
   console.log(`  ${cyan('slop pipe a b c --text=input')}       Chain APIs together`);
   console.log(`  ${cyan('slop mcp serve')}                    Use in Claude Code / Cursor`);
-  console.log(`  ${cyan('slop dream on "your goal"')}         Grow memory while away`);
+  console.log(`  ${cyan('slop dream on "your goal"')}         ${bold('Dream Engine')} — synthesize memory while away`);
+  console.log(`  ${cyan('slop call memory/share/create')}     ${bold('Multiplayer Memory')} — share with teammates`);
+  console.log(`  ${cyan('slop research "your topic"')}        ${bold('Planet Research')} — X/Grok + 小红书 + Яндекс`);
   console.log(`  ${cyan('slop help')}                         All 70+ commands\n`);
 
   // Offer Dream setup

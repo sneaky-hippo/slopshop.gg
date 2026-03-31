@@ -239,7 +239,7 @@ function validateDAG(nodes, edges) {
   }
 
   // Valid types — FIX: added llm, parallel, retry
-  const validTypes = ['tool', 'condition', 'loop', 'human_gate', 'transform', 'start', 'end', 'llm', 'parallel', 'retry'];
+  const validTypes = ['tool', 'condition', 'loop', 'human_gate', 'transform', 'start', 'end', 'llm', 'parallel', 'retry', 'wait', 'memory', 'webhook', 'email', 'llm-route', 'memory-read', 'memory-write', 'memory-search'];
   for (const node of nodes) {
     if (!validTypes.includes(node.type)) {
       errors.push({ node_id: node.id, issue: `Invalid node type "${node.type}". Must be one of: ${validTypes.join(', ')}` });
@@ -800,10 +800,20 @@ module.exports = function (app, db, apiKeys) {
         return { logEntry, output: { ...context, _gate_node_id: node.id }, status: 'waiting_approval', credits_used: 0 };
       }
 
+      if (node.type === 'wait') {
+        const config = node.config || {};
+        const delayMs = Math.min(parseInt(config.delay_ms) || 1000, 30000); // max 30s
+        await new Promise(r => setTimeout(r, delayMs));
+        logEntry.status = 'success';
+        logEntry.output = { waited_ms: delayMs };
+        logEntry.latency_ms = now() - start;
+        return { logEntry, output: { ...context, waited_ms: delayMs }, status: 'success', credits_used: 0 };
+      }
+
       // FIX: loop node actually executes body nodes N times
       if (node.type === 'loop') {
         const config = node.config || {};
-        const iterations = Math.min(parseInt(config.iterations) || 3, 10);
+        const iterations = Math.min(parseInt(config.iterations) || 10, 100);
         let loopOutput = { ...context };
         let totalCredits = 0;
         const loopLog = [];
@@ -992,6 +1002,129 @@ module.exports = function (app, db, apiKeys) {
         };
       }
 
+      // llm-route node: uses LLM to decide which branch/next-node to take
+      // Config: { prompt_template?, options: {key: description}, default?: key }
+      // Sets llm_route_key in context for downstream edge condition routing.
+      if (node.type === 'llm-route') {
+        const config = node.config || {};
+        const options = config.options || {};
+        if (!Object.keys(options).length) {
+          logEntry.status = 'error';
+          logEntry.output = { error: 'llm-route node requires config.options ({key: description})' };
+          logEntry.latency_ms = now() - start;
+          return { logEntry, output: { ...context, last_error: logEntry.output }, status: 'error', credits_used: 0 };
+        }
+        const routeInput = {
+          ...context,
+          options,
+          default: config.default || Object.keys(options)[0],
+          prompt_template: config.prompt_template || null,
+          context: context.task || context.prompt || context.llm_result || context.text || JSON.stringify(context).slice(0, 500),
+        };
+        const result = await callToolInternally('llm-route', routeInput, apiKey, 20000);
+        const latency_ms = now() - start;
+        const success = result.status >= 200 && result.status < 300;
+        const responseData = result.body;
+        const credits = (responseData && responseData.meta && responseData.meta.credits_used) || (responseData && responseData.credits_used) || 2;
+        logEntry.status = success ? 'success' : 'error';
+        logEntry.output = responseData;
+        logEntry.latency_ms = latency_ms;
+        let outputData = { ...context };
+        if (success && responseData && responseData.data) {
+          const d = responseData.data;
+          outputData = { ...outputData, ...d, llm_route_key: d.chosen_key, llm_route_label: d.chosen_label, llm_route_confidence: d.confidence };
+        } else if (!success) {
+          outputData = { ...outputData, last_error: responseData };
+        }
+        return { logEntry, output: outputData, status: logEntry.status, credits_used: credits };
+      }
+
+      // memory-read node: reads a named key from the memory namespace into context
+      // Config: { namespace?, key (required), output_key? }
+      if (node.type === 'memory-read') {
+        const config = node.config || {};
+        const namespace = config.namespace || context.namespace || 'default';
+        const memKey = config.key || context.key || '';
+        const outputKey = config.output_key || memKey || 'memory_value';
+        if (!memKey) {
+          logEntry.status = 'error';
+          logEntry.output = { error: 'memory-read node requires config.key' };
+          logEntry.latency_ms = now() - start;
+          return { logEntry, output: { ...context, last_error: logEntry.output }, status: 'error', credits_used: 0 };
+        }
+        try {
+          db.exec('CREATE TABLE IF NOT EXISTS memory (namespace TEXT NOT NULL, key TEXT NOT NULL, value TEXT, tags TEXT NOT NULL DEFAULT "[]", created INTEGER NOT NULL, updated INTEGER NOT NULL, ttl INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (namespace, key))');
+          const row = db.prepare('SELECT value FROM memory WHERE namespace = ? AND key = ?').get(namespace, memKey);
+          const value = row ? (() => { try { return JSON.parse(row.value); } catch { return row.value; } })() : null;
+          const memOut = { key: memKey, namespace, value, found: !!row };
+          logEntry.status = 'success';
+          logEntry.output = memOut;
+          logEntry.latency_ms = now() - start;
+          return { logEntry, output: { ...context, [outputKey]: value, memory_result: memOut }, status: 'success', credits_used: 0 };
+        } catch (memErr) {
+          logEntry.status = 'error';
+          logEntry.output = { error: memErr.message };
+          logEntry.latency_ms = now() - start;
+          return { logEntry, output: { ...context, last_error: logEntry.output }, status: 'error', credits_used: 0 };
+        }
+      }
+
+      // memory-write node: writes a context value to persistent memory
+      // Config: { namespace?, key (required), value_key? (which context field), value? }
+      if (node.type === 'memory-write') {
+        const config = node.config || {};
+        const namespace = config.namespace || context.namespace || 'default';
+        const memKey = config.key || context.key || '';
+        const valueKey = config.value_key || null;
+        const memVal = valueKey ? context[valueKey] : (config.value !== undefined ? config.value : (context.llm_result || context.result || null));
+        if (!memKey) {
+          logEntry.status = 'error';
+          logEntry.output = { error: 'memory-write node requires config.key' };
+          logEntry.latency_ms = now() - start;
+          return { logEntry, output: { ...context, last_error: logEntry.output }, status: 'error', credits_used: 0 };
+        }
+        try {
+          db.exec('CREATE TABLE IF NOT EXISTS memory (namespace TEXT NOT NULL, key TEXT NOT NULL, value TEXT, tags TEXT NOT NULL DEFAULT "[]", created INTEGER NOT NULL, updated INTEGER NOT NULL, ttl INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (namespace, key))');
+          const ts = now();
+          db.prepare('INSERT INTO memory (namespace, key, value, tags, created, updated, ttl, version) VALUES (?, ?, ?, "[]", ?, ?, 0, 1) ON CONFLICT(namespace, key) DO UPDATE SET value = excluded.value, updated = excluded.updated, version = memory.version + 1').run(namespace, memKey, JSON.stringify(memVal), ts, ts);
+          const memOut = { key: memKey, namespace, stored: true };
+          logEntry.status = 'success';
+          logEntry.output = memOut;
+          logEntry.latency_ms = now() - start;
+          return { logEntry, output: { ...context, memory_write_result: memOut }, status: 'success', credits_used: 0 };
+        } catch (memErr) {
+          logEntry.status = 'error';
+          logEntry.output = { error: memErr.message };
+          logEntry.latency_ms = now() - start;
+          return { logEntry, output: { ...context, last_error: logEntry.output }, status: 'error', credits_used: 0 };
+        }
+      }
+
+      // memory-search node: searches memory by query string, puts results into context
+      // Config: { namespace?, query, limit?, output_key? }
+      if (node.type === 'memory-search') {
+        const config = node.config || {};
+        const namespace = config.namespace || context.namespace || 'default';
+        const query = config.query || context.query || context.task || context.text || '';
+        const limit = Math.min(parseInt(config.limit || context.limit || 10), 50);
+        const outputKey = config.output_key || 'memory_search_results';
+        try {
+          db.exec('CREATE TABLE IF NOT EXISTS memory (namespace TEXT NOT NULL, key TEXT NOT NULL, value TEXT, tags TEXT NOT NULL DEFAULT "[]", created INTEGER NOT NULL, updated INTEGER NOT NULL, ttl INTEGER NOT NULL DEFAULT 0, version INTEGER NOT NULL DEFAULT 1, PRIMARY KEY (namespace, key))');
+          const rows = db.prepare('SELECT key, value, namespace, updated FROM memory WHERE namespace = ? AND (key LIKE ? OR value LIKE ?) ORDER BY updated DESC LIMIT ?').all(namespace, '%' + query + '%', '%' + query + '%', limit);
+          const results = rows.map(r => ({ key: r.key, namespace: r.namespace, value: (() => { try { return JSON.parse(r.value); } catch { return r.value; } })(), updated: r.updated }));
+          const memOut = { query, namespace, results, count: results.length };
+          logEntry.status = 'success';
+          logEntry.output = memOut;
+          logEntry.latency_ms = now() - start;
+          return { logEntry, output: { ...context, [outputKey]: results, memory_search_result: memOut }, status: 'success', credits_used: 0 };
+        } catch (memErr) {
+          logEntry.status = 'error';
+          logEntry.output = { error: memErr.message };
+          logEntry.latency_ms = now() - start;
+          return { logEntry, output: { ...context, last_error: logEntry.output }, status: 'error', credits_used: 0 };
+        }
+      }
+
       // Unknown node type
       logEntry.status = 'error';
       logEntry.output = { error: `Unknown node type: ${node.type}` };
@@ -1048,14 +1181,15 @@ module.exports = function (app, db, apiKeys) {
         continue;
       }
 
-      // FIX: 'true' / 'false' conditions check condition_result from context
+      // 'true'/'false' conditions check the PREDECESSOR node's status (condition_true/condition_false)
+      // NOT context.condition_result — that breaks with multiple condition nodes in the same workflow
       if (cond === 'true') {
-        if (context.condition_result === true) return true;
+        if (sourceStatus === 'condition_true') return true;
         continue;
       }
 
       if (cond === 'false') {
-        if (context.condition_result === false) return true;
+        if (sourceStatus === 'condition_false') return true;
         continue;
       }
 

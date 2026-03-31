@@ -560,5 +560,145 @@ module.exports = {
       tier: 'compute'
     },
 
+    // =========================================================================
+    // UTILITY TOOLS (2026-03-31)
+    // =========================================================================
+
+    'text-lorem-ipsum': {
+      cat: 'Text',
+      name: 'Lorem Ipsum Generator',
+      desc: 'Generate lorem ipsum placeholder text. Specify word count and number of paragraphs.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'text-word-frequency': {
+      cat: 'Text',
+      name: 'Word Frequency Counter',
+      desc: 'Count the frequency of each word in a block of text. Returns a sorted frequency map and top-20 words.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'data-flatten': {
+      cat: 'Data',
+      name: 'Flatten Array',
+      desc: 'Flatten a nested array to a specified depth (default: Infinity). Returns the flattened array and length stats.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'data-unflatten': {
+      cat: 'Data',
+      name: 'Unflatten Object',
+      desc: 'Convert dot-notation flat keys back into a nested object structure. Supports custom separators.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'math-gcd': {
+      cat: 'Math',
+      name: 'Greatest Common Divisor',
+      desc: 'Compute the greatest common divisor (GCD) of two or more integers using the Euclidean algorithm.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'math-lcm': {
+      cat: 'Math',
+      name: 'Least Common Multiple',
+      desc: 'Compute the least common multiple (LCM) of two or more integers.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'math-clamp': {
+      cat: 'Math',
+      name: 'Clamp Number',
+      desc: 'Clamp a number to a specified [min, max] range. Returns the clamped value.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'color-hex-to-rgb': {
+      cat: 'Color',
+      name: 'Hex to RGB',
+      desc: 'Convert a CSS hex color code (#RRGGBB or #RGB) to its RGB component values.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'color-rgb-to-hex': {
+      cat: 'Color',
+      name: 'RGB to Hex',
+      desc: 'Convert RGB component values (0-255 each) to a CSS hex color string.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'color-lighten': {
+      cat: 'Color',
+      name: 'Lighten Color',
+      desc: 'Lighten a hex color by a given percentage (default 10%). Returns the lightened hex color.',
+      credits: 1,
+      tier: 'compute'
+    },
+
+    'memory-to-graph': {
+      cat: 'Memory',
+      name: 'Memory to Graph',
+      desc: 'Export all memory entries in a namespace as knowledge graph triples. Each memory key becomes a subject node with predicate "memory_entry" and value as object.',
+      credits: 2,
+      tier: 'memory'
+    },
+
+    'memory-score': {
+      cat: 'Memory',
+      name: 'Score Memory Keys',
+      desc: 'Score all memory keys in a namespace by importance using recency decay, tag richness, value length, and lock bonus. Returns keys sorted by score descending.',
+      credits: 2,
+      tier: 'memory'
+    },
+
+    'memory-forget': {
+      cat: 'Memory',
+      name: 'Forget Low-Value Memories',
+      desc: 'Delete memory keys that fall below an importance score threshold. Supports dry_run mode (default true) to preview what would be removed before committing.',
+      credits: 2,
+      tier: 'memory'
+    },
+
+    'knowledge-cluster': {
+      cat: 'Knowledge',
+      name: 'Cluster Knowledge Graph',
+      desc: 'Find connected components (clusters) in a knowledge graph using BFS traversal. Returns node groups and their member counts.',
+      credits: 2,
+      tier: 'graphrag'
+    },
+
+    'knowledge-summary': {
+      cat: 'Knowledge',
+      name: 'Summarize Knowledge Cluster',
+      desc: 'Format a knowledge graph cluster as structured human-readable text listing subjects and their predicate-object relationships.',
+      credits: 1,
+      tier: 'graphrag'
+    },
+
+    'knowledge-import-from-memory': {
+      cat: 'Knowledge',
+      name: 'Import Memory into Knowledge Graph',
+      desc: 'Build knowledge graph triples from a memory namespace. Each memory entry becomes a subject-predicate-object triple in the graph.',
+      credits: 3,
+      tier: 'graphrag'
+    },
+
+    'llm-route': {
+      cat: 'Workflow',
+      name: 'LLM Dynamic Route',
+      desc: 'Use an LLM to evaluate a condition and return a branch label for dynamic workflow routing. Supports custom conditions and branch options.',
+      credits: 3,
+      tier: 'llm'
+    },
+
   }
 };

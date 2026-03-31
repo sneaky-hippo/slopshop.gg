@@ -1,7 +1,19 @@
 # Slopshop Development Guide
 
-This project is Slopshop — The Self-Hostable MCP Agent Runtime OS for the Computer-Use Era.
-An API platform with 1,303+ real tools across 82 categories.
+**Slopshop — The Living Agentic Backend OS.**
+**North Star: Dream Engine + Multiplayer Memory.**
+
+Agents that synthesize knowledge overnight (Dream Engine). Teams that share intelligence in real time (Multiplayer Memory). Self-hostable, multi-model, open forever.
+
+> "Claude controls the screen. Slopshop runs the brain — openly, on any model, forever."
+
+## Headline Products
+
+- **Dream Engine** — REM-style memory consolidation. Agents synthesize, compress, and evolve their memory on a schedule. `POST /v1/memory/dream/start` → `GET /v1/memory/dream/status/:id`
+- **Multiplayer Memory** — Shared memory spaces with collaborator invites. Real-time team intelligence. `POST /v1/memory/share/create` → `POST /v1/memory/collaborator/invite`
+
+Everything else (1,421+ APIs, 82 categories, visual DAG workflows, hive coordination, GraphRAG, northstar goal-anchoring) supports and extends these two primitives.
+
 API definitions live in four registries: `registry.js` (530 base), `registry-expansion.js`, `registry-hackathon.js`, and `registry-new.js` (vision/vertical/memory-upgrade).
 
 ## Running the server

@@ -44,7 +44,12 @@ function callLocal(slug, inp, timeoutMs) {
   });
 }
 
-module.exports = {
+// Factory function: call as require('./orchestrate')(db) to enable SQLite for hive handlers.
+// Also supports plain require('./orchestrate') — returns handlers with JSON-only hive storage.
+let _db = null;
+module.exports = function makeOrchHandlers(db) {
+  _db = db || null;
+  return {
   // ===== DELAY =====
   'orch-delay': async (input) => {
     const ms = Math.min(input.ms || input.delay || (input.seconds ? input.seconds * 1000 : 0) || 1000, 10000);
@@ -1179,40 +1184,194 @@ module.exports = {
   },
 
   // ===== HIVE =====
+  // NOTE: hive handlers use SQLite (via _db) when available, else fall back to JSON files.
+  // _db is injected by the factory export pattern (same as memory.js).
   'hive-create': (input) => {
-    const hives = load('hives.json', {});
     const id = input.id || crypto.randomUUID().slice(0, 8);
-    hives[id] = { id, name: input.name || id, topic: input.topic || '', members: [], messages: [], created_at: new Date().toISOString() };
+    const name = input.name || id;
+    const topic = input.topic || '';
+    const ts = Date.now();
+    if (_db) {
+      try {
+        _db.exec(`CREATE TABLE IF NOT EXISTS hives_orch (
+          id TEXT PRIMARY KEY, name TEXT, topic TEXT,
+          members TEXT DEFAULT '[]', created INTEGER
+        )`);
+        _db.prepare('INSERT OR IGNORE INTO hives_orch (id, name, topic, members, created) VALUES (?, ?, ?, ?, ?)')
+          .run(id, name, topic, '[]', ts);
+        return { _engine: 'real', created: true, id, name, topic, storage: 'sqlite' };
+      } catch (e) { /* fall through to JSON */ }
+    }
+    const hives = load('hives.json', {});
+    hives[id] = { id, name, topic, members: [], messages: [], created_at: new Date().toISOString() };
     save('hives.json', hives);
-    return { _engine: 'real', created: true, id, name: hives[id].name, topic: hives[id].topic };
+    return { _engine: 'real', created: true, id, name, topic, storage: 'json' };
   },
   'hive-send': (input) => {
+    const hive_id = input.hive_id;
+    const msg_text = input.message || '';
+    const agent = input.agent || 'anon';
+    const ts = Date.now();
+    if (_db) {
+      try {
+        _db.exec(`CREATE TABLE IF NOT EXISTS hive_messages_orch (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          hive_id TEXT NOT NULL, agent TEXT, message TEXT, sent_at INTEGER
+        )`);
+        const r = _db.prepare('INSERT INTO hive_messages_orch (hive_id, agent, message, sent_at) VALUES (?, ?, ?, ?)').run(hive_id, agent, msg_text, ts);
+        return { _engine: 'real', sent: true, hive: hive_id, message_id: r.lastInsertRowid, storage: 'sqlite' };
+      } catch (e) { /* fall through to JSON */ }
+    }
     const hives = load('hives.json', {});
-    const id = input.hive_id;
-    if (!hives[id]) return { _engine: 'real', error: 'hive not found', id };
-    const msg = { id: Date.now(), agent: input.agent || 'anon', message: input.message, sent_at: new Date().toISOString() };
-    hives[id].messages.push(msg);
-    if (hives[id].messages.length > 500) hives[id].messages.splice(0, hives[id].messages.length - 500);
+    if (!hives[hive_id]) return { _engine: 'real', error: 'hive not found', id: hive_id };
+    const msg = { id: ts, agent, message: msg_text, sent_at: new Date().toISOString() };
+    hives[hive_id].messages.push(msg);
+    if (hives[hive_id].messages.length > 500) hives[hive_id].messages.splice(0, hives[hive_id].messages.length - 500);
     save('hives.json', hives);
-    return { _engine: 'real', sent: true, hive: id, message_id: msg.id };
+    return { _engine: 'real', sent: true, hive: hive_id, message_id: msg.id, storage: 'json' };
   },
   'hive-sync': (input) => {
-    const hives = load('hives.json', {});
-    const id = input.hive_id;
-    if (!hives[id]) return { _engine: 'real', error: 'hive not found', id };
+    const hive_id = input.hive_id;
     const since = input.since || 0;
-    const messages = hives[id].messages.filter(m => m.id > since);
-    return { _engine: 'real', hive: id, messages, cursor: messages.length ? messages[messages.length - 1].id : since, new_count: messages.length };
+    if (_db) {
+      try {
+        _db.exec(`CREATE TABLE IF NOT EXISTS hive_messages_orch (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          hive_id TEXT NOT NULL, agent TEXT, message TEXT, sent_at INTEGER
+        )`);
+        const rows = _db.prepare('SELECT * FROM hive_messages_orch WHERE hive_id = ? AND sent_at > ? ORDER BY sent_at ASC LIMIT 100').all(hive_id, since);
+        const cursor = rows.length ? rows[rows.length - 1].sent_at : since;
+        return { _engine: 'real', hive: hive_id, messages: rows, cursor, new_count: rows.length, storage: 'sqlite' };
+      } catch (e) { /* fall through to JSON */ }
+    }
+    const hives = load('hives.json', {});
+    if (!hives[hive_id]) return { _engine: 'real', error: 'hive not found', id: hive_id };
+    const messages = hives[hive_id].messages.filter(m => m.id > since);
+    return { _engine: 'real', hive: hive_id, messages, cursor: messages.length ? messages[messages.length - 1].id : since, new_count: messages.length, storage: 'json' };
   },
   'hive-standup': (input) => {
-    const standups = load('hive-standups.json', {});
     const hive = input.hive_id || 'default';
     const today = new Date().toISOString().slice(0, 10);
+    const agent = input.agent || 'anon';
+    const nowTs = Date.now();
+    const todayStart = new Date(today).getTime();
+
+    if (_db) {
+      try {
+        // Ensure hive_messages table exists (main server creates it, but handle edge case)
+        _db.exec(`CREATE TABLE IF NOT EXISTS hive_messages (
+          id INTEGER PRIMARY KEY AUTOINCREMENT, hive_id TEXT NOT NULL,
+          channel TEXT DEFAULT 'general', sender TEXT, message TEXT,
+          type TEXT DEFAULT 'message', ts INTEGER DEFAULT 0
+        )`);
+
+        // Check if already submitted today
+        const existing = _db.prepare(
+          "SELECT id FROM hive_messages WHERE hive_id = ? AND sender = ? AND (type = 'standup' OR channel = 'standup') AND ts > ? LIMIT 1"
+        ).get(hive, agent, todayStart);
+
+        const alreadySubmitted = !!existing;
+        if (!alreadySubmitted) {
+          const standupData = JSON.stringify({ agent, did: input.did || '', will: input.will || '', blockers: input.blockers || 'none', submitted_at: new Date().toISOString() });
+          _db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(hive, 'standup', agent, standupData, 'standup', nowTs);
+        }
+
+        // Count today's standups
+        const countRow = _db.prepare("SELECT COUNT(*) as cnt FROM hive_messages WHERE hive_id = ? AND (type = 'standup' OR channel = 'standup') AND ts > ?").get(hive, todayStart);
+        const teamStandups = countRow ? countRow.cnt : 0;
+
+        // Streak: count consecutive days
+        const agentStandups = _db.prepare(
+          "SELECT ts FROM hive_messages WHERE hive_id = ? AND sender = ? AND (type = 'standup' OR channel = 'standup') ORDER BY ts DESC LIMIT 365"
+        ).all(hive, agent);
+        const agentDates = new Set(agentStandups.map(r => new Date(r.ts).toISOString().slice(0, 10)));
+        let streak = 0;
+        const checkDay = new Date(today);
+        for (let i = 0; i < 365; i++) {
+          const d = checkDay.toISOString().slice(0, 10);
+          if (agentDates.has(d) || (i === 0 && !alreadySubmitted)) { streak++; checkDay.setDate(checkDay.getDate() - 1); }
+          else break;
+        }
+
+        // Hive member count
+        let memberCount = 1;
+        try {
+          const hiveRow = _db.prepare('SELECT members FROM hives WHERE id = ?').get(hive);
+          if (hiveRow) memberCount = Math.max(JSON.parse(hiveRow.members || '[]').length, teamStandups, 1);
+        } catch(e) {}
+
+        return { _engine: 'real', submitted: !alreadySubmitted, already_submitted: alreadySubmitted, hive, date: today, team_standups_today: teamStandups, completion_pct: Math.round((teamStandups / memberCount) * 100), streak, storage: 'sqlite' };
+      } catch(e) { /* fall through */ }
+    }
+
+    // JSON fallback
+    const standups = load('hive-standups.json', {});
     if (!standups[hive]) standups[hive] = {};
     if (!standups[hive][today]) standups[hive][today] = [];
-    standups[hive][today].push({ agent: input.agent, did: input.did || '', will: input.will || '', blockers: input.blockers || 'none', submitted_at: new Date().toISOString() });
-    save('hive-standups.json', standups);
-    return { _engine: 'real', submitted: true, hive, date: today, team_standups_today: standups[hive][today].length };
+    const agentDates = Object.entries(standups[hive]).filter(([, entries]) => entries.some(e => e.agent === agent)).map(([date]) => date).sort();
+    let streak = 0;
+    const checkDay = new Date(today);
+    for (let i = 0; i < 365; i++) {
+      const d = checkDay.toISOString().slice(0, 10);
+      if (agentDates.includes(d) || i === 0) { streak++; checkDay.setDate(checkDay.getDate() - 1); }
+      else break;
+    }
+    const hives = load('hives.json', {});
+    const memberCount = ((hives[hive] || {}).members || []).length || Math.max(standups[hive][today].length + 1, 1);
+    const alreadySubmitted = standups[hive][today].some(e => e.agent === agent);
+    if (!alreadySubmitted) {
+      standups[hive][today].push({ agent, did: input.did || '', will: input.will || '', blockers: input.blockers || 'none', submitted_at: new Date().toISOString() });
+      save('hive-standups.json', standups);
+    }
+    return { _engine: 'real', submitted: !alreadySubmitted, already_submitted: alreadySubmitted, hive, date: today, team_standups_today: standups[hive][today].length, completion_pct: Math.round((standups[hive][today].length / memberCount) * 100), streak, storage: 'json' };
+  },
+
+  // Aggregates all hive standups for a given date into a concise summary
+  'hive-daily-summary': (input) => {
+    const hive = input.hive_id || 'default';
+    const date = input.date || new Date().toISOString().slice(0, 10);
+    const dateTs = new Date(date).getTime();
+    const nextDayTs = dateTs + 86400000;
+
+    if (_db) {
+      try {
+        const rows = _db.prepare(
+          "SELECT sender, message, ts FROM hive_messages WHERE hive_id = ? AND (type = 'standup' OR channel = 'standup') AND ts >= ? AND ts < ? ORDER BY ts ASC"
+        ).all(hive, dateTs, nextDayTs);
+        const todayEntries = rows.map(r => { try { return JSON.parse(r.message); } catch(e) { return { agent: r.sender, did: r.message, will: '', blockers: 'none' }; } });
+        let memberCount = todayEntries.length || 1;
+        try { const hiveRow = _db.prepare('SELECT members FROM hives WHERE id = ?').get(hive); if (hiveRow) memberCount = Math.max(JSON.parse(hiveRow.members || '[]').length, todayEntries.length, 1); } catch(e) {}
+        const total_submitted = todayEntries.length;
+        const blockers = todayEntries.filter(e => e.blockers && e.blockers !== 'none' && e.blockers.trim() !== '').map(e => ({ agent: e.agent, blocker: e.blockers }));
+        const achievements = todayEntries.filter(e => e.did && e.did.trim() !== '').map(e => ({ agent: e.agent, achievement: e.did }));
+        const completion_pct = Math.round((total_submitted / memberCount) * 100);
+        const overall_status = completion_pct >= 80 ? 'healthy' : completion_pct >= 50 ? 'partial' : 'low_participation';
+        return { _engine: 'real', hive, date, total_submitted, expected_members: memberCount, completion_pct, overall_status, blockers, achievements, entries: todayEntries, storage: 'sqlite' };
+      } catch(e) { /* fall through */ }
+    }
+
+    const standups = load('hive-standups.json', {});
+    const hives = load('hives.json', {});
+    const hiveData = hives[hive] || {};
+    const todayEntries = (standups[hive] && standups[hive][date]) || [];
+    const memberCount = (hiveData.members || []).length || todayEntries.length || 1;
+    const total_submitted = todayEntries.length;
+    const blockers = todayEntries.filter(e => e.blockers && e.blockers !== 'none' && e.blockers.trim() !== '').map(e => ({ agent: e.agent, blocker: e.blockers }));
+    const achievements = todayEntries.filter(e => e.did && e.did.trim() !== '').map(e => ({ agent: e.agent, achievement: e.did }));
+    const completion_pct = Math.round((total_submitted / memberCount) * 100);
+    const overall_status = completion_pct >= 80 ? 'healthy' : completion_pct >= 50 ? 'partial' : 'low_participation';
+    return {
+      _engine: 'real',
+      hive,
+      date,
+      total_submitted,
+      expected_members: memberCount,
+      completion_pct,
+      overall_status,
+      blockers,
+      achievements,
+      entries: todayEntries,
+    };
   },
 
   // ===== BROADCAST =====
@@ -1360,6 +1519,89 @@ module.exports = {
       }
     }
     return { _engine: 'real', found: false, from_entity: from, to_entity: to, path: [], message: 'No path found within 6 hops' };
+  },
+
+  // Finds densely connected subgraphs (clusters) in the knowledge graph via BFS
+  'knowledge-cluster': (input) => {
+    const kg = load('knowledge.json', []);
+    const minSize = input.min_size || 2;
+    const maxClusters = Math.min(input.max_clusters || 10, 20);
+    const adj = {};
+    for (const t of kg) {
+      if (!adj[t.subject]) adj[t.subject] = new Set();
+      if (!adj[t.object]) adj[t.object] = new Set();
+      adj[t.subject].add(t.object);
+      adj[t.object].add(t.subject);
+    }
+    const allEntities = Object.keys(adj);
+    const seen = new Set();
+    const clusters = [];
+    for (const entity of allEntities) {
+      if (seen.has(entity)) continue;
+      const cluster = [];
+      const q = [entity];
+      while (q.length) {
+        const e = q.shift();
+        if (seen.has(e)) continue;
+        seen.add(e);
+        cluster.push(e);
+        for (const neighbor of (adj[e] || [])) { if (!seen.has(neighbor)) q.push(neighbor); }
+      }
+      if (cluster.length >= minSize) {
+        const clusterFacts = kg.filter(t => cluster.includes(t.subject) && cluster.includes(t.object));
+        const possible = cluster.length * (cluster.length - 1) / 2;
+        const density = possible > 0 ? +(clusterFacts.length / possible).toFixed(3) : 0;
+        clusters.push({ entities: cluster, entity_count: cluster.length, fact_count: clusterFacts.length, density, facts: clusterFacts.slice(0, 20) });
+      }
+    }
+    clusters.sort((a, b) => b.density - a.density || b.entity_count - a.entity_count);
+    return { _engine: 'real', total_entities: allEntities.length, total_facts: kg.length, clusters_found: clusters.length, clusters: clusters.slice(0, maxClusters) };
+  },
+
+  // Generates a text summary of a knowledge cluster (pipe to llm-think for AI prose)
+  'knowledge-summary': (input) => {
+    const entities = input.entities || [];
+    const facts = input.facts || [];
+    if (!entities.length && !facts.length) return { _engine: 'real', error: 'Provide entities or facts to summarize', summary: null };
+    const lines = facts.slice(0, 30).map(t => '  - ' + t.subject + ' ' + t.predicate + ' ' + t.object);
+    const entityList = entities.slice(0, 20).join(', ');
+    const parts = [];
+    if (entities.length) parts.push('Cluster of ' + entities.length + ' entities: ' + entityList + '.');
+    if (facts.length) parts.push('Connected by ' + facts.length + ' relationships:');
+    const summary = parts.concat(lines).join('\n');
+    return { _engine: 'real', entity_count: entities.length, fact_count: facts.length, summary, note: 'For LLM-generated summaries, pipe this through llm-think with the summary as context.' };
+  },
+
+  // Builds knowledge graph triples from a memory namespace
+  'knowledge-import-from-memory': (input) => {
+    const namespace = input.namespace || 'default';
+    const kg = load('knowledge.json', []);
+    const agent = input.agent || 'memory-import';
+    let entries = [];
+    try {
+      const memRaw = load('memory-ns-' + namespace + '.json', null);
+      if (Array.isArray(memRaw)) { entries = memRaw; }
+      else if (memRaw && typeof memRaw === 'object') { entries = Object.entries(memRaw).map(([k, v]) => ({ key: k, value: typeof v === 'object' ? JSON.stringify(v) : String(v) })); }
+    } catch (_) {}
+    if (!entries.length) {
+      const memAll = load('memory.json', {});
+      if (typeof memAll === 'object' && !Array.isArray(memAll)) {
+        entries = Object.entries(memAll).filter(([k]) => namespace === 'default' || k.startsWith(namespace + ':')).map(([k, v]) => ({ key: k, value: typeof v === 'object' ? JSON.stringify(v) : String(v) }));
+      }
+    }
+    let added = 0;
+    for (const entry of entries.slice(0, 200)) {
+      const key = String(entry.key || 'unknown');
+      const val = typeof entry.value === 'string' ? entry.value : JSON.stringify(entry.value || '');
+      if (key && val && val.length < 500) {
+        const triple = { subject: namespace + ':' + key, predicate: 'contains', object: val.slice(0, 100), added_at: new Date().toISOString(), agent };
+        const exists = kg.some(t => t.subject === triple.subject && t.predicate === triple.predicate && t.object === triple.object);
+        if (!exists) { kg.push(triple); added++; }
+      }
+    }
+    if (kg.length > 5000) kg.splice(0, kg.length - 5000);
+    save('knowledge.json', kg);
+    return { _engine: 'real', namespace, entries_scanned: entries.length, triples_added: added, total_facts: kg.length };
   },
 
   // ===== CONSCIOUSNESS / INTROSPECTION =====
@@ -1744,4 +1986,54 @@ module.exports = {
       timing_ms: Date.now() - start,
     };
   },
+
+  // ===== LLM ROUTE =====
+  // Uses LLM reasoning to decide which branch to take from a set of labeled options.
+  // Node config: { prompt_template, options: {key: description}, default: key }
+  // Output: { chosen_key, chosen_label, reasoning, confidence, all_options }
+  'llm-route': async (input) => {
+    const options = input.options || {};
+    const optionKeys = Object.keys(options);
+    if (!optionKeys.length) {
+      return { _engine: 'real', error: 'options is required (object mapping key -> description)', chosen_key: null };
+    }
+    const defaultKey = input.default || optionKeys[0];
+    const context = input.context || input.task || input.prompt || '';
+    const promptTemplate = input.prompt_template || null;
+    const optionsList = optionKeys.map((k, i) => (i + 1) + '. [' + k + ']: ' + options[k]).join('\n');
+    const routingPrompt = promptTemplate
+      ? promptTemplate.replace('{{context}}', context).replace('{{options}}', optionsList)
+      : 'Given the following context, choose the best option. Reply ONLY with the option key (one of: ' + optionKeys.join(', ') + ').\n\nContext: ' + context + '\n\nOptions:\n' + optionsList + '\n\nYour choice (just the key):';
+    try {
+      const result = await callLocal('llm-think', { text: routingPrompt, prompt: routingPrompt, max_tokens: 64 }, 15000);
+      let raw = '';
+      if (result && result.data && result.data.result) raw = String(result.data.result).trim();
+      else if (result && result.result) raw = String(result.result).trim();
+      else if (typeof result === 'string') raw = result.trim();
+      const chosen = optionKeys.find(k => raw === k) || optionKeys.find(k => raw.toLowerCase().includes(k.toLowerCase())) || defaultKey;
+      const confidence = optionKeys.find(k => raw === k) ? 'high' : optionKeys.find(k => raw.toLowerCase().includes(k.toLowerCase())) ? 'medium' : 'low';
+      return {
+        _engine: 'real',
+        chosen_key: chosen,
+        chosen_label: options[chosen] || chosen,
+        reasoning: raw,
+        confidence,
+        all_options: options,
+        used_default: confidence === 'low',
+      };
+    } catch (e) {
+      return {
+        _engine: 'real',
+        chosen_key: defaultKey,
+        chosen_label: options[defaultKey] || defaultKey,
+        reasoning: 'LLM unavailable: ' + e.message,
+        confidence: 'none',
+        all_options: options,
+        used_default: true,
+      };
+    }
+  },
 };
+};
+// Allow plain require() without db arg (JSON-only mode)
+module.exports.plain = module.exports;

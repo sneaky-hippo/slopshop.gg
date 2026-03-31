@@ -163,6 +163,32 @@ setInterval(() => {
   }
 }, 300000);
 
+// Background cleanup: expired TTL memory entries + expired shared spaces (runs every 10 min)
+setInterval(() => {
+  try {
+    const now = Date.now();
+    // Expire TTL memory entries (ttl > 0 and created + ttl*1000 < now)
+    const expiredMem = db.prepare("SELECT namespace, key, created, ttl FROM memory WHERE ttl > 0 AND (created + ttl * 1000) < ?").all(now);
+    if (expiredMem.length > 0) {
+      const delMem = db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?');
+      const delMany = db.transaction(rows => { for (const r of rows) delMem.run(r.namespace, r.key); });
+      delMany(expiredMem);
+    }
+    // Expire shared memory spaces with retention TTL
+    const expiredSpaces = db.prepare('SELECT id FROM shared_memory_spaces WHERE expires_at IS NOT NULL AND expires_at < ?').all(now);
+    if (expiredSpaces.length > 0) {
+      for (const s of expiredSpaces) {
+        db.prepare('DELETE FROM shared_memory_members WHERE space_id = ?').run(s.id);
+        db.prepare("DELETE FROM memory WHERE namespace = ?").run('shared:' + s.id);
+        db.prepare('DELETE FROM shared_memory_spaces WHERE id = ?').run(s.id);
+      }
+    }
+    // Evict old research cache entries
+    const cacheNow = Date.now();
+    for (const [k, v] of _researchCache) { if (cacheNow - v.ts > RESEARCH_CACHE_TTL * 2) _researchCache.delete(k); }
+  } catch(e) { /* cleanup is best-effort */ }
+}, 10 * 60 * 1000);
+
 // Load all handlers
 const computeHandlers = require('./handlers/compute');
 const llmHandlers = require('./handlers/llm');
@@ -173,7 +199,7 @@ try { senseHandlers = require('./handlers/sense'); } catch (e) { console.warn('H
 try { generateHandlers = require('./handlers/generate'); } catch (e) { console.warn('Handler load skipped:', e.message); }
 // memory loaded after db init (see below)
 try { enrichHandlers = require('./handlers/enrich'); } catch (e) { console.warn('Handler load skipped:', e.message); }
-try { orchHandlers = require('./handlers/orchestrate'); } catch (e) { console.warn('Handler load skipped:', e.message); }
+try { const _orchFactory = require('./handlers/orchestrate'); orchHandlers = typeof _orchFactory === 'function' ? _orchFactory(db) : _orchFactory; } catch (e) { console.warn('Handler load skipped:', e.message); }
 let superpowerHandlers = {}, hackathon1 = {}, hackathon2 = {}, hackathon3 = {}, hackathon4 = {}, hackathon5a = {}, hackathon5b = {}, competitor1 = {}, competitor2 = {}, rapidapi1 = {}, rapidapi2 = {}, rapidapi3 = {}, power1 = {}, power2 = {};
 let visionHandlers = {}, verticalHandlers = {}, memoryUpgradeHandlers = {};
 try { superpowerHandlers = require('./handlers/compute-superpowers'); } catch (e) { console.warn('Handler load skipped:', e.message); }
@@ -324,6 +350,7 @@ db.exec(`
   );
   CREATE INDEX IF NOT EXISTS idx_audit_ts ON audit_log(ts);
   CREATE INDEX IF NOT EXISTS idx_audit_api ON audit_log(api);
+  CREATE INDEX IF NOT EXISTS idx_audit_key_prefix ON audit_log(key_prefix);
 `);
 
 // Migrate: add columns that may be missing from older databases
@@ -385,6 +412,38 @@ db.exec(`CREATE TABLE IF NOT EXISTS memory_2fa_settings (
   enabled INTEGER DEFAULT 0,
   email TEXT,
   updated INTEGER NOT NULL
+)`);
+
+// Memory 2FA brute-force attempt tracking (persistent across restarts)
+db.exec(`CREATE TABLE IF NOT EXISTS memory_2fa_attempts (
+  session_id TEXT PRIMARY KEY,
+  attempts INTEGER DEFAULT 0,
+  locked_until INTEGER DEFAULT 0
+)`);
+
+// Memory collaborators v2 - email invite, role system, expiry
+db.exec(`CREATE TABLE IF NOT EXISTS memory_collaborators_v2 (
+  id TEXT PRIMARY KEY,
+  owner_api_key_hash TEXT NOT NULL,
+  collaborator_api_key_hash TEXT,
+  collaborator_email TEXT,
+  namespace TEXT NOT NULL,
+  role TEXT DEFAULT 'read',
+  status TEXT DEFAULT 'pending',
+  invite_code TEXT,
+  invited_at INTEGER,
+  accepted_at INTEGER,
+  expires_at INTEGER
+)`);
+
+// Memory access log - tracks namespace access for audit
+db.exec(`CREATE TABLE IF NOT EXISTS memory_access_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  namespace TEXT,
+  key TEXT,
+  accessor_hash TEXT,
+  action TEXT,
+  ts INTEGER
 )`);
 
 const dbGetMemSession = db.prepare('SELECT * FROM memory_sessions WHERE id = ? AND api_key = ?');
@@ -470,15 +529,50 @@ app.post('/v1/memory/session/verify', auth, (req, res) => {
   const { session_id, code } = req.body;
   if (!session_id || !code) return res.status(422).json({ error: { code: 'missing_fields', fields: ['session_id', 'code'] } });
 
+  // SECURITY: Dual-layer brute-force protection for 6-digit code
+  // Layer 1: in-memory counter (fast path, resets on restart)
+  const BF_KEY = 'memverify:' + session_id;
+  const bfEntry = ipLimits.get(BF_KEY);
+  if (bfEntry && bfEntry.c >= 5) {
+    return res.status(429).json({ error: { code: 'too_many_attempts', message: 'Too many invalid code attempts. Create a new session.' } });
+  }
+  // Layer 2: persistent DB tracking (survives restarts)
+  let dbAttempt;
+  try { dbAttempt = db.prepare('SELECT * FROM memory_2fa_attempts WHERE session_id = ?').get(session_id); } catch(e) { dbAttempt = null; }
+  if (dbAttempt && dbAttempt.locked_until > Date.now()) {
+    const unlockIn = Math.ceil((dbAttempt.locked_until - Date.now()) / 1000);
+    return res.status(429).json({ error: { code: 'locked', message: 'Too many attempts. Try again in ' + unlockIn + 's.' } });
+  }
+  if (dbAttempt && dbAttempt.attempts >= 5) {
+    return res.status(429).json({ error: { code: 'too_many_attempts', message: 'Too many invalid code attempts. Create a new session.' } });
+  }
+
   const session = dbGetMemSession.get(session_id, req.apiKey);
   if (!session) return res.status(404).json({ error: { code: 'session_not_found' } });
   if (session.verified) return res.json({ ok: true, message: 'Already verified.', session_id });
   if (session.code_expires < Date.now()) return res.status(410).json({ error: { code: 'code_expired', message: 'Code expired. Create a new session.' } });
 
-  // Timing-safe comparison
-  if (!crypto.timingSafeEqual(Buffer.from(String(code)), Buffer.from(String(session.code)))) {
-    return res.status(401).json({ error: { code: 'invalid_code' } });
+  // Timing-safe comparison (guard: equal-length buffers required)
+  const codeStr = String(code);
+  const sessionCodeStr = String(session.code);
+  const codeBuf = Buffer.from(codeStr);
+  const sessionCodeBuf = Buffer.from(sessionCodeStr);
+  const codeMatch = codeBuf.length === sessionCodeBuf.length && crypto.timingSafeEqual(codeBuf, sessionCodeBuf);
+
+  if (!codeMatch) {
+    if (!bfEntry) ipLimits.set(BF_KEY, { c: 1, s: Date.now() }); else bfEntry.c += 1;
+    try {
+      const newCount = (dbAttempt ? dbAttempt.attempts : 0) + 1;
+      const lockedUntil = newCount >= 5 ? Date.now() + 300000 : 0;
+      db.prepare('INSERT OR REPLACE INTO memory_2fa_attempts (session_id, attempts, locked_until) VALUES (?, ?, ?)').run(session_id, newCount, lockedUntil);
+    } catch(e) {}
+    const remaining = Math.max(0, 5 - (ipLimits.get(BF_KEY)?.c || 1));
+    return res.status(401).json({ error: { code: 'invalid_code', attempts_remaining: remaining } });
   }
+
+  // Correct code - clear both counters
+  ipLimits.delete(BF_KEY);
+  try { db.prepare('DELETE FROM memory_2fa_attempts WHERE session_id = ?').run(session_id); } catch(e) {}
 
   dbVerifyMemSession.run(session_id, req.apiKey);
   res.json({ ok: true, message: 'Session verified. Include X-Memory-Session: ' + session_id + ' header on memory requests.', session_id, expires: new Date(session.expires).toISOString() });
@@ -598,6 +692,41 @@ for (const slug of Object.keys(API_DEFS)) {
 if (missing.length > 0) {
   console.error('WARNING: APIs without handlers:', missing);
 }
+
+// Wire 'route' slug into allHandlers — lightweight version for batch/dispatcher use
+// The full INTENT_BOOSTS version lives in the Express POST /v1/route handler
+allHandlers['route'] = function routeSlugHandler(input) {
+  const task = input.task || input.query || '';
+  if (!task) return { error: { code: 'missing_task', message: 'Provide task or query' } };
+  const lower = task.toLowerCase();
+  const stopWords = new Set(['the','and','for','are','this','that','with','from','into','your','some','will','can','how','its','have','not','but','use','get','set','you','all','can','was','has']);
+  const words = lower.split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
+  const scored = [];
+  for (const [slug, def] of Object.entries(API_DEFS)) {
+    const text = (slug + ' ' + (def.name||'') + ' ' + (def.desc||'')).toLowerCase();
+    let score = 0;
+    const matchedTerms = [];
+    words.forEach(w => {
+      if (text.includes(w)) { score++; matchedTerms.push(w); }
+      if (slug.includes(w)) score += 3;
+    });
+    if (def.tier === 'compute') score += 2;
+    if (def.credits <= 1) score += 1;
+    if (score > 2) scored.push({ slug, name: def.name, description: def.desc, credits: def.credits, tier: def.tier, category: def.cat, relevance_score: score, has_handler: !!allHandlers[slug] });
+  }
+  scored.sort((a, b) => b.relevance_score - a.relevance_score);
+  const best = scored[0] || null;
+  return {
+    task, best_match: best,
+    top_matches: scored.slice(0, 5),
+    total_candidates: scored.length,
+    recommended_call: best ? `POST /v1/${best.slug}` : null,
+    _engine: 'route-slug-handler',
+  };
+};
+// Remove 'route' from missing since we just added its handler
+const routeIdx = missing.indexOf('route');
+if (routeIdx !== -1) missing.splice(routeIdx, 1);
 
 // Seed demo key — upsert so balance/tier always stays generous
 db.prepare('INSERT INTO api_keys (key, id, balance, tier, created, key_hash, key_prefix) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(key) DO UPDATE SET balance=excluded.balance, tier=excluded.tier').run(
@@ -1357,14 +1486,21 @@ app.get('/robots.txt', (req, res) => {
 Allow: /
 Sitemap: https://slopshop.gg/sitemap.xml
 
-# AI Agent Discovery - slopshop.gg
-# Real tools for AI agents, zero mocks, credit-based
+# Slopshop — The Living Agentic Backend OS
+# Dream Engine + Multiplayer Memory. Backends that dream, teams that share intelligence.
+#
+# HEADLINE PRODUCTS:
+# Dream Engine:       POST /v1/memory/dream/start      — REM-style memory consolidation
+# Multiplayer Memory: POST /v1/memory/share/create     — shared team intelligence spaces
+# Memory Stats:       GET  /v1/memory/stats             — namespace analytics
+# Northstar:          POST /v1/northstar                — goal-anchored memory
+#
+# DISCOVERY:
 # Tool manifest: GET /v1/tools?format=anthropic|openai|mcp
 # Semantic search: POST /v1/resolve {"query": "what you need"}
 # MCP server: npx -y slopshop mcp
-# Docs: /docs.html
-# Dashboard: /dashboard.html
 # Health: /v1/health
+# Docs: /docs.html
 `);
 });
 
@@ -1378,17 +1514,32 @@ app.get('/v1/health', (_, res) => {
   res.json({
     status: 'healthy',
     version: '3.7.0',
+    platform: 'Slopshop — The Living Agentic Backend OS',
+    headline: 'Dream Engine + Multiplayer Memory. Backends that dream, teams that share intelligence.',
     apis: apiCount,
     uptime_seconds: Math.floor((Date.now() - serverStart) / 1000),
     memory_mb: Math.round(mem.rss / 1024 / 1024),
     sqlite_tables: sqliteTableCount,
     features: {
+      dream_engine: true,
+      multiplayer_memory: true,
       streaming: true,
       batch: true,
       dry_run: true,
       copilot: true,
       exchange: true,
       memory: true,
+    },
+    dream_engine: {
+      status: 'live',
+      description: 'REM-style memory consolidation — agents synthesize, compress, and evolve their memory overnight',
+      endpoints: ['POST /v1/memory/dream/start', 'GET /v1/memory/dream/status/:id', 'GET /v1/memory/dream/log', 'POST /v1/memory/dream/schedule'],
+      strategies: ['synthesize', 'pattern_extract', 'insight_generate', 'compress', 'associate'],
+    },
+    multiplayer_memory: {
+      status: 'live',
+      description: 'Shared memory spaces, collaborator invites, and real-time team intelligence sync',
+      endpoints: ['POST /v1/memory/share/create', 'POST /v1/memory/collaborator/invite', 'POST /v1/memory/share/set', 'POST /v1/memory/share/search'],
     },
     detail: {
       handlers: handlerCount,
@@ -1397,6 +1548,54 @@ app.get('/v1/health', (_, res) => {
       heap_total_mb: Math.round(mem.heapTotal / 1024 / 1024),
       last_benchmark_ts: lastBenchmarkTs,
     },
+  });
+});
+
+// ===== API HEALTH DASHBOARD =====
+// GET /v1/api-health — full handler coverage report with by-category breakdown
+app.get('/v1/api-health', (_, res) => {
+  const now = Date.now();
+  const totalApis = Object.keys(API_DEFS).length;
+  const handlersPresent = Object.keys(allHandlers).length;
+  const missingHandlers = missing.slice();
+
+  // Group by category (cat field in API_DEFS)
+  const byCategory = {};
+  const missingBySlug = new Set(missingHandlers);
+  for (const [slug, def] of Object.entries(API_DEFS)) {
+    const cat = String(def.cat || def.category || 'Uncategorized');
+    if (!byCategory[cat]) byCategory[cat] = { total: 0, handlers_present: 0, missing: [] };
+    byCategory[cat].total++;
+    if (!missingBySlug.has(slug)) {
+      byCategory[cat].handlers_present++;
+    } else {
+      byCategory[cat].missing.push(slug);
+    }
+  }
+
+  // Group missing by slug prefix for quick diagnosis
+  const missingByPrefix = {};
+  for (const slug of missingHandlers) {
+    const prefix = slug.split('-')[0];
+    if (!missingByPrefix[prefix]) missingByPrefix[prefix] = [];
+    missingByPrefix[prefix].push(slug);
+  }
+
+  const coverage_pct = totalApis > 0
+    ? Math.round((totalApis - missingHandlers.length) / totalApis * 10000) / 100
+    : 100;
+
+  res.json({
+    status: missingHandlers.length === 0 ? 'full_coverage' : 'partial_coverage',
+    total_apis: totalApis,
+    handlers_present: handlersPresent,
+    missing_count: missingHandlers.length,
+    coverage_pct,
+    missing_handlers: missingHandlers,
+    missing_by_prefix: missingByPrefix,
+    by_category: byCategory,
+    last_checked: new Date(now).toISOString(),
+    _note: 'handler counts include all handler files + inline registrations + runtime-loaded memory factory handlers',
   });
 });
 
@@ -3141,11 +3340,33 @@ app.get('/v1/badge.svg', (req, res) => {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const RESEARCH_TIERS = {
-  basic:    { providers: 1, credits: 20, max_tokens: 600, description: 'Single best-available LLM' },
-  standard: { providers: 2, credits: 35, max_tokens: 800, description: '2 LLMs (Claude + Grok)' },
-  advanced: { providers: 4, credits: 50, max_tokens: 800, description: 'All 4 LLMs + multi-language search' },
-  deep:     { providers: 4, credits: 75, max_tokens: 1200, description: 'All 4 LLMs + deep search + extended context' },
+  basic:    { providers: 1, credits: 20, max_tokens: 600,  description: 'Single best-available LLM' },
+  standard: { providers: 2, credits: 35, max_tokens: 800,  description: '2 LLMs (Claude + Grok/X real-time)' },
+  advanced: { providers: 4, credits: 50, max_tokens: 800,  description: 'All 4 LLMs + multi-language search (EN/ZH/JA)' },
+  deep:     { providers: 5, credits: 75, max_tokens: 1200, description: 'All 5 sources + deep search + extended context (EN/ZH/JA/RU)' },
+  planet:   { providers: 5, credits: 100, max_tokens: 2000, description: 'Full planetary intelligence: X/Twitter, 小红书/Zhihu, Yandex/Telegram, academic + synthesis. Every language.' },
 };
+
+// Research result cache — prevent duplicate expensive queries (30 min TTL)
+const _researchCache = new Map(); // key: hash(topic+tier) → { result, ts }
+const RESEARCH_CACHE_TTL = 30 * 60 * 1000; // 30 minutes
+function _researchCacheKey(topic, tier) {
+  return crypto.createHash('sha256').update(topic.toLowerCase().trim() + '|' + tier).digest('hex').slice(0, 16);
+}
+function _researchCacheGet(topic, tier) {
+  const k = _researchCacheKey(topic, tier);
+  const hit = _researchCache.get(k);
+  if (hit && (Date.now() - hit.ts) < RESEARCH_CACHE_TTL) return hit.result;
+  _researchCache.delete(k);
+  return null;
+}
+function _researchCacheSet(topic, tier, result) {
+  if (_researchCache.size > 200) { // Evict oldest
+    const oldestKey = _researchCache.keys().next().value;
+    _researchCache.delete(oldestKey);
+  }
+  _researchCache.set(_researchCacheKey(topic, tier), { result, ts: Date.now() });
+}
 
 // Fetch with AbortController timeout — prevents LLM provider calls from hanging the server
 async function fetchWithTimeout(url, options, ms = 20000) {
@@ -3160,109 +3381,280 @@ async function fetchWithTimeout(url, options, ms = 20000) {
 
 // Core research function — used by both /v1/research and dream engine
 async function executeResearch(topic, options = {}) {
-  const { tier = 'advanced', context = '', timeframe = 'recent', language_targets = ['en', 'zh', 'ja'], max_tokens } = options;
+  const { tier = 'advanced', context = '', timeframe = 'recent', language_targets = ['en', 'zh', 'ja', 'ru'], max_tokens, use_cache = true } = options;
   const tierConfig = RESEARCH_TIERS[tier] || RESEARCH_TIERS.advanced;
   const tokens = max_tokens || tierConfig.max_tokens;
 
+  // Check cache first
+  if (use_cache) {
+    const cached = _researchCacheGet(topic, tier);
+    if (cached) return { ...cached, from_cache: true };
+  }
+
   const providers = [];
+
+  // 1. Claude — Deep synthesis & cross-source analysis
   if (process.env.ANTHROPIC_API_KEY) providers.push({
-    name: 'claude', role: 'Deep analysis & synthesis',
-    prompt: (q, ctx) => `You are a research analyst. Analyze "${q}" with deep synthesis.
-${ctx ? 'EXISTING CONTEXT:\n' + ctx.slice(0, 2000) : ''}
-${timeframe !== 'all' ? `Focus on ${timeframe} developments.` : ''}
-Provide: 1) Key findings 2) Patterns & connections 3) Actionable insights 4) Confidence level (1-10)
-Be specific. Cite concrete details.`,
+    name: 'claude', role: 'Deep synthesis, cross-source analysis & insight generation',
+    prompt: (q, ctx) => `You are a world-class research analyst with access to the full internet. Synthesize everything you know about: "${q}"
+
+${ctx ? `EXISTING RESEARCH CONTEXT (synthesize with this):\n${ctx.slice(0, 2000)}\n\n` : ''}FOCUS: ${timeframe !== 'all' ? `${timeframe} developments only` : 'all time'}
+
+Deliver a structured research report with:
+1. **Executive Summary** (3-5 key findings in plain English)
+2. **Deep Patterns** (non-obvious connections, second-order effects)
+3. **Actionable Insights** (what to do with this knowledge)
+4. **Confidence Level** (1-10) and what you're uncertain about
+5. **Emerging Signals** (what might happen next)
+
+Be specific. Cite real details. Avoid vague statements.`,
     call: async (prompt) => {
-      const resp = await fetchWithTimeout('https://api.anthropic.com/v1/messages', { method: 'POST', headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' }, body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: tokens, messages: [{ role: 'user', content: prompt }] }) });
+      const resp = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: tokens, messages: [{ role: 'user', content: prompt }] })
+      });
       const j = await resp.json(); return j.content?.[0]?.text || null;
     }
   });
 
+  // 2. Grok — X/Twitter real-time + Japanese X (日本語) + English/Japanese bilingual
   if (process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY) providers.push({
-    name: 'grok', role: 'Real-time X/Twitter + Japanese X search',
-    prompt: (q, ctx) => `You are Grok, searching X (Twitter) and the real-time web for: "${q}"
-${language_targets.includes('ja') ? `Also search X Japan (日本語) for Japanese perspectives on "${q}". Translate key findings to English.` : ''}
-${timeframe !== 'all' ? `Focus on ${timeframe} posts and discussions.` : ''}
-Report: 1) What people are saying RIGHT NOW on X 2) Trending takes 3) Breaking developments 4) Japanese perspectives (if available)`,
+    name: 'grok', role: 'X/Twitter real-time intelligence + Japanese X (日本語) bilingual search',
+    prompt: (q) => `You are Grok with real-time access to X (Twitter). Search comprehensively for: "${q}"
+
+ENGLISH X SEARCH:
+- What is trending RIGHT NOW on X about this topic?
+- What are the hot takes, debates, and breaking news?
+- Which accounts (researchers, founders, journalists) are saying the most important things?
+- What's being retweeted most?
+
+JAPANESE X SEARCH (日本語):
+- 「${q}」について日本語のXでは何が話されていますか？
+- 日本の視点からの重要な洞察を英語に翻訳してください
+- Japanese tech community, researchers, and business leaders' perspectives
+
+Report format:
+**English X:** [top 5 real-time findings with context]
+**Japanese X:** [top 3 Japanese perspectives, translated to English]
+**Breaking:** [any developing stories in last 24h]
+**Sentiment:** [overall mood: bullish/bearish/neutral/divided]`,
     call: async (prompt) => {
       const key = process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY;
-      const resp = await fetchWithTimeout('https://api.x.ai/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'grok-3', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
+      const resp = await fetchWithTimeout('https://api.x.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + key, 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'grok-3', messages: [{ role: 'user', content: prompt }], max_tokens: tokens })
+      }, 25000);
       const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
     }
   });
 
+  // 3. DeepSeek — Chinese internet: 小红书 + 知乎 + 微信 + B站 + Baidu (Chinese-native intelligence)
   if (process.env.DEEPSEEK_API_KEY) providers.push({
-    name: 'deepseek', role: 'Chinese-web research (小红书, 知乎, 微信, B站)',
-    prompt: (q, ctx) => {
-      // Translate query to Chinese for native search
-      const zhQuery = q; // DeepSeek natively handles Chinese
-      return `You are a Chinese-web research agent. Search for information about "${q}" across Chinese platforms.
+    name: 'deepseek', role: '小红书/Xiaohongshu · 知乎/Zhihu · 微信/WeChat · B站/Bilibili · 百度/Baidu — Chinese internet intelligence',
+    prompt: (q) => `你是一个中文互联网研究专家。请深入研究关于"${q}"的最新中文网络信息。
 
-SEARCH THESE SOURCES (in Chinese - translate the query):
-- 小红书 (Xiaohongshu/Little Red Book) — lifestyle & consumer insights
-- 知乎 (Zhihu) — technical Q&A and expert opinions
-- 微信公众号 (WeChat Official Accounts) — industry analysis
-- B站 (Bilibili) — tech tutorials and discussions
-- 百度 (Baidu) — general Chinese web search
+SEARCH THESE PLATFORMS SPECIFICALLY:
 
-Query in Chinese: 请搜索关于"${zhQuery}"的最新信息
+**小红书 (Xiaohongshu / Little Red Book):**
+搜索：${q} 的消费者评价、使用体验、测评和趋势
+- What are Chinese consumers/creators saying about this?
+- What's trending on Little Red Book?
 
-Report findings in English. Include: 1) Chinese market perspective 2) Technical insights from Zhihu 3) Consumer sentiment from Xiaohongshu 4) Key differences from Western sources`;
-    },
+**知乎 (Zhihu):**
+搜索：${q} 的技术分析、专家意见和深度讨论
+- Expert technical opinions and Q&A
+- What do Chinese engineers/researchers think?
+
+**微信公众号 (WeChat Official Accounts):**
+搜索：${q} 的行业分析和权威解读
+- Industry analysis and official perspectives
+
+**B站 (Bilibili):**
+搜索：${q} 的教程、评测和技术分享
+- Tech tutorials, reviews, technical discussions
+
+**百度 (Baidu):**
+搜索：${q} 的最新新闻和综合信息
+
+REPORT IN ENGLISH:
+1. **Chinese Consumer Perspective** (小红书 insights)
+2. **Technical Expert View** (知乎 insights)
+3. **Industry Analysis** (WeChat insights)
+4. **Key Differences** from Western/English internet
+5. **Chinese Market Signals** (what this means for the Chinese market)`,
     call: async (prompt) => {
-      const resp = await fetchWithTimeout('https://api.deepseek.com/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.DEEPSEEK_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
+      const resp = await fetchWithTimeout('https://api.deepseek.com/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + process.env.DEEPSEEK_API_KEY, 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'deepseek-chat', messages: [{ role: 'user', content: prompt }], max_tokens: tokens })
+      }, 25000);
       const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
     }
   });
 
+  // 4. OpenAI — Academic, long-form, creative connections & contrarian takes
   if (process.env.OPENAI_API_KEY) providers.push({
-    name: 'openai', role: 'Broad internet research & creative connections',
-    prompt: (q, ctx) => `Research "${q}" thoroughly across the internet.
-${ctx ? 'EXISTING CONTEXT:\n' + ctx.slice(0, 1500) : ''}
-${timeframe !== 'all' ? `Focus on ${timeframe} information.` : ''}
-Provide: 1) Broad internet findings 2) Academic/research perspectives 3) Creative connections others might miss 4) Contrarian viewpoints`,
+    name: 'openai', role: 'Academic research, technical depth & creative cross-domain connections',
+    prompt: (q, ctx) => `You are a research polymath. Deeply research: "${q}"
+
+${ctx ? `PRIOR RESEARCH:\n${ctx.slice(0, 1500)}\n\n` : ''}SCOPE: ${timeframe !== 'all' ? `Focus on ${timeframe}` : 'All available information'}
+
+Provide:
+1. **Academic & Technical Depth** — papers, studies, technical details others miss
+2. **Creative Connections** — unexpected links to other domains, analogies, metaphors
+3. **Contrarian View** — what's the strongest case AGAINST the consensus?
+4. **Historical Context** — what similar things happened before and what can we learn?
+5. **Quantitative Anchors** — numbers, statistics, benchmarks, scale
+
+Go deep. Be specific. Make connections.`,
     call: async (prompt) => {
-      const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY, 'content-type': 'application/json' }, body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: prompt }], max_tokens: tokens }) });
+      const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + process.env.OPENAI_API_KEY, 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'gpt-4o', messages: [{ role: 'user', content: prompt }], max_tokens: tokens })
+      }, 25000);
       const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
     }
   });
 
-  // Select providers based on tier
+  // 5. Yandex/Russian intelligence — Yandex, Telegram, VK, RuNet (uses YandexGPT or falls back to Claude for Russian-language research)
+  const yandexKey = process.env.YANDEX_API_KEY || process.env.YANDEXGPT_API_KEY;
+  const yandexFolderId = process.env.YANDEX_FOLDER_ID;
+  if (yandexKey || (language_targets.includes('ru') && (process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY))) providers.push({
+    name: 'yandex', role: 'Яндекс/Yandex · Telegram · ВКонтакте/VK · RuNet — Russian internet intelligence',
+    prompt: (q) => `Вы — эксперт по русскоязычному интернету. Исследуйте тему "${q}" в российских источниках.
+
+ПОИСК В СЛЕДУЮЩИХ ИСТОЧНИКАХ:
+
+**Яндекс (Yandex.ru):**
+Найдите: ${q} — последние новости, статьи, обзоры
+- What are Russian-language sources saying?
+- What's trending on Yandex?
+
+**Telegram-каналы (Telegram Channels):**
+Найдите ключевые Telegram-каналы о ${q}
+- Major Russian tech/business Telegram channels
+- What are influencers and experts saying?
+
+**ВКонтакте (VKontakte/VK):**
+Найдите: ${q} в сообществах и публикациях
+- Russian social media sentiment
+
+**Хабр (Habr.com) — Russian tech blog:**
+Найдите технические статьи о ${q}
+- Russian developer/engineer perspective
+
+REPORT IN ENGLISH:
+1. **Russian Market Perspective** — what Russia/CIS countries think about this
+2. **Telegram Intelligence** — what major channels are saying
+3. **Technical View** (Habr) — Russian developer community insights
+4. **Geopolitical Angle** — any unique Russian/CIS market dynamics
+5. **Key Differences** from Western internet narrative`,
+    call: async (prompt) => {
+      // Try YandexGPT first if key available
+      if (yandexKey && yandexFolderId) {
+        try {
+          const resp = await fetchWithTimeout('https://llm.api.cloud.yandex.net/foundationModels/v1/completion', {
+            method: 'POST',
+            headers: { 'Authorization': 'Api-Key ' + yandexKey, 'content-type': 'application/json' },
+            body: JSON.stringify({ modelUri: 'gpt://' + yandexFolderId + '/yandexgpt/latest', completionOptions: { stream: false, temperature: 0.3, maxTokens: String(tokens) }, messages: [{ role: 'user', text: prompt }] })
+          }, 20000);
+          const j = await resp.json();
+          return j.result?.alternatives?.[0]?.message?.text || null;
+        } catch(e) { /* Fall through to backup */ }
+      }
+      // Fallback: use Claude or OpenAI with Russian-language research instructions
+      const fallbackKey = process.env.ANTHROPIC_API_KEY;
+      if (fallbackKey) {
+        const resp = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: { 'x-api-key': fallbackKey, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'claude-sonnet-4-6', max_tokens: Math.min(tokens, 800), messages: [{ role: 'user', content: prompt }] })
+        }, 20000);
+        const j = await resp.json(); return j.content?.[0]?.text || null;
+      }
+      const oaiKey = process.env.OPENAI_API_KEY;
+      if (oaiKey) {
+        const resp = await fetchWithTimeout('https://api.openai.com/v1/chat/completions', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + oaiKey, 'content-type': 'application/json' },
+          body: JSON.stringify({ model: 'gpt-4o-mini', messages: [{ role: 'user', content: prompt }], max_tokens: Math.min(tokens, 800) })
+        }, 20000);
+        const j = await resp.json(); return j.choices?.[0]?.message?.content || null;
+      }
+      return null;
+    }
+  });
+
+  // Select providers based on tier (prioritize by configured keys)
   const activeProviders = providers.slice(0, tierConfig.providers);
   if (activeProviders.length === 0) {
-    return { findings: [], providers_used: 0, error: 'No LLM API keys configured. Set ANTHROPIC_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, or OPENAI_API_KEY.' };
+    return { findings: [], providers_used: 0, error: 'No LLM API keys configured. Set ANTHROPIC_API_KEY, XAI_API_KEY, DEEPSEEK_API_KEY, OPENAI_API_KEY, or YANDEX_API_KEY.' };
   }
 
-  // Execute all providers in parallel
+  // Execute all providers in parallel with independent timeouts
   const startTime = Date.now();
   const results = await Promise.allSettled(
     activeProviders.map(async p => {
-      const prompt = p.prompt(topic, context);
-      const response = await p.call(prompt);
-      return { provider: p.name, role: p.role, response, chars: response?.length || 0 };
+      try {
+        const prompt = p.prompt(topic, context);
+        const response = await p.call(prompt);
+        return { provider: p.name, role: p.role, response, chars: response?.length || 0 };
+      } catch(e) {
+        return { provider: p.name, role: p.role, response: null, error: e.message };
+      }
     })
   );
 
   const findings = results
-    .filter(r => r.status === 'fulfilled' && r.value.response)
+    .filter(r => r.status === 'fulfilled' && r.value?.response)
     .map(r => r.value);
   const errors = results
-    .filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value.response))
-    .map(r => ({ provider: r.value?.provider || 'unknown', error: r.reason?.message || 'no response' }));
+    .filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && !r.value?.response))
+    .map(r => ({ provider: r.value?.provider || 'unknown', error: r.reason?.message || r.value?.error || 'no response' }));
 
-  return {
+  // Cross-synthesize if multiple sources found (for deep/planet tier)
+  let synthesis = null;
+  if (findings.length >= 3 && (tier === 'deep' || tier === 'planet') && process.env.ANTHROPIC_API_KEY) {
+    try {
+      const sourceTexts = findings.map(f => `=== ${f.provider.toUpperCase()} (${f.role}) ===\n${(f.response || '').slice(0, 800)}`).join('\n\n');
+      const synthResp = await fetchWithTimeout('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01', 'content-type': 'application/json' },
+        body: JSON.stringify({ model: 'claude-haiku-4-5-20251001', max_tokens: 600, messages: [{ role: 'user', content: `Synthesize these multi-source research findings about "${topic}" into 5 key cross-cultural insights that no single source would reveal:\n\n${sourceTexts}\n\nProvide: 1) Universal consensus 2) Key disagreements 3) Unique per-culture angle 4) Blind spots across all sources 5) Most actionable takeaway` }] })
+      }, 15000);
+      const sj = await synthResp.json();
+      synthesis = sj.content?.[0]?.text || null;
+    } catch(e) { /* synthesis is optional */ }
+  }
+
+  const result = {
     topic,
     tier,
     findings,
     errors,
+    synthesis,
     providers_used: findings.length,
     providers_available: activeProviders.length,
-    total_chars: findings.reduce((s, f) => s + f.chars, 0),
+    total_chars: findings.reduce((s, f) => s + (f.chars || 0), 0),
     latency_ms: Date.now() - startTime,
     language_targets,
     timeframe,
     credits_used: tierConfig.credits,
+    languages_covered: [...new Set(findings.map(f => {
+      if (f.provider === 'grok') return ['en', 'ja'];
+      if (f.provider === 'deepseek') return ['zh', 'en'];
+      if (f.provider === 'yandex') return ['ru', 'en'];
+      return ['en'];
+    }).flat())],
   };
+
+  // Cache successful results
+  if (findings.length > 0 && use_cache) _researchCacheSet(topic, tier, result);
+
+  return result;
 }
 
 // POST /v1/research — On-demand multi-LLM research
@@ -3281,13 +3673,30 @@ app.post('/v1/research', auth, async (req, res) => {
   persistKey(req.apiKey);
 
   try {
-    const result = await executeResearch(q, { tier: tier || 'advanced', context, timeframe: timeframe || 'recent', language_targets: languages || ['en', 'zh', 'ja'] });
-    // Store in memory for history
-    try {
-      const histKey = `research-${Date.now().toString(36)}`;
-      allHandlers['memory-set']({ api_key: req.apiKey, namespace: 'research', key: histKey, value: JSON.stringify({ query: q, tier: tier || 'advanced', result, created: new Date().toISOString() }), tags: 'research' });
-    } catch(e) {}
-    res.json({ ok: true, data: { _engine: 'real', ...result } });
+    const useCache = req.body.no_cache !== true;
+    const result = await executeResearch(q, {
+      tier: tier || 'advanced',
+      context,
+      timeframe: timeframe || 'recent',
+      language_targets: languages || ['en', 'zh', 'ja', 'ru'],
+      use_cache: useCache,
+    });
+    // Refund credits if served from cache
+    if (result.from_cache) {
+      req.acct.balance += tierConfig.credits;
+      persistKey(req.apiKey);
+    }
+    // Store in memory for history — properly scoped to this user
+    let histKey = null;
+    if (!result.from_cache) {
+      try {
+        const nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+        const scopedResearchNs = nsPrefix + ':research';
+        histKey = `research-${Date.now().toString(36)}`;
+        if (allHandlers['memory-set']) allHandlers['memory-set']({ namespace: scopedResearchNs, key: histKey, value: JSON.stringify({ query: q, tier: tier || 'advanced', result, created: new Date().toISOString() }), tags: ['research'] });
+      } catch(e) {}
+    }
+    res.json({ ok: true, result_id: histKey, from_cache: result.from_cache || false, data: { _engine: 'real', ...result } });
   } catch (e) {
     req.acct.balance += tierConfig.credits; // Refund on error
     persistKey(req.apiKey);
@@ -3299,7 +3708,9 @@ app.post('/v1/research', auth, async (req, res) => {
 app.get('/v1/research/history', auth, (req, res) => {
   try {
     const limit = Math.min(parseInt(req.query.limit) || 20, 100);
-    const result = allHandlers['memory-search']({ api_key: req.apiKey, namespace: 'research', tag: 'research', limit });
+    const nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const scopedResearchNs = nsPrefix + ':research';
+    const result = allHandlers['memory-search'] ? allHandlers['memory-search']({ namespace: scopedResearchNs, query: '', limit }) : { results: [] };
     const history = (result.results || []).map(r => {
       try { const d = JSON.parse(r.value); return { id: r.key, query: d.query, tier: d.tier, summary: d.result?.summary, created: d.created }; }
       catch(e) { return { id: r.key }; }
@@ -3308,19 +3719,48 @@ app.get('/v1/research/history', auth, (req, res) => {
   } catch(e) { res.status(500).json({ error: { code: 'history_error', message: e.message } }); }
 });
 
+// GET /v1/research/:id/result — retrieve a specific research result by ID
+app.get('/v1/research/:id/result', auth, (req, res) => {
+  try {
+    const nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const scopedResearchNs = nsPrefix + ':research';
+    const row = db.prepare("SELECT value FROM memory WHERE namespace = ? AND key = ?").get(scopedResearchNs, req.params.id);
+    if (!row) return res.status(404).json({ error: { code: 'not_found', message: 'Research result not found' } });
+    let data; try { data = JSON.parse(row.value); } catch(e) { data = row.value; }
+    res.json({ ok: true, id: req.params.id, ...data, _engine: 'real' });
+  } catch(e) { res.status(500).json({ error: { code: 'fetch_error', message: e.message } }); }
+});
+
 // GET /v1/research/tiers — Show available research tiers and pricing
 app.get('/v1/research/tiers', publicRateLimit, (req, res) => {
   const available = [];
   if (process.env.ANTHROPIC_API_KEY) available.push('claude');
-  if (process.env.XAI_API_KEY || process.env.GROK_API_KEY) available.push('grok');
+  if (process.env.XAI_API_KEY || process.env.GROK_API_KEY || process.env.X_API_KEY) available.push('grok');
   if (process.env.DEEPSEEK_API_KEY) available.push('deepseek');
   if (process.env.OPENAI_API_KEY) available.push('openai');
-  res.json({ ok: true, tiers: RESEARCH_TIERS, providers_configured: available, provider_roles: {
-    claude: 'Deep analysis & synthesis',
-    grok: 'Real-time X/Twitter + Japanese X search',
-    deepseek: 'Chinese-web research (小红书, 知乎, 微信, B站)',
-    openai: 'Broad internet research & creative connections',
-  }});
+  if (process.env.YANDEX_API_KEY || process.env.YANDEXGPT_API_KEY || available.length > 0) available.push('yandex');
+  res.json({
+    ok: true,
+    tiers: RESEARCH_TIERS,
+    providers_configured: available,
+    provider_roles: {
+      claude: 'Deep synthesis, cross-source analysis & insight generation',
+      grok: 'X/Twitter real-time + Japanese X (日本語) bilingual intelligence',
+      deepseek: '小红书/Xiaohongshu · 知乎/Zhihu · 微信/WeChat · B站/Bilibili (Chinese internet)',
+      openai: 'Academic depth, technical research & creative cross-domain connections',
+      yandex: 'Яндекс/Yandex · Telegram · ВКонтакте/VK · Хабр/Habr (Russian internet)',
+    },
+    languages_covered: { claude: ['en'], grok: ['en', 'ja'], deepseek: ['zh', 'en'], openai: ['en'], yandex: ['ru', 'en'] },
+    setup: {
+      claude: 'ANTHROPIC_API_KEY',
+      grok: 'XAI_API_KEY (or GROK_API_KEY or X_API_KEY)',
+      deepseek: 'DEEPSEEK_API_KEY',
+      openai: 'OPENAI_API_KEY',
+      yandex: 'YANDEX_API_KEY + YANDEX_FOLDER_ID (optional — falls back to Claude/GPT for Russian research)',
+    },
+    cache_ttl_minutes: 30,
+    _engine: 'real',
+  });
 });
 
 // ═══ NORTH STAR — one-sentence goal triggers research swarm ═══
@@ -3334,7 +3774,7 @@ app.post('/v1/northstar/set', auth, async (req, res) => {
 
   // Store the goal
   try {
-    const storeData = JSON.stringify({ key: 'northstar_goal', value: goal, namespace: ns, tags: 'northstar,goal' });
+    const storeData = JSON.stringify({ key: 'northstar_goal', value: goal, namespace: ns, tags: ['northstar', 'goal'] });
     await new Promise((resolve, reject) => {
       const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-set', method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(storeData), 'Authorization': req.headers.authorization }, timeout: 5000
@@ -3348,7 +3788,7 @@ app.post('/v1/northstar/set', auth, async (req, res) => {
     try {
       const research = await executeResearch(goal, { tier: 'basic', context: '', timeframe: 'recent' });
       if (research) {
-        const resData = JSON.stringify({ key: 'northstar_initial_research', value: JSON.stringify(research), namespace: ns, tags: 'northstar,research' });
+        const resData = JSON.stringify({ key: 'northstar_initial_research', value: JSON.stringify(research), namespace: ns, tags: ['northstar', 'research'] });
         const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-set', method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(resData), 'Authorization': 'Bearer ' + req.apiKey }, timeout: 10000
         }, () => {}); r.on('error', () => {}); r.write(resData); r.end();
@@ -3376,16 +3816,114 @@ app.post('/v1/northstar/set', auth, async (req, res) => {
 // GET /v1/northstar — Get current North Star (reads direct from SQLite, no self-call)
 app.get('/v1/northstar', auth, (req, res) => {
   try {
-    const row = db.prepare("SELECT value FROM memory WHERE api_key = ? AND key = 'northstar_goal' AND namespace = 'northstar' ORDER BY created DESC LIMIT 1").get(req.apiKey);
-    const goal = row ? row.value : null;
-    // Also get research summary if available
-    const resRow = db.prepare("SELECT value FROM memory WHERE api_key = ? AND key = 'northstar_initial_research' AND namespace = 'northstar' ORDER BY created DESC LIMIT 1").get(req.apiKey);
+    // Scope namespace to api key (same as wildcard dispatcher)
+    if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const scopedNs = req.acct._nsPrefix + ':northstar';
+
+    const goalRow = allHandlers['memory-get'] ? allHandlers['memory-get']({ key: 'northstar_goal', namespace: scopedNs }) : null;
+    const goal = (goalRow && goalRow.found) ? goalRow.value : null;
+
     let researchSummary = null;
-    if (resRow) { try { const r = JSON.parse(resRow.value); researchSummary = { providers_used: r.providers_used || 0, findings_count: (r.findings||[]).length }; } catch(_) {} }
+    try {
+      const resRow = allHandlers['memory-get'] ? allHandlers['memory-get']({ key: 'northstar_initial_research', namespace: scopedNs }) : null;
+      if (resRow && resRow.found) {
+        const r = typeof resRow.value === 'object' ? resRow.value : JSON.parse(resRow.value);
+        researchSummary = { providers_used: r.providers_used || 0, findings_count: (r.findings||[]).length };
+      }
+    } catch(_) {}
+
     res.json({ ok: true, data: { goal: goal || null, set: !!goal, namespace: 'northstar', research_summary: researchSummary } });
   } catch(e) {
     res.json({ ok: true, data: { goal: null, set: false, error: e.message } });
   }
+});
+
+// POST /v1/northstar/progress — log progress against your northstar goal
+app.post('/v1/northstar/progress', auth, (req, res) => {
+  const { note, percent_complete, milestone } = req.body;
+  if (!note) return res.status(400).json({ error: { code: 'missing_note', message: 'note is required' } });
+
+  // Compute the scoped namespace prefix (same as wildcard dispatcher)
+  const nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const scopedNs = nsPrefix + ':northstar';
+
+  // Get current northstar goal from memory
+  let goal = null;
+  try {
+    const goalRow = allHandlers['memory-get'] ? allHandlers['memory-get']({ key: 'northstar_goal', namespace: scopedNs }) : null;
+    if (goalRow && goalRow.found) goal = goalRow.value;
+  } catch(e) {}
+
+  if (!goal) return res.status(404).json({ error: { code: 'no_northstar', message: 'Set a northstar first via POST /v1/northstar/set' } });
+
+  // Store progress entry in memory system
+  const progressKey = 'northstar:progress:' + Date.now();
+  const progressEntry = {
+    goal,
+    note,
+    percent_complete: percent_complete || null,
+    milestone: milestone || null,
+    logged_at: new Date().toISOString()
+  };
+
+  try {
+    if (allHandlers['memory-set']) {
+      allHandlers['memory-set']({
+        key: progressKey,
+        value: progressEntry,
+        namespace: scopedNs,
+        tags: ['progress', 'northstar'],
+        type: 'project',
+      });
+    }
+  } catch(e) {}
+
+  // Get all progress entries for this goal
+  let progressHistory = [];
+  try {
+    const searchResult = allHandlers['memory-search'] ? allHandlers['memory-search']({ query: 'northstar:progress:', namespace: scopedNs, limit: 20 }) : { results: [] };
+    progressHistory = (searchResult.results || [])
+      .filter(r => r.key && r.key.startsWith('northstar:progress:'))
+      .map(r => r.value);
+  } catch(e) {}
+
+  dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'northstar/progress', 1, 0, 'compute');
+
+  res.json({
+    ok: true,
+    goal,
+    note,
+    percent_complete: percent_complete || null,
+    milestone: milestone || null,
+    progress_count: progressHistory.length,
+    progress_history: progressHistory.slice(0, 5),
+    logged_at: new Date().toISOString()
+  });
+});
+
+// GET /v1/northstar/progress — retrieve progress history
+app.get('/v1/northstar/progress', auth, (req, res) => {
+  try {
+    const nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const scopedNs = nsPrefix + ':northstar';
+    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+    const rows = db.prepare("SELECT key, value, ts FROM memory WHERE namespace = ? AND key LIKE 'northstar:progress:%' ORDER BY ts DESC LIMIT ?").all(scopedNs, limit);
+    const entries = rows.map(r => { let val; try { val = JSON.parse(r.value); } catch(e) { val = r.value; } return { key: r.key, ...val, ts: r.ts }; });
+    let goal = null;
+    try { const gr = db.prepare("SELECT value FROM memory WHERE namespace = ? AND key = ?").get(scopedNs, 'northstar_goal'); if (gr) { try { goal = JSON.parse(gr.value); } catch(e) { goal = gr.value; } } } catch(e) {}
+    res.json({ ok: true, goal, progress: entries, count: entries.length, _engine: 'real' });
+  } catch(e) { res.status(500).json({ error: { code: 'progress_fetch_error', message: e.message } }); }
+});
+
+// DELETE /v1/northstar — clear the North Star goal
+app.delete('/v1/northstar', auth, (req, res) => {
+  try {
+    const nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    const scopedNs = nsPrefix + ':northstar';
+    db.prepare("DELETE FROM memory WHERE namespace = ? AND key = ?").run(scopedNs, 'northstar_goal');
+    db.prepare("DELETE FROM memory WHERE namespace = ? AND key = ?").run(scopedNs, 'northstar_initial_research');
+    res.json({ ok: true, cleared: true, message: 'North Star goal cleared', _engine: 'real' });
+  } catch(e) { res.status(500).json({ error: { code: 'delete_error', message: e.message } }); }
 });
 
 // POST /v1/hive/daily-intelligence — Run daily intelligence cycle
@@ -3430,7 +3968,7 @@ app.post('/v1/hive/daily-intelligence', auth, async (req, res) => {
       findings: research.findings,
       providers_used: research.providers_used,
       credits_used: tierConfig.credits,
-    }), namespace: 'northstar', tags: 'daily-brief,intelligence' });
+    }), namespace: 'northstar', tags: ['daily-brief', 'intelligence'] });
     await new Promise((resolve) => {
       const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-set', method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(storeData), 'Authorization': req.headers.authorization }, timeout: 5000
@@ -3525,7 +4063,11 @@ app.post('/v1/dream/subscribe', auth, (req, res) => {
   try { db.exec('ALTER TABLE dream_subscriptions ADD COLUMN rem_cycles INTEGER DEFAULT 1'); } catch(_) {}
   try { db.exec('ALTER TABLE dream_subscriptions ADD COLUMN max_credits INTEGER DEFAULT 0'); } catch(_) {}
   try { db.exec('ALTER TABLE dream_subscriptions ADD COLUMN tier TEXT DEFAULT \'basic\''); } catch(_) {}
-  db.prepare('INSERT INTO dream_subscriptions (id, api_key, topic, interval_hours, credits_per_dream, rem_cycles, max_credits, tier, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, req.apiKey, topic, hours, creditsPerCycle, cycles, maxCreds, dreamTier, Date.now());
+  try {
+    db.prepare('INSERT INTO dream_subscriptions (id, api_key, topic, interval_hours, credits_per_dream, rem_cycles, max_credits, tier, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(id, req.apiKey, topic, hours, creditsPerCycle, cycles, maxCreds, dreamTier, Date.now());
+  } catch(e) {
+    return res.status(500).json({ error: { code: 'subscribe_failed', message: e.message, hint: 'Check that topic is a non-empty string' } });
+  }
 
   const intervalStr = hours >= 1 ? `${hours}h` : `${Math.round(hours * 60)}min`;
   const dailyCycles = Math.round(24 / hours);
@@ -3547,8 +4089,12 @@ app.post('/v1/dream/subscribe', auth, (req, res) => {
 });
 
 app.get('/v1/dream/subscriptions', auth, (req, res) => {
-  const subs = db.prepare('SELECT * FROM dream_subscriptions WHERE api_key = ?').all(req.apiKey);
-  res.json({ ok: true, subscriptions: subs, count: subs.length });
+  try {
+    const subs = db.prepare('SELECT * FROM dream_subscriptions WHERE api_key = ?').all(req.apiKey);
+    res.json({ ok: true, subscriptions: subs, count: subs.length, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'subscriptions_error', message: e.message } });
+  }
 });
 
 app.get('/v1/dream/subscriptions/:id', auth, (req, res) => {
@@ -3579,8 +4125,12 @@ app.patch('/v1/dream/subscribe/:id', auth, (req, res) => {
 });
 
 app.delete('/v1/dream/subscribe/:id', auth, (req, res) => {
-  db.prepare('UPDATE dream_subscriptions SET active = 0 WHERE id = ? AND api_key = ?').run(req.params.id, req.apiKey);
-  res.json({ ok: true, deleted: req.params.id });
+  try {
+    db.prepare('UPDATE dream_subscriptions SET active = 0 WHERE id = ? AND api_key = ?').run(req.params.id, req.apiKey);
+    res.json({ ok: true, deleted: req.params.id, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'delete_failed', message: e.message } });
+  }
 });
 
 // POST /v1/dream/review — Review pending dream insights before deploying
@@ -3758,106 +4308,79 @@ app.get('/v1/dream/shared', publicRateLimit, (req, res) => {
 // Accepts: { content: "raw text or JSON string", format: "text|json|markdown|auto", namespace: "default" }
 // Transcribes into compressed, structured memory entries
 app.post('/v1/memory/upload', auth, async (req, res) => {
-  const { content, format, namespace, filename } = req.body;
-  if (!content) return res.status(400).json({ error: { code: 'missing_content' } });
-
+  const { content: rawContent, format, namespace, prefix, filename } = req.body;
+  if (!rawContent) return res.status(400).json({ error: { code: 'missing_content', message: 'Provide content field' } });
   const ns = namespace || 'default';
+  const pfx = prefix ? String(prefix).replace(/[^a-z0-9_-]/gi, '_') + '_' : '';
   const fmt = format || 'auto';
   const entries = [];
-
-  // Auto-detect format
-  let parsed;
-  if (fmt === 'json' || (fmt === 'auto' && content.trim().startsWith('{'))) {
-    try {
-      parsed = JSON.parse(content);
-      // If it's an object, each key becomes a memory entry
-      if (typeof parsed === 'object' && !Array.isArray(parsed)) {
-        for (const [key, value] of Object.entries(parsed)) {
-          entries.push({ key: key.slice(0, 200), value: typeof value === 'string' ? value : JSON.stringify(value) });
-        }
-      } else if (Array.isArray(parsed)) {
-        parsed.forEach((item, i) => {
-          const key = item.key || item.id || item.name || `import_${i}`;
-          const value = item.value || item.content || item.text || JSON.stringify(item);
-          entries.push({ key: String(key).slice(0, 200), value: String(value) });
-        });
-      }
-    } catch(e) { /* fall through to text parsing */ }
+  const errors = [];
+  function parseCSV(text) {
+    text.split('\n').filter(r => r.trim()).forEach((row, i) => {
+      try {
+        const cols = row.split(',');
+        const k = (cols[0] || '').trim().replace(/^"|"$/g, '');
+        const v = cols.slice(1).join(',').trim().replace(/^"|"$/g, '');
+        if (k) entries.push({ key: pfx + k.slice(0, 200), value: v, tags: ['csv', 'import'] });
+      } catch (err) { errors.push({ row: i, reason: err.message }); }
+    });
   }
-
-  if (entries.length === 0) {
-    // Parse as text/markdown — split into sections by headers or paragraphs
-    const lines = content.split('\n');
-    let currentSection = '';
-    let currentKey = filename ? filename.replace(/\.[^.]+$/, '') : 'import';
-    let sectionIndex = 0;
-
-    for (const line of lines) {
-      const headerMatch = line.match(/^#{1,3}\s+(.+)/);
-      if (headerMatch) {
-        // Save previous section
-        if (currentSection.trim()) {
-          entries.push({
-            key: `${currentKey}_${sectionIndex}_${headerMatch[1].toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60)}`,
-            value: currentSection.trim()
-          });
-          sectionIndex++;
-        }
-        currentSection = line + '\n';
-      } else {
-        currentSection += line + '\n';
-      }
-    }
-    // Save last section
-    if (currentSection.trim()) {
-      entries.push({ key: `${currentKey}_${sectionIndex}`, value: currentSection.trim() });
-    }
-
-    // If no sections found (no headers), chunk by paragraphs
-    if (entries.length === 0) {
-      const paragraphs = content.split(/\n\s*\n/).filter(p => p.trim());
-      paragraphs.forEach((p, i) => {
-        entries.push({ key: `${currentKey}_p${i}`, value: p.trim() });
+  function parseJSON(text) {
+    let parsed;
+    try { parsed = JSON.parse(text); } catch (err) { errors.push({ reason: 'JSON parse error: ' + err.message }); return; }
+    if (Array.isArray(parsed)) {
+      parsed.forEach((item, i) => {
+        const k = item.key || item.id || item.name || ('item_' + i);
+        const v = item.value || item.content || item.text || JSON.stringify(item);
+        const t = Array.isArray(item.tags) ? item.tags.concat(['json','import']) : ['json','import'];
+        entries.push({ key: pfx + String(k).slice(0, 200), value: String(v), tags: t });
       });
-    }
+    } else if (parsed && typeof parsed === 'object') {
+      for (const [k, v] of Object.entries(parsed)) {
+        entries.push({ key: pfx + k.slice(0, 200), value: typeof v === 'string' ? v : JSON.stringify(v), tags: ['json','import'] });
+      }
+    } else { errors.push({ reason: 'JSON root must be object or array' }); }
   }
-
-  // Compress: skip entries smaller than 10 chars, truncate values at 10KB
-  const compressed = entries
-    .filter(e => e.value.length >= 10)
-    .map(e => ({ ...e, value: e.value.slice(0, 10000) }));
-
-  // Store all entries via internal HTTP call (respects API key scoping)
-  let stored = 0;
-  const storeEntry = (key, value, tags) => new Promise(resolve => {
-    const data = JSON.stringify({ namespace: ns, key, value, tags });
-    const r = http.request({ hostname: 'localhost', port: process.env.PORT || 3000, path: '/v1/memory-set', method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data), 'Authorization': req.headers.authorization },
-      timeout: 5000
-    }, res2 => { let b = ''; res2.on('data', c => b += c); res2.on('end', () => resolve(res2.statusCode === 200)); });
-    r.on('error', () => resolve(false));
-    r.write(data); r.end();
-  });
-  for (const entry of compressed) {
-    const ok = await storeEntry(entry.key, entry.value, 'import,upload' + (filename ? ',' + filename : ''));
-    if (ok) stored++;
+  function parseMarkdown(text) {
+    const base = filename ? filename.replace(/\.[^.]+$/, '') : 'doc';
+    text.split(/\n(?=#{1,2} )/).forEach((section, i) => {
+      const hm = section.match(/^#{1,2}\s+(.+)/);
+      const heading = hm ? hm[1].trim() : (base + '_' + i);
+      const body = section.replace(/^#{1,2}[^\n]*\n?/, '').trim();
+      if (body.length >= 5) entries.push({ key: pfx + heading.toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 60), value: body, tags: ['markdown','import'] });
+    });
+    if (entries.length === 0) text.split(/\n\s*\n/).filter(p => p.trim().length >= 5).forEach((p, i) => entries.push({ key: pfx + base + '_p' + i, value: p.trim(), tags: ['markdown','import'] }));
   }
-
-  res.json({
-    ok: true,
-    data: {
-      _engine: 'real',
-      entries_parsed: entries.length,
-      entries_stored: stored,
-      entries_skipped: entries.length - stored,
-      namespace: ns,
-      format_detected: parsed ? 'json' : 'text',
-      total_chars: content.length,
-      compressed_chars: compressed.reduce((s, e) => s + e.value.length, 0),
-      compression_ratio: content.length > 0 ? (compressed.reduce((s, e) => s + e.value.length, 0) / content.length * 100).toFixed(1) + '%' : '0%',
-      keys: compressed.map(e => e.key),
-    }
-  });
+  function parseText(text) {
+    const base = filename ? filename.replace(/\.[^.]+$/, '') : 'text';
+    const paras = text.split(/\n\s*\n/).filter(p => p.trim().length >= 5);
+    if (paras.length > 0) paras.forEach((p, i) => entries.push({ key: pfx + base + '_p' + i, value: p.trim(), tags: ['text','import'] }));
+    else if (text.trim().length >= 5) entries.push({ key: pfx + base, value: text.trim(), tags: ['text','import'] });
+  }
+  const trimmed = rawContent.trim();
+  if (fmt === 'csv') parseCSV(rawContent);
+  else if (fmt === 'json') parseJSON(rawContent);
+  else if (fmt === 'markdown') parseMarkdown(rawContent);
+  else if (fmt === 'text') parseText(rawContent);
+  else {
+    if (trimmed.startsWith('{') || trimmed.startsWith('[')) parseJSON(rawContent);
+    else if (/^[^,\n]+,[^\n]+/.test(trimmed) && !trimmed.startsWith('#')) parseCSV(rawContent);
+    else if (trimmed.startsWith('#')) parseMarkdown(rawContent);
+    else parseText(rawContent);
+  }
+  const valid = entries.filter(e => e.value && String(e.value).length >= 2).map(e => ({ ...e, value: String(e.value).slice(0, 10000) }));
+  const skipped = entries.length - valid.length;
+  let imported = 0;
+  const importErrors = [...errors];
+  if (valid.length > 0 && allHandlers['memory-bulk-set']) {
+    try {
+      const bulkResult = allHandlers['memory-bulk-set']({ entries: valid.map(e => ({ key: e.key, value: e.value, tags: e.tags })), namespace: ns, api_key: req.apiKey });
+      imported = bulkResult.stored || 0;
+      if (bulkResult.errors && bulkResult.errors.length) importErrors.push(...bulkResult.errors.map(err => ({ key: err.entry && err.entry.key, reason: err.reason })));
+    } catch (err) { importErrors.push({ reason: 'bulk-set failed: ' + err.message }); }
+  }
+  const fmtDetected = fmt !== 'auto' ? fmt : (trimmed.startsWith('{') || trimmed.startsWith('[')) ? 'json' : (/^[^,\n]+,[^\n]+/.test(trimmed) && !trimmed.startsWith('#')) ? 'csv' : trimmed.startsWith('#') ? 'markdown' : 'text';
+  res.json({ ok: true, imported, skipped, errors: importErrors, sample_keys: valid.slice(0, 10).map(e => e.key), namespace: ns, format_detected: fmtDetected });
 });
 
 // ═══ SHARED MEMORY — cross-team collaboration with permission controls ═══
@@ -3866,8 +4389,13 @@ db.exec(`CREATE TABLE IF NOT EXISTS shared_memory_spaces (
   name TEXT NOT NULL,
   owner_key TEXT NOT NULL,
   created INTEGER NOT NULL,
-  description TEXT DEFAULT ''
+  description TEXT DEFAULT '',
+  retention TEXT DEFAULT 'permanent',
+  expires_at INTEGER DEFAULT NULL
 )`);
+// Migrate: add retention + expires_at columns if missing
+try { db.exec("ALTER TABLE shared_memory_spaces ADD COLUMN retention TEXT DEFAULT 'permanent'"); } catch(e) {}
+try { db.exec('ALTER TABLE shared_memory_spaces ADD COLUMN expires_at INTEGER DEFAULT NULL'); } catch(e) {}
 db.exec(`CREATE TABLE IF NOT EXISTS shared_memory_members (
   space_id TEXT NOT NULL,
   api_key TEXT NOT NULL,
@@ -3877,14 +4405,39 @@ db.exec(`CREATE TABLE IF NOT EXISTS shared_memory_members (
   PRIMARY KEY (space_id, api_key)
 )`);
 
+// Retention TTL map for shared memory spaces
+const RETENTION_TTL = {
+  session: 24 * 60 * 60 * 1000,      // 24 hours
+  daily: 7 * 24 * 60 * 60 * 1000,    // 7 days
+  weekly: 30 * 24 * 60 * 60 * 1000,  // 30 days
+  permanent: null,                     // No expiry
+};
+
 // POST /v1/memory/share/create — Create a shared memory space
 app.post('/v1/memory/share/create', auth, (req, res) => {
-  const { name, description } = req.body;
+  const { name, description, retention } = req.body;
   if (!name) return res.status(400).json({ error: { code: 'missing_name' } });
+  const validRetention = ['session', 'daily', 'weekly', 'permanent'];
+  const retentionMode = validRetention.includes(retention) ? retention : 'permanent';
+  const ttlMs = RETENTION_TTL[retentionMode];
+  const expiresAt = ttlMs ? Date.now() + ttlMs : null;
   const id = 'shared-' + crypto.randomUUID().slice(0, 12);
-  db.prepare('INSERT INTO shared_memory_spaces (id, name, owner_key, created, description) VALUES (?, ?, ?, ?, ?)').run(id, name, req.apiKey, Date.now(), description || '');
+  db.prepare('INSERT INTO shared_memory_spaces (id, name, owner_key, created, description, retention, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)').run(id, name, req.apiKey, Date.now(), description || '', retentionMode, expiresAt);
   db.prepare('INSERT INTO shared_memory_members (space_id, api_key, role, invited_by, joined) VALUES (?, ?, ?, ?, ?)').run(id, req.apiKey, 'owner', req.apiKey, Date.now());
-  res.status(201).json({ ok: true, space_id: id, name, role: 'owner', note: 'Invite others with POST /v1/memory/share/invite {space_id, invite_key}' });
+  res.status(201).json({
+    ok: true, space_id: id, name, role: 'owner', description: description || '',
+    retention: retentionMode,
+    expires_at: expiresAt ? new Date(expiresAt).toISOString() : null,
+    retention_options: { session: '24 hours', daily: '7 days', weekly: '30 days', permanent: 'never expires' },
+    note: 'Multiplayer Memory space created.',
+    next_steps: [
+      'POST /v1/memory/share/invite {space_id, invite_key} — invite teammates',
+      'POST /v1/memory/share/set {space_id, key, value} — write shared memory',
+      'POST /v1/memory/share/search {space_id, query} — search team memory',
+      'GET /v1/memory/share/' + id + ' — space info',
+    ],
+    _engine: 'real',
+  });
 });
 
 // POST /v1/memory/share/invite — Invite another API key to a shared space
@@ -3895,7 +4448,8 @@ app.post('/v1/memory/share/invite', auth, (req, res) => {
   if (!space) return res.status(404).json({ error: { code: 'space_not_found' } });
   const member = db.prepare('SELECT * FROM shared_memory_members WHERE space_id = ? AND api_key = ?').get(space_id, req.apiKey);
   if (!member || (member.role !== 'owner' && member.role !== 'admin')) return res.status(403).json({ error: { code: 'not_authorized', message: 'Only owners and admins can invite' } });
-  const memberRole = role || 'editor';
+  const validRoles = ['viewer', 'editor', 'admin'];
+  const memberRole = validRoles.includes(role) ? role : 'editor';
   try {
     db.prepare('INSERT OR REPLACE INTO shared_memory_members (space_id, api_key, role, invited_by, joined) VALUES (?, ?, ?, ?, ?)').run(space_id, invite_key, memberRole, req.apiKey, Date.now());
   } catch(e) { return res.status(500).json({ error: { code: 'invite_failed', message: e.message } }); }
@@ -3911,8 +4465,9 @@ app.post('/v1/memory/share/set', auth, (req, res) => {
   if (member.role === 'viewer') return res.status(403).json({ error: { code: 'read_only', message: 'Viewers cannot write' } });
   try {
     allHandlers['memory-set']({ namespace: 'shared:' + space_id, key, value: typeof value === 'string' ? value : JSON.stringify(value), tags: 'shared,' + space_id });
-    res.json({ ok: true, space_id, key, written_by: req.apiKey.slice(0, 12) + '...' });
-  } catch(e) { res.status(500).json({ error: { code: 'write_failed', message: e.message } }); }
+    try { db.prepare('INSERT INTO memory_access_log (namespace, key, accessor_hash, action, ts) VALUES (?, ?, ?, ?, ?)').run('shared:' + space_id, key, hashApiKey(req.apiKey), 'write', Date.now()); } catch(e2) {}
+    res.json({ ok: true, space_id, key, written_by: req.apiKey.slice(0, 12) + '...', _engine: 'real' });
+  } catch(e) { res.status(500).json({ error: { code: 'write_failed', message: e.message }, _engine: 'real' }); }
 });
 
 // POST /v1/memory/share/get — Read from shared memory space
@@ -3929,8 +4484,50 @@ app.post('/v1/memory/share/get', auth, (req, res) => {
 
 // GET /v1/memory/share/list — List shared spaces you belong to
 app.get('/v1/memory/share/list', auth, (req, res) => {
-  const memberships = db.prepare('SELECT m.space_id, m.role, m.joined, s.name, s.description, s.owner_key FROM shared_memory_members m JOIN shared_memory_spaces s ON m.space_id = s.id WHERE m.api_key = ?').all(req.apiKey);
-  res.json({ ok: true, spaces: memberships.map(m => ({ id: m.space_id, name: m.name, description: m.description, role: m.role, owner: m.owner_key.slice(0, 12) + '...', joined: m.joined })), count: memberships.length });
+  try {
+    const memberships = db.prepare('SELECT m.space_id, m.role, m.joined, s.name, s.description, s.owner_key FROM shared_memory_members m JOIN shared_memory_spaces s ON m.space_id = s.id WHERE m.api_key = ?').all(req.apiKey);
+    res.json({ ok: true, spaces: memberships.map(m => ({ id: m.space_id, name: m.name, description: m.description, role: m.role, owner: m.owner_key.slice(0, 12) + '...', joined: m.joined })), count: memberships.length, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'list_failed', message: e.message } });
+  }
+});
+
+// POST /v1/memory/share/:space_id/retention — Change retention policy on a space
+app.post('/v1/memory/share/:space_id/retention', auth, (req, res) => {
+  const spaceId = req.params.space_id;
+  const space = db.prepare('SELECT * FROM shared_memory_spaces WHERE id = ? AND owner_key = ?').get(spaceId, req.apiKey);
+  if (!space) return res.status(404).json({ error: { code: 'space_not_found_or_not_owner' } });
+  const validRetention = ['session', 'daily', 'weekly', 'permanent'];
+  const { retention } = req.body;
+  if (!retention || !validRetention.includes(retention)) return res.status(400).json({ error: { code: 'invalid_retention', valid: validRetention } });
+  const ttlMs = RETENTION_TTL[retention];
+  const expiresAt = ttlMs ? Date.now() + ttlMs : null;
+  db.prepare('UPDATE shared_memory_spaces SET retention = ?, expires_at = ? WHERE id = ?').run(retention, expiresAt, spaceId);
+  res.json({ ok: true, space_id: spaceId, retention, expires_at: expiresAt ? new Date(expiresAt).toISOString() : null, _engine: 'real' });
+});
+
+// GET /v1/memory/share/:space_id — Space info (key count, members, metadata)
+app.get('/v1/memory/share/:space_id', auth, (req, res) => {
+  const spaceId = req.params.space_id;
+  const member = db.prepare('SELECT * FROM shared_memory_members WHERE space_id = ? AND api_key = ?').get(spaceId, req.apiKey);
+  if (!member) return res.status(403).json({ error: { code: 'not_a_member' } });
+  const space = db.prepare('SELECT * FROM shared_memory_spaces WHERE id = ?').get(spaceId);
+  if (!space) return res.status(404).json({ error: { code: 'space_not_found' } });
+  const memberCount = db.prepare('SELECT COUNT(*) as c FROM shared_memory_members WHERE space_id = ?').get(spaceId);
+  const keyCount = db.prepare("SELECT COUNT(*) as c FROM memory WHERE namespace = ?").get('shared:' + spaceId);
+  res.json({ ok: true, space_id: spaceId, name: space.name, description: space.description, created: space.created, owner: space.owner_key.slice(0, 12) + '...', member_count: memberCount.c, key_count: keyCount.c, your_role: member.role, _engine: 'real' });
+});
+
+// GET /v1/memory/share/activity/:space_id — Recent activity log for a shared space
+app.get('/v1/memory/share/activity/:space_id', auth, (req, res) => {
+  const spaceId = req.params.space_id;
+  const member = db.prepare('SELECT * FROM shared_memory_members WHERE space_id = ? AND api_key = ?').get(spaceId, req.apiKey);
+  if (!member) return res.status(403).json({ error: { code: 'not_a_member' } });
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  try {
+    const logs = db.prepare("SELECT key, accessor_hash, action, ts FROM memory_access_log WHERE namespace = ? ORDER BY ts DESC LIMIT ?").all('shared:' + spaceId, limit);
+    res.json({ ok: true, space_id: spaceId, activity: logs.map(l => ({ key: l.key, accessor: l.accessor_hash ? l.accessor_hash.slice(0, 12) + '...' : null, action: l.action, ts: new Date(l.ts).toISOString() })), count: logs.length, _engine: 'real' });
+  } catch(e) { res.status(500).json({ error: { code: 'activity_failed', message: e.message } }); }
 });
 
 // GET /v1/memory/share/members/:space_id — List members of a shared space
@@ -3941,71 +4538,103 @@ app.get('/v1/memory/share/members/:space_id', auth, (req, res) => {
   res.json({ ok: true, space_id: req.params.space_id, members: members.map(m => ({ key: m.api_key.slice(0, 12) + '...', role: m.role, joined: m.joined })), count: members.length });
 });
 
-// POST /v1/memory/share/search — Search within shared memory space
+// POST /v1/memory/share/search — Search within shared memory space (multi-term)
 app.post('/v1/memory/share/search', auth, (req, res) => {
-  const { space_id, query } = req.body;
+  const { space_id, query, limit } = req.body;
   if (!space_id || !query) return res.status(400).json({ error: { code: 'missing_fields' } });
   const member = db.prepare('SELECT * FROM shared_memory_members WHERE space_id = ? AND api_key = ?').get(space_id, req.apiKey);
   if (!member) return res.status(403).json({ error: { code: 'not_a_member' } });
   try {
-    const result = allHandlers['memory-search']({ namespace: 'shared:' + space_id, query, limit: 20 });
-    res.json({ ok: true, space_id, results: result.results || [], count: (result.results || []).length });
-  } catch(e) { res.json({ ok: true, results: [], count: 0 }); }
+    const ns = 'shared:' + space_id;
+    const maxResults = Math.min(parseInt(limit) || 20, 100);
+    const terms = String(query).toLowerCase().split(/\s+/).filter(t => t.length > 1);
+    const rows = db.prepare('SELECT key, value, tags, updated FROM memory WHERE namespace = ?').all(ns);
+    const scored = rows.map(r => {
+      const haystack = (r.key + ' ' + (r.value || '') + ' ' + (r.tags || '')).toLowerCase();
+      const hits = terms.filter(t => haystack.includes(t)).length;
+      return { key: r.key, value: r.value, tags: r.tags, updated: r.updated, score: hits / Math.max(terms.length, 1) };
+    }).filter(r => r.score > 0).sort((a, b) => b.score - a.score).slice(0, maxResults);
+    try { db.prepare('INSERT INTO memory_access_log (namespace, key, accessor_hash, action, ts) VALUES (?, ?, ?, ?, ?)').run(ns, '_search', hashApiKey(req.apiKey), 'search', Date.now()); } catch(e2) {}
+    res.json({ ok: true, space_id, query, results: scored, count: scored.length, _engine: 'real' });
+  } catch(e) { res.json({ ok: true, space_id, query, results: [], count: 0, _engine: 'real' }); }
 });
 
-// ═══ MEMORY COLLABORATOR — atomic invite/accept/revoke with audit ═══
-db.exec(`CREATE TABLE IF NOT EXISTS memory_collaborators (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
-  namespace TEXT NOT NULL,
-  invitee_key TEXT NOT NULL,
-  permission TEXT DEFAULT 'rw',
-  invited_by TEXT NOT NULL,
-  invited_at INTEGER NOT NULL,
-  accepted_at INTEGER,
-  status TEXT DEFAULT 'pending',
-  invite_token TEXT UNIQUE,
-  UNIQUE(namespace, invitee_key)
-)`);
+// ═══ MEMORY COLLABORATOR v2 — email invite, role system, expiry, audit ═══
 
+// POST /v1/memory/collaborator/invite
 app.post('/v1/memory/collaborator/invite', auth, (req, res) => {
-  const { namespace, invitee_key, permission } = req.body;
-  if (!namespace || !invitee_key) return res.status(400).json({ error: { code: 'missing_fields', required: ['namespace', 'invitee_key'] } });
-  const perm = permission || 'rw';
-  const token = crypto.randomUUID();
+  const { namespace, email, role, expires_hours } = req.body;
+  if (!namespace) return res.status(400).json({ error: { code: 'missing_namespace' } });
+  const validRoles = ['read', 'write', 'admin'];
+  const assignedRole = validRoles.includes(role) ? role : 'read';
+  const expiresHours = Math.min(Math.max(parseInt(expires_hours) || 168, 1), 8760);
+  const now = Date.now();
+  const inviteId = 'collab_' + crypto.randomBytes(8).toString('hex');
+  const inviteCode = crypto.randomBytes(16).toString('hex');
+  const ownerHash = hashApiKey(req.apiKey);
+  const expiresAt = now + expiresHours * 3600000;
   try {
-    db.prepare('INSERT INTO memory_collaborators (namespace, invitee_key, permission, invited_by, invited_at, invite_token) VALUES (?, ?, ?, ?, ?, ?)').run(namespace, invitee_key, perm, req.apiKey, Date.now(), token);
-    res.json({ ok: true, invite_token: token, namespace, permission: perm, note: 'Share this token with the invitee. They accept via POST /v1/memory/collaborator/accept {invite_token}' });
-  } catch(e) {
-    if (e.message.includes('UNIQUE')) return res.status(409).json({ error: { code: 'already_invited' } });
-    res.status(500).json({ error: { code: 'invite_failed', message: e.message } });
+    db.prepare('INSERT INTO memory_collaborators_v2 (id, owner_api_key_hash, collaborator_email, namespace, role, status, invite_code, invited_at, expires_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(inviteId, ownerHash, email || null, namespace, assignedRole, 'pending', inviteCode, now, expiresAt);
+  } catch (e) {
+    return res.status(500).json({ error: { code: 'invite_failed', message: e.message } });
   }
+  const baseUrl = process.env.BASE_URL || 'https://slopshop.gg';
+  res.status(201).json({ ok: true, invite_id: inviteId, invite_code: inviteCode, invite_url: baseUrl + '/v1/memory/collaborator/accept?code=' + inviteCode, namespace, role: assignedRole, expires_at: new Date(expiresAt).toISOString() });
 });
 
+// POST /v1/memory/collaborator/accept
 app.post('/v1/memory/collaborator/accept', auth, (req, res) => {
-  const { invite_token } = req.body;
-  if (!invite_token) return res.status(400).json({ error: { code: 'missing_token' } });
-  const row = db.prepare('SELECT * FROM memory_collaborators WHERE invite_token = ? AND status = ?').get(invite_token, 'pending');
-  if (!row) return res.status(404).json({ error: { code: 'invalid_or_expired_token' } });
-  db.prepare('UPDATE memory_collaborators SET status = ?, accepted_at = ?, invitee_key = ? WHERE id = ?').run('active', Date.now(), req.apiKey, row.id);
-  res.json({ ok: true, namespace: row.namespace, permission: row.permission, status: 'active' });
-});
-
-app.get('/v1/memory/collaborator/list', auth, (req, res) => {
-  const { namespace } = req.query;
-  let collabs;
-  if (namespace) {
-    collabs = db.prepare('SELECT * FROM memory_collaborators WHERE namespace = ? AND (invited_by = ? OR invitee_key = ?)').all(namespace, req.apiKey, req.apiKey);
-  } else {
-    collabs = db.prepare('SELECT * FROM memory_collaborators WHERE invited_by = ? OR invitee_key = ?').all(req.apiKey, req.apiKey);
+  const { invite_code } = req.body;
+  if (!invite_code) return res.status(400).json({ error: { code: 'missing_invite_code' } });
+  const row = db.prepare('SELECT * FROM memory_collaborators_v2 WHERE invite_code = ?').get(invite_code);
+  if (!row) return res.status(404).json({ error: { code: 'invalid_invite_code' } });
+  if (row.status === 'revoked') return res.status(410).json({ error: { code: 'invite_revoked' } });
+  if (row.expires_at && row.expires_at < Date.now()) return res.status(410).json({ error: { code: 'invite_expired' } });
+  if (row.status === 'active') return res.json({ ok: true, message: 'Already accepted', namespace: row.namespace, role: row.role, namespace_access: row.namespace });
+  const collabHash = hashApiKey(req.apiKey);
+  if (collabHash === row.owner_api_key_hash) return res.status(400).json({ error: { code: 'cannot_accept_own_invite' } });
+  db.prepare('UPDATE memory_collaborators_v2 SET status = ?, collaborator_api_key_hash = ?, accepted_at = ? WHERE id = ?').run('active', collabHash, Date.now(), row.id);
+  try { db.prepare('INSERT INTO memory_access_log (namespace, key, accessor_hash, action, ts) VALUES (?, ?, ?, ?, ?)').run(row.namespace, '_invite_accept', collabHash, 'accept', Date.now()); } catch(e) {}
+  // Bridge: if namespace matches a shared space, also add to shared_memory_members
+  if (row.namespace && row.namespace.startsWith('shared-')) {
+    try {
+      const spaceRole = row.role === 'admin' ? 'admin' : row.role === 'write' ? 'editor' : 'viewer';
+      db.prepare('INSERT OR IGNORE INTO shared_memory_members (space_id, api_key, role, invited_by, joined) VALUES (?, ?, ?, ?, ?)').run(row.namespace, req.apiKey, spaceRole, row.owner_api_key_hash, Date.now());
+    } catch(e2) {}
   }
-  res.json({ ok: true, collaborators: collabs.map(c => ({ namespace: c.namespace, invitee: c.invitee_key.slice(0, 12) + '...', permission: c.permission, status: c.status, invited_at: c.invited_at })), count: collabs.length });
+  res.json({ ok: true, namespace_access: row.namespace, role: row.role, owner: row.owner_api_key_hash.slice(0, 12) + '...' });
 });
 
-app.post('/v1/memory/collaborator/revoke', auth, (req, res) => {
-  const { namespace, invitee_key } = req.body;
-  if (!namespace || !invitee_key) return res.status(400).json({ error: { code: 'missing_fields' } });
-  db.prepare('UPDATE memory_collaborators SET status = ? WHERE namespace = ? AND invitee_key = ? AND invited_by = ?').run('revoked', namespace, invitee_key, req.apiKey);
-  res.json({ ok: true, revoked: true });
+// GET /v1/memory/collaborators - List all collaborator relationships
+app.get('/v1/memory/collaborators', auth, (req, res) => {
+  const ownerHash = hashApiKey(req.apiKey);
+  const rows = db.prepare('SELECT * FROM memory_collaborators_v2 WHERE owner_api_key_hash = ? OR collaborator_api_key_hash = ? ORDER BY invited_at DESC').all(ownerHash, ownerHash);
+  res.json({
+    ok: true,
+    collaborators: rows.map(r => ({ id: r.id, namespace: r.namespace, role: r.role, status: r.status, email: r.collaborator_email || null, invited_at: r.invited_at ? new Date(r.invited_at).toISOString() : null, accepted_at: r.accepted_at ? new Date(r.accepted_at).toISOString() : null, expires_at: r.expires_at ? new Date(r.expires_at).toISOString() : null, is_owner: r.owner_api_key_hash === ownerHash })),
+    count: rows.length
+  });
+});
+
+// DELETE /v1/memory/collaborator/:id - Revoke access
+app.delete('/v1/memory/collaborator/:id', auth, (req, res) => {
+  const ownerHash = hashApiKey(req.apiKey);
+  const row = db.prepare('SELECT * FROM memory_collaborators_v2 WHERE id = ?').get(req.params.id);
+  if (!row) return res.status(404).json({ error: { code: 'collaborator_not_found' } });
+  if (row.owner_api_key_hash !== ownerHash) return res.status(403).json({ error: { code: 'not_owner' } });
+  db.prepare('UPDATE memory_collaborators_v2 SET status = ? WHERE id = ?').run('revoked', row.id);
+  try { db.prepare('INSERT INTO memory_access_log (namespace, key, accessor_hash, action, ts) VALUES (?, ?, ?, ?, ?)').run(row.namespace, row.id, ownerHash, 'revoke', Date.now()); } catch(e) {}
+  res.json({ ok: true, revoked: true, id: row.id });
+});
+
+// GET /v1/memory/access-log - Last 100 accesses to your namespaces
+app.get('/v1/memory/access-log', auth, (req, res) => {
+  const ownerHash = hashApiKey(req.apiKey);
+  const ownedNs = db.prepare('SELECT DISTINCT namespace FROM memory_collaborators_v2 WHERE owner_api_key_hash = ?').all(ownerHash).map(r => r.namespace);
+  if (ownedNs.length === 0) return res.json({ ok: true, accesses: [], count: 0, note: 'No namespaces with collaborators found.' });
+  const placeholders = ownedNs.map(() => '?').join(',');
+  const logs = db.prepare('SELECT id, namespace, key, accessor_hash, action, ts FROM memory_access_log WHERE namespace IN (' + placeholders + ') ORDER BY ts DESC LIMIT 100').all(...ownedNs);
+  res.json({ ok: true, accesses: logs.map(l => ({ id: l.id, namespace: l.namespace, key: l.key, accessor: l.accessor_hash ? l.accessor_hash.slice(0, 12) + '...' : null, action: l.action, ts: new Date(l.ts).toISOString() })), count: logs.length });
 });
 
 // ===== AGENT PUB/SUB CHANNELS =====
@@ -4047,13 +4676,38 @@ app.get('/v1/webhooks/inbox', auth, (req, res) => {
 
 // ===== KNOWLEDGE GRAPH =====
 db.exec(`CREATE TABLE IF NOT EXISTS knowledge_graph (id INTEGER PRIMARY KEY AUTOINCREMENT, api_key TEXT, subject TEXT, predicate TEXT, object TEXT, confidence REAL DEFAULT 1.0, ts INTEGER)`);
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_knowledge_graph_api_key ON knowledge_graph(api_key)'); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_knowledge_graph_subject ON knowledge_graph(api_key, subject)'); } catch(e) {}
+try { db.exec('CREATE INDEX IF NOT EXISTS idx_knowledge_graph_object ON knowledge_graph(api_key, object)'); } catch(e) {}
 
 app.post('/v1/knowledge/add', auth, (req, res) => {
   const { subject, predicate, object, confidence } = req.body;
   if (!subject || !predicate || !object) return res.status(400).json({ error: { code: 'missing_fields', message: 'Provide subject, predicate, object' } });
-  db.prepare('INSERT INTO knowledge_graph (api_key, subject, predicate, object, confidence, ts) VALUES (?, ?, ?, ?, ?, ?)').run(req.apiKey, subject, predicate, object, confidence || 1.0, Date.now());
+  const conf = confidence !== undefined ? Math.min(Math.max(parseFloat(confidence), 0.0), 1.0) : 1.0;
+  const info = db.prepare('INSERT INTO knowledge_graph (api_key, subject, predicate, object, confidence, ts) VALUES (?, ?, ?, ?, ?, ?)').run(req.apiKey, subject, predicate, object, conf, Date.now());
   const outputHash = crypto.createHash('sha256').update(JSON.stringify({ subject, predicate, object })).digest('hex').slice(0, 16);
-  res.json({ ok: true, triple: { subject, predicate, object }, output_hash: outputHash, _engine: 'real' });
+  res.json({ ok: true, id: info.lastInsertRowid, triple: { subject, predicate, object, confidence: conf }, output_hash: outputHash, _engine: 'real' });
+});
+
+// DELETE /v1/knowledge/triple/:id — Remove a specific triple
+app.delete('/v1/knowledge/triple/:id', auth, (req, res) => {
+  const id = parseInt(req.params.id);
+  if (!id) return res.status(400).json({ error: { code: 'invalid_id' } });
+  const triple = db.prepare('SELECT * FROM knowledge_graph WHERE id = ? AND api_key = ?').get(id, req.apiKey);
+  if (!triple) return res.status(404).json({ error: { code: 'triple_not_found' } });
+  db.prepare('DELETE FROM knowledge_graph WHERE id = ? AND api_key = ?').run(id, req.apiKey);
+  res.json({ ok: true, deleted: true, id, triple: { subject: triple.subject, predicate: triple.predicate, object: triple.object }, _engine: 'real' });
+});
+
+// GET /v1/knowledge/stats — Graph stats for current user
+app.get('/v1/knowledge/stats', auth, (req, res) => {
+  const total = db.prepare('SELECT COUNT(*) as c FROM knowledge_graph WHERE api_key = ?').get(req.apiKey);
+  const subjects = db.prepare('SELECT COUNT(DISTINCT subject) as c FROM knowledge_graph WHERE api_key = ?').get(req.apiKey);
+  const predicates = db.prepare('SELECT COUNT(DISTINCT predicate) as c FROM knowledge_graph WHERE api_key = ?').get(req.apiKey);
+  const objects = db.prepare('SELECT COUNT(DISTINCT object) as c FROM knowledge_graph WHERE api_key = ?').get(req.apiKey);
+  const topPredicates = db.prepare('SELECT predicate, COUNT(*) as count FROM knowledge_graph WHERE api_key = ? GROUP BY predicate ORDER BY count DESC LIMIT 10').all(req.apiKey);
+  const avgConf = db.prepare('SELECT AVG(confidence) as avg FROM knowledge_graph WHERE api_key = ?').get(req.apiKey);
+  res.json({ ok: true, total_triples: total.c, unique_subjects: subjects.c, unique_predicates: predicates.c, unique_objects: objects.c, avg_confidence: Math.round((avgConf.avg || 0) * 1000) / 1000, top_predicates: topPredicates, _engine: 'real' });
 });
 
 // Support both GET and POST for knowledge/query
@@ -4275,25 +4929,38 @@ app.get('/v1/ab/:id', auth, (req, res) => {
 
 // ===== FEATURE: Forgetting Curve (#48) =====
 app.post('/v1/memory/decay', auth, (req, res) => {
-  const { namespace, factor } = req.body;
-  const ns = namespace || 'default';
-  const decayFactor = factor || 0.95;
+  const { namespace, factor, threshold, dry_run } = req.body;
+  if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const ns = req.acct._nsPrefix + ':' + (namespace || 'default');
+  const decayFactor = Math.min(Math.max(factor || 0.95, 0.01), 0.9999);
+  const pruneThreshold = Math.min(Math.max(threshold || 0.05, 0), 1);
+  const isDryRun = dry_run === true;
   try {
-    const all = db.prepare('SELECT key, updated FROM memory WHERE namespace = ? ORDER BY updated ASC').all(ns);
+    const all = db.prepare('SELECT key, updated, locked FROM memory WHERE namespace = ? ORDER BY updated ASC').all(ns);
     const now = Date.now();
-    const decayed = all.map((row, i) => {
-      const age = (now - row.updated) / 86400000; // days
+    const scored = all.map(row => {
+      const age = (now - (row.updated || now)) / 86400000;
       const score = Math.pow(decayFactor, age);
-      return { key: row.key, age_days: Math.round(age*10)/10, retention_score: Math.round(score*1000)/1000 };
+      return { key: row.key, age_days: Math.round(age * 10) / 10, retention_score: Math.round(score * 1000) / 1000, locked: row.locked || 0 };
     });
-    res.json({ namespace: ns, total: decayed.length, decay_factor: decayFactor, memories: decayed.slice(0, 50) });
-  } catch(e) { res.json({ error: e.message }); }
+    const toPrune = scored.filter(r => r.retention_score < pruneThreshold && !r.locked);
+    if (!isDryRun && toPrune.length > 0) {
+      const del = db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ? AND (locked IS NULL OR locked = 0)');
+      const delMany = db.transaction(keys => { for (const k of keys) del.run(ns, k); });
+      delMany(toPrune.map(r => r.key));
+    }
+    res.json({ ok: true, namespace: ns, total: scored.length, decay_factor: decayFactor, prune_threshold: pruneThreshold, pruned: isDryRun ? 0 : toPrune.length, dry_run: isDryRun, pruned_keys: toPrune.map(r => r.key), memories: scored.filter(r => !toPrune.find(p => p.key === r.key)).slice(0, 50), _engine: 'real' });
+  } catch(e) { res.status(500).json({ error: { code: 'decay_failed', message: e.message }, _engine: 'real' }); }
 });
 
-// POST /v1/memory/snapshot — Export all keys in a namespace as JSON or CSV
+// Bootstrap memory_snapshots table
+try { db.exec(`CREATE TABLE IF NOT EXISTS memory_snapshots (id TEXT PRIMARY KEY, api_key TEXT NOT NULL, namespace TEXT NOT NULL, format TEXT NOT NULL, key_count INTEGER, snapshot TEXT, created INTEGER)`); } catch(e) {}
+
+// POST /v1/memory/snapshot — Export all keys in a namespace as JSON or CSV and persist
 app.post('/v1/memory/snapshot', auth, (req, res) => {
   const { namespace, format } = req.body;
-  const ns = namespace || 'default';
+  if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const ns = req.acct._nsPrefix + ':' + (namespace || 'default');
   const fmt = (format || 'json').toLowerCase();
   if (fmt !== 'json' && fmt !== 'csv') {
     return res.status(400).json({ error: { code: 'invalid_format', message: 'format must be "json" or "csv"' } });
@@ -4311,8 +4978,30 @@ app.post('/v1/memory/snapshot', auth, (req, res) => {
     } else {
       snapshot = rows.map(r => ({ key: r.key, value: r.value, namespace: r.namespace, updated: r.updated }));
     }
-    res.json({ ok: true, snapshot, key_count: rows.length, format: fmt, _engine: 'real' });
-  } catch (e) { res.status(500).json({ error: e.message }); }
+    const snapshotId = crypto.randomUUID();
+    const snapshotStr = fmt === 'csv' ? snapshot : JSON.stringify(snapshot);
+    db.prepare('INSERT INTO memory_snapshots (id, api_key, namespace, format, key_count, snapshot, created) VALUES (?, ?, ?, ?, ?, ?, ?)').run(snapshotId, req.apiKey, ns, fmt, rows.length, snapshotStr, Date.now());
+    res.json({ ok: true, snapshot_id: snapshotId, snapshot, key_count: rows.length, format: fmt, _engine: 'real' });
+  } catch (e) { res.status(500).json({ error: { code: 'snapshot_failed', message: e.message }, _engine: 'real' }); }
+});
+
+// GET /v1/memory/snapshots — list saved snapshots
+app.get('/v1/memory/snapshots', auth, (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  try {
+    const rows = db.prepare('SELECT id, namespace, format, key_count, created FROM memory_snapshots WHERE api_key = ? ORDER BY created DESC LIMIT ?').all(req.apiKey, limit);
+    res.json({ ok: true, snapshots: rows, count: rows.length, _engine: 'real' });
+  } catch(e) { res.status(500).json({ error: { code: 'list_failed', message: e.message }, _engine: 'real' }); }
+});
+
+// GET /v1/memory/snapshot/:id — retrieve a saved snapshot
+app.get('/v1/memory/snapshot/:id', auth, (req, res) => {
+  try {
+    const row = db.prepare('SELECT * FROM memory_snapshots WHERE id = ? AND api_key = ?').get(req.params.id, req.apiKey);
+    if (!row) return res.status(404).json({ error: { code: 'snapshot_not_found' } });
+    const snapshot = row.format === 'csv' ? row.snapshot : JSON.parse(row.snapshot || '[]');
+    res.json({ ok: true, snapshot_id: row.id, namespace: row.namespace, format: row.format, key_count: row.key_count, created: row.created, snapshot, _engine: 'real' });
+  } catch(e) { res.status(500).json({ error: { code: 'get_failed', message: e.message }, _engine: 'real' }); }
 });
 
 // ===== FEATURE: Dead Man's Switch (#60) =====
@@ -5803,11 +6492,15 @@ app.post('/v1/hive/:id/subscribe', auth, (req, res) => {
   const { channel } = req.body;
   const ch = channel || '*';
   const agentId = req.apiKey.slice(0, 12);
-  db.prepare('INSERT OR REPLACE INTO hive_subscriptions (hive_id, agent_id, channel, subscribed_at) VALUES (?, ?, ?, ?)').run(
-    req.params.id, agentId, ch, Date.now()
-  );
-  hiveTrackActivity(req.params.id, agentId, 'subscribe', { channel: ch });
-  res.json({ ok: true, hive_id: req.params.id, agent: agentId, channel: ch, note: 'You will receive A2A inbox notifications for messages in this channel. Poll GET /v1/agent/a2a/inbox to receive them.' });
+  try {
+    db.prepare('INSERT OR REPLACE INTO hive_subscriptions (hive_id, agent_id, channel, subscribed_at) VALUES (?, ?, ?, ?)').run(
+      req.params.id, agentId, ch, Date.now()
+    );
+    hiveTrackActivity(req.params.id, agentId, 'subscribe', { channel: ch });
+    res.json({ ok: true, hive_id: req.params.id, agent: agentId, channel: ch, note: 'You will receive A2A inbox notifications for messages in this channel. Poll GET /v1/agent/a2a/inbox to receive them.', _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'subscribe_failed', message: e.message } });
+  }
 });
 
 // DELETE /v1/hive/:id/subscribe — unsubscribe from hive channel
@@ -5815,8 +6508,12 @@ app.delete('/v1/hive/:id/subscribe', auth, (req, res) => {
   const { channel } = req.body;
   const ch = channel || '*';
   const agentId = req.apiKey.slice(0, 12);
-  db.prepare('DELETE FROM hive_subscriptions WHERE hive_id = ? AND agent_id = ? AND channel = ?').run(req.params.id, agentId, ch);
-  res.json({ ok: true, hive_id: req.params.id, unsubscribed: ch });
+  try {
+    db.prepare('DELETE FROM hive_subscriptions WHERE hive_id = ? AND agent_id = ? AND channel = ?').run(req.params.id, agentId, ch);
+    res.json({ ok: true, hive_id: req.params.id, unsubscribed: ch, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'unsubscribe_failed', message: e.message } });
+  }
 });
 
 // POST /v1/hive/create — launch a new always-on agent workspace
@@ -5836,14 +6533,17 @@ app.post('/v1/hive/create', auth, (req, res) => {
     ...config,
   };
 
-  db.prepare('INSERT INTO hives (id, api_key, name, config, channels, members, created) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
-    id, req.apiKey, name || 'My Hive', JSON.stringify(hiveConfig), JSON.stringify([...new Set(defaultChannels)]), JSON.stringify(memberList), Date.now()
-  );
-
-  // Post welcome message
-  db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(
-    id, 'general', 'system', hiveConfig.welcome_message, 'system', Date.now()
-  );
+  try {
+    db.prepare('INSERT INTO hives (id, api_key, name, config, channels, members, created) VALUES (?, ?, ?, ?, ?, ?, ?)').run(
+      id, req.apiKey, name || 'My Hive', JSON.stringify(hiveConfig), JSON.stringify([...new Set(defaultChannels)]), JSON.stringify(memberList), Date.now()
+    );
+    // Post welcome message
+    db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(
+      id, 'general', 'system', hiveConfig.welcome_message, 'system', Date.now()
+    );
+  } catch(e) {
+    return res.status(500).json({ error: { code: 'hive_create_failed', message: e.message, hint: 'Retry or contact support' } });
+  }
 
   res.json({
     ok: true,
@@ -5872,6 +6572,7 @@ app.post('/v1/hive/create', auth, (req, res) => {
 app.post('/v1/hive/:id/send', auth, (req, res) => {
   const { channel, message, type, mode } = req.body;
   if (!message) return res.status(400).json({ error: { code: 'empty_message' } });
+  if (!db.prepare('SELECT id FROM hives WHERE id = ?').get(req.params.id)) return res.status(404).json({ error: { code: 'hive_not_found' } });
   const ch = channel || 'general';
   const now = Date.now();
   const sender = req.apiKey.slice(0, 12);
@@ -5917,7 +6618,7 @@ app.post('/v1/hive/:id/send', auth, (req, res) => {
         _engine: 'real'
       });
     } catch(e) {
-      return res.json({ ok: true, hive_id: req.params.id, channel: ch, mode: 'debate', error: e.message });
+      return res.status(500).json({ error: { code: 'debate_failed', message: e.message, hint: 'Debate mode requires recent hive messages' } });
     }
   }
 
@@ -5926,7 +6627,7 @@ app.post('/v1/hive/:id/send', auth, (req, res) => {
   // Track activity
   hiveTrackActivity(req.params.id, sender, 'message', { channel: ch, length: msgText.length });
 
-  res.json({ ok: true, hive_id: req.params.id, channel: ch, subscribers_notified: notified });
+  res.json({ ok: true, hive_id: req.params.id, channel: ch, subscribers_notified: notified, _engine: 'real' });
 });
 
 // GET /v1/hive/:id/channel/:name — read messages from a channel
@@ -5944,7 +6645,7 @@ app.get('/v1/hive/:id/standup', auth, (req, res) => {
   if (!hive) return res.status(404).json({ error: { code: 'hive_not_found' } });
   const days = Math.min(parseInt(req.query.days) || 7, 30);
   const since = Date.now() - days * 86400000;
-  const messages = db.prepare("SELECT sender, message, ts FROM hive_messages WHERE hive_id = ? AND channel = 'standup' AND ts > ? ORDER BY ts DESC LIMIT 100").all(req.params.id, since);
+  const messages = db.prepare("SELECT sender, message, ts FROM hive_messages WHERE hive_id = ? AND channel = 'standup' AND type = 'standup' AND ts > ? ORDER BY ts DESC LIMIT 100").all(req.params.id, since);
   const today = new Date().toISOString().slice(0, 10);
   const dailySummaryRow = db.prepare("SELECT value FROM hive_state WHERE hive_id = ? AND key = ?").get(req.params.id, 'standup:daily:' + today);
   const daily_summary = dailySummaryRow ? JSON.parse(dailySummaryRow.value) : null;
@@ -6078,8 +6779,8 @@ app.get('/v1/hive/:id/sync', auth, (req, res) => {
     since: new Date(since).toISOString(),
     channels_with_activity: Object.keys(sync),
     messages: sync,
-    state_changes: state.map(s => ({ ...s, value: JSON.parse(s.value) })),
-    members: JSON.parse(hive.members),
+    state_changes: state.map(s => { try { return { ...s, value: JSON.parse(s.value) }; } catch(_) { return { ...s, value: s.value }; } }),
+    members: (() => { try { return JSON.parse(hive.members || '[]'); } catch(_) { return []; } })(),
     sync_timestamp: Date.now(),
     next_sync_url: `/v1/hive/${req.params.id}/sync?since=${Date.now()}`,
   });
@@ -6088,21 +6789,25 @@ app.get('/v1/hive/:id/sync', auth, (req, res) => {
 // POST /v1/hive/:id/state — set shared state in the hive
 app.post('/v1/hive/:id/state', auth, (req, res) => {
   const { key, value } = req.body;
-  if (!key) return res.status(400).json({ error: { code: 'missing_key' } });
-  db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(req.params.id, key, JSON.stringify(value), Date.now());
-  // Announce state change in alerts channel
-  db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(
-    req.params.id, 'alerts', 'system', `State updated: ${key} = ${JSON.stringify(value).slice(0, 200)}`, 'state_change', Date.now()
-  );
-  res.json({ ok: true, key, hive_id: req.params.id });
+  if (!key) return res.status(400).json({ error: { code: 'missing_key', message: 'key is required', hint: 'Provide a key string in the request body' } });
+  try {
+    db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(req.params.id, key, JSON.stringify(value), Date.now());
+    // Announce state change in alerts channel
+    db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(
+      req.params.id, 'alerts', 'system', `State updated: ${key} = ${JSON.stringify(value).slice(0, 200)}`, 'state_change', Date.now()
+    );
+    res.json({ ok: true, key, hive_id: req.params.id, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'state_write_failed', message: e.message } });
+  }
 });
 
 // GET /v1/hive/:id/state — read all shared state
 app.get('/v1/hive/:id/state', auth, (req, res) => {
   const rows = db.prepare('SELECT key, value, ts FROM hive_state WHERE hive_id = ?').all(req.params.id);
   const state = {};
-  rows.forEach(r => state[r.key] = JSON.parse(r.value));
-  res.json({ hive_id: req.params.id, state, keys: rows.length });
+  rows.forEach(r => { try { state[r.key] = JSON.parse(r.value); } catch(_) { state[r.key] = r.value; } });
+  res.json({ ok: true, hive_id: req.params.id, state, keys: rows.length, _engine: 'real' });
 });
 
 // GET /v1/hive/:id — full hive info
@@ -6111,14 +6816,13 @@ app.get('/v1/hive/:id', auth, (req, res) => {
   if (!hive) return res.status(404).json({ error: { code: 'hive_not_found' } });
   const msgCount = db.prepare('SELECT COUNT(*) as c FROM hive_messages WHERE hive_id = ?').get(req.params.id);
   const stateCount = db.prepare('SELECT COUNT(*) as c FROM hive_state WHERE hive_id = ?').get(req.params.id);
-  res.json({
-    ...hive,
-    channels: JSON.parse(hive.channels),
-    members: JSON.parse(hive.members),
-    config: JSON.parse(hive.config),
-    total_messages: msgCount.c,
-    state_keys: stateCount.c,
-  });
+  let channels = [], members = [], config = {};
+  try { channels = JSON.parse(hive.channels || '[]'); } catch(e) {}
+  try { members = JSON.parse(hive.members || '[]'); } catch(e) {}
+  try { config = JSON.parse(hive.config || '{}'); } catch(e) {}
+  let lastActivity = null;
+  try { const lm = db.prepare('SELECT ts FROM hive_messages WHERE hive_id = ? ORDER BY ts DESC LIMIT 1').get(req.params.id); lastActivity = lm ? lm.ts : null; } catch(e) {}
+  res.json({ ok: true, id: hive.id, name: hive.name, created: hive.created, channels, members, member_count: members.length, config, total_messages: msgCount.c, state_keys: stateCount.c, last_activity: lastActivity, _engine: 'real' });
 });
 
 // POST /v1/hive/:id/invite — add a member
@@ -6127,27 +6831,52 @@ app.post('/v1/hive/:id/invite', auth, (req, res) => {
   if (!agent_key) return res.status(400).json({ error: { code: 'missing_agent_key' } });
   const hive = db.prepare('SELECT members FROM hives WHERE id = ? AND api_key = ?').get(req.params.id, req.apiKey);
   if (!hive) return res.status(404).json({ error: { code: 'hive_not_found' } });
-  const members = JSON.parse(hive.members);
+  let members = []; try { members = JSON.parse(hive.members || '[]'); } catch(_) {}
   const prefix = agent_key.slice(0, 12);
   if (!members.includes(prefix)) members.push(prefix);
-  db.prepare('UPDATE hives SET members = ? WHERE id = ?').run(JSON.stringify(members), req.params.id);
-  // Welcome message
-  db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(
-    req.params.id, 'general', 'system', `${prefix} joined the hive.`, 'system', Date.now()
-  );
-  res.json({ ok: true, invited: prefix, members });
+  try {
+    db.prepare('UPDATE hives SET members = ? WHERE id = ?').run(JSON.stringify(members), req.params.id);
+    // Welcome message
+    db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(
+      req.params.id, 'general', 'system', `${prefix} joined the hive.`, 'system', Date.now()
+    );
+    res.json({ ok: true, invited: prefix, members, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'invite_failed', message: e.message } });
+  }
 });
 
 // GET /v1/hives — list all hives for this user
 app.get('/v1/hives', auth, (req, res) => {
-  const hives = db.prepare('SELECT id, name, created FROM hives WHERE api_key = ? OR members LIKE ? ORDER BY created DESC').all(req.apiKey, '%' + req.apiKey.slice(0, 12) + '%');
-  res.json({ hives, count: hives.length });
+  try {
+    const rows = db.prepare('SELECT id, name, created, channels, members, config FROM hives WHERE api_key = ? OR members LIKE ? ORDER BY created DESC').all(req.apiKey, '%' + req.apiKey.slice(0, 12) + '%');
+    const hives = rows.map(h => {
+      let members = [], channels = [];
+      try { members = JSON.parse(h.members || '[]'); } catch(e) {}
+      try { channels = JSON.parse(h.channels || '[]'); } catch(e) {}
+      const msgCount = db.prepare('SELECT COUNT(*) as c FROM hive_messages WHERE hive_id = ?').get(h.id)?.c || 0;
+      return { id: h.id, name: h.name, created: h.created, member_count: members.length, channel_count: channels.length, message_count: msgCount };
+    });
+    res.json({ ok: true, hives, count: hives.length, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'list_failed', message: e.message } });
+  }
 });
 
 // GET /v1/hive — alias for /v1/hives
 app.get('/v1/hive', auth, (req, res) => {
-  const hives = db.prepare('SELECT id, name, created FROM hives WHERE api_key = ? OR members LIKE ? ORDER BY created DESC').all(req.apiKey, '%' + req.apiKey.slice(0, 12) + '%');
-  res.json({ hives, count: hives.length });
+  try {
+    const rows = db.prepare('SELECT id, name, created, channels, members FROM hives WHERE api_key = ? OR members LIKE ? ORDER BY created DESC').all(req.apiKey, '%' + req.apiKey.slice(0, 12) + '%');
+    const hives = rows.map(h => {
+      let members = [], channels = [];
+      try { members = JSON.parse(h.members || '[]'); } catch(e) {}
+      try { channels = JSON.parse(h.channels || '[]'); } catch(e) {}
+      return { id: h.id, name: h.name, created: h.created, member_count: members.length, channel_count: channels.length };
+    });
+    res.json({ ok: true, hives, count: hives.length, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'list_failed', message: e.message } });
+  }
 });
 
 // GET /v1/hive/:id/members — list members of a hive
@@ -6163,6 +6892,176 @@ app.get('/v1/hive/:id/activity', auth, (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 20, 100);
   const rows = db.prepare('SELECT * FROM hive_messages WHERE hive_id = ? ORDER BY ts DESC LIMIT ?').all(req.params.id, limit);
   res.json({ hive_id: req.params.id, activity: rows, count: rows.length });
+});
+
+// GET /v1/hive/:id/pulse — real-time momentum score for a hive
+app.get('/v1/hive/:id/pulse', auth, (req, res) => {
+  const hive_id = req.params.id;
+  const hive = db.prepare('SELECT id, name FROM hives WHERE id = ?').get(hive_id);
+  if (!hive) return res.status(404).json({ error: { code: 'hive_not_found' } });
+
+  const now = Date.now();
+  const oneHourAgo = now - 60 * 60 * 1000;
+  const twentyFourHoursAgo = now - 24 * 60 * 60 * 1000;
+  const fiveMinAgo = now - 5 * 60 * 1000;
+
+  const msgsLastHour = db.prepare('SELECT * FROM hive_messages WHERE hive_id = ? AND ts > ?').all(hive_id, oneHourAgo);
+  const msgsLast24h = db.prepare('SELECT message FROM hive_messages WHERE hive_id = ? AND ts > ?').all(hive_id, twentyFourHoursAgo);
+  const recentMsg = db.prepare('SELECT id FROM hive_messages WHERE hive_id = ? AND ts > ? LIMIT 1').get(hive_id, fiveMinAgo);
+
+  // Count distinct senders in last hour
+  const senderSet = new Set(msgsLastHour.map(m => m.sender));
+  const active_agents = senderSet.size;
+
+  // Count messages per channel in last hour
+  const channel_activity = {};
+  for (const m of msgsLastHour) {
+    const ch = m.channel || 'general';
+    channel_activity[ch] = (channel_activity[ch] || 0) + 1;
+  }
+
+  // Build hot_topics from last 24h messages
+  const stopWords = new Set(['the','a','an','is','it','in','of','to','for','and','or','be','do','at','on','with','from','as','by','we','i','you','are','was','has','have','this','that','not','can','but','so','all','get','set','use']);
+  const wordCount = {};
+  for (const m of msgsLast24h) {
+    if (!m.message) continue;
+    const words = m.message.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').split(/\s+/);
+    for (const w of words) {
+      if (w.length < 2 || stopWords.has(w)) continue;
+      wordCount[w] = (wordCount[w] || 0) + 1;
+    }
+  }
+  const hot_topics = Object.entries(wordCount)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5)
+    .map(([word, count]) => ({ word, count }));
+
+  // Compute momentum_score
+  const velocityScore = Math.min(40, msgsLastHour.length * 4);
+  const contributorScore = Math.min(30, active_agents * 10);
+  const topicScore = Math.min(20, hot_topics.length * 4);
+  const recencyBonus = recentMsg ? 10 : 0;
+  const momentum_score = velocityScore + contributorScore + topicScore + recencyBonus;
+
+  let momentum_label;
+  if (momentum_score >= 80) momentum_label = 'blazing';
+  else if (momentum_score >= 60) momentum_label = 'hot';
+  else if (momentum_score >= 40) momentum_label = 'active';
+  else if (momentum_score >= 20) momentum_label = 'warming';
+  else momentum_label = 'quiet';
+
+  res.json({
+    ok: true,
+    hive_id,
+    name: hive.name,
+    pulse: {
+      momentum_score,
+      momentum_label,
+      messages_last_hour: msgsLastHour.length,
+      messages_last_24h: msgsLast24h.length,
+      active_agents,
+      hot_topics,
+      channel_activity,
+      sampled_at: now,
+    },
+  });
+});
+
+// GET /v1/hive/:id/standup-summary — synthesize today's standup entries
+app.get('/v1/hive/:id/standup-summary', auth, async (req, res) => {
+  try {
+    const hive_id = req.params.id;
+    const hive = db.prepare('SELECT id, name FROM hives WHERE id = ?').get(hive_id);
+    if (!hive) return res.status(404).json({ error: { code: 'hive_not_found' } });
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayTs = todayStart.getTime();
+    const todayDate = todayStart.toISOString().slice(0, 10);
+
+    const rows = db.prepare('SELECT sender, message, ts FROM hive_messages WHERE hive_id = ? AND (type = ? OR channel = ?) AND ts > ? ORDER BY ts ASC').all(hive_id, 'standup', 'standup', todayTs);
+
+    const entries = [];
+    const blockers_today_set = new Set();
+    const participantSet = new Set();
+
+    for (const row of rows) {
+      participantSet.add(row.sender);
+      let parsed = null;
+      try { parsed = JSON.parse(row.message); } catch (e) { /* plain text */ }
+
+      if (parsed && typeof parsed === 'object') {
+        const entry = {
+          sender: row.sender,
+          ts: row.ts,
+          did: parsed.did || null,
+          doing: parsed.doing || null,
+          blockers: parsed.blockers || null,
+          agent: parsed.agent || row.sender,
+        };
+        entries.push(entry);
+        if (parsed.blockers) {
+          const bs = Array.isArray(parsed.blockers) ? parsed.blockers : [parsed.blockers];
+          for (const b of bs) if (b) blockers_today_set.add(b);
+        }
+      } else {
+        entries.push({ sender: row.sender, ts: row.ts, text: row.message });
+      }
+    }
+
+    const blockers_today = Array.from(blockers_today_set);
+    const participants = participantSet.size;
+
+    let summary = '';
+    let ai_powered = false;
+
+    if (process.env.ANTHROPIC_API_KEY && entries.length > 0) {
+      try {
+        const standupText = entries.map(e => {
+          if (e.text) return `${e.sender}: ${e.text}`;
+          return `${e.agent || e.sender}: Did: ${e.did || 'n/a'} | Doing: ${e.doing || 'n/a'} | Blockers: ${Array.isArray(e.blockers) ? e.blockers.join(', ') : (e.blockers || 'none')}`;
+        }).join('\n');
+
+        const { Anthropic } = require('@anthropic-ai/sdk');
+        const client = new Anthropic();
+        const msg = await client.messages.create({
+          model: 'claude-haiku-4-5-20251001',
+          max_tokens: 400,
+          messages: [{ role: 'user', content: 'You are a team lead summarizing daily standups...\n\n' + standupText + '\n\nWrite a concise 2-3 sentence summary of what the team accomplished, what they are working on, and key blockers. Be direct.' }],
+        });
+        summary = msg.content[0].text;
+        ai_powered = true;
+      } catch (aiErr) {
+        // fallback below
+      }
+    }
+
+    if (!summary) {
+      if (entries.length === 0) {
+        summary = 'No standup entries recorded today.';
+      } else {
+        const lines = entries.map(e => {
+          if (e.text) return `- ${e.sender}: ${e.text}`;
+          return `- ${e.agent || e.sender}: did=${e.did || 'n/a'}, doing=${e.doing || 'n/a'}, blockers=${Array.isArray(e.blockers) ? e.blockers.join('; ') : (e.blockers || 'none')}`;
+        });
+        summary = `${participants} participant(s) checked in today.\n` + lines.join('\n');
+      }
+    }
+
+    res.json({
+      ok: true,
+      hive_id,
+      date: todayDate,
+      participants,
+      entry_count: entries.length,
+      summary,
+      blockers: blockers_today,
+      ai_powered,
+      entries_preview: entries.slice(0, 5),
+    });
+  } catch (err) {
+    res.status(500).json({ error: { code: 'internal_error', message: err.message } });
+  }
 });
 
 // ===== SUPERPOWER ENDPOINTS =====
@@ -6185,7 +7084,7 @@ db.exec(`CREATE TABLE IF NOT EXISTS sp_emotions (agent_key TEXT, mood TEXT, ener
 // ── TEAMS ──────────────────────────────────────────────────────────────────
 app.post('/v1/team/create', auth, (req, res) => {
   const { name, members = [] } = req.body;
-  if (!name) return res.status(400).json({ error: 'name required' });
+  if (!name) return res.status(400).json({ error: { code: 'missing_name', message: 'name is required' } });
   const id = 'team-' + crypto.randomBytes(6).toString('hex');
   db.prepare('INSERT INTO sp_teams (id, name, namespace, created, creator) VALUES (?, ?, ?, ?, ?)').run(id, name, id, Date.now(), req.apiKey.slice(0, 12));
   for (const m of members) db.prepare('INSERT INTO sp_team_members (team_id, agent_key, role, added) VALUES (?, ?, ?, ?)').run(id, m.key || m, m.role || 'worker', Date.now());
@@ -6227,7 +7126,7 @@ app.post('/v1/team/interview', auth, (req, res) => {
 // ── PREDICTION MARKETS ─────────────────────────────────────────────────────
 app.post('/v1/market/create', auth, (req, res) => {
   const { question, deadline } = req.body;
-  if (!question) return res.status(400).json({ error: 'question required' });
+  if (!question) return res.status(400).json({ error: { code: 'missing_question', message: 'question is required' } });
   const id = 'mkt-' + crypto.randomBytes(5).toString('hex');
   const dl = deadline ? new Date(deadline).getTime() : Date.now() + 86400000 * 7;
   db.prepare('INSERT INTO sp_markets (id, question, deadline, status, creator, created) VALUES (?, ?, ?, ?, ?, ?)').run(id, question, dl, 'open', req.apiKey.slice(0, 12), Date.now());
@@ -6519,6 +7418,7 @@ app.get('/v1/hive/:id/vision', auth, (req, res) => {
 app.post('/v1/hive/:id/governance/propose', auth, (req, res) => {
   const { title, description, type } = req.body;
   if (!title) return res.status(400).json({ error: { code: 'missing_title' } });
+  if (!db.prepare('SELECT id FROM hives WHERE id = ?').get(req.params.id)) return res.status(404).json({ error: { code: 'hive_not_found' } });
   const proposalId = 'prop-' + crypto.randomUUID().slice(0, 12);
   const now = Date.now();
   const proposal = {
@@ -6533,10 +7433,14 @@ app.post('/v1/hive/:id/governance/propose', auth, (req, res) => {
     status: 'open',
     created_at: now,
   };
-  db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(
-    req.params.id, 'governance:proposal:' + proposalId, JSON.stringify(proposal), now
-  );
-  res.json({ ok: true, hive_id: req.params.id, proposal });
+  try {
+    db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(
+      req.params.id, 'governance:proposal:' + proposalId, JSON.stringify(proposal), now
+    );
+  } catch(e) {
+    return res.status(500).json({ error: { code: 'proposal_failed', message: e.message } });
+  }
+  res.json({ ok: true, hive_id: req.params.id, proposal, _engine: 'real' });
 });
 
 // POST /v1/hive/:id/governance/vote — vote on a governance proposal
@@ -6609,6 +7513,14 @@ app.post('/v1/hive/:id/governance/vote', auth, (req, res) => {
       db.prepare('INSERT OR REPLACE INTO hive_state (hive_id, key, value, ts) VALUES (?, ?, ?, ?)').run(
         req.params.id, 'governance:proposal:' + proposal_id, JSON.stringify(proposal), now
       );
+      // Announce outcome to general channel
+      try {
+        db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(
+          req.params.id, 'governance', 'system',
+          `Proposal "${proposal.title}" has ${proposal.outcome}. Quorum: ${voterCount}/${memberCount} members voted. Yes: ${proposal.votes_yes}, No: ${proposal.votes_no}.`,
+          'governance_outcome', now
+        );
+      } catch(e2) {}
       autoExecuted = true;
     }
   }
@@ -6895,7 +7807,6 @@ app.post('/v1/templates/star/:id', auth, (req, res) => {
   res.json({ ok: true, starred: req.params.id });
 });
 
-// NOTE: Duplicate registration of /v1/templates/browse — also registered at line ~7908. TODO: deduplicate in future cleanup.
 app.get('/v1/templates/browse', publicRateLimit, (req, res) => {
   // Sanitized: whitelist sort columns to prevent SQL injection
   const sortMap = { stars: 'stars', forks: 'forks', ts: 'ts' };
@@ -9654,17 +10565,17 @@ app.post('/v1/context/session', auth, (req, res) => {
   const sessionId = req.body.session_id || 'default';
   const keyPrefix = req.acct._nsPrefix || crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
 
-  // Get recent memory changes
+  // Get recent memory changes (scope to user's prefix across all namespaces)
   const memoryKeys = [];
   try {
-    const rows = db.prepare('SELECT key, updated FROM memory WHERE namespace = ? ORDER BY updated DESC LIMIT 20').all(keyPrefix);
-    rows.forEach(r => memoryKeys.push({ key: r.key, updated: new Date(r.updated).toISOString() }));
+    const rows = db.prepare('SELECT key, namespace, updated FROM memory WHERE namespace LIKE ? ORDER BY updated DESC LIMIT 20').all(keyPrefix + ':%');
+    rows.forEach(r => memoryKeys.push({ key: r.key, namespace: r.namespace, updated: new Date(r.updated).toISOString() }));
   } catch(e) {}
 
   // Get recent agent runs
   const recentRuns = [];
   try {
-    const rows = db.prepare('SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE key_prefix = ? ORDER BY id DESC LIMIT 10').all(req.apiKey.slice(0, 12) + '...');
+    const rows = db.prepare('SELECT api, credits, latency_ms, engine, ts FROM audit_log WHERE key_prefix LIKE ? ORDER BY id DESC LIMIT 10').all(keyPrefix.slice(0, 12) + '%');
     rows.forEach(r => recentRuns.push({ api: r.api, credits: r.credits, latency_ms: r.latency_ms, engine: r.engine, time: r.ts }));
   } catch(e) {}
 
@@ -9682,10 +10593,10 @@ app.post('/v1/context/session', auth, (req, res) => {
     rate_limit: { max_per_min: req.acct.tier === 'leviathan' ? 1000 : req.acct.tier === 'reef-boss' ? 300 : 120, remaining: 'check X-RateLimit-Remaining header' },
   };
 
-  // Current goal (from hive vision if available)
+  // Current goal (from northstar or vision key)
   let goal = null;
   try {
-    const vision = db.prepare("SELECT value FROM memory WHERE namespace = ? AND key = '_vision' ORDER BY updated DESC LIMIT 1").get(keyPrefix);
+    const vision = db.prepare("SELECT value FROM memory WHERE namespace LIKE ? AND (key = 'northstar_goal' OR key = '_vision') ORDER BY updated DESC LIMIT 1").get(keyPrefix + ':%');
     if (vision) goal = vision.value;
   } catch(e) {}
 
@@ -9747,173 +10658,350 @@ app.get('/v1/introspect', auth, (req, res) => {
   });
 });
 
-// PILLAR 3: /route — Smart API routing (Grok's request)
-// Auto-selects the best API for a task based on intent, cost, reliability
-app.post('/v1/route', auth, (req, res) => {
-  const task = req.body.task || req.body.query || '';
-  if (!task) return res.status(422).json({ error: { code: 'missing_task' } });
+// ═══ SHARED NL ROUTER UTILITIES (used by /v1/route and /v1/query) ═══
 
-  const lower = task.toLowerCase();
+// Comprehensive NL_INTENT_BOOSTS — 120+ patterns across all major API categories
+const NL_INTENT_BOOSTS = [
+  // Crypto / hashing
+  { patterns: ['sha256','hash sha256'], slugs: ['crypto-hash-sha256'], boost: 25 },
+  { patterns: ['sha512','hash sha512'], slugs: ['crypto-hash-sha512'], boost: 25 },
+  { patterns: ['md5','hash md5'], slugs: ['crypto-hash-md5'], boost: 25 },
+  { patterns: ['sha1','hash sha1'], slugs: ['crypto-hash-sha1'], boost: 22 },
+  { patterns: ['hash','checksum','digest','fingerprint'], slugs: ['crypto-hash-sha256','crypto-hash-sha512','crypto-hash-md5'], boost: 12 },
+  { patterns: ['uuid','guid','unique id','generate id','new uuid'], slugs: ['crypto-uuid'], boost: 25 },
+  { patterns: ['hmac','message auth','hmac-sha'], slugs: ['crypto-hmac'], boost: 22 },
+  { patterns: ['encrypt','aes encrypt','cipher','encipher'], slugs: ['crypto-encrypt-aes'], boost: 22 },
+  { patterns: ['decrypt','aes decrypt','decipher','uncipher'], slugs: ['crypto-decrypt-aes'], boost: 22 },
+  { patterns: ['base64 encode','encode base64','to base64','encode to base64'], slugs: ['crypto-base64-encode'], boost: 22 },
+  { patterns: ['base64 decode','decode base64','from base64','decode from base64'], slugs: ['crypto-base64-decode'], boost: 22 },
+  { patterns: ['base64'], slugs: ['crypto-base64-encode','crypto-base64-decode'], boost: 12 },
+  { patterns: ['decode jwt','parse jwt','inspect jwt','verify jwt'], slugs: ['crypto-jwt-decode'], boost: 25 },
+  { patterns: ['sign jwt','create jwt','generate jwt','new jwt','make jwt'], slugs: ['crypto-jwt-sign'], boost: 25 },
+  { patterns: ['jwt','json web token'], slugs: ['crypto-jwt-decode'], boost: 15 },
+  { patterns: ['generate password','create password','random password','new password','secure password','strong password'], slugs: ['crypto-password-generate'], boost: 28 },
+  { patterns: ['hash password','password hash','bcrypt','pbkdf2'], slugs: ['crypto-password-hash'], boost: 22 },
+  { patterns: ['random bytes','random hex','secure random'], slugs: ['crypto-random-bytes'], boost: 18 },
+  { patterns: ['random int','random number','random integer'], slugs: ['crypto-random-int'], boost: 22 },
+  // Text processing
+  { patterns: ['word count','count words','how many words','number of words'], slugs: ['text-word-count'], boost: 28 },
+  { patterns: ['char count','character count','count chars','count characters','how many characters'], slugs: ['text-char-count'], boost: 28 },
+  { patterns: ['truncate','shorten text','cut text','limit text','trim to'], slugs: ['text-truncate'], boost: 22 },
+  { patterns: ['slugify','url slug','make slug','text to slug'], slugs: ['text-slugify'], boost: 22 },
+  { patterns: ['camel case','camelcase','snake case','snakecase','title case','titlecase','case convert','convert case'], slugs: ['text-case-convert'], boost: 22 },
+  { patterns: ['uppercase','to uppercase','lowercase','to lowercase'], slugs: ['text-case-convert'], boost: 18 },
+  { patterns: ['reverse text','reverse string','text backwards'], slugs: ['text-reverse'], boost: 25 },
+  { patterns: ['palindrome','is palindrome','check palindrome'], slugs: ['text-palindrome'], boost: 25 },
+  { patterns: ['sentiment','emotion analysis','tone analysis','is it positive','is it negative','positive or negative'], slugs: ['text-sentiment'], boost: 22 },
+  { patterns: ['extract email','find email','emails in text','pull emails'], slugs: ['text-extract-emails'], boost: 25 },
+  { patterns: ['extract url','find url','links in text','pull urls','extract links'], slugs: ['text-extract-urls'], boost: 25 },
+  { patterns: ['extract phone','find phone','phone numbers in','pull phone'], slugs: ['text-extract-phones'], boost: 25 },
+  { patterns: ['redact pii','remove pii','anonymize','remove personal','mask personal'], slugs: ['text-redact-pii'], boost: 22 },
+  { patterns: ['summarize','summary','tldr','tl;dr','summarise'], slugs: ['text-summarize-extractive','llm-summarize'], boost: 20 },
+  { patterns: ['translate','translation','convert language','change language','to english','to spanish','to french','to german'], slugs: ['text-translate','llm-translate'], boost: 20 },
+  { patterns: ['token count','count tokens','how many tokens','tokenize'], slugs: ['text-token-count'], boost: 25 },
+  { patterns: ['test regex','regex match','regular expression test','match pattern'], slugs: ['text-regex-test'], boost: 22 },
+  { patterns: ['text diff','compare text','text difference'], slugs: ['text-diff'], boost: 22 },
+  { patterns: ['readability','reading level','flesch','reading score'], slugs: ['text-readability'], boost: 22 },
+  { patterns: ['levenshtein','edit distance','string distance','string similarity'], slugs: ['text-levenshtein'], boost: 25 },
+  { patterns: ['lorem ipsum','placeholder text','dummy text','filler text'], slugs: ['text-lorem-ipsum'], boost: 25 },
+  { patterns: ['extract dates','find dates','dates in text'], slugs: ['text-extract-dates'], boost: 25 },
+  // Math
+  { patterns: ['calculate','math expression','evaluate expression','compute expression'], slugs: ['math-eval'], boost: 18 },
+  { patterns: ['fibonacci','fib sequence','fib number'], slugs: ['math-fibonacci'], boost: 28 },
+  { patterns: ['is prime','prime check','check if prime'], slugs: ['math-prime-check'], boost: 28 },
+  { patterns: ['statistics','mean','median','std dev','standard deviation','variance'], slugs: ['math-stats'], boost: 22 },
+  { patterns: ['percentage','percent of','what percent'], slugs: ['math-percentage'], boost: 22 },
+  { patterns: ['mortgage','loan payment','amortize','monthly payment'], slugs: ['math-mortgage'], boost: 25 },
+  { patterns: ['matrix','matrix multiply','determinant','dot product'], slugs: ['math-matrix'], boost: 22 },
+  { patterns: ['compound interest','investment return','future value'], slugs: ['math-compound-interest'], boost: 22 },
+  { patterns: ['factorial','n factorial','compute factorial'], slugs: ['math-factorial'], boost: 25 },
+  { patterns: ['gcd','lcm','greatest common divisor','least common multiple'], slugs: ['math-gcd'], boost: 25 },
+  { patterns: ['convert temperature','celsius to fahrenheit','fahrenheit to celsius','temp convert'], slugs: ['math-unit-convert'], boost: 22 },
+  // Memory / storage
+  { patterns: ['store this','store in memory','save to memory','write to memory','memorize','remember this','persist this'], slugs: ['memory-set'], boost: 25 },
+  { patterns: ['remember','save this','save it'], slugs: ['memory-set'], boost: 18 },
+  { patterns: ['recall','load memory','get from memory','read memory','retrieve from memory'], slugs: ['memory-get'], boost: 25 },
+  { patterns: ['list memories','all memories','show memories','list all memory'], slugs: ['memory-list'], boost: 22 },
+  { patterns: ['search memory','find memory','search memories','query memory','what did i store'], slugs: ['memory-search'], boost: 25 },
+  { patterns: ['delete memory','forget','remove memory','clear memory'], slugs: ['memory-delete'], boost: 22 },
+  { patterns: ['memory score','score memory','rate memory'], slugs: ['memory-score'], boost: 22 },
+  { patterns: ['memory drift','evolve memory','dream'], slugs: ['memory-evolve'], boost: 22 },
+  { patterns: ['kv set','key value set','store key value'], slugs: ['kv-set'], boost: 20 },
+  { patterns: ['kv get','key value get','get key value'], slugs: ['kv-get'], boost: 20 },
+  { patterns: ['queue push','enqueue','add to queue','job queue','task queue'], slugs: ['queue-push'], boost: 22 },
+  { patterns: ['queue pop','dequeue','pull from queue','next in queue'], slugs: ['queue-pop'], boost: 22 },
+  { patterns: ['counter increment','increment counter','count up','bump counter'], slugs: ['counter-increment'], boost: 22 },
+  { patterns: ['counter get','read counter','get count'], slugs: ['counter-get'], boost: 22 },
+  // Validation
+  { patterns: ['validate email','email valid','check email format','is email valid'], slugs: ['validate-email-syntax'], boost: 28 },
+  { patterns: ['validate url','url valid','check url format','is url valid'], slugs: ['validate-url'], boost: 25 },
+  { patterns: ['validate ip','ip valid','check ip','is valid ip'], slugs: ['net-ip-validate'], boost: 25 },
+  { patterns: ['validate uuid','uuid valid','check uuid'], slugs: ['validate-uuid'], boost: 25 },
+  { patterns: ['validate credit card','credit card valid','luhn check','card number valid'], slugs: ['validate-credit-card'], boost: 25 },
+  { patterns: ['validate phone','phone valid','check phone number'], slugs: ['validate-phone'], boost: 25 },
+  { patterns: ['validate iban','iban valid','bank account valid'], slugs: ['validate-iban'], boost: 25 },
+  { patterns: ['validate json','json valid','is valid json'], slugs: ['validate-json'], boost: 22 },
+  // Date / time
+  { patterns: ['current date','today date','what is today','what day is it','todays date'], slugs: ['date-now'], boost: 28 },
+  { patterns: ['current time','what time is it'], slugs: ['date-now'], boost: 20 },
+  { patterns: ['format date','date format','convert date format'], slugs: ['date-format'], boost: 25 },
+  { patterns: ['parse date','read date string','parse timestamp'], slugs: ['date-parse'], boost: 25 },
+  { patterns: ['business days','working days','weekday count','skip weekends'], slugs: ['date-business-days'], boost: 25 },
+  { patterns: ['cron next','cron expression','next cron run','schedule cron'], slugs: ['date-cron-next'], boost: 25 },
+  { patterns: ['date diff','days between','time difference','how many days between'], slugs: ['date-diff'], boost: 22 },
+  { patterns: ['unix timestamp','epoch time','to epoch','from epoch'], slugs: ['date-to-unix'], boost: 22 },
+  { patterns: ['add days','add months','add years','date add','date math'], slugs: ['date-add'], boost: 22 },
+  { patterns: ['timezone convert','convert timezone','utc to local','local to utc'], slugs: ['date-timezone'], boost: 22 },
+  // Network
+  { patterns: ['dns lookup','dns resolve','lookup domain','resolve hostname'], slugs: ['net-dns-lookup'], boost: 25 },
+  { patterns: ['is site up','is site down','check website','ping website','website status','http check'], slugs: ['net-http-check'], boost: 25 },
+  { patterns: ['ssl check','certificate check','ssl cert','https cert'], slugs: ['net-ssl-check'], boost: 25 },
+  { patterns: ['ping host','icmp ping','is host alive','ping ip'], slugs: ['net-ping'], boost: 25 },
+  { patterns: ['http headers','response headers','get headers'], slugs: ['net-http-headers'], boost: 22 },
+  { patterns: ['ip geolocation','where is ip','locate ip','ip location','ip geo','geolocate ip'], slugs: ['net-ip-geo'], boost: 25 },
+  { patterns: ['whois','domain owner','registrar','domain registration'], slugs: ['net-whois'], boost: 25 },
+  { patterns: ['port scan','check port','is port open','open ports'], slugs: ['net-port-scan'], boost: 25 },
+  { patterns: ['my ip','what is my ip','external ip'], slugs: ['net-my-ip'], boost: 25 },
+  { patterns: ['email deliverability','mx check','smtp check'], slugs: ['net-email-validate'], boost: 22 },
+  // Data transform
+  { patterns: ['csv to json','parse csv','convert csv'], slugs: ['data-csv-to-json'], boost: 25 },
+  { patterns: ['json to csv','export json to csv'], slugs: ['data-json-to-csv'], boost: 25 },
+  { patterns: ['xml to json','parse xml'], slugs: ['data-xml-to-json'], boost: 25 },
+  { patterns: ['yaml to json','parse yaml'], slugs: ['data-yaml-to-json'], boost: 25 },
+  { patterns: ['json to yaml','convert to yaml'], slugs: ['data-json-to-yaml'], boost: 25 },
+  { patterns: ['compress','gzip','deflate compress'], slugs: ['data-compress'], boost: 18 },
+  { patterns: ['flatten json','flatten object','flatten array'], slugs: ['data-flatten'], boost: 22 },
+  { patterns: ['json diff','compare json','object diff'], slugs: ['data-json-diff'], boost: 22 },
+  { patterns: ['json schema validate','validate against schema'], slugs: ['data-json-schema-validate'], boost: 22 },
+  { patterns: ['qr code','generate qr','make qr'], slugs: ['data-qr-generate'], boost: 25 },
+  { patterns: ['barcode','generate barcode'], slugs: ['data-barcode-generate'], boost: 25 },
+  { patterns: ['data forecast','trend forecast','predict values'], slugs: ['data-forecast'], boost: 22 },
+  // Code utilities
+  { patterns: ['format sql','sql format','beautify sql','sql pretty'], slugs: ['code-sql-format'], boost: 28 },
+  { patterns: ['run sql','execute sql','sql query on data','sql on json'], slugs: ['exec-sql-on-json'], boost: 28 },
+  { patterns: ['explain regex','what does regex','regex explanation'], slugs: ['code-regex-explain'], boost: 25 },
+  { patterns: ['semver','version compare','semantic version'], slugs: ['code-semver-compare'], boost: 25 },
+  { patterns: ['parse env','dotenv','env file parse'], slugs: ['code-parse-env'], boost: 22 },
+  { patterns: ['format json','pretty json','json beautify','json pretty print'], slugs: ['code-json-format'], boost: 22 },
+  { patterns: ['code review','review code'], slugs: ['llm-code-review'], boost: 22 },
+  { patterns: ['generate code','write code','code generation','code this'], slugs: ['llm-code-generate'], boost: 20 },
+  { patterns: ['fix code','debug code','repair code'], slugs: ['llm-code-fix'], boost: 22 },
+  // LLM / AI
+  { patterns: ['ask claude','ask ai','chat with ai','ask the ai'], slugs: ['llm-chat'], boost: 22 },
+  { patterns: ['think','reason through','deep think'], slugs: ['llm-think'], boost: 18 },
+  { patterns: ['classify text','classify this','categorize','what category'], slugs: ['llm-classify'], boost: 22 },
+  { patterns: ['extract data','extract structured','parse this into json','structured extract'], slugs: ['llm-data-extract'], boost: 22 },
+  { patterns: ['write blog','blog post','write article'], slugs: ['llm-blog'], boost: 22 },
+  { patterns: ['generate text','write text','compose text','draft this'], slugs: ['llm-generate'], boost: 18 },
+  { patterns: ['council','multi model','ask multiple models','model council'], slugs: ['llm-council'], boost: 22 },
+  // Fleet / agents
+  { patterns: ['register agent','new agent','add agent to fleet'], slugs: ['fleet-register'], boost: 25 },
+  { patterns: ['dispatch task','send task to agent','assign task'], slugs: ['fleet-dispatch'], boost: 25 },
+  { patterns: ['agent status','fleet status','list agents','all agents'], slugs: ['fleet-status'], boost: 25 },
+  { patterns: ['heartbeat','agent heartbeat','ping agent'], slugs: ['fleet-heartbeat'], boost: 25 },
+  { patterns: ['deregister agent','remove agent','retire agent'], slugs: ['fleet-deregister'], boost: 25 },
+  { patterns: ['chain agents','run pipeline','orchestrate'], slugs: ['agent-chain'], boost: 22 },
+  { patterns: ['army','deploy army','multi agent','agent swarm','spawn agents'], slugs: ['army-deploy'], boost: 22 },
+  // GraphRAG
+  { patterns: ['add to graph','add node','add knowledge','insert to graph'], slugs: ['graphrag-add'], boost: 25 },
+  { patterns: ['query graph','search graph','graph search','find in graph'], slugs: ['graphrag-query'], boost: 25 },
+  { patterns: ['link nodes','connect nodes','add edge','relate nodes'], slugs: ['graphrag-link'], boost: 25 },
+  // Hive / NorthStar
+  { patterns: ['daily brief','daily intelligence','daily hive','hive brief'], slugs: ['hive-daily-intelligence'], boost: 28 },
+  { patterns: ['hive workspace','run hive','hive session'], slugs: ['hive-run'], boost: 22 },
+  { patterns: ['north star','set northstar','northstar goal'], slugs: ['northstar-set'], boost: 25 },
+  { patterns: ['get northstar','my northstar','what is my goal'], slugs: ['northstar-get'], boost: 25 },
+  // Weather / external
+  { patterns: ['weather','weather forecast','temperature forecast','weather report','current weather'], slugs: ['weather-report'], boost: 28 },
+  { patterns: ['send email','email someone','mail to'], slugs: ['ext-email-send'], boost: 25 },
+  { patterns: ['slack message','send slack','post to slack'], slugs: ['ext-slack-send'], boost: 25 },
+  { patterns: ['github issue','github pr','github repo'], slugs: ['ext-github-issue'], boost: 22 },
+  { patterns: ['s3 upload','upload to s3','upload file'], slugs: ['ext-s3-upload'], boost: 25 },
+  // Vision
+  { patterns: ['image hash','hash image','fingerprint image'], slugs: ['vision-image-hash'], boost: 25 },
+  { patterns: ['ocr','read image text','extract text from image','image to text'], slugs: ['vision-ocr'], boost: 28 },
+  { patterns: ['color palette','image colors','dominant colors','extract colors'], slugs: ['vision-color-palette'], boost: 25 },
+  { patterns: ['image metadata','exif','image info'], slugs: ['vision-image-metadata'], boost: 25 },
+  // Finance / vertical
+  { patterns: ['stock price','stock quote','share price'], slugs: ['finance-stock-price'], boost: 25 },
+  { patterns: ['crypto price','bitcoin price','eth price','coin price'], slugs: ['finance-crypto-price'], boost: 25 },
+  { patterns: ['exchange rate','currency convert','forex','convert currency'], slugs: ['finance-exchange-rate'], boost: 25 },
+  { patterns: ['legal doc','generate contract','nda generate','legal template'], slugs: ['legal-doc-generate'], boost: 22 },
+  { patterns: ['seo analyze','seo score','seo check'], slugs: ['marketing-seo-analyze'], boost: 22 },
+  { patterns: ['competitor research','competitive analysis'], slugs: ['marketing-competitor-research'], boost: 22 },
+];
 
-  // Intent-boosting map: natural language phrases -> slug boost targets
-  const INTENT_BOOSTS = [
-    // Crypto / hashing
-    { patterns: ['hash','sha256','sha512','sha1','checksum','digest','fingerprint'], slugs: ['crypto-hash-sha256','crypto-hash-sha512','crypto-hash-md5'], boost: 15 },
-    { patterns: ['md5'], slugs: ['crypto-hash-md5'], boost: 20 },
-    { patterns: ['uuid','guid','unique id','generate id'], slugs: ['crypto-uuid'], boost: 20 },
-    { patterns: ['hmac','message auth'], slugs: ['crypto-hmac'], boost: 20 },
-    { patterns: ['encrypt','aes','cipher','encipher'], slugs: ['crypto-encrypt-aes'], boost: 20 },
-    { patterns: ['decrypt','decipher','aes decrypt'], slugs: ['crypto-decrypt-aes'], boost: 20 },
-    { patterns: ['base64 encode','encode base64','to base64'], slugs: ['crypto-base64-encode'], boost: 18 },
-    { patterns: ['base64 decode','decode base64','from base64'], slugs: ['crypto-base64-decode'], boost: 18 },
-    { patterns: ['jwt','json web token','decode jwt','parse jwt','inspect jwt'], slugs: ['crypto-jwt-decode'], boost: 20 },
-    { patterns: ['sign jwt','create jwt','generate jwt'], slugs: ['crypto-jwt-sign'], boost: 20 },
-    { patterns: ['generate password','create password','random password','new password','secure password','strong password'], slugs: ['crypto-password-generate'], boost: 24 },
-    { patterns: ['password hash','hash password','bcrypt','pbkdf2'], slugs: ['crypto-password-hash'], boost: 18 },
-    { patterns: ['random bytes','random hex','random string','secure random'], slugs: ['crypto-random-bytes'], boost: 15 },
-    // Text processing
-    { patterns: ['word count','count words','how many words'], slugs: ['text-word-count'], boost: 25 },
-    { patterns: ['char count','character count','count chars','count characters'], slugs: ['text-char-count'], boost: 25 },
-    { patterns: ['truncate','shorten text','cut text','limit text'], slugs: ['text-truncate'], boost: 20 },
-    { patterns: ['slug','url slug','kebab case from'], slugs: ['text-slugify'], boost: 20 },
-    { patterns: ['camel case','snake case','title case','uppercase','lowercase','case convert'], slugs: ['text-case-convert'], boost: 20 },
-    { patterns: ['reverse','reverse text','reverse string'], slugs: ['text-reverse'], boost: 20 },
-    { patterns: ['palindrome','is palindrome'], slugs: ['text-palindrome'], boost: 20 },
-    { patterns: ['sentiment','positive or negative','emotion analysis','tone'], slugs: ['text-sentiment'], boost: 20 },
-    { patterns: ['extract email','find email','emails in text'], slugs: ['text-extract-emails'], boost: 22 },
-    { patterns: ['extract url','find url','links in text'], slugs: ['text-extract-urls'], boost: 22 },
-    { patterns: ['extract phone','find phone','phone numbers in'], slugs: ['text-extract-phones'], boost: 22 },
-    { patterns: ['redact','pii','remove personal','anonymize'], slugs: ['text-redact-pii'], boost: 20 },
-    { patterns: ['summarize','summary','tldr','tl;dr'], slugs: ['text-summarize','llm-summarize'], boost: 18 },
-    { patterns: ['translate','translation','convert language'], slugs: ['text-translate','llm-translate'], boost: 18 },
-    { patterns: ['token count','count tokens','how many tokens'], slugs: ['text-token-count'], boost: 22 },
-    { patterns: ['regex','regular expression','test pattern'], slugs: ['text-regex-test'], boost: 18 },
-    { patterns: ['diff','compare text','text difference'], slugs: ['text-diff'], boost: 18 },
-    { patterns: ['readability','reading level','flesch'], slugs: ['text-readability'], boost: 18 },
-    // Math
-    { patterns: ['calculate','compute formula','evaluate expression','math'], slugs: ['math-eval'], boost: 18 },
-    { patterns: ['fibonacci','fib sequence'], slugs: ['math-fibonacci'], boost: 22 },
-    { patterns: ['prime','is prime','prime number'], slugs: ['math-prime'], boost: 22 },
-    { patterns: ['statistics','mean','median','standard deviation','variance'], slugs: ['math-stats'], boost: 20 },
-    { patterns: ['percentage','percent of','calculate percent'], slugs: ['math-percentage'], boost: 18 },
-    { patterns: ['mortgage','loan payment','amortize'], slugs: ['math-mortgage'], boost: 22 },
-    { patterns: ['matrix','matrix multiply','determinant'], slugs: ['math-matrix'], boost: 20 },
-    { patterns: ['compound interest','investment return','future value'], slugs: ['math-compound-interest'], boost: 20 },
-    // Memory / storage
-    { patterns: ['store','save','remember','persist','memorize','store in memory','write to memory'], slugs: ['memory-set'], boost: 22 },
-    { patterns: ['retrieve','recall','load memory','get from memory','read memory'], slugs: ['memory-get'], boost: 22 },
-    { patterns: ['list memories','all memories','show memories'], slugs: ['memory-list'], boost: 20 },
-    { patterns: ['search memory','find memory','query memory'], slugs: ['memory-search'], boost: 20 },
-    { patterns: ['kv store','key value','key-value'], slugs: ['kv-set','kv-get'], boost: 18 },
-    { patterns: ['queue','enqueue','job queue','task queue'], slugs: ['queue-push'], boost: 20 },
-    { patterns: ['counter','increment','count up','atomic counter'], slugs: ['counter-increment'], boost: 20 },
-    // Validation
-    { patterns: ['validate email','email valid','check email format'], slugs: ['validate-email-syntax','net-email-validate'], boost: 25 },
-    { patterns: ['validate url','url valid','check url'], slugs: ['validate-url'], boost: 22 },
-    { patterns: ['validate ip','ip address valid','check ip'], slugs: ['net-ip-validate'], boost: 22 },
-    { patterns: ['validate uuid','uuid valid'], slugs: ['validate-uuid'], boost: 22 },
-    { patterns: ['validate credit card','card number valid','luhn'], slugs: ['validate-credit-card'], boost: 22 },
-    { patterns: ['validate phone','phone number valid'], slugs: ['validate-phone'], boost: 22 },
-    { patterns: ['validate iban','iban valid'], slugs: ['validate-iban'], boost: 22 },
-    { patterns: ['validate json','json valid','parse json'], slugs: ['validate-json'], boost: 20 },
-    // Date / time
-    { patterns: ['current date','what date','today date','now','current time','what day is it','what day today','what is today'], slugs: ['date-now'], boost: 22 },
-    { patterns: ['format date','date format','convert date'], slugs: ['date-format'], boost: 22 },
-    { patterns: ['parse date','read date string'], slugs: ['date-parse'], boost: 22 },
-    { patterns: ['business days','working days','weekday'], slugs: ['date-business-days'], boost: 22 },
-    { patterns: ['cron','cron expression','schedule next run'], slugs: ['date-cron-next'], boost: 22 },
-    { patterns: ['time difference','days between','date diff'], slugs: ['date-diff'], boost: 20 },
-    { patterns: ['unix timestamp','epoch','convert timestamp'], slugs: ['date-to-unix'], boost: 20 },
-    // Network
-    { patterns: ['dns lookup','dns resolve','lookup domain'], slugs: ['net-dns-lookup'], boost: 22 },
-    { patterns: ['http check','is site up','is site down','check url status','ping url','website up','site status','check if site'], slugs: ['net-http-check'], boost: 22 },
-    { patterns: ['ssl check','certificate valid','https check'], slugs: ['net-ssl-check'], boost: 22 },
-    { patterns: ['ping','icmp ping','is host alive'], slugs: ['net-ping'], boost: 22 },
-    { patterns: ['http headers','response headers','get headers'], slugs: ['net-http-headers'], boost: 20 },
-    { patterns: ['ip geolocation','where is ip','ip location','ip address located','geolocate ip','ip geo','locate ip'], slugs: ['net-ip-geo'], boost: 22 },
-    { patterns: ['whois','domain owner','registrar'], slugs: ['net-whois'], boost: 22 },
-    // Data transform
-    { patterns: ['csv','csv to json','parse csv','convert csv'], slugs: ['data-csv-to-json'], boost: 22 },
-    { patterns: ['json to csv','convert json to csv'], slugs: ['data-json-to-csv'], boost: 22 },
-    { patterns: ['xml','parse xml','xml to json'], slugs: ['data-xml-to-json'], boost: 22 },
-    { patterns: ['yaml','parse yaml','yaml to json'], slugs: ['data-yaml-to-json'], boost: 22 },
-    { patterns: ['compress file','gzip file','deflate compress','compress with gzip','gzip compress','gunzip','decompress gzip'], slugs: ['data-compress'], boost: 20 },
-    { patterns: ['zip array','interleave arrays','zip two arrays','array zip'], slugs: ['data-zip'], boost: 18 },
-    { patterns: ['flatten','flatten json','flatten object','flatten array'], slugs: ['data-flatten'], boost: 20 },
-    { patterns: ['json diff','object diff','compare json'], slugs: ['data-json-diff'], boost: 20 },
-    { patterns: ['json schema','validate schema'], slugs: ['data-json-schema-validate'], boost: 20 },
-    // Code utilities
-    { patterns: ['format sql','sql format','indent sql','beautify sql'], slugs: ['code-sql-format'], boost: 25 },
-    { patterns: ['run sql','execute sql','sql query','sql on data','sql query on','run a sql','execute a sql'], slugs: ['exec-sql-on-json'], boost: 25 },
-    { patterns: ['explain regex','regex explain','what does regex'], slugs: ['code-regex-explain'], boost: 22 },
-    { patterns: ['semver','version compare','semantic version'], slugs: ['code-semver-compare'], boost: 22 },
-    { patterns: ['parse env','dotenv','env file'], slugs: ['code-parse-env'], boost: 20 },
-    { patterns: ['format json','pretty print json','json beautify'], slugs: ['code-json-format'], boost: 20 },
-    // Generation / LLM
-    { patterns: ['generate text','write text','compose','draft','llm generate'], slugs: ['llm-generate'], boost: 18 },
-    { patterns: ['blog post','write blog','article'], slugs: ['llm-blog'], boost: 18 },
-    { patterns: ['generate code','write code','code generation'], slugs: ['llm-code'], boost: 18 },
-    { patterns: ['weather','weather forecast','temperature forecast','weather report'], slugs: ['weather-report'], boost: 25 },
-    { patterns: ['forecast data','trend forecast','number forecast','data forecast'], slugs: ['data-forecast'], boost: 20 },
-    // Agent / orchestration
-    { patterns: ['chain agents','run workflow','execute pipeline','orchestrate'], slugs: ['agent-chain'], boost: 20 },
-    { patterns: ['deploy army','multi agent','spawn agents','agent swarm'], slugs: ['army-deploy'], boost: 20 },
-    { patterns: ['hive','hive workspace','agent workspace'], slugs: ['hive-run'], boost: 20 },
-  ];
+// NL param extractor — pulls structured input params from a natural language query string
+function nlExtractParams(query, slug) {
+  const q = query;
+  const quoted = (s) => { const m = s.match(/['"]([^'"]+)['"]/); return m ? m[1] : null; };
+  if (['crypto-hash-sha256','crypto-hash-sha512','crypto-hash-md5','crypto-hash-sha1'].includes(slug)) {
+    const cleaned = q.replace(/sha256|sha512|md5|sha1|hash|of|the|string|text|word|compute|calculate/gi, '').trim();
+    return { data: quoted(q) || cleaned || q };
+  }
+  if (slug === 'crypto-base64-encode') { return { data: quoted(q) || q.replace(/base64|encode|to|the|string|text/gi, '').trim() }; }
+  if (slug === 'crypto-base64-decode') { return { data: quoted(q) || q.replace(/base64|decode|from|the|string/gi, '').trim() }; }
+  if (slug === 'crypto-uuid') return {};
+  if (slug === 'crypto-password-generate') { const lm = q.match(/(\d+)\s*(?:char|character|digit|length|long)/i); return { length: lm ? parseInt(lm[1]) : 16 }; }
+  if (slug === 'crypto-random-int') { const ns = q.match(/\d+/g) || []; return { min: ns[0] ? parseInt(ns[0]) : 1, max: ns[1] ? parseInt(ns[1]) : 100 }; }
+  if (['text-word-count','text-char-count','text-reverse','text-palindrome','text-token-count','text-readability'].includes(slug)) {
+    return { text: quoted(q) || q.replace(/word count|char count|character count|count words|count chars|reverse|palindrome|token count|readability|of|the|text|string|in/gi, '').trim() || q };
+  }
+  if (slug === 'text-sentiment') { return { text: quoted(q) || q.replace(/sentiment|analyze|what is the|tone of|feel|positive|negative|of/gi, '').trim() || q }; }
+  if (slug === 'text-translate' || slug === 'llm-translate') {
+    const lm = q.match(/to\s+([a-z]+)(?:\s|$)/i), fm = q.match(/from\s+([a-z]+)\s+to/i);
+    const r = { text: quoted(q) || q.replace(/translate|from\s+\w+|to\s+\w+|the\s+text|the\s+phrase|the\s+word/gi, '').trim() || q, target_lang: lm ? lm[1].toLowerCase().slice(0, 2) : 'en' };
+    if (fm) r.source_lang = fm[1].toLowerCase().slice(0, 2);
+    return r;
+  }
+  if (slug === 'text-summarize-extractive' || slug === 'llm-summarize') { return { text: quoted(q) || q.replace(/summarize|summary|tldr|tl;dr|give me a|of/gi, '').trim() || q }; }
+  if (slug === 'math-fibonacci') { const n = q.match(/\d+/)?.[0]; return { n: n ? parseInt(n) : 10 }; }
+  if (slug === 'math-prime-check' || slug === 'math-prime') { const n = q.match(/\d+/)?.[0]; return { number: n ? parseInt(n) : 7 }; }
+  if (slug === 'math-factorial') { const n = q.match(/\d+/)?.[0]; return { n: n ? parseInt(n) : 5 }; }
+  if (slug === 'math-eval' || slug === 'math-evaluate') { return { expression: quoted(q) || q.replace(/calculate|evaluate|compute|what is|the result of|math/gi, '').trim() || q }; }
+  if (slug === 'memory-set') {
+    const am = q.match(/as\s+([\w-]+)(?:\s|$)/i);
+    return { key: am ? am[1] : 'auto_' + Date.now().toString(36), value: quoted(q) || q.replace(/store|save|remember|persist|memorize|in memory|write to memory|as\s+[\w-]+/gi, '').trim() || q };
+  }
+  if (slug === 'memory-get') { const km = q.match(/(?:get|retrieve|recall|load)\s+(?:memory\s+)?(?:for\s+)?['"]?([\w-]+)['"]?/i); return { key: km ? km[1] : (quoted(q) || q.replace(/get|retrieve|recall|load|memory|for/gi, '').trim()) }; }
+  if (slug === 'memory-search') { return { query: quoted(q) || q.replace(/search|find|query|memory|memories|for|about|in/gi, '').trim() || q }; }
+  if (slug === 'memory-delete') { return { key: quoted(q) || q.replace(/delete|forget|remove|memory|clear|for/gi, '').trim() || q }; }
+  if (slug === 'validate-email-syntax') { const em = q.match(/[\w.+-]+@[\w-]+\.[\w.]+/); return { email: em ? em[0] : (quoted(q) || q.replace(/validate|check|email|is|valid|a/gi, '').trim()) }; }
+  if (slug === 'validate-url') { const um = q.match(/https?:\/\/[^\s'"]+/); return { url: um ? um[0] : (quoted(q) || q.replace(/validate|check|url|is|valid/gi, '').trim()) }; }
+  if (slug === 'net-dns-lookup') { const dm = q.match(/(?:lookup|resolve|dns)\s+(?:for\s+)?([a-z0-9.-]+\.[a-z]{2,})/i); return { host: dm ? dm[1] : (q.match(/[a-z0-9.-]+\.[a-z]{2,}/)?.[0] || q.replace(/dns|lookup|resolve/gi,'').trim()) }; }
+  if (slug === 'net-http-check') { const um = q.match(/https?:\/\/[^\s'"]+/) || q.match(/([a-z0-9.-]+\.[a-z]{2,}[^\s]*)/i); return { url: um ? (um[0].startsWith('http') ? um[0] : 'https://' + um[0]) : q.replace(/check|is|site|up|down|status|website|ping/gi,'').trim() }; }
+  if (slug === 'net-ip-geo') { const ip = q.match(/\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}/); return { ip: ip ? ip[0] : (quoted(q) || q.replace(/ip|geolocation|locate|where is|geolocate/gi,'').trim()) }; }
+  if (slug === 'net-whois') { const dm = q.match(/[a-z0-9.-]+\.[a-z]{2,}/i); return { domain: dm ? dm[0] : q.replace(/whois|domain|owner|registrar/gi,'').trim() }; }
+  if (slug === 'net-ping') { const hm = q.match(/(?:ping\s+)?([a-z0-9.-]+\.[a-z]{2,}|\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/i); return { host: hm ? hm[1] : q.replace(/ping|host|icmp/gi,'').trim() }; }
+  if (slug === 'weather-report') { return { location: quoted(q) || q.replace(/weather|forecast|report|in|for|current|temperature/gi, '').trim() || 'New York' }; }
+  if (slug === 'date-now') return {};
+  if (slug === 'date-diff') { const ds = q.match(/\d{4}-\d{2}-\d{2}/g) || []; return { date1: ds[0] || new Date().toISOString().split('T')[0], date2: ds[1] || new Date().toISOString().split('T')[0] }; }
+  if (slug === 'llm-chat' || slug === 'llm-think') { return { message: q.replace(/ask claude|ask ai|chat with ai|ask the ai|think about|reason through|analyze/gi, '').trim() || q }; }
+  if (slug === 'fleet-register') { const nm = q.match(/(?:register|add|new)\s+(?:agent\s+)?['"]?([\w-]+)['"]?/i); return { name: nm ? nm[1] : 'agent-' + Date.now().toString(36) }; }
+  if (slug === 'fleet-dispatch') { return { task: quoted(q) || q.replace(/dispatch|send|task|to agent|agent/gi, '').trim() || q }; }
+  if (slug === 'graphrag-add') { const cl = q.replace(/add to graph|add node|add knowledge|insert to graph|in|the|to/gi, '').trim(); return { label: quoted(q) ? 'node' : (cl.split(/\s+/)[0] || 'node'), value: quoted(q) || cl }; }
+  if (slug === 'graphrag-query') { return { query: quoted(q) || q.replace(/query graph|search graph|find in graph|in|the|for/gi, '').trim() || q }; }
+  return { text: q, message: q };
+}
 
-  // Apply intent boosts
-  const intentBoostMap = {};
-  for (const intent of INTENT_BOOSTS) {
-    const matched = intent.patterns.some(p => lower.includes(p));
-    if (matched) {
-      for (const slug of intent.slugs) {
-        intentBoostMap[slug] = (intentBoostMap[slug] || 0) + intent.boost;
-      }
+// Apply NL_INTENT_BOOSTS to a lowercased task string
+function nlScoreIntents(lower) {
+  const boostMap = {};
+  for (const intent of NL_INTENT_BOOSTS) {
+    if (intent.patterns.some(p => lower.includes(p))) {
+      for (const slug of intent.slugs) boostMap[slug] = (boostMap[slug] || 0) + intent.boost;
     }
   }
+  return boostMap;
+}
 
-  // Score all APIs
-  const scored = [];
+// Score all API_DEFS against a natural language task
+function nlScoreAPIs(task) {
+  const lower = task.toLowerCase();
+  const intentBoostMap = nlScoreIntents(lower);
   const stopWords = new Set(['the','and','for','are','this','that','with','from','into','your','some','will','can','how','its','have']);
   const words = lower.split(/\s+/).filter(w => w.length > 2 && !stopWords.has(w));
-  const maxPossible = words.length * 4 + 3 + 30; // text + slug + compute + boost
-
+  const wordsSet = new Set(words);
+  const maxPossible = words.length * 4 + 3 + 30;
+  function jac(tokens, querySet) {
+    if (!tokens.length || !querySet.size) return 0;
+    const tSet = new Set(tokens); let inter = 0;
+    for (const t of tSet) { if (querySet.has(t)) inter++; }
+    const union = tSet.size + querySet.size - inter;
+    return union > 0 ? inter / union : 0;
+  }
+  const scored = [];
   for (const [slug, def] of Object.entries(API_DEFS)) {
     const text = (slug + ' ' + def.name + ' ' + def.desc).toLowerCase();
-    let score = 0;
-    let matchedTerms = [];
-    words.forEach(w => {
-      if (text.includes(w)) { score++; matchedTerms.push(w); }
-      if (slug.includes(w)) { score += 3; }
-    });
+    let score = 0; const matchedTerms = [];
+    words.forEach(w => { if (text.includes(w)) { score++; matchedTerms.push(w); } if (slug.includes(w)) score += 3; });
+    const slugTokens = slug.split(/[-_]+/);
+    const nameTokens = (def.name || '').toLowerCase().split(/\s+/).filter(w => w.length > 1);
+    const jBonus = Math.round((jac(slugTokens, wordsSet) * 4 + jac(nameTokens, wordsSet) * 3) * 10) / 10;
+    score += jBonus;
     if (def.tier === 'compute') score += 2;
     if (def.credits <= 1) score += 1;
     const intentBoost = intentBoostMap[slug] || 0;
     score += intentBoost;
-
     if (score > 2 || intentBoost > 0) {
-      scored.push({
-        slug, name: def.name, description: def.desc,
-        credits: def.credits, tier: def.tier, category: def.cat,
-        relevance_score: score,
-        has_handler: !!allHandlers[slug],
-        input_schema: SCHEMAS?.[slug]?.input || null,
-        _matched_terms: matchedTerms,
-        _intent_boost: intentBoost,
-      });
+      scored.push({ slug, name: def.name, description: def.desc, credits: def.credits, tier: def.tier, category: def.cat, relevance_score: score, has_handler: !!allHandlers[slug], input_schema: SCHEMAS?.[slug]?.input || null, _matched_terms: matchedTerms, _intent_boost: intentBoost, _jaccard_bonus: jBonus });
     }
   }
-
   scored.sort((a, b) => b.relevance_score - a.relevance_score);
-  const best = scored[0] || null;
-  const maxScore = best ? best.relevance_score : 0;
+  return { scored, maxPossible };
+}
 
-  // Build example_call for the best match
+// nl_query_log table for /v1/query/history
+db.exec('CREATE TABLE IF NOT EXISTS nl_query_log (id INTEGER PRIMARY KEY AUTOINCREMENT, api_key TEXT, query TEXT, slug TEXT, method TEXT, confidence REAL, result_summary TEXT, ts INTEGER)');
+// nl_query_feedback table for feedback loop
+db.exec('CREATE TABLE IF NOT EXISTS nl_query_feedback (id INTEGER PRIMARY KEY AUTOINCREMENT, api_key TEXT, query_id INTEGER, slug_chosen TEXT, correct INTEGER, ts INTEGER)');
+
+// Levenshtein distance — used by fuzzy stage for typo-tolerant slug matching
+function levenshtein(a, b) {
+  const m = a.length, n = b.length;
+  const dp = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => i === 0 ? j : j === 0 ? i : 0));
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i-1] === b[j-1]
+        ? dp[i-1][j-1]
+        : 1 + Math.min(dp[i-1][j], dp[i][j-1], dp[i-1][j-1]);
+    }
+  }
+  return dp[m][n];
+}
+
+// Fuzzy slug match — returns best slug by Levenshtein similarity against slug tokens
+function fuzzySlugMatch(query) {
+  const lower = (query || '').toLowerCase().replace(/[^a-z0-9\s]/g, '');
+  const words = lower.split(/\s+/).filter(w => w.length >= 3);
+  let bestSlug = null, bestScore = Infinity;
+  for (const slug of Object.keys(API_DEFS)) {
+    const tokens = slug.split('-').filter(t => t.length >= 3);
+    for (const w of words) {
+      for (const t of tokens) {
+        const d = levenshtein(w, t);
+        const norm = d / Math.max(w.length, t.length);
+        if (norm < bestScore) { bestScore = norm; bestSlug = slug; }
+      }
+    }
+  }
+  return bestScore <= 0.35 ? bestSlug : null;
+}
+
+// Compound / pipe detector — returns pipe_suggestion when query implies multi-step work
+const PIPE_CONNECTORS = /(and then|then store|and store|and save|and send|and email|and remember|after that|followed by|then (?:hash|encrypt|send|store|save|email|post|upload))/i;
+function detectPipeSuggestion(query, scored) {
+  if (!query || !PIPE_CONNECTORS.test(query) || scored.length < 2) return null;
+  const top = scored.slice(0, 8);
+  const first = top[0];
+  const second = top.find(s => s.category !== first.category) || top[1];
+  if (!second || second.slug === first.slug) return null;
+  return {
+    steps: [
+      { slug: first.slug, name: first.name, input: nlExtractParams(query, first.slug) },
+      { slug: second.slug, name: second.name, input: nlExtractParams(query, second.slug) },
+    ],
+    hint: 'Use POST /v1/chain/create or POST /v1/workflows/run to execute multi-step pipes',
+  };
+}
+
+// PILLAR 3: /route — Smart API routing (returns best slug + filled params, does NOT execute)
+// Returns: { slug, input_filled, confidence, method, alternatives[] }
+app.post('/v1/route', auth, (req, res) => {
+  const task = req.body.task || req.body.query || '';
+  if (!task) return res.status(422).json({ error: { code: 'missing_task' } });
+
+  const { scored, maxPossible } = nlScoreAPIs(task);
+  const best = scored[0] || null;
+  const method = best ? (best._intent_boost > 0 ? 'keyword' : 'fuzzy') : 'no_match';
+  const input_filled = best ? nlExtractParams(task, best.slug) : null;
+  const confidence = best ? Math.min(Math.round((best.relevance_score / Math.max(maxPossible, best.relevance_score)) * 100) / 100, 1) : 0;
+
   function buildExampleCall(item) {
     if (!item) return null;
     const schema = SCHEMAS?.[item.slug];
     const exampleInput = schema?.example?.input || {};
-    // Fill in required fields with sensible defaults if example is empty
     if (Object.keys(exampleInput).length === 0 && item.input_schema) {
       for (const [k, v] of Object.entries(item.input_schema)) {
         if (v && v.required) {
@@ -9925,10 +11013,10 @@ app.post('/v1/route', auth, (req, res) => {
         }
       }
     }
-    return { endpoint: '/v1/' + item.slug, body: exampleInput };
+    const bodyToUse = input_filled && Object.keys(input_filled).filter(k => k !== 'text' && k !== 'message').length > 0 ? input_filled : exampleInput;
+    return { endpoint: '/v1/' + item.slug, body: bodyToUse };
   }
 
-  // Generate human-readable reason
   function buildReason(item) {
     if (!item) return 'No matching API found';
     const parts = [];
@@ -9939,19 +11027,28 @@ app.post('/v1/route', auth, (req, res) => {
     return parts.length > 0 ? parts.join('; ') : 'best available match';
   }
 
+  const recommended_call = buildExampleCall(best);
+  const pipe_suggestion = detectPipeSuggestion(task, scored);
+
   res.json({
     ok: true,
     task,
+    slug: best ? best.slug : null,
     recommended: best ? best.slug : null,
-    confidence: best ? Math.min(Math.round((best.relevance_score / Math.max(maxPossible, best.relevance_score)) * 100) / 100, 1) : 0,
+    recommended_call,
+    input_filled,
+    confidence,
+    method,
     reason: buildReason(best),
-    alternatives: scored.slice(1, 4).map(s => s.slug),
-    example_call: buildExampleCall(best),
-    _detail: best ? {
-      slug: best.slug, name: best.name, description: best.description,
-      credits: best.credits, tier: best.tier, category: best.category,
-      has_handler: best.has_handler, input_schema: best.input_schema,
-    } : null,
+    alternatives: scored.slice(1, 4).map(s => ({
+      slug: s.slug,
+      name: s.name,
+      description: s.description,
+      confidence: Math.min(Math.round((s.relevance_score / Math.max(maxPossible, s.relevance_score)) * 100) / 100, 1),
+    })),
+    pipe_suggestion,
+    example_call: recommended_call,
+    _detail: best ? { slug: best.slug, name: best.name, description: best.description, credits: best.credits, tier: best.tier, category: best.category, has_handler: best.has_handler, input_schema: best.input_schema } : null,
     total_matches: scored.length,
     _engine: 'real',
   });
@@ -10270,11 +11367,11 @@ app.post('/v1/compare', auth, async (req, res) => {
 // ===== ONBOARDING — Interactive quickstart (requested by GPT, Grok, DeepSeek, Mistral) =====
 app.get('/v1/quickstart/interactive', auth, async (req, res) => {
   const steps = [
-    { step: 1, title: 'Generate a UUID', command: 'slop call crypto-uuid', api: 'crypto-uuid', credits: 1 },
-    { step: 2, title: 'Hash some text', command: 'slop call crypto-hash-sha256 --text "hello"', api: 'crypto-hash-sha256', credits: 1 },
-    { step: 3, title: 'Store in memory (free)', command: 'slop memory set mykey "hello world"', api: 'memory-set', credits: 0 },
-    { step: 4, title: 'Ask all 4 AI models', command: 'slop call llm-council --text "What should I build?"', api: 'llm-council', credits: 40 },
-    { step: 5, title: 'Launch an agent team', command: 'slop org launch --template dev-agency', api: 'org/launch', credits: 5 },
+    { step: 1, title: 'Store your first memory', command: 'slop memory set mykey "hello world"', api: 'memory-set', credits: 0, why: 'Memory is free and permanent — the foundation of the Dream Engine' },
+    { step: 2, title: 'Start a Dream session', command: 'curl -X POST /v1/memory/dream/start -d \'{"strategy":"synthesize"}\'', api: '/v1/memory/dream/start', credits: 10, why: 'The Dream Engine synthesizes your memories into compressed insights while you sleep' },
+    { step: 3, title: 'Create a team memory space', command: 'curl -X POST /v1/memory/share/create -d \'{"name":"my-team"}\'', api: '/v1/memory/share/create', credits: 0, why: 'Multiplayer Memory — share intelligence with teammates and agents in real time' },
+    { step: 4, title: 'Ask all models at once', command: 'slop call llm-council --text "What should I build?"', api: 'llm-council', credits: 40, why: 'Multi-model intelligence: Claude, Grok, GPT, and any local model' },
+    { step: 5, title: 'Launch an agent team', command: 'slop org launch --template dev-agency', api: 'org/launch', credits: 5, why: 'Swarms of agents share memory and dream together — the Living Backend OS' },
   ];
 
   // Auto-execute step 1 to show immediate value
@@ -10288,7 +11385,8 @@ app.get('/v1/quickstart/interactive', auth, async (req, res) => {
 
   res.json({
     ok: true,
-    welcome: 'Welcome to Slopshop! Follow these 5 steps to see the platform in action.',
+    welcome: 'Welcome to Slopshop — The Living Agentic Backend OS. Dream Engine + Multiplayer Memory: agents that synthesize knowledge overnight, teams that share intelligence in real time.',
+    headline: 'Our north star: Dream Engine (REM-style memory consolidation) + Multiplayer Memory (shared team intelligence). Everything else is built around these two primitives.',
     your_balance: req.acct.balance,
     steps,
     demo_result: demo ? { uuid: demo.uuid, _engine: demo._engine } : null,
@@ -10326,7 +11424,11 @@ app.get('/v1/status/dashboard', (req, res) => {
     memory_mb: Math.round(mem.heapUsed / 1048576),
     recent_1h: { calls: recentCalls, errors: recentErrors, error_rate: recentCalls > 0 ? (recentErrors / recentCalls * 100).toFixed(1) + '%' : '0%' },
     sqlite_tables: db.prepare("SELECT count(*) as c FROM sqlite_master WHERE type='table'").get().c,
-    features: { workflows: true, telemetry: true, eval: true, compare: true, mesh: true, byok: true, memory_2fa: true, sybil_protection: true },
+    features: { dream_engine: true, multiplayer_memory: true, workflows: true, telemetry: true, eval: true, compare: true, mesh: true, byok: true, memory_2fa: true, sybil_protection: true },
+    headline_products: {
+      dream_engine: 'REM-style memory consolidation — agents synthesize and evolve their knowledge overnight. POST /v1/memory/dream/start',
+      multiplayer_memory: 'Shared memory spaces with collaborator invites — teams share intelligence in real time. POST /v1/memory/share/create',
+    },
     _engine: 'real',
   });
 });
@@ -11198,42 +12300,6 @@ app.get('/v1/eval/datasets/list', auth, (req, res) => {
   res.json({ ok: true, datasets, count: datasets.length, _engine: 'real' });
 });
 
-// NOTE: Duplicate registration of /v1/eval/run — also registered at lines ~4021 and ~7797. TODO: deduplicate in future cleanup.
-app.post('/v1/eval/run', auth, async (req, res) => {
-  const { dataset, provider, model } = req.body;
-  if (!dataset) return res.status(422).json({ error: { code: 'missing_dataset' } });
-  const ns = 'eval-datasets:' + req.apiKey.slice(0, 12);
-  const row = db.prepare('SELECT value FROM agent_state WHERE key = ?').get(ns + ':' + dataset);
-  if (!row) return res.status(404).json({ error: { code: 'dataset_not_found' } });
-
-  const data = JSON.parse(row.value);
-  const results = [];
-  const handler = allHandlers['llm-think'];
-  if (!handler) return res.json({ ok: true, error: 'no LLM handler', _engine: 'real' });
-
-  for (const entry of data.entries.slice(0, 20)) {
-    try {
-      const start = Date.now();
-      const result = await handler({ text: entry.input, provider: provider || 'anthropic', model });
-      const answer = result?.answer || result?.summary || '';
-      const latency = Date.now() - start;
-      const match = entry.expected_output ? answer.toLowerCase().includes(entry.expected_output.toLowerCase()) : null;
-      results.push({ input: entry.input.slice(0, 80), expected: entry.expected_output, got: answer.slice(0, 200), match, latency_ms: latency });
-    } catch(e) {
-      results.push({ input: entry.input.slice(0, 80), error: e.message });
-    }
-  }
-
-  const passing = results.filter(r => r.match === true).length;
-  const total = results.filter(r => r.match !== null).length;
-
-  res.json({
-    ok: true, dataset, provider: provider || 'anthropic',
-    results, passing, total, accuracy: total > 0 ? Math.round(passing / total * 100) + '%' : 'N/A',
-    _engine: 'real',
-  });
-});
-
 // ===== OBSERVABILITY TRACES (Claude roadmap #9) =====
 app.post('/v1/traces/start', auth, (req, res) => {
   const traceId = 'trace-' + crypto.randomUUID().slice(0, 12);
@@ -11435,101 +12501,248 @@ app.get('/v1/exchange/list', auth, (req, res) => {
   } catch(e) { res.json({ ok: true, nodes: [], count: 0, _engine: 'real' }); }
 });
 // ═══ NATURAL LANGUAGE ROUTER — "slop anything" ═══
+// POST /v1/query — parse NL, route to best tool, execute, return result
+// Returns: { slug, input, result, confidence, method: 'keyword'|'llm'|'fallback' }
 app.post('/v1/query', auth, async (req, res) => {
-  const { query, q, text, debug } = req.body;
-  const input = query || q || text;
-  if (!input) return res.status(400).json({ error: { code: 'missing_query' } });
+  // Null safety: accept query/q/text, coerce to string
+  const raw = req.body.query || req.body.q || req.body.text;
+  const input = raw && typeof raw === 'string' ? raw.trim() : (raw ? String(raw).trim() : '');
+  const debug = req.body.debug;
+  if (!input) return res.status(400).json({ error: { code: 'missing_query', message: 'Provide query, q, or text in request body' } });
+  const start_ts = Date.now();
+
+  // Helper: normalised confidence with floor for real matches
+  function calcConf(score, maxP) {
+    const raw = score / Math.max(maxP, score, 1);
+    return Math.min(Math.round(raw * 100) / 100, 1);
+  }
+
+  // Helper: log query and return inserted row id (for feedback linkage)
+  function logQuery(apiKey, query, slug, method, confidence, resultSummary) {
+    try {
+      const info = db.prepare('INSERT INTO nl_query_log (api_key, query, slug, method, confidence, result_summary, ts) VALUES (?,?,?,?,?,?,?)').run(apiKey, query, slug, method, confidence, resultSummary, Date.now());
+      return info.lastInsertRowid;
+    } catch(_) { return null; }
+  }
+
+  // Helper: structured best_match object
+  function buildBestMatch(item, conf, mp) {
+    if (!item) return null;
+    return {
+      slug: item.slug,
+      name: item.name || (API_DEFS[item.slug] && API_DEFS[item.slug].name) || item.slug,
+      description: item.description || (API_DEFS[item.slug] && API_DEFS[item.slug].desc) || null,
+      confidence: conf != null ? conf : calcConf(item.relevance_score || 0, mp),
+      credits: item.credits,
+      tier: item.tier,
+      category: item.category,
+      has_handler: item.has_handler != null ? item.has_handler : !!allHandlers[item.slug],
+      input_schema: item.input_schema || null,
+      matched_terms: item._matched_terms || [],
+    };
+  }
+
+  // Helper: top-3 alternatives excluding chosen slug
+  function buildAlternatives(scored, chosenSlug, maxP) {
+    return scored
+      .filter(s => s.slug !== chosenSlug)
+      .slice(0, 3)
+      .map(s => ({ slug: s.slug, name: s.name, confidence: calcConf(s.relevance_score, maxP) }));
+  }
 
   // Stage 1: Fast exact-match (is this a known slug?)
   const slugMatch = input.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
   if (allHandlers[slugMatch]) {
     try {
       const result = await Promise.resolve(allHandlers[slugMatch](req.body));
-      return res.json({ ok: true, data: { _engine: 'real', routed_to: slugMatch, method: 'exact_match', ...result } });
-    } catch(e) {}
+      const conf = 1.0;
+      const qid = logQuery(req.apiKey, input, slugMatch, 'exact', conf, JSON.stringify(result).slice(0, 200));
+      return res.json({
+        ok: true, query_id: qid, slug: slugMatch,
+        best_match: { slug: slugMatch, name: (API_DEFS[slugMatch] && API_DEFS[slugMatch].name) || slugMatch, confidence: conf, method: 'exact' },
+        alternatives: [],
+        pipe_suggestion: null,
+        input: req.body, result, confidence: conf, method: 'exact',
+        recommended_call: { endpoint: '/v1/' + slugMatch, body: req.body },
+        _engine: 'real', latency_ms: Date.now() - start_ts,
+      });
+    } catch(e) { if (debug) console.error('[v1/query] exact handler error:', e.message); }
   }
 
-  // Stage 2: Keyword-based intent classification
-  const q_lower = input.toLowerCase();
-  const intents = [
-    { match: /hash|sha256|sha512|md5|encrypt|decrypt/i, slug: q_lower.includes('decrypt') ? 'crypto-decrypt-aes' : q_lower.includes('md5') ? 'crypto-hash-md5' : q_lower.includes('512') ? 'crypto-hash-sha512' : 'crypto-hash-sha256', extract: { text: input.replace(/hash|sha256|sha512|md5|encrypt|decrypt|with|using|the|word/gi, '').trim() } },
-    { match: /word count|count words|how many words/i, slug: 'text-word-count', extract: { text: input.replace(/word count|count words|how many words|in/gi, '').trim() } },
-    { match: /reverse|backwards/i, slug: 'text-reverse', extract: { text: input.replace(/reverse|backwards|the text|the string/gi, '').trim() } },
-    { match: /validate email|check email|is .* email/i, slug: 'validate-email-syntax', extract: { email: (input.match(/[\w.+-]+@[\w-]+\.[\w.]+/) || [''])[0] || input.replace(/validate|check|is|email|a valid/gi, '').trim() } },
-    { match: /uuid|unique id|generate id/i, slug: 'crypto-uuid', extract: {} },
-    { match: /random number|random int/i, slug: 'crypto-random-int', extract: { min: 1, max: 100 } },
-    { match: /password|generate pass/i, slug: 'crypto-password-generate', extract: { length: 16 } },
-    { match: /factorial/i, slug: 'math-factorial', extract: { n: parseInt(input.match(/\d+/)?.[0] || '5') } },
-    { match: /prime|is .* prime/i, slug: 'math-prime-check', extract: { number: parseInt(input.match(/\d+/)?.[0] || '7') } },
-    { match: /fibonacci|fib/i, slug: 'math-fibonacci', extract: { n: parseInt(input.match(/\d+/)?.[0] || '10') } },
-    { match: /evaluate|calculate|compute|math/i, slug: 'math-evaluate', extract: { expression: input.replace(/evaluate|calculate|compute|math|what is|the result of/gi, '').trim() } },
-    { match: /sentiment|how.*feel|positive.*negative/i, slug: 'ml-sentiment', extract: { text: input } },
-    { match: /summarize|summary|tldr/i, slug: 'llm-summarize', extract: { text: input.replace(/summarize|summary|tldr/gi, '').trim() } },
-    { match: /translate/i, slug: 'llm-translate', extract: { text: input } },
-    { match: /memory.*set|store.*memory|remember/i, slug: 'memory-set', extract: { key: 'auto_' + Date.now().toString(36), value: input } },
-    { match: /memory.*get|recall|what.*remember/i, slug: 'memory-search', extract: { query: input.replace(/memory|get|recall|what do you|remember|about/gi, '').trim() } },
-    { match: /research|investigate|find out/i, slug: '_research', extract: { topic: input.replace(/research|investigate|find out about/gi, '').trim() } },
-    { match: /dream|sleep|overnight/i, slug: '_dream', extract: { topic: input } },
-    { match: /north star|goal|mission/i, slug: '_northstar', extract: { goal: input.replace(/set|my|north star|goal|mission|is/gi, '').trim() } },
-  ];
+  // Stage 2: Keyword/intent matching via NL_INTENT_BOOSTS + scoring
+  const { scored, maxPossible } = nlScoreAPIs(input);
+  const best = scored[0] || null;
+  const pipe_suggestion = detectPipeSuggestion(input, scored);
 
-  for (const intent of intents) {
-    if (intent.match.test(q_lower)) {
-      // Special routing for meta-commands
-      if (intent.slug === '_research') {
-        try {
-          const result = await executeResearch(intent.extract.topic, { tier: 'basic' });
-          req.acct.balance -= 20; persistKey(req.apiKey);
-          return res.json({ ok: true, data: { _engine: 'real', routed_to: 'research', method: 'nl_router', ...result } });
-        } catch(e) { return res.status(500).json({ error: { message: e.message } }); }
-      }
-      if (intent.slug === '_northstar' || intent.slug === '_dream') {
-        // Forward to appropriate endpoint
-        return res.json({ ok: true, data: { _engine: 'real', routed_to: intent.slug, suggestion: `Use POST /v1/northstar/set or POST /v1/dream/subscribe for this`, input: intent.extract } });
-      }
-
+  if (best && best._intent_boost > 0) {
+    const extractedInput = nlExtractParams(input, best.slug);
+    const confidence = calcConf(best.relevance_score, maxPossible);
+    const handler = allHandlers[best.slug];
+    if (handler) {
       try {
-        const handler = allHandlers[intent.slug];
-        if (handler) {
-          const result = await Promise.resolve(handler(intent.extract));
-          return res.json({ ok: true, data: { _engine: 'real', routed_to: intent.slug, method: 'nl_intent', ...result } });
-        }
-      } catch(e) {}
-    }
-  }
-
-  // Stage 3: Fuzzy tool search fallback
-  const searchResults = [];
-  const words = input.toLowerCase().split(/\s+/);
-  for (const [slug, def] of Object.entries(API_DEFS)) {
-    const score = words.filter(w => slug.includes(w) || (def.name || '').toLowerCase().includes(w) || (def.desc || '').toLowerCase().includes(w)).length;
-    if (score > 0) searchResults.push({ slug, score, name: def.name });
-  }
-  searchResults.sort((a, b) => b.score - a.score);
-
-  if (searchResults.length > 0 && searchResults[0].score >= 2) {
-    const best = searchResults[0];
-    try {
-      const handler = allHandlers[best.slug];
-      if (handler) {
-        const result = await Promise.resolve(handler(req.body));
-        return res.json({ ok: true, data: { _engine: 'real', routed_to: best.slug, method: 'fuzzy_match', confidence: best.score, ...result } });
+        const result = await Promise.resolve(handler({ ...extractedInput, _apiKey: req.apiKey, _apiKeyHash: req.apiKey }));
+        const qid = logQuery(req.apiKey, input, best.slug, 'keyword', confidence, JSON.stringify(result).slice(0, 200));
+        return res.json({
+          ok: true, query_id: qid, slug: best.slug,
+          best_match: buildBestMatch(best, confidence, maxPossible),
+          alternatives: buildAlternatives(scored, best.slug, maxPossible),
+          pipe_suggestion,
+          input: extractedInput, result, confidence, method: 'keyword',
+          recommended_call: { endpoint: '/v1/' + best.slug, body: extractedInput },
+          _engine: 'real', latency_ms: Date.now() - start_ts,
+        });
+      } catch(e) {
+        if (debug) console.error('[v1/query] keyword handler error:', e.message);
       }
-    } catch(e) {}
+    }
   }
 
-  // Stage 4: Return suggestions
-  res.json({
-    ok: true,
-    data: {
-      _engine: 'real',
-      routed_to: null,
-      method: 'no_match',
-      query: input,
-      suggestions: searchResults.slice(0, 5).map(s => ({ slug: s.slug, name: s.name, confidence: s.score })),
-      hint: 'Try being more specific, or use POST /v1/{slug} directly'
+  // Stage 3: LLM fallback — gated on ANY available LLM API key
+  const llmHandler = allHandlers['llm-think'] || allHandlers['llm-chat'];
+  const hasLlmKey = !!(process.env.ANTHROPIC_API_KEY || process.env.OPENAI_API_KEY || process.env.GROK_API_KEY || process.env.DEEPSEEK_API_KEY);
+  if (llmHandler && hasLlmKey) {
+    try {
+      const slugList = Object.keys(API_DEFS).slice(0, 80).join(', ');
+      const routingPrompt = 'You are a routing engine for an API platform. Given this user query, return ONLY a JSON object with keys: slug (best API slug to call), input (extracted parameters as object), confidence (0-1 float).\n\nAvailable slugs (sample): ' + slugList + '\n\nUser query: "' + input + '"\n\nRespond with ONLY valid JSON, no markdown, no explanation. Example: {"slug":"crypto-hash-sha256","input":{"data":"hello world"},"confidence":0.95}';
+      const llmResult = await Promise.resolve(llmHandler({ message: routingPrompt, max_tokens: 200 }));
+      const llmText = llmResult && (llmResult.content || llmResult.text || llmResult.response) || '';
+      const jsonMatch = llmText.match(/\{[\s\S]*?\}/);
+      if (jsonMatch) {
+        const parsed = JSON.parse(jsonMatch[0]);
+        if (parsed.slug && allHandlers[parsed.slug]) {
+          const execInput = parsed.input || nlExtractParams(input, parsed.slug);
+          const result = await Promise.resolve(allHandlers[parsed.slug]({ ...execInput, _apiKey: req.apiKey, _apiKeyHash: req.apiKey }));
+          const conf = Math.min(parsed.confidence || 0.6, 1);
+          const qid = logQuery(req.apiKey, input, parsed.slug, 'llm', conf, JSON.stringify(result).slice(0, 200));
+          const matchedDef = scored.find(s => s.slug === parsed.slug) || { slug: parsed.slug, name: API_DEFS[parsed.slug] && API_DEFS[parsed.slug].name };
+          return res.json({
+            ok: true, query_id: qid, slug: parsed.slug,
+            best_match: buildBestMatch(matchedDef, conf, maxPossible),
+            alternatives: buildAlternatives(scored, parsed.slug, maxPossible),
+            pipe_suggestion,
+            input: execInput, result, confidence: conf, method: 'llm',
+            recommended_call: { endpoint: '/v1/' + parsed.slug, body: execInput },
+            _engine: 'real', latency_ms: Date.now() - start_ts,
+          });
+        }
+      }
+    } catch(e) {
+      if (debug) console.error('[v1/query] llm fallback error:', e.message);
     }
+  }
+
+  // Stage 4: True fuzzy fallback — Levenshtein-based (distinct from Stage 2 scoring)
+  const fuzzySlug = fuzzySlugMatch(input);
+  const fuzzyTarget = (fuzzySlug && allHandlers[fuzzySlug]) ? fuzzySlug : (best && best.has_handler ? best.slug : null);
+  if (fuzzyTarget && allHandlers[fuzzyTarget]) {
+    const extractedInput = nlExtractParams(input, fuzzyTarget);
+    const scoreEntry = scored.find(s => s.slug === fuzzyTarget);
+    const confidence = scoreEntry ? calcConf(scoreEntry.relevance_score, maxPossible) : 0.2;
+    try {
+      const result = await Promise.resolve(allHandlers[fuzzyTarget]({ ...extractedInput, _apiKey: req.apiKey, _apiKeyHash: req.apiKey }));
+      const qid = logQuery(req.apiKey, input, fuzzyTarget, 'fuzzy', confidence, JSON.stringify(result).slice(0, 200));
+      return res.json({
+        ok: true, query_id: qid, slug: fuzzyTarget,
+        best_match: buildBestMatch(scoreEntry || { slug: fuzzyTarget, name: API_DEFS[fuzzyTarget] && API_DEFS[fuzzyTarget].name, relevance_score: 0 }, confidence, maxPossible),
+        alternatives: buildAlternatives(scored, fuzzyTarget, maxPossible),
+        pipe_suggestion,
+        input: extractedInput, result, confidence, method: 'fuzzy',
+        recommended_call: { endpoint: '/v1/' + fuzzyTarget, body: extractedInput },
+        _engine: 'real', latency_ms: Date.now() - start_ts,
+      });
+    } catch(e) { if (debug) console.error('[v1/query] fuzzy handler error:', e.message); }
+  }
+
+  // Stage 5: No match — return structured response with suggestions
+  const qid = logQuery(req.apiKey, input, null, 'no_match', 0, null);
+  res.json({
+    ok: false,
+    query_id: qid,
+    slug: null,
+    best_match: null,
+    alternatives: scored.slice(0, 3).map(s => ({ slug: s.slug, name: s.name, confidence: calcConf(s.relevance_score, maxPossible) })),
+    pipe_suggestion: null,
+    input: {},
+    result: null,
+    confidence: 0,
+    method: 'no_match',
+    query: input,
+    recommended_call: null,
+    suggestions: scored.slice(0, 5).map(s => ({ slug: s.slug, name: s.name, confidence: calcConf(s.relevance_score, maxPossible) })),
+    hint: 'Try being more specific, or use POST /v1/{slug} directly',
+    _engine: 'real',
+    latency_ms: Date.now() - start_ts,
   });
+});
+
+// GET /v1/query/history — last N NL queries for this API key (default 20, max 100)
+app.get('/v1/query/history', auth, (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const rows = db.prepare('SELECT id, query, slug, method, confidence, result_summary, ts FROM nl_query_log WHERE api_key = ? ORDER BY ts DESC LIMIT ?').all(req.apiKey, limit);
+    // Attach any feedback for each row
+    const feedbackRows = rows.length > 0
+      ? db.prepare('SELECT query_id, slug_chosen, correct FROM nl_query_feedback WHERE api_key = ? AND query_id IN (' + rows.map(() => '?').join(',') + ')').all(req.apiKey, ...rows.map(r => r.id))
+      : [];
+    const feedbackByQid = {};
+    for (const fb of feedbackRows) feedbackByQid[fb.query_id] = { slug_chosen: fb.slug_chosen, correct: !!fb.correct };
+    res.json({
+      ok: true,
+      history: rows.map(r => ({
+        id: r.id,
+        query: r.query,
+        slug: r.slug,
+        method: r.method,
+        confidence: r.confidence,
+        result_summary: r.result_summary,
+        feedback: feedbackByQid[r.id] || null,
+        ts: new Date(r.ts).toISOString(),
+      })),
+      count: rows.length,
+      _engine: 'real',
+    });
+  } catch(e) {
+    res.json({ ok: true, history: [], count: 0, _engine: 'real' });
+  }
+});
+
+// POST /v1/query/feedback — mark a previous NL query routing as correct or incorrect
+// Body: { query_id, slug_chosen, correct: true|false }
+app.post('/v1/query/feedback', auth, (req, res) => {
+  const { query_id, slug_chosen, correct } = req.body;
+  if (!query_id) return res.status(400).json({ error: { code: 'missing_query_id', message: 'Provide query_id from a previous /v1/query response' } });
+  try {
+    // Verify the query_id belongs to this API key
+    const row = db.prepare('SELECT id, slug FROM nl_query_log WHERE id = ? AND api_key = ?').get(query_id, req.apiKey);
+    if (!row) return res.status(404).json({ error: { code: 'query_not_found', message: 'No query found with that id for your API key' } });
+    const chosenSlug = slug_chosen || row.slug;
+    db.prepare('INSERT OR REPLACE INTO nl_query_feedback (api_key, query_id, slug_chosen, correct, ts) VALUES (?,?,?,?,?)').run(req.apiKey, query_id, chosenSlug, correct ? 1 : 0, Date.now());
+    res.json({ ok: true, query_id, slug_chosen: chosenSlug, correct: !!correct, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'feedback_error', message: e.message } });
+  }
+});
+
+// GET /v1/route/suggestions?q=X — autocomplete: top 10 API slugs matching a partial query
+app.get('/v1/route/suggestions', auth, (req, res) => {
+  const q = (req.query.q || req.query.query || '').trim();
+  if (!q) return res.status(400).json({ error: { code: 'missing_q', message: 'Provide ?q=<partial query>' } });
+  try {
+    const { scored, maxPossible } = nlScoreAPIs(q);
+    const suggestions = scored.slice(0, 10).map(s => ({
+      slug: s.slug,
+      name: s.name,
+      description: s.description,
+      confidence: Math.min(Math.round((s.relevance_score / Math.max(maxPossible, s.relevance_score, 1)) * 100) / 100, 1),
+      credits: s.credits,
+      tier: s.tier,
+      category: s.category,
+      example_call: { endpoint: '/v1/' + s.slug },
+    }));
+    res.json({ ok: true, q, suggestions, count: suggestions.length, _engine: 'real' });
+  } catch(e) {
+    res.status(500).json({ error: { code: 'suggestions_error', message: e.message } });
+  }
 });
 
 // ═══ WORKFLOW ENGINE — handled by routes/workflow-builder.js ═══
@@ -11788,37 +13001,6 @@ app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => 
 
 // ===== PHASE 2-3: AGENT EVALUATION SYSTEM =====
 
-// POST /v1/eval/run — Run an agent evaluation
-// NOTE: Duplicate registration of /v1/eval/run — also registered at lines ~4021 and ~7392. TODO: deduplicate in future cleanup.
-app.post('/v1/eval/run', auth, async (req, res) => {
-  const { agent_slug, test_cases, criteria } = req.body;
-  const id = uuidv4();
-  const results = [];
-  const handler = allHandlers[agent_slug];
-  if (!handler) return res.status(404).json({ error: { code: 'agent_not_found' } });
-
-  for (const tc of (test_cases || [])) {
-    const start = Date.now();
-    try {
-      const result = await handler(tc.input || {});
-      const latency = Date.now() - start;
-      const correct = tc.expected ? JSON.stringify(result).includes(JSON.stringify(tc.expected)) : true;
-      results.push({ input: tc.input, output: result, expected: tc.expected, correct, latency_ms: latency });
-    } catch(e) {
-      results.push({ input: tc.input, error: e.message, correct: false, latency_ms: Date.now() - start });
-    }
-  }
-
-  const accuracy = Math.round(results.filter(r => r.correct).length / Math.max(results.length, 1) * 100);
-  const avgLatency = Math.round(results.reduce((s, r) => s + r.latency_ms, 0) / Math.max(results.length, 1));
-
-  db.prepare('INSERT INTO evaluations (id, user_id, agent_slug, accuracy, avg_latency, results, created_at) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)').run(
-    id, req.acct?.email || req.apiKey, agent_slug, accuracy, avgLatency, JSON.stringify(results)
-  );
-
-  res.json({ ok: true, eval_id: id, accuracy, avg_latency_ms: avgLatency, results, total: results.length, passed: results.filter(r => r.correct).length });
-});
-
 // GET /v1/eval/leaderboard — Public leaderboard of best-performing tools
 app.get('/v1/eval/leaderboard', publicRateLimit, (req, res) => {
   try {
@@ -12012,26 +13194,6 @@ app.post('/v1/templates/publish', auth, (req, res) => {
   res.json({ ok: true, template_id: id, status: 'published', params_applied: !!params });
 });
 
-// GET /v1/templates/browse — Browse marketplace templates
-// NOTE: Duplicate registration of /v1/templates/browse — also registered at line ~4177. TODO: deduplicate in future cleanup.
-app.get('/v1/templates/browse', publicRateLimit, (req, res) => {
-  try {
-    const category = req.query.category;
-    // Sanitized: whitelist sort columns to prevent SQL injection
-    const sortMap = { forks: 'forks DESC', recent: 'created_at DESC', rating: 'rating DESC' };
-    const sort = sortMap[req.query.sort] || 'rating DESC';
-    const limit = Math.min(parseInt(req.query.limit) || 50, 200);
-    const offset = parseInt(req.query.offset) || 0;
-    let rows;
-    if (category) {
-      rows = db.prepare('SELECT id, author_id, name, description, category, estimated_credits, forks, rating, rating_count, status, created_at FROM marketplace_templates WHERE status = \'published\' AND category = ? ORDER BY ' + sort + ' LIMIT ? OFFSET ?').all(category, limit, offset);
-    } else {
-      rows = db.prepare('SELECT id, author_id, name, description, category, estimated_credits, forks, rating, rating_count, status, created_at FROM marketplace_templates WHERE status = \'published\' ORDER BY ' + sort + ' LIMIT ? OFFSET ?').all(limit, offset);
-    }
-    res.json({ ok: true, templates: rows, limit, offset });
-  } catch(e) { res.json({ ok: false, templates: [], error: e.message }); }
-});
-
 // POST /v1/templates/fork/:id — Fork a template
 app.post('/v1/templates/fork/:id', auth, (req, res) => {
   const tmpl = db.prepare('SELECT * FROM marketplace_templates WHERE id = ?').get(req.params.id);
@@ -12211,13 +13373,15 @@ app.post('/v1/playground/auto-save', auth, (req, res) => {
 
 // 6. "Memory Health Score" dashboard
 app.get('/v1/memory/health', auth, (req, res) => {
-  const ns = req.query.namespace || 'default';
-  const userId = req.acct?.email || req.apiKey;
+  const rawNs = req.query.namespace || 'default';
+  if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const scopedNs = req.acct._nsPrefix + ':' + rawNs;
+  const ns = rawNs;
   try {
-    const totalKeys = db.prepare("SELECT COUNT(*) as cnt FROM memory WHERE namespace = ?").get(ns + ':' + userId)?.cnt || 0;
-    const totalSize = db.prepare("SELECT SUM(LENGTH(value)) as size FROM memory WHERE namespace = ?").get(ns + ':' + userId)?.size || 0;
-    const oldestEntry = db.prepare("SELECT MIN(updated) as ts FROM memory WHERE namespace = ?").get(ns + ':' + userId)?.ts || null;
-    const newestEntry = db.prepare("SELECT MAX(updated) as ts FROM memory WHERE namespace = ?").get(ns + ':' + userId)?.ts || null;
+    const totalKeys = db.prepare("SELECT COUNT(*) as cnt FROM memory WHERE namespace = ?").get(scopedNs)?.cnt || 0;
+    const totalSize = db.prepare("SELECT SUM(LENGTH(value)) as size FROM memory WHERE namespace = ?").get(scopedNs)?.size || 0;
+    const oldestEntry = db.prepare("SELECT MIN(updated) as ts FROM memory WHERE namespace = ?").get(scopedNs)?.ts || null;
+    const newestEntry = db.prepare("SELECT MAX(updated) as ts FROM memory WHERE namespace = ?").get(scopedNs)?.ts || null;
     const orphanedKeys = 0; // placeholder for advanced check
     const healthScore = Math.min(100, Math.max(0, totalKeys > 0 ? 80 + Math.min(20, Math.floor(totalKeys / 5)) : 0));
     res.json({
@@ -12237,6 +13401,56 @@ app.get('/v1/memory/health', auth, (req, res) => {
   } catch(e) {
     res.json({ ok: true, health_score: 0, grade: 'N/A', metrics: { total_keys: 0 }, recommendations: ['No memory data yet. Use POST /v1/memory-set to get started.'], note: e.message });
   }
+});
+
+// GET /v1/memory/stats — namespace-level statistics for your memory
+app.get('/v1/memory/stats', auth, (req, res) => {
+  // Namespace prefix for this API key (same as dispatcher scoping)
+  if (!req.acct._nsPrefix) {
+    req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  }
+  const nsPrefix = req.acct._nsPrefix + ':';
+
+  let namespaceStats = [];
+  let totalCount = 0;
+  let totalSize = 0;
+
+  try {
+    namespaceStats = db.prepare(`
+      SELECT
+        SUBSTR(namespace, ?) as display_namespace,
+        namespace,
+        COUNT(*) as entry_count,
+        SUM(LENGTH(value)) as total_bytes,
+        MAX(updated) as last_updated,
+        MIN(created) as first_created
+      FROM memory
+      WHERE namespace LIKE ?
+      GROUP BY namespace
+      ORDER BY entry_count DESC
+      LIMIT 50
+    `).all(nsPrefix.length + 1, nsPrefix + '%');
+
+    const totals = db.prepare('SELECT COUNT(*) as cnt, SUM(LENGTH(value)) as bytes FROM memory WHERE namespace LIKE ?').get(nsPrefix + '%');
+    totalCount = totals ? totals.cnt : 0;
+    totalSize = totals ? (totals.bytes || 0) : 0;
+  } catch(e) {}
+
+  res.json({
+    ok: true,
+    total_entries: totalCount,
+    total_size_bytes: totalSize,
+    total_size_kb: Math.round(totalSize / 1024 * 10) / 10,
+    namespace_count: namespaceStats.length,
+    namespaces: namespaceStats.map(r => ({
+      namespace: r.display_namespace,
+      entry_count: r.entry_count,
+      total_bytes: r.total_bytes || 0,
+      last_updated: r.last_updated ? new Date(r.last_updated).toISOString() : null,
+      first_created: r.first_created ? new Date(r.first_created).toISOString() : null,
+    })),
+    _engine: 'real',
+  });
 });
 
 // 8. "Auto-Summarize" — read all keys in a namespace, extract keywords, generate summary
@@ -12419,11 +13633,13 @@ app.post('/v1/router/smart', auth, (req, res) => {
 
 // 11. Knowledge graph auto-discovery from memory
 app.post('/v1/knowledge/auto-discover', auth, (req, res) => {
-  const { namespace } = req.body;
-  const userId = req.acct?.email || req.apiKey;
-  const ns = namespace || 'default';
+  const { namespace, persist } = req.body;
+  if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const rawNs = namespace || 'default';
+  const scopedNs = req.acct._nsPrefix + ':' + rawNs;
+  const ns = rawNs;
   try {
-    const memories = db.prepare("SELECT key, value FROM memory WHERE namespace = ? LIMIT 200").all(ns + ':' + userId);
+    const memories = db.prepare("SELECT key, value FROM memory WHERE namespace = ? LIMIT 200").all(scopedNs);
     const entities = new Set();
     const relationships = [];
     for (const m of memories) {
@@ -12447,15 +13663,25 @@ app.post('/v1/knowledge/auto-discover', auth, (req, res) => {
         }
       }
     }
+    // Optionally persist discovered triples to knowledge_graph
+    let persisted = 0;
+    if (persist === true && relationships.length > 0) {
+      const insert = db.prepare('INSERT INTO knowledge_graph (api_key, subject, predicate, object, confidence, ts) VALUES (?, ?, ?, ?, ?, ?)');
+      const insertMany = db.transaction(rels => { for (const r of rels) insert.run(req.apiKey, r.subject, r.predicate, r.object, 0.8, Date.now()); });
+      insertMany(relationships.slice(0, 200));
+      persisted = Math.min(relationships.length, 200);
+    }
     res.json({
       ok: true, namespace: ns, entities_discovered: entities.size,
       relationships_found: relationships.length,
       entities: [...entities].slice(0, 100),
       relationships: relationships.slice(0, 200),
-      tip: 'Use POST /v1/knowledge/add to persist these relationships into the knowledge graph',
+      persisted,
+      tip: persist ? `${persisted} triples saved to knowledge graph` : 'Pass {persist:true} to auto-save these to the knowledge graph',
+      _engine: 'real',
     });
   } catch(e) {
-    res.json({ ok: true, entities_discovered: 0, relationships_found: 0, note: 'No memory data to analyze. Use POST /v1/memory-set first.', error: e.message });
+    res.json({ ok: true, entities_discovered: 0, relationships_found: 0, note: 'No memory data to analyze. Use POST /v1/memory-set first.', error: e.message, _engine: 'real' });
   }
 });
 
@@ -13012,9 +14238,12 @@ app.post('/v1/org/:id/task', auth, async (req, res) => {
   const taskId = uuidv4();
 
   // Post task to hive
-  db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, ts) VALUES (?, ?, ?, ?, ?)').run(
-    org.hive_id, 'general', 'system', JSON.stringify({ task_id: taskId, task, priority: priority || 'normal', assigned_to: assign_to || org.agents[0]?.name }),
-    Date.now()
+  const assignedAgent = assign_to
+    ? (org.agents.find(a => a.name === assign_to || (a.skills || []).includes(assign_to)) || org.agents[0])
+    : org.agents[0];
+  db.prepare('INSERT INTO hive_messages (hive_id, channel, sender, message, type, ts) VALUES (?, ?, ?, ?, ?, ?)').run(
+    org.hive_id, 'general', 'system', JSON.stringify({ task_id: taskId, task, priority: priority || 'normal', assigned_to: assignedAgent?.name }),
+    'task', Date.now()
   );
 
   // If auto_handoff, advance the chain
@@ -13035,7 +14264,7 @@ app.post('/v1/org/:id/task', auth, async (req, res) => {
     ok: true,
     task_id: taskId,
     org_id: orgId,
-    assigned_to: assign_to || org.agents[0]?.name,
+    assigned_to: assignedAgent?.name,
     chain: chainResult,
     hive_id: org.hive_id,
     _engine: 'real'
@@ -13093,11 +14322,16 @@ app.post('/v1/org/:id/scale', auth, (req, res) => {
   }
 
   // Update config
+  const now = Date.now();
   db.prepare("UPDATE memory SET value = ?, updated = ? WHERE namespace = ? AND key = 'config'").run(
-    JSON.stringify(org), Date.now(), 'org:' + req.params.id
+    JSON.stringify(org), now, 'org:' + req.params.id
   );
+  // Sync hive members
+  if (org.hive_id) {
+    db.prepare('UPDATE hives SET members = ? WHERE id = ?').run(JSON.stringify(org.agents.map(a => a.name)), org.hive_id);
+  }
 
-  res.json({ ok: true, org_id: req.params.id, agents: org.agents, agent_count: org.agents.length, _engine: 'real' });
+  res.json({ ok: true, org_id: req.params.id, agents: org.agents, agent_count: org.agents.length, hive_id: org.hive_id, _engine: 'real' });
 });
 
 // GET /v1/org/:id/standup — Get latest standup from all agents
@@ -13106,21 +14340,39 @@ app.get('/v1/org/:id/standup', auth, (req, res) => {
   if (!orgData) return res.status(404).json({ error: { code: 'org_not_found' } });
   const org = JSON.parse(orgData.value);
 
-  // Get today's standups
-  const today = new Date().toISOString().slice(0, 10);
-  const standups = db.prepare("SELECT * FROM standups WHERE date = ? ORDER BY ts DESC").all(today);
+  // Get today's standups from hive_messages
+  const todayMs = new Date().setHours(0, 0, 0, 0);
+  const standups = db.prepare("SELECT sender, message, ts FROM hive_messages WHERE hive_id = ? AND type = 'standup' AND ts > ? ORDER BY ts DESC").all(org.hive_id, todayMs);
 
   res.json({
     ok: true,
     org_id: req.params.id,
-    agents: org.agents.map(a => ({
-      name: a.name,
-      role: a.role,
-      model: a.model,
-      standup: standups.find(s => s.api_key === a.name) || { status: 'no standup today' }
-    })),
+    name: org.name,
+    agents: org.agents.map(a => {
+      const su = standups.find(s => s.sender === a.name);
+      let suData = null;
+      try { suData = su ? JSON.parse(su.message) : null; } catch(e) { suData = su ? { message: su.message } : null; }
+      return { name: a.name, role: a.role, model: a.model, standup: suData || { status: 'no standup today' } };
+    }),
+    standup_count: standups.length,
     _engine: 'real'
   });
+});
+
+// DELETE /v1/org/:id — Dissolve an organization
+app.delete('/v1/org/:id', auth, (req, res) => {
+  const orgData = db.prepare("SELECT value FROM memory WHERE namespace = ? AND key = 'config'").get('org:' + req.params.id);
+  if (!orgData) return res.status(404).json({ error: { code: 'org_not_found' } });
+  const org = JSON.parse(orgData.value);
+  // Delete org config from memory
+  db.prepare("DELETE FROM memory WHERE namespace = ? AND key = 'config'").run('org:' + req.params.id);
+  // Deactivate copilot sessions
+  for (const agent of (org.agents || [])) {
+    if (agent.agent_id) db.prepare("UPDATE copilot_sessions SET status = 'dissolved' WHERE id = ?").run(agent.agent_id);
+  }
+  // Deactivate chain
+  if (org.chain_id) db.prepare("UPDATE agent_chains SET status = 'dissolved' WHERE id = ?").run(org.chain_id);
+  res.json({ ok: true, org_id: req.params.id, dissolved: true, _engine: 'real' });
 });
 
 // GET /v1/org/templates — Pre-built org templates
@@ -13272,6 +14524,56 @@ app.get('/v1/org/templates', publicRateLimit, (req, res) => {
           { name: 'Coordinator', role: 'lab-coordinator', model: 'claude', skills: ['scheduling', 'resource-allocation', 'compliance', 'reporting'] },
         ],
         channels: ['general', 'comp-bio', 'ml-research', 'chemistry', 'data', 'publications', 'standups', 'journal-club'],
+      },
+      {
+        id: 'content-team',
+        name: 'Content Team (4 agents)',
+        description: 'Lean content team: strategist, 2 writers, SEO specialist',
+        agents: [
+          { name: 'Strategist', role: 'content-strategist', model: 'claude', skills: ['calendar', 'brand-voice', 'audience-research', 'kpis'] },
+          { name: 'Writer-1', role: 'content-writer', model: 'gpt', skills: ['long-form', 'blogs', 'case-studies', 'whitepapers'] },
+          { name: 'Writer-2', role: 'copy-writer', model: 'grok', skills: ['short-form', 'ads', 'email', 'social-captions'] },
+          { name: 'SEO', role: 'seo-specialist', model: 'claude', skills: ['keywords', 'on-page', 'link-building', 'analytics'] },
+        ],
+        channels: ['general', 'drafts', 'reviews', 'published', 'standups'],
+      },
+      {
+        id: 'research-squad',
+        name: 'Research Squad (5 agents)',
+        description: 'Fast research team: lead, 2 researchers, analyst, writer',
+        agents: [
+          { name: 'Lead', role: 'research-lead', model: 'claude', skills: ['scoping', 'delegation', 'synthesis', 'review'] },
+          { name: 'Researcher-1', role: 'researcher', model: 'claude', skills: ['web-search', 'literature-review', 'interviews', 'surveys'] },
+          { name: 'Researcher-2', role: 'researcher', model: 'gpt', skills: ['data-collection', 'source-validation', 'note-taking'] },
+          { name: 'Analyst', role: 'analyst', model: 'grok', skills: ['statistics', 'visualization', 'pattern-finding', 'reporting'] },
+          { name: 'Writer', role: 'report-writer', model: 'gpt', skills: ['executive-summaries', 'slide-decks', 'briefs'] },
+        ],
+        channels: ['general', 'sources', 'analysis', 'reports', 'standups'],
+      },
+      {
+        id: 'qa-team',
+        name: 'QA Team (4 agents)',
+        description: 'Quality assurance team: QA lead, 2 testers, automation engineer',
+        agents: [
+          { name: 'QA-Lead', role: 'qa-lead', model: 'claude', skills: ['test-strategy', 'risk-assessment', 'metrics', 'reporting'] },
+          { name: 'Tester-1', role: 'manual-tester', model: 'gpt', skills: ['exploratory', 'regression', 'uat', 'accessibility'] },
+          { name: 'Tester-2', role: 'qa-engineer', model: 'grok', skills: ['edge-cases', 'bug-reports', 'performance', 'security-testing'] },
+          { name: 'Automator', role: 'automation-engineer', model: 'claude', skills: ['selenium', 'playwright', 'ci-integration', 'coverage'] },
+        ],
+        channels: ['general', 'bugs', 'test-plans', 'automation', 'standups'],
+      },
+      {
+        id: 'data-pipeline',
+        name: 'Data Pipeline Team (5 agents)',
+        description: 'Data engineering team: architect, 2 data engineers, analyst, ML engineer',
+        agents: [
+          { name: 'Architect', role: 'data-architect', model: 'claude', skills: ['schema-design', 'lake-architecture', 'governance', 'standards'] },
+          { name: 'DataEng-1', role: 'data-engineer', model: 'claude', skills: ['etl', 'spark', 'airflow', 'dbt'] },
+          { name: 'DataEng-2', role: 'data-engineer', model: 'gpt', skills: ['streaming', 'kafka', 'flink', 'real-time'] },
+          { name: 'Analyst', role: 'data-analyst', model: 'grok', skills: ['sql', 'dashboards', 'reporting', 'business-intelligence'] },
+          { name: 'MLEng', role: 'ml-engineer', model: 'claude', skills: ['feature-engineering', 'model-serving', 'mlflow', 'monitoring'] },
+        ],
+        channels: ['general', 'pipelines', 'data-quality', 'ml', 'standups'],
       },
     ],
     _engine: 'real'
@@ -13600,7 +14902,8 @@ app.post('/v1/graphrag/query', auth, (req, res) => {
   const searchTerms = [...entities, ...queryTerms].slice(0, 10);
   for (const term of searchTerms) {
     try {
-      const rows = db.prepare("SELECT key, value FROM agent_state WHERE key LIKE ? LIMIT 5").all(`%${term}%`);
+      const _nsP = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+      const rows = db.prepare("SELECT key, value FROM memory WHERE namespace LIKE ? AND key LIKE ? LIMIT 5").all(_nsP + '%', `%${term}%`);
       rows.forEach(r => {
         let parsedValue;
         try { parsedValue = JSON.parse(r.value); } catch { parsedValue = r.value; }
@@ -15612,7 +16915,8 @@ app.post('/v1/memory/graph-query', auth, (req, res) => {
   const seenMemKeys = new Set();
   for (const term of searchTerms) {
     try {
-      const rows = db.prepare("SELECT key, value FROM agent_state WHERE key LIKE ? LIMIT 5").all(`%${term}%`);
+      const _nsP2 = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+      const rows = db.prepare("SELECT key, value FROM memory WHERE namespace LIKE ? AND key LIKE ? LIMIT 5").all(_nsP2 + '%', `%${term}%`);
       for (const r of rows) {
         if (seenMemKeys.has(r.key)) continue;
         seenMemKeys.add(r.key);
@@ -15883,7 +17187,10 @@ const activeEvolutions = new Map();
 
 app.post('/v1/memory/evolve/start', auth, (req, res) => {
   const { namespace, strategy, budget_per_cycle, interval_minutes } = req.body;
-  const ns = namespace || 'default';
+  const rawNs = namespace || 'default';
+  // Scope namespace to api key
+  if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const ns = req.acct._nsPrefix + ':' + rawNs;
   const strat = strategy || 'consolidate';
   const validStrategies = ['consolidate', 'enrich', 'decay', 'summarize'];
   if (!validStrategies.includes(strat)) {
@@ -15959,7 +17266,7 @@ app.post('/v1/memory/evolve/start', auth, (req, res) => {
       // Log evolution cycle
       try {
         db.prepare('INSERT INTO memory_evolution_log (api_key, action, detail, merged_keys, ts) VALUES (?, ?, ?, ?, ?)').run(
-          keyPrefix, strat, `Processed ${processed} keys in namespace ${ns}`, JSON.stringify([]), now
+          req.apiKey, strat, `Processed ${processed} keys in namespace ${ns}`, JSON.stringify([]), now
         );
       } catch (e) { /* log table may not exist */ }
 
@@ -16030,6 +17337,777 @@ app.get('/v1/memory/evolve/log', auth, (req, res) => {
   const limit = Math.min(parseInt(req.query.limit) || 50, 200);
   const logs = db.prepare('SELECT * FROM memory_evolution_log WHERE api_key = ? ORDER BY ts DESC LIMIT ?').all(req.apiKey, limit);
   res.json({ ok: true, logs, count: logs.length, _engine: 'real' });
+});
+
+// ===== FEATURE: Memory Dreaming — LLM-powered memory consolidation =====
+// Inspired by how human memory consolidates during sleep: synthesize, pattern-extract,
+// generate insights, compress, and associate stored memories via real LLM calls.
+
+// Bootstrap dream_sessions table (idempotent)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS dream_sessions (
+      id          TEXT PRIMARY KEY,
+      api_key     TEXT NOT NULL,
+      namespace   TEXT NOT NULL,
+      strategy    TEXT NOT NULL,
+      status      TEXT NOT NULL DEFAULT 'pending',
+      keys_sampled INTEGER NOT NULL DEFAULT 0,
+      memories_created INTEGER NOT NULL DEFAULT 0,
+      model       TEXT NOT NULL DEFAULT 'claude-haiku-4-5',
+      started_at  INTEGER NOT NULL,
+      completed_at INTEGER,
+      duration_ms INTEGER,
+      error       TEXT,
+      result      TEXT
+    );
+    CREATE INDEX IF NOT EXISTS idx_dream_sessions_api_key ON dream_sessions (api_key, started_at DESC);
+  `);
+} catch (e) { /* table already exists */ }
+
+// Bootstrap dream_schedules table (idempotent)
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS dream_schedules (
+      id              TEXT PRIMARY KEY,
+      api_key         TEXT NOT NULL,
+      namespace       TEXT NOT NULL,
+      strategy        TEXT NOT NULL,
+      interval_hours  REAL NOT NULL,
+      budget          INTEGER NOT NULL DEFAULT 20,
+      model           TEXT NOT NULL DEFAULT 'claude-haiku-4-5',
+      auto            INTEGER NOT NULL DEFAULT 1,
+      credits_per_dream INTEGER NOT NULL DEFAULT 20,
+      created_at      TEXT NOT NULL,
+      last_run        TEXT,
+      run_count       INTEGER NOT NULL DEFAULT 0,
+      active          INTEGER NOT NULL DEFAULT 1
+    );
+    CREATE INDEX IF NOT EXISTS idx_dream_schedules_api_key ON dream_schedules (api_key, active);
+  `);
+} catch (e) { /* table already exists */ }
+
+const activeDreamSessions = new Map(); // dream_id -> session metadata
+const dreamSchedules = new Map();      // schedule_id -> { timer, config }
+
+// Restore active dream schedules on boot
+(function restoreDreamSchedules() {
+  try {
+    const rows = db.prepare('SELECT * FROM dream_schedules WHERE active = 1').all();
+    for (const row of rows) {
+      const config = {
+        id: row.id,
+        api_key: row.api_key,
+        namespace: row.namespace,
+        strategy: row.strategy,
+        interval_hours: row.interval_hours,
+        budget: row.budget,
+        model: row.model,
+        auto: !!row.auto,
+        credits_per_dream: row.credits_per_dream,
+        created_at: row.created_at,
+        last_run: row.last_run,
+        run_count: row.run_count,
+        active: true,
+      };
+      const credits = row.credits_per_dream;
+      const scheduleId = row.id;
+      const apiKeyRef = row.api_key;
+      const namespace = row.namespace;
+      const strategy = row.strategy;
+      const budget = row.budget;
+      const model = row.model;
+
+      async function makeRestoreRunner(sid, akey, ns, strat, bdgt, mdl, creds) {
+        return async function runScheduledDream() {
+          const acct = apiKeys.get(akey);
+          if (!acct || acct.balance < creds) {
+            log.warn('Skipping scheduled dream — insufficient credits', { scheduleId: sid, balance: acct ? acct.balance : 0 });
+            return;
+          }
+          const dreamId = 'dream-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+          const now = Date.now();
+          try {
+            db.prepare(
+              'INSERT INTO dream_sessions (id, api_key, namespace, strategy, status, keys_sampled, memories_created, model, started_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            ).run(dreamId, akey, ns, strat, 'pending', 0, 0, mdl, now);
+            activeDreamSessions.set(dreamId, {
+              id: dreamId, api_key: akey, namespace: ns, strategy: strat,
+              budget: bdgt, model: mdl, status: 'pending',
+              started_at: new Date(now).toISOString(), keys_sampled: 0, memories_created: 0,
+            });
+            acct.balance -= creds;
+            persistKey(akey);
+            dbInsertAudit.run(new Date().toISOString(), akey.slice(0, 12) + '...', 'memory/dream/scheduled', creds, 0, 'llm');
+            await executeDream(dreamId, akey, ns, strat, bdgt, mdl);
+          } catch (e) {
+            log.error('Scheduled dream failed', { scheduleId: sid, dreamId: dreamId, error: e.message });
+          } finally {
+            activeDreamSessions.delete(dreamId);
+            const sched = dreamSchedules.get(sid);
+            if (sched) {
+              sched.last_run = new Date().toISOString();
+              sched.run_count = (sched.run_count || 0) + 1;
+            }
+            try {
+              db.prepare('UPDATE dream_schedules SET last_run = ?, run_count = run_count + 1 WHERE id = ?')
+                .run(new Date().toISOString(), sid);
+            } catch (_) {}
+          }
+        };
+      }
+
+      makeRestoreRunner(scheduleId, apiKeyRef, namespace, strategy, budget, model, credits).then(function(runner) {
+        const timer = setInterval(runner, row.interval_hours * 3600 * 1000);
+        config._timer = timer;
+        dreamSchedules.set(scheduleId, config);
+        log.info('Restored dream schedule', { id: scheduleId, namespace: namespace, strategy: strategy, interval_hours: row.interval_hours });
+      }).catch(function(e) {
+        log.error('Failed to restore dream schedule', { id: scheduleId, error: e.message });
+      });
+    }
+    if (rows.length) log.info('Dream schedules restored', { count: rows.length });
+  } catch (e) {
+    log.warn('Could not restore dream schedules', { error: e.message });
+  }
+})();
+
+const DREAM_STRATEGIES = ['synthesize', 'pattern_extract', 'insight_generate', 'compress', 'associate'];
+
+// Per-strategy LLM prompts — each returns a function(namespace, memoriesText) -> string
+const DREAM_PROMPTS = {
+  synthesize: function(ns, memories) {
+    return 'You are a memory consolidation system performing sleep-like synthesis.\n\nNamespace: ' + ns + '\n\nHere are memories to process:\n\n' + memories + '\n\nSynthesize the key themes, patterns, and insights into 3-5 consolidated memory entries. Each entry should be richer than the originals, connecting ideas, surfacing patterns, and distilling actionable knowledge.\n\nRespond ONLY in valid JSON with this structure:\n{"synthesis": [{"key": "synth_<slug>", "value": "<rich consolidated content>", "theme": "<theme name>", "source_keys": ["<key1>"]}], "meta": {"dominant_themes": [], "coverage_gaps": [], "confidence": 0.9}}';
+  },
+  pattern_extract: function(ns, memories) {
+    return 'You are a pattern recognition system analyzing stored memories.\n\nNamespace: ' + ns + '\n\nMemories to analyze:\n\n' + memories + '\n\nFind recurring patterns, contradictions, and gaps. Output a structured pattern map.\n\nRespond ONLY in valid JSON with this structure:\n{"patterns": [{"key": "pattern_<slug>", "value": "<pattern description and evidence>", "type": "recurring|contradiction|gap|trend", "frequency": 1, "source_keys": ["<key1>"]}], "meta": {"pattern_count": 0, "contradictions_found": 0, "gaps_found": 0}}';
+  },
+  insight_generate: function(ns, memories) {
+    return 'You are a creative insight engine processing stored memories.\n\nNamespace: ' + ns + '\n\nMemories to combine:\n\n' + memories + '\n\nGenerate novel insights by combining these memories in unexpected ways. Look for non-obvious connections, analogies, and emergent ideas not present in any single memory.\n\nRespond ONLY in valid JSON with this structure:\n{"insights": [{"key": "insight_<slug>", "value": "<novel insight with explanation>", "novelty_score": 0.8, "connecting_keys": ["<key1>", "<key2>"]}], "meta": {"total_insights": 0, "avg_novelty": 0.8, "breakthrough_idea": "<idea>"}}';
+  },
+  compress: function(ns, memories) {
+    return 'You are a memory compression system reducing redundancy.\n\nNamespace: ' + ns + '\n\nPotentially redundant memories:\n\n' + memories + '\n\nCompress similar or redundant memories into fewer, richer entries. Preserve all unique information while eliminating repetition.\n\nRespond ONLY in valid JSON with this structure:\n{"compressed": [{"key": "compressed_<slug>", "value": "<dense compressed content>", "replaces_keys": ["<key1>", "<key2>"], "compression_ratio": 2.0}], "meta": {"original_count": 0, "compressed_count": 0, "bytes_saved_estimate": 0}}';
+  },
+  associate: function(ns, memories) {
+    return 'You are a memory association builder creating a knowledge graph.\n\nNamespace: ' + ns + '\n\nMemories to connect:\n\n' + memories + '\n\nBuild rich associations between these memories. Identify what connects them — shared concepts, causal links, temporal sequences, analogical relationships.\n\nRespond ONLY in valid JSON with this structure:\n{"associations": [{"key": "assoc_<slug>", "value": "<association description and link explanation>", "link_type": "causal|temporal|analogical|conceptual|contradictory", "linked_keys": ["<key1>", "<key2>"]}], "meta": {"total_links": 0, "strongest_cluster": "<cluster>", "isolated_keys": []}}';
+  },
+};
+
+// Credits cost per strategy
+const DREAM_CREDITS = {
+  synthesize:       25,
+  pattern_extract:  20,
+  insight_generate: 30,
+  compress:         15,
+  associate:        20,
+};
+
+// Sample memory keys from a namespace: mix of recent + random for breadth
+function sampleDreamMemories(namespace, budget) {
+  const now = Date.now();
+  const recentRows = db.prepare(
+    'SELECT key, value, tags, updated FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?) ORDER BY updated DESC LIMIT ?'
+  ).all(namespace, now, Math.ceil(budget * 0.6));
+
+  const recentKeys = new Set(recentRows.map(function(r) { return r.key; }));
+  const allRows = db.prepare(
+    'SELECT key, value, tags, updated FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?) ORDER BY RANDOM() LIMIT ?'
+  ).all(namespace, now, budget);
+
+  const combined = recentRows.slice();
+  for (let i = 0; i < allRows.length; i++) {
+    const r = allRows[i];
+    if (!recentKeys.has(r.key) && combined.length < budget) combined.push(r);
+  }
+  return combined;
+}
+
+// Format memory rows for LLM consumption
+function formatMemoriesForLLM(rows) {
+  return rows.map(function(r, i) {
+    let val = r.value;
+    try { val = JSON.parse(val); if (typeof val === 'object') val = JSON.stringify(val); } catch (_) {}
+    val = String(val || '').slice(0, 800);
+    let tags = '';
+    try { tags = JSON.parse(r.tags || '[]').join(', '); } catch (_) { tags = r.tags || ''; }
+    return '[' + (i + 1) + '] KEY: ' + r.key + '\n    TAGS: ' + (tags || 'none') + '\n    VALUE: ' + val;
+  }).join('\n\n');
+}
+
+// Extract result entries from LLM response based on strategy
+function extractDreamEntries(strategy, parsed) {
+  if (!parsed) return [];
+  const map = {
+    synthesize:       parsed.synthesis,
+    pattern_extract:  parsed.patterns,
+    insight_generate: parsed.insights,
+    compress:         parsed.compressed,
+    associate:        parsed.associations,
+  };
+  return Array.isArray(map[strategy]) ? map[strategy] : [];
+}
+
+// Map a model name to its provider name so the llm handler picks the right API key.
+function dreamModelToProvider(model) {
+  if (!model || model === 'auto') return undefined; // let llm handler auto-select
+  const m = model.toLowerCase();
+  if (m.startsWith('claude')) return 'anthropic';
+  if (m.startsWith('gpt') || m.startsWith('o1') || m.startsWith('o3') || m.startsWith('o4')) return 'openai';
+  if (m.startsWith('grok')) return 'grok';
+  if (m.startsWith('deepseek')) return 'deepseek';
+  if (m.startsWith('llama') || m.startsWith('mistral') || m.startsWith('phi') || m.startsWith('gemma')) return 'ollama';
+  return undefined; // unknown model — fall back to auto
+}
+
+// Wrap an async promise with a hard timeout (ms). Rejects if exceeded.
+function withDreamTimeout(promise, ms, label) {
+  return new Promise(function(resolve, reject) {
+    var _t = setTimeout(function() {
+      reject(new Error((label || 'Operation') + ' timed out after ' + ms + 'ms'));
+    }, ms);
+    promise.then(function(v) { clearTimeout(_t); resolve(v); }, function(e) { clearTimeout(_t); reject(e); });
+  });
+}
+
+// Strategy key map: strategy name -> JSON key the LLM returns entries under
+const DREAM_STRATEGY_KEY = {
+  synthesize:       'synthesis',
+  pattern_extract:  'patterns',
+  insight_generate: 'insights',
+  compress:         'compressed',
+  associate:        'associations',
+};
+
+// Core dream execution — called by both the route and the scheduler.
+// dryRun=true returns a preview without persisting anything or spending credits.
+async function executeDream(dreamId, apiKey, namespace, strategy, budget, model, dryRun) {
+  const startTime = Date.now();
+
+  if (!dryRun) {
+    db.prepare('UPDATE dream_sessions SET status = ? WHERE id = ?').run('running', dreamId);
+  }
+  const session = activeDreamSessions.get(dreamId);
+  if (session) session.status = dryRun ? 'dry_run' : 'running';
+
+  try {
+    // 1. Orient — sample memories (recent-biased 60% + random 40% for breadth)
+    const rows = sampleDreamMemories(namespace, budget);
+    if (rows.length === 0) {
+      const emptyResult = {
+        dream_id: dreamId, strategy: strategy,
+        keys_sampled: 0, memories_created: 0, keys_pruned: 0,
+        duration_ms: Date.now() - startTime,
+        note: 'namespace is empty — nothing to dream about',
+        brief: 'No memories found in this namespace. Store some memories first, then dream.',
+        entries: [],
+      };
+      if (!dryRun) {
+        db.prepare('UPDATE dream_sessions SET status = ?, keys_sampled = ?, memories_created = ?, completed_at = ?, duration_ms = ?, result = ? WHERE id = ?')
+          .run('complete', 0, 0, Date.now(), Date.now() - startTime, JSON.stringify(emptyResult), dreamId);
+        if (session) Object.assign(session, { status: 'complete', keys_sampled: 0, memories_created: 0 });
+      }
+      return emptyResult;
+    }
+
+    const keySampled = rows.map(function(r) { return r.key; });
+    const formattedMemories = formatMemoriesForLLM(rows);
+
+    // 2. Gather — build strategy-specific LLM prompt
+    const promptFn = DREAM_PROMPTS[strategy];
+    if (!promptFn) throw new Error('Unknown strategy: ' + strategy);
+    const userPrompt = promptFn(namespace, formattedMemories);
+
+    // 3. Consolidate — invoke LLM with provider auto-mapped from model name; 90s hard timeout
+    const llmHandler = allHandlers['llm-think'];
+    if (!llmHandler) throw new Error('No LLM handler available. Configure ANTHROPIC_API_KEY or another provider key.');
+
+    const provider = dreamModelToProvider(model);
+    const llmResult = await withDreamTimeout(
+      llmHandler({
+        text: userPrompt,
+        model: (model && model !== 'auto') ? model : undefined,
+        provider: provider,
+        max_tokens: 3000,
+        system_prompt: 'You are a memory consolidation engine. Always respond in valid JSON only. No markdown, no prose outside JSON.',
+      }),
+      90000,
+      'Dream LLM call'
+    );
+
+    // Guard: if no provider key was configured, handler returns { _engine: 'needs_key' }
+    if (llmResult && llmResult._engine === 'needs_key') {
+      throw new Error('No LLM provider key configured. Set ANTHROPIC_API_KEY, OPENAI_API_KEY, XAI_API_KEY, or DEEPSEEK_API_KEY.');
+    }
+
+    // 4. Parse LLM output
+    // makeHandler() spreads parsed JSON into the result object so strategy keys
+    // (synthesis, patterns, etc.) appear at top-level of llmResult — try that first.
+    let parsedOutput = null;
+    const strategyKey = DREAM_STRATEGY_KEY[strategy];
+
+    if (llmResult && Array.isArray(llmResult[strategyKey])) {
+      // Fast path: makeHandler already spread the strategy JSON into llmResult
+      parsedOutput = llmResult;
+    } else {
+      // Slow path: extract from any text field that might hold raw JSON
+      const rawText = llmResult
+        ? (typeof llmResult.answer === 'string' ? llmResult.answer
+          : typeof llmResult.raw    === 'string' ? llmResult.raw
+          : typeof llmResult.text   === 'string' ? llmResult.text
+          : JSON.stringify(llmResult))
+        : '{}';
+      try {
+        const jsonMatch = rawText.match(/\{[\s\S]*\}/);
+        if (jsonMatch) parsedOutput = JSON.parse(jsonMatch[0]);
+      } catch (_) {}
+    }
+
+    if (!parsedOutput || !Array.isArray(parsedOutput[strategyKey])) {
+      // Last resort: package whatever we have as a single raw entry
+      parsedOutput = {};
+      parsedOutput[strategyKey] = [{
+        key: 'dream_raw_' + Date.now().toString(36),
+        value: JSON.stringify(llmResult || {}).slice(0, 4000),
+      }];
+    }
+
+    // 5. Extract structured entries and meta
+    const entries = extractDreamEntries(strategy, parsedOutput);
+    const meta = parsedOutput.meta || {};
+
+    // Generate a brief 2-sentence summary for log and status response
+    const dominantTheme = (meta.dominant_themes && meta.dominant_themes[0])
+      || meta.strongest_cluster
+      || meta.breakthrough_idea
+      || null;
+    const brief = 'Dream Engine ran "' + strategy + '" on ' + keySampled.length + ' memories, producing '
+      + entries.length + ' ' + strategy.replace('_', '-') + ' entr' + (entries.length === 1 ? 'y' : 'ies') + '. '
+      + (dominantTheme
+        ? 'Primary focus: ' + String(dominantTheme).slice(0, 120) + '.'
+        : 'No single dominant theme detected across the sampled memories.');
+
+    // 6. Store — write dream outputs as memory keys into <namespace>:dreams
+    const dreamNamespace = namespace + ':dreams';
+    const dreamTags = ['dream', 'synthesized', strategy];
+    const bulkEntries = [];
+
+    for (let ei = 0; ei < entries.length; ei++) {
+      const entry = entries[ei];
+      if (!entry || !entry.key) continue;
+      const memKey = dreamId + ':' + entry.key;
+      bulkEntries.push({
+        key: memKey,
+        value: Object.assign({}, entry, {
+          dream_id: dreamId,
+          strategy: strategy,
+          source_namespace: namespace,
+          dreamed_at: new Date().toISOString(),
+          model: model,
+          meta: meta,
+        }),
+        tags: dreamTags,
+        type: 'dream',
+      });
+    }
+
+    // Manifest entry summarizing this dream session (always stored)
+    bulkEntries.push({
+      key: dreamId + ':manifest',
+      value: {
+        dream_id: dreamId,
+        strategy: strategy,
+        source_namespace: namespace,
+        keys_sampled: keySampled,
+        entries_generated: entries.length,
+        brief: brief,
+        meta: meta,
+        dreamed_at: new Date().toISOString(),
+        model: model,
+      },
+      tags: ['dream', 'manifest', strategy],
+      type: 'dream',
+    });
+
+    let memoriesCreated = 0;
+    if (!dryRun && bulkEntries.length > 0) {
+      try {
+        const bulkResult = allHandlers['memory-bulk-set']({ namespace: dreamNamespace, entries: bulkEntries });
+        memoriesCreated = (bulkResult && typeof bulkResult.stored === 'number') ? bulkResult.stored : bulkEntries.length;
+      } catch (bulkErr) {
+        log.error('Dream bulk-set failed', { dreamId: dreamId, error: bulkErr.message });
+        memoriesCreated = 0;
+      }
+    } else if (dryRun) {
+      memoriesCreated = bulkEntries.length; // preview count only
+    }
+
+    // 7. Prune — for compress strategy, delete source keys the LLM said it replaced
+    let pruned = 0;
+    if (!dryRun && strategy === 'compress') {
+      const memDeleteHandler = allHandlers['memory-delete'];
+      if (memDeleteHandler) {
+        const toDelete = new Set();
+        for (let pi = 0; pi < entries.length; pi++) {
+          const pEntry = entries[pi];
+          if (Array.isArray(pEntry.replaces_keys)) {
+            pEntry.replaces_keys.forEach(function(k) { if (k && typeof k === 'string') toDelete.add(k); });
+          }
+        }
+        toDelete.forEach(function(k) {
+          try { memDeleteHandler({ namespace: namespace, key: k }); pruned++; } catch (_) {}
+        });
+      }
+    }
+
+    const durationMs = Date.now() - startTime;
+
+    // Concise entries preview for status response (key + value snippet, max 20)
+    const entriesSummary = entries.slice(0, 20).map(function(e) {
+      return {
+        key: e.key,
+        value: typeof e.value === 'string' ? e.value.slice(0, 300) : e.value,
+        type: e.type || e.link_type || strategy,
+      };
+    });
+
+    const result = {
+      dream_id: dreamId,
+      strategy: strategy,
+      namespace: namespace,
+      dream_namespace: dreamNamespace,
+      keys_sampled: keySampled.length,
+      keys_sampled_list: keySampled,
+      insights_generated: entries.length,
+      memories_created: memoriesCreated,
+      keys_pruned: pruned,
+      duration_ms: durationMs,
+      model: model,
+      brief: brief,
+      entries: entriesSummary,
+      meta: meta,
+      _engine: 'llm',
+    };
+    if (dryRun) result._dry_run = true;
+
+    if (!dryRun) {
+      db.prepare('UPDATE dream_sessions SET status = ?, keys_sampled = ?, memories_created = ?, completed_at = ?, duration_ms = ?, result = ? WHERE id = ?')
+        .run('complete', keySampled.length, memoriesCreated, Date.now(), durationMs, JSON.stringify(result), dreamId);
+      if (session) Object.assign(session, { status: 'complete', keys_sampled: keySampled.length, memories_created: memoriesCreated, duration_ms: durationMs });
+    }
+
+    return result;
+  } catch (err) {
+    const durationMs = Date.now() - startTime;
+    const errorMsg = err.message || String(err);
+    if (!dryRun) {
+      db.prepare('UPDATE dream_sessions SET status = ?, completed_at = ?, duration_ms = ?, error = ? WHERE id = ?')
+        .run('error', Date.now(), durationMs, errorMsg, dreamId);
+      if (session) Object.assign(session, { status: 'error', error: errorMsg, duration_ms: durationMs });
+    }
+    throw err;
+  }
+}
+
+// POST /v1/memory/dream/start — Kick off a dreaming session
+// Pass dry_run=true to preview what would be dreamed without spending credits or writing memories.
+app.post('/v1/memory/dream/start', auth, async (req, res) => {
+  const rawNamespace = req.body.namespace || 'default';
+  // Scope namespace to API key — same prefix logic as the /v1/:slug dispatcher
+  if (!req.acct._nsPrefix) {
+    req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  }
+  const namespace = req.acct._nsPrefix + ':' + rawNamespace;
+  const strategy = req.body.strategy || 'synthesize';
+  const budget = Math.min(Math.max(1, parseInt(req.body.budget) || 20), 100);
+  const model = req.body.model || 'claude-haiku-4-5';
+  const dryRun = req.body.dry_run === true || req.body.dry_run === 'true';
+
+  if (!DREAM_STRATEGIES.includes(strategy)) {
+    return res.status(400).json({ error: { code: 'invalid_strategy', message: 'strategy must be one of: ' + DREAM_STRATEGIES.join(', ') } });
+  }
+
+  const credits = DREAM_CREDITS[strategy] || 20;
+
+  // dry_run: run the full LLM pipeline but skip DB write and credit deduction
+  if (dryRun) {
+    const dryId = 'dry-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+    try {
+      const preview = await executeDream(dryId, req.apiKey, namespace, strategy, budget, model, true);
+      return res.json(Object.assign({ ok: true, _dry_run: true, credits_would_charge: credits }, preview));
+    } catch (dryErr) {
+      return res.status(500).json({ error: { code: 'dry_run_failed', message: dryErr.message } });
+    }
+  }
+
+  if (req.acct.balance < credits) {
+    return res.status(402).json({ error: { code: 'insufficient_credits', required: credits, balance: req.acct.balance } });
+  }
+
+  const dreamId = 'dream-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+  const now = Date.now();
+
+  db.prepare(
+    'INSERT INTO dream_sessions (id, api_key, namespace, strategy, status, keys_sampled, memories_created, model, started_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(dreamId, req.apiKey, namespace, strategy, 'pending', 0, 0, model, now);
+
+  activeDreamSessions.set(dreamId, {
+    id: dreamId,
+    api_key: req.apiKey,
+    namespace: namespace,
+    strategy: strategy,
+    budget: budget,
+    model: model,
+    status: 'pending',
+    started_at: new Date(now).toISOString(),
+    keys_sampled: 0,
+    memories_created: 0,
+  });
+
+  req.acct.balance -= credits;
+  persistKey(req.apiKey);
+  dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory/dream/start', credits, 0, 'llm');
+
+  // Fire-and-forget — client polls /v1/memory/dream/status/:id
+  executeDream(dreamId, req.apiKey, namespace, strategy, budget, model, false)
+    .then(function() { activeDreamSessions.delete(dreamId); })
+    .catch(function(err) {
+      log.error('Dream execution failed', { dreamId: dreamId, error: err.message });
+      activeDreamSessions.delete(dreamId);
+    });
+
+  res.json({
+    ok: true,
+    dream_id: dreamId,
+    status: 'running',
+    namespace: rawNamespace,
+    strategy: strategy,
+    budget: budget,
+    model: model,
+    credits_charged: credits,
+    dream_namespace: rawNamespace + ':dreams',
+    poll_endpoint: 'GET /v1/memory/dream/status/' + dreamId,
+    what_happens_next: 'The Dream Engine is synthesizing your memories using the "' + strategy + '" strategy. It will sample up to ' + budget + ' memory keys, extract patterns and insights, and store compressed dream outputs back into your namespace. This is the open, multi-model alternative to KAIROS — fully self-hostable.',
+    tip: 'Use dry_run=true to preview without spending credits. Schedule recurring dreams with POST /v1/memory/dream/schedule.',
+    _engine: 'real',
+  });
+});
+
+// GET /v1/memory/dream/status/:dream_id — Poll dream session status
+app.get('/v1/memory/dream/status/:dream_id', auth, function(req, res) {
+  const dream_id = req.params.dream_id;
+
+  const active = activeDreamSessions.get(dream_id);
+  if (active && active.api_key === req.apiKey) {
+    const safe = Object.assign({}, active);
+    delete safe.api_key;
+    return res.json(Object.assign({ ok: true, _engine: 'real' }, safe));
+  }
+
+  const session = db.prepare('SELECT * FROM dream_sessions WHERE id = ? AND api_key = ?').get(dream_id, req.apiKey);
+  if (!session) return res.status(404).json({ error: { code: 'not_found', message: 'Dream session not found or not yours' } });
+
+  let result = null;
+  try { result = session.result ? JSON.parse(session.result) : null; } catch (_) {}
+
+  res.json({
+    ok: true,
+    dream_id: session.id,
+    namespace: session.namespace,
+    strategy: session.strategy,
+    status: session.status,
+    model: session.model,
+    keys_sampled: session.keys_sampled,
+    memories_created: session.memories_created,
+    keys_pruned: result ? (result.keys_pruned || 0) : null,
+    started_at: new Date(session.started_at).toISOString(),
+    completed_at: session.completed_at ? new Date(session.completed_at).toISOString() : null,
+    duration_ms: session.duration_ms,
+    error: session.error || null,
+    brief: result ? (result.brief || null) : null,
+    entries: result ? (result.entries || null) : null,
+    result: result,
+    _engine: 'real',
+  });
+});
+
+// GET /v1/memory/dream/log — List recent dream sessions for this API key
+app.get('/v1/memory/dream/log', auth, function(req, res) {
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  const statusFilter = req.query.status;
+
+  let sessions;
+  if (statusFilter) {
+    sessions = db.prepare('SELECT id, namespace, strategy, status, model, keys_sampled, memories_created, started_at, completed_at, duration_ms, error, result FROM dream_sessions WHERE api_key = ? AND status = ? ORDER BY started_at DESC LIMIT ?').all(req.apiKey, statusFilter, limit);
+  } else {
+    sessions = db.prepare('SELECT id, namespace, strategy, status, model, keys_sampled, memories_created, started_at, completed_at, duration_ms, error, result FROM dream_sessions WHERE api_key = ? ORDER BY started_at DESC LIMIT ?').all(req.apiKey, limit);
+  }
+
+  const formatted = sessions.map(function(s) {
+    let sessionResult = null;
+    try { sessionResult = s.result ? JSON.parse(s.result) : null; } catch (_) {}
+    const entry = Object.assign({}, s, {
+      started_at: new Date(s.started_at).toISOString(),
+      completed_at: s.completed_at ? new Date(s.completed_at).toISOString() : null,
+      brief: sessionResult ? (sessionResult.brief || null) : null,
+    });
+    delete entry.result; // keep log response lean
+    return entry;
+  });
+
+  const inFlight = [];
+  activeDreamSessions.forEach(function(session, id) {
+    if (session.api_key === req.apiKey && !formatted.find(function(s) { return s.id === id; })) {
+      const safe = Object.assign({}, session);
+      delete safe.api_key;
+      inFlight.push(safe);
+    }
+  });
+
+  res.json({
+    ok: true,
+    sessions: inFlight.concat(formatted),
+    count: formatted.length + inFlight.length,
+    in_flight: inFlight.length,
+    _engine: 'real',
+  });
+});
+
+// POST /v1/memory/dream/schedule — Schedule recurring dream sessions
+app.post('/v1/memory/dream/schedule', auth, function(req, res) {
+  const rawNamespace = req.body.namespace || 'default';
+  // Scope namespace to api key (same as dispatcher)
+  if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const namespace = req.acct._nsPrefix + ':' + rawNamespace;
+  const strategy = req.body.strategy || 'synthesize';
+  const interval_hours = Math.max(0.25, parseFloat(req.body.interval_hours) || 24);
+  const budget = Math.min(Math.max(1, parseInt(req.body.budget) || 20), 100);
+  const model = req.body.model || 'claude-haiku-4-5';
+  const auto = req.body.auto !== false;
+
+  if (!DREAM_STRATEGIES.includes(strategy)) {
+    return res.status(400).json({ error: { code: 'invalid_strategy', message: 'strategy must be one of: ' + DREAM_STRATEGIES.join(', ') } });
+  }
+
+  const credits = DREAM_CREDITS[strategy] || 20;
+  const scheduleId = 'dsched-' + Date.now().toString(36) + '-' + crypto.randomBytes(3).toString('hex');
+  const apiKeyRef = req.apiKey;
+
+  const config = {
+    id: scheduleId,
+    api_key: apiKeyRef,
+    namespace: namespace,
+    strategy: strategy,
+    interval_hours: interval_hours,
+    budget: budget,
+    model: model,
+    auto: auto,
+    credits_per_dream: credits,
+    created_at: new Date().toISOString(),
+    last_run: null,
+    run_count: 0,
+    active: true,
+  };
+
+  async function runScheduledDream() {
+    const acct = apiKeys.get(apiKeyRef);
+    if (!acct || acct.balance < credits) {
+      log.warn('Skipping scheduled dream — insufficient credits', { scheduleId: scheduleId, balance: acct ? acct.balance : 0 });
+      return;
+    }
+    const dreamId = 'dream-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+    const now = Date.now();
+    try {
+      db.prepare(
+        'INSERT INTO dream_sessions (id, api_key, namespace, strategy, status, keys_sampled, memories_created, model, started_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      ).run(dreamId, apiKeyRef, namespace, strategy, 'pending', 0, 0, model, now);
+      activeDreamSessions.set(dreamId, {
+        id: dreamId, api_key: apiKeyRef, namespace: namespace, strategy: strategy,
+        budget: budget, model: model, status: 'pending',
+        started_at: new Date(now).toISOString(), keys_sampled: 0, memories_created: 0,
+      });
+      acct.balance -= credits;
+      persistKey(apiKeyRef);
+      dbInsertAudit.run(new Date().toISOString(), apiKeyRef.slice(0, 12) + '...', 'memory/dream/scheduled', credits, 0, 'llm');
+      await executeDream(dreamId, apiKeyRef, namespace, strategy, budget, model);
+    } catch (e) {
+      log.error('Scheduled dream failed', { scheduleId: scheduleId, dreamId: dreamId, error: e.message });
+    } finally {
+      activeDreamSessions.delete(dreamId);
+      const sched = dreamSchedules.get(scheduleId);
+      if (sched) {
+        sched.last_run = new Date().toISOString();
+        sched.run_count = (sched.run_count || 0) + 1;
+      }
+      try {
+        db.prepare('UPDATE dream_schedules SET last_run = ?, run_count = run_count + 1 WHERE id = ?')
+          .run(new Date().toISOString(), scheduleId);
+      } catch (_) {}
+    }
+  }
+
+  // Persist schedule to DB for boot-time restore
+  try {
+    db.prepare(
+      'INSERT INTO dream_schedules (id, api_key, namespace, strategy, interval_hours, budget, model, auto, credits_per_dream, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+    ).run(scheduleId, apiKeyRef, namespace, strategy, interval_hours, budget, model, auto ? 1 : 0, credits, config.created_at);
+  } catch (e) {
+    log.error('Failed to persist dream schedule', { error: e.message });
+  }
+
+  if (auto) runScheduledDream().catch(function() {});
+
+  const timer = setInterval(runScheduledDream, interval_hours * 3600 * 1000);
+  config._timer = timer;
+  dreamSchedules.set(scheduleId, config);
+
+  res.json({
+    ok: true,
+    schedule_id: scheduleId,
+    namespace: namespace,
+    strategy: strategy,
+    interval_hours: interval_hours,
+    budget: budget,
+    model: model,
+    auto: auto,
+    credits_per_dream: credits,
+    next_run: auto ? 'immediately + every ' + interval_hours + 'h' : 'every ' + interval_hours + 'h',
+    cancel_endpoint: 'DELETE /v1/memory/dream/schedule/' + scheduleId,
+    list_endpoint: 'GET /v1/memory/dream/schedules',
+    _engine: 'real',
+  });
+});
+
+// DELETE /v1/memory/dream/schedule/:id — Cancel a scheduled dream
+app.delete('/v1/memory/dream/schedule/:id', auth, function(req, res) {
+  const id = req.params.id;
+  const sched = dreamSchedules.get(id);
+  if (!sched) return res.status(404).json({ error: { code: 'not_found', message: 'No active schedule with that ID' } });
+  if (sched.api_key !== req.apiKey) return res.status(403).json({ error: { code: 'forbidden', message: 'Not your schedule' } });
+
+  clearInterval(sched._timer);
+  dreamSchedules.delete(id);
+
+  try {
+    db.prepare('UPDATE dream_schedules SET active = 0 WHERE id = ?').run(id);
+  } catch (_) {}
+
+  const safeConfig = Object.assign({}, sched);
+  delete safeConfig._timer;
+  delete safeConfig.api_key;
+  res.json({ ok: true, cancelled: true, schedule: safeConfig, _engine: 'real' });
+});
+
+// GET /v1/memory/dream/schedules — List active dream schedules for this key
+app.get('/v1/memory/dream/schedules', auth, function(req, res) {
+  const schedules = [];
+  dreamSchedules.forEach(function(sched) {
+    if (sched.api_key !== req.apiKey) return;
+    const safe = Object.assign({}, sched);
+    delete safe._timer;
+    delete safe.api_key;
+    schedules.push(safe);
+  });
+  res.json({ ok: true, schedules: schedules, count: schedules.length, _engine: 'real' });
 });
 
 // ===== FEATURE: Swarm Live SSE Stream =====
@@ -17321,6 +19399,76 @@ app.post('/v1/import/schemas', auth, (req, res) => {
     } catch(e) {}
   }
   res.json({ ok: true, imported, source: source || 'manual', namespace: 'imported_schemas' });
+});
+
+// POST /v1/agent/clone — fork an agent config under a new name
+app.post('/v1/agent/clone', auth, (req, res) => {
+  const { source_id, new_name, overrides } = req.body;
+  if (!source_id) return res.status(400).json({ error: { code: 'missing_source_id' } });
+
+  let sourceAgent = null;
+  try {
+    sourceAgent = db.prepare('SELECT * FROM agents WHERE id = ? AND api_key = ?').get(source_id, req.apiKey);
+  } catch(e) {}
+
+  if (!sourceAgent) return res.status(404).json({ error: { code: 'agent_not_found', message: 'Source agent not found' } });
+
+  const newId = require('crypto').randomUUID();
+  const newName = new_name || sourceAgent.name + ' (clone)';
+  const config = JSON.parse(sourceAgent.config || '{}');
+  const merged = { ...config, ...(overrides || {}) };
+
+  try {
+    db.prepare('INSERT INTO agents (id, api_key, name, config, created_at) VALUES (?, ?, ?, ?, ?)').run(
+      newId, req.apiKey, newName, JSON.stringify(merged), new Date().toISOString()
+    );
+  } catch(e) {
+    return res.status(500).json({ error: { code: 'clone_failed', message: e.message } });
+  }
+
+  dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0,12)+'...', 'agent/clone', 2, 0, 'compute');
+
+  res.json({
+    ok: true,
+    cloned: true,
+    source_id,
+    new_id: newId,
+    name: newName,
+    config: merged,
+    created_at: new Date().toISOString(),
+  });
+});
+
+// GET /v1/workflow/:id/history — execution history for a workflow
+app.get('/v1/workflow/:id/history', auth, (req, res) => {
+  const { id } = req.params;
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+
+  const wf = db.prepare('SELECT * FROM workflows WHERE id = ? AND api_key = ?').get(id, req.apiKey);
+  if (!wf) return res.status(404).json({ error: { code: 'not_found', message: 'Workflow not found' } });
+
+  // Get execution runs from workflow_runs table if it exists, else from audit_log
+  let runs = [];
+  try {
+    runs = db.prepare('SELECT * FROM workflow_runs WHERE workflow_id = ? ORDER BY started_at DESC LIMIT ?').all(id, limit);
+  } catch(e) {
+    // Fall back to audit_log
+    runs = db.prepare("SELECT ts as started_at, credits as credits_used, latency_ms FROM audit_log WHERE tool = ? ORDER BY ts DESC LIMIT ?").all('workflow:' + id, limit);
+  }
+
+  res.json({
+    ok: true,
+    workflow_id: id,
+    name: wf.name,
+    run_count: runs.length,
+    runs: runs.map(r => ({
+      started_at: r.started_at || r.ts,
+      credits_used: r.credits_used || r.credits,
+      duration_ms: r.duration_ms || r.latency_ms || null,
+      status: r.status || 'completed',
+      error: r.error || null,
+    })),
+  });
 });
 
 const PORT = process.env.PORT || 3000;

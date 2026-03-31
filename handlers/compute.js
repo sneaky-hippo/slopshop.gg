@@ -831,14 +831,16 @@ function mathPrimeCheck(input) {
 }
 
 function mathGcd(input) {
-  const nums = input.numbers || [input.a||0, input.b||0];
+  const nums = (input.numbers || [input.a||0, input.b||0]).map(Number).filter(n => !isNaN(n));
+  if (!nums.length) return { _engine: 'real', error: 'numbers array required', gcd: 0 };
   const gcd2 = (x,y) => { x=Math.abs(x); y=Math.abs(y); while(y){const t=y;y=x%y;x=t;} return x; };
   const result = nums.reduce((a,b) => gcd2(a,b));
   return { _engine: 'real', numbers: nums, gcd: result };
 }
 
 function mathLcm(input) {
-  const nums = input.numbers || [input.a||0, input.b||0];
+  const nums = (input.numbers || [input.a||0, input.b||0]).map(Number).filter(n => !isNaN(n));
+  if (!nums.length) return { _engine: 'real', error: 'numbers array required', lcm: 0 };
   const gcd2 = (x,y) => { x=Math.abs(x); y=Math.abs(y); while(y){const t=y;y=x%y;x=t;} return x; };
   const lcm2 = (x,y) => { const g=gcd2(x,y); return g===0?0:(Math.abs(x)/g)*Math.abs(y); };
   const result = nums.reduce((a,b) => lcm2(a,b));
@@ -4018,10 +4020,12 @@ module.exports = {
     return { _engine: 'real', result: Number(r) };
   },
 
-  'math-clamp': ({value, min, max}) => ({
-    _engine: 'real',
-    result: Math.min(Math.max(value || 0, min || 0), max || 100),
-  }),
+  'math-clamp': (input) => {
+    const value = input.value !== undefined ? Number(input.value) : 0;
+    const min = input.min !== undefined ? Number(input.min) : 0;
+    const max = input.max !== undefined ? Number(input.max) : 100;
+    return { _engine: 'real', result: Math.min(Math.max(value, min), max), value, min, max };
+  },
 
   'math-lerp': ({a, b, t}) => ({
     _engine: 'real',
@@ -5689,14 +5693,16 @@ module.exports = {
   },
 
   'math-gcd': (input) => {
-    const nums = input.numbers || [Number(input.a || 0), Number(input.b || 0)];
+    const nums = (input.numbers || [Number(input.a || 0), Number(input.b || 0)]).map(Number).filter(n => !isNaN(n));
+    if (!nums.length) return { _engine: 'real', error: 'numbers array required', gcd: 0 };
     const gcd2 = (x, y) => { x = Math.abs(x); y = Math.abs(y); while (y) { const t = y; y = x % y; x = t; } return x; };
     const result = nums.reduce((a, b) => gcd2(a, b));
     return { _engine: 'real', numbers: nums, gcd: result };
   },
 
   'math-lcm': (input) => {
-    const nums = input.numbers || [Number(input.a || 0), Number(input.b || 0)];
+    const nums = (input.numbers || [Number(input.a || 0), Number(input.b || 0)]).map(Number).filter(n => !isNaN(n));
+    if (!nums.length) return { _engine: 'real', error: 'numbers array required', lcm: 0 };
     const gcd2 = (x, y) => { x = Math.abs(x); y = Math.abs(y); while (y) { const t = y; y = x % y; x = t; } return x; };
     const lcm2 = (x, y) => { const g = gcd2(x, y); return g === 0 ? 0 : (Math.abs(x) / g) * Math.abs(y); };
     const result = nums.reduce((a, b) => lcm2(a, b));
@@ -5780,5 +5786,80 @@ module.exports = {
       }
       return { _engine: 'real', result };
     } catch (e) { return { _engine: 'real', error: e.message }; }
+  },
+
+  // ─── UTILITY SLUGS (2026-03-31) ─────────────────────────────────────────────
+
+  'text-word-frequency': (input) => {
+    const text = input.text || input.input || input.content || '';
+    if (!text) return { _engine: 'real', error: 'missing text', frequency: {}, top: [] };
+    const topN = Math.min(parseInt(input.top_n) || 20, 200);
+    const stopWords = new Set(['the','a','an','and','or','but','in','on','at','to','for','of','with','by','from','is','are','was','were','be','been','being','have','has','had','do','does','did','will','would','could','should','may','might','shall','can','that','this','these','those','it','its','i','you','he','she','we','they','not','no','so','if','as','up','out','into','than','then','when','where','who','which','what','how','all','any','both','each','few','more','most','other','some','such','also','just','very','too','only']);
+    const words = text.toLowerCase().replace(/[^a-z0-9'\s-]/g, '').split(/\s+/).filter(w => w.length > 1 && !stopWords.has(w));
+    const allWords = text.toLowerCase().replace(/[^a-z0-9'\s-]/g, '').split(/\s+/).filter(Boolean);
+    const freq = {};
+    for (const w of words) freq[w] = (freq[w] || 0) + 1;
+    const sorted = Object.entries(freq).sort((a, b) => b[1] - a[1]);
+    return { _engine: 'real', frequency: Object.fromEntries(sorted), top: sorted.slice(0, topN).map(([word, count]) => ({ word, count })), totalWords: allWords.length, uniqueWords: sorted.length, stop_words_excluded: true };
+  },
+
+  'data-flatten': (input) => {
+    const arr = input.array || input.data || input.input;
+    if (!Array.isArray(arr)) return { _engine: 'real', error: 'missing array: provide array field' };
+    const depth = input.depth !== undefined ? Number(input.depth) : Infinity;
+    const result = arr.flat(isFinite(depth) ? depth : Infinity);
+    return { _engine: 'real', result, originalLength: arr.length, flatLength: result.length };
+  },
+
+  'data-unflatten': (input) => {
+    try {
+      const obj = typeof input.obj === 'object' && input.obj !== null ? input.obj
+                : typeof input.data === 'object' && input.data !== null ? input.data
+                : JSON.parse(input.text || '{}');
+      const sep = input.separator || '.';
+      const result = {};
+      for (const key of Object.keys(obj)) {
+        const parts = key.split(sep);
+        let cur = result;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!(parts[i] in cur)) cur[parts[i]] = {};
+          cur = cur[parts[i]];
+        }
+        cur[parts[parts.length - 1]] = obj[key];
+      }
+      return { _engine: 'real', result };
+    } catch (e) { return { _engine: 'real', error: e.message }; }
+  },
+
+  'color-hex-to-rgb': (input) => {
+    const hex = (input.hex || input.color || '').trim().replace(/^#/, '');
+    if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(hex)) return { _engine: 'real', error: 'invalid hex color' };
+    const full = hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex;
+    const r = parseInt(full.slice(0, 2), 16);
+    const g = parseInt(full.slice(2, 4), 16);
+    const b = parseInt(full.slice(4, 6), 16);
+    return { _engine: 'real', r, g, b, rgb: `rgb(${r}, ${g}, ${b})`, hex: '#' + full.toLowerCase() };
+  },
+
+  'color-rgb-to-hex': (input) => {
+    const r = Math.round(Math.min(255, Math.max(0, Number(input.r || 0))));
+    const g = Math.round(Math.min(255, Math.max(0, Number(input.g || 0))));
+    const b = Math.round(Math.min(255, Math.max(0, Number(input.b || 0))));
+    if ([r, g, b].some(isNaN)) return { _engine: 'real', error: 'invalid r/g/b values' };
+    const hex = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    return { _engine: 'real', hex, r, g, b, rgb: `rgb(${r}, ${g}, ${b})` };
+  },
+
+  'color-lighten': (input) => {
+    const hex = (input.hex || input.color || '').trim().replace(/^#/, '');
+    if (!/^[0-9a-fA-F]{3}$|^[0-9a-fA-F]{6}$/.test(hex)) return { _engine: 'real', error: 'invalid hex color' };
+    const amount = Number(input.amount !== undefined ? input.amount : 10);
+    const full = hex.length === 3 ? hex.split('').map(c => c + c).join('') : hex;
+    const clamp = v => Math.min(255, Math.max(0, Math.round(v)));
+    const r = clamp(parseInt(full.slice(0, 2), 16) + (255 * amount / 100));
+    const g = clamp(parseInt(full.slice(2, 4), 16) + (255 * amount / 100));
+    const b = clamp(parseInt(full.slice(4, 6), 16) + (255 * amount / 100));
+    const result = '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    return { _engine: 'real', result, original: '#' + full.toLowerCase(), amount, r, g, b };
   },
 };
