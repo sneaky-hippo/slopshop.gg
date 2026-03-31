@@ -350,9 +350,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(
     <div class="canvas-wrap">
       <div class="canvas-toolbar">
         <span class="tb-label">WORKFLOW</span>
-        <button class="tb-btn clear" id="btnClear">✕ Clear All</button>
-        <button class="tb-btn run" id="btnRun">▶ Run Workflow</button>
-        <button class="tb-btn export" id="btnExport">⟨/⟩ Export Code</button>
+        <button class="tb-btn" id="btnTemplates" style="border-color:rgba(6,182,212,0.3);color:var(--c)">⬡ Templates</button>
+        <button class="tb-btn clear" id="btnClear">✕ Clear</button>
+        <button class="tb-btn run" id="btnRun">▶ Run</button>
+        <button class="tb-btn export" id="btnExport">⟨/⟩ Export</button>
         <div class="tb-spacer"></div>
         <span class="node-count" id="nodeCount">0 nodes</span>
       </div>
@@ -421,6 +422,19 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(
   </div>
 </div>
 
+<!-- TEMPLATES MODAL -->
+<div class="modal-overlay" id="templatesModal">
+  <div class="modal" style="max-width:640px">
+    <div class="modal-head">
+      <h2>⬡ Starter Templates</h2>
+      <button class="modal-close" id="templatesClose">✕</button>
+    </div>
+    <div class="modal-body" style="padding:0">
+      <div id="templatesList" style="display:flex;flex-direction:column;gap:0"></div>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST CONTAINER -->
 <div class="toast-wrap" id="toastWrap"></div>
 
@@ -439,6 +453,130 @@ let currentTab = 'log';
 let lastResult = null;
 let totalCreditsUsed = 0;
 let execLog = [];
+
+// ═══════════════════════════════════════════════════════════════
+// TEMPLATES
+// ═══════════════════════════════════════════════════════════════
+const TEMPLATES = [
+  {
+    id: 'dream-starter',
+    name: 'Dream Starter',
+    icon: '🌙',
+    desc: 'Search your memory, run Dream Engine synthesis, save the insights.',
+    color: 'var(--v)',
+    nodes: [
+      {type:'memory-search', x:60,  y:80, config:{namespace:'agent', query:'recent work', limit:8}},
+      {type:'dream-engine',  x:270, y:80, config:{namespace:'agent', strategy:'synthesize', topic:'work insights'}},
+      {type:'memory-write',  x:480, y:80, config:{namespace:'agent', key:'dream_insights', value:''}},
+    ],
+    connections: [[0,1],[1,2]],
+  },
+  {
+    id: 'multiplayer-sync',
+    name: 'Multiplayer Sync',
+    icon: '👥',
+    desc: 'Read from your private memory, transform it, share to a team namespace.',
+    color: 'var(--g)',
+    nodes: [
+      {type:'memory-read',   x:60,  y:80, config:{namespace:'agent', key:'project_notes'}},
+      {type:'transform',     x:270, y:80, config:{operation:'summarize'}},
+      {type:'memory-write',  x:480, y:80, config:{namespace:'team', key:'shared_notes', value:''}},
+    ],
+    connections: [[0,1],[1,2]],
+  },
+  {
+    id: 'daily-digest',
+    name: 'Daily Digest',
+    icon: '📰',
+    desc: 'List all memory entries, run pattern extraction to surface recurring themes.',
+    color: 'var(--o)',
+    nodes: [
+      {type:'memory-list',   x:60,  y:80, config:{namespace:'agent', limit:30}},
+      {type:'dream-engine',  x:280, y:80, config:{namespace:'agent', strategy:'pattern_extract', topic:'daily themes'}},
+    ],
+    connections: [[0,1]],
+  },
+  {
+    id: 'evolve-loop',
+    name: 'Evolve Loop',
+    icon: '🔁',
+    desc: 'Write new knowledge, evolve Bayesian beliefs, compress and store updated model.',
+    color: 'var(--r)',
+    nodes: [
+      {type:'memory-write',  x:60,  y:80, config:{namespace:'agent', key:'new_input', value:'paste new data here'}},
+      {type:'dream-engine',  x:270, y:80, config:{namespace:'agent', strategy:'evolve', topic:'belief update'}},
+      {type:'memory-write',  x:480, y:80, config:{namespace:'agent', key:'evolved_model', value:''}},
+    ],
+    connections: [[0,1],[1,2]],
+  },
+];
+
+function renderTemplates() {
+  const list = document.getElementById('templatesList');
+  list.innerHTML = '';
+  TEMPLATES.forEach(t => {
+    const el = document.createElement('div');
+    el.style.cssText = 'padding:20px 24px;border-bottom:1px solid var(--b);cursor:pointer;transition:background 0.15s;display:flex;align-items:flex-start;gap:16px';
+    el.innerHTML = `
+      <div style="font-size:1.8rem;flex-shrink:0;line-height:1">${t.icon}</div>
+      <div style="flex:1">
+        <div style="font-family:var(--mono);font-weight:700;font-size:0.88rem;color:${t.color};margin-bottom:4px">${t.name}</div>
+        <div style="font-size:0.78rem;color:var(--t3);line-height:1.6;margin-bottom:10px">${t.desc}</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap">${t.nodes.map(n=>NODE_META[n.type]?`<span style="background:var(--s2);border:1px solid var(--b2);padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:0.62rem;color:var(--t3)">${NODE_META[n.type].icon} ${NODE_META[n.type].name}</span>`:'').join('')}</div>
+      </div>
+      <button style="background:${t.color};color:#000;border:none;padding:8px 18px;border-radius:7px;font-family:var(--mono);font-size:0.72rem;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;color:#fff">Load →</button>
+    `;
+    el.querySelector('button').addEventListener('click', () => loadTemplate(t));
+    el.addEventListener('mouseenter', () => el.style.background = 'var(--s2)');
+    el.addEventListener('mouseleave', () => el.style.background = '');
+    list.appendChild(el);
+  });
+}
+
+function loadTemplate(t) {
+  // Clear existing
+  Object.values(nodes).forEach(n => n.el.remove());
+  nodes = {};
+  connections = [];
+  nodeCounter = 0;
+  selectedNodeId = null;
+  showConfigEmpty();
+  updateArrows();
+
+  const canvas = document.getElementById('canvas');
+  const ch = canvas.offsetHeight;
+  const yOffset = Math.max(0, (ch - 160) / 2) - 40;
+
+  const created = t.nodes.map(nd => {
+    const n = createNode(nd.type, nd.x, nd.y + yOffset);
+    n.config = Object.assign({}, nd.config);
+    updateNodeBody(n);
+    return n;
+  });
+
+  t.connections.forEach(([fi, ti]) => {
+    connections.push({from: created[fi].id, to: created[ti].id});
+  });
+
+  updateArrows();
+  updateNodeCount();
+  document.getElementById('templatesModal').classList.remove('open');
+  toast(`${t.icon} ${t.name} loaded — click nodes to configure, then Run Workflow`, 'success');
+  openOutput();
+  logMsg(`Template "${t.name}" loaded. ${t.nodes.length} nodes, ${t.connections.length} connections.`, 'info');
+}
+
+// Templates button
+document.getElementById('btnTemplates').addEventListener('click', () => {
+  renderTemplates();
+  document.getElementById('templatesModal').classList.add('open');
+});
+document.getElementById('templatesClose').addEventListener('click', () => {
+  document.getElementById('templatesModal').classList.remove('open');
+});
+document.getElementById('templatesModal').addEventListener('click', (e) => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
+});
 
 // Node metadata
 const NODE_META = {
