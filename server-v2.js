@@ -20061,13 +20061,26 @@ const server = app.listen(PORT, () => {
   } catch(_) {}
 });
 
-// Memory growth monitor — logs every 15s to help diagnose Railway crashes
+// Memory growth watchdog — samples every 5s, writes to /data/mem.log on Railway
 if (IS_RAILWAY) {
   const _memStart = Date.now();
+  const _fs = require('fs');
+  const _memLogPath = '/data/mem.log';
+  // Read and print mem.log from previous run on startup
+  try {
+    if (_fs.existsSync(_memLogPath)) {
+      const prev = _fs.readFileSync(_memLogPath, 'utf8').trim().split('\n').slice(-20);
+      console.log('  📊 Memory log from PREVIOUS run (last 20 samples):');
+      prev.forEach(l => console.log('    ' + l));
+      _fs.writeFileSync(_memLogPath, ''); // clear for this run
+    }
+  } catch(_) {}
   setInterval(() => {
     const m = process.memoryUsage();
-    console.log(JSON.stringify({ level: 'info', msg: 'mem_monitor', rss_mb: Math.round(m.rss/1024/1024), heap_used_mb: Math.round(m.heapUsed/1024/1024), heap_total_mb: Math.round(m.heapTotal/1024/1024), uptime_s: Math.round((Date.now()-_memStart)/1000), ts: new Date().toISOString() }));
-  }, 15000);
+    const entry = JSON.stringify({ t: Math.round((Date.now()-_memStart)/1000), rss: Math.round(m.rss/1024/1024), heap: Math.round(m.heapUsed/1024/1024), htot: Math.round(m.heapTotal/1024/1024), ext: Math.round(m.external/1024/1024) });
+    console.log(JSON.stringify({ level: 'info', msg: 'mem_monitor', ...JSON.parse(entry), ts: new Date().toISOString() }));
+    try { _fs.appendFileSync(_memLogPath, entry + '\n'); } catch(_) {}
+  }, 5000);
 }
 
 function gracefulShutdown(signal) {
