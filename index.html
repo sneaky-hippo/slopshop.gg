@@ -479,6 +479,8 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
     <a href="#multiplayer-memory" style="color:var(--o)" data-mobile>Multiplayer Memory</a>
     <a href="/docs" data-mobile>Docs</a>
     <a href="/tools">Tools</a>
+    <a href="/playground">Playground</a>
+    <a href="/memory-manager">Memory</a>
     <a href="#pricing" data-mobile>Pricing</a>
     <a href="/security">Security</a>
     <a href="/about">About</a>
@@ -513,6 +515,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
 
     <div class="hero-ctas" style="margin-top:32px">
       <a href="/signup" class="cta-primary">Start for Free &mdash; No Card Required</a>
+      <a href="/playground" class="cta-secondary" style="border-color:rgba(129,140,248,0.35);color:var(--v)">&#x25A6; No-Code Builder</a>
       <a href="#install" class="cta-secondary" onclick="navigator.clipboard&&navigator.clipboard.writeText('npm install -g slopshop && slop start')">npm install -g slopshop &amp;&amp; slop start</a>
       <a href="/docs" class="cta-secondary" style="border-color:rgba(167,139,250,0.3);color:var(--o)">Read the Docs &#x2197;</a>
     </div>
@@ -527,6 +530,7 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'npm install -g slopshop && slop start')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">npm install -g slopshop &amp;&amp; slop start</span><span style="color:var(--t4);font-size:0.6rem">copy</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop signup')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop signup</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># guided setup + API keys + 500 free credits</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop mcp serve')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop mcp serve</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Claude Code, Cursor, Goose, Cline</span></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'npx -y slopshop slopshop-mcp')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">npx -y slopshop slopshop-mcp</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Claude Code one-liner (no install)</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;remember my project uses React + Next.js&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "remember my project uses React + Next.js"</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># free persistent memory</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;synthesize my project notes tonight&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "synthesize my project notes tonight"</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Dream Engine: overnight synthesis</span></div>
         <div style="display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="cc(this,'slop &quot;share this workspace with my team for a week&quot;')"><span style="color:var(--green)">$</span> <span style="flex:1;margin-left:8px;color:var(--t)">slop "share this workspace with my team for a week"</span> <span class="tc" style="color:var(--t4);font-size:0.6rem;white-space:nowrap;margin-left:8px"># Multiplayer Memory</span></div>
@@ -558,6 +562,49 @@ footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
     </div>
   </div>
 </div>
+
+<!-- ========== NO-CODE SECTION ========== -->
+<div class="sec" style="padding-top:72px;padding-bottom:72px" id="no-code">
+  <div style="text-align:center;font-family:var(--mono);font-size:0.65rem;color:var(--v);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:12px">No setup required</div>
+  <h2 style="font-size:1.3rem;text-align:center;margin-bottom:10px;font-family:var(--mono);font-weight:700;letter-spacing:-0.02em">No CLI? No Problem.</h2>
+  <p style="text-align:center;max-width:500px;margin:0 auto 44px;color:var(--t3);font-size:0.85rem;line-height:1.75">Use Dream Engine and Multiplayer Memory directly in your browser. Drag, drop, connect — no code, no terminal.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:24px;max-width:900px;margin:0 auto">
+
+    <!-- Playground -->
+    <a href="/playground" style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--v);border-radius:14px;padding:32px;text-decoration:none;color:inherit;display:block;transition:transform 0.2s,box-shadow 0.2s;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 40px rgba(0,0,0,0.35)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+      <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(ellipse,rgba(129,140,248,0.06),transparent 70%);pointer-events:none"></div>
+      <div style="font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--v);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="background:var(--vg);padding:2px 8px;border-radius:4px">PLAYGROUND</span><span style="background:var(--vg);padding:2px 8px;border-radius:4px;color:var(--g)">FREE</span></div>
+      <h3 style="font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--t);margin-bottom:10px;letter-spacing:-0.02em">No-Code Workflow Builder</h3>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:20px">Drag Dream Engine, Memory Read/Write, and Search nodes onto a canvas. Connect them visually. Run real API calls with one click.</p>
+      <div style="display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:0.72rem;color:var(--t3);margin-bottom:20px">
+        <div><span style="color:var(--v);margin-right:6px">&#x25A6;</span> Drag Dream Engine nodes — set topic, interval, REM cycles</div>
+        <div><span style="color:var(--v);margin-right:6px">&#x25A6;</span> Connect Memory Write &rarr; Dream Engine &rarr; Memory Read</div>
+        <div><span style="color:var(--v);margin-right:6px">&#x25A6;</span> Real API calls — see live results in the output panel</div>
+        <div><span style="color:var(--v);margin-right:6px">&#x25A6;</span> Export as JSON or Python code</div>
+      </div>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:var(--v);color:#fff;padding:9px 20px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:700">Open Playground &rarr;</div>
+    </a>
+
+    <!-- Memory Manager -->
+    <a href="/memory-manager" style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--g);border-radius:14px;padding:32px;text-decoration:none;color:inherit;display:block;transition:transform 0.2s,box-shadow 0.2s;position:relative;overflow:hidden" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 12px 40px rgba(0,0,0,0.35)'" onmouseout="this.style.transform='none';this.style.boxShadow='none'">
+      <div style="position:absolute;top:0;right:0;width:200px;height:200px;background:radial-gradient(ellipse,rgba(52,211,153,0.06),transparent 70%);pointer-events:none"></div>
+      <div style="font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--g);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="background:var(--gg);padding:2px 8px;border-radius:4px">MEMORY MANAGER</span><span style="background:var(--gg);padding:2px 8px;border-radius:4px">TEAMS</span></div>
+      <h3 style="font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--t);margin-bottom:10px;letter-spacing:-0.02em">Memory &amp; Sharing Dashboard</h3>
+      <p style="font-size:0.82rem;color:var(--t2);line-height:1.75;margin-bottom:20px">Browse, search, and edit your memory keys. Create shared team spaces, invite collaborators, and start Dream Engine synthesis — all from your browser.</p>
+      <div style="display:flex;flex-direction:column;gap:6px;font-family:var(--mono);font-size:0.72rem;color:var(--t3);margin-bottom:20px">
+        <div><span style="color:var(--g);margin-right:6px">&#x25A6;</span> View all memory keys with search &amp; filter</div>
+        <div><span style="color:var(--g);margin-right:6px">&#x25A6;</span> Create shared spaces &amp; invite teammates</div>
+        <div><span style="color:var(--g);margin-right:6px">&#x25A6;</span> Start Dream Engine synthesis from the UI</div>
+        <div><span style="color:var(--g);margin-right:6px">&#x25A6;</span> Monitor dream runs and view insights</div>
+      </div>
+      <div style="display:inline-flex;align-items:center;gap:6px;background:var(--g);color:#000;padding:9px 20px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:700">Open Memory Manager &rarr;</div>
+    </a>
+
+  </div>
+</div>
+
+<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(129,140,248,0.15),transparent);max-width:600px;margin:0 auto"></div>
 
 <!-- ========== THREE PILLARS ========== -->
 <div style="height:40px"></div>
@@ -657,9 +704,6 @@ POST /v1/memory/dream/start
 POST /v1/memory/share/create
   {"name":"team-research","retention":"weekly"}</div>
     </div>
-
-  </div>
-</div>
 
     <!-- Planet Research -->
     <div style="background:var(--s1);border:1px solid var(--b);border-left:3px solid var(--o);border-radius:12px;padding:28px;transition:transform 0.15s,border-color 0.2s;position:relative" onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
@@ -1053,7 +1097,7 @@ POST /v1/memory-search
     <div style="border:1px solid var(--b);border-radius:12px;background:var(--s1);padding:24px 40px">
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px 24px;font-size:0.78rem;color:var(--t3)">
         <span style="font-family:var(--mono);font-weight:700;color:var(--t2)">Works with:</span>
-        <span style="font-weight:600;color:var(--t2)">Claude Code</span><span style="color:var(--t4)">&middot;</span>
+        <a href="/integrate-claude-code" style="font-weight:600;color:var(--r);text-decoration:none">Claude Code</a><span style="color:var(--t4)">&middot;</span>
         <span style="font-weight:600;color:var(--t2)">Cursor</span><span style="color:var(--t4)">&middot;</span>
         <span style="font-weight:600;color:var(--t2)">Goose</span><span style="color:var(--t4)">&middot;</span>
         <span style="font-weight:600;color:var(--t2)">Cline</span><span style="color:var(--t4)">&middot;</span>
@@ -1253,20 +1297,20 @@ POST /v1/memory-search
     <div class="footer-grid">
       <div class="footer-col">
         <h4>Product</h4>
+        <a href="/playground">Playground</a>
+        <a href="/memory-manager">Memory Manager</a>
         <a href="/tools">Tools</a>
         <a href="/templates">Templates</a>
         <a href="/playbooks">Playbooks</a>
-        <a href="/gallery">Gallery</a>
         <a href="#pricing">Pricing</a>
-        <a href="/savings">Savings</a>
       </div>
       <div class="footer-col">
         <h4>Integrate</h4>
-        <a href="/integrate-claude">Claude</a>
+        <a href="/integrate-claude-code" style="color:var(--r)">Claude Code</a>
+        <a href="/integrate-claude">Claude API</a>
         <a href="/integrate-openai">OpenAI</a>
         <a href="/integrate-grok">Grok</a>
         <a href="/integrate-langchain">LangChain</a>
-        <a href="/v1/tasks">Task API</a>
         <a href="/v1/benchmarks">Benchmarks</a>
       </div>
       <div class="footer-col">

@@ -1,0 +1,1395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Playground | Slopshop — No-Code Memory Builder</title>
+<meta name="description" content="Drag-and-drop visual builder for Slopshop's Memory and Dream Engine APIs. Build memory workflows without writing code.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;--b3:#333;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);--rb:rgba(255,51,51,0.2);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);--ob:rgba(255,136,0,0.25);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);--gb:rgba(0,204,102,0.25);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);--cb:rgba(0,170,255,0.25);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);--vb:rgba(136,85,255,0.25);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none}
+a:hover{opacity:0.8}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(5,5,5,0.88);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:100%;width:100%;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.05em;display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none}
+.logo .mark{color:#ef4444;font-weight:900}
+.logo .vtag{font-size:0.55rem;color:#ff3333;border:1px solid rgba(255,51,51,0.2);padding:2px 6px;border-radius:4px;margin-left:6px}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s;font-family:var(--sans)}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--t);background:var(--s2)}
+.nav-links .signup{background:var(--r);color:#fff!important;padding:6px 16px;border-radius:6px;font-weight:600}
+.nav-links .signup:hover{background:#e62e2e;opacity:1}
+
+/* ── HERO STRIP ── */
+.hero-strip{padding:80px 32px 32px;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid var(--b)}
+.hero-strip::before{content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:900px;height:500px;background:radial-gradient(ellipse,rgba(136,85,255,0.06),transparent 65%);pointer-events:none}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--vg);border:1px solid var(--vb);color:var(--v);padding:5px 14px;border-radius:99px;font-size:0.7rem;font-weight:600;font-family:var(--mono);margin-bottom:20px}
+.hero-strip h1{font-family:var(--mono);font-size:clamp(1.8rem,4vw,3rem);font-weight:900;letter-spacing:-0.01em;line-height:1.1;margin-bottom:10px}
+.hero-strip h1 .acc{color:var(--v)}
+.hero-strip .sub{color:var(--t2);font-size:0.9rem;max-width:480px;margin:0 auto 24px;line-height:1.7}
+
+/* ── CONNECT BAR ── */
+.connect-bar{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding-bottom:8px}
+.api-key-wrap{position:relative;display:flex;align-items:center}
+.api-key-wrap input{font-family:var(--mono);font-size:0.82rem;background:var(--s2);border:1px solid var(--b3);color:var(--t);padding:10px 44px 10px 14px;border-radius:8px;width:320px;outline:none;transition:0.2s}
+.api-key-wrap input:focus{border-color:var(--v);box-shadow:0 0 0 2px var(--vg)}
+.api-key-wrap input::placeholder{color:var(--t4)}
+.toggle-key{position:absolute;right:12px;background:none;border:none;color:var(--t4);cursor:pointer;font-size:0.9rem;padding:0;line-height:1}
+.toggle-key:hover{color:var(--t2)}
+.btn-connect{background:var(--v);color:#fff;border:none;padding:10px 22px;border-radius:8px;font-family:var(--mono);font-size:0.82rem;font-weight:700;cursor:pointer;transition:0.2s;display:flex;align-items:center;gap:7px}
+.btn-connect:hover{background:#9966ff;box-shadow:0 0 20px var(--vg)}
+.btn-connect.connected{background:var(--g)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--t4);flex-shrink:0;transition:0.3s}
+.status-dot.on{background:var(--g);box-shadow:0 0 8px var(--g);animation:pulse 2s infinite}
+.status-dot.err{background:var(--r)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+.status-label{font-family:var(--mono);font-size:0.72rem;color:var(--t3)}
+.status-label.on{color:var(--g)}
+.status-label.err{color:var(--r)}
+
+/* ── MAIN APP SHELL ── */
+#app{display:none;flex:1;overflow:hidden;height:calc(100vh - 56px);margin-top:56px;flex-direction:column}
+#app.visible{display:flex}
+.app-body{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* ── LEFT PALETTE ── */
+.palette{width:200px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:4px}
+.palette-title{font-family:var(--mono);font-size:0.6rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.12em;padding:4px 8px 8px}
+.palette-item{background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:9px 10px;cursor:grab;transition:0.15s;user-select:none;display:flex;align-items:flex-start;gap:8px}
+.palette-item:hover{border-color:var(--b3);background:var(--s3);transform:translateX(2px)}
+.palette-item:active{cursor:grabbing;transform:scale(0.97)}
+.palette-item .pi-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
+.palette-item .pi-text{}
+.palette-item .pi-name{font-family:var(--mono);font-size:0.72rem;font-weight:700;color:var(--t);line-height:1.2;margin-bottom:2px}
+.palette-item .pi-desc{font-size:0.62rem;color:var(--t4);line-height:1.4}
+.palette-item[data-type="memory-read"] .pi-name{color:var(--c)}
+.palette-item[data-type="memory-write"] .pi-name{color:var(--g)}
+.palette-item[data-type="dream-engine"] .pi-name{color:var(--v)}
+.palette-item[data-type="memory-search"] .pi-name{color:var(--o)}
+.palette-item[data-type="memory-list"] .pi-name{color:var(--t2)}
+.palette-item[data-type="transform"] .pi-name{color:var(--r)}
+.palette-drag-ghost{position:fixed;pointer-events:none;z-index:9999;opacity:0.9;transform:rotate(2deg) scale(1.05)}
+
+/* ── CANVAS AREA ── */
+.canvas-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
+.canvas-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s1);border-bottom:1px solid var(--b);flex-shrink:0}
+.canvas-toolbar .tb-label{font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-right:4px}
+.tb-btn{background:var(--s2);border:1px solid var(--b2);color:var(--t3);padding:6px 14px;border-radius:6px;font-family:var(--mono);font-size:0.72rem;font-weight:600;cursor:pointer;transition:0.15s;display:flex;align-items:center;gap:6px}
+.tb-btn:hover{border-color:var(--b3);color:var(--t)}
+.tb-btn.run{background:var(--g);color:#000;border-color:var(--g);font-weight:700}
+.tb-btn.run:hover{background:#00e673;box-shadow:0 0 16px var(--gg)}
+.tb-btn.run:disabled{background:var(--s3);color:var(--t4);border-color:var(--b2);cursor:not-allowed;box-shadow:none}
+.tb-btn.export{border-color:var(--cb);color:var(--c)}
+.tb-btn.export:hover{border-color:var(--c);background:var(--cg)}
+.tb-btn.clear{border-color:var(--rb);color:var(--r2)}
+.tb-btn.clear:hover{background:var(--rg)}
+.tb-spacer{flex:1}
+.node-count{font-family:var(--mono);font-size:0.65rem;color:var(--t4)}
+
+.canvas{flex:1;position:relative;overflow:hidden;background:var(--bg);background-image:radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px);background-size:24px 24px}
+.canvas.drag-over{background-color:rgba(136,85,255,0.02)}
+.canvas svg.arrows{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;overflow:visible}
+.canvas svg.arrows .arrow-path{stroke:var(--v);stroke-width:2;fill:none;opacity:0.6;marker-end:url(#arrowhead)}
+
+/* ── CANVAS NODES ── */
+.canvas-node{position:absolute;min-width:170px;background:var(--s1);border:1px solid var(--b2);border-radius:10px;z-index:10;cursor:move;user-select:none;transition:box-shadow 0.15s,border-color 0.15s;overflow:visible}
+.canvas-node:hover{border-color:var(--b3)}
+.canvas-node.selected{border-color:var(--v)!important;box-shadow:0 0 0 2px var(--vg),0 4px 24px rgba(0,0,0,0.4)}
+.canvas-node.running{border-color:var(--o)!important;box-shadow:0 0 0 2px var(--og)}
+.canvas-node.done{border-color:var(--g)!important;box-shadow:0 0 0 2px var(--gg)}
+.canvas-node.error{border-color:var(--r)!important;box-shadow:0 0 0 2px var(--rg)}
+.node-header{padding:9px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--b);border-radius:10px 10px 0 0}
+.node-header .nh-icon{font-size:1rem}
+.node-header .nh-title{font-family:var(--mono);font-size:0.72rem;font-weight:700;flex:1;line-height:1.2}
+.node-header .nh-status{width:7px;height:7px;border-radius:50%;background:var(--t4);flex-shrink:0;transition:0.3s}
+.node-header .nh-status.running{background:var(--o);animation:pulse 1s infinite}
+.node-header .nh-status.done{background:var(--g)}
+.node-header .nh-status.error{background:var(--r)}
+.node-body{padding:8px 12px 10px;font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:1.5}
+.node-body .nb-field{margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
+.node-body .nb-field span{color:var(--t3)}
+
+/* ports */
+.port{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid var(--b3);background:var(--s2);top:50%;transform:translateY(-50%);transition:0.15s;z-index:20;cursor:crosshair}
+.port:hover{transform:translateY(-50%) scale(1.4);border-color:var(--v);background:var(--v)}
+.port.input-port{left:-6px}
+.port.output-port{right:-6px}
+.port.connecting{background:var(--v);border-color:var(--v);animation:pulse 0.8s infinite}
+.port[data-type="memory-read"] .port{border-color:var(--cb)}
+.canvas-node[data-type="memory-read"] .output-port{border-color:var(--c)}
+.canvas-node[data-type="memory-write"] .output-port{border-color:var(--g)}
+.canvas-node[data-type="dream-engine"] .output-port{border-color:var(--v)}
+.canvas-node[data-type="memory-search"] .output-port{border-color:var(--o)}
+.canvas-node[data-type="transform"] .output-port{border-color:var(--r)}
+
+/* ── RIGHT CONFIG PANEL ── */
+.config-panel{width:280px;flex-shrink:0;background:var(--s1);border-left:1px solid var(--b);overflow-y:auto;display:flex;flex-direction:column}
+.config-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;color:var(--t4);text-align:center}
+.config-empty .ce-icon{font-size:2.5rem;opacity:0.3}
+.config-empty .ce-text{font-family:var(--mono);font-size:0.72rem;line-height:1.6}
+.config-header{padding:14px 16px 10px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.config-header .ch-icon{font-size:1.1rem}
+.config-header .ch-title{font-family:var(--mono);font-size:0.82rem;font-weight:700;flex:1}
+.config-header .ch-del{background:none;border:none;color:var(--t4);cursor:pointer;font-size:0.9rem;padding:4px;border-radius:4px;transition:0.15s;line-height:1}
+.config-header .ch-del:hover{color:var(--r);background:var(--rg)}
+.config-fields{padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:12px}
+.cf-group{display:flex;flex-direction:column;gap:5px}
+.cf-label{font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em}
+.cf-input{font-family:var(--mono);font-size:0.78rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:8px 10px;border-radius:6px;outline:none;width:100%;transition:0.2s}
+.cf-input:focus{border-color:var(--v);box-shadow:0 0 0 2px var(--vg)}
+.cf-input.error{border-color:var(--r)!important}
+.cf-input::placeholder{color:var(--t4)}
+.cf-textarea{font-family:var(--mono);font-size:0.75rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:8px 10px;border-radius:6px;outline:none;width:100%;resize:vertical;min-height:72px;transition:0.2s;line-height:1.5}
+.cf-textarea:focus{border-color:var(--v);box-shadow:0 0 0 2px var(--vg)}
+.cf-textarea.error{border-color:var(--r)!important}
+.cf-textarea::placeholder{color:var(--t4)}
+.cf-select{font-family:var(--mono);font-size:0.78rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:8px 10px;border-radius:6px;outline:none;width:100%;transition:0.2s;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.cf-select:focus{border-color:var(--v);box-shadow:0 0 0 2px var(--vg)}
+.cf-hint{font-size:0.62rem;color:var(--t4);line-height:1.5;font-family:var(--mono)}
+.cf-connected-badge{font-family:var(--mono);font-size:0.72rem;color:var(--g);background:var(--gg);border:1px solid var(--gb);padding:5px 10px;border-radius:5px;display:flex;align-items:center;gap:6px}
+.config-apply{margin:0 16px 16px;background:var(--v);color:#fff;border:none;padding:9px;border-radius:7px;font-family:var(--mono);font-size:0.75rem;font-weight:700;cursor:pointer;transition:0.2s;width:calc(100% - 32px)}
+.config-apply:hover{background:#9966ff}
+
+/* ── OUTPUT PANEL ── */
+.output-panel{background:var(--s1);border-top:1px solid var(--b);flex-shrink:0;display:flex;flex-direction:column;max-height:220px;transition:max-height 0.3s ease}
+.output-panel.collapsed{max-height:38px}
+.output-header{padding:8px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0;background:var(--s1);border-bottom:1px solid transparent;user-select:none}
+.output-panel:not(.collapsed) .output-header{border-bottom-color:var(--b)}
+.output-title{font-family:var(--mono);font-size:0.68rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:0.1em;flex:1}
+.output-toggle{font-size:0.6rem;color:var(--t4);transition:transform 0.2s}
+.output-panel.collapsed .output-toggle{transform:rotate(180deg)}
+.output-tabs{display:flex;gap:0;padding:0 14px;background:var(--s1);flex-shrink:0}
+.out-tab{font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--t4);padding:6px 14px;cursor:pointer;border-bottom:2px solid transparent;transition:0.15s}
+.out-tab.active{color:var(--t);border-bottom-color:var(--v)}
+.out-tab:hover:not(.active){color:var(--t2)}
+.output-body{flex:1;overflow-y:auto;padding:10px 14px;font-family:var(--mono);font-size:0.72rem;line-height:1.6;color:var(--t3)}
+.log-line{display:flex;gap:10px;margin-bottom:3px;align-items:flex-start}
+.log-ts{color:var(--t4);flex-shrink:0;font-size:0.65rem;padding-top:1px}
+.log-icon{flex-shrink:0;font-size:0.7rem}
+.log-msg{flex:1;word-break:break-word}
+.log-msg.info{color:var(--t2)}
+.log-msg.success{color:var(--g)}
+.log-msg.error{color:var(--r)}
+.log-msg.warn{color:var(--o)}
+.output-result{white-space:pre-wrap;color:var(--t2);font-size:0.72rem;line-height:1.6}
+.credits-display{display:flex;gap:20px;padding:4px 0}
+.cred-item{display:flex;flex-direction:column;gap:3px}
+.cred-label{font-size:0.6rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.08em}
+.cred-val{font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--o)}
+.empty-output{color:var(--t4);font-size:0.72rem;display:flex;flex-direction:column;align-items:center;justify-content:center;height:60px;gap:6px}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity 0.2s}
+.modal-overlay.open{opacity:1;pointer-events:all}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:14px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;transform:translateY(10px);transition:transform 0.2s}
+.modal-overlay.open .modal{transform:translateY(0)}
+.modal-head{padding:18px 20px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-head h2{font-family:var(--mono);font-size:0.95rem;font-weight:800}
+.modal-close{background:none;border:none;color:var(--t4);cursor:pointer;font-size:1.1rem;padding:4px 8px;border-radius:4px;transition:0.15s;font-family:var(--mono)}
+.modal-close:hover{color:var(--r);background:var(--rg)}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-body pre{background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:16px;font-family:var(--mono);font-size:0.72rem;line-height:1.7;color:var(--t2);overflow-x:auto;white-space:pre-wrap;word-break:break-word}
+.modal-body pre .kw{color:var(--v)}
+.modal-body pre .str{color:var(--g)}
+.modal-body pre .comment{color:var(--t4)}
+.modal-copy{margin-top:12px;background:var(--s2);border:1px solid var(--b2);color:var(--t2);padding:9px 20px;border-radius:7px;font-family:var(--mono);font-size:0.75rem;font-weight:600;cursor:pointer;transition:0.15s}
+.modal-copy:hover{border-color:var(--c);color:var(--c)}
+
+/* ── TEMP CONNECTION LINE ── */
+#temp-line{position:fixed;pointer-events:none;z-index:9999}
+
+/* ── TOAST ── */
+.toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--s2);border:1px solid var(--b3);border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:0.75rem;color:var(--t2);box-shadow:0 4px 20px rgba(0,0,0,0.5);animation:slideIn 0.2s ease,fadeOut 0.3s ease 2.7s forwards;display:flex;align-items:center;gap:8px}
+.toast.success{border-color:var(--gb);color:var(--g)}
+.toast.error{border-color:var(--rb);color:var(--r2)}
+@keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+@keyframes fadeOut{to{opacity:0;transform:translateY(8px)}}
+
+/* ── SPINNER ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spinner{width:12px;height:12px;border:2px solid rgba(255,255,255,0.15);border-top-color:currentColor;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;flex-shrink:0}
+
+/* ── HERO LANDING (before connect) ── */
+#landing{padding:88px 32px 48px;text-align:center}
+.sample-preview{margin-top:24px;display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;opacity:0.5}
+.sp-node{background:var(--s2);border:1px solid var(--b2);border-radius:7px;padding:6px 12px;font-family:var(--mono);font-size:0.68rem;color:var(--t3)}
+.sp-arrow{color:var(--t4);font-size:0.8rem}
+
+/* ── RESPONSIVE MOBILE ── */
+@media(max-width:768px){
+  nav{padding:0 16px;height:50px}
+  .nav-links a:not(.signup){display:none}
+  .hero-strip{padding:66px 16px 24px}
+  .api-key-wrap input{width:220px}
+  #app{margin-top:50px;height:calc(100vh - 50px)}
+  .app-body{flex-direction:column}
+  .palette{width:100%;max-height:120px;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;border-right:none;border-bottom:1px solid var(--b);padding:8px}
+  .palette-title{display:none}
+  .palette-item{min-width:130px;flex-direction:row}
+  .config-panel{width:100%;max-height:200px;border-left:none;border-top:1px solid var(--b)}
+  .canvas-wrap{min-height:200px}
+}
+@media(max-width:480px){
+  .connect-bar{flex-direction:column}
+  .api-key-wrap input{width:100%;max-width:300px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav><div class="nv">
+  <a href="/" class="logo"><span class="mark">SLOPSHOP.gg</span><span class="vtag">v4.0</span></a>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/tools">Tools</a>
+    <a href="/docs">Docs</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/playground" class="active">Playground</a>
+    <a href="/signup" class="signup">Sign Up Free</a>
+  </div>
+</div></nav>
+
+<!-- HERO STRIP (always visible) -->
+<div class="hero-strip" id="heroStrip">
+  <div class="hero-tag">✦ No-Code Builder — Beta</div>
+  <h1><span class="acc">No-Code</span> Memory Builder</h1>
+  <p class="sub">Drag, drop, and connect Memory &amp; Dream Engine nodes into live workflows. No code required — runs real API calls.</p>
+  <div class="connect-bar">
+    <div class="api-key-wrap">
+      <input type="password" id="apiKeyInput" placeholder="sk-slop-..." autocomplete="off" spellcheck="false">
+      <button class="toggle-key" id="toggleKey" title="Show/hide key">👁</button>
+    </div>
+    <button class="btn-connect" id="connectBtn">⚡ Connect</button>
+    <div style="display:flex;align-items:center;gap:7px;margin-left:4px">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-label" id="statusLabel">Disconnected</span>
+    </div>
+  </div>
+  <div class="sample-preview">
+    <span class="sp-node">🔍 Memory Search</span>
+    <span class="sp-arrow">→</span>
+    <span class="sp-node">🌙 Dream Engine</span>
+    <span class="sp-arrow">→</span>
+    <span class="sp-node">💾 Memory Write</span>
+  </div>
+</div>
+
+<!-- MAIN APP (hidden until connected) -->
+<div id="app">
+  <div class="app-body">
+
+    <!-- LEFT: PALETTE -->
+    <div class="palette" id="palette">
+      <div class="palette-title">Components</div>
+      <div class="palette-item" data-type="memory-read" draggable="true">
+        <span class="pi-icon">🧠</span>
+        <div class="pi-text">
+          <div class="pi-name">Memory Read</div>
+          <div class="pi-desc">Read a key from namespace</div>
+        </div>
+      </div>
+      <div class="palette-item" data-type="memory-write" draggable="true">
+        <span class="pi-icon">💾</span>
+        <div class="pi-text">
+          <div class="pi-name">Memory Write</div>
+          <div class="pi-desc">Write key/value to namespace</div>
+        </div>
+      </div>
+      <div class="palette-item" data-type="dream-engine" draggable="true">
+        <span class="pi-icon">🌙</span>
+        <div class="pi-text">
+          <div class="pi-name">Dream Engine</div>
+          <div class="pi-desc">Run a dream strategy</div>
+        </div>
+      </div>
+      <div class="palette-item" data-type="memory-search" draggable="true">
+        <span class="pi-icon">🔍</span>
+        <div class="pi-text">
+          <div class="pi-name">Memory Search</div>
+          <div class="pi-desc">Semantic search in memory</div>
+        </div>
+      </div>
+      <div class="palette-item" data-type="memory-list" draggable="true">
+        <span class="pi-icon">📋</span>
+        <div class="pi-text">
+          <div class="pi-name">Memory List</div>
+          <div class="pi-desc">List all keys in namespace</div>
+        </div>
+      </div>
+      <div class="palette-item" data-type="transform" draggable="true">
+        <span class="pi-icon">🔄</span>
+        <div class="pi-text">
+          <div class="pi-name">Transform</div>
+          <div class="pi-desc">Summarize, extract, expand</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CENTER: CANVAS -->
+    <div class="canvas-wrap">
+      <div class="canvas-toolbar">
+        <span class="tb-label">WORKFLOW</span>
+        <button class="tb-btn clear" id="btnClear">✕ Clear All</button>
+        <button class="tb-btn run" id="btnRun">▶ Run Workflow</button>
+        <button class="tb-btn export" id="btnExport">⟨/⟩ Export Code</button>
+        <div class="tb-spacer"></div>
+        <span class="node-count" id="nodeCount">0 nodes</span>
+      </div>
+      <div class="canvas" id="canvas" ondragover="event.preventDefault()" ondrop="handleCanvasDrop(event)">
+        <svg class="arrows" id="arrowSvg">
+          <defs>
+            <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#8855ff" opacity="0.8"/>
+            </marker>
+          </defs>
+        </svg>
+      </div>
+    </div>
+
+    <!-- RIGHT: CONFIG PANEL -->
+    <div class="config-panel" id="configPanel">
+      <div class="config-empty" id="configEmpty">
+        <div class="ce-icon">⚙️</div>
+        <div class="ce-text">Click a node to configure it.<br><br>Drag components from the left panel onto the canvas.</div>
+      </div>
+      <div id="configContent" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+        <div class="config-header" id="configHeader">
+          <span class="ch-icon" id="configIcon"></span>
+          <span class="ch-title" id="configTitle"></span>
+          <button class="ch-del" id="configDelete" title="Delete node">✕</button>
+        </div>
+        <div class="config-fields" id="configFields"></div>
+        <button class="config-apply" id="configApply">Apply Changes</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- OUTPUT PANEL -->
+  <div class="output-panel collapsed" id="outputPanel">
+    <div class="output-header" id="outputHeader">
+      <span class="output-title">▸ Output &amp; Logs</span>
+      <span id="outputCreditsInline" style="font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-right:8px"></span>
+      <span class="output-toggle">▲</span>
+    </div>
+    <div class="output-tabs" id="outputTabs" style="display:none">
+      <div class="out-tab active" data-tab="log">Log</div>
+      <div class="out-tab" data-tab="result">Result</div>
+      <div class="out-tab" data-tab="credits">Credits</div>
+    </div>
+    <div class="output-body" id="outputBody">
+      <div class="empty-output">
+        <span style="font-size:1.5rem;opacity:0.3">📋</span>
+        <span>Run a workflow to see output here.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EXPORT MODAL -->
+<div class="modal-overlay" id="exportModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>⟨/⟩ Export as JavaScript</h2>
+      <button class="modal-close" id="exportClose">✕</button>
+    </div>
+    <div class="modal-body">
+      <pre id="exportCode"></pre>
+      <button class="modal-copy" id="exportCopy">📋 Copy to Clipboard</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST CONTAINER -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════
+const API_BASE = 'https://slopshop-production.up.railway.app/v1';
+let apiKey = '';
+let nodes = {}; // id → {id, type, x, y, config, el}
+let connections = []; // [{from: nodeId, to: nodeId}]
+let selectedNodeId = null;
+let nodeCounter = 0;
+let connectingFrom = null; // {nodeId, portEl}
+let currentTab = 'log';
+let lastResult = null;
+let totalCreditsUsed = 0;
+let execLog = [];
+
+// Node metadata
+const NODE_META = {
+  'memory-read':   {icon:'🧠', name:'Memory Read',   color:'var(--c)', endpoint:'/memory/read'},
+  'memory-write':  {icon:'💾', name:'Memory Write',  color:'var(--g)', endpoint:'/memory/write'},
+  'dream-engine':  {icon:'🌙', name:'Dream Engine',  color:'var(--v)', endpoint:'/memory/dream/start'},
+  'memory-search': {icon:'🔍', name:'Memory Search', color:'var(--o)', endpoint:'/memory/search'},
+  'memory-list':   {icon:'📋', name:'Memory List',   color:'var(--t2)',endpoint:'/memory/list'},
+  'transform':     {icon:'🔄', name:'Transform',     color:'var(--r)', endpoint:null},
+};
+
+const NODE_DEFAULTS = {
+  'memory-read':   {namespace:'agent', key:''},
+  'memory-write':  {namespace:'agent', key:'', value:''},
+  'dream-engine':  {namespace:'agent', strategy:'synthesize', topic:''},
+  'memory-search': {namespace:'agent', query:'', limit:5},
+  'memory-list':   {namespace:'agent', limit:20},
+  'transform':     {operation:'summarize'},
+};
+
+// ═══════════════════════════════════════════════════════════════
+// CONNECT
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('toggleKey').addEventListener('click', () => {
+  const inp = document.getElementById('apiKeyInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+});
+
+document.getElementById('connectBtn').addEventListener('click', async () => {
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) { toast('Enter your API key first', 'error'); return; }
+  apiKey = key;
+  setStatus('connecting');
+  try {
+    const r = await fetch(`${API_BASE}/memory/list`, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
+      body: JSON.stringify({namespace:'__ping__', limit:1})
+    });
+    if (r.status === 401) throw new Error('Invalid API key');
+    setStatus('connected');
+    showApp();
+    toast('Connected! Loading sample workflow...', 'success');
+    setTimeout(loadSampleWorkflow, 300);
+  } catch(e) {
+    setStatus('error');
+    toast(e.message || 'Connection failed', 'error');
+  }
+});
+
+function setStatus(s) {
+  const dot = document.getElementById('statusDot');
+  const lbl = document.getElementById('statusLabel');
+  const btn = document.getElementById('connectBtn');
+  dot.className = 'status-dot' + (s === 'connected' ? ' on' : s === 'error' ? ' err' : '');
+  lbl.className = 'status-label' + (s === 'connected' ? ' on' : s === 'error' ? ' err' : '');
+  lbl.textContent = s === 'connected' ? 'Connected' : s === 'error' ? 'Error' : s === 'connecting' ? 'Connecting...' : 'Disconnected';
+  if (s === 'connected') { btn.className = 'btn-connect connected'; btn.textContent = '✓ Connected'; }
+  if (s === 'connecting') { btn.innerHTML = '<span class="spinner"></span> Connecting...'; btn.className = 'btn-connect'; }
+  if (s === 'error') { btn.textContent = '⚡ Retry'; btn.className = 'btn-connect'; }
+}
+
+function showApp() {
+  document.getElementById('heroStrip').style.display = 'none';
+  const app = document.getElementById('app');
+  app.classList.add('visible');
+  updateArrows();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// SAMPLE WORKFLOW
+// ═══════════════════════════════════════════════════════════════
+function loadSampleWorkflow() {
+  const canvas = document.getElementById('canvas');
+  const cw = canvas.offsetWidth, ch = canvas.offsetHeight;
+  const startX = Math.max(40, (cw - 600) / 2);
+  const y = Math.max(80, ch / 2 - 70);
+
+  const n1 = createNode('memory-search', startX, y);
+  n1.config = {namespace:'agent', query:'recent insights', limit:5};
+  updateNodeBody(n1);
+
+  const n2 = createNode('dream-engine', startX + 210, y);
+  n2.config = {namespace:'agent', strategy:'synthesize', topic:'insights summary'};
+  updateNodeBody(n2);
+
+  const n3 = createNode('memory-write', startX + 420, y);
+  n3.config = {namespace:'agent', key:'synthesis_result', value:''};
+  updateNodeBody(n3);
+
+  connections.push({from: n1.id, to: n2.id});
+  connections.push({from: n2.id, to: n3.id});
+
+  updateArrows();
+  updateNodeCount();
+  logMsg('Sample workflow loaded. Configure namespaces and click Run Workflow.', 'info');
+  openOutput();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NODE CREATION
+// ═══════════════════════════════════════════════════════════════
+function createNode(type, x, y) {
+  const id = `node_${++nodeCounter}`;
+  const meta = NODE_META[type];
+  const config = Object.assign({}, NODE_DEFAULTS[type]);
+  const el = document.createElement('div');
+  el.className = 'canvas-node';
+  el.dataset.id = id;
+  el.dataset.type = type;
+  el.style.left = x + 'px';
+  el.style.top  = y + 'px';
+
+  el.innerHTML = `
+    <div class="node-header">
+      <span class="nh-icon">${meta.icon}</span>
+      <span class="nh-title" style="color:${meta.color}">${meta.name}</span>
+      <span class="nh-status" id="ns_${id}"></span>
+    </div>
+    <div class="node-body" id="nb_${id}">
+      <div class="nb-field" style="color:var(--t4)">Click to configure</div>
+    </div>
+    <div class="port input-port" id="ip_${id}" title="Input port"></div>
+    <div class="port output-port" id="op_${id}" title="Output port"></div>
+  `;
+
+  // Node click → select
+  el.addEventListener('mousedown', (e) => {
+    if (e.target.classList.contains('port')) return;
+    e.stopPropagation();
+    startDragNode(e, id);
+  });
+  el.addEventListener('click', (e) => {
+    if (e.target.classList.contains('port')) return;
+    selectNode(id);
+  });
+  el.addEventListener('dblclick', (e) => {
+    if (e.target.classList.contains('port')) return;
+    deleteNode(id);
+  });
+
+  // Port interactions
+  const outPort = el.querySelector(`#op_${id}`);
+  const inPort  = el.querySelector(`#ip_${id}`);
+
+  outPort.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+    e.preventDefault();
+    startConnecting(id, outPort, e);
+  });
+
+  inPort.addEventListener('mouseup', (e) => {
+    e.stopPropagation();
+    finishConnecting(id);
+  });
+
+  document.getElementById('canvas').appendChild(el);
+
+  const node = {id, type, x, y, config, el, status:'idle'};
+  nodes[id] = node;
+  return node;
+}
+
+function updateNodeBody(node) {
+  const el = document.getElementById(`nb_${node.id}`);
+  if (!el) return;
+  const cfg = node.config;
+  let lines = [];
+  if (cfg.namespace) lines.push(`<span style="color:var(--t4)">ns:</span> <span style="color:var(--t2)">${esc(cfg.namespace)}</span>`);
+  if (cfg.key)       lines.push(`<span style="color:var(--t4)">key:</span> <span style="color:var(--t2)">${esc(cfg.key.substring(0,16))}</span>`);
+  if (cfg.query)     lines.push(`<span style="color:var(--t4)">q:</span> <span style="color:var(--t2)">${esc(cfg.query.substring(0,16))}</span>`);
+  if (cfg.strategy)  lines.push(`<span style="color:var(--t4)">strat:</span> <span style="color:var(--v)">${esc(cfg.strategy)}</span>`);
+  if (cfg.operation) lines.push(`<span style="color:var(--t4)">op:</span> <span style="color:var(--r)">${esc(cfg.operation)}</span>`);
+  if (cfg.limit)     lines.push(`<span style="color:var(--t4)">limit:</span> ${cfg.limit}`);
+  el.innerHTML = lines.length ? lines.map(l=>`<div class="nb-field">${l}</div>`).join('') : '<div class="nb-field" style="color:var(--t4)">Unconfigured</div>';
+}
+
+function setNodeStatus(id, status) {
+  const node = nodes[id];
+  if (!node) return;
+  node.status = status;
+  node.el.className = 'canvas-node' + (selectedNodeId === id ? ' selected' : '') + (status !== 'idle' ? ` ${status}` : '');
+  const dot = document.getElementById(`ns_${id}`);
+  if (dot) dot.className = 'nh-status ' + status;
+}
+
+function deleteNode(id) {
+  const node = nodes[id];
+  if (!node) return;
+  node.el.remove();
+  delete nodes[id];
+  connections = connections.filter(c => c.from !== id && c.to !== id);
+  if (selectedNodeId === id) { selectedNodeId = null; showConfigEmpty(); }
+  updateArrows();
+  updateNodeCount();
+  toast('Node deleted', '');
+}
+
+function updateNodeCount() {
+  const n = Object.keys(nodes).length;
+  document.getElementById('nodeCount').textContent = `${n} node${n !== 1 ? 's' : ''}`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAG FROM PALETTE
+// ═══════════════════════════════════════════════════════════════
+let dragType = null;
+let ghostEl = null;
+
+document.querySelectorAll('.palette-item').forEach(item => {
+  item.addEventListener('dragstart', (e) => {
+    dragType = item.dataset.type;
+    e.dataTransfer.setData('text/plain', dragType);
+    e.dataTransfer.effectAllowed = 'copy';
+    // ghost
+    const meta = NODE_META[dragType];
+    ghostEl = document.createElement('div');
+    ghostEl.className = 'canvas-node palette-drag-ghost';
+    ghostEl.style.width = '160px';
+    ghostEl.innerHTML = `<div class="node-header"><span class="nh-icon">${meta.icon}</span><span class="nh-title" style="color:${meta.color}">${meta.name}</span></div>`;
+    document.body.appendChild(ghostEl);
+    ghostEl.style.left = '-9999px';
+    ghostEl.style.top = '-9999px';
+    e.dataTransfer.setDragImage(ghostEl, 80, 24);
+  });
+  item.addEventListener('dragend', () => {
+    if (ghostEl) { ghostEl.remove(); ghostEl = null; }
+  });
+});
+
+function handleCanvasDrop(e) {
+  e.preventDefault();
+  const type = e.dataTransfer.getData('text/plain') || dragType;
+  if (!type || !NODE_META[type]) return;
+  const canvas = document.getElementById('canvas');
+  const rect = canvas.getBoundingClientRect();
+  const x = e.clientX - rect.left - 85;
+  const y = e.clientY - rect.top - 30;
+  const node = createNode(type, Math.max(8, x), Math.max(8, y));
+  selectNode(node.id);
+  updateNodeCount();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DRAG NODES ON CANVAS
+// ═══════════════════════════════════════════════════════════════
+let draggingNode = null, dragOffX = 0, dragOffY = 0;
+
+function startDragNode(e, id) {
+  if (e.button !== 0) return;
+  draggingNode = id;
+  const node = nodes[id];
+  const rect = node.el.getBoundingClientRect();
+  const canvas = document.getElementById('canvas');
+  const cr = canvas.getBoundingClientRect();
+  dragOffX = e.clientX - rect.left;
+  dragOffY = e.clientY - rect.top;
+  node.el.style.cursor = 'grabbing';
+  e.preventDefault();
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (draggingNode) {
+    const node = nodes[draggingNode];
+    if (!node) { draggingNode = null; return; }
+    const canvas = document.getElementById('canvas');
+    const cr = canvas.getBoundingClientRect();
+    const nx = e.clientX - cr.left - dragOffX;
+    const ny = e.clientY - cr.top - dragOffY;
+    node.x = Math.max(4, nx);
+    node.y = Math.max(4, ny);
+    node.el.style.left = node.x + 'px';
+    node.el.style.top  = node.y + 'px';
+    updateArrows();
+  }
+  if (connectingFrom) {
+    drawTempLine(e.clientX, e.clientY);
+  }
+});
+
+document.addEventListener('mouseup', (e) => {
+  if (draggingNode) {
+    const node = nodes[draggingNode];
+    if (node) node.el.style.cursor = 'move';
+    draggingNode = null;
+  }
+  if (connectingFrom) {
+    cancelConnecting();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PORT CONNECTIONS
+// ═══════════════════════════════════════════════════════════════
+let tempSvg = null;
+
+function startConnecting(nodeId, portEl, e) {
+  connectingFrom = {nodeId, portEl};
+  portEl.classList.add('connecting');
+  // create temp SVG overlay
+  tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  tempSvg.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:9998;overflow:visible';
+  document.body.appendChild(tempSvg);
+}
+
+function drawTempLine(mx, my) {
+  if (!connectingFrom || !tempSvg) return;
+  const portRect = connectingFrom.portEl.getBoundingClientRect();
+  const x1 = portRect.left + portRect.width / 2;
+  const y1 = portRect.top + portRect.height / 2;
+  const dx = (mx - x1) * 0.5;
+  tempSvg.innerHTML = `
+    <defs><marker id="th" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+      <polygon points="0 0, 8 3, 0 6" fill="#8855ff" opacity="0.7"/>
+    </marker></defs>
+    <path d="M${x1},${y1} C${x1+dx},${y1} ${mx-dx},${my} ${mx},${my}"
+      stroke="#8855ff" stroke-width="2" fill="none" opacity="0.6" stroke-dasharray="5,3"
+      marker-end="url(#th)"/>
+  `;
+}
+
+function finishConnecting(toNodeId) {
+  if (!connectingFrom) return;
+  const fromId = connectingFrom.nodeId;
+  if (fromId !== toNodeId) {
+    // Remove duplicate
+    connections = connections.filter(c => !(c.from === fromId && c.to === toNodeId));
+    connections.push({from: fromId, to: toNodeId});
+    updateArrows();
+    toast('Nodes connected', 'success');
+  }
+  cancelConnecting();
+}
+
+function cancelConnecting() {
+  if (connectingFrom) {
+    connectingFrom.portEl.classList.remove('connecting');
+    connectingFrom = null;
+  }
+  if (tempSvg) { tempSvg.remove(); tempSvg = null; }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ARROWS (SVG)
+// ═══════════════════════════════════════════════════════════════
+function updateArrows() {
+  const svg = document.getElementById('arrowSvg');
+  const canvas = document.getElementById('canvas');
+  const cr = canvas.getBoundingClientRect();
+  let paths = '';
+  for (const conn of connections) {
+    const from = nodes[conn.from];
+    const to   = nodes[conn.to];
+    if (!from || !to) continue;
+    const op = document.getElementById(`op_${conn.from}`);
+    const ip = document.getElementById(`ip_${conn.to}`);
+    if (!op || !ip) continue;
+    const or = op.getBoundingClientRect();
+    const ir = ip.getBoundingClientRect();
+    const x1 = or.left + or.width/2 - cr.left;
+    const y1 = or.top + or.height/2 - cr.top;
+    const x2 = ir.left + ir.width/2 - cr.left;
+    const y2 = ir.top + ir.height/2 - cr.top;
+    const dx = Math.abs(x2 - x1) * 0.5;
+    paths += `<path class="arrow-path" d="M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}"/>`;
+  }
+  svg.innerHTML = `<defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8855ff" opacity="0.8"/></marker></defs>${paths}`;
+}
+
+window.addEventListener('resize', updateArrows);
+
+// ═══════════════════════════════════════════════════════════════
+// CONFIG PANEL
+// ═══════════════════════════════════════════════════════════════
+function selectNode(id) {
+  if (selectedNodeId && nodes[selectedNodeId]) {
+    setNodeStatus(selectedNodeId, nodes[selectedNodeId].status);
+    nodes[selectedNodeId].el.classList.remove('selected');
+  }
+  selectedNodeId = id;
+  nodes[id].el.classList.add('selected');
+  renderConfigPanel(id);
+}
+
+function showConfigEmpty() {
+  document.getElementById('configEmpty').style.display = 'flex';
+  document.getElementById('configContent').style.display = 'none';
+}
+
+function renderConfigPanel(id) {
+  const node = nodes[id];
+  if (!node) return;
+  const meta = NODE_META[node.type];
+  document.getElementById('configEmpty').style.display = 'none';
+  const cc = document.getElementById('configContent');
+  cc.style.display = 'flex';
+  cc.style.flexDirection = 'column';
+  cc.style.overflow = 'hidden';
+  document.getElementById('configIcon').textContent = meta.icon;
+  document.getElementById('configTitle').textContent = meta.name;
+  document.getElementById('configDelete').onclick = () => { deleteNode(id); };
+  document.getElementById('configApply').onclick = () => { applyConfig(id); };
+
+  const fields = document.getElementById('configFields');
+  fields.innerHTML = buildConfigFields(node);
+}
+
+function buildConfigFields(node) {
+  const c = node.config;
+  const t = node.type;
+  let html = '';
+  const inp = (name, label, val, ph='', hint='') =>
+    `<div class="cf-group">
+      <label class="cf-label">${label}</label>
+      <input class="cf-input" id="cf_${name}" data-field="${name}" value="${esc(val||'')}" placeholder="${ph}">
+      ${hint ? `<span class="cf-hint">${hint}</span>` : ''}
+    </div>`;
+  const area = (name, label, val, ph='') =>
+    `<div class="cf-group">
+      <label class="cf-label">${label}</label>
+      <textarea class="cf-textarea" id="cf_${name}" data-field="${name}" placeholder="${ph}">${esc(val||'')}</textarea>
+    </div>`;
+  const sel = (name, label, val, opts) =>
+    `<div class="cf-group">
+      <label class="cf-label">${label}</label>
+      <select class="cf-select" id="cf_${name}" data-field="${name}">
+        ${opts.map(o=>`<option value="${o.v}" ${val===o.v?'selected':''}>${o.l}</option>`).join('')}
+      </select>
+    </div>`;
+
+  if (t === 'memory-read') {
+    html += inp('namespace','Namespace', c.namespace,'agent','Memory namespace to read from');
+    html += inp('key','Key', c.key,'my-key','Key to retrieve');
+  } else if (t === 'memory-write') {
+    html += inp('namespace','Namespace', c.namespace,'agent');
+    html += inp('key','Key', c.key,'my-key');
+    const connIn = connections.find(x => x.to === node.id);
+    if (connIn) {
+      html += `<div class="cf-group"><label class="cf-label">Value</label><div class="cf-connected-badge">⚡ From connected node</div><span class="cf-hint">Value will be the output of the upstream node.</span></div>`;
+    } else {
+      html += area('value','Value', c.value,'Enter value or connect a node...');
+    }
+  } else if (t === 'dream-engine') {
+    html += inp('namespace','Namespace', c.namespace,'agent');
+    html += sel('strategy','Strategy', c.strategy, [
+      {v:'synthesize',l:'Synthesize'},
+      {v:'compress',l:'Compress'},
+      {v:'pattern_extract',l:'Pattern Extract'},
+      {v:'insight_generate',l:'Insight Generate'},
+      {v:'associate',l:'Associate'},
+    ]);
+    html += inp('topic','Topic', c.topic,'summary of recent events','Optional focus topic for the dream');
+  } else if (t === 'memory-search') {
+    html += inp('namespace','Namespace', c.namespace,'agent');
+    html += inp('query','Query', c.query,'search term','Semantic search query');
+    html += inp('limit','Limit', c.limit,'5','Max results (1-50)');
+  } else if (t === 'memory-list') {
+    html += inp('namespace','Namespace', c.namespace,'agent');
+    html += inp('limit','Limit', c.limit,'20','Max keys to return');
+  } else if (t === 'transform') {
+    const connIn = connections.find(x => x.to === node.id);
+    html += sel('operation','Operation', c.operation, [
+      {v:'summarize',l:'Summarize'},
+      {v:'extract_keywords',l:'Extract Keywords'},
+      {v:'sentiment',l:'Sentiment Analysis'},
+      {v:'expand',l:'Expand / Elaborate'},
+    ]);
+    if (connIn) {
+      html += `<div class="cf-group"><label class="cf-label">Input</label><div class="cf-connected-badge">⚡ From connected node</div></div>`;
+    } else {
+      html += area('input_text','Input Text', c.input_text || '','Paste text or connect upstream node...');
+    }
+  }
+  return html;
+}
+
+function applyConfig(id) {
+  const node = nodes[id];
+  if (!node) return;
+  const fields = document.getElementById('configFields').querySelectorAll('[data-field]');
+  fields.forEach(f => {
+    node.config[f.dataset.field] = f.value;
+    f.classList.remove('error');
+  });
+  updateNodeBody(node);
+  toast('Config saved', 'success');
+}
+
+// Clicking canvas deselects
+document.getElementById('canvas').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('canvas') || e.target === document.getElementById('arrowSvg')) {
+    if (selectedNodeId) {
+      nodes[selectedNodeId]?.el.classList.remove('selected');
+      selectedNodeId = null;
+      showConfigEmpty();
+    }
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// CLEAR ALL
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('btnClear').addEventListener('click', () => {
+  if (Object.keys(nodes).length === 0) return;
+  if (!confirm('Clear all nodes and connections?')) return;
+  Object.values(nodes).forEach(n => n.el.remove());
+  nodes = {};
+  connections = [];
+  selectedNodeId = null;
+  showConfigEmpty();
+  updateArrows();
+  updateNodeCount();
+  toast('Canvas cleared', '');
+});
+
+// ═══════════════════════════════════════════════════════════════
+// TOPOLOGICAL SORT
+// ═══════════════════════════════════════════════════════════════
+function topoSort() {
+  const ids = Object.keys(nodes);
+  const inDeg = {};
+  const adj = {};
+  ids.forEach(id => { inDeg[id] = 0; adj[id] = []; });
+  connections.forEach(c => {
+    if (nodes[c.from] && nodes[c.to]) {
+      adj[c.from].push(c.to);
+      inDeg[c.to]++;
+    }
+  });
+  const queue = ids.filter(id => inDeg[id] === 0);
+  const order = [];
+  while (queue.length) {
+    const cur = queue.shift();
+    order.push(cur);
+    adj[cur].forEach(nb => { if (--inDeg[nb] === 0) queue.push(nb); });
+  }
+  return order.length === ids.length ? order : null; // null = cycle
+}
+
+// ═══════════════════════════════════════════════════════════════
+// VALIDATE
+// ═══════════════════════════════════════════════════════════════
+function validateNodes() {
+  let valid = true;
+  Object.values(nodes).forEach(node => {
+    const cfg = node.config;
+    const t = node.type;
+    let required = ['namespace'];
+    if (t === 'memory-read')   required = ['namespace','key'];
+    if (t === 'memory-write')  required = ['namespace','key'];
+    if (t === 'memory-search') required = ['namespace','query'];
+    if (t === 'dream-engine')  required = ['namespace','strategy'];
+    required.forEach(f => {
+      if (!cfg[f] || cfg[f].toString().trim() === '') {
+        node.el.classList.add('error');
+        valid = false;
+        logMsg(`Node "${NODE_META[node.type].name}" missing required field: ${f}`, 'error');
+      } else {
+        node.el.classList.remove('error');
+      }
+    });
+  });
+  return valid;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RUN WORKFLOW
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('btnRun').addEventListener('click', runWorkflow);
+
+async function runWorkflow() {
+  if (Object.keys(nodes).length === 0) { toast('Add nodes first', 'error'); return; }
+  const order = topoSort();
+  if (!order) { toast('Cycle detected in workflow', 'error'); logMsg('Workflow has a cycle — cannot execute', 'error'); return; }
+  if (!validateNodes()) { toast('Fix missing fields (shown in red)', 'error'); openOutput(); return; }
+
+  const btn = document.getElementById('btnRun');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Running...';
+  openOutput();
+  execLog = [];
+  lastResult = null;
+  totalCreditsUsed = 0;
+  renderLog();
+
+  const nodeOutputs = {}; // id → output data
+
+  logMsg('Starting workflow execution...', 'info');
+
+  for (const id of order) {
+    const node = nodes[id];
+    if (!node) continue;
+    setNodeStatus(id, 'running');
+    logMsg(`Running: ${NODE_META[node.type].name} (${id})`, 'info');
+
+    // Determine input from upstream
+    const upstream = connections.find(c => c.to === id);
+    const upstreamOutput = upstream ? nodeOutputs[upstream.from] : null;
+
+    try {
+      const result = await executeNode(node, upstreamOutput);
+      nodeOutputs[id] = result;
+      setNodeStatus(id, 'done');
+      logMsg(`✓ ${NODE_META[node.type].name} done`, 'success');
+      lastResult = result;
+      if (result && result.credits_used) {
+        totalCreditsUsed += result.credits_used;
+      }
+    } catch(e) {
+      setNodeStatus(id, 'error');
+      logMsg(`✗ ${NODE_META[node.type].name}: ${e.message}`, 'error');
+      break;
+    }
+  }
+
+  renderLog();
+  renderResult();
+  renderCredits();
+  btn.disabled = false;
+  btn.innerHTML = '▶ Run Workflow';
+  toast('Workflow complete', 'success');
+}
+
+async function executeNode(node, upstreamData) {
+  const cfg = node.config;
+  const t = node.type;
+  const headers = {'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`};
+
+  if (t === 'memory-read') {
+    const r = await fetch(`${API_BASE}/memory/read`, {
+      method:'POST', headers,
+      body: JSON.stringify({namespace: cfg.namespace, key: cfg.key})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    return d;
+  }
+
+  if (t === 'memory-write') {
+    const value = upstreamData
+      ? (typeof upstreamData === 'string' ? upstreamData : JSON.stringify(upstreamData))
+      : cfg.value;
+    const r = await fetch(`${API_BASE}/memory/write`, {
+      method:'POST', headers,
+      body: JSON.stringify({namespace: cfg.namespace, key: cfg.key, value})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    return d;
+  }
+
+  if (t === 'memory-search') {
+    const r = await fetch(`${API_BASE}/memory/search`, {
+      method:'POST', headers,
+      body: JSON.stringify({namespace: cfg.namespace, query: cfg.query, limit: parseInt(cfg.limit)||5})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    return d;
+  }
+
+  if (t === 'memory-list') {
+    const r = await fetch(`${API_BASE}/memory/list`, {
+      method:'POST', headers,
+      body: JSON.stringify({namespace: cfg.namespace, limit: parseInt(cfg.limit)||20})
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    return d;
+  }
+
+  if (t === 'dream-engine') {
+    const body = {namespace: cfg.namespace, strategy: cfg.strategy};
+    if (cfg.topic) body.topic = cfg.topic;
+    if (upstreamData) body.context = typeof upstreamData === 'string' ? upstreamData : JSON.stringify(upstreamData);
+    const r = await fetch(`${API_BASE}/memory/dream/start`, {
+      method:'POST', headers, body: JSON.stringify(body)
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    // Poll status
+    if (d.dream_id || d.id) {
+      return await pollDream(d.dream_id || d.id, headers);
+    }
+    return d;
+  }
+
+  if (t === 'transform') {
+    const input = upstreamData
+      ? (typeof upstreamData === 'string' ? upstreamData : JSON.stringify(upstreamData, null, 2))
+      : cfg.input_text || '';
+    const r = await fetch(`${API_BASE}/llm-think`, {
+      method:'POST', headers,
+      body: JSON.stringify({
+        prompt: buildTransformPrompt(cfg.operation, input),
+        max_tokens: 512
+      })
+    });
+    const d = await r.json();
+    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
+    return d.result || d.output || d;
+  }
+
+  throw new Error(`Unknown node type: ${t}`);
+}
+
+async function pollDream(dreamId, headers) {
+  for (let i = 0; i < 20; i++) {
+    await delay(2000);
+    const r = await fetch(`${API_BASE}/memory/dream/status/${dreamId}`, {headers});
+    const d = await r.json();
+    if (d.status === 'done' || d.status === 'complete' || d.status === 'completed') return d;
+    if (d.status === 'error' || d.status === 'failed') throw new Error(d.error || 'Dream failed');
+    logMsg(`Dream engine: ${d.status || 'processing'}...`, 'info');
+  }
+  throw new Error('Dream timed out after 40s');
+}
+
+function buildTransformPrompt(op, input) {
+  const ops = {
+    summarize: `Summarize the following text concisely:\n\n${input}`,
+    extract_keywords: `Extract the key terms and concepts from this text as a JSON array:\n\n${input}`,
+    sentiment: `Analyze the sentiment of this text. Return a JSON with {sentiment, score, reasoning}:\n\n${input}`,
+    expand: `Expand and elaborate on the following text, adding more detail and context:\n\n${input}`,
+  };
+  return ops[op] || `Process this text (${op}):\n\n${input}`;
+}
+
+function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+// ═══════════════════════════════════════════════════════════════
+// OUTPUT PANEL
+// ═══════════════════════════════════════════════════════════════
+function logMsg(msg, type='info') {
+  const ts = new Date().toLocaleTimeString('en', {hour12:false});
+  execLog.push({ts, msg, type});
+  if (execLog.length > 200) execLog.shift();
+}
+
+function openOutput() {
+  const panel = document.getElementById('outputPanel');
+  panel.classList.remove('collapsed');
+  document.getElementById('outputTabs').style.display = 'flex';
+}
+
+document.getElementById('outputHeader').addEventListener('click', () => {
+  const panel = document.getElementById('outputPanel');
+  panel.classList.toggle('collapsed');
+  const tabs = document.getElementById('outputTabs');
+  tabs.style.display = panel.classList.contains('collapsed') ? 'none' : 'flex';
+});
+
+document.querySelectorAll('.out-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.out-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    currentTab = tab.dataset.tab;
+    renderCurrentTab();
+  });
+});
+
+function renderCurrentTab() {
+  if (currentTab === 'log') renderLog();
+  else if (currentTab === 'result') renderResult();
+  else if (currentTab === 'credits') renderCredits();
+}
+
+function renderLog() {
+  if (currentTab !== 'log') return;
+  const body = document.getElementById('outputBody');
+  if (execLog.length === 0) {
+    body.innerHTML = '<div class="empty-output"><span style="font-size:1.5rem;opacity:0.3">📋</span><span>Run a workflow to see logs here.</span></div>';
+    return;
+  }
+  body.innerHTML = execLog.map(l => {
+    const icon = l.type === 'success' ? '✓' : l.type === 'error' ? '✗' : l.type === 'warn' ? '⚠' : '›';
+    return `<div class="log-line">
+      <span class="log-ts">${l.ts}</span>
+      <span class="log-icon">${icon}</span>
+      <span class="log-msg ${l.type}">${esc(l.msg)}</span>
+    </div>`;
+  }).join('');
+  body.scrollTop = body.scrollHeight;
+}
+
+function renderResult() {
+  if (currentTab !== 'result') return;
+  const body = document.getElementById('outputBody');
+  if (!lastResult) {
+    body.innerHTML = '<div class="empty-output"><span style="font-size:1.5rem;opacity:0.3">📤</span><span>No result yet. Run a workflow.</span></div>';
+    return;
+  }
+  const text = typeof lastResult === 'string' ? lastResult : JSON.stringify(lastResult, null, 2);
+  body.innerHTML = `<pre class="output-result">${esc(text)}</pre>`;
+}
+
+function renderCredits() {
+  if (currentTab !== 'credits') return;
+  const body = document.getElementById('outputBody');
+  const inline = document.getElementById('outputCreditsInline');
+  inline.textContent = totalCreditsUsed ? `${totalCreditsUsed} credits used` : '';
+  body.innerHTML = `<div class="credits-display">
+    <div class="cred-item"><span class="cred-label">Credits Used</span><span class="cred-val">${totalCreditsUsed}</span></div>
+    <div class="cred-item"><span class="cred-label">Nodes Run</span><span class="cred-val">${execLog.filter(l=>l.type==='success').length}</span></div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// EXPORT CODE
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('btnExport').addEventListener('click', () => {
+  const order = topoSort();
+  if (!order || order.length === 0) { toast('Add nodes first', 'error'); return; }
+  const code = generateExportCode(order);
+  document.getElementById('exportCode').innerHTML = highlightJS(code);
+  document.getElementById('exportModal').classList.add('open');
+});
+
+document.getElementById('exportClose').addEventListener('click', () => {
+  document.getElementById('exportModal').classList.remove('open');
+});
+
+document.getElementById('exportModal').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('exportModal')) {
+    document.getElementById('exportModal').classList.remove('open');
+  }
+});
+
+document.getElementById('exportCopy').addEventListener('click', () => {
+  const code = generateExportCode(topoSort() || []);
+  navigator.clipboard.writeText(code).then(() => toast('Copied!', 'success'));
+});
+
+function generateExportCode(order) {
+  let lines = [];
+  lines.push(`// Generated by Slopshop Playground — ${new Date().toISOString().split('T')[0]}`);
+  lines.push(`const API_BASE = '${API_BASE}';`);
+  lines.push(`const API_KEY = 'sk-slop-YOUR_KEY_HERE';`);
+  lines.push(`const headers = { 'Content-Type': 'application/json', 'Authorization': \`Bearer \${API_KEY}\` };`);
+  lines.push('');
+  lines.push(`async function runWorkflow() {`);
+  lines.push(`  const nodeOutputs = {};`);
+  lines.push('');
+
+  for (const id of order) {
+    const node = nodes[id];
+    if (!node) continue;
+    const meta = NODE_META[node.type];
+    const cfg = node.config;
+    const t = node.type;
+    const upstream = connections.find(c => c.to === id);
+    const varName = `out_${id}`;
+
+    lines.push(`  // ${meta.icon} ${meta.name}`);
+
+    if (t === 'memory-read') {
+      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory/read\`, {`);
+      lines.push(`    method: 'POST', headers,`);
+      lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', key: '${cfg.key}' })`);
+      lines.push(`  }).then(r => r.json());`);
+    } else if (t === 'memory-write') {
+      const val = upstream ? `JSON.stringify(nodeOutputs['${upstream.from}'])` : `'${(cfg.value||'').replace(/'/g,"\\'")}'`;
+      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory/write\`, {`);
+      lines.push(`    method: 'POST', headers,`);
+      lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', key: '${cfg.key}', value: ${val} })`);
+      lines.push(`  }).then(r => r.json());`);
+    } else if (t === 'memory-search') {
+      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory/search\`, {`);
+      lines.push(`    method: 'POST', headers,`);
+      lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', query: '${cfg.query}', limit: ${cfg.limit||5} })`);
+      lines.push(`  }).then(r => r.json());`);
+    } else if (t === 'memory-list') {
+      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory/list\`, {`);
+      lines.push(`    method: 'POST', headers,`);
+      lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', limit: ${cfg.limit||20} })`);
+      lines.push(`  }).then(r => r.json());`);
+    } else if (t === 'dream-engine') {
+      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory/dream/start\`, {`);
+      lines.push(`    method: 'POST', headers,`);
+      const ctx = upstream ? `, context: JSON.stringify(nodeOutputs['${upstream.from}'])` : '';
+      lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', strategy: '${cfg.strategy}'${cfg.topic?`, topic: '${cfg.topic}'`:''}${ctx} })`);
+      lines.push(`  }).then(r => r.json());`);
+      lines.push(`  // Poll dream status: GET \${API_BASE}/memory/dream/status/\${${varName}.dream_id}`);
+    } else if (t === 'transform') {
+      const input = upstream ? `JSON.stringify(nodeOutputs['${upstream.from}'])` : `'${(cfg.input_text||'').replace(/'/g,"\\'")}'`;
+      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/llm-think\`, {`);
+      lines.push(`    method: 'POST', headers,`);
+      lines.push(`    body: JSON.stringify({ prompt: \`${cfg.operation}: \${${input}}\`, max_tokens: 512 })`);
+      lines.push(`  }).then(r => r.json());`);
+    }
+    lines.push(`  nodeOutputs['${id}'] = ${varName};`);
+    lines.push('');
+  }
+
+  lines.push(`  return nodeOutputs;`);
+  lines.push(`}`);
+  lines.push('');
+  lines.push(`runWorkflow().then(console.log).catch(console.error);`);
+  return lines.join('\n');
+}
+
+function highlightJS(code) {
+  return esc(code)
+    .replace(/\/\/.*/g, m => `<span class="comment">${m}</span>`)
+    .replace(/\b(const|let|var|async|await|function|return|if|for|of)\b/g, m => `<span class="kw">${m}</span>`)
+    .replace(/('(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g, m => `<span class="str">${m}</span>`);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════════════════
+function toast(msg, type='') {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast ' + type;
+  el.innerHTML = `${type === 'success' ? '✓' : type === 'error' ? '✗' : '›'} ${esc(msg)}`;
+  wrap.appendChild(el);
+  setTimeout(() => el.remove(), 3100);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function esc(s) {
+  if (s == null) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Allow pressing Enter on API key input to connect
+document.getElementById('apiKeyInput').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') document.getElementById('connectBtn').click();
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', (e) => {
+  if (!document.getElementById('app').classList.contains('visible')) return;
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  if (e.key === 'Delete' || e.key === 'Backspace') {
+    if (selectedNodeId) { deleteNode(selectedNodeId); }
+  }
+  if (e.key === 'Escape') {
+    if (selectedNodeId) {
+      nodes[selectedNodeId]?.el.classList.remove('selected');
+      selectedNodeId = null;
+      showConfigEmpty();
+    }
+  }
+  if (e.key === 'Enter' && !e.shiftKey) {
+    // run if nothing focused
+  }
+});
+</script>
+</body>
+</html>

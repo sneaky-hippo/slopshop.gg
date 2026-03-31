@@ -218,6 +218,7 @@ footer{padding:40px 32px;text-align:center;border-top:1px solid var(--b)}
 footer p{font-size:0.68rem;color:var(--t4);line-height:2.2;font-family:var(--mono)}
 footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 .divider{border:none;border-top:1px solid var(--b);margin:0}
+.nocode-card:hover{border-color:var(--b2);transform:translateY(-2px);box-shadow:0 8px 32px rgba(0,0,0,0.3)}
 
 @media(max-width:1100px){
   .tiers{grid-template-columns:repeat(3,1fr)}
@@ -226,6 +227,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
   .tiers{grid-template-columns:repeat(3,1fr)}
   .credits-explainer{grid-template-columns:1fr}
 }
+@media(max-width:600px){.tiers{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:768px){
   nav{padding:0 16px;height:50px}
   .logo{font-size:0.85rem}
@@ -249,6 +251,8 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
     <a href="/">Home</a>
     <a href="/docs">Docs</a>
     <a href="/tools">Tools</a>
+    <a href="/playground">Playground</a>
+    <a href="/memory-manager">Memory</a>
     <a href="/pricing" class="active">Pricing</a>
     <a href="/security">Security</a>
     <a href="/about">About</a>
@@ -385,6 +389,30 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
       <div class="text"><strong style="color:var(--o)">Planet Research</strong><span>Grok/X (EN+JA) · DeepSeek/小红书 · Yandex/Яндекс · Claude synthesis · 5 providers</span></div>
     </div>
   </div>
+</div>
+
+<hr class="divider">
+<div class="sec">
+  <div class="sec-label">No-Code Tools</div>
+  <h2>Use Slopshop without code</h2>
+  <p class="desc">Two powerful no-code interfaces let you use memory and dream engine directly from your browser — no API calls, no programming required.</p>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
+    <!-- Memory Manager card -->
+    <a href="/memory-manager" class="nocode-card" style="display:flex;flex-direction:column;gap:10px;background:var(--s1);border:1px solid rgba(0,170,255,0.2);border-radius:14px;padding:28px 24px;text-decoration:none;transition:0.2s">
+      <div style="font-size:2.2rem">🧠</div>
+      <div style="font-family:var(--mono);font-weight:800;font-size:1rem;color:var(--t)">Memory Manager</div>
+      <div style="font-size:0.82rem;color:var(--t3);line-height:1.6">View, search, edit, and share your agent memory. Manage namespaces, shared spaces, and dream subscriptions from a clean dashboard interface.</div>
+      <div style="font-family:var(--mono);font-size:0.72rem;color:var(--c);margin-top:auto">Open Memory Manager →</div>
+    </a>
+    <!-- Playground card -->
+    <a href="/playground" class="nocode-card" style="display:flex;flex-direction:column;gap:10px;background:var(--s1);border:1px solid rgba(136,85,255,0.2);border-radius:14px;padding:28px 24px;text-decoration:none;transition:0.2s">
+      <div style="font-size:2.2rem">🎮</div>
+      <div style="font-family:var(--mono);font-weight:800;font-size:1rem;color:var(--t)">No-Code Playground</div>
+      <div style="font-size:0.82rem;color:var(--t3);line-height:1.6">Drag-and-drop visual builder for memory workflows. Chain Memory Read → Dream Engine → Memory Write without writing any code.</div>
+      <div style="font-family:var(--mono);font-size:0.72rem;color:var(--v);margin-top:auto">Open Playground →</div>
+    </a>
+  </div>
+  <p style="font-size:0.8rem;color:var(--t4);font-family:var(--mono)">Both tools use your API key directly — all operations count toward your credit balance.</p>
 </div>
 
 <hr class="divider">

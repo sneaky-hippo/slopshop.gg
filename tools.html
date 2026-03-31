@@ -51,6 +51,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(
 /* HERO */
 .hero{padding:100px 32px 36px;text-align:center;position:relative;overflow:hidden}
 .hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:1000px;height:600px;background:radial-gradient(ellipse,rgba(255,51,51,0.04),transparent 60%);pointer-events:none}
+.hero-inner{max-width:1200px;margin:0 auto;position:relative;z-index:1}
 .hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--rg);border:1px solid rgba(255,51,51,0.15);color:var(--r2);padding:6px 16px;border-radius:99px;font-size:0.72rem;font-weight:600;font-family:var(--mono);margin-bottom:20px}
 .hero h1{font-family:var(--mono);font-size:clamp(2.4rem,6vw,4.2rem);font-weight:900;letter-spacing:0.04em;line-height:1.1;margin-bottom:14px}
 .hero h1 .red{color:var(--r)}.hero h1 .white{color:var(--t)}
@@ -183,6 +184,8 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
     <a href="/">Home</a>
     <a href="/docs">Docs</a>
     <a href="/tools" class="active">Tools</a>
+    <a href="/playground">Playground</a>
+    <a href="/memory-manager">Memory</a>
     <a href="/pricing">Pricing</a>
     <a href="/security">Security</a>
     <a href="/about">About</a>
@@ -191,6 +194,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 </div></nav>
 
 <section class="hero">
+<div class="hero-inner">
   <h1><span class="white">All </span><span class="red">Tools</span></h1>
   <p class="sub">Browse, search, and try every API.<br><span class="free-hl">Memory tools cost nothing.</span> One key unlocks everything.</p>
   <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
@@ -198,6 +202,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
     <a href="/" style="display:inline-flex;align-items:center;gap:6px;background:var(--s2);color:var(--t2);padding:8px 20px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:600;text-decoration:none;border:1px solid var(--b)">Home</a>
     <a href="/playbooks" style="display:inline-flex;align-items:center;gap:6px;background:var(--s2);color:var(--t2);padding:8px 20px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;font-weight:600;text-decoration:none;border:1px solid var(--b)">Playbooks</a>
   </div>
+</div>
 </section>
 
 <div class="filter-wrap">
