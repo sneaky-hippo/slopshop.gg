@@ -21,6 +21,25 @@ const log = {
   error: (msg, data = {}) => console.error(JSON.stringify({ level: 'error', msg, ...data, ts: new Date().toISOString() })),
 };
 
+// Global crash handlers — catch what Railway silently drops
+process.on('uncaughtException', (err) => {
+  console.error(JSON.stringify({ level: 'fatal', msg: 'uncaughtException', error: err.message, stack: err.stack, ts: new Date().toISOString() }));
+  try {
+    const fs = require('fs');
+    fs.appendFileSync('/data/crash.log', JSON.stringify({ ts: new Date().toISOString(), type: 'uncaughtException', error: err.message, stack: err.stack }) + '\n');
+  } catch(_) {}
+  process.exit(1);
+});
+process.on('unhandledRejection', (reason) => {
+  const msg = reason instanceof Error ? reason.message : String(reason);
+  const stack = reason instanceof Error ? reason.stack : '';
+  console.error(JSON.stringify({ level: 'fatal', msg: 'unhandledRejection', error: msg, stack, ts: new Date().toISOString() }));
+  try {
+    const fs = require('fs');
+    fs.appendFileSync('/data/crash.log', JSON.stringify({ ts: new Date().toISOString(), type: 'unhandledRejection', error: msg, stack }) + '\n');
+  } catch(_) {}
+});
+
 const helmet = require('helmet');
 const compression = require('compression');
 const app = express();
@@ -285,9 +304,11 @@ if (!db) {
 db.pragma('journal_mode = WAL'); // fast concurrent reads
 db.pragma('busy_timeout = 5000'); // wait up to 5s for locks instead of failing
 db.pragma('synchronous = NORMAL'); // faster writes, still crash-safe with WAL
-db.pragma('cache_size = -64000'); // PERF: 64MB cache (default is 2MB) — massive read speedup
+// Memory-aware SQLite tuning: constrained on Railway (512MB), generous locally
+const IS_RAILWAY = !!(process.env.RAILWAY_SERVICE_NAME || process.env.RAILWAY_ENVIRONMENT || process.env.RAILWAY_PROJECT_ID);
+db.pragma(`cache_size = ${IS_RAILWAY ? -8000 : -64000}`); // 8MB on Railway, 64MB locally
 db.pragma('temp_store = MEMORY'); // PERF: temp tables in memory, not disk
-db.pragma('mmap_size = 268435456'); // PERF: 256MB memory-mapped I/O — bypass read() syscalls
+db.pragma(`mmap_size = ${IS_RAILWAY ? 0 : 268435456}`); // disable mmap on Railway to save RSS
 db.pragma('page_size = 8192'); // PERF: 8KB pages (better for large tables, only works on new DBs)
 log.info('Database initialized', { path: DB_PATH, tables: db.prepare("SELECT count(*) as c FROM sqlite_master WHERE type='table'").get().c });
 
@@ -848,9 +869,7 @@ function flushDirtyKeys() {
 }
 setInterval(flushDirtyKeys, KEY_PERSIST_INTERVAL);
 
-// Flush on shutdown
-process.on('SIGTERM', () => { flushDirtyKeys(); flushAuditBatch(); process.exit(0); });
-process.on('SIGINT', () => { flushDirtyKeys(); flushAuditBatch(); process.exit(0); });
+// Note: SIGTERM/SIGINT handled by gracefulShutdown() near end of file (calls flushDirtyKeys/flushAuditBatch)
 
 const jobs = new Map();
 const serverStart = Date.now();
@@ -20006,16 +20025,31 @@ app.get('/v1/swarms', auth, function(req, res) {
 const PORT = process.env.PORT || 3000;
 const server = app.listen(PORT, () => {
   const llm = process.env.ANTHROPIC_API_KEY ? 'Anthropic' : process.env.OPENAI_API_KEY ? 'OpenAI' : 'NONE';
+  const mem = process.memoryUsage();
 
   console.log(`\n  🦞 SLOPSHOP v2 is live on http://localhost:${PORT}`);
   console.log(`  📡 ${apiCount} APIs, ${handlerCount} handlers`);
   console.log(`  🔑 Demo key: sk-slop-demo-key-12345678 (200 cr)`);
   console.log(`  🤖 LLM: ${llm}${llm === 'NONE' ? ' (set ANTHROPIC_API_KEY to unlock 48 AI APIs)' : ''}`);
   console.log(`  🌐 http://localhost:${PORT}/index.html\n`);
+  console.log(`  💾 RSS: ${Math.round(mem.rss/1024/1024)}MB heap: ${Math.round(mem.heapUsed/1024/1024)}/${Math.round(mem.heapTotal/1024/1024)}MB railway:${IS_RAILWAY}`);
+
+  // Check for previous crash logs
+  try {
+    const fs = require('fs');
+    if (fs.existsSync('/data/crash.log')) {
+      const lines = fs.readFileSync('/data/crash.log', 'utf8').trim().split('\n').slice(-5);
+      console.log('  ⚠️  Previous crash logs:');
+      lines.forEach(l => console.log('    ' + l));
+      fs.writeFileSync('/data/crash.log', ''); // clear after reading
+    }
+  } catch(_) {}
 });
 
 function gracefulShutdown(signal) {
   console.log(`\n${signal} received. Shutting down gracefully...`);
+  try { flushDirtyKeys(); } catch(_) {}
+  try { flushAuditBatch(); } catch(_) {}
   server.close(() => {
     console.log('HTTP server closed.');
     try { db.close(); console.log('Database closed.'); } catch(e) {}
