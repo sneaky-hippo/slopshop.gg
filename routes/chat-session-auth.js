@@ -61,6 +61,9 @@ module.exports = function (app, db, apiKeys) {
       jti TEXT PRIMARY KEY,
       expires_at INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS pubsub (channel TEXT, message TEXT, sender TEXT, ts INTEGER);
+    CREATE TABLE IF NOT EXISTS hives (id TEXT PRIMARY KEY, name TEXT, api_key TEXT, created INTEGER);
   `);
 
   // ─── PREPARED STATEMENTS ────────────────────────────────────────────────────

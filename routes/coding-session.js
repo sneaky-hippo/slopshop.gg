@@ -52,6 +52,7 @@ module.exports = function (app, db, apiKeys) {
       ts INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_coding_session_history_session ON coding_session_history(session_id);
+    CREATE TABLE IF NOT EXISTS pubsub (channel TEXT, message TEXT, sender TEXT, ts INTEGER);
   `);
 
   // ===== PREPARED STATEMENTS =====
