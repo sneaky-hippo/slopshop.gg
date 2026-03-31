@@ -2714,6 +2714,11 @@ setInterval(async () => {
     }
   }
   // ═══ REAL DREAM ENGINE — scans memory, calls LLMs, appends research ═══
+  // Memory guard: skip on Railway if heap pressure is high
+  const _schedMem = process.memoryUsage();
+  if (IS_RAILWAY && _schedMem.heapUsed > 150 * 1024 * 1024) {
+    log.warn('Scheduler: skipping dream engine — memory pressure', { heap_mb: Math.round(_schedMem.heapUsed/1024/1024) });
+  } else
   try {
     const dueDreams = db.prepare('SELECT * FROM dream_subscriptions WHERE active = 1 AND (last_dream IS NULL OR last_dream < ?)').all(new Date(Date.now() - 900000).toISOString());
     for (const dream of dueDreams) {
@@ -17439,6 +17444,14 @@ const dreamSchedules = new Map();      // schedule_id -> { timer, config }
 
       async function makeRestoreRunner(sid, akey, ns, strat, bdgt, mdl, creds) {
         return async function runScheduledDream() {
+          // Memory guard: skip dream execution on Railway if heap is too high
+          if (IS_RAILWAY) {
+            const mem = process.memoryUsage();
+            if (mem.heapUsed > 150 * 1024 * 1024) {
+              log.warn('Skipping scheduled dream — memory pressure', { scheduleId: sid, heap_mb: Math.round(mem.heapUsed/1024/1024) });
+              return;
+            }
+          }
           const acct = apiKeys.get(akey);
           if (!acct || acct.balance < creds) {
             log.warn('Skipping scheduled dream — insufficient credits', { scheduleId: sid, balance: acct ? acct.balance : 0 });
@@ -17477,7 +17490,8 @@ const dreamSchedules = new Map();      // schedule_id -> { timer, config }
       }
 
       makeRestoreRunner(scheduleId, apiKeyRef, namespace, strategy, budget, model, credits).then(function(runner) {
-        const timer = setInterval(runner, row.interval_hours * 3600 * 1000);
+        const safeInterval = Math.max(row.interval_hours, IS_RAILWAY ? 1 : 0.25) * 3600 * 1000; // min 1h on Railway, 15min locally
+        const timer = setInterval(runner, safeInterval);
         config._timer = timer;
         dreamSchedules.set(scheduleId, config);
         log.info('Restored dream schedule', { id: scheduleId, namespace: namespace, strategy: strategy, interval_hours: row.interval_hours });
@@ -18091,7 +18105,8 @@ app.post('/v1/memory/dream/schedule', auth, function(req, res) {
 
   if (auto) runScheduledDream().catch(function() {});
 
-  const timer = setInterval(runScheduledDream, interval_hours * 3600 * 1000);
+  const safeIntervalMs = Math.max(interval_hours, IS_RAILWAY ? 1 : 0.25) * 3600 * 1000; // min 1h on Railway
+  const timer = setInterval(runScheduledDream, safeIntervalMs);
   config._timer = timer;
   dreamSchedules.set(scheduleId, config);
 
