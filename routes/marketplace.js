@@ -430,7 +430,6 @@ module.exports = function (app, db, apiKeys) {
     CREATE INDEX IF NOT EXISTS idx_mkt_listings_status ON marketplace_listings(status);
     CREATE INDEX IF NOT EXISTS idx_mkt_listings_downloads ON marketplace_listings(downloads);
     CREATE INDEX IF NOT EXISTS idx_mkt_listings_rating ON marketplace_listings(rating);
-    CREATE INDEX IF NOT EXISTS idx_mkt_listings_featured ON marketplace_listings(featured);
 
     CREATE TABLE IF NOT EXISTS marketplace_purchases (
       id TEXT PRIMARY KEY,
@@ -489,6 +488,8 @@ module.exports = function (app, db, apiKeys) {
   const safeAlter = (sql) => { try { db.exec(sql); } catch (_) {} };
   safeAlter('ALTER TABLE marketplace_listings ADD COLUMN version TEXT DEFAULT \'1.0.0\'');
   safeAlter('ALTER TABLE marketplace_listings ADD COLUMN featured INTEGER DEFAULT 0');
+  // Create index after migration ensures column exists
+  safeAlter('CREATE INDEX IF NOT EXISTS idx_mkt_listings_featured ON marketplace_listings(featured)');
   safeAlter('ALTER TABLE marketplace_listings ADD COLUMN tags TEXT DEFAULT \'[]\'');
   safeAlter('ALTER TABLE marketplace_purchases ADD COLUMN uninstalled_at INTEGER DEFAULT NULL');
   safeAlter('ALTER TABLE marketplace_purchases ADD COLUMN version_at_install TEXT DEFAULT \'1.0.0\'');

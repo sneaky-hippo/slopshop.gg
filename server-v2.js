@@ -3028,6 +3028,13 @@ app.post('/v1/files/upload', auth, (req, res) => {
   res.json({ ok: true, file_id: fileId, filename, size: buf.length, _engine: 'real' });
 });
 
+app.get('/v1/files/search', auth, (req, res) => {
+  const { q } = req.query;
+  if (!q) return res.status(400).json({ error: { code: 'missing_query', message: 'Provide ?q=search_term' } });
+  const rows = db.prepare("SELECT id, filename, size, tags, created FROM files WHERE key = ? AND filename LIKE ? ORDER BY created DESC").all(req.apiKey, `%${q}%`);
+  res.json({ ok: true, files: rows, count: rows.length, query: q });
+});
+
 app.get('/v1/files/:id', auth, (req, res) => {
   const row = db.prepare('SELECT * FROM files WHERE id = ? AND key = ?').get(req.params.id, req.apiKey);
   if (!row) return res.status(404).json({ error: { code: 'file_not_found' } });
@@ -3083,13 +3090,6 @@ app.post('/v1/files/:id/copy', auth, (req, res) => {
     db.prepare('INSERT INTO files (id, key, filename, size, tags, created) VALUES (?, ?, ?, ?, ?, ?)').run(newId, req.apiKey, newFilename, row.size, row.tags, Date.now());
     res.json({ ok: true, file_id: newId, filename: newFilename, copied_from: row.id, size: row.size });
   } catch(e) { res.status(500).json({ error: { code: 'copy_error', message: e.message } }); }
-});
-
-app.get('/v1/files/search', auth, (req, res) => {
-  const { q } = req.query;
-  if (!q) return res.status(400).json({ error: { code: 'missing_query', message: 'Provide ?q=search_term' } });
-  const rows = db.prepare("SELECT id, filename, size, tags, created FROM files WHERE key = ? AND filename LIKE ? ORDER BY created DESC").all(req.apiKey, `%${q}%`);
-  res.json({ ok: true, files: rows, count: rows.length, query: q });
 });
 
 // ===== COST ESTIMATE =====
@@ -11532,157 +11532,10 @@ app.post('/v1/query', auth, async (req, res) => {
   });
 });
 
-// ═══ WORKFLOW ENGINE — Turing-complete visual builder backend ═══
-db.exec(`CREATE TABLE IF NOT EXISTS workflows (
-  id TEXT PRIMARY KEY,
-  name TEXT NOT NULL,
-  owner_key TEXT NOT NULL,
-  nodes TEXT NOT NULL DEFAULT '[]',
-  edges TEXT NOT NULL DEFAULT '[]',
-  settings TEXT DEFAULT '{}',
-  version INTEGER DEFAULT 1,
-  created INTEGER NOT NULL,
-  updated INTEGER NOT NULL
-)`);
-db.exec(`CREATE TABLE IF NOT EXISTS workflow_runs (
-  id TEXT PRIMARY KEY,
-  workflow_id TEXT NOT NULL,
-  input TEXT,
-  output TEXT,
-  trace TEXT DEFAULT '[]',
-  status TEXT DEFAULT 'pending',
-  credits_used INTEGER DEFAULT 0,
-  started_at INTEGER,
-  completed_at INTEGER
-)`);
+// ═══ WORKFLOW ENGINE — handled by routes/workflow-builder.js ═══
+// Table creation and all /v1/workflows routes are in routes/workflow-builder.js
 
-// CRUD
-app.post('/v1/workflows', auth, (req, res) => {
-  const { name, nodes, edges, settings } = req.body;
-  if (!name) return res.status(400).json({ error: { code: 'missing_name' } });
-  const id = 'wf-' + crypto.randomUUID().slice(0, 12);
-  db.prepare('INSERT INTO workflows (id, name, owner_key, nodes, edges, settings, created, updated) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(
-    id, name, req.apiKey, JSON.stringify(nodes || []), JSON.stringify(edges || []), JSON.stringify(settings || {}), Date.now(), Date.now()
-  );
-  res.status(201).json({ ok: true, workflow_id: id, name });
-});
-
-app.get('/v1/workflows', auth, (req, res) => {
-  const wfs = db.prepare('SELECT id, name, version, created, updated FROM workflows WHERE owner_key = ?').all(req.apiKey);
-  res.json({ ok: true, workflows: wfs, count: wfs.length });
-});
-
-app.get('/v1/workflows/:id', auth, (req, res) => {
-  const wf = db.prepare('SELECT * FROM workflows WHERE id = ? AND owner_key = ?').get(req.params.id, req.apiKey);
-  if (!wf) return res.status(404).json({ error: { code: 'not_found' } });
-  res.json({ ok: true, ...wf, nodes: JSON.parse(wf.nodes), edges: JSON.parse(wf.edges), settings: JSON.parse(wf.settings) });
-});
-
-// Execute workflow
-app.post('/v1/workflows/:id/run', auth, async (req, res) => {
-  const wf = db.prepare('SELECT * FROM workflows WHERE id = ? AND owner_key = ?').get(req.params.id, req.apiKey);
-  if (!wf) return res.status(404).json({ error: { code: 'not_found' } });
-
-  const nodes = JSON.parse(wf.nodes);
-  const edges = JSON.parse(wf.edges);
-  const settings = JSON.parse(wf.settings);
-  const input = req.body.input || {};
-  const dryRun = req.body.dry_run === true;
-
-  const runId = 'run-' + crypto.randomUUID().slice(0, 12);
-  const trace = [];
-  const state = new Map();
-  state.set('input', input);
-  let totalCredits = 0;
-
-  // Topological sort
-  const inDegree = {};
-  const adjList = {};
-  nodes.forEach(n => { inDegree[n.id] = 0; adjList[n.id] = []; });
-  edges.forEach(e => { if (adjList[e.source]) { adjList[e.source].push(e.target); inDegree[e.target] = (inDegree[e.target] || 0) + 1; } });
-  const queue = Object.keys(inDegree).filter(k => inDegree[k] === 0);
-  const order = [];
-  while (queue.length > 0) {
-    const node = queue.shift();
-    order.push(node);
-    (adjList[node] || []).forEach(next => { inDegree[next]--; if (inDegree[next] === 0) queue.push(next); });
-  }
-
-  if (!dryRun) {
-    db.prepare('INSERT INTO workflow_runs (id, workflow_id, input, status, started_at) VALUES (?, ?, ?, ?, ?)').run(runId, wf.id, JSON.stringify(input), 'running', Date.now());
-  }
-
-  // Execute in topological order
-  for (const nodeId of order) {
-    const node = nodes.find(n => n.id === nodeId);
-    if (!node || node.type === 'start' || node.type === 'end') continue;
-
-    const stepStart = Date.now();
-    let stepResult = null;
-    let stepCredits = 0;
-
-    if (node.type === 'handler' && node.data?.handler) {
-      const handler = allHandlers[node.data.handler];
-      if (handler) {
-        const handlerDef = API_DEFS[node.data.handler];
-        stepCredits = handlerDef?.credits || 1;
-        if (!dryRun) {
-          try { stepResult = await Promise.resolve(handler(node.data.params || {})); } catch(e) { stepResult = { error: e.message }; }
-        }
-      }
-    } else if (node.type === 'llm') {
-      stepCredits = 10;
-      if (!dryRun && allHandlers['llm-think']) {
-        try { stepResult = await allHandlers['llm-think']({ prompt: node.data?.prompt || '' }); } catch(e) { stepResult = { error: e.message }; }
-      }
-    }
-
-    totalCredits += stepCredits;
-    state.set(nodeId, stepResult);
-    trace.push({ node_id: nodeId, type: node.type, handler: node.data?.handler, credits: stepCredits, latency_ms: Date.now() - stepStart, result_preview: JSON.stringify(stepResult).slice(0, 200) });
-
-    // Budget guard
-    if (settings.maxCredits && totalCredits > settings.maxCredits) {
-      trace.push({ node_id: nodeId, type: 'budget_guard', message: 'Stopped: exceeded maxCredits ' + settings.maxCredits });
-      break;
-    }
-  }
-
-  if (!dryRun) {
-    req.acct.balance -= totalCredits;
-    persistKey(req.apiKey);
-    db.prepare('UPDATE workflow_runs SET output = ?, trace = ?, status = ?, credits_used = ?, completed_at = ? WHERE id = ?').run(
-      JSON.stringify(state.get(order[order.length - 1])), JSON.stringify(trace), 'completed', totalCredits, Date.now(), runId
-    );
-  }
-
-  res.json({
-    ok: true,
-    data: {
-      _engine: 'real',
-      run_id: dryRun ? null : runId,
-      dry_run: dryRun,
-      workflow_id: wf.id,
-      nodes_executed: trace.length,
-      total_credits: totalCredits,
-      trace,
-      output: dryRun ? null : state.get(order[order.length - 1]),
-    }
-  });
-});
-
-// Get run history
-app.get('/v1/workflows/:id/runs', auth, (req, res) => {
-  const runs = db.prepare('SELECT id, status, credits_used, started_at, completed_at FROM workflow_runs WHERE workflow_id = ? ORDER BY started_at DESC LIMIT 50').all(req.params.id);
-  res.json({ ok: true, runs, count: runs.length });
-});
-
-// Get specific run trace (for replay debugger)
-app.get('/v1/workflows/runs/:runId', auth, (req, res) => {
-  const run = db.prepare('SELECT * FROM workflow_runs WHERE id = ?').get(req.params.runId);
-  if (!run) return res.status(404).json({ error: { code: 'run_not_found' } });
-  res.json({ ok: true, ...run, input: JSON.parse(run.input || '{}'), output: JSON.parse(run.output || 'null'), trace: JSON.parse(run.trace || '[]') });
-});
+// All /v1/workflows routes are handled by routes/workflow-builder.js
 
 // ═══ BUDGET GUARDRAILS ═══
 db.exec('CREATE TABLE IF NOT EXISTS budget_settings (api_key TEXT PRIMARY KEY, daily_limit INTEGER, monthly_limit INTEGER, alert_threshold INTEGER, created INTEGER)');

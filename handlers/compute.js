@@ -276,7 +276,7 @@ function textCountFrequency(input) {
 }
 
 function textStripHtml(input) {
-  const text = input.text || '';
+  const text = input.text || input.html || '';
   return { _engine: 'real', result: text.replace(/<[^>]*>/g,'').replace(/\s+/g,' ').trim(), original: text };
 }
 
@@ -377,13 +377,14 @@ function textYamlToJson(input) {
 }
 
 function textJsonValidate(input) {
-  const text = input.text || '';
+  const text = input.text || input.json || input.data || '';
   try { const p=JSON.parse(text); return { _engine: 'real', valid:true, type:Array.isArray(p)?'array':typeof p, size:text.length }; }
   catch(e) { return { _engine: 'real', valid:false, error:e.message }; }
 }
 
 function textJsonFormat(input) {
-  const { text = '', minify = false, indent = 2 } = input;
+  const text = input.text || input.json || input.data || '';
+  const { minify = false, indent = 2 } = input;
   try { const p=JSON.parse(text); return { _engine: 'real', result: minify?JSON.stringify(p):JSON.stringify(p,null,indent), valid:true }; }
   catch(e) { return { _engine: 'real', error:e.message, valid:false }; }
 }
@@ -481,7 +482,7 @@ function textJsonSchemaGenerate(input) {
 }
 
 function textBase64Encode(input) { return { _engine: 'real',result:Buffer.from(input.text||'','utf8').toString('base64')}; }
-function textBase64Decode(input) { try{return{ _engine: 'real',result:Buffer.from(input.text||'','base64').toString('utf8')}}catch(e){return{ _engine: 'real',error:e.message}}; }
+function textBase64Decode(input) { try{return{ _engine: 'real',result:Buffer.from(input.text||input.encoded||input.data||'','base64').toString('utf8')}}catch(e){return{ _engine: 'real',error:e.message}}; }
 function textUrlEncode(input) { return { _engine: 'real',result:encodeURIComponent(input.text||'')}; }
 function textUrlDecode(input) { try{return{ _engine: 'real',result:decodeURIComponent(input.text||'')}}catch(e){return{ _engine: 'real',error:e.message}}; }
 
@@ -943,7 +944,7 @@ function dateFormat(input) {
 }
 
 function dateDiff(input) {
-  const a=new Date(input.from),b=new Date(input.to);
+  const a=new Date(input.from||input.date1||input.a||input.start),b=new Date(input.to||input.date2||input.b||input.end);
   if (isNaN(a.getTime())||isNaN(b.getTime())) return { _engine: 'real',error:'Invalid date'};
   const ms=Math.abs(b-a);
   return { _engine: 'real',milliseconds:ms,seconds:Math.floor(ms/1000),minutes:Math.floor(ms/60000),hours:Math.floor(ms/3600000),days:Math.floor(ms/86400000),weeks:Math.floor(ms/604800000),months:Math.abs((b.getFullYear()-a.getFullYear())*12+(b.getMonth()-a.getMonth())),years:Math.abs(b.getFullYear()-a.getFullYear()),direction:b>=a?'future':'past'};
@@ -4001,7 +4002,7 @@ module.exports = {
 
   'text-count-chars': ({text, char}) => ({
     _engine: 'real',
-    count: (text || '').split(char || '').length - 1,
+    count: char ? (text || '').split(char).length - 1 : (text || '').length,
   }),
 
   'text-remove-duplicates': ({text}) => ({

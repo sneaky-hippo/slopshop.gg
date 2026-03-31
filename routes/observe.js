@@ -113,7 +113,6 @@ module.exports = function (app, db, apiKeys, ipLimits) {
       api_key TEXT,
       span_id TEXT,
       parent_span TEXT,
-      trace_id TEXT,
       operation TEXT,
       status TEXT,
       latency_ms INTEGER,
@@ -124,7 +123,6 @@ module.exports = function (app, db, apiKeys, ipLimits) {
     );
     CREATE INDEX IF NOT EXISTS idx_traces_api_key ON traces(api_key);
     CREATE INDEX IF NOT EXISTS idx_traces_span_id ON traces(span_id);
-    CREATE INDEX IF NOT EXISTS idx_traces_trace_id ON traces(trace_id);
     CREATE INDEX IF NOT EXISTS idx_traces_ts ON traces(ts);
 
     CREATE TABLE IF NOT EXISTS budgets (
@@ -173,14 +171,15 @@ module.exports = function (app, db, apiKeys, ipLimits) {
       alert_type TEXT DEFAULT 'threshold'
     );
     CREATE INDEX IF NOT EXISTS idx_budget_alerts_budget_id ON budget_alerts(budget_id);
-
-    -- FIX: Add trace_id column if missing (migration guard)
-    CREATE TEMPORARY TABLE IF NOT EXISTS _mig_check(x);
   `);
 
   // Migration: add trace_id column to traces if it doesn't already exist
   try {
     db.exec(`ALTER TABLE traces ADD COLUMN trace_id TEXT`);
+  } catch (_) { /* already exists */ }
+  // Now safe to create the index — column is guaranteed to exist
+  try {
+    db.exec(`CREATE INDEX IF NOT EXISTS idx_traces_trace_id ON traces(trace_id)`);
   } catch (_) { /* already exists */ }
 
   // ══════════════════════════════════════════════════════════════════════════

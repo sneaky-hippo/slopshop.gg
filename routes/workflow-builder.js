@@ -1726,6 +1726,35 @@ module.exports = function (app, db, apiKeys) {
     });
   });
 
+  // POST /v1/workflows — alias for /v1/workflow/create (REST-style shorthand)
+  app.post('/v1/workflows', (req, res) => {
+    const auth = requireAuth(req, res, apiKeys);
+    if (!auth) return;
+
+    const { name, description, nodes, edges, variables } = req.body;
+    if (!name || typeof name !== 'string') return err(res, 422, 'missing_field', 'name is required');
+
+    const nodesArr = Array.isArray(nodes) ? nodes : [];
+    const edgesArr = (Array.isArray(edges) ? edges : []).map(e => ({
+      from_node_id: e.from_node_id || e.from,
+      to_node_id:   e.to_node_id   || e.to,
+      condition:    e.condition,
+      condition_expr: e.condition_expr,
+      label:        e.label,
+    }));
+    const variablesObj = variables && typeof variables === 'object' ? variables : {};
+    const validation_result = validateDAG(nodesArr, edgesArr);
+    const workflow_id = 'wf-' + uid(12);
+    const ts = now();
+
+    db.prepare(`
+      INSERT INTO workflows (id, api_key, name, description, nodes, edges, variables, status, version, created, updated)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'draft', 1, ?, ?)
+    `).run(workflow_id, auth.key, name, description || '', JSON.stringify(nodesArr), JSON.stringify(edgesArr), JSON.stringify(variablesObj), ts, ts);
+
+    return ok(res, { workflow_id, name, validation_result });
+  });
+
   // ══════════════════════════════════════════════════════════════════════════
   // WORKFLOW VALIDATION
   // ══════════════════════════════════════════════════════════════════════════
