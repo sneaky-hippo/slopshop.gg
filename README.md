@@ -4,7 +4,9 @@
 
 ### The Self-Hostable MCP Agent Runtime OS for the Computer-Use Era
 
-**Claude controls the screen. Slopshop runs the brain.**
+**Claude controls the screen. Slopshop runs the brain — openly, on any model, forever.**
+
+> Dream Engine + Multiplayer Memory. Agents that synthesize knowledge overnight. Teams that share intelligence in real time.
 
 ```bash
 npm install -g slopshop
@@ -15,7 +17,7 @@ slop identity issue --agent "my-agent"  # zero-trust agent identity
 
 [![npm version](https://img.shields.io/npm/v/slopshop?color=red&label=npm)](https://www.npmjs.com/package/slopshop)
 [![Tests](https://img.shields.io/badge/tests-2272%20passing-brightgreen)](https://slopshop.gg)
-[![APIs](https://img.shields.io/badge/APIs-1303-blue)](https://slopshop.gg/tools.html)
+[![APIs](https://img.shields.io/badge/APIs-1421+-blue)](https://slopshop.gg/tools.html)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![MCP Compatible](https://img.shields.io/badge/MCP-45_tools-purple)](https://modelcontextprotocol.io)
 [![Models](https://img.shields.io/badge/Models-7_(Claude%2BGPT%2BGrok%2BDeepSeek%2BOllama)-orange)](https://slopshop.gg)
@@ -31,16 +33,20 @@ slop identity issue --agent "my-agent"  # zero-trust agent identity
 
 Slopshop is the self-hostable MCP Agent Runtime OS for the Computer-Use Era — the full backend stack that gives your agents identity, memory, tools, and orchestration from a single `npm install`.
 
-**1,303 real APIs** across 82 categories. **Zero-trust agent identity** (NIST-aligned SPIFFE/SVID). **Free evolving memory** (GraphRAG + episodic, survives sessions and model swaps). **Computer Use backend** — session recording, screenshot diffs, approvals, and replay. **MCP gateway + policy engine** with signed manifests and audit export. **Visual DAG workflows** with Kahn's topo sort, condition branching, and human gates. **Tool marketplace** with 70/30 revenue share. **Army-scale orchestration** (10,000 parallel agents). **Self-hostable** with zero native dependencies.
+**1,421+ real APIs** across 82 categories. **Dream Engine** — REM-style memory consolidation that synthesizes, compresses, and evolves knowledge on a schedule, surviving server restarts. **Multiplayer Memory** — shared spaces, collaborator invites, and retention tiers so teams share intelligence in real time. **Planet Research** — 5 providers (Claude synthesis, Grok/X EN+JA, DeepSeek Chinese platforms, OpenAI academic, Yandex RU) with a `planet` tier that cross-synthesizes across all of them. **Zero-trust agent identity** (NIST-aligned SPIFFE/SVID). **Free evolving memory** (GraphRAG + episodic, survives sessions and model swaps). **Computer Use backend** — session recording, screenshot diffs, approvals, and replay. **MCP gateway + policy engine** with signed manifests and audit export. **Visual DAG workflows** with Kahn's topo sort, condition branching, and human gates. **Tool marketplace** with 70/30 revenue share. **Army-scale orchestration** (10,000 parallel agents). **Self-hostable** with zero native dependencies.
 
 Works with Claude Code (MCP), Goose, Cursor, OpenCode, Cline, Aider, LangChain, CrewAI, or raw HTTP.
 
 ---
 
-## New in v3.7.0 — Agent Runtime OS
+## New in v4.0 — Dream Engine + Multiplayer Memory
 
 | Layer | What shipped |
 |-------|-------------|
+| **Dream Engine** | REM-style memory consolidation — 5 strategies (synthesize, pattern_extract, insight_generate, compress, associate). Schedule-based, persists across restarts via `dream_schedules` SQLite table. `POST /v1/memory/dream/start`, `POST /v1/memory/dream/schedule` |
+| **Multiplayer Memory** | Shared memory spaces, collaborator invites, retention tiers: `session` (24h), `daily` (7d), `weekly` (30d), `permanent`. `POST /v1/memory/share/create` |
+| **Planet Research** | 5 providers: Claude (synthesis), Grok/X (EN + JA 日本語), DeepSeek (小红书/知乎/微信/B站), OpenAI (academic), Yandex (Яндекс/Telegram/VK). Tiers: basic/standard/advanced/deep/planet. Cross-synthesis at deep+. 30min cache. `POST /v1/research` |
+| **Memory Compression** | Automatic zlib deflateRaw for values >512 bytes, `~z~` prefix, transparent to callers — zero config |
 | **Agent Identity** | SPIFFE/SVID JWT issue, rotate, verify; ANS namespace registry; A2A encrypted messaging; org management |
 | **Observability** | Distributed traces, analytics dashboard, budget monitoring, ROI reporting, public status page |
 | **Computer Use Backend** | Session start/stop/screenshot, screenshot diff, action replay, human approval gates |
@@ -48,7 +54,6 @@ Works with Claude Code (MCP), Goose, Cursor, OpenCode, Cline, Aider, LangChain, 
 | **Eval Suite** | Eval runs, benchmark tracking, model routing with cost/latency optimization |
 | **Visual DAG Workflows** | Create/run DAGs, Kahn's topological sort, cycle detection, condition branching, human gates, templates |
 | **Tool Marketplace** | Publish/install tools, 70/30 revenue split, 16-pattern code security scan, ratings |
-| **36 new handler slugs** | Vision (12), Finance (5), DevOps (5), Legal (2), Health (2), Marketing (3), Memory 2.0 (7) |
 
 ---
 
@@ -88,6 +93,43 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 }
 ```
 
+**Dream Engine** — consolidate your agent's memories on a schedule:
+
+```bash
+# Start a dream run (synthesize, compress, extract patterns)
+curl -X POST https://slopshop.gg/v1/memory/dream/start \
+  -H "Authorization: Bearer $SLOPSHOP_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "my-agent", "strategy": "synthesize"}'
+
+# Schedule nightly consolidation (persists across restarts)
+curl -X POST https://slopshop.gg/v1/memory/dream/schedule \
+  -H "Authorization: Bearer $SLOPSHOP_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"namespace": "my-agent", "cron": "0 2 * * *", "strategy": "insight_generate"}'
+```
+
+**Multiplayer Memory** — shared spaces for multi-agent teams:
+
+```bash
+curl -X POST https://slopshop.gg/v1/memory/share/create \
+  -H "Authorization: Bearer $SLOPSHOP_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"name": "team-research", "retention": "weekly"}'
+# retention options: session (24h) | daily (7d) | weekly (30d) | permanent
+```
+
+**Planet Research** — 5 providers, one call:
+
+```bash
+curl -X POST https://slopshop.gg/v1/research \
+  -H "Authorization: Bearer $SLOPSHOP_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "AI agent infrastructure 2026", "tier": "planet", "provider": "all"}'
+# tier: basic | standard | advanced | deep | planet
+# provider: claude | grok | deepseek | openai | yandex | all
+```
+
 > Sign up for **500 free credits**. Memory APIs are free forever. Bring your own API keys (BYOK) for 0-credit LLM calls.
 
 ---
@@ -114,7 +156,9 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 | 16 | **Agent Wallets** | Sub-wallets, budget controls, credit trading marketplace |
 | 17 | **Eval Suite** | Automated agent evals, leaderboards, model routing by cost/latency |
 | 18 | **Observability** | Distributed traces, analytics dashboard, budget monitoring, ROI reporting |
-| 19 | **Dream Scheduling** | Background task processing — daily, hourly, weekly |
+| 19 | **Dream Engine** | REM-style memory consolidation — 5 strategies, schedule-based, survives restarts |
+| 19b | **Multiplayer Memory** | Shared spaces, collaborator invites, session/daily/weekly/permanent retention tiers |
+| 19c | **Planet Research** | 5 providers (Claude, Grok, DeepSeek, OpenAI, Yandex), planet tier, 30min cache |
 | 20 | **Stream & Batch** | SSE streaming output and batch API calls |
 | 21 | **Enterprise Ops** | Teams, RBAC, analytics dashboards, webhooks, budget forecasting |
 | 22 | **Self-Hosting** | `npm install slopshop` — zero external deps, runs locally |
@@ -145,7 +189,7 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
                          +----------+----------+
                          |   server-v2.js      |
                          |   Express + Auth     |
-                         |   1,303 endpoints   |
+                         |   1,421+ endpoints  |
                          +----------+----------+
                                     |
        +----------------------------+----------------------------+
@@ -176,7 +220,7 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
               |                     |                     |
     +---------+--------+  +--------+---------+  +--------+---------+
     | registry*.js     |  | pipes.js         |  | mcp-server.js    |
-    | 1,303 API defs   |  | 14 workflows     |  | MCP for Claude   |
+    | 1,421+ API defs  |  | 14 workflows     |  | MCP for Claude   |
     +------------------+  +------------------+  +------------------+
               |                     |                     |
     +---------+--------+  +--------+---------+  +--------+---------+
@@ -187,7 +231,7 @@ curl -X POST https://slopshop.gg/v1/crypto-hash-sha256 \
 
 **Request lifecycle:** Request → Auth middleware → Route module OR Registry lookup → Handler execution (real compute) → Response with `_engine: "real"`
 
-**Route modules** (`routes/`) mount before the wildcard dispatcher and own their own Express paths. **Handler files** (`handlers/`) export pure functions keyed by API slug, called by the wildcard dispatcher for the 1,303 registry-defined tools.
+**Route modules** (`routes/`) mount before the wildcard dispatcher and own their own Express paths. **Handler files** (`handlers/`) export pure functions keyed by API slug, called by the wildcard dispatcher for the 1,421+ registry-defined tools.
 
 ---
 
@@ -201,7 +245,7 @@ cd slopshop.gg
 npm install
 node server-v2.js
 # Server running on http://localhost:3000
-# 1,303 APIs · 82 categories · 136 SQLite tables · 0 startup warnings
+# 1,421+ APIs · 82 categories · 136 SQLite tables · 0 startup warnings
 ```
 
 Copy `.env.example` to `.env` and fill in what you need:
@@ -223,7 +267,7 @@ Copy `.env.example` to `.env` and fill in what you need:
 Health check:
 ```bash
 curl http://localhost:3000/v1/health
-# {"status":"operational","apis_loaded":1303,"version":"3.7.0"}
+# {"status":"operational","apis_loaded":1421,"version":"4.0.0"}
 ```
 
 Issue an agent identity:

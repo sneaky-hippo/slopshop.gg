@@ -131,7 +131,7 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
   </div>
 
   <h1><span class="red">Quickstart</span></h1>
-  <p class="subtitle">Three curl commands. That's all you need to sign up, call an API, and check your balance. <b>No SDKs, no config files, no setup.</b></p>
+  <p class="subtitle">Three curl commands to get running. Then two more to unlock <b>Dream Engine</b> and <b>Multiplayer Memory</b> — the features that make Slopshop worth using. <b>No SDKs, no config files, no setup.</b></p>
 
   <!-- COMMAND 1 -->
   <div class="cmd">
@@ -191,8 +191,62 @@ footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
 
   <p style="font-size:0.85rem;color:var(--t2);line-height:1.7;text-align:center">That's it. You now have access to <b style="color:var(--t)">82 categories of tools</b> across crypto, text, math, network, AI, memory, code execution, and more.</p>
 
+  <!-- DREAM ENGINE -->
+  <div class="cmd" style="margin-top:40px">
+    <div class="cmd-label">
+      <div class="num" style="background:var(--v)">4</div>
+      <div class="text">Dream Engine — agents that learn while you sleep</div>
+    </div>
+    <p class="cmd-desc">The Dream Engine runs REM-style memory consolidation on a schedule. Give your agent a namespace, pick a strategy, and it synthesizes, compresses, and evolves its memory overnight. <b style="color:var(--t)">Schedules survive server restarts.</b> <a href="/docs.html#dream-engine">Full docs &rarr;</a></p>
+    <div class="code-block">
+      <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><code><span class="hl-comment"># Start an immediate dream run (pick a strategy)</span>
+curl -X POST https://slopshop.gg/v1/memory/dream/start \
+  -H <span class="hl-str">"Authorization: Bearer YOUR_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"namespace":"my-agent","strategy":"synthesize"}'</span>
+
+<span class="hl-comment"># Strategies: synthesize | pattern_extract | insight_generate | compress | associate</span>
+
+<span class="hl-comment"># Schedule nightly consolidation (persists across restarts)</span>
+curl -X POST https://slopshop.gg/v1/memory/dream/schedule \
+  -H <span class="hl-str">"Authorization: Bearer YOUR_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"namespace":"my-agent","cron":"0 2 * * *","strategy":"insight_generate"}'</span>
+
+<span class="hl-comment"># Returns: {"schedule_id":"sched_xyz","next_run":"2026-04-01T02:00:00Z"}</span></code></pre>
+    </div>
+  </div>
+
+  <!-- MULTIPLAYER MEMORY -->
+  <div class="cmd" style="margin-top:8px">
+    <div class="cmd-label">
+      <div class="num" style="background:var(--c)">5</div>
+      <div class="text">Multiplayer Memory — shared intelligence for agent teams</div>
+    </div>
+    <p class="cmd-desc">Create a shared memory space, invite collaborators, set how long it lives. Every agent with access reads and writes to the same namespace in real time. No syncing needed. <a href="/docs.html#memory-collaborator">Full docs &rarr;</a></p>
+    <div class="code-block">
+      <div class="code-header"><span class="lang">bash</span><button class="copy-btn" onclick="copyCode(this)">copy</button></div>
+      <pre><code><span class="hl-comment"># Create a shared space (retention: session=24h | daily=7d | weekly=30d | permanent)</span>
+curl -X POST https://slopshop.gg/v1/memory/share/create \
+  -H <span class="hl-str">"Authorization: Bearer YOUR_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"name":"team-research","retention":"weekly"}'</span>
+
+<span class="hl-comment"># Invite a collaborator (read | read-write | admin)</span>
+curl -X POST https://slopshop.gg/v1/memory/collaborator/invite \
+  -H <span class="hl-str">"Authorization: Bearer YOUR_KEY"</span> \
+  -H <span class="hl-str">"Content-Type: application/json"</span> \
+  -d <span class="hl-str">'{"namespace":"team-research","invitee_key":"sk_other_agent","permissions":"read-write"}'</span>
+
+<span class="hl-comment"># Now any team member can read/write: {"key":"findings","namespace":"team-research"}</span></code></pre>
+    </div>
+  </div>
+
+  <hr class="sep">
+
   <!-- ECOSYSTEM QUICK COMMANDS -->
-  <div class="cmd" style="margin-top:32px">
+  <div class="cmd" style="margin-top:8px">
     <div class="cmd-label">
       <div class="num" style="background:var(--v)">+</div>
       <div class="text">Ecosystem integrations</div>
@@ -214,7 +268,7 @@ slop agents</code></pre>
   <div class="next">
     <div class="left">
       <h3>Want to go deeper?</h3>
-      <p>The full tutorial covers memory, agents, MCP setup, ecosystem integrations, and more.</p>
+      <p>The full tutorial covers Dream Engine scheduling, Multiplayer Memory, Planet Research, MCP setup, and more.</p>
     </div>
     <div class="right">
       <a href="/getting-started.html" class="btn-primary">Full tutorial</a>
@@ -227,7 +281,7 @@ slop agents</code></pre>
   <div class="f-brand">&#129438; <span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>
   <p>
     <a href="/">Home</a> &middot; <a href="/docs.html">Docs</a> &middot; <a href="/getting-started.html">Get Started</a> &middot; <a href="/pricing.html">Pricing</a> &middot; <a href="/compare.html">Compare</a> &middot; <a href="/dashboard.html">Dashboard</a> &middot; <a href="https://x.com/slopshopgg">@slopshopgg</a><br>
-    82 categories of tools &middot; all real &middot; one key &middot; slopshop.gg
+    1,421+ APIs &middot; 82 categories &middot; Dream Engine &middot; Multiplayer Memory &middot; Planet Research &middot; all real &middot; one key &middot; slopshop.gg
   </p>
 </footer>
 
