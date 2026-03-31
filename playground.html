@@ -3,255 +3,259 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>Playground | Slopshop — No-Code Memory Builder</title>
-<meta name="description" content="Drag-and-drop visual builder for Slopshop's Memory and Dream Engine APIs. Build memory workflows without writing code.">
+<title>Playground | SLOPSHOP.gg — No-Code Workflow Builder</title>
+<meta name="description" content="Drag-and-drop visual workflow builder for Dream Engine and Memory APIs. Build memory workflows without writing code.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
-  --b:#1a1a1a;--b2:#2a2a2a;--b3:#333;
-  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
-  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);--rb:rgba(255,51,51,0.2);
-  --o:#ff8800;--og:rgba(255,136,0,0.1);--ob:rgba(255,136,0,0.25);
-  --g:#00cc66;--gg:rgba(0,204,102,0.1);--gb:rgba(0,204,102,0.25);
-  --c:#00aaff;--cg:rgba(0,170,255,0.1);--cb:rgba(0,170,255,0.25);
-  --v:#8855ff;--vg:rgba(136,85,255,0.1);--vb:rgba(136,85,255,0.25);
+  --bg:#09090b;--s1:#111113;--s2:#18181b;--s3:#27272a;
+  --b:#1e1e22;--b2:#27272a;
+  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+  --r:#06b6d4;--rg:rgba(6,182,212,0.08);--rb:rgba(6,182,212,0.2);
+  --o:#a78bfa;--og:rgba(167,139,250,0.1);--ob:rgba(167,139,250,0.25);
+  --g:#34d399;--gg:rgba(52,211,153,0.1);--gb:rgba(52,211,153,0.25);
+  --v:#818cf8;--vg:rgba(129,140,248,0.1);--vb:rgba(129,140,248,0.25);
+  --orange:#f59e0b;--orangeg:rgba(245,158,11,0.1);
+  --red:#f87171;--redg:rgba(248,113,113,0.1);
+  --purple:#c084fc;--purpleg:rgba(192,132,252,0.1);
   --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
 }
 body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;overflow-x:hidden}
-::selection{background:var(--r);color:#fff}
+::selection{background:var(--v);color:#fff}
 a{color:var(--r);text-decoration:none}
 a:hover{opacity:0.8}
 
-/* ── NAV ── */
-nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(5,5,5,0.88);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
-.nv{max-width:100%;width:100%;display:flex;align-items:center;justify-content:space-between}
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(9,9,11,0.9);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{width:100%;display:flex;align-items:center;justify-content:space-between}
 .logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.05em;display:flex;align-items:center;gap:8px;color:inherit;text-decoration:none}
-.logo .mark{color:#ef4444;font-weight:900}
-.logo .vtag{font-size:0.55rem;color:#ff3333;border:1px solid rgba(255,51,51,0.2);padding:2px 6px;border-radius:4px;margin-left:6px}
-.nav-links{display:flex;gap:4px;align-items:center}
-.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s;font-family:var(--sans)}
+.logo .mark{color:var(--r)}
+.logo .vtag{font-size:0.55rem;color:var(--r);border:1px solid var(--rb);padding:2px 6px;border-radius:4px;margin-left:4px;opacity:0.8}
+.nav-links{display:flex;gap:2px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 11px;border-radius:6px;transition:0.15s;font-family:var(--sans)}
 .nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
 .nav-links a.active{color:var(--t);background:var(--s2)}
-.nav-links .signup{background:var(--r);color:#fff!important;padding:6px 16px;border-radius:6px;font-weight:600}
-.nav-links .signup:hover{background:#e62e2e;opacity:1}
+.nav-links .signup{background:var(--r);color:#000!important;padding:6px 16px;border-radius:6px;font-weight:700}
+.nav-links .signup:hover{opacity:0.85}
 
-/* ── HERO STRIP ── */
-.hero-strip{padding:80px 32px 32px;text-align:center;position:relative;overflow:hidden;border-bottom:1px solid var(--b)}
-.hero-strip::before{content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);width:900px;height:500px;background:radial-gradient(ellipse,rgba(136,85,255,0.06),transparent 65%);pointer-events:none}
-.hero-tag{display:inline-flex;align-items:center;gap:6px;background:var(--vg);border:1px solid var(--vb);color:var(--v);padding:5px 14px;border-radius:99px;font-size:0.7rem;font-weight:600;font-family:var(--mono);margin-bottom:20px}
-.hero-strip h1{font-family:var(--mono);font-size:clamp(1.8rem,4vw,3rem);font-weight:900;letter-spacing:-0.01em;line-height:1.1;margin-bottom:10px}
-.hero-strip h1 .acc{color:var(--v)}
-.hero-strip .sub{color:var(--t2);font-size:0.9rem;max-width:480px;margin:0 auto 24px;line-height:1.7}
-
-/* ── CONNECT BAR ── */
-.connect-bar{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;padding-bottom:8px}
-.api-key-wrap{position:relative;display:flex;align-items:center}
-.api-key-wrap input{font-family:var(--mono);font-size:0.82rem;background:var(--s2);border:1px solid var(--b3);color:var(--t);padding:10px 44px 10px 14px;border-radius:8px;width:320px;outline:none;transition:0.2s}
+/* LANDING */
+#landing{min-height:calc(100vh - 56px);margin-top:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;position:relative;overflow:hidden}
+#landing::before{content:'';position:absolute;top:20%;left:50%;transform:translateX(-50%);width:900px;height:600px;background:radial-gradient(ellipse,rgba(129,140,248,0.06) 0%,transparent 65%);pointer-events:none}
+#landing::after{content:'';position:absolute;bottom:10%;left:30%;width:400px;height:400px;background:radial-gradient(ellipse,rgba(6,182,212,0.04) 0%,transparent 65%);pointer-events:none}
+.landing-badge{display:inline-flex;align-items:center;gap:6px;background:var(--vg);border:1px solid var(--vb);color:var(--v);padding:5px 14px;border-radius:99px;font-size:0.7rem;font-weight:600;font-family:var(--mono);margin-bottom:22px}
+.landing-h1{font-family:var(--mono);font-size:clamp(2rem,5vw,3.6rem);font-weight:900;letter-spacing:-0.02em;line-height:1.05;margin-bottom:16px;max-width:720px}
+.landing-h1 .acc-cyan{color:var(--r)}
+.landing-h1 .acc-indigo{color:var(--v)}
+.landing-sub{color:var(--t2);font-size:0.95rem;max-width:520px;margin:0 auto 36px;line-height:1.75}
+.connect-card{background:var(--s1);border:1px solid var(--b2);border-radius:14px;padding:24px 28px;max-width:500px;width:100%;margin-bottom:40px}
+.connect-card-title{font-family:var(--mono);font-size:0.8rem;font-weight:700;color:var(--t2);margin-bottom:16px;text-align:left}
+.connect-row{display:flex;gap:10px;align-items:stretch}
+.api-key-wrap{position:relative;flex:1;display:flex;align-items:center}
+.api-key-wrap input{font-family:var(--mono);font-size:0.82rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:10px 42px 10px 13px;border-radius:8px;width:100%;outline:none;transition:0.2s}
 .api-key-wrap input:focus{border-color:var(--v);box-shadow:0 0 0 2px var(--vg)}
 .api-key-wrap input::placeholder{color:var(--t4)}
-.toggle-key{position:absolute;right:12px;background:none;border:none;color:var(--t4);cursor:pointer;font-size:0.9rem;padding:0;line-height:1}
+.toggle-key{position:absolute;right:11px;background:none;border:none;color:var(--t4);cursor:pointer;font-size:0.85rem;padding:0;line-height:1;transition:0.15s}
 .toggle-key:hover{color:var(--t2)}
-.btn-connect{background:var(--v);color:#fff;border:none;padding:10px 22px;border-radius:8px;font-family:var(--mono);font-size:0.82rem;font-weight:700;cursor:pointer;transition:0.2s;display:flex;align-items:center;gap:7px}
-.btn-connect:hover{background:#9966ff;box-shadow:0 0 20px var(--vg)}
-.btn-connect.connected{background:var(--g)}
-.status-dot{width:8px;height:8px;border-radius:50%;background:var(--t4);flex-shrink:0;transition:0.3s}
+.btn-connect{background:var(--v);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-family:var(--mono);font-size:0.82rem;font-weight:700;cursor:pointer;transition:0.2s;white-space:nowrap;display:flex;align-items:center;gap:7px}
+.btn-connect:hover{background:#9aa5fc;box-shadow:0 0 24px var(--vg)}
+.connect-status{margin-top:12px;display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:0.72rem}
+.status-dot{width:7px;height:7px;border-radius:50%;background:var(--t4);flex-shrink:0;transition:0.3s}
 .status-dot.on{background:var(--g);box-shadow:0 0 8px var(--g);animation:pulse 2s infinite}
-.status-dot.err{background:var(--r)}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
-.status-label{font-family:var(--mono);font-size:0.72rem;color:var(--t3)}
+.status-dot.err{background:var(--red)}
+.status-label{color:var(--t3)}
 .status-label.on{color:var(--g)}
-.status-label.err{color:var(--r)}
+.status-label.err{color:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.45}}
 
-/* ── MAIN APP SHELL ── */
-#app{display:none;flex:1;overflow:hidden;height:calc(100vh - 56px);margin-top:56px;flex-direction:column}
+.sample-preview{display:flex;align-items:center;gap:10px;flex-wrap:wrap;justify-content:center;opacity:0.45}
+.sp-node{background:var(--s2);border:1px solid var(--b2);border-radius:7px;padding:6px 13px;font-family:var(--mono);font-size:0.68rem;color:var(--t3)}
+.sp-arrow{color:var(--t4);font-size:0.9rem}
+
+/* MAIN APP */
+#app{display:none;flex-direction:column;height:calc(100vh - 56px);margin-top:56px}
 #app.visible{display:flex}
+.app-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s1);border-bottom:1px solid var(--b);flex-shrink:0;flex-wrap:wrap}
+.tb-label{font-family:var(--mono);font-size:0.62rem;color:var(--t4);padding-right:4px}
+.tb-btn{background:var(--s2);border:1px solid var(--b2);color:var(--t3);padding:6px 13px;border-radius:6px;font-family:var(--mono);font-size:0.72rem;font-weight:600;cursor:pointer;transition:0.15s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.tb-btn:hover{color:var(--t);background:var(--s3)}
+.tb-btn.run-btn{background:var(--g);color:#000;border-color:var(--g);font-weight:700}
+.tb-btn.run-btn:hover{background:#3febb0;box-shadow:0 0 16px var(--gg)}
+.tb-btn.run-btn:disabled{background:var(--s3);color:var(--t4);border-color:var(--b2);cursor:not-allowed;box-shadow:none}
+.tb-btn.export-btn{border-color:var(--rb);color:var(--r)}
+.tb-btn.export-btn:hover{background:var(--rg)}
+.tb-btn.tmpl-btn{border-color:var(--ob);color:var(--o)}
+.tb-btn.tmpl-btn:hover{background:var(--og)}
+.tb-btn.clear-btn{color:var(--red)}
+.tb-btn.clear-btn:hover{background:var(--redg)}
+.tb-spacer{flex:1}
+.node-count{font-family:var(--mono);font-size:0.65rem;color:var(--t4)}
+.connected-badge{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:0.68rem;color:var(--g);background:var(--gg);border:1px solid var(--gb);padding:5px 11px;border-radius:6px}
+.connected-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--g);animation:pulse 2s infinite}
+
 .app-body{display:flex;flex:1;overflow:hidden;min-height:0}
 
-/* ── LEFT PALETTE ── */
-.palette{width:200px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);overflow-y:auto;padding:12px 8px;display:flex;flex-direction:column;gap:4px}
-.palette-title{font-family:var(--mono);font-size:0.6rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.12em;padding:4px 8px 8px}
+/* PALETTE */
+.palette{width:200px;flex-shrink:0;background:var(--s1);border-right:1px solid var(--b);overflow-y:auto;padding:10px 8px;display:flex;flex-direction:column;gap:3px}
+.palette-section{font-family:var(--mono);font-size:0.58rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.12em;padding:8px 8px 5px}
 .palette-item{background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:9px 10px;cursor:grab;transition:0.15s;user-select:none;display:flex;align-items:flex-start;gap:8px}
-.palette-item:hover{border-color:var(--b3);background:var(--s3);transform:translateX(2px)}
+.palette-item:hover{background:var(--s3);transform:translateX(2px)}
 .palette-item:active{cursor:grabbing;transform:scale(0.97)}
-.palette-item .pi-icon{font-size:1.1rem;flex-shrink:0;margin-top:1px}
-.palette-item .pi-text{}
-.palette-item .pi-name{font-family:var(--mono);font-size:0.72rem;font-weight:700;color:var(--t);line-height:1.2;margin-bottom:2px}
-.palette-item .pi-desc{font-size:0.62rem;color:var(--t4);line-height:1.4}
-.palette-item[data-type="memory-read"] .pi-name{color:var(--c)}
+.pi-icon{font-size:1rem;flex-shrink:0;margin-top:1px}
+.pi-name{font-family:var(--mono);font-size:0.71rem;font-weight:700;line-height:1.2;margin-bottom:2px}
+.pi-desc{font-size:0.6rem;color:var(--t4);line-height:1.4}
+.palette-item[data-type="memory-read"] .pi-name{color:var(--r)}
 .palette-item[data-type="memory-write"] .pi-name{color:var(--g)}
 .palette-item[data-type="dream-engine"] .pi-name{color:var(--v)}
 .palette-item[data-type="memory-search"] .pi-name{color:var(--o)}
 .palette-item[data-type="memory-list"] .pi-name{color:var(--t2)}
-.palette-item[data-type="transform"] .pi-name{color:var(--r)}
-.palette-drag-ghost{position:fixed;pointer-events:none;z-index:9999;opacity:0.9;transform:rotate(2deg) scale(1.05)}
+.palette-item[data-type="transform"] .pi-name{color:var(--red)}
+.palette-item[data-type="shared-space"] .pi-name{color:var(--purple)}
 
-/* ── CANVAS AREA ── */
+/* CANVAS */
 .canvas-wrap{flex:1;display:flex;flex-direction:column;overflow:hidden;position:relative}
-.canvas-toolbar{display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--s1);border-bottom:1px solid var(--b);flex-shrink:0}
-.canvas-toolbar .tb-label{font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-right:4px}
-.tb-btn{background:var(--s2);border:1px solid var(--b2);color:var(--t3);padding:6px 14px;border-radius:6px;font-family:var(--mono);font-size:0.72rem;font-weight:600;cursor:pointer;transition:0.15s;display:flex;align-items:center;gap:6px}
-.tb-btn:hover{border-color:var(--b3);color:var(--t)}
-.tb-btn.run{background:var(--g);color:#000;border-color:var(--g);font-weight:700}
-.tb-btn.run:hover{background:#00e673;box-shadow:0 0 16px var(--gg)}
-.tb-btn.run:disabled{background:var(--s3);color:var(--t4);border-color:var(--b2);cursor:not-allowed;box-shadow:none}
-.tb-btn.export{border-color:var(--cb);color:var(--c)}
-.tb-btn.export:hover{border-color:var(--c);background:var(--cg)}
-.tb-btn.clear{border-color:var(--rb);color:var(--r2)}
-.tb-btn.clear:hover{background:var(--rg)}
-.tb-spacer{flex:1}
-.node-count{font-family:var(--mono);font-size:0.65rem;color:var(--t4)}
+.canvas{flex:1;position:relative;overflow:hidden;background:var(--bg);background-image:radial-gradient(circle,rgba(255,255,255,0.035) 1px,transparent 1px);background-size:24px 24px}
+.canvas.pan-mode{cursor:grab}
+.canvas.pan-mode:active{cursor:grabbing}
+.canvas.drag-over{background-color:rgba(129,140,248,0.02)}
+svg.arrows{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;overflow:visible}
+.arrow-path{stroke:var(--v);stroke-width:2;fill:none;opacity:0.55;marker-end:url(#arrowhead)}
+.arrow-path.sel{opacity:1;stroke:var(--o)}
+.arrow-hit{stroke:transparent;stroke-width:14;fill:none;cursor:pointer;pointer-events:stroke}
 
-.canvas{flex:1;position:relative;overflow:hidden;background:var(--bg);background-image:radial-gradient(circle,rgba(255,255,255,0.04) 1px,transparent 1px);background-size:24px 24px}
-.canvas.drag-over{background-color:rgba(136,85,255,0.02)}
-.canvas svg.arrows{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:5;overflow:visible}
-.canvas svg.arrows .arrow-path{stroke:var(--v);stroke-width:2;fill:none;opacity:0.6;marker-end:url(#arrowhead)}
-
-/* ── CANVAS NODES ── */
-.canvas-node{position:absolute;min-width:170px;background:var(--s1);border:1px solid var(--b2);border-radius:10px;z-index:10;cursor:move;user-select:none;transition:box-shadow 0.15s,border-color 0.15s;overflow:visible}
-.canvas-node:hover{border-color:var(--b3)}
-.canvas-node.selected{border-color:var(--v)!important;box-shadow:0 0 0 2px var(--vg),0 4px 24px rgba(0,0,0,0.4)}
-.canvas-node.running{border-color:var(--o)!important;box-shadow:0 0 0 2px var(--og)}
+/* CANVAS NODES */
+.canvas-node{position:absolute;min-width:168px;background:var(--s1);border:1px solid var(--b2);border-radius:10px;z-index:10;user-select:none;transition:box-shadow 0.15s,border-color 0.15s}
+.canvas-node.selected{border-color:var(--v)!important;box-shadow:0 0 0 2px var(--vg),0 6px 28px rgba(0,0,0,0.5)}
+.canvas-node.running{border-color:var(--orange)!important;box-shadow:0 0 0 2px var(--orangeg)}
 .canvas-node.done{border-color:var(--g)!important;box-shadow:0 0 0 2px var(--gg)}
-.canvas-node.error{border-color:var(--r)!important;box-shadow:0 0 0 2px var(--rg)}
-.node-header{padding:9px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--b);border-radius:10px 10px 0 0}
-.node-header .nh-icon{font-size:1rem}
-.node-header .nh-title{font-family:var(--mono);font-size:0.72rem;font-weight:700;flex:1;line-height:1.2}
-.node-header .nh-status{width:7px;height:7px;border-radius:50%;background:var(--t4);flex-shrink:0;transition:0.3s}
-.node-header .nh-status.running{background:var(--o);animation:pulse 1s infinite}
-.node-header .nh-status.done{background:var(--g)}
-.node-header .nh-status.error{background:var(--r)}
-.node-body{padding:8px 12px 10px;font-size:0.65rem;color:var(--t4);font-family:var(--mono);line-height:1.5}
-.node-body .nb-field{margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:150px}
-.node-body .nb-field span{color:var(--t3)}
+.canvas-node.error{border-color:var(--red)!important;box-shadow:0 0 0 2px var(--redg)}
+.node-header{padding:8px 12px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--b);border-radius:10px 10px 0 0;cursor:move}
+.nh-icon{font-size:0.95rem;flex-shrink:0}
+.nh-title{font-family:var(--mono);font-size:0.71rem;font-weight:700;flex:1;line-height:1.2}
+.nh-status{width:7px;height:7px;border-radius:50%;background:var(--t4);flex-shrink:0;transition:0.3s}
+.nh-status.running{background:var(--orange);animation:pulse 1s infinite}
+.nh-status.done{background:var(--g)}
+.nh-status.error{background:var(--red)}
+.node-body{padding:7px 12px 10px;font-size:0.63rem;color:var(--t4);font-family:var(--mono);line-height:1.55}
+.nb-field{margin-bottom:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:148px}
+.nb-field span{color:var(--t3)}
 
 /* ports */
-.port{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid var(--b3);background:var(--s2);top:50%;transform:translateY(-50%);transition:0.15s;z-index:20;cursor:crosshair}
+.port{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid var(--b2);background:var(--s3);top:50%;transform:translateY(-50%);transition:0.15s;z-index:20;cursor:crosshair}
 .port:hover{transform:translateY(-50%) scale(1.4);border-color:var(--v);background:var(--v)}
-.port.input-port{left:-6px}
-.port.output-port{right:-6px}
-.port.connecting{background:var(--v);border-color:var(--v);animation:pulse 0.8s infinite}
-.port[data-type="memory-read"] .port{border-color:var(--cb)}
-.canvas-node[data-type="memory-read"] .output-port{border-color:var(--c)}
+.input-port{left:-6px}
+.output-port{right:-6px}
+.port.active-port{background:var(--v);border-color:var(--v);animation:pulse 0.8s infinite}
+.canvas-node[data-type="memory-read"] .output-port{border-color:var(--r)}
 .canvas-node[data-type="memory-write"] .output-port{border-color:var(--g)}
 .canvas-node[data-type="dream-engine"] .output-port{border-color:var(--v)}
 .canvas-node[data-type="memory-search"] .output-port{border-color:var(--o)}
-.canvas-node[data-type="transform"] .output-port{border-color:var(--r)}
+.canvas-node[data-type="memory-list"] .output-port{border-color:var(--t3)}
+.canvas-node[data-type="transform"] .output-port{border-color:var(--red)}
+.canvas-node[data-type="shared-space"] .output-port{border-color:var(--purple)}
 
-/* ── RIGHT CONFIG PANEL ── */
+/* CONFIG PANEL */
 .config-panel{width:280px;flex-shrink:0;background:var(--s1);border-left:1px solid var(--b);overflow-y:auto;display:flex;flex-direction:column}
-.config-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;color:var(--t4);text-align:center}
-.config-empty .ce-icon{font-size:2.5rem;opacity:0.3}
-.config-empty .ce-text{font-family:var(--mono);font-size:0.72rem;line-height:1.6}
-.config-header{padding:14px 16px 10px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:8px;flex-shrink:0}
-.config-header .ch-icon{font-size:1.1rem}
-.config-header .ch-title{font-family:var(--mono);font-size:0.82rem;font-weight:700;flex:1}
-.config-header .ch-del{background:none;border:none;color:var(--t4);cursor:pointer;font-size:0.9rem;padding:4px;border-radius:4px;transition:0.15s;line-height:1}
-.config-header .ch-del:hover{color:var(--r);background:var(--rg)}
+.config-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;color:var(--t4);text-align:center}
+.ce-icon{font-size:2.2rem;opacity:0.25}
+.ce-text{font-family:var(--mono);font-size:0.68rem;line-height:1.65;color:var(--t4)}
+.config-header{padding:13px 16px 10px;border-bottom:1px solid var(--b);display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ch-icon{font-size:1.05rem}
+.ch-title{font-family:var(--mono);font-size:0.8rem;font-weight:700;flex:1}
+.ch-del{background:none;border:none;color:var(--t4);cursor:pointer;font-size:0.85rem;padding:4px 6px;border-radius:4px;transition:0.15s;line-height:1}
+.ch-del:hover{color:var(--red);background:var(--redg)}
 .config-fields{padding:14px 16px;flex:1;display:flex;flex-direction:column;gap:12px}
 .cf-group{display:flex;flex-direction:column;gap:5px}
-.cf-label{font-family:var(--mono);font-size:0.62rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em}
-.cf-input{font-family:var(--mono);font-size:0.78rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:8px 10px;border-radius:6px;outline:none;width:100%;transition:0.2s}
-.cf-input:focus{border-color:var(--v);box-shadow:0 0 0 2px var(--vg)}
-.cf-input.error{border-color:var(--r)!important}
-.cf-input::placeholder{color:var(--t4)}
-.cf-textarea{font-family:var(--mono);font-size:0.75rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:8px 10px;border-radius:6px;outline:none;width:100%;resize:vertical;min-height:72px;transition:0.2s;line-height:1.5}
-.cf-textarea:focus{border-color:var(--v);box-shadow:0 0 0 2px var(--vg)}
-.cf-textarea.error{border-color:var(--r)!important}
-.cf-textarea::placeholder{color:var(--t4)}
-.cf-select{font-family:var(--mono);font-size:0.78rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:8px 10px;border-radius:6px;outline:none;width:100%;transition:0.2s;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23666'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
-.cf-select:focus{border-color:var(--v);box-shadow:0 0 0 2px var(--vg)}
-.cf-hint{font-size:0.62rem;color:var(--t4);line-height:1.5;font-family:var(--mono)}
-.cf-connected-badge{font-family:var(--mono);font-size:0.72rem;color:var(--g);background:var(--gg);border:1px solid var(--gb);padding:5px 10px;border-radius:5px;display:flex;align-items:center;gap:6px}
+.cf-label{font-family:var(--mono);font-size:0.6rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em}
+.cf-input,.cf-select,.cf-textarea{font-family:var(--mono);font-size:0.77rem;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:8px 10px;border-radius:6px;outline:none;width:100%;transition:0.2s}
+.cf-input:focus,.cf-select:focus,.cf-textarea:focus{border-color:var(--v);box-shadow:0 0 0 2px var(--vg)}
+.cf-input::placeholder,.cf-textarea::placeholder{color:var(--t4)}
+.cf-select{cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%2352525b'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center}
+.cf-textarea{resize:vertical;min-height:68px;line-height:1.5}
+.cf-hint{font-size:0.6rem;color:var(--t4);line-height:1.5;font-family:var(--mono)}
+.cf-upstream{font-family:var(--mono);font-size:0.68rem;color:var(--g);background:var(--gg);border:1px solid var(--gb);padding:6px 10px;border-radius:6px}
 .config-apply{margin:0 16px 16px;background:var(--v);color:#fff;border:none;padding:9px;border-radius:7px;font-family:var(--mono);font-size:0.75rem;font-weight:700;cursor:pointer;transition:0.2s;width:calc(100% - 32px)}
-.config-apply:hover{background:#9966ff}
+.config-apply:hover{background:#9aa5fc;box-shadow:0 0 16px var(--vg)}
 
-/* ── OUTPUT PANEL ── */
-.output-panel{background:var(--s1);border-top:1px solid var(--b);flex-shrink:0;display:flex;flex-direction:column;max-height:220px;transition:max-height 0.3s ease}
-.output-panel.collapsed{max-height:38px}
-.output-header{padding:8px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0;background:var(--s1);border-bottom:1px solid transparent;user-select:none}
+/* OUTPUT PANEL */
+.output-panel{background:var(--s1);border-top:1px solid var(--b);flex-shrink:0;display:flex;flex-direction:column;max-height:220px;transition:max-height 0.25s ease}
+.output-panel.collapsed{max-height:38px;overflow:hidden}
+.output-header{padding:8px 14px;display:flex;align-items:center;gap:10px;cursor:pointer;flex-shrink:0;user-select:none;border-bottom:1px solid transparent}
 .output-panel:not(.collapsed) .output-header{border-bottom-color:var(--b)}
-.output-title{font-family:var(--mono);font-size:0.68rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:0.1em;flex:1}
-.output-toggle{font-size:0.6rem;color:var(--t4);transition:transform 0.2s}
+.output-title{font-family:var(--mono);font-size:0.67rem;font-weight:700;color:var(--t2);text-transform:uppercase;letter-spacing:0.1em;flex:1}
+.output-toggle{font-size:0.65rem;color:var(--t4);transition:transform 0.2s}
 .output-panel.collapsed .output-toggle{transform:rotate(180deg)}
-.output-tabs{display:flex;gap:0;padding:0 14px;background:var(--s1);flex-shrink:0}
-.out-tab{font-family:var(--mono);font-size:0.65rem;font-weight:600;color:var(--t4);padding:6px 14px;cursor:pointer;border-bottom:2px solid transparent;transition:0.15s}
+.output-tabs{display:flex;padding:0 14px;background:var(--s1);flex-shrink:0;border-bottom:1px solid var(--b)}
+.out-tab{font-family:var(--mono);font-size:0.64rem;font-weight:600;color:var(--t4);padding:6px 13px;cursor:pointer;border-bottom:2px solid transparent;transition:0.15s;margin-bottom:-1px}
 .out-tab.active{color:var(--t);border-bottom-color:var(--v)}
 .out-tab:hover:not(.active){color:var(--t2)}
-.output-body{flex:1;overflow-y:auto;padding:10px 14px;font-family:var(--mono);font-size:0.72rem;line-height:1.6;color:var(--t3)}
-.log-line{display:flex;gap:10px;margin-bottom:3px;align-items:flex-start}
-.log-ts{color:var(--t4);flex-shrink:0;font-size:0.65rem;padding-top:1px}
-.log-icon{flex-shrink:0;font-size:0.7rem}
+.output-body{flex:1;overflow-y:auto;padding:10px 14px;font-family:var(--mono);font-size:0.71rem;line-height:1.65;color:var(--t3)}
+.log-line{display:flex;gap:9px;margin-bottom:2px;align-items:flex-start}
+.log-ts{color:var(--t4);flex-shrink:0;font-size:0.63rem;padding-top:2px}
 .log-msg{flex:1;word-break:break-word}
 .log-msg.info{color:var(--t2)}
 .log-msg.success{color:var(--g)}
-.log-msg.error{color:var(--r)}
-.log-msg.warn{color:var(--o)}
-.output-result{white-space:pre-wrap;color:var(--t2);font-size:0.72rem;line-height:1.6}
-.credits-display{display:flex;gap:20px;padding:4px 0}
+.log-msg.error{color:var(--red)}
+.log-msg.warn{color:var(--orange)}
+.output-result{white-space:pre-wrap;color:var(--t2);font-size:0.7rem;line-height:1.6;margin-top:4px}
+.credits-row{display:flex;gap:20px;padding:4px 0 8px}
 .cred-item{display:flex;flex-direction:column;gap:3px}
-.cred-label{font-size:0.6rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.08em}
-.cred-val{font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--o)}
-.empty-output{color:var(--t4);font-size:0.72rem;display:flex;flex-direction:column;align-items:center;justify-content:center;height:60px;gap:6px}
+.cred-lbl{font-size:0.58rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.08em}
+.cred-val{font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--orange)}
+.empty-output{color:var(--t4);font-size:0.7rem;display:flex;flex-direction:column;align-items:center;justify-content:center;height:56px;gap:6px}
 
-/* ── MODAL ── */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity 0.2s}
+/* MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.78);z-index:500;display:flex;align-items:center;justify-content:center;padding:24px;opacity:0;pointer-events:none;transition:opacity 0.2s}
 .modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--s1);border:1px solid var(--b2);border-radius:14px;max-width:700px;width:100%;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;transform:translateY(10px);transition:transform 0.2s}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:14px;max-width:720px;width:100%;max-height:82vh;display:flex;flex-direction:column;overflow:hidden;transform:translateY(12px);transition:transform 0.2s}
 .modal-overlay.open .modal{transform:translateY(0)}
-.modal-head{padding:18px 20px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-head{padding:18px 20px 14px;border-bottom:1px solid var(--b);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
 .modal-head h2{font-family:var(--mono);font-size:0.95rem;font-weight:800}
 .modal-close{background:none;border:none;color:var(--t4);cursor:pointer;font-size:1.1rem;padding:4px 8px;border-radius:4px;transition:0.15s;font-family:var(--mono)}
-.modal-close:hover{color:var(--r);background:var(--rg)}
+.modal-close:hover{color:var(--red);background:var(--redg)}
 .modal-body{padding:20px;overflow-y:auto;flex:1}
-.modal-body pre{background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:16px;font-family:var(--mono);font-size:0.72rem;line-height:1.7;color:var(--t2);overflow-x:auto;white-space:pre-wrap;word-break:break-word}
-.modal-body pre .kw{color:var(--v)}
-.modal-body pre .str{color:var(--g)}
-.modal-body pre .comment{color:var(--t4)}
+.modal-body pre{background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:16px;font-family:var(--mono);font-size:0.7rem;line-height:1.75;color:var(--t2);overflow-x:auto;white-space:pre-wrap;word-break:break-all}
 .modal-copy{margin-top:12px;background:var(--s2);border:1px solid var(--b2);color:var(--t2);padding:9px 20px;border-radius:7px;font-family:var(--mono);font-size:0.75rem;font-weight:600;cursor:pointer;transition:0.15s}
-.modal-copy:hover{border-color:var(--c);color:var(--c)}
+.modal-copy:hover{border-color:var(--r);color:var(--r)}
+.templates-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tmpl-card{background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:16px;cursor:default}
+.tmpl-card h3{font-family:var(--mono);font-size:0.8rem;font-weight:700;margin-bottom:6px;color:var(--t)}
+.tmpl-card p{font-size:0.7rem;color:var(--t3);line-height:1.55;margin-bottom:10px}
+.tmpl-flow{display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.tmpl-step{font-family:var(--mono);font-size:0.6rem;background:var(--s3);border:1px solid var(--b2);border-radius:5px;padding:3px 8px;color:var(--t3)}
+.tmpl-arrow{color:var(--t4);font-size:0.7rem}
+.tmpl-load-btn{margin-top:12px;background:var(--v);color:#fff;border:none;padding:7px 14px;border-radius:6px;font-family:var(--mono);font-size:0.7rem;font-weight:700;cursor:pointer;transition:0.2s;width:100%}
+.tmpl-load-btn:hover{background:#9aa5fc}
 
-/* ── TEMP CONNECTION LINE ── */
-#temp-line{position:fixed;pointer-events:none;z-index:9999}
-
-/* ── TOAST ── */
+/* TOAST */
 .toast-wrap{position:fixed;bottom:20px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast{background:var(--s2);border:1px solid var(--b3);border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:0.75rem;color:var(--t2);box-shadow:0 4px 20px rgba(0,0,0,0.5);animation:slideIn 0.2s ease,fadeOut 0.3s ease 2.7s forwards;display:flex;align-items:center;gap:8px}
+.toast{background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:10px 16px;font-family:var(--mono);font-size:0.73rem;color:var(--t2);box-shadow:0 4px 24px rgba(0,0,0,0.55);animation:toastIn 0.2s ease,toastOut 0.3s ease 2.7s forwards;display:flex;align-items:center;gap:8px}
 .toast.success{border-color:var(--gb);color:var(--g)}
-.toast.error{border-color:var(--rb);color:var(--r2)}
-@keyframes slideIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
-@keyframes fadeOut{to{opacity:0;transform:translateY(8px)}}
+.toast.error{border-color:rgba(248,113,113,0.3);color:var(--red)}
+.toast.warn{border-color:rgba(245,158,11,0.3);color:var(--orange)}
+@keyframes toastIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastOut{to{opacity:0;transform:translateY(6px)}}
 
-/* ── SPINNER ── */
+/* SPINNER */
 @keyframes spin{to{transform:rotate(360deg)}}
-.spinner{width:12px;height:12px;border:2px solid rgba(255,255,255,0.15);border-top-color:currentColor;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block;flex-shrink:0}
+.spinner{width:11px;height:11px;border:2px solid rgba(255,255,255,0.15);border-top-color:currentColor;border-radius:50%;animation:spin 0.65s linear infinite;display:inline-block;flex-shrink:0}
 
-/* ── HERO LANDING (before connect) ── */
-#landing{padding:88px 32px 48px;text-align:center}
-.sample-preview{margin-top:24px;display:inline-flex;align-items:center;gap:8px;flex-wrap:wrap;justify-content:center;opacity:0.5}
-.sp-node{background:var(--s2);border:1px solid var(--b2);border-radius:7px;padding:6px 12px;font-family:var(--mono);font-size:0.68rem;color:var(--t3)}
-.sp-arrow{color:var(--t4);font-size:0.8rem}
-
-/* ── RESPONSIVE MOBILE ── */
+/* RESPONSIVE */
+@media(max-width:900px){.config-panel{width:240px}}
 @media(max-width:768px){
   nav{padding:0 16px;height:50px}
   .nav-links a:not(.signup){display:none}
-  .hero-strip{padding:66px 16px 24px}
-  .api-key-wrap input{width:220px}
+  #landing{padding:30px 16px}
   #app{margin-top:50px;height:calc(100vh - 50px)}
   .app-body{flex-direction:column}
-  .palette{width:100%;max-height:120px;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;border-right:none;border-bottom:1px solid var(--b);padding:8px}
-  .palette-title{display:none}
-  .palette-item{min-width:130px;flex-direction:row}
-  .config-panel{width:100%;max-height:200px;border-left:none;border-top:1px solid var(--b)}
-  .canvas-wrap{min-height:200px}
-}
-@media(max-width:480px){
-  .connect-bar{flex-direction:column}
-  .api-key-wrap input{width:100%;max-width:300px}
+  .palette{width:100%;max-height:110px;flex-direction:row;flex-wrap:nowrap;overflow-x:auto;overflow-y:hidden;border-right:none;border-bottom:1px solid var(--b);padding:8px;gap:6px}
+  .palette-section{display:none}
+  .palette-item{min-width:120px;flex-shrink:0}
+  .config-panel{width:100%;max-height:190px;border-left:none;border-top:1px solid var(--b)}
+  .canvas-wrap{min-height:180px}
+  .templates-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -259,150 +263,193 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(
 
 <!-- NAV -->
 <nav><div class="nv">
-  <a href="/" class="logo"><span class="mark">SLOPSHOP.gg</span><span class="vtag">v4.0</span></a>
+  <a href="/" class="logo"><span class="mark">SLOPSHOP.gg</span><span class="vtag">v4</span></a>
   <div class="nav-links">
     <a href="/">Home</a>
     <a href="/tools">Tools</a>
     <a href="/docs">Docs</a>
     <a href="/pricing">Pricing</a>
+    <a href="/memory-manager">Memory Manager</a>
     <a href="/playground" class="active">Playground</a>
     <a href="/signup" class="signup">Sign Up Free</a>
   </div>
 </div></nav>
 
-<!-- HERO STRIP (always visible) -->
-<div class="hero-strip" id="heroStrip">
-  <div class="hero-tag">✦ No-Code Builder — Beta</div>
-  <h1><span class="acc">No-Code</span> Memory Builder</h1>
-  <p class="sub">Drag, drop, and connect Memory &amp; Dream Engine nodes into live workflows. No code required — runs real API calls.</p>
-  <div class="connect-bar">
-    <div class="api-key-wrap">
-      <input type="password" id="apiKeyInput" placeholder="sk-slop-..." autocomplete="off" spellcheck="false">
-      <button class="toggle-key" id="toggleKey" title="Show/hide key">👁</button>
+<!-- LANDING -->
+<div id="landing">
+  <div class="landing-badge">&#10022; No-Code Workflow Builder</div>
+  <h1 class="landing-h1">Build <span class="acc-indigo">Dream Engine</span><br>workflows <span class="acc-cyan">visually</span></h1>
+  <p class="landing-sub">Drag nodes onto the canvas. Connect them. Hit Run. Real API calls — no code, no friction. Memory synthesis, team spaces, and AI transforms in minutes.</p>
+  <div class="connect-card">
+    <div class="connect-card-title">Enter your API key to start building</div>
+    <div class="connect-row">
+      <div class="api-key-wrap">
+        <input type="password" id="apiKeyInput" placeholder="sk-slop-..." autocomplete="off" spellcheck="false">
+        <button class="toggle-key" id="toggleKey" title="Show key">&#128065;</button>
+      </div>
+      <button class="btn-connect" id="connectBtn">
+        <span class="spinner" id="connectSpinner" style="display:none"></span>
+        &#9889; Connect
+      </button>
     </div>
-    <button class="btn-connect" id="connectBtn">⚡ Connect</button>
-    <div style="display:flex;align-items:center;gap:7px;margin-left:4px">
+    <div class="connect-status">
       <div class="status-dot" id="statusDot"></div>
-      <span class="status-label" id="statusLabel">Disconnected</span>
+      <span class="status-label" id="statusLabel">Not connected</span>
     </div>
   </div>
   <div class="sample-preview">
-    <span class="sp-node">🔍 Memory Search</span>
-    <span class="sp-arrow">→</span>
-    <span class="sp-node">🌙 Dream Engine</span>
-    <span class="sp-arrow">→</span>
-    <span class="sp-node">💾 Memory Write</span>
+    <span class="sp-node">&#128270; Memory Search</span>
+    <span class="sp-arrow">&#8594;</span>
+    <span class="sp-node">&#127769; Dream Engine</span>
+    <span class="sp-arrow">&#8594;</span>
+    <span class="sp-node">&#128190; Memory Write</span>
   </div>
 </div>
 
-<!-- MAIN APP (hidden until connected) -->
+<!-- MAIN APP -->
 <div id="app">
+  <div class="app-toolbar">
+    <span class="tb-label">Workflow:</span>
+    <button class="tb-btn run-btn" id="runBtn" disabled>&#9654; Run Workflow</button>
+    <button class="tb-btn tmpl-btn" id="templatesBtn">&#9776; Templates</button>
+    <button class="tb-btn export-btn" id="exportBtn">&#10515; Export JS</button>
+    <button class="tb-btn clear-btn" id="clearBtn">&#10005; Clear</button>
+    <div class="tb-spacer"></div>
+    <span class="node-count" id="nodeCount">0 nodes</span>
+    <div class="connected-badge"><div class="dot"></div><span id="connectedHint">Connected</span></div>
+  </div>
   <div class="app-body">
 
-    <!-- LEFT: PALETTE -->
+    <!-- PALETTE -->
     <div class="palette" id="palette">
-      <div class="palette-title">Components</div>
+      <div class="palette-section">Memory</div>
       <div class="palette-item" data-type="memory-read" draggable="true">
-        <span class="pi-icon">🧠</span>
-        <div class="pi-text">
-          <div class="pi-name">Memory Read</div>
-          <div class="pi-desc">Read a key from namespace</div>
-        </div>
+        <div class="pi-icon">&#128269;</div>
+        <div><div class="pi-name">Memory Read</div><div class="pi-desc">Fetch a key from namespace</div></div>
       </div>
       <div class="palette-item" data-type="memory-write" draggable="true">
-        <span class="pi-icon">💾</span>
-        <div class="pi-text">
-          <div class="pi-name">Memory Write</div>
-          <div class="pi-desc">Write key/value to namespace</div>
-        </div>
-      </div>
-      <div class="palette-item" data-type="dream-engine" draggable="true">
-        <span class="pi-icon">🌙</span>
-        <div class="pi-text">
-          <div class="pi-name">Dream Engine</div>
-          <div class="pi-desc">Run a dream strategy</div>
-        </div>
+        <div class="pi-icon">&#128190;</div>
+        <div><div class="pi-name">Memory Write</div><div class="pi-desc">Store a value in namespace</div></div>
       </div>
       <div class="palette-item" data-type="memory-search" draggable="true">
-        <span class="pi-icon">🔍</span>
-        <div class="pi-text">
-          <div class="pi-name">Memory Search</div>
-          <div class="pi-desc">Semantic search in memory</div>
-        </div>
+        <div class="pi-icon">&#128270;</div>
+        <div><div class="pi-name">Memory Search</div><div class="pi-desc">Semantic search memories</div></div>
       </div>
       <div class="palette-item" data-type="memory-list" draggable="true">
-        <span class="pi-icon">📋</span>
-        <div class="pi-text">
-          <div class="pi-name">Memory List</div>
-          <div class="pi-desc">List all keys in namespace</div>
-        </div>
+        <div class="pi-icon">&#128218;</div>
+        <div><div class="pi-name">Memory List</div><div class="pi-desc">List keys in namespace</div></div>
+      </div>
+      <div class="palette-section">AI</div>
+      <div class="palette-item" data-type="dream-engine" draggable="true">
+        <div class="pi-icon">&#127769;</div>
+        <div><div class="pi-name">Dream Engine</div><div class="pi-desc">Synthesize &amp; evolve memory</div></div>
       </div>
       <div class="palette-item" data-type="transform" draggable="true">
-        <span class="pi-icon">🔄</span>
-        <div class="pi-text">
-          <div class="pi-name">Transform</div>
-          <div class="pi-desc">Summarize, extract, expand</div>
-        </div>
+        <div class="pi-icon">&#9889;</div>
+        <div><div class="pi-name">Transform</div><div class="pi-desc">Summarize, extract, expand</div></div>
+      </div>
+      <div class="palette-section">Sharing</div>
+      <div class="palette-item" data-type="shared-space" draggable="true">
+        <div class="pi-icon">&#128101;</div>
+        <div><div class="pi-name">Shared Space</div><div class="pi-desc">Create a multiplayer space</div></div>
       </div>
     </div>
 
-    <!-- CENTER: CANVAS -->
+    <!-- CANVAS -->
     <div class="canvas-wrap">
-      <div class="canvas-toolbar">
-        <span class="tb-label">WORKFLOW</span>
-        <button class="tb-btn" id="btnTemplates" style="border-color:rgba(6,182,212,0.3);color:var(--c)">⬡ Templates</button>
-        <button class="tb-btn clear" id="btnClear">✕ Clear</button>
-        <button class="tb-btn run" id="btnRun">▶ Run</button>
-        <button class="tb-btn export" id="btnExport">⟨/⟩ Export</button>
-        <div class="tb-spacer"></div>
-        <span class="node-count" id="nodeCount">0 nodes</span>
-      </div>
-      <div class="canvas" id="canvas" ondragover="event.preventDefault()" ondrop="handleCanvasDrop(event)">
-        <svg class="arrows" id="arrowSvg">
+      <div class="canvas" id="canvas">
+        <svg class="arrows" id="arrowsSvg">
           <defs>
-            <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-              <polygon points="0 0, 8 3, 0 6" fill="#8855ff" opacity="0.8"/>
+            <marker id="arrowhead" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+              <polygon points="0 0,8 3,0 6" fill="#818cf8" opacity="0.7"/>
             </marker>
           </defs>
         </svg>
       </div>
     </div>
 
-    <!-- RIGHT: CONFIG PANEL -->
+    <!-- CONFIG PANEL -->
     <div class="config-panel" id="configPanel">
       <div class="config-empty" id="configEmpty">
-        <div class="ce-icon">⚙️</div>
-        <div class="ce-text">Click a node to configure it.<br><br>Drag components from the left panel onto the canvas.</div>
+        <div class="ce-icon">&#128295;</div>
+        <div class="ce-text">Click a node to<br>configure it here.<br><br>Drag nodes from the<br>palette to add them.</div>
       </div>
-      <div id="configContent" style="display:none;flex:1;flex-direction:column;overflow:hidden">
-        <div class="config-header" id="configHeader">
-          <span class="ch-icon" id="configIcon"></span>
-          <span class="ch-title" id="configTitle"></span>
-          <button class="ch-del" id="configDelete" title="Delete node">✕</button>
-        </div>
-        <div class="config-fields" id="configFields"></div>
-        <button class="config-apply" id="configApply">Apply Changes</button>
-      </div>
+      <div id="configContent" style="display:none;flex-direction:column;flex:1"></div>
     </div>
-
   </div>
 
   <!-- OUTPUT PANEL -->
-  <div class="output-panel collapsed" id="outputPanel">
+  <div class="output-panel" id="outputPanel">
     <div class="output-header" id="outputHeader">
-      <span class="output-title">▸ Output &amp; Logs</span>
-      <span id="outputCreditsInline" style="font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-right:8px"></span>
-      <span class="output-toggle">▲</span>
+      <span class="output-title">&#128196; Output</span>
+      <span class="output-toggle" id="outputToggle">&#9660;</span>
     </div>
-    <div class="output-tabs" id="outputTabs" style="display:none">
+    <div class="output-tabs" id="outputTabs">
       <div class="out-tab active" data-tab="log">Log</div>
-      <div class="out-tab" data-tab="result">Result</div>
+      <div class="out-tab" data-tab="results">Results</div>
       <div class="out-tab" data-tab="credits">Credits</div>
     </div>
     <div class="output-body" id="outputBody">
-      <div class="empty-output">
-        <span style="font-size:1.5rem;opacity:0.3">📋</span>
-        <span>Run a workflow to see output here.</span>
+      <div class="empty-output">&#128196; Run a workflow to see output here.</div>
+    </div>
+  </div>
+</div>
+
+<!-- TEMPLATES MODAL -->
+<div class="modal-overlay" id="templatesModal">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>&#9776; Workflow Templates</h2>
+      <button class="modal-close" data-close="templatesModal">&#10005;</button>
+    </div>
+    <div class="modal-body">
+      <div class="templates-grid">
+        <div class="tmpl-card">
+          <h3>&#127775; Dream Starter</h3>
+          <p>Search your memory, pipe results into Dream Engine for synthesis, then write the result back.</p>
+          <div class="tmpl-flow">
+            <span class="tmpl-step">Memory Search</span>
+            <span class="tmpl-arrow">&#8594;</span>
+            <span class="tmpl-step">Dream Engine</span>
+            <span class="tmpl-arrow">&#8594;</span>
+            <span class="tmpl-step">Memory Write</span>
+          </div>
+          <button class="tmpl-load-btn" data-tmpl="dream-starter">Load Template</button>
+        </div>
+        <div class="tmpl-card">
+          <h3>&#128197; Daily Digest</h3>
+          <p>List all memories in a namespace and extract patterns with Dream Engine's pattern_extract strategy.</p>
+          <div class="tmpl-flow">
+            <span class="tmpl-step">Memory List</span>
+            <span class="tmpl-arrow">&#8594;</span>
+            <span class="tmpl-step">Dream Engine</span>
+          </div>
+          <button class="tmpl-load-btn" data-tmpl="daily-digest">Load Template</button>
+        </div>
+        <div class="tmpl-card">
+          <h3>&#128101; Team Sync</h3>
+          <p>Read a memory, summarize it with Transform, then create a Shared Space for team collaboration.</p>
+          <div class="tmpl-flow">
+            <span class="tmpl-step">Memory Read</span>
+            <span class="tmpl-arrow">&#8594;</span>
+            <span class="tmpl-step">Transform</span>
+            <span class="tmpl-arrow">&#8594;</span>
+            <span class="tmpl-step">Shared Space</span>
+          </div>
+          <button class="tmpl-load-btn" data-tmpl="team-sync">Load Template</button>
+        </div>
+        <div class="tmpl-card">
+          <h3>&#128260; Evolve Loop</h3>
+          <p>Write a seed memory, run Dream Engine to evolve it, then write the evolved result back.</p>
+          <div class="tmpl-flow">
+            <span class="tmpl-step">Memory Write</span>
+            <span class="tmpl-arrow">&#8594;</span>
+            <span class="tmpl-step">Dream Engine</span>
+            <span class="tmpl-arrow">&#8594;</span>
+            <span class="tmpl-step">Memory Write</span>
+          </div>
+          <button class="tmpl-load-btn" data-tmpl="evolve-loop">Load Template</button>
+        </div>
       </div>
     </div>
   </div>
@@ -412,1122 +459,864 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(
 <div class="modal-overlay" id="exportModal">
   <div class="modal">
     <div class="modal-head">
-      <h2>⟨/⟩ Export as JavaScript</h2>
-      <button class="modal-close" id="exportClose">✕</button>
+      <h2>&#10515; Export as JavaScript</h2>
+      <button class="modal-close" data-close="exportModal">&#10005;</button>
     </div>
     <div class="modal-body">
       <pre id="exportCode"></pre>
-      <button class="modal-copy" id="exportCopy">📋 Copy to Clipboard</button>
+      <button class="modal-copy" id="exportCopy">&#128203; Copy to Clipboard</button>
     </div>
   </div>
 </div>
 
-<!-- TEMPLATES MODAL -->
-<div class="modal-overlay" id="templatesModal">
-  <div class="modal" style="max-width:640px">
-    <div class="modal-head">
-      <h2>⬡ Starter Templates</h2>
-      <button class="modal-close" id="templatesClose">✕</button>
-    </div>
-    <div class="modal-body" style="padding:0">
-      <div id="templatesList" style="display:flex;flex-direction:column;gap:0"></div>
-    </div>
-  </div>
-</div>
-
-<!-- TOAST CONTAINER -->
+<!-- TOAST -->
 <div class="toast-wrap" id="toastWrap"></div>
 
+<!-- TEMP CONNECTION LINE -->
+<svg id="tempLineSvg" style="position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:9999;display:none;overflow:visible">
+  <defs>
+    <marker id="arrowheadTemp" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+      <polygon points="0 0,8 3,0 6" fill="#818cf8" opacity="0.85"/>
+    </marker>
+  </defs>
+  <path id="tempLinePath" stroke="#818cf8" stroke-width="2" fill="none" stroke-dasharray="6 3" opacity="0.8" marker-end="url(#arrowheadTemp)"/>
+</svg>
+
 <script>
-// ═══════════════════════════════════════════════════════════════
-// STATE
-// ═══════════════════════════════════════════════════════════════
+'use strict';
+
+// ─── CONFIG ───────────────────────────────────────────────────────────────
 const API_BASE = '/v1';
-let apiKey = '';
-let nodes = {}; // id → {id, type, x, y, config, el}
-let connections = []; // [{from: nodeId, to: nodeId}]
-let selectedNodeId = null;
-let nodeCounter = 0;
-let connectingFrom = null; // {nodeId, portEl}
-let currentTab = 'log';
-let lastResult = null;
-let totalCreditsUsed = 0;
-let execLog = [];
 
-// ═══════════════════════════════════════════════════════════════
-// TEMPLATES
-// ═══════════════════════════════════════════════════════════════
-const TEMPLATES = [
-  {
-    id: 'dream-starter',
-    name: 'Dream Starter',
-    icon: '🌙',
-    desc: 'Search your memory, run Dream Engine synthesis, save the insights.',
-    color: 'var(--v)',
-    nodes: [
-      {type:'memory-search', x:60,  y:80, config:{namespace:'agent', query:'recent work', limit:8}},
-      {type:'dream-engine',  x:270, y:80, config:{namespace:'agent', strategy:'synthesize', topic:'work insights'}},
-      {type:'memory-write',  x:480, y:80, config:{namespace:'agent', key:'dream_insights', value:''}},
-    ],
-    connections: [[0,1],[1,2]],
-  },
-  {
-    id: 'multiplayer-sync',
-    name: 'Multiplayer Sync',
-    icon: '👥',
-    desc: 'Read from your private memory, transform it, share to a team namespace.',
-    color: 'var(--g)',
-    nodes: [
-      {type:'memory-read',   x:60,  y:80, config:{namespace:'agent', key:'project_notes'}},
-      {type:'transform',     x:270, y:80, config:{operation:'summarize'}},
-      {type:'memory-write',  x:480, y:80, config:{namespace:'team', key:'shared_notes', value:''}},
-    ],
-    connections: [[0,1],[1,2]],
-  },
-  {
-    id: 'daily-digest',
-    name: 'Daily Digest',
-    icon: '📰',
-    desc: 'List all memory entries, run pattern extraction to surface recurring themes.',
-    color: 'var(--o)',
-    nodes: [
-      {type:'memory-list',   x:60,  y:80, config:{namespace:'agent', limit:30}},
-      {type:'dream-engine',  x:280, y:80, config:{namespace:'agent', strategy:'pattern_extract', topic:'daily themes'}},
-    ],
-    connections: [[0,1]],
-  },
-  {
-    id: 'evolve-loop',
-    name: 'Evolve Loop',
-    icon: '🔁',
-    desc: 'Write new knowledge, evolve Bayesian beliefs, compress and store updated model.',
-    color: 'var(--r)',
-    nodes: [
-      {type:'memory-write',  x:60,  y:80, config:{namespace:'agent', key:'new_input', value:'paste new data here'}},
-      {type:'dream-engine',  x:270, y:80, config:{namespace:'agent', strategy:'evolve', topic:'belief update'}},
-      {type:'memory-write',  x:480, y:80, config:{namespace:'agent', key:'evolved_model', value:''}},
-    ],
-    connections: [[0,1],[1,2]],
-  },
-];
+// ─── STATE ────────────────────────────────────────────────────────────────
+let apiKey      = '';
+let nodes       = {};  // id -> node object
+let edges       = [];  // { id, from, to }
+let selectedId  = null;
+let connectFrom = null; // { nodeId, portEl }
+let panOffset   = { x: 0, y: 0 };
+let isPanning   = false;
+let panStart    = { x: 0, y: 0 };
+let dragNode    = null; // { id, ox, oy }
+let nodeSeq     = 0;
+let edgeSeq     = 0;
+let outputTab   = 'log';
+let logLines    = [];
+let resultData  = {};
+let creditsUsed = 0;
+let totalCreds  = 0;
 
-function renderTemplates() {
-  const list = document.getElementById('templatesList');
-  list.innerHTML = '';
-  TEMPLATES.forEach(t => {
-    const el = document.createElement('div');
-    el.style.cssText = 'padding:20px 24px;border-bottom:1px solid var(--b);cursor:pointer;transition:background 0.15s;display:flex;align-items:flex-start;gap:16px';
-    el.innerHTML = `
-      <div style="font-size:1.8rem;flex-shrink:0;line-height:1">${t.icon}</div>
-      <div style="flex:1">
-        <div style="font-family:var(--mono);font-weight:700;font-size:0.88rem;color:${t.color};margin-bottom:4px">${t.name}</div>
-        <div style="font-size:0.78rem;color:var(--t3);line-height:1.6;margin-bottom:10px">${t.desc}</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap">${t.nodes.map(n=>NODE_META[n.type]?`<span style="background:var(--s2);border:1px solid var(--b2);padding:2px 8px;border-radius:4px;font-family:var(--mono);font-size:0.62rem;color:var(--t3)">${NODE_META[n.type].icon} ${NODE_META[n.type].name}</span>`:'').join('')}</div>
-      </div>
-      <button style="background:${t.color};color:#000;border:none;padding:8px 18px;border-radius:7px;font-family:var(--mono);font-size:0.72rem;font-weight:700;cursor:pointer;flex-shrink:0;white-space:nowrap;color:#fff">Load →</button>
-    `;
-    el.querySelector('button').addEventListener('click', () => loadTemplate(t));
-    el.addEventListener('mouseenter', () => el.style.background = 'var(--s2)');
-    el.addEventListener('mouseleave', () => el.style.background = '');
-    list.appendChild(el);
-  });
-}
-
-function loadTemplate(t) {
-  // Clear existing
-  Object.values(nodes).forEach(n => n.el.remove());
-  nodes = {};
-  connections = [];
-  nodeCounter = 0;
-  selectedNodeId = null;
-  showConfigEmpty();
-  updateArrows();
-
-  const canvas = document.getElementById('canvas');
-  const ch = canvas.offsetHeight;
-  const yOffset = Math.max(0, (ch - 160) / 2) - 40;
-
-  const created = t.nodes.map(nd => {
-    const n = createNode(nd.type, nd.x, nd.y + yOffset);
-    n.config = Object.assign({}, nd.config);
-    updateNodeBody(n);
-    return n;
-  });
-
-  t.connections.forEach(([fi, ti]) => {
-    connections.push({from: created[fi].id, to: created[ti].id});
-  });
-
-  updateArrows();
-  updateNodeCount();
-  document.getElementById('templatesModal').classList.remove('open');
-  toast(`${t.icon} ${t.name} loaded — click nodes to configure, then Run Workflow`, 'success');
-  openOutput();
-  logMsg(`Template "${t.name}" loaded. ${t.nodes.length} nodes, ${t.connections.length} connections.`, 'info');
-}
-
-// Templates button
-document.getElementById('btnTemplates').addEventListener('click', () => {
-  renderTemplates();
-  document.getElementById('templatesModal').classList.add('open');
-});
-document.getElementById('templatesClose').addEventListener('click', () => {
-  document.getElementById('templatesModal').classList.remove('open');
-});
-document.getElementById('templatesModal').addEventListener('click', (e) => {
-  if (e.target === e.currentTarget) e.currentTarget.classList.remove('open');
-});
-
-// Node metadata
-const NODE_META = {
-  'memory-read':   {icon:'🧠', name:'Memory Read',   color:'var(--c)', endpoint:'/memory-get'},
-  'memory-write':  {icon:'💾', name:'Memory Write',  color:'var(--g)', endpoint:'/memory-set'},
-  'dream-engine':  {icon:'🌙', name:'Dream Engine',  color:'var(--v)', endpoint:'/memory/dream/start'},
-  'memory-search': {icon:'🔍', name:'Memory Search', color:'var(--o)', endpoint:'/memory-search'},
-  'memory-list':   {icon:'📋', name:'Memory List',   color:'var(--t2)',endpoint:'/memory-list'},
-  'transform':     {icon:'🔄', name:'Transform',     color:'var(--r)', endpoint:null},
+// ─── NODE DEFINITIONS ─────────────────────────────────────────────────────
+const NODE_DEF = {
+  'memory-read':   { icon: '&#128269;', label: 'Memory Read',   color: 'var(--r)',      fields: [['namespace','Namespace','text','agent'],['key','Key','text','my-key']] },
+  'memory-write':  { icon: '&#128190;', label: 'Memory Write',  color: 'var(--g)',      fields: [['namespace','Namespace','text','agent'],['key','Key','text','result'],['value','Value','textarea','Memory content...']] },
+  'memory-search': { icon: '&#128270;', label: 'Memory Search', color: 'var(--o)',      fields: [['namespace','Namespace','text','agent'],['query','Query','text','topic or concept'],['limit','Limit','number','10']] },
+  'memory-list':   { icon: '&#128218;', label: 'Memory List',   color: 'var(--t2)',     fields: [['namespace','Namespace','text','agent'],['limit','Limit','number','50']] },
+  'dream-engine':  { icon: '&#127769;', label: 'Dream Engine',  color: 'var(--v)',      fields: [['namespace','Namespace','text','agent'],['strategy','Strategy','select:synthesize|pattern_extract|insight_generate|compress|associate|evolve|forecast|reflect|validate','synthesize'],['topic','Topic (optional)','text','']] },
+  'transform':     { icon: '&#9889;',   label: 'Transform',     color: 'var(--red)',    fields: [['operation','Operation','select:summarize|extract|expand|translate','summarize'],['model','Model','select:claude|grok|deepseek','claude'],['input','Input (optional)','textarea','']] },
+  'shared-space':  { icon: '&#128101;', label: 'Shared Space',  color: 'var(--purple)', fields: [['name','Space Name','text','team-space'],['retention','Retention','select:1h|24h|7d|30d','24h']] }
 };
 
-const NODE_DEFAULTS = {
-  'memory-read':   {namespace:'agent', key:''},
-  'memory-write':  {namespace:'agent', key:'', value:''},
-  'dream-engine':  {namespace:'agent', strategy:'synthesize', topic:''},
-  'memory-search': {namespace:'agent', query:'', limit:5},
-  'memory-list':   {namespace:'agent', limit:20},
-  'transform':     {operation:'summarize'},
-};
+// ─── UTILITIES ────────────────────────────────────────────────────────────
+function uid()  { return 'n' + (++nodeSeq) + '_' + Math.random().toString(36).slice(2, 6); }
+function eid()  { return 'e' + (++edgeSeq); }
+function escH(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function ts()   { const d = new Date(); return [d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>String(n).padStart(2,'0')).join(':'); }
+function sleep(ms){ return new Promise(r=>setTimeout(r,ms)); }
 
-// ═══════════════════════════════════════════════════════════════
-// CONNECT
-// ═══════════════════════════════════════════════════════════════
+function toast(msg, type='info') {
+  const w = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = 'toast' + (type !== 'info' ? ' ' + type : '');
+  const icon = type==='success' ? '&#9989; ' : type==='error' ? '&#10060; ' : type==='warn' ? '&#9888; ' : '&#8505; ';
+  el.innerHTML = icon + escH(msg);
+  w.appendChild(el);
+  setTimeout(() => el.remove(), 3200);
+}
+
+function log(msg, type='info') {
+  logLines.push({ ts: ts(), msg, type });
+  if (outputTab === 'log') renderLog();
+}
+
+async function apiCall(method, path, body) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + apiKey }
+  };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const resp = await fetch(API_BASE + path, opts);
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) {
+    const msg = data.error || data.message || ('HTTP ' + resp.status);
+    const err = new Error(msg);
+    err.status = resp.status;
+    err.data = data;
+    throw err;
+  }
+  return data;
+}
+
+// ─── CONNECT ──────────────────────────────────────────────────────────────
+const $apiKey    = document.getElementById('apiKeyInput');
+const $connBtn   = document.getElementById('connectBtn');
+const $statusDot = document.getElementById('statusDot');
+const $statusLbl = document.getElementById('statusLabel');
+const $connSpn   = document.getElementById('connectSpinner');
+
+const savedKey = localStorage.getItem('slop_api_key');
+if (savedKey) $apiKey.value = savedKey;
+
 document.getElementById('toggleKey').addEventListener('click', () => {
-  const inp = document.getElementById('apiKeyInput');
-  inp.type = inp.type === 'password' ? 'text' : 'password';
+  $apiKey.type = $apiKey.type === 'password' ? 'text' : 'password';
 });
 
-document.getElementById('connectBtn').addEventListener('click', async () => {
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) { toast('Enter your API key first', 'error'); return; }
-  apiKey = key;
+$apiKey.addEventListener('keydown', e => { if (e.key === 'Enter') $connBtn.click(); });
+
+$connBtn.addEventListener('click', async () => {
+  const key = $apiKey.value.trim();
+  if (!key) { toast('Enter an API key first', 'warn'); return; }
+  $connBtn.disabled = true;
+  $connSpn.style.display = 'inline-block';
   setStatus('connecting');
   try {
-    const r = await fetch(`${API_BASE}/memory-list`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
-      body: JSON.stringify({namespace:'__ping__', limit:1})
-    });
-    if (r.status === 401) throw new Error('Invalid API key');
-    setStatus('connected');
+    apiKey = key;
+    const res = await apiCall('POST', '/memory-list', { namespace: '__ping__', limit: 1 });
+    localStorage.setItem('slop_api_key', key);
+    if (typeof res.credits === 'number') totalCreds = res.credits;
+    setStatus('on', 'Connected');
     showApp();
-    toast('Connected! Loading sample workflow...', 'success');
-    setTimeout(loadSampleWorkflow, 300);
-  } catch(e) {
-    setStatus('error');
-    toast(e.message || 'Connection failed', 'error');
+    toast('Connected — start building!', 'success');
+  } catch (err) {
+    apiKey = '';
+    if (err.status === 401) {
+      setStatus('err', 'Invalid API key');
+      toast('Invalid API key — double-check and retry', 'error');
+    } else {
+      setStatus('err', 'Connection failed');
+      toast('Connection failed: ' + err.message, 'error');
+    }
+  } finally {
+    $connBtn.disabled = false;
+    $connSpn.style.display = 'none';
   }
 });
 
-function setStatus(s) {
-  const dot = document.getElementById('statusDot');
-  const lbl = document.getElementById('statusLabel');
-  const btn = document.getElementById('connectBtn');
-  dot.className = 'status-dot' + (s === 'connected' ? ' on' : s === 'error' ? ' err' : '');
-  lbl.className = 'status-label' + (s === 'connected' ? ' on' : s === 'error' ? ' err' : '');
-  lbl.textContent = s === 'connected' ? 'Connected' : s === 'error' ? 'Error' : s === 'connecting' ? 'Connecting...' : 'Disconnected';
-  if (s === 'connected') { btn.className = 'btn-connect connected'; btn.textContent = '✓ Connected'; }
-  if (s === 'connecting') { btn.innerHTML = '<span class="spinner"></span> Connecting...'; btn.className = 'btn-connect'; }
-  if (s === 'error') { btn.textContent = '⚡ Retry'; btn.className = 'btn-connect'; }
+function setStatus(state, msg) {
+  $statusDot.className = 'status-dot' + (state === 'on' ? ' on' : state === 'err' ? ' err' : '');
+  $statusLbl.className = 'status-label' + (state === 'on' ? ' on' : state === 'err' ? ' err' : '');
+  $statusLbl.textContent = msg || (state === 'on' ? 'Connected' : state === 'err' ? 'Error' : 'Connecting...');
 }
 
 function showApp() {
-  document.getElementById('heroStrip').style.display = 'none';
-  const app = document.getElementById('app');
-  app.classList.add('visible');
-  updateArrows();
+  document.getElementById('landing').style.display = 'none';
+  document.getElementById('app').classList.add('visible');
+  const hint = apiKey.length > 12 ? apiKey.slice(0,8) + '...' + apiKey.slice(-4) : '***';
+  document.getElementById('connectedHint').textContent = hint;
+  document.getElementById('runBtn').disabled = false;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// SAMPLE WORKFLOW
-// ═══════════════════════════════════════════════════════════════
-function loadSampleWorkflow() {
-  const canvas = document.getElementById('canvas');
-  const cw = canvas.offsetWidth, ch = canvas.offsetHeight;
-  const startX = Math.max(40, (cw - 600) / 2);
-  const y = Math.max(80, ch / 2 - 70);
-
-  const n1 = createNode('memory-search', startX, y);
-  n1.config = {namespace:'agent', query:'recent insights', limit:5};
-  updateNodeBody(n1);
-
-  const n2 = createNode('dream-engine', startX + 210, y);
-  n2.config = {namespace:'agent', strategy:'synthesize', topic:'insights summary'};
-  updateNodeBody(n2);
-
-  const n3 = createNode('memory-write', startX + 420, y);
-  n3.config = {namespace:'agent', key:'synthesis_result', value:''};
-  updateNodeBody(n3);
-
-  connections.push({from: n1.id, to: n2.id});
-  connections.push({from: n2.id, to: n3.id});
-
-  updateArrows();
-  updateNodeCount();
-  logMsg('Sample workflow loaded. Configure namespaces and click Run Workflow.', 'info');
-  openOutput();
+// ─── DEFAULT CONFIG ───────────────────────────────────────────────────────
+function defaultCfg(type) {
+  const cfg = {};
+  (NODE_DEF[type].fields || []).forEach(([k,,, def]) => { cfg[k] = def || ''; });
+  return cfg;
 }
 
-// ═══════════════════════════════════════════════════════════════
-// NODE CREATION
-// ═══════════════════════════════════════════════════════════════
-function createNode(type, x, y) {
-  const id = `node_${++nodeCounter}`;
-  const meta = NODE_META[type];
-  const config = Object.assign({}, NODE_DEFAULTS[type]);
+// ─── CREATE NODE ──────────────────────────────────────────────────────────
+function createNode(type, x, y, config) {
+  const id = uid();
+  nodes[id] = { id, type, x, y, config: config || defaultCfg(type), status: 'idle', output: null };
+  mountNode(id);
+  updateCount();
+  document.getElementById('runBtn').disabled = false;
+  return id;
+}
+
+function mountNode(id) {
+  const nd  = nodes[id];
+  const def = NODE_DEF[nd.type];
+  const old = document.getElementById('nd_' + id);
+  if (old) old.remove();
+
   const el = document.createElement('div');
-  el.className = 'canvas-node';
+  el.className = 'canvas-node' + (nd.status !== 'idle' ? ' ' + nd.status : '') + (id === selectedId ? ' selected' : '');
+  el.id = 'nd_' + id;
   el.dataset.id = id;
-  el.dataset.type = type;
-  el.style.left = x + 'px';
-  el.style.top  = y + 'px';
+  el.dataset.type = nd.type;
+  el.style.cssText = 'left:' + (nd.x + panOffset.x) + 'px;top:' + (nd.y + panOffset.y) + 'px';
 
-  el.innerHTML = `
-    <div class="node-header">
-      <span class="nh-icon">${meta.icon}</span>
-      <span class="nh-title" style="color:${meta.color}">${meta.name}</span>
-      <span class="nh-status" id="ns_${id}"></span>
-    </div>
-    <div class="node-body" id="nb_${id}">
-      <div class="nb-field" style="color:var(--t4)">Click to configure</div>
-    </div>
-    <div class="port input-port" id="ip_${id}" title="Input port"></div>
-    <div class="port output-port" id="op_${id}" title="Output port"></div>
-  `;
-
-  // Node click → select
-  el.addEventListener('mousedown', (e) => {
-    if (e.target.classList.contains('port')) return;
-    e.stopPropagation();
-    startDragNode(e, id);
-  });
-  el.addEventListener('click', (e) => {
-    if (e.target.classList.contains('port')) return;
-    selectNode(id);
-  });
-  el.addEventListener('dblclick', (e) => {
-    if (e.target.classList.contains('port')) return;
-    deleteNode(id);
-  });
-
-  // Port interactions
-  const outPort = el.querySelector(`#op_${id}`);
-  const inPort  = el.querySelector(`#ip_${id}`);
-
-  outPort.addEventListener('mousedown', (e) => {
-    e.stopPropagation();
-    e.preventDefault();
-    startConnecting(id, outPort, e);
-  });
-
-  inPort.addEventListener('mouseup', (e) => {
-    e.stopPropagation();
-    finishConnecting(id);
-  });
+  el.innerHTML =
+    '<div class="node-header" style="background:linear-gradient(135deg,' + def.color + '18,transparent)">' +
+      '<span class="nh-icon">' + def.icon + '</span>' +
+      '<span class="nh-title" style="color:' + def.color + '">' + def.label + '</span>' +
+      '<span class="nh-status ' + (nd.status === 'idle' ? '' : nd.status) + '" id="nst_' + id + '"></span>' +
+    '</div>' +
+    '<div class="node-body" id="nbd_' + id + '">' + nodeBodyHtml(nd) + '</div>' +
+    '<div class="input-port port" data-node="' + id + '" data-role="input"></div>' +
+    '<div class="output-port port" data-node="' + id + '" data-role="output"></div>';
 
   document.getElementById('canvas').appendChild(el);
-
-  const node = {id, type, x, y, config, el, status:'idle'};
-  nodes[id] = node;
-  return node;
+  wireNodeEvents(el, id);
 }
 
-function updateNodeBody(node) {
-  const el = document.getElementById(`nb_${node.id}`);
-  if (!el) return;
-  const cfg = node.config;
-  let lines = [];
-  if (cfg.namespace) lines.push(`<span style="color:var(--t4)">ns:</span> <span style="color:var(--t2)">${esc(cfg.namespace)}</span>`);
-  if (cfg.key)       lines.push(`<span style="color:var(--t4)">key:</span> <span style="color:var(--t2)">${esc(cfg.key.substring(0,16))}</span>`);
-  if (cfg.query)     lines.push(`<span style="color:var(--t4)">q:</span> <span style="color:var(--t2)">${esc(cfg.query.substring(0,16))}</span>`);
-  if (cfg.strategy)  lines.push(`<span style="color:var(--t4)">strat:</span> <span style="color:var(--v)">${esc(cfg.strategy)}</span>`);
-  if (cfg.operation) lines.push(`<span style="color:var(--t4)">op:</span> <span style="color:var(--r)">${esc(cfg.operation)}</span>`);
-  if (cfg.limit)     lines.push(`<span style="color:var(--t4)">limit:</span> ${cfg.limit}`);
-  el.innerHTML = lines.length ? lines.map(l=>`<div class="nb-field">${l}</div>`).join('') : '<div class="nb-field" style="color:var(--t4)">Unconfigured</div>';
+function nodeBodyHtml(nd) {
+  const def = NODE_DEF[nd.type];
+  const lines = (def.fields || []).slice(0, 3).map(([k, lbl]) => {
+    const v = nd.config[k] || '';
+    if (!v) return '';
+    return '<div class="nb-field">' + escH(lbl) + ': <span>' + escH(String(v).slice(0, 22)) + '</span></div>';
+  }).filter(Boolean);
+  return lines.length ? lines.join('') : '<div class="nb-field" style="color:var(--t4)">Not configured</div>';
+}
+
+function refreshNodeBody(id) {
+  const el = document.getElementById('nbd_' + id);
+  if (el) el.innerHTML = nodeBodyHtml(nodes[id]);
 }
 
 function setNodeStatus(id, status) {
-  const node = nodes[id];
-  if (!node) return;
-  node.status = status;
-  node.el.className = 'canvas-node' + (selectedNodeId === id ? ' selected' : '') + (status !== 'idle' ? ` ${status}` : '');
-  const dot = document.getElementById(`ns_${id}`);
-  if (dot) dot.className = 'nh-status ' + status;
+  if (!nodes[id]) return;
+  nodes[id].status = status;
+  const el = document.getElementById('nd_' + id);
+  if (!el) return;
+  el.className = 'canvas-node' + (status !== 'idle' ? ' ' + status : '') + (id === selectedId ? ' selected' : '');
+  const dot = document.getElementById('nst_' + id);
+  if (dot) dot.className = 'nh-status ' + (status === 'idle' ? '' : status);
+}
+
+function wireNodeEvents(el, id) {
+  // header — drag to move
+  el.querySelector('.node-header').addEventListener('mousedown', e => {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    selectNode(id);
+    const rect = el.getBoundingClientRect();
+    dragNode = { id, ox: e.clientX - rect.left, oy: e.clientY - rect.top };
+  });
+
+  // body click — select
+  el.addEventListener('click', e => { e.stopPropagation(); selectNode(id); });
+
+  // right-click — delete
+  el.addEventListener('contextmenu', e => { e.preventDefault(); deleteNode(id); });
+
+  // output port — start connection
+  el.querySelector('.output-port').addEventListener('mousedown', e => {
+    e.stopPropagation();
+    e.preventDefault();
+    connectFrom = { nodeId: id, portEl: el.querySelector('.output-port') };
+    connectFrom.portEl.classList.add('active-port');
+  });
+
+  // input port — finish connection
+  el.querySelector('.input-port').addEventListener('mouseup', () => {
+    if (connectFrom && connectFrom.nodeId !== id) finishEdge(id);
+  });
+}
+
+// ─── DRAG TO MOVE NODE ────────────────────────────────────────────────────
+document.addEventListener('mousemove', e => {
+  if (dragNode) {
+    const nd  = nodes[dragNode.id];
+    const el  = document.getElementById('nd_' + dragNode.id);
+    if (!nd || !el) return;
+    const cx = e.clientX - dragNode.ox;
+    const cy = e.clientY - dragNode.oy;
+    nd.x = cx - panOffset.x;
+    nd.y = cy - panOffset.y;
+    el.style.left = cx + 'px';
+    el.style.top  = cy + 'px';
+    drawEdges();
+  }
+
+  if (connectFrom) {
+    const svg  = document.getElementById('tempLineSvg');
+    const path = document.getElementById('tempLinePath');
+    svg.style.display = 'block';
+    const pr = connectFrom.portEl.getBoundingClientRect();
+    const x1 = pr.left + pr.width / 2;
+    const y1 = pr.top  + pr.height / 2;
+    const x2 = e.clientX, y2 = e.clientY;
+    const cp = Math.min(80, Math.abs(x2 - x1) * 0.55);
+    path.setAttribute('d', 'M' + x1 + ',' + y1 + ' C' + (x1 + cp) + ',' + y1 + ' ' + (x2 - cp) + ',' + y2 + ' ' + x2 + ',' + y2);
+  }
+
+  if (isPanning) {
+    panOffset.x += e.clientX - panStart.x;
+    panOffset.y += e.clientY - panStart.y;
+    panStart = { x: e.clientX, y: e.clientY };
+    applyPan();
+    drawEdges();
+  }
+});
+
+document.addEventListener('mouseup', () => {
+  dragNode = null;
+  if (connectFrom) {
+    connectFrom.portEl.classList.remove('active-port');
+    document.getElementById('tempLineSvg').style.display = 'none';
+    connectFrom = null;
+  }
+  if (isPanning) {
+    isPanning = false;
+    document.getElementById('canvas').classList.remove('pan-mode');
+  }
+});
+
+function applyPan() {
+  Object.keys(nodes).forEach(id => {
+    const nd = nodes[id];
+    const el = document.getElementById('nd_' + id);
+    if (el) {
+      el.style.left = (nd.x + panOffset.x) + 'px';
+      el.style.top  = (nd.y + panOffset.y) + 'px';
+    }
+  });
+}
+
+// ─── CANVAS MOUSEDOWN — PAN ───────────────────────────────────────────────
+document.getElementById('canvas').addEventListener('mousedown', e => {
+  const tag = e.target.tagName.toLowerCase();
+  const isCanvas = e.target.id === 'canvas' || tag === 'svg' || tag === 'defs' || tag === 'marker' || e.target === document.getElementById('arrowsSvg');
+  if (isCanvas && e.button === 0) {
+    deselectAll();
+    isPanning = true;
+    panStart = { x: e.clientX, y: e.clientY };
+    document.getElementById('canvas').classList.add('pan-mode');
+  }
+});
+
+// ─── PALETTE DRAG & DROP ──────────────────────────────────────────────────
+document.querySelectorAll('.palette-item').forEach(item => {
+  item.addEventListener('dragstart', e => {
+    e.dataTransfer.setData('node-type', item.dataset.type);
+    e.dataTransfer.effectAllowed = 'copy';
+  });
+});
+
+const $canvas = document.getElementById('canvas');
+$canvas.addEventListener('dragover', e => { e.preventDefault(); $canvas.classList.add('drag-over'); });
+$canvas.addEventListener('dragleave', () => $canvas.classList.remove('drag-over'));
+$canvas.addEventListener('drop', e => {
+  e.preventDefault();
+  $canvas.classList.remove('drag-over');
+  const type = e.dataTransfer.getData('node-type');
+  if (!type || !NODE_DEF[type]) return;
+  const r = $canvas.getBoundingClientRect();
+  const x = e.clientX - r.left - panOffset.x - 84;
+  const y = e.clientY - r.top  - panOffset.y - 34;
+  const id = createNode(type, Math.max(4, x), Math.max(4, y));
+  selectNode(id);
+});
+
+// ─── EDGES ────────────────────────────────────────────────────────────────
+function finishEdge(toId) {
+  if (!connectFrom || connectFrom.nodeId === toId) return;
+  const fromId = connectFrom.nodeId;
+  if (!edges.find(e => e.from === fromId && e.to === toId)) {
+    edges.push({ id: eid(), from: fromId, to: toId });
+    drawEdges();
+    toast('Nodes connected', 'success');
+  }
+}
+
+function drawEdges() {
+  const svg = document.getElementById('arrowsSvg');
+  Array.from(svg.querySelectorAll('.arrow-path,.arrow-hit')).forEach(el => el.remove());
+  edges.forEach(edge => {
+    const fromEl = document.getElementById('nd_' + edge.from);
+    const toEl   = document.getElementById('nd_' + edge.to);
+    if (!fromEl || !toEl) return;
+    const fr = fromEl.getBoundingClientRect();
+    const tr = toEl.getBoundingClientRect();
+    const sr = svg.getBoundingClientRect();
+    const x1 = fr.right  - sr.left;
+    const y1 = fr.top + fr.height / 2 - sr.top;
+    const x2 = tr.left   - sr.left;
+    const y2 = tr.top + tr.height / 2 - sr.top;
+    const cp = Math.min(90, Math.abs(x2 - x1) * 0.55);
+    const d  = 'M' + x1 + ',' + y1 + ' C' + (x1+cp) + ',' + y1 + ' ' + (x2-cp) + ',' + y2 + ' ' + x2 + ',' + y2;
+    // visible path
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('class', 'arrow-path');
+    path.setAttribute('d', d);
+    svg.appendChild(path);
+    // wide hit area for click-delete
+    const hit = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    hit.setAttribute('class', 'arrow-hit');
+    hit.setAttribute('d', d);
+    hit.dataset.eid = edge.id;
+    hit.addEventListener('click', () => { edges = edges.filter(e => e.id !== edge.id); drawEdges(); toast('Connection removed', 'warn'); });
+    svg.appendChild(hit);
+  });
+}
+
+// ─── SELECT / DESELECT ────────────────────────────────────────────────────
+function selectNode(id) {
+  if (selectedId) {
+    const prev = document.getElementById('nd_' + selectedId);
+    if (prev) prev.classList.remove('selected');
+  }
+  selectedId = id;
+  const el = document.getElementById('nd_' + id);
+  if (el) el.classList.add('selected');
+  renderConfig(id);
+}
+
+function deselectAll() {
+  if (selectedId) {
+    const el = document.getElementById('nd_' + selectedId);
+    if (el) el.classList.remove('selected');
+    selectedId = null;
+  }
+  renderConfig(null);
 }
 
 function deleteNode(id) {
-  const node = nodes[id];
-  if (!node) return;
-  node.el.remove();
+  edges = edges.filter(e => e.from !== id && e.to !== id);
   delete nodes[id];
-  connections = connections.filter(c => c.from !== id && c.to !== id);
-  if (selectedNodeId === id) { selectedNodeId = null; showConfigEmpty(); }
-  updateArrows();
-  updateNodeCount();
-  toast('Node deleted', '');
+  const el = document.getElementById('nd_' + id);
+  if (el) el.remove();
+  if (selectedId === id) { selectedId = null; renderConfig(null); }
+  drawEdges();
+  updateCount();
+  if (!Object.keys(nodes).length) document.getElementById('runBtn').disabled = true;
+  toast('Node deleted', 'warn');
 }
 
-function updateNodeCount() {
+// ─── CONFIG PANEL ─────────────────────────────────────────────────────────
+function renderConfig(id) {
+  const empty   = document.getElementById('configEmpty');
+  const content = document.getElementById('configContent');
+  if (!id || !nodes[id]) {
+    empty.style.display   = 'flex';
+    content.style.display = 'none';
+    content.innerHTML = '';
+    return;
+  }
+  empty.style.display   = 'none';
+  content.style.display = 'flex';
+  const nd  = nodes[id];
+  const def = NODE_DEF[nd.type];
+  const ups = edges.filter(e => e.to === id).map(e => NODE_DEF[nodes[e.from]?.type]?.label || e.from);
+
+  let flds = '';
+  (def.fields || []).forEach(([key, label, type, ph]) => {
+    const v = nd.config[key] !== undefined ? nd.config[key] : '';
+    if (type === 'textarea') {
+      flds += '<div class="cf-group"><label class="cf-label">' + label + '</label><textarea class="cf-textarea" data-key="' + key + '" placeholder="' + escH(ph) + '">' + escH(v) + '</textarea></div>';
+    } else if (type.startsWith('select:')) {
+      const opts = type.slice(7).split('|').map(o => '<option value="' + o + '"' + (v===o?' selected':'') + '>' + o + '</option>').join('');
+      flds += '<div class="cf-group"><label class="cf-label">' + label + '</label><select class="cf-select" data-key="' + key + '">' + opts + '</select></div>';
+    } else {
+      flds += '<div class="cf-group"><label class="cf-label">' + label + '</label><input class="cf-input" type="' + type + '" data-key="' + key + '" value="' + escH(v) + '" placeholder="' + escH(ph) + '"></div>';
+    }
+  });
+
+  const upsBadge = ups.length
+    ? '<div class="cf-group"><div class="cf-label">Upstream</div><div class="cf-upstream">&#128279; ' + escH(ups.join(', ')) + '</div></div>'
+    : '';
+
+  content.innerHTML =
+    '<div class="config-header">' +
+      '<span class="ch-icon">' + def.icon + '</span>' +
+      '<span class="ch-title" style="color:' + def.color + '">' + def.label + '</span>' +
+      '<button class="ch-del" title="Delete node">&#128465;</button>' +
+    '</div>' +
+    '<div class="config-fields">' + upsBadge + flds + '</div>' +
+    '<button class="config-apply">&#10003; Apply Config</button>';
+
+  content.querySelector('.ch-del').addEventListener('click', () => deleteNode(id));
+  content.querySelector('.config-apply').addEventListener('click', () => {
+    content.querySelectorAll('[data-key]').forEach(inp => { nodes[id].config[inp.dataset.key] = inp.value; });
+    refreshNodeBody(id);
+    toast('Config saved', 'success');
+  });
+}
+
+// ─── KEYBOARD ─────────────────────────────────────────────────────────────
+document.addEventListener('keydown', e => {
+  if ((e.key === 'Delete' || e.key === 'Backspace') && selectedId) {
+    const tag = document.activeElement.tagName;
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') deleteNode(selectedId);
+  }
+  if (e.key === 'Escape') {
+    document.querySelectorAll('.modal-overlay.open').forEach(m => m.classList.remove('open'));
+  }
+});
+
+// ─── TOOLBAR ──────────────────────────────────────────────────────────────
+function updateCount() {
   const n = Object.keys(nodes).length;
-  document.getElementById('nodeCount').textContent = `${n} node${n !== 1 ? 's' : ''}`;
+  document.getElementById('nodeCount').textContent = n + ' node' + (n !== 1 ? 's' : '');
 }
 
-// ═══════════════════════════════════════════════════════════════
-// DRAG FROM PALETTE
-// ═══════════════════════════════════════════════════════════════
-let dragType = null;
-let ghostEl = null;
-
-document.querySelectorAll('.palette-item').forEach(item => {
-  item.addEventListener('dragstart', (e) => {
-    dragType = item.dataset.type;
-    e.dataTransfer.setData('text/plain', dragType);
-    e.dataTransfer.effectAllowed = 'copy';
-    // ghost
-    const meta = NODE_META[dragType];
-    ghostEl = document.createElement('div');
-    ghostEl.className = 'canvas-node palette-drag-ghost';
-    ghostEl.style.width = '160px';
-    ghostEl.innerHTML = `<div class="node-header"><span class="nh-icon">${meta.icon}</span><span class="nh-title" style="color:${meta.color}">${meta.name}</span></div>`;
-    document.body.appendChild(ghostEl);
-    ghostEl.style.left = '-9999px';
-    ghostEl.style.top = '-9999px';
-    e.dataTransfer.setDragImage(ghostEl, 80, 24);
-  });
-  item.addEventListener('dragend', () => {
-    if (ghostEl) { ghostEl.remove(); ghostEl = null; }
-  });
-});
-
-function handleCanvasDrop(e) {
-  e.preventDefault();
-  const type = e.dataTransfer.getData('text/plain') || dragType;
-  if (!type || !NODE_META[type]) return;
-  const canvas = document.getElementById('canvas');
-  const rect = canvas.getBoundingClientRect();
-  const x = e.clientX - rect.left - 85;
-  const y = e.clientY - rect.top - 30;
-  const node = createNode(type, Math.max(8, x), Math.max(8, y));
-  selectNode(node.id);
-  updateNodeCount();
-}
-
-// ═══════════════════════════════════════════════════════════════
-// DRAG NODES ON CANVAS
-// ═══════════════════════════════════════════════════════════════
-let draggingNode = null, dragOffX = 0, dragOffY = 0;
-
-function startDragNode(e, id) {
-  if (e.button !== 0) return;
-  draggingNode = id;
-  const node = nodes[id];
-  const rect = node.el.getBoundingClientRect();
-  const canvas = document.getElementById('canvas');
-  const cr = canvas.getBoundingClientRect();
-  dragOffX = e.clientX - rect.left;
-  dragOffY = e.clientY - rect.top;
-  node.el.style.cursor = 'grabbing';
-  e.preventDefault();
-}
-
-document.addEventListener('mousemove', (e) => {
-  if (draggingNode) {
-    const node = nodes[draggingNode];
-    if (!node) { draggingNode = null; return; }
-    const canvas = document.getElementById('canvas');
-    const cr = canvas.getBoundingClientRect();
-    const nx = e.clientX - cr.left - dragOffX;
-    const ny = e.clientY - cr.top - dragOffY;
-    node.x = Math.max(4, nx);
-    node.y = Math.max(4, ny);
-    node.el.style.left = node.x + 'px';
-    node.el.style.top  = node.y + 'px';
-    updateArrows();
-  }
-  if (connectingFrom) {
-    drawTempLine(e.clientX, e.clientY);
-  }
-});
-
-document.addEventListener('mouseup', (e) => {
-  if (draggingNode) {
-    const node = nodes[draggingNode];
-    if (node) node.el.style.cursor = 'move';
-    draggingNode = null;
-  }
-  if (connectingFrom) {
-    cancelConnecting();
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════
-// PORT CONNECTIONS
-// ═══════════════════════════════════════════════════════════════
-let tempSvg = null;
-
-function startConnecting(nodeId, portEl, e) {
-  connectingFrom = {nodeId, portEl};
-  portEl.classList.add('connecting');
-  // create temp SVG overlay
-  tempSvg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  tempSvg.style.cssText = 'position:fixed;top:0;left:0;width:100vw;height:100vh;pointer-events:none;z-index:9998;overflow:visible';
-  document.body.appendChild(tempSvg);
-}
-
-function drawTempLine(mx, my) {
-  if (!connectingFrom || !tempSvg) return;
-  const portRect = connectingFrom.portEl.getBoundingClientRect();
-  const x1 = portRect.left + portRect.width / 2;
-  const y1 = portRect.top + portRect.height / 2;
-  const dx = (mx - x1) * 0.5;
-  tempSvg.innerHTML = `
-    <defs><marker id="th" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
-      <polygon points="0 0, 8 3, 0 6" fill="#8855ff" opacity="0.7"/>
-    </marker></defs>
-    <path d="M${x1},${y1} C${x1+dx},${y1} ${mx-dx},${my} ${mx},${my}"
-      stroke="#8855ff" stroke-width="2" fill="none" opacity="0.6" stroke-dasharray="5,3"
-      marker-end="url(#th)"/>
-  `;
-}
-
-function finishConnecting(toNodeId) {
-  if (!connectingFrom) return;
-  const fromId = connectingFrom.nodeId;
-  if (fromId !== toNodeId) {
-    // Remove duplicate
-    connections = connections.filter(c => !(c.from === fromId && c.to === toNodeId));
-    connections.push({from: fromId, to: toNodeId});
-    updateArrows();
-    toast('Nodes connected', 'success');
-  }
-  cancelConnecting();
-}
-
-function cancelConnecting() {
-  if (connectingFrom) {
-    connectingFrom.portEl.classList.remove('connecting');
-    connectingFrom = null;
-  }
-  if (tempSvg) { tempSvg.remove(); tempSvg = null; }
-}
-
-// ═══════════════════════════════════════════════════════════════
-// ARROWS (SVG)
-// ═══════════════════════════════════════════════════════════════
-function updateArrows() {
-  const svg = document.getElementById('arrowSvg');
-  const canvas = document.getElementById('canvas');
-  const cr = canvas.getBoundingClientRect();
-  let paths = '';
-  for (const conn of connections) {
-    const from = nodes[conn.from];
-    const to   = nodes[conn.to];
-    if (!from || !to) continue;
-    const op = document.getElementById(`op_${conn.from}`);
-    const ip = document.getElementById(`ip_${conn.to}`);
-    if (!op || !ip) continue;
-    const or = op.getBoundingClientRect();
-    const ir = ip.getBoundingClientRect();
-    const x1 = or.left + or.width/2 - cr.left;
-    const y1 = or.top + or.height/2 - cr.top;
-    const x2 = ir.left + ir.width/2 - cr.left;
-    const y2 = ir.top + ir.height/2 - cr.top;
-    const dx = Math.abs(x2 - x1) * 0.5;
-    paths += `<path class="arrow-path" d="M${x1},${y1} C${x1+dx},${y1} ${x2-dx},${y2} ${x2},${y2}"/>`;
-  }
-  svg.innerHTML = `<defs><marker id="arrowhead" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8855ff" opacity="0.8"/></marker></defs>${paths}`;
-}
-
-window.addEventListener('resize', updateArrows);
-
-// ═══════════════════════════════════════════════════════════════
-// CONFIG PANEL
-// ═══════════════════════════════════════════════════════════════
-function selectNode(id) {
-  if (selectedNodeId && nodes[selectedNodeId]) {
-    setNodeStatus(selectedNodeId, nodes[selectedNodeId].status);
-    nodes[selectedNodeId].el.classList.remove('selected');
-  }
-  selectedNodeId = id;
-  nodes[id].el.classList.add('selected');
-  renderConfigPanel(id);
-}
-
-function showConfigEmpty() {
-  document.getElementById('configEmpty').style.display = 'flex';
-  document.getElementById('configContent').style.display = 'none';
-}
-
-function renderConfigPanel(id) {
-  const node = nodes[id];
-  if (!node) return;
-  const meta = NODE_META[node.type];
-  document.getElementById('configEmpty').style.display = 'none';
-  const cc = document.getElementById('configContent');
-  cc.style.display = 'flex';
-  cc.style.flexDirection = 'column';
-  cc.style.overflow = 'hidden';
-  document.getElementById('configIcon').textContent = meta.icon;
-  document.getElementById('configTitle').textContent = meta.name;
-  document.getElementById('configDelete').onclick = () => { deleteNode(id); };
-  document.getElementById('configApply').onclick = () => { applyConfig(id); };
-
-  const fields = document.getElementById('configFields');
-  fields.innerHTML = buildConfigFields(node);
-}
-
-function buildConfigFields(node) {
-  const c = node.config;
-  const t = node.type;
-  let html = '';
-  const inp = (name, label, val, ph='', hint='') =>
-    `<div class="cf-group">
-      <label class="cf-label">${label}</label>
-      <input class="cf-input" id="cf_${name}" data-field="${name}" value="${esc(val||'')}" placeholder="${ph}">
-      ${hint ? `<span class="cf-hint">${hint}</span>` : ''}
-    </div>`;
-  const area = (name, label, val, ph='') =>
-    `<div class="cf-group">
-      <label class="cf-label">${label}</label>
-      <textarea class="cf-textarea" id="cf_${name}" data-field="${name}" placeholder="${ph}">${esc(val||'')}</textarea>
-    </div>`;
-  const sel = (name, label, val, opts) =>
-    `<div class="cf-group">
-      <label class="cf-label">${label}</label>
-      <select class="cf-select" id="cf_${name}" data-field="${name}">
-        ${opts.map(o=>`<option value="${o.v}" ${val===o.v?'selected':''}>${o.l}</option>`).join('')}
-      </select>
-    </div>`;
-
-  if (t === 'memory-read') {
-    html += inp('namespace','Namespace', c.namespace,'agent','Memory namespace to read from');
-    html += inp('key','Key', c.key,'my-key','Key to retrieve');
-  } else if (t === 'memory-write') {
-    html += inp('namespace','Namespace', c.namespace,'agent');
-    html += inp('key','Key', c.key,'my-key');
-    const connIn = connections.find(x => x.to === node.id);
-    if (connIn) {
-      html += `<div class="cf-group"><label class="cf-label">Value</label><div class="cf-connected-badge">⚡ From connected node</div><span class="cf-hint">Value will be the output of the upstream node.</span></div>`;
-    } else {
-      html += area('value','Value', c.value,'Enter value or connect a node...');
-    }
-  } else if (t === 'dream-engine') {
-    html += inp('namespace','Namespace', c.namespace,'agent');
-    html += sel('strategy','Strategy', c.strategy, [
-      {v:'synthesize',l:'Synthesize'},
-      {v:'compress',l:'Compress'},
-      {v:'pattern_extract',l:'Pattern Extract'},
-      {v:'insight_generate',l:'Insight Generate'},
-      {v:'associate',l:'Associate'},
-    ]);
-    html += inp('topic','Topic', c.topic,'summary of recent events','Optional focus topic for the dream');
-  } else if (t === 'memory-search') {
-    html += inp('namespace','Namespace', c.namespace,'agent');
-    html += inp('query','Query', c.query,'search term','Semantic search query');
-    html += inp('limit','Limit', c.limit,'5','Max results (1-50)');
-  } else if (t === 'memory-list') {
-    html += inp('namespace','Namespace', c.namespace,'agent');
-    html += inp('limit','Limit', c.limit,'20','Max keys to return');
-  } else if (t === 'transform') {
-    const connIn = connections.find(x => x.to === node.id);
-    html += sel('operation','Operation', c.operation, [
-      {v:'summarize',l:'Summarize'},
-      {v:'extract_keywords',l:'Extract Keywords'},
-      {v:'sentiment',l:'Sentiment Analysis'},
-      {v:'expand',l:'Expand / Elaborate'},
-    ]);
-    if (connIn) {
-      html += `<div class="cf-group"><label class="cf-label">Input</label><div class="cf-connected-badge">⚡ From connected node</div></div>`;
-    } else {
-      html += area('input_text','Input Text', c.input_text || '','Paste text or connect upstream node...');
-    }
-  }
-  return html;
-}
-
-function applyConfig(id) {
-  const node = nodes[id];
-  if (!node) return;
-  const fields = document.getElementById('configFields').querySelectorAll('[data-field]');
-  fields.forEach(f => {
-    node.config[f.dataset.field] = f.value;
-    f.classList.remove('error');
-  });
-  updateNodeBody(node);
-  toast('Config saved', 'success');
-}
-
-// Clicking canvas deselects
-document.getElementById('canvas').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('canvas') || e.target === document.getElementById('arrowSvg')) {
-    if (selectedNodeId) {
-      nodes[selectedNodeId]?.el.classList.remove('selected');
-      selectedNodeId = null;
-      showConfigEmpty();
-    }
-  }
-});
-
-// ═══════════════════════════════════════════════════════════════
-// CLEAR ALL
-// ═══════════════════════════════════════════════════════════════
-document.getElementById('btnClear').addEventListener('click', () => {
-  if (Object.keys(nodes).length === 0) return;
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if (!Object.keys(nodes).length) return;
   if (!confirm('Clear all nodes and connections?')) return;
-  Object.values(nodes).forEach(n => n.el.remove());
-  nodes = {};
-  connections = [];
-  selectedNodeId = null;
-  showConfigEmpty();
-  updateArrows();
-  updateNodeCount();
-  toast('Canvas cleared', '');
+  Object.keys(nodes).forEach(id => { const el = document.getElementById('nd_' + id); if (el) el.remove(); });
+  nodes = {}; edges = []; selectedId = null;
+  renderConfig(null);
+  drawEdges();
+  updateCount();
+  document.getElementById('runBtn').disabled = true;
+  toast('Canvas cleared');
 });
 
-// ═══════════════════════════════════════════════════════════════
-// TOPOLOGICAL SORT
-// ═══════════════════════════════════════════════════════════════
-function topoSort() {
-  const ids = Object.keys(nodes);
-  const inDeg = {};
-  const adj = {};
-  ids.forEach(id => { inDeg[id] = 0; adj[id] = []; });
-  connections.forEach(c => {
-    if (nodes[c.from] && nodes[c.to]) {
-      adj[c.from].push(c.to);
-      inDeg[c.to]++;
-    }
-  });
-  const queue = ids.filter(id => inDeg[id] === 0);
-  const order = [];
-  while (queue.length) {
-    const cur = queue.shift();
-    order.push(cur);
-    adj[cur].forEach(nb => { if (--inDeg[nb] === 0) queue.push(nb); });
-  }
-  return order.length === ids.length ? order : null; // null = cycle
-}
-
-// ═══════════════════════════════════════════════════════════════
-// VALIDATE
-// ═══════════════════════════════════════════════════════════════
-function validateNodes() {
-  let valid = true;
-  Object.values(nodes).forEach(node => {
-    const cfg = node.config;
-    const t = node.type;
-    let required = ['namespace'];
-    if (t === 'memory-read')   required = ['namespace','key'];
-    if (t === 'memory-write')  required = ['namespace','key'];
-    if (t === 'memory-search') required = ['namespace','query'];
-    if (t === 'dream-engine')  required = ['namespace','strategy'];
-    required.forEach(f => {
-      if (!cfg[f] || cfg[f].toString().trim() === '') {
-        node.el.classList.add('error');
-        valid = false;
-        logMsg(`Node "${NODE_META[node.type].name}" missing required field: ${f}`, 'error');
-      } else {
-        node.el.classList.remove('error');
-      }
-    });
-  });
-  return valid;
-}
-
-// ═══════════════════════════════════════════════════════════════
-// RUN WORKFLOW
-// ═══════════════════════════════════════════════════════════════
-document.getElementById('btnRun').addEventListener('click', runWorkflow);
-
-async function runWorkflow() {
-  if (Object.keys(nodes).length === 0) { toast('Add nodes first', 'error'); return; }
-  const order = topoSort();
-  if (!order) { toast('Cycle detected in workflow', 'error'); logMsg('Workflow has a cycle — cannot execute', 'error'); return; }
-  if (!validateNodes()) { toast('Fix missing fields (shown in red)', 'error'); openOutput(); return; }
-
-  const btn = document.getElementById('btnRun');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Running...';
-  openOutput();
-  execLog = [];
-  lastResult = null;
-  totalCreditsUsed = 0;
-  renderLog();
-
-  const nodeOutputs = {}; // id → output data
-
-  logMsg('Starting workflow execution...', 'info');
-
-  for (const id of order) {
-    const node = nodes[id];
-    if (!node) continue;
-    setNodeStatus(id, 'running');
-    logMsg(`Running: ${NODE_META[node.type].name} (${id})`, 'info');
-
-    // Determine input from upstream
-    const upstream = connections.find(c => c.to === id);
-    const upstreamOutput = upstream ? nodeOutputs[upstream.from] : null;
-
-    try {
-      const result = await executeNode(node, upstreamOutput);
-      nodeOutputs[id] = result;
-      setNodeStatus(id, 'done');
-      logMsg(`✓ ${NODE_META[node.type].name} done`, 'success');
-      lastResult = result;
-      if (result && result.credits_used) {
-        totalCreditsUsed += result.credits_used;
-      }
-    } catch(e) {
-      setNodeStatus(id, 'error');
-      logMsg(`✗ ${NODE_META[node.type].name}: ${e.message}`, 'error');
-      break;
-    }
-  }
-
-  renderLog();
-  renderResult();
-  renderCredits();
-  btn.disabled = false;
-  btn.innerHTML = '▶ Run Workflow';
-  toast('Workflow complete', 'success');
-}
-
-async function executeNode(node, upstreamData) {
-  const cfg = node.config;
-  const t = node.type;
-  const headers = {'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`};
-
-  if (t === 'memory-read') {
-    const r = await fetch(`${API_BASE}/memory-get`, {
-      method:'POST', headers,
-      body: JSON.stringify({namespace: cfg.namespace, key: cfg.key})
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-    return d;
-  }
-
-  if (t === 'memory-write') {
-    const value = upstreamData
-      ? (typeof upstreamData === 'string' ? upstreamData : JSON.stringify(upstreamData))
-      : cfg.value;
-    const r = await fetch(`${API_BASE}/memory-set`, {
-      method:'POST', headers,
-      body: JSON.stringify({namespace: cfg.namespace, key: cfg.key, value})
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-    return d;
-  }
-
-  if (t === 'memory-search') {
-    const r = await fetch(`${API_BASE}/memory-search`, {
-      method:'POST', headers,
-      body: JSON.stringify({namespace: cfg.namespace, query: cfg.query, limit: parseInt(cfg.limit)||5})
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-    return d;
-  }
-
-  if (t === 'memory-list') {
-    const r = await fetch(`${API_BASE}/memory-list`, {
-      method:'POST', headers,
-      body: JSON.stringify({namespace: cfg.namespace, limit: parseInt(cfg.limit)||20})
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-    return d;
-  }
-
-  if (t === 'dream-engine') {
-    const body = {namespace: cfg.namespace, strategy: cfg.strategy};
-    if (cfg.topic) body.topic = cfg.topic;
-    if (upstreamData) body.context = typeof upstreamData === 'string' ? upstreamData : JSON.stringify(upstreamData);
-    const r = await fetch(`${API_BASE}/memory/dream/start`, {
-      method:'POST', headers, body: JSON.stringify(body)
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-    // Poll status
-    if (d.dream_id || d.id) {
-      return await pollDream(d.dream_id || d.id, headers);
-    }
-    return d;
-  }
-
-  if (t === 'transform') {
-    const input = upstreamData
-      ? (typeof upstreamData === 'string' ? upstreamData : JSON.stringify(upstreamData, null, 2))
-      : cfg.input_text || '';
-    const r = await fetch(`${API_BASE}/llm-think`, {
-      method:'POST', headers,
-      body: JSON.stringify({
-        prompt: buildTransformPrompt(cfg.operation, input),
-        max_tokens: 512
-      })
-    });
-    const d = await r.json();
-    if (!r.ok) throw new Error(d.error || `HTTP ${r.status}`);
-    return d.result || d.output || d;
-  }
-
-  throw new Error(`Unknown node type: ${t}`);
-}
-
-async function pollDream(dreamId, headers) {
-  for (let i = 0; i < 20; i++) {
-    await delay(2000);
-    const r = await fetch(`${API_BASE}/memory/dream/status/${dreamId}`, {headers});
-    const d = await r.json();
-    if (d.status === 'done' || d.status === 'complete' || d.status === 'completed') return d;
-    if (d.status === 'error' || d.status === 'failed') throw new Error(d.error || 'Dream failed');
-    logMsg(`Dream engine: ${d.status || 'processing'}...`, 'info');
-  }
-  throw new Error('Dream timed out after 40s');
-}
-
-function buildTransformPrompt(op, input) {
-  const ops = {
-    summarize: `Summarize the following text concisely:\n\n${input}`,
-    extract_keywords: `Extract the key terms and concepts from this text as a JSON array:\n\n${input}`,
-    sentiment: `Analyze the sentiment of this text. Return a JSON with {sentiment, score, reasoning}:\n\n${input}`,
-    expand: `Expand and elaborate on the following text, adding more detail and context:\n\n${input}`,
-  };
-  return ops[op] || `Process this text (${op}):\n\n${input}`;
-}
-
-function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-// ═══════════════════════════════════════════════════════════════
-// OUTPUT PANEL
-// ═══════════════════════════════════════════════════════════════
-function logMsg(msg, type='info') {
-  const ts = new Date().toLocaleTimeString('en', {hour12:false});
-  execLog.push({ts, msg, type});
-  if (execLog.length > 200) execLog.shift();
-}
-
-function openOutput() {
-  const panel = document.getElementById('outputPanel');
-  panel.classList.remove('collapsed');
-  document.getElementById('outputTabs').style.display = 'flex';
-}
-
+// ─── OUTPUT PANEL ─────────────────────────────────────────────────────────
 document.getElementById('outputHeader').addEventListener('click', () => {
-  const panel = document.getElementById('outputPanel');
-  panel.classList.toggle('collapsed');
-  const tabs = document.getElementById('outputTabs');
-  tabs.style.display = panel.classList.contains('collapsed') ? 'none' : 'flex';
+  const p = document.getElementById('outputPanel');
+  p.classList.toggle('collapsed');
+  document.getElementById('outputToggle').innerHTML = p.classList.contains('collapsed') ? '&#9650;' : '&#9660;';
 });
 
 document.querySelectorAll('.out-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.out-tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
-    currentTab = tab.dataset.tab;
-    renderCurrentTab();
+    outputTab = tab.dataset.tab;
+    if (outputTab === 'log')     renderLog();
+    if (outputTab === 'results') renderResults();
+    if (outputTab === 'credits') renderCredits();
   });
 });
 
-function renderCurrentTab() {
-  if (currentTab === 'log') renderLog();
-  else if (currentTab === 'result') renderResult();
-  else if (currentTab === 'credits') renderCredits();
+function openOutput() {
+  const p = document.getElementById('outputPanel');
+  p.classList.remove('collapsed');
+  document.getElementById('outputToggle').innerHTML = '&#9660;';
 }
 
 function renderLog() {
-  if (currentTab !== 'log') return;
   const body = document.getElementById('outputBody');
-  if (execLog.length === 0) {
-    body.innerHTML = '<div class="empty-output"><span style="font-size:1.5rem;opacity:0.3">📋</span><span>Run a workflow to see logs here.</span></div>';
-    return;
-  }
-  body.innerHTML = execLog.map(l => {
-    const icon = l.type === 'success' ? '✓' : l.type === 'error' ? '✗' : l.type === 'warn' ? '⚠' : '›';
-    return `<div class="log-line">
-      <span class="log-ts">${l.ts}</span>
-      <span class="log-icon">${icon}</span>
-      <span class="log-msg ${l.type}">${esc(l.msg)}</span>
-    </div>`;
-  }).join('');
+  if (!logLines.length) { body.innerHTML = '<div class="empty-output">&#128196; No log entries yet.</div>'; return; }
+  body.innerHTML = logLines.slice(-150).map(l =>
+    '<div class="log-line"><span class="log-ts">' + l.ts + '</span><span class="log-msg ' + l.type + '">' + l.msg + '</span></div>'
+  ).join('');
   body.scrollTop = body.scrollHeight;
 }
 
-function renderResult() {
-  if (currentTab !== 'result') return;
+function renderResults() {
   const body = document.getElementById('outputBody');
-  if (!lastResult) {
-    body.innerHTML = '<div class="empty-output"><span style="font-size:1.5rem;opacity:0.3">📤</span><span>No result yet. Run a workflow.</span></div>';
-    return;
-  }
-  const text = typeof lastResult === 'string' ? lastResult : JSON.stringify(lastResult, null, 2);
-  body.innerHTML = `<pre class="output-result">${esc(text)}</pre>`;
+  const ids  = Object.keys(resultData);
+  if (!ids.length) { body.innerHTML = '<div class="empty-output">&#128202; No results yet. Run the workflow.</div>'; return; }
+  body.innerHTML = ids.map(id => {
+    const nd  = nodes[id];
+    const lbl = nd ? NODE_DEF[nd.type].label : id;
+    const val = typeof resultData[id] === 'string' ? resultData[id] : JSON.stringify(resultData[id], null, 2);
+    return '<div style="margin-bottom:14px"><div style="font-family:var(--mono);font-size:0.62rem;color:var(--t4);margin-bottom:5px;text-transform:uppercase">' + escH(lbl) + '</div><div class="output-result">' + escH(val.slice(0,1500)) + '</div></div>';
+  }).join('');
 }
 
 function renderCredits() {
-  if (currentTab !== 'credits') return;
-  const body = document.getElementById('outputBody');
-  const inline = document.getElementById('outputCreditsInline');
-  inline.textContent = totalCreditsUsed ? `${totalCreditsUsed} credits used` : '';
-  body.innerHTML = `<div class="credits-display">
-    <div class="cred-item"><span class="cred-label">Credits Used</span><span class="cred-val">${totalCreditsUsed}</span></div>
-    <div class="cred-item"><span class="cred-label">Nodes Run</span><span class="cred-val">${execLog.filter(l=>l.type==='success').length}</span></div>
-  </div>`;
+  document.getElementById('outputBody').innerHTML =
+    '<div class="credits-row">' +
+      '<div class="cred-item"><div class="cred-lbl">Used this run</div><div class="cred-val">' + creditsUsed + '</div></div>' +
+      '<div class="cred-item"><div class="cred-lbl">Balance</div><div class="cred-val">' + (totalCreds > 0 ? totalCreds : '—') + '</div></div>' +
+    '</div>' +
+    '<div class="cf-hint">Credits are consumed per API call. Dream Engine uses more credits due to LLM operations.</div>';
 }
 
-// ═══════════════════════════════════════════════════════════════
-// EXPORT CODE
-// ═══════════════════════════════════════════════════════════════
-document.getElementById('btnExport').addEventListener('click', () => {
-  const order = topoSort();
-  if (!order || order.length === 0) { toast('Add nodes first', 'error'); return; }
-  const code = generateExportCode(order);
-  document.getElementById('exportCode').innerHTML = highlightJS(code);
-  document.getElementById('exportModal').classList.add('open');
-});
-
-document.getElementById('exportClose').addEventListener('click', () => {
-  document.getElementById('exportModal').classList.remove('open');
-});
-
-document.getElementById('exportModal').addEventListener('click', (e) => {
-  if (e.target === document.getElementById('exportModal')) {
-    document.getElementById('exportModal').classList.remove('open');
+// ─── TOPO SORT (Kahn's) ───────────────────────────────────────────────────
+function topoSort() {
+  const ids   = Object.keys(nodes);
+  const inDeg = {};
+  const adj   = {};
+  ids.forEach(id => { inDeg[id] = 0; adj[id] = []; });
+  edges.forEach(e => {
+    if (nodes[e.from] && nodes[e.to]) { adj[e.from].push(e.to); inDeg[e.to]++; }
+  });
+  const queue = ids.filter(id => inDeg[id] === 0);
+  const order = [];
+  while (queue.length) {
+    const n = queue.shift();
+    order.push(n);
+    adj[n].forEach(m => { if (--inDeg[m] === 0) queue.push(m); });
   }
+  return order.length === ids.length ? order : null;
+}
+
+// ─── RUN WORKFLOW ─────────────────────────────────────────────────────────
+document.getElementById('runBtn').addEventListener('click', runWorkflow);
+
+async function runWorkflow() {
+  const order = topoSort();
+  if (!order)           { toast('Cycle detected — cannot run', 'error'); return; }
+  if (!order.length)    { toast('Add nodes to run a workflow', 'warn'); return; }
+
+  logLines = []; resultData = {}; creditsUsed = 0;
+  const runBtn = document.getElementById('runBtn');
+  runBtn.disabled = true;
+  runBtn.innerHTML = '<span class="spinner"></span> Running...';
+  openOutput();
+  document.querySelector('[data-tab="log"]').click();
+  order.forEach(id => setNodeStatus(id, 'idle'));
+
+  log('Workflow started — ' + order.length + ' node(s)', 'info');
+  const outputs = {}; // id -> string
+
+  for (const id of order) {
+    const nd = nodes[id];
+    setNodeStatus(id, 'running');
+    log('Running: ' + NODE_DEF[nd.type].label, 'info');
+    renderLog();
+
+    const upCtx = edges.filter(e => e.to === id).map(e => outputs[e.from]).filter(Boolean).join('\n\n---\n\n');
+    try {
+      const result = await execNode(nd, upCtx);
+      outputs[id]    = result;
+      resultData[id] = result;
+      setNodeStatus(id, 'done');
+      log(NODE_DEF[nd.type].label + ' done', 'success');
+    } catch (err) {
+      setNodeStatus(id, 'error');
+      log(NODE_DEF[nd.type].label + ' failed: ' + err.message, 'error');
+      toast(NODE_DEF[nd.type].label + ' failed: ' + err.message, 'error');
+    }
+    renderLog();
+    if (outputTab === 'results') renderResults();
+  }
+
+  runBtn.disabled = false;
+  runBtn.innerHTML = '&#9654; Run Workflow';
+  log('Workflow finished', 'info');
+  renderLog();
+  if (outputTab === 'credits') renderCredits();
+  toast('Workflow complete', 'success');
+}
+
+function trackCreds(res) {
+  if (res && typeof res.credits_used === 'number') creditsUsed += res.credits_used;
+  if (res && typeof res.credits      === 'number') totalCreds   = res.credits;
+}
+
+async function execNode(nd, upCtx) {
+  const c = nd.config;
+  switch (nd.type) {
+
+    case 'memory-read': {
+      const r = await apiCall('POST', '/memory-get', { namespace: c.namespace || 'agent', key: c.key });
+      trackCreds(r);
+      return typeof r.value === 'string' ? r.value : JSON.stringify(r.value ?? r);
+    }
+
+    case 'memory-write': {
+      let val = c.value || '';
+      if (upCtx) val = upCtx + (val ? '\n\n' + val : '');
+      const r = await apiCall('POST', '/memory-set', { namespace: c.namespace || 'agent', key: c.key, value: val });
+      trackCreds(r);
+      return 'Wrote to ' + (c.namespace || 'agent') + '/' + c.key;
+    }
+
+    case 'memory-search': {
+      const r = await apiCall('POST', '/memory-search', {
+        namespace: c.namespace || 'agent',
+        query:     c.query || upCtx || 'recent',
+        limit:     parseInt(c.limit) || 10
+      });
+      trackCreds(r);
+      const results = r.results || r.memories || [];
+      if (!results.length) return '(no results)';
+      return results.map(m => (m.key ? m.key + ': ' : '') + (m.value || m.content || JSON.stringify(m))).join('\n');
+    }
+
+    case 'memory-list': {
+      const r = await apiCall('POST', '/memory-list', { namespace: c.namespace || 'agent', limit: parseInt(c.limit) || 50 });
+      trackCreds(r);
+      const keys = r.keys || r.memories || [];
+      return Array.isArray(keys) ? keys.map(k => typeof k === 'string' ? k : (k.key || JSON.stringify(k))).join('\n') : JSON.stringify(keys);
+    }
+
+    case 'dream-engine': {
+      const body = { namespace: c.namespace || 'agent', strategy: c.strategy || 'synthesize' };
+      const topic = c.topic || (upCtx ? upCtx.slice(0, 500) : '');
+      if (topic) body.topic = topic;
+      const start = await apiCall('POST', '/memory/dream/start', body);
+      trackCreds(start);
+      const dreamId = start.id || start.dream_id;
+      if (!dreamId) return start.result || start.output || JSON.stringify(start);
+
+      log('Dream Engine running (id: ' + dreamId + ')...', 'info');
+      for (let i = 0; i < 15; i++) {
+        await sleep(2000);
+        const st = await apiCall('GET', '/memory/dream/status/' + dreamId);
+        trackCreds(st);
+        if (st.status === 'complete' || st.status === 'done') return st.result || st.output || JSON.stringify(st);
+        if (st.status === 'error' || st.status === 'failed') throw new Error(st.error || 'Dream Engine failed');
+        log('Still dreaming... (' + (i + 1) + '/15)', 'info');
+        renderLog();
+      }
+      throw new Error('Dream Engine timed out after 30s');
+    }
+
+    case 'transform': {
+      const input = upCtx || c.input || '';
+      const r = await apiCall('POST', '/llm-think', { operation: c.operation || 'summarize', input, provider: c.model || 'claude' });
+      trackCreds(r);
+      return r.result || r.output || r.text || JSON.stringify(r);
+    }
+
+    case 'shared-space': {
+      const r = await apiCall('POST', '/memory/share/create', {
+        name:      c.name || 'team-space',
+        retention: c.retention || '24h',
+        description: upCtx ? upCtx.slice(0, 200) : ''
+      });
+      trackCreds(r);
+      return (r.share_id || r.id || 'created') + (r.url ? ' — ' + r.url : '');
+    }
+
+    default:
+      throw new Error('Unknown node type: ' + nd.type);
+  }
+}
+
+// ─── TEMPLATES ────────────────────────────────────────────────────────────
+document.getElementById('templatesBtn').addEventListener('click', () => openModal('templatesModal'));
+
+document.querySelectorAll('[data-tmpl]').forEach(btn => {
+  btn.addEventListener('click', () => {
+    loadTemplate(btn.dataset.tmpl);
+    closeModal('templatesModal');
+  });
+});
+
+function clearCanvas() {
+  Object.keys(nodes).forEach(id => { const el = document.getElementById('nd_' + id); if (el) el.remove(); });
+  nodes = {}; edges = []; selectedId = null;
+  renderConfig(null);
+  drawEdges();
+}
+
+function loadTemplate(name) {
+  clearCanvas();
+  const T = {
+    'dream-starter': () => {
+      const a = createNode('memory-search', 50,  100, Object.assign(defaultCfg('memory-search'), { namespace:'agent', query:'important memories', limit:'10' }));
+      const b = createNode('dream-engine',  310, 100, Object.assign(defaultCfg('dream-engine'),  { namespace:'agent', strategy:'synthesize',      topic:'' }));
+      const c = createNode('memory-write',  570, 100, Object.assign(defaultCfg('memory-write'),  { namespace:'agent', key:'synthesis-result',     value:'' }));
+      edges.push({ id: eid(), from: a, to: b });
+      edges.push({ id: eid(), from: b, to: c });
+      drawEdges();
+    },
+    'daily-digest': () => {
+      const a = createNode('memory-list',  80,  130, Object.assign(defaultCfg('memory-list'),   { namespace:'agent', limit:'50' }));
+      const b = createNode('dream-engine', 360, 130, Object.assign(defaultCfg('dream-engine'),  { namespace:'agent', strategy:'pattern_extract', topic:'daily patterns' }));
+      edges.push({ id: eid(), from: a, to: b });
+      drawEdges();
+    },
+    'team-sync': () => {
+      const a = createNode('memory-read',  50,  130, Object.assign(defaultCfg('memory-read'),   { namespace:'team', key:'meeting-notes' }));
+      const b = createNode('transform',    290, 130, Object.assign(defaultCfg('transform'),     { operation:'summarize', model:'claude' }));
+      const c = createNode('shared-space', 540, 130, Object.assign(defaultCfg('shared-space'),  { name:'team-sync', retention:'24h' }));
+      edges.push({ id: eid(), from: a, to: b });
+      edges.push({ id: eid(), from: b, to: c });
+      drawEdges();
+    },
+    'evolve-loop': () => {
+      const a = createNode('memory-write', 50,  130, Object.assign(defaultCfg('memory-write'),  { namespace:'agent', key:'seed', value:'Initial knowledge seed.' }));
+      const b = createNode('dream-engine', 300, 130, Object.assign(defaultCfg('dream-engine'),  { namespace:'agent', strategy:'evolve', topic:'knowledge evolution' }));
+      const c = createNode('memory-write', 560, 130, Object.assign(defaultCfg('memory-write'),  { namespace:'agent', key:'evolved', value:'' }));
+      edges.push({ id: eid(), from: a, to: b });
+      edges.push({ id: eid(), from: b, to: c });
+      drawEdges();
+    }
+  };
+  if (T[name]) {
+    T[name]();
+    updateCount();
+    document.getElementById('runBtn').disabled = false;
+    toast('Template loaded', 'success');
+  }
+}
+
+// ─── EXPORT ───────────────────────────────────────────────────────────────
+document.getElementById('exportBtn').addEventListener('click', () => {
+  const order = topoSort();
+  if (!order || !order.length) { toast('Add nodes first', 'warn'); return; }
+
+  const pathMap = {
+    'memory-read':   '/memory-get',
+    'memory-write':  '/memory-set',
+    'memory-search': '/memory-search',
+    'memory-list':   '/memory-list',
+    'dream-engine':  '/memory/dream/start',
+    'transform':     '/llm-think',
+    'shared-space':  '/memory/share/create'
+  };
+
+  const bodyMap = nd => {
+    const c = nd.config;
+    switch (nd.type) {
+      case 'memory-read':   return { namespace: c.namespace, key: c.key };
+      case 'memory-write':  return { namespace: c.namespace, key: c.key, value: c.value };
+      case 'memory-search': return { namespace: c.namespace, query: c.query, limit: parseInt(c.limit)||10 };
+      case 'memory-list':   return { namespace: c.namespace, limit: parseInt(c.limit)||50 };
+      case 'dream-engine':  return { namespace: c.namespace, strategy: c.strategy, topic: c.topic };
+      case 'transform':     return { operation: c.operation, provider: c.model, input: c.input };
+      case 'shared-space':  return { name: c.name, retention: c.retention };
+      default:              return {};
+    }
+  };
+
+  const lines = [
+    "const API_BASE = '/v1';",
+    "const API_KEY  = 'YOUR_API_KEY_HERE';",
+    "",
+    "async function apiCall(path, body) {",
+    "  const r = await fetch(API_BASE + path, {",
+    "    method: 'POST',",
+    "    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + API_KEY },",
+    "    body: JSON.stringify(body)",
+    "  });",
+    "  return r.json();",
+    "}",
+    "",
+    "async function runWorkflow() {",
+    "  let prevOutput = '';",
+    ""
+  ];
+
+  order.forEach((id, i) => {
+    const nd  = nodes[id];
+    const def = NODE_DEF[nd.type];
+    const body = bodyMap(nd);
+    lines.push("  // Step " + (i+1) + ": " + def.label);
+    lines.push("  const step" + (i+1) + " = await apiCall('" + pathMap[nd.type] + "', " + JSON.stringify(body) + ");");
+    lines.push("  prevOutput = JSON.stringify(step" + (i+1) + ");");
+    lines.push("  console.log('Step " + (i+1) + " (" + def.label + "):', step" + (i+1) + ");");
+    lines.push("");
+  });
+
+  lines.push("  return prevOutput;");
+  lines.push("}");
+  lines.push("");
+  lines.push("runWorkflow().then(r => console.log('Done:', r)).catch(console.error);");
+
+  document.getElementById('exportCode').textContent = lines.join('\n');
+  openModal('exportModal');
 });
 
 document.getElementById('exportCopy').addEventListener('click', () => {
-  const code = generateExportCode(topoSort() || []);
-  navigator.clipboard.writeText(code).then(() => toast('Copied!', 'success'));
+  navigator.clipboard.writeText(document.getElementById('exportCode').textContent)
+    .then(() => toast('Copied to clipboard', 'success'))
+    .catch(() => toast('Copy failed — select manually', 'warn'));
 });
 
-function generateExportCode(order) {
-  let lines = [];
-  lines.push(`// Generated by Slopshop Playground — ${new Date().toISOString().split('T')[0]}`);
-  lines.push(`const API_BASE = '${API_BASE}';`);
-  lines.push(`const API_KEY = 'sk-slop-YOUR_KEY_HERE';`);
-  lines.push(`const headers = { 'Content-Type': 'application/json', 'Authorization': \`Bearer \${API_KEY}\` };`);
-  lines.push('');
-  lines.push(`async function runWorkflow() {`);
-  lines.push(`  const nodeOutputs = {};`);
-  lines.push('');
+// ─── MODALS ───────────────────────────────────────────────────────────────
+function openModal(id)  { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 
-  for (const id of order) {
-    const node = nodes[id];
-    if (!node) continue;
-    const meta = NODE_META[node.type];
-    const cfg = node.config;
-    const t = node.type;
-    const upstream = connections.find(c => c.to === id);
-    const varName = `out_${id}`;
-
-    lines.push(`  // ${meta.icon} ${meta.name}`);
-
-    if (t === 'memory-read') {
-      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory-get\`, {`);
-      lines.push(`    method: 'POST', headers,`);
-      lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', key: '${cfg.key}' })`);
-      lines.push(`  }).then(r => r.json());`);
-    } else if (t === 'memory-write') {
-      const val = upstream ? `JSON.stringify(nodeOutputs['${upstream.from}'])` : `'${(cfg.value||'').replace(/'/g,"\\'")}'`;
-      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory-set\`, {`);
-      lines.push(`    method: 'POST', headers,`);
-      lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', key: '${cfg.key}', value: ${val} })`);
-      lines.push(`  }).then(r => r.json());`);
-    } else if (t === 'memory-search') {
-      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory-search\`, {`);
-      lines.push(`    method: 'POST', headers,`);
-      lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', query: '${cfg.query}', limit: ${cfg.limit||5} })`);
-      lines.push(`  }).then(r => r.json());`);
-    } else if (t === 'memory-list') {
-      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory-list\`, {`);
-      lines.push(`    method: 'POST', headers,`);
-      lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', limit: ${cfg.limit||20} })`);
-      lines.push(`  }).then(r => r.json());`);
-    } else if (t === 'dream-engine') {
-      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory/dream/start\`, {`);
-      lines.push(`    method: 'POST', headers,`);
-      const ctx = upstream ? `, context: JSON.stringify(nodeOutputs['${upstream.from}'])` : '';
-      lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', strategy: '${cfg.strategy}'${cfg.topic?`, topic: '${cfg.topic}'`:''}${ctx} })`);
-      lines.push(`  }).then(r => r.json());`);
-      lines.push(`  // Poll dream status: GET \${API_BASE}/memory/dream/status/\${${varName}.dream_id}`);
-    } else if (t === 'transform') {
-      const input = upstream ? `JSON.stringify(nodeOutputs['${upstream.from}'])` : `'${(cfg.input_text||'').replace(/'/g,"\\'")}'`;
-      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/llm-think\`, {`);
-      lines.push(`    method: 'POST', headers,`);
-      lines.push(`    body: JSON.stringify({ prompt: \`${cfg.operation}: \${${input}}\`, max_tokens: 512 })`);
-      lines.push(`  }).then(r => r.json());`);
-    }
-    lines.push(`  nodeOutputs['${id}'] = ${varName};`);
-    lines.push('');
-  }
-
-  lines.push(`  return nodeOutputs;`);
-  lines.push(`}`);
-  lines.push('');
-  lines.push(`runWorkflow().then(console.log).catch(console.error);`);
-  return lines.join('\n');
-}
-
-function highlightJS(code) {
-  return esc(code)
-    .replace(/\/\/.*/g, m => `<span class="comment">${m}</span>`)
-    .replace(/\b(const|let|var|async|await|function|return|if|for|of)\b/g, m => `<span class="kw">${m}</span>`)
-    .replace(/('(?:[^'\\]|\\.)*'|`(?:[^`\\]|\\.)*`)/g, m => `<span class="str">${m}</span>`);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// TOAST
-// ═══════════════════════════════════════════════════════════════
-function toast(msg, type='') {
-  const wrap = document.getElementById('toastWrap');
-  const el = document.createElement('div');
-  el.className = 'toast ' + type;
-  el.innerHTML = `${type === 'success' ? '✓' : type === 'error' ? '✗' : '›'} ${esc(msg)}`;
-  wrap.appendChild(el);
-  setTimeout(() => el.remove(), 3100);
-}
-
-// ═══════════════════════════════════════════════════════════════
-// UTILS
-// ═══════════════════════════════════════════════════════════════
-function esc(s) {
-  if (s == null) return '';
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-
-// Allow pressing Enter on API key input to connect
-document.getElementById('apiKeyInput').addEventListener('keydown', (e) => {
-  if (e.key === 'Enter') document.getElementById('connectBtn').click();
+document.querySelectorAll('[data-close]').forEach(btn => {
+  btn.addEventListener('click', () => closeModal(btn.dataset.close));
+});
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) closeModal(o.id); });
 });
 
-// Keyboard shortcuts
-document.addEventListener('keydown', (e) => {
-  if (!document.getElementById('app').classList.contains('visible')) return;
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-  if (e.key === 'Delete' || e.key === 'Backspace') {
-    if (selectedNodeId) { deleteNode(selectedNodeId); }
-  }
-  if (e.key === 'Escape') {
-    if (selectedNodeId) {
-      nodes[selectedNodeId]?.el.classList.remove('selected');
-      selectedNodeId = null;
-      showConfigEmpty();
-    }
-  }
-  if (e.key === 'Enter' && !e.shiftKey) {
-    // run if nothing focused
-  }
-});
+// ─── INIT ─────────────────────────────────────────────────────────────────
+renderLog();
 </script>
 </body>
 </html>
