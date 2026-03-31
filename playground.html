@@ -442,7 +442,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(
 // ═══════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════
-const API_BASE = 'https://slopshop-production.up.railway.app/v1';
+const API_BASE = '/v1';
 let apiKey = '';
 let nodes = {}; // id → {id, type, x, y, config, el}
 let connections = []; // [{from: nodeId, to: nodeId}]
@@ -580,11 +580,11 @@ document.getElementById('templatesModal').addEventListener('click', (e) => {
 
 // Node metadata
 const NODE_META = {
-  'memory-read':   {icon:'🧠', name:'Memory Read',   color:'var(--c)', endpoint:'/memory/read'},
-  'memory-write':  {icon:'💾', name:'Memory Write',  color:'var(--g)', endpoint:'/memory/write'},
+  'memory-read':   {icon:'🧠', name:'Memory Read',   color:'var(--c)', endpoint:'/memory-get'},
+  'memory-write':  {icon:'💾', name:'Memory Write',  color:'var(--g)', endpoint:'/memory-set'},
   'dream-engine':  {icon:'🌙', name:'Dream Engine',  color:'var(--v)', endpoint:'/memory/dream/start'},
-  'memory-search': {icon:'🔍', name:'Memory Search', color:'var(--o)', endpoint:'/memory/search'},
-  'memory-list':   {icon:'📋', name:'Memory List',   color:'var(--t2)',endpoint:'/memory/list'},
+  'memory-search': {icon:'🔍', name:'Memory Search', color:'var(--o)', endpoint:'/memory-search'},
+  'memory-list':   {icon:'📋', name:'Memory List',   color:'var(--t2)',endpoint:'/memory-list'},
   'transform':     {icon:'🔄', name:'Transform',     color:'var(--r)', endpoint:null},
 };
 
@@ -611,7 +611,7 @@ document.getElementById('connectBtn').addEventListener('click', async () => {
   apiKey = key;
   setStatus('connecting');
   try {
-    const r = await fetch(`${API_BASE}/memory/list`, {
+    const r = await fetch(`${API_BASE}/memory-list`, {
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`},
       body: JSON.stringify({namespace:'__ping__', limit:1})
@@ -1206,7 +1206,7 @@ async function executeNode(node, upstreamData) {
   const headers = {'Content-Type':'application/json','Authorization':`Bearer ${apiKey}`};
 
   if (t === 'memory-read') {
-    const r = await fetch(`${API_BASE}/memory/read`, {
+    const r = await fetch(`${API_BASE}/memory-get`, {
       method:'POST', headers,
       body: JSON.stringify({namespace: cfg.namespace, key: cfg.key})
     });
@@ -1219,7 +1219,7 @@ async function executeNode(node, upstreamData) {
     const value = upstreamData
       ? (typeof upstreamData === 'string' ? upstreamData : JSON.stringify(upstreamData))
       : cfg.value;
-    const r = await fetch(`${API_BASE}/memory/write`, {
+    const r = await fetch(`${API_BASE}/memory-set`, {
       method:'POST', headers,
       body: JSON.stringify({namespace: cfg.namespace, key: cfg.key, value})
     });
@@ -1229,7 +1229,7 @@ async function executeNode(node, upstreamData) {
   }
 
   if (t === 'memory-search') {
-    const r = await fetch(`${API_BASE}/memory/search`, {
+    const r = await fetch(`${API_BASE}/memory-search`, {
       method:'POST', headers,
       body: JSON.stringify({namespace: cfg.namespace, query: cfg.query, limit: parseInt(cfg.limit)||5})
     });
@@ -1239,7 +1239,7 @@ async function executeNode(node, upstreamData) {
   }
 
   if (t === 'memory-list') {
-    const r = await fetch(`${API_BASE}/memory/list`, {
+    const r = await fetch(`${API_BASE}/memory-list`, {
       method:'POST', headers,
       body: JSON.stringify({namespace: cfg.namespace, limit: parseInt(cfg.limit)||20})
     });
@@ -1433,23 +1433,23 @@ function generateExportCode(order) {
     lines.push(`  // ${meta.icon} ${meta.name}`);
 
     if (t === 'memory-read') {
-      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory/read\`, {`);
+      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory-get\`, {`);
       lines.push(`    method: 'POST', headers,`);
       lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', key: '${cfg.key}' })`);
       lines.push(`  }).then(r => r.json());`);
     } else if (t === 'memory-write') {
       const val = upstream ? `JSON.stringify(nodeOutputs['${upstream.from}'])` : `'${(cfg.value||'').replace(/'/g,"\\'")}'`;
-      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory/write\`, {`);
+      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory-set\`, {`);
       lines.push(`    method: 'POST', headers,`);
       lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', key: '${cfg.key}', value: ${val} })`);
       lines.push(`  }).then(r => r.json());`);
     } else if (t === 'memory-search') {
-      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory/search\`, {`);
+      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory-search\`, {`);
       lines.push(`    method: 'POST', headers,`);
       lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', query: '${cfg.query}', limit: ${cfg.limit||5} })`);
       lines.push(`  }).then(r => r.json());`);
     } else if (t === 'memory-list') {
-      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory/list\`, {`);
+      lines.push(`  const ${varName} = await fetch(\`\${API_BASE}/memory-list\`, {`);
       lines.push(`    method: 'POST', headers,`);
       lines.push(`    body: JSON.stringify({ namespace: '${cfg.namespace}', limit: ${cfg.limit||20} })`);
       lines.push(`  }).then(r => r.json());`);
