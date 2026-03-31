@@ -19,41 +19,7 @@ function fail(res, status, code, message) {
 }
 
 module.exports = function (app, db, apiKeys) {
-  // ===== DB SCHEMA =====
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS coding_sessions (
-      id TEXT PRIMARY KEY,
-      api_key TEXT NOT NULL,
-      name TEXT NOT NULL,
-      description TEXT DEFAULT '',
-      language TEXT DEFAULT 'javascript',
-      code TEXT DEFAULT '',
-      status TEXT DEFAULT 'waiting',
-      rotation_policy TEXT DEFAULT 'round-robin',
-      current_turn TEXT,
-      turn_order TEXT DEFAULT '[]',
-      participants TEXT DEFAULT '[]',
-      turn_index INTEGER DEFAULT 0,
-      turn_started_at INTEGER DEFAULT 0,
-      turn_timeout_ms INTEGER DEFAULT 120000,
-      message_count INTEGER DEFAULT 0,
-      created INTEGER NOT NULL,
-      updated INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_coding_sessions_api_key ON coding_sessions(api_key);
-    CREATE TABLE IF NOT EXISTS coding_session_history (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      session_id TEXT NOT NULL,
-      actor TEXT NOT NULL,
-      actor_type TEXT DEFAULT 'human',
-      action TEXT NOT NULL,
-      content TEXT DEFAULT '',
-      metadata TEXT DEFAULT '{}',
-      ts INTEGER NOT NULL
-    );
-    CREATE INDEX IF NOT EXISTS idx_coding_session_history_session ON coding_session_history(session_id);
-    CREATE TABLE IF NOT EXISTS pubsub (channel TEXT, message TEXT, sender TEXT, ts INTEGER);
-  `);
+  // Schema is created in server-v2.js before route mounting
 
   // ===== PREPARED STATEMENTS =====
   const stmts = {

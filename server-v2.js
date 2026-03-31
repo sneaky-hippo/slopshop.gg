@@ -446,6 +446,49 @@ db.exec(`CREATE TABLE IF NOT EXISTS memory_2fa_attempts (
   locked_until INTEGER DEFAULT 0
 )`);
 
+// ── Multiplayer Coding Sessions ───────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS coding_sessions (
+    id TEXT PRIMARY KEY, api_key TEXT NOT NULL, name TEXT NOT NULL,
+    description TEXT DEFAULT '', language TEXT DEFAULT 'javascript',
+    code TEXT DEFAULT '', status TEXT DEFAULT 'waiting',
+    rotation_policy TEXT DEFAULT 'round-robin', current_turn TEXT,
+    turn_order TEXT DEFAULT '[]', participants TEXT DEFAULT '[]',
+    turn_index INTEGER DEFAULT 0, turn_started_at INTEGER DEFAULT 0,
+    turn_timeout_ms INTEGER DEFAULT 120000, message_count INTEGER DEFAULT 0,
+    created INTEGER NOT NULL, updated INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_coding_sessions_api_key ON coding_sessions(api_key);
+  CREATE TABLE IF NOT EXISTS coding_session_history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL,
+    actor TEXT NOT NULL, actor_type TEXT DEFAULT 'human',
+    action TEXT NOT NULL, content TEXT DEFAULT '', metadata TEXT DEFAULT '{}',
+    ts INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_coding_session_history_session ON coding_session_history(session_id);
+`);
+
+// ── Chat Session JWT Auth ─────────────────────────────────────────────────────
+db.exec(`
+  CREATE TABLE IF NOT EXISTS chat_sessions (
+    id TEXT PRIMARY KEY, api_key TEXT NOT NULL, hive_id TEXT NOT NULL,
+    channel TEXT DEFAULT '*', display_name TEXT DEFAULT '',
+    revoked_at INTEGER, token_version INTEGER DEFAULT 0,
+    created INTEGER NOT NULL, last_seen INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_cs_api_key ON chat_sessions(api_key);
+  CREATE INDEX IF NOT EXISTS idx_cs_hive ON chat_sessions(hive_id);
+  CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INTEGER PRIMARY KEY AUTOINCREMENT, session_id TEXT NOT NULL,
+    refresh_hash TEXT UNIQUE NOT NULL, family_id TEXT NOT NULL,
+    expires_at INTEGER NOT NULL, revoked_at INTEGER, created INTEGER NOT NULL
+  );
+  CREATE INDEX IF NOT EXISTS idx_rt_hash ON refresh_tokens(refresh_hash);
+  CREATE INDEX IF NOT EXISTS idx_rt_family ON refresh_tokens(family_id);
+  CREATE INDEX IF NOT EXISTS idx_rt_session ON refresh_tokens(session_id);
+  CREATE TABLE IF NOT EXISTS jwt_blacklist (jti TEXT PRIMARY KEY, expires_at INTEGER NOT NULL);
+`);
+
 // Memory collaborators v2 - email invite, role system, expiry
 db.exec(`CREATE TABLE IF NOT EXISTS memory_collaborators_v2 (
   id TEXT PRIMARY KEY,
