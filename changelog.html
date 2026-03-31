@@ -148,6 +148,43 @@ footer .footer-right a:hover{color:var(--t2);text-decoration:none}
   <!-- Timeline -->
   <div class="timeline">
 
+    <!-- v4.1 -->
+    <div class="version-entry major" id="v4.1" style="border-left:2px solid var(--r);padding-left:16px;margin-left:-18px">
+      <div class="version-header">
+        <span class="version-number" style="color:var(--r)">v4.1</span>
+        <span class="version-date">March 31, 2026</span>
+        <span class="version-label label-major">Living Memory</span>
+      </div>
+
+      <div class="change-section">Dream Engine — Persistent Memory Consolidation</div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>Dream Engine</strong> — REM-style memory consolidation. 5 strategies: <code>synthesize</code>, <code>pattern_extract</code>, <code>insight_generate</code>, <code>compress</code>, <code>associate</code>. Runs as scheduled background process against your memory namespace. <code>POST /v1/memory/dream/start</code></span></div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>Dream schedule persistence</strong> — Dream schedules now survive server restarts. Stored in <code>dream_schedules</code> SQLite table; restored on boot via <code>restoreDreamSchedules()</code>. Previously all active schedules were silently lost on restart.</span></div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>Dream schedule CRUD</strong> — <code>POST /v1/memory/dream/schedule</code>, <code>DELETE /v1/memory/dream/schedule/:id</code>, <code>GET /v1/memory/dream/schedules</code>. Each run updates <code>last_run</code> + <code>run_count</code> in DB.</span></div>
+
+      <div class="change-section">Multiplayer Memory — Shared Agent Intelligence</div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>Multiplayer Memory</strong> — Shared memory spaces with collaborator invites, role-based access (owner/editor/viewer), real-time multi-term search with relevance scoring. <code>POST /v1/memory/share/create</code></span></div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>Retention tiers</strong> — Customizable memory space lifetime: <code>session</code> (24h), <code>daily</code> (7d), <code>weekly</code> (30d), <code>permanent</code>. Background cleanup auto-expires spaces. <code>POST /v1/memory/share/:id/retention</code></span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>11 Multiplayer Memory bugs fixed</strong> — Viewer role validation, audit trail for share/set, multi-term search, missing GET space info + activity endpoints, collaborator/accept bridge for shared memory access.</span></div>
+
+      <div class="change-section">Planet Research — Full Internet Intelligence</div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>5-provider planet research</strong> — <strong>Claude</strong> (synthesis) · <strong>Grok/X</strong> (real-time + 日本語 Japanese X) · <strong>DeepSeek</strong> (小红书/知乎/微信/B站 Chinese internet) · <strong>OpenAI</strong> (academic depth) · <strong>Yandex</strong> (Яндекс/Telegram/VK Russian web). <code>POST /v1/research</code></span></div>
+      <div class="change-item"><span class="tag tag-feature">Feature</span><span class="change-text"><strong>Planet tier</strong> — All 5 providers, 2000 tokens, $100 credits. Deep/planet tiers get cross-synthesis: Claude Haiku synthesizes all 5 source perspectives into unified cross-cultural intelligence.</span></div>
+      <div class="change-item"><span class="tag tag-perf">Perf</span><span class="change-text"><strong>Research cache</strong> — 30-minute in-memory TTL cache, 200 entry max. Repeat queries return instantly at zero cost. Evicted by background cleanup job every 10 min.</span></div>
+
+      <div class="change-section">Memory Compression</div>
+      <div class="change-item"><span class="tag tag-perf">Perf</span><span class="change-text"><strong>Automatic zlib compression</strong> — Values &gt;512 bytes compressed with <code>deflateRaw</code> level 6 before write; transparently decompressed on read. <code>~z~</code> prefix marker. Zero new dependencies (built-in Node.js zlib). Applied to all 14+ memory read/write paths.</span></div>
+      <div class="change-item"><span class="tag tag-perf">Perf</span><span class="change-text"><strong>Background cleanup job</strong> — Runs every 10 min: TTL memory expiry, expired shared space deletion (cascades members + memory), research cache eviction.</span></div>
+
+      <div class="change-section">Bug Fixes — Hive, Org, GraphRAG, Security</div>
+      <div class="change-item"><span class="tag tag-security">Security</span><span class="change-text"><strong>Hive api_key leak</strong> — <code>GET /v1/hive/:id</code> was spreading <code>...hive</code> row, exposing owner api_key. Fixed: explicit safe field selection only.</span></div>
+      <div class="change-item"><span class="tag tag-security">Security</span><span class="change-text"><strong>Namespace security fixes</strong> — <code>/v1/memory/health</code> and <code>/v1/knowledge/auto-discover</code> were using email as namespace suffix (leaked cross-account). Fixed: SHA-256 prefix scoping. <code>/v1/context/session</code> bare prefix never matched; fixed to <code>LIKE prefix + ':%'</code>.</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>9 Hive bugs fixed</strong> — Standup type filter, existence checks on send + propose, governance quorum announcement to channel, GET /v1/hive(s) enriched with member/channel/message counts.</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>7 Org/Swarm bugs fixed</strong> — hive_messages missing type column, wrong standup table, scale doesn't sync hive members, added <code>DELETE /v1/org/:id</code>, 4 missing template aliases (content-team, research-squad, qa-team, data-pipeline).</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>GraphRAG improvements</strong> — <code>confidence=0</code> coercion bug fixed, <code>/v1/knowledge/add</code> returns <code>id</code>, added <code>DELETE /v1/knowledge/triple/:id</code>, <code>GET /v1/knowledge/stats</code>, <code>auto-discover</code> persist option, 3 performance indexes.</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>Memory decay + snapshot persistence</strong> — <code>/v1/memory/decay</code> now actually prunes DB entries (was compute-only). <code>/v1/memory/snapshot</code> now persists to <code>memory_snapshots</code> table with GET list + retrieve endpoints.</span></div>
+      <div class="change-item"><span class="tag tag-fix">Fix</span><span class="change-text"><strong>Duplicate route deduplication</strong> — Removed 3 dead Express route handlers: 2× duplicate <code>POST /v1/eval/run</code>, 1× duplicate <code>GET /v1/templates/browse</code>.</span></div>
+    </div>
+
     <!-- v4.0 -->
     <div class="version-entry major" id="v4.0" style="border-left:2px solid var(--r);padding-left:16px;margin-left:-18px">
       <div class="version-header">
