@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Credential Vault | Slopshop — Secretless API Key Storage for AI Agents</title>
+<meta name="description" content="Store API keys by vault_id. Agents never see raw credentials. AES-256-GCM encryption, server-side proxy injection, full audit trail. SSRF-protected.">
+<meta name="keywords" content="credential vault, api key storage, agent secrets, vault_id, slopshop, AES-256-GCM, secretless agents, proxy credentials">
+<link rel="canonical" href="https://slopshop.gg/vault">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/vault">
+<meta property="og:title" content="Credential Vault | Slopshop — Secretless Agent Credentials">
+<meta property="og:description" content="Agents store and use API keys via vault_id. Raw credentials never leave the server. AES-256-GCM, scrypt, SSRF protection, full audit log.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Slopshop Credential Vault — Secretless API Keys">
+<meta name="twitter:description" content="Agents use vault_id, not raw secrets. AES-256-GCM encryption. Server-side proxy injection. Zero credential exposure.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='8' fill='%2306b6d4'/><path d='M14 10c-3 0-4 2-4 4v4c0 2-1 3-3 3 2 0 3 1 3 3v4c0 2 1 4 4 4' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/><path d='M26 10c3 0 4 2 4 4v4c0 2 1 3 3 3-2 0-3 1-3 3v4c0 2-1 4-4 4' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/><circle cx='20' cy='21' r='2.5' fill='white'/></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090b;--s1:#111113;--s2:#18181b;--s3:#27272a;
+  --b:#1e1e22;--b2:#27272a;
+  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+  --r:#06b6d4;--r2:#22d3ee;--rg:rgba(6,182,212,0.06);
+  --o:#a78bfa;--og:rgba(167,139,250,0.08);
+  --g:#34d399;--gg:rgba(52,211,153,0.08);
+  --c:#06b6d4;--cg:rgba(6,182,212,0.06);
+  --v:#818cf8;--vg:rgba(129,140,248,0.08);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,-apple-system,sans-serif;
+  --accent:var(--r);--accent2:var(--rg);--orange:var(--o);--green:var(--g);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+::selection{background:var(--r);color:#000}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(9,9,11,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+
+/* HERO */
+.hero{padding:128px 32px 80px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:900px;height:700px;background:radial-gradient(ellipse at center,rgba(167,139,250,0.07) 0%,rgba(167,139,250,0.02) 40%,transparent 65%);pointer-events:none}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--og);border:1px solid rgba(167,139,250,0.22);color:var(--o);padding:6px 16px;border-radius:99px;font-size:0.7rem;font-weight:600;font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:28px}
+.hero-eyebrow .dot{width:6px;height:6px;background:var(--o);border-radius:50%}
+.hero h1{font-family:var(--mono);font-size:clamp(1.9rem,5vw,3.2rem);font-weight:800;letter-spacing:-0.025em;line-height:1.1;margin-bottom:24px;color:var(--t)}
+.hero h1 .accent{color:var(--o)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:600px;margin:0 auto 40px;line-height:1.85}
+.hero .sub b{color:var(--t)}
+.hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:8px;font-size:0.8rem;font-weight:600;font-family:var(--mono);transition:opacity 0.15s,transform 0.15s;cursor:pointer}
+.btn:hover{opacity:0.85;transform:translateY(-1px)}
+.btn-primary{background:var(--o);color:#fff}
+.btn-cyan{background:var(--r);color:#000}
+.btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--t2)}
+.btn-ghost:hover{border-color:var(--o);color:var(--o)}
+
+/* PROBLEM BAND */
+.problem-band{background:rgba(239,68,68,0.05);border-top:1px solid rgba(239,68,68,0.12);border-bottom:1px solid rgba(239,68,68,0.12);padding:40px 32px}
+.problem-inner{max-width:900px;margin:0 auto}
+.problem-label{font-family:var(--mono);font-size:0.62rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:#ef4444;margin-bottom:12px}
+.problem-inner h2{font-family:var(--mono);font-size:1.15rem;font-weight:800;color:var(--t);margin-bottom:14px}
+.problem-inner p{color:var(--t2);font-size:0.875rem;line-height:1.85;max-width:680px}
+.problem-inner p b{color:var(--t)}
+.threat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-top:24px}
+.threat-card{background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.14);border-radius:8px;padding:14px 16px}
+.threat-card h4{font-family:var(--mono);font-size:0.75rem;font-weight:700;color:#f87171;margin-bottom:4px}
+.threat-card p{font-size:0.78rem;color:var(--t3);margin-bottom:0}
+
+/* LAYOUT */
+.wrap{max-width:900px;margin:0 auto;padding:0 32px 120px}
+
+/* SECTION */
+.section{margin-bottom:72px;padding-top:60px}
+.section-label{font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--o);margin-bottom:12px}
+.section h2{font-family:var(--mono);font-size:1.25rem;font-weight:800;color:var(--t);margin-bottom:16px;letter-spacing:-0.02em}
+.section p{color:var(--t2);font-size:0.875rem;line-height:1.85;margin-bottom:14px}
+.section p b{color:var(--t)}
+
+/* FLOW DIAGRAM */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:0;margin:28px 0;position:relative}
+.flow::before{content:'';position:absolute;top:36px;left:12.5%;right:12.5%;height:1px;background:linear-gradient(90deg,var(--b2),rgba(167,139,250,0.4),var(--b2));z-index:0}
+.flow-step{display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 12px;position:relative;z-index:1}
+.flow-icon{width:72px;height:72px;border-radius:50%;border:1px solid rgba(167,139,250,0.25);background:var(--s1);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:14px;transition:border-color 0.2s}
+.flow-step:hover .flow-icon{border-color:var(--o)}
+.flow-step h4{font-family:var(--mono);font-size:0.72rem;font-weight:700;color:var(--t);margin-bottom:6px}
+.flow-step p{font-size:0.72rem;color:var(--t3);line-height:1.6;margin-bottom:6px}
+.flow-step code{font-family:var(--mono);font-size:0.65rem;color:var(--o);background:var(--og);padding:2px 8px;border-radius:4px}
+@media(max-width:640px){.flow{grid-template-columns:1fr 1fr;gap:20px}.flow::before{display:none}}
+
+/* CODE BLOCK */
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden;margin:20px 0}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--b);background:var(--s2)}
+.code-lang{font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--t4)}
+.code-label{font-family:var(--mono);font-size:0.68rem;color:var(--o)}
+pre{padding:20px;overflow-x:auto;font-family:var(--mono);font-size:0.78rem;line-height:1.7;color:var(--t2)}
+pre .key{color:var(--r)}
+pre .val{color:var(--g)}
+pre .str{color:var(--o)}
+pre .num{color:var(--v)}
+pre .comment{color:var(--t4)}
+pre .method{color:var(--r2)}
+
+/* SECURITY GRID */
+.security-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:24px}
+.sec-card{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:18px 20px;transition:border-color 0.2s}
+.sec-card:hover{border-color:rgba(52,211,153,0.25)}
+.sec-card .badge{font-family:var(--mono);font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--g);background:var(--gg);border:1px solid rgba(52,211,153,0.18);padding:2px 8px;border-radius:4px;display:inline-block;margin-bottom:10px}
+.sec-card h4{font-family:var(--mono);font-size:0.8rem;font-weight:700;color:var(--t);margin-bottom:6px}
+.sec-card p{font-size:0.78rem;color:var(--t2);margin-bottom:0}
+
+/* CALLOUT */
+.callout{background:var(--og);border:1px solid rgba(167,139,250,0.22);border-radius:10px;padding:16px 20px;display:flex;gap:12px;align-items:flex-start;margin:20px 0}
+.callout .icon{font-size:1rem;flex-shrink:0;margin-top:1px}
+.callout p{color:var(--t2);font-size:0.82rem;margin-bottom:0}
+.callout p b{color:var(--o)}
+
+/* CLI BLOCK */
+.cli-block{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px 24px;font-family:var(--mono);font-size:0.78rem;line-height:1.9;color:var(--t2);margin:20px 0}
+.cli-block .prompt{color:var(--t4);user-select:none}
+.cli-block .cmd{color:var(--t)}
+.cli-block .arg{color:var(--o)}
+.cli-block .out{color:var(--g)}
+.cli-block .comment{color:var(--t4)}
+
+/* FOOTER */
+footer{border-top:1px solid var(--b);padding:40px 32px;background:var(--s1)}
+.footer-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:32px}
+.footer-brand .logo-text{font-family:var(--mono);font-weight:700;font-size:0.95rem;color:var(--r);letter-spacing:0.08em}
+.footer-brand p{color:var(--t4);font-size:0.75rem;margin-top:6px;max-width:220px;line-height:1.6}
+.footer-links{display:flex;gap:48px;flex-wrap:wrap}
+.footer-col h5{font-family:var(--mono);font-size:0.62rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--t4);margin-bottom:12px}
+.footer-col a{display:block;color:var(--t3);font-size:0.78rem;margin-bottom:8px;transition:color 0.15s}
+.footer-col a:hover{color:var(--r)}
+.footer-bottom{border-top:1px solid var(--b);padding:20px 32px;text-align:center}
+.footer-bottom p{color:var(--t4);font-size:0.72rem}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <div class="logo">
+    <a href="/" style="display:flex;align-items:center;text-decoration:none">
+      <span class="mark" style="color:var(--r);font-family:var(--mono);font-weight:700;letter-spacing:0.08em;font-size:1rem">SLOPSHOP.gg</span><span style="font-size:0.5rem;color:var(--t4);border:1px solid var(--b);padding:1px 6px;border-radius:3px;margin-left:8px;font-family:var(--mono)">alpha</span>
+    </a>
+  </div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/docs" data-mobile>Docs</a>
+    <a href="/tools">Tools</a>
+    <a href="/ecosystem">Ecosystem</a>
+    <a href="/security">Security</a>
+    <a href="/about">About</a>
+    <a href="/login" data-mobile style="color:var(--t3);font-size:0.75rem;padding:6px 12px">Log In</a>
+    <a href="/signup" data-mobile style="background:var(--r);color:#000;padding:6px 16px;border-radius:6px;font-weight:600">Sign Up Free</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <div class="hero-eyebrow"><span class="dot"></span>Vault</div>
+  <h1>Secretless<br><span class="accent">Credential Vault</span></h1>
+  <p class="sub">Agents reference API keys by <b>vault_id</b> — never the raw secret. Slopshop decrypts server-side, injects credentials into proxied requests, and logs every access. Your keys never touch agent memory.</p>
+  <div class="hero-ctas">
+    <a href="/docs" class="btn btn-primary">API Docs</a>
+    <a href="/verifiable-memory" class="btn btn-ghost">Verifiable Memory &rarr;</a>
+  </div>
+</section>
+
+<div class="problem-band">
+  <div class="problem-inner">
+    <div class="problem-label">The Problem</div>
+    <h2>Raw API keys in agent context are a liability</h2>
+    <p>When an AI agent handles raw credentials, the key exists in plaintext in the LLM context, tool call arguments, logs, and any downstream agent it passes data to. <b>One leaked trace or one compromised intermediate agent exposes the credential.</b></p>
+    <div class="threat-grid">
+      <div class="threat-card">
+        <h4>Context leakage</h4>
+        <p>Keys stored in agent working memory can appear in completions, traces, and debug logs.</p>
+      </div>
+      <div class="threat-card">
+        <h4>Agent-to-agent spread</h4>
+        <p>In multi-agent chains, a raw key passed as a parameter propagates to every downstream agent.</p>
+      </div>
+      <div class="threat-card">
+        <h4>No audit trail</h4>
+        <p>Raw key usage leaves no per-request log. You can't tell when, how often, or by which agent a key was used.</p>
+      </div>
+      <div class="threat-card">
+        <h4>Rotation complexity</h4>
+        <p>If a key is hardcoded in agent prompts or configs, rotating it requires touching every reference manually.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <!-- HOW IT WORKS -->
+  <div class="section">
+    <div class="section-label">How it works</div>
+    <h2>Four-step secretless flow</h2>
+    <p>The vault abstracts credentials behind opaque identifiers. Agents interact with <code style="font-family:var(--mono);color:var(--o);background:var(--og);padding:1px 6px;border-radius:4px">vault_id</code> strings — Slopshop handles decryption and injection at the proxy layer.</p>
+
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-icon">&#128274;</div>
+        <h4>1. Store</h4>
+        <p>Developer stores credential via API or CLI</p>
+        <code>POST /v1/vault/set</code>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon">&#128220;</div>
+        <h4>2. List</h4>
+        <p>Agent lists available credentials by name only</p>
+        <code>GET /v1/vault/list</code>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon">&#128257;</div>
+        <h4>3. Proxy</h4>
+        <p>Agent proxies request via vault_id — key injected server-side</p>
+        <code>POST /v1/vault/proxy</code>
+      </div>
+      <div class="flow-step">
+        <div class="flow-icon">&#128202;</div>
+        <h4>4. Audit</h4>
+        <p>Every proxy access logged with timestamp and agent ID</p>
+        <code>GET /v1/vault/audit</code>
+      </div>
+    </div>
+  </div>
+
+  <!-- STORE -->
+  <div class="section">
+    <div class="section-label">Step 1 — Store</div>
+    <h2>POST /v1/vault/set</h2>
+    <p>Store a named credential. Slopshop encrypts it immediately using AES-256-GCM and returns a <code style="font-family:var(--mono);color:var(--o);background:var(--og);padding:1px 6px;border-radius:4px">vault_id</code>. The raw credential is never returned again.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Request</span>
+        <span class="code-label">POST /v1/vault/set</span>
+      </div>
+      <pre>{
+  <span class="key">"name"</span>:       <span class="str">"openai-prod"</span>,
+  <span class="key">"credential"</span>: <span class="str">"sk-proj-..."</span>
+}</pre>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Response</span>
+        <span class="code-label">201 Created</span>
+      </div>
+      <pre>{
+  <span class="key">"status"</span>:   <span class="str">"stored"</span>,
+  <span class="key">"vault_id"</span>: <span class="str">"vlt_7f3a9c2e1d4b..."</span>,
+  <span class="key">"name"</span>:     <span class="str">"openai-prod"</span>
+}
+
+<span class="comment">// Raw credential is never returned after this point.</span>
+<span class="comment">// Store vault_id in your agent's config or .env.</span></pre>
+    </div>
+  </div>
+
+  <!-- LIST -->
+  <div class="section">
+    <div class="section-label">Step 2 — List</div>
+    <h2>GET /v1/vault/list</h2>
+    <p>Agents can list all stored credentials by name and vault_id. Raw credentials are never included in list responses. This lets agents know what's available without ever touching the underlying secrets.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Response</span>
+        <span class="code-label">GET /v1/vault/list</span>
+      </div>
+      <pre>{
+  <span class="key">"credentials"</span>: [
+    { <span class="key">"vault_id"</span>: <span class="str">"vlt_7f3a9c2e1d4b..."</span>, <span class="key">"name"</span>: <span class="str">"openai-prod"</span>,    <span class="key">"created_at"</span>: <span class="str">"2026-03-31"</span> },
+    { <span class="key">"vault_id"</span>: <span class="str">"vlt_2b9d8e5f3a1c..."</span>, <span class="key">"name"</span>: <span class="str">"github-token"</span>,   <span class="key">"created_at"</span>: <span class="str">"2026-03-28"</span> },
+    { <span class="key">"vault_id"</span>: <span class="str">"vlt_4e1f6a7b2c9d..."</span>, <span class="key">"name"</span>: <span class="str">"stripe-live"</span>,    <span class="key">"created_at"</span>: <span class="str">"2026-03-20"</span> }
+  ]
+}
+
+<span class="comment">// credential field is never present — only name + vault_id.</span></pre>
+    </div>
+  </div>
+
+  <!-- PROXY -->
+  <div class="section">
+    <div class="section-label">Step 3 — Proxy</div>
+    <h2>POST /v1/vault/proxy</h2>
+    <p>The proxy endpoint is the core of the vault. The agent provides a <code style="font-family:var(--mono);color:var(--o);background:var(--og);padding:1px 6px;border-radius:4px">vault_id</code>, a target URL, and optional headers. Slopshop decrypts the credential on the server, injects it as a Bearer token (or custom header), makes the request, and returns the response to the agent. The agent never sees the raw key.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Request</span>
+        <span class="code-label">POST /v1/vault/proxy</span>
+      </div>
+      <pre>{
+  <span class="key">"vault_id"</span>:    <span class="str">"vlt_7f3a9c2e1d4b..."</span>,
+  <span class="key">"url"</span>:         <span class="str">"https://api.openai.com/v1/models"</span>,
+  <span class="key">"method"</span>:      <span class="str">"GET"</span>,
+  <span class="key">"inject_as"</span>:   <span class="str">"Bearer"</span>
+}
+
+<span class="comment">// Slopshop decrypts "openai-prod", injects:</span>
+<span class="comment">// Authorization: Bearer sk-proj-...</span>
+<span class="comment">// Returns the raw API response to the agent.</span></pre>
+    </div>
+
+    <div class="callout">
+      <span class="icon">&#128737;</span>
+      <p><b>SSRF protection is mandatory.</b> The proxy blocks all RFC-1918 private ranges (10.x, 172.16-31.x, 192.168.x), loopback (127.x, ::1), and link-local (169.254.x) addresses. Only HTTPS targets are accepted. Attempts to proxy to internal infrastructure are rejected with 403.</p>
+    </div>
+  </div>
+
+  <!-- AUDIT -->
+  <div class="section">
+    <div class="section-label">Step 4 — Audit</div>
+    <h2>GET /v1/vault/audit</h2>
+    <p>Every proxy call is logged with the vault_id, target domain, HTTP method, response status, timestamp, and the agent API key that made the request. Use the audit log for compliance, anomaly detection, and key rotation decisions.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Response</span>
+        <span class="code-label">GET /v1/vault/audit</span>
+      </div>
+      <pre>{
+  <span class="key">"entries"</span>: [
+    {
+      <span class="key">"vault_id"</span>:    <span class="str">"vlt_7f3a9c2e1d4b..."</span>,
+      <span class="key">"name"</span>:        <span class="str">"openai-prod"</span>,
+      <span class="key">"target"</span>:      <span class="str">"api.openai.com"</span>,
+      <span class="key">"method"</span>:      <span class="str">"POST"</span>,
+      <span class="key">"status"</span>:      <span class="num">200</span>,
+      <span class="key">"agent_key"</span>:   <span class="str">"sk-slop-...abc"</span>,
+      <span class="key">"timestamp"</span>:   <span class="str">"2026-03-31T14:22:00Z"</span>
+    }
+  ],
+  <span class="key">"total"</span>: <span class="num">1</span>
+}</pre>
+    </div>
+  </div>
+
+  <!-- SECURITY -->
+  <div class="section">
+    <div class="section-label">Security Controls</div>
+    <h2>How credentials are protected</h2>
+    <p>The vault uses multiple independent security layers. Compromising any single layer is insufficient to recover a raw credential.</p>
+
+    <div class="security-grid">
+      <div class="sec-card">
+        <div class="badge">Encryption</div>
+        <h4>AES-256-GCM</h4>
+        <p>Every credential is encrypted with AES-256 in Galois/Counter Mode before writing to the database. GCM provides authenticated encryption — any bit flip in the ciphertext causes decryption to fail with an auth tag error.</p>
+      </div>
+      <div class="sec-card">
+        <div class="badge">Key Derivation</div>
+        <h4>scrypt KDF</h4>
+        <p>Encryption keys are derived from the master secret using scrypt with N=16384, r=8, p=1. This makes brute-force attacks computationally expensive even with GPU acceleration.</p>
+      </div>
+      <div class="sec-card">
+        <div class="badge">Tamper Proof</div>
+        <h4>auth_tag verification</h4>
+        <p>GCM's 128-bit authentication tag is stored alongside each ciphertext. Any modification to the encrypted credential — or its IV — causes the auth tag check to fail on decryption, returning an error rather than garbage data.</p>
+      </div>
+      <div class="sec-card">
+        <div class="badge">Network</div>
+        <h4>SSRF protection</h4>
+        <p>The proxy resolves the target hostname and blocks requests to RFC-1918 ranges, loopback, and link-local addresses. Only public HTTPS endpoints are permitted, preventing credential exfiltration to internal services.</p>
+      </div>
+      <div class="sec-card">
+        <div class="badge">Transport</div>
+        <h4>HTTPS-only proxy</h4>
+        <p>The proxy enforces HTTPS on all outbound requests. HTTP targets are rejected. This ensures the injected credential is never transmitted in plaintext over the network.</p>
+      </div>
+      <div class="sec-card">
+        <div class="badge">Access</div>
+        <h4>Per-key audit log</h4>
+        <p>Every proxy call is attributed to the Slopshop API key that made the request. If a credential is misused, the audit log identifies which agent key was responsible.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- CLI -->
+  <div class="section">
+    <div class="section-label">CLI</div>
+    <h2>Vault commands in the Slopshop CLI</h2>
+    <p>Manage vault entries directly from the terminal with the <code style="font-family:var(--mono);color:var(--o);background:var(--og);padding:1px 6px;border-radius:4px">slop vault</code> command group.</p>
+
+    <div class="cli-block">
+      <span class="comment"># Store a new credential</span><br>
+      <span class="prompt">$ </span><span class="cmd">slop vault set</span> <span class="arg">--name openai-key --credential sk-proj-...</span><br>
+      <span class="out">&#10003; Stored. vault_id: vlt_7f3a9c2e1d4b...</span><br><br>
+      <span class="comment"># List all stored credentials (no raw values)</span><br>
+      <span class="prompt">$ </span><span class="cmd">slop vault list</span><br>
+      <span class="out">NAME            VAULT_ID                  CREATED</span><br>
+      <span class="out">openai-key      vlt_7f3a9c2e1d4b...      2026-03-31</span><br>
+      <span class="out">github-token    vlt_2b9d8e5f3a1c...      2026-03-28</span><br><br>
+      <span class="comment"># Proxy a request using a stored credential</span><br>
+      <span class="prompt">$ </span><span class="cmd">slop vault proxy</span> <span class="arg">--vault-id vlt_7f3a9c2e1d4b... --url https://api.openai.com/v1/models</span><br>
+      <span class="out">{"object":"list","data":[...]}</span><br><br>
+      <span class="comment"># View audit log</span><br>
+      <span class="prompt">$ </span><span class="cmd">slop vault audit</span> <span class="arg">--vault-id vlt_7f3a9c2e1d4b...</span><br>
+      <span class="out">2026-03-31 14:22:00  GET  api.openai.com  200  agent:sk-slop-...abc</span>
+    </div>
+  </div>
+
+  <!-- LINKS -->
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+    <a href="/docs" class="btn btn-primary">Full API Docs</a>
+    <a href="/verifiable-memory" class="btn btn-ghost">Verifiable Memory</a>
+    <a href="/security" class="btn btn-ghost">Security Overview</a>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="logo-text">SLOP.gg</div>
+      <p>The self-hostable AI Agent OS. Memory, tools, vault, and identity in one API.</p>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h5>Product</h5>
+        <a href="/docs">Docs</a>
+        <a href="/tools">Tools</a>
+        <a href="/ecosystem">Ecosystem</a>
+        <a href="/security">Security</a>
+      </div>
+      <div class="footer-col">
+        <h5>Features</h5>
+        <a href="/verifiable-memory">Verifiable Memory</a>
+        <a href="/vault">Credential Vault</a>
+        <a href="/ecosystem">Integrations</a>
+      </div>
+      <div class="footer-col">
+        <h5>Company</h5>
+        <a href="/about">About</a>
+        <a href="https://x.com/slopshopgg" target="_blank" rel="noopener">Twitter / X</a>
+      </div>
+    </div>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <p>&copy; 2026 Slopshop. Self-host it. Own your secrets.</p>
+</div>
+
+</body>
+</html>

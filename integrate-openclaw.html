@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Integrate Slopshop with OpenClaw — Slopshop.gg</title>
+  <meta name="description" content="Add Slopshop as the brain layer for OpenClaw agents. Get verifiable memory, 1,303 tools, and secretless credentials via MCP in minutes.">
+  <meta property="og:title" content="Integrate Slopshop with OpenClaw">
+  <meta property="og:description" content="Add verifiable memory, 1,303 tools, and secretless credentials to OpenClaw agents via MCP.">
+  <meta property="og:type" content="article">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{
+      --bg:#09090b;--s1:#111113;--s2:#18181b;--s3:#27272a;
+      --b:#1e1e22;--b2:#27272a;
+      --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+      --r:#06b6d4;--r2:#22d3ee;--rg:rgba(6,182,212,0.06);
+      --o:#a78bfa;--og:rgba(167,139,250,0.08);
+      --g:#34d399;--gg:rgba(52,211,153,0.08);
+      --c:#06b6d4;--cg:rgba(6,182,212,0.06);
+      --v:#818cf8;--vg:rgba(129,140,248,0.08);
+      --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,-apple-system,sans-serif;
+    }
+    body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+    a{color:var(--r);text-decoration:none}
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+    .nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+    .logo{font-family:var(--mono);font-weight:700}
+    .nav-links{display:flex;gap:4px;align-items:center}
+    .nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px}
+    .nav-links a:hover{color:var(--t);background:var(--s2)}
+    .page{max-width:900px;margin:0 auto;padding:88px 32px 80px}
+    h1{font-family:var(--mono);font-size:clamp(1.4rem,3vw,2rem);font-weight:700;letter-spacing:-0.03em;margin-bottom:16px}
+    h2{font-family:var(--mono);font-size:1.1rem;font-weight:700;margin-bottom:12px;margin-top:48px;letter-spacing:-0.02em}
+    h3{font-family:var(--mono);font-size:0.9rem;font-weight:700;margin-bottom:8px;margin-top:32px}
+    p{color:var(--t2);line-height:1.8;margin-bottom:16px}
+    pre{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:16px 20px;font-family:var(--mono);font-size:0.72rem;color:var(--o);line-height:1.7;overflow-x:auto;white-space:pre;margin-bottom:16px}
+    code{background:var(--s2);padding:1px 6px;border-radius:4px;font-family:var(--mono);font-size:0.82em;color:var(--r)}
+    .badge{display:inline-block;font-family:var(--mono);font-size:0.62rem;padding:3px 10px;border-radius:99px;font-weight:700;margin-bottom:16px}
+    .note{background:var(--rg);border:1px solid rgba(6,182,212,0.2);border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:0.8rem;color:var(--t2)}
+    table{width:100%;border-collapse:collapse;margin-bottom:24px;font-size:0.8rem}
+    th{font-family:var(--mono);font-size:0.65rem;text-transform:uppercase;letter-spacing:0.08em;color:var(--t3);text-align:left;padding:10px 14px;border-bottom:1px solid var(--b);background:var(--s2)}
+    td{padding:10px 14px;border-bottom:1px solid var(--b);color:var(--t2);vertical-align:top}
+    .step-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--r);color:#000;font-family:var(--mono);font-size:0.65rem;font-weight:700;margin-right:10px;flex-shrink:0}
+    .step-header{display:flex;align-items:center;font-family:var(--mono);font-size:1.1rem;font-weight:700;margin-bottom:12px;margin-top:48px;letter-spacing:-0.02em}
+    .pill{display:inline-block;font-family:var(--mono);font-size:0.65rem;padding:2px 8px;border-radius:4px;font-weight:700;margin-left:8px;vertical-align:middle}
+    .divider{border:none;border-top:1px solid var(--b);margin:40px 0}
+    footer{border-top:1px solid var(--b);padding:40px 32px;text-align:center;color:var(--t4);font-size:0.75rem;font-family:var(--mono)}
+    footer a{color:var(--t3)}
+    footer a:hover{color:var(--t)}
+    .footer-inner{max-width:900px;margin:0 auto}
+    .tool-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px;margin-bottom:24px}
+    .tool-card{background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:10px 14px;font-size:0.75rem}
+    .tool-card .name{font-family:var(--mono);color:var(--t);font-weight:700;margin-bottom:2px}
+    .tool-card .count{color:var(--t3);font-size:0.7rem}
+  </style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <div class="logo"><span style="color:var(--r)">SLOP</span><span style="color:var(--t4);font-weight:400;font-size:0.7rem;margin-left:2px">.gg</span></div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/docs">Docs</a>
+    <a href="/ecosystem">Ecosystem</a>
+    <a href="/signup" style="background:var(--r);color:#fff;padding:6px 16px;border-radius:6px;font-weight:600">Sign Up Free</a>
+  </div>
+</div></nav>
+
+<div class="page">
+
+  <div style="margin-bottom:8px">
+    <a href="/ecosystem" style="color:var(--t3);font-size:0.75rem;font-family:var(--mono)">&larr; Ecosystem</a>
+  </div>
+
+  <span class="badge" style="background:var(--og);color:var(--o);border:1px solid rgba(167,139,250,0.2)">250K+ Stars</span>
+  <h1>Integrate Slopshop with OpenClaw</h1>
+  <p style="font-size:0.95rem;color:var(--t2);max-width:640px;margin-bottom:32px">
+    OpenClaw is the leading open-source agent framework. Add Slopshop as the brain layer via MCP for verifiable memory, 1,303 tools, and secretless credentials — no infrastructure changes required.
+  </p>
+
+  <div class="note">
+    <strong style="color:var(--r);font-family:var(--mono)">Prerequisites</strong><br>
+    Node.js 18+, an OpenClaw project, and a free Slopshop account. The MCP integration works with OpenClaw v2.x and later.
+  </div>
+
+  <!-- Step 1 -->
+  <div class="step-header"><span class="step-num">1</span>Install the Slopshop CLI</div>
+  <p>Install the CLI globally and create your account. The CLI manages your API keys, vault secrets, and MCP server lifecycle.</p>
+  <pre>npm install -g slopshop
+slop signup</pre>
+  <p>After signup, your API key is stored at <code>~/.slop/credentials</code>. You can also retrieve it from the dashboard at <a href="https://slopshop.gg/dashboard">slopshop.gg/dashboard</a>.</p>
+  <p>Verify the installation:</p>
+  <pre>slop --version
+slop status</pre>
+
+  <!-- Step 2 -->
+  <div class="step-header"><span class="step-num">2</span>Configure OpenClaw MCP</div>
+  <p>OpenClaw uses an MCP config file to discover and connect to tool servers. Add the Slopshop MCP server entry to your OpenClaw configuration. The config file is typically located at <code>.openclaw/mcp.json</code> in your project root, or globally at <code>~/.openclaw/mcp.json</code>.</p>
+  <pre>{
+  "mcpServers": {
+    "slopshop": {
+      "command": "slop",
+      "args": ["mcp", "serve"],
+      "env": {
+        "SLOP_API_KEY": "sk-slop-your-key-here"
+      }
+    }
+  }
+}</pre>
+  <div class="note">
+    Replace <code>sk-slop-your-key-here</code> with your actual key from <code>slop status</code> or the dashboard. Never commit API keys to source control — use environment variables or the vault pattern in Step 4.
+  </div>
+  <p>Restart OpenClaw after saving the config. You should see <strong style="color:var(--g)">slopshop</strong> appear in the connected MCP servers list in the OpenClaw UI or CLI output.</p>
+
+  <!-- Step 3 -->
+  <div class="step-header"><span class="step-num">3</span>Verifiable Memory in OpenClaw Skills</div>
+  <p>Every memory write returns a <code>proof_hash</code> and <code>merkle_root</code> — cryptographic receipts you can store, share, or audit later. Use the <code>memory-set</code> and <code>memory-get</code> MCP tools inside any OpenClaw skill.</p>
+
+  <h3>Writing memory with a proof</h3>
+  <pre>{
+  "tool": "memory-set",
+  "input": {
+    "key": "research/findings/2024-Q4",
+    "value": {
+      "summary": "Market analysis complete",
+      "sources": ["arxiv:2401.00001", "arxiv:2401.00042"],
+      "confidence": 0.94
+    },
+    "namespace": "openclaw-agent"
+  }
+}</pre>
+  <p>The response includes a verifiable proof you can log or pass downstream:</p>
+  <pre>{
+  "status": "stored",
+  "key": "research/findings/2024-Q4",
+  "proof_hash": "sha256:a3f9c2e1b8d47...",
+  "merkle_root": "0x7a2b4f...",
+  "timestamp": "2024-01-15T10:23:44Z"
+}</pre>
+
+  <h3>Reading memory back</h3>
+  <pre>{
+  "tool": "memory-get",
+  "input": {
+    "key": "research/findings/2024-Q4",
+    "namespace": "openclaw-agent"
+  }
+}</pre>
+
+  <h3>Semantic search across memories</h3>
+  <pre>{
+  "tool": "memory-search",
+  "input": {
+    "query": "market analysis confidence high",
+    "namespace": "openclaw-agent",
+    "limit": 5
+  }
+}</pre>
+
+  <!-- Step 4 -->
+  <div class="step-header"><span class="step-num">4</span>Secretless Vault Pattern</div>
+  <p>Stop putting API keys in your skill code. Store them once in the Slopshop vault (AES-256-GCM encrypted), then reference the <code>vault_id</code> in your OpenClaw skills. The key is never returned in plaintext — only used server-side for proxied requests.</p>
+
+  <h3>Store a secret via CLI</h3>
+  <pre>slop vault set GITHUB_TOKEN ghp_your_token_here
+# output: vault_id = vlt_7f3a9c2e1b8d</pre>
+
+  <h3>Use the vault in a skill</h3>
+  <pre>{
+  "tool": "vault-proxy",
+  "input": {
+    "vault_id": "vlt_7f3a9c2e1b8d",
+    "url": "https://api.github.com/user/repos",
+    "method": "GET"
+  }
+}</pre>
+  <p>The Slopshop backend injects the credential, makes the request, and returns the result. Your skill code never touches the raw token.</p>
+
+  <hr class="divider">
+
+  <!-- Tools -->
+  <h2>1,303 Tools Across 82 Categories</h2>
+  <p>When Slopshop is connected via MCP, all tools are available to your OpenClaw agents automatically. No additional SDKs or configurations needed. A sample of available categories:</p>
+
+  <div class="tool-grid">
+    <div class="tool-card"><div class="name">Web Search</div><div class="count">12 tools</div></div>
+    <div class="tool-card"><div class="name">Code Execution</div><div class="count">18 tools</div></div>
+    <div class="tool-card"><div class="name">File System</div><div class="count">24 tools</div></div>
+    <div class="tool-card"><div class="name">Browser / CUA</div><div class="count">31 tools</div></div>
+    <div class="tool-card"><div class="name">Database</div><div class="count">19 tools</div></div>
+    <div class="tool-card"><div class="name">Email / Calendar</div><div class="count">14 tools</div></div>
+    <div class="tool-card"><div class="name">Image / Vision</div><div class="count">22 tools</div></div>
+    <div class="tool-card"><div class="name">Memory &amp; RAG</div><div class="count">16 tools</div></div>
+    <div class="tool-card"><div class="name">Fleet Mgmt</div><div class="count">9 tools</div></div>
+    <div class="tool-card"><div class="name">Crypto / Proofs</div><div class="count">11 tools</div></div>
+    <div class="tool-card"><div class="name">Analytics</div><div class="count">17 tools</div></div>
+    <div class="tool-card"><div class="name">+ 71 more</div><div class="count" style="color:var(--r)">View all &rarr;</div></div>
+  </div>
+
+  <p>Run <code>slop tools list</code> from the CLI, or browse the full catalog at <a href="https://slopshop.gg/tools">slopshop.gg/tools</a>.</p>
+
+  <hr class="divider">
+
+  <!-- Troubleshooting -->
+  <h2>Troubleshooting</h2>
+
+  <h3>MCP server not appearing in OpenClaw</h3>
+  <p>Ensure the CLI is on your PATH: <code>which slop</code> should return a path. If it doesn't, check your npm global bin directory is included in <code>$PATH</code>. Restart OpenClaw completely after editing the MCP config.</p>
+
+  <h3>Authentication errors (401)</h3>
+  <p>Verify your key with <code>slop status</code>. Keys starting with <code>sk-slop-</code> are valid. If you regenerated your key in the dashboard, update the value in <code>mcp.json</code> and restart OpenClaw.</p>
+
+  <h3>Memory writes succeed but reads return null</h3>
+  <p>Check that the <code>namespace</code> parameter matches between your write and read calls. Namespaces are case-sensitive and default to <code>"default"</code> if omitted.</p>
+
+  <h3>Slow tool response times</h3>
+  <p>The MCP server starts a new process per session. For high-throughput scenarios, run <code>slop mcp serve --persistent</code> to keep the server alive between OpenClaw sessions and reduce cold-start latency.</p>
+
+  <h3>Vault proxy returning 403</h3>
+  <p>The vault_id must belong to the same account as your API key. List your vault entries with <code>slop vault list</code> to confirm the ID. Domain-restricted vault entries will only proxy to allowed hostnames — check restrictions with <code>slop vault inspect &lt;vault_id&gt;</code>.</p>
+
+  <hr class="divider">
+
+  <div style="background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px 28px;display:flex;align-items:flex-start;gap:20px;margin-bottom:32px">
+    <div>
+      <div style="font-family:var(--mono);font-size:0.85rem;font-weight:700;margin-bottom:6px">Need help with your integration?</div>
+      <p style="margin-bottom:12px;font-size:0.8rem">Join the Slopshop Discord for real-time help, or browse the full API reference.</p>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <a href="https://discord.gg/slopshop" style="background:var(--r);color:#000;font-family:var(--mono);font-size:0.72rem;font-weight:700;padding:6px 14px;border-radius:6px">Join Discord</a>
+        <a href="/docs/api" style="background:var(--s2);color:var(--t);font-family:var(--mono);font-size:0.72rem;font-weight:700;padding:6px 14px;border-radius:6px;border:1px solid var(--b)">API Reference</a>
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size:0.75rem;color:var(--t4);font-family:var(--mono)">Last updated: March 2026 &middot; <a href="https://github.com/slopshop/docs">Edit this page</a></p>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div style="margin-bottom:16px">
+      <span style="font-weight:700"><span style="color:var(--r)">SLOP</span><span style="color:var(--t4)">.gg</span></span>
+    </div>
+    <div style="display:flex;justify-content:center;gap:24px;margin-bottom:16px;flex-wrap:wrap">
+      <a href="/docs">Docs</a>
+      <a href="/ecosystem">Ecosystem</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/changelog">Changelog</a>
+      <a href="/status">Status</a>
+      <a href="https://github.com/slopshop">GitHub</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+    </div>
+    <div style="color:var(--t4)">Copyright &copy; 2026 Slopshop. All rights reserved.</div>
+  </div>
+</footer>
+
+</body>
+</html>

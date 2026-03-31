@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "slopshop": {
+      "command": "slop",
+      "args": ["mcp", "serve"],
+      "env": {
+        "SLOPSHOP_KEY": "sk-slop-your-key-here",
+        "SLOPSHOP_BASE": "https://slopshop.gg"
+      }
+    }
+  }
+}

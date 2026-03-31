@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<title>Verifiable Persistent Memory | Slopshop — Cryptographic Proof for Every Write</title>
+<meta name="description" content="Every memory write to Slopshop returns a cryptographic proof hash and Merkle root. Audit agent memory offline, verify integrity, build trustless workflows.">
+<meta name="keywords" content="verifiable memory, cryptographic proof, merkle root, agent memory, slopshop, proof hash, audit trail">
+<link rel="canonical" href="https://slopshop.gg/verifiable-memory">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/verifiable-memory">
+<meta property="og:title" content="Verifiable Persistent Memory | Slopshop">
+<meta property="og:description" content="Every memory write returns a SHA-256 proof hash and Merkle root. Verify offline, audit without trust, build provable agent workflows.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="Verifiable Persistent Memory | Slopshop">
+<meta name="twitter:description" content="Every memory write returns a cryptographic proof. SHA-256 + Merkle chain. Verify offline.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'><rect width='40' height='40' rx='8' fill='%2306b6d4'/><path d='M14 10c-3 0-4 2-4 4v4c0 2-1 3-3 3 2 0 3 1 3 3v4c0 2 1 4 4 4' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/><path d='M26 10c3 0 4 2 4 4v4c0 2 1 3 3 3-2 0-3 1-3 3v4c0 2-1 4-4 4' stroke='white' stroke-width='2.5' stroke-linecap='round' fill='none'/><circle cx='20' cy='21' r='2.5' fill='white'/></svg>">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090b;--s1:#111113;--s2:#18181b;--s3:#27272a;
+  --b:#1e1e22;--b2:#27272a;
+  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+  --r:#06b6d4;--r2:#22d3ee;--rg:rgba(6,182,212,0.06);
+  --o:#a78bfa;--og:rgba(167,139,250,0.08);
+  --g:#34d399;--gg:rgba(52,211,153,0.08);
+  --c:#06b6d4;--cg:rgba(6,182,212,0.06);
+  --v:#818cf8;--vg:rgba(129,140,248,0.08);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,-apple-system,sans-serif;
+  --accent:var(--r);--accent2:var(--rg);--orange:var(--o);--green:var(--g);
+}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.85rem;line-height:1.75}
+a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
+a:hover{opacity:0.8}
+::selection{background:var(--r);color:#000}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(9,9,11,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
+.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.nav-links{display:flex;gap:4px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s,opacity 0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+
+/* HERO */
+.hero{padding:128px 32px 80px;text-align:center;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;top:-200px;left:50%;transform:translateX(-50%);width:900px;height:700px;background:radial-gradient(ellipse at center,rgba(6,182,212,0.07) 0%,rgba(6,182,212,0.02) 40%,transparent 65%);pointer-events:none}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;background:var(--rg);border:1px solid rgba(6,182,212,0.18);color:var(--r);padding:6px 16px;border-radius:99px;font-size:0.7rem;font-weight:600;font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase;margin-bottom:28px}
+.hero-eyebrow .dot{width:6px;height:6px;background:var(--r);border-radius:50%;animation:pulse 2s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.5;transform:scale(0.8)}}
+.hero h1{font-family:var(--mono);font-size:clamp(1.9rem,5vw,3.2rem);font-weight:800;letter-spacing:-0.025em;line-height:1.1;margin-bottom:24px;color:var(--t)}
+.hero h1 .accent{color:var(--r)}
+.hero .sub{color:var(--t2);font-size:clamp(0.9rem,1.6vw,1rem);max-width:600px;margin:0 auto 40px;line-height:1.85}
+.hero .sub b{color:var(--t)}
+.hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 24px;border-radius:8px;font-size:0.8rem;font-weight:600;font-family:var(--mono);transition:opacity 0.15s,transform 0.15s;cursor:pointer}
+.btn:hover{opacity:0.85;transform:translateY(-1px)}
+.btn-primary{background:var(--r);color:#000}
+.btn-ghost{background:transparent;border:1px solid var(--b2);color:var(--t2)}
+.btn-ghost:hover{border-color:var(--r);color:var(--r)}
+
+/* LAYOUT */
+.wrap{max-width:900px;margin:0 auto;padding:0 32px 120px}
+
+/* SECTION */
+.section{margin-bottom:72px}
+.section-label{font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--r);margin-bottom:12px}
+.section h2{font-family:var(--mono);font-size:1.25rem;font-weight:800;color:var(--t);margin-bottom:16px;letter-spacing:-0.02em}
+.section p{color:var(--t2);font-size:0.875rem;line-height:1.85;margin-bottom:14px}
+.section p b{color:var(--t)}
+
+/* CARDS */
+.card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:24px 28px;margin-bottom:16px}
+.card h3{font-family:var(--mono);font-size:0.88rem;font-weight:700;color:var(--t);margin-bottom:8px}
+.card p{color:var(--t2);font-size:0.82rem;margin-bottom:0}
+
+/* CODE BLOCK */
+.code-block{background:var(--s1);border:1px solid var(--b);border-radius:10px;overflow:hidden;margin:20px 0}
+.code-header{display:flex;align-items:center;justify-content:space-between;padding:10px 16px;border-bottom:1px solid var(--b);background:var(--s2)}
+.code-lang{font-family:var(--mono);font-size:0.65rem;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--t4)}
+.code-label{font-family:var(--mono);font-size:0.68rem;color:var(--r)}
+pre{padding:20px;overflow-x:auto;font-family:var(--mono);font-size:0.78rem;line-height:1.7;color:var(--t2)}
+pre .key{color:var(--r)}
+pre .val{color:var(--g)}
+pre .str{color:var(--o)}
+pre .num{color:var(--v)}
+pre .comment{color:var(--t4)}
+pre .method{color:var(--r2)}
+pre .url{color:var(--t)}
+
+/* STEP FLOW */
+.step-flow{display:grid;grid-template-columns:1fr;gap:0}
+.step{display:flex;gap:20px;align-items:flex-start;padding:20px 0;border-bottom:1px solid var(--b)}
+.step:last-child{border-bottom:none}
+.step-num{flex-shrink:0;width:32px;height:32px;border-radius:50%;background:var(--rg);border:1px solid rgba(6,182,212,0.25);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:0.7rem;font-weight:700;color:var(--r)}
+.step-body h4{font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--t);margin-bottom:4px}
+.step-body p{color:var(--t2);font-size:0.8rem;margin-bottom:0}
+.step-body code{font-family:var(--mono);font-size:0.75rem;color:var(--r);background:var(--rg);padding:1px 6px;border-radius:4px}
+
+/* FEATURE GRID */
+.feature-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;margin-top:24px}
+.feature-card{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:20px 22px;transition:border-color 0.2s}
+.feature-card:hover{border-color:rgba(6,182,212,0.25)}
+.feature-card .icon{font-size:1.2rem;margin-bottom:10px}
+.feature-card h4{font-family:var(--mono);font-size:0.8rem;font-weight:700;color:var(--t);margin-bottom:6px}
+.feature-card p{font-size:0.78rem;color:var(--t2);margin-bottom:0}
+
+/* CALLOUT */
+.callout{background:var(--rg);border:1px solid rgba(6,182,212,0.2);border-radius:10px;padding:16px 20px;display:flex;gap:12px;align-items:flex-start;margin:20px 0}
+.callout .icon{font-size:1rem;flex-shrink:0;margin-top:1px}
+.callout p{color:var(--t2);font-size:0.82rem;margin-bottom:0}
+.callout p b{color:var(--r)}
+
+/* DIVIDER */
+.divider{border:none;border-top:1px solid var(--b);margin:60px 0}
+
+/* FOOTER */
+footer{border-top:1px solid var(--b);padding:40px 32px;background:var(--s1)}
+.footer-inner{max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:32px}
+.footer-brand .logo-text{font-family:var(--mono);font-weight:700;font-size:0.95rem;color:var(--r);letter-spacing:0.08em}
+.footer-brand p{color:var(--t4);font-size:0.75rem;margin-top:6px;max-width:220px;line-height:1.6}
+.footer-links{display:flex;gap:48px;flex-wrap:wrap}
+.footer-col h5{font-family:var(--mono);font-size:0.62rem;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--t4);margin-bottom:12px}
+.footer-col a{display:block;color:var(--t3);font-size:0.78rem;margin-bottom:8px;transition:color 0.15s}
+.footer-col a:hover{color:var(--r)}
+.footer-bottom{border-top:1px solid var(--b);padding:20px 32px;text-align:center}
+.footer-bottom p{color:var(--t4);font-size:0.72rem}
+</style>
+</head>
+<body>
+
+<nav><div class="nv">
+  <div class="logo">
+    <a href="/" style="display:flex;align-items:center;text-decoration:none">
+      <span class="mark" style="color:var(--r);font-family:var(--mono);font-weight:700;letter-spacing:0.08em;font-size:1rem">SLOPSHOP.gg</span><span style="font-size:0.5rem;color:var(--t4);border:1px solid var(--b);padding:1px 6px;border-radius:3px;margin-left:8px;font-family:var(--mono)">alpha</span>
+    </a>
+  </div>
+  <div class="nav-links">
+    <a href="/">Home</a>
+    <a href="/docs" data-mobile>Docs</a>
+    <a href="/tools">Tools</a>
+    <a href="/ecosystem">Ecosystem</a>
+    <a href="/security">Security</a>
+    <a href="/about">About</a>
+    <a href="/login" data-mobile style="color:var(--t3);font-size:0.75rem;padding:6px 12px">Log In</a>
+    <a href="/signup" data-mobile style="background:var(--r);color:#000;padding:6px 16px;border-radius:6px;font-weight:600">Sign Up Free</a>
+  </div>
+</div></nav>
+
+<section class="hero">
+  <div class="hero-eyebrow"><span class="dot"></span>Memory v2</div>
+  <h1>Verifiable Persistent<br><span class="accent">Memory</span></h1>
+  <p class="sub">Every memory write returns a <b>cryptographic proof</b>. SHA-256 hash of namespace:key:value:timestamp, chained into a running Merkle root. Verify agent memory offline — no trust required.</p>
+  <div class="hero-ctas">
+    <a href="/docs" class="btn btn-primary">Read the Docs</a>
+    <a href="/vault" class="btn btn-ghost">Credential Vault &rarr;</a>
+  </div>
+</section>
+
+<div class="wrap">
+
+  <!-- HOW IT WORKS -->
+  <div class="section">
+    <div class="section-label">How it works</div>
+    <h2>Proof on every write</h2>
+    <p>When an agent calls <code style="font-family:var(--mono);color:var(--r);background:var(--rg);padding:1px 6px;border-radius:4px">POST /v1/memory-set</code>, Slopshop stores the key-value pair and immediately computes two proofs: a <b>leaf proof_hash</b> and an updated <b>Merkle root</b>. Both are returned in the response body — no extra call needed.</p>
+    <p>The proof is deterministic. Given the same namespace, key, value, and timestamp, anyone can recompute the SHA-256 hash offline and confirm it matches. The Merkle root chains every write in sequence, so tampering with any historical entry breaks the root.</p>
+
+    <div class="step-flow" style="margin-top:28px">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h4>Agent writes memory</h4>
+          <p>Agent calls <code>POST /v1/memory-set</code> with <code>namespace</code>, <code>key</code>, and <code>value</code>. Slopshop stores the entry in SQLite with an auto-generated timestamp and version number.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h4>SHA-256 leaf hash computed</h4>
+          <p>Slopshop computes <code>SHA-256(namespace + ":" + key + ":" + value + ":" + timestamp)</code> — the <code>proof_hash</code>. This is the leaf node of the Merkle tree.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h4>Merkle root updated</h4>
+          <p>The new leaf is appended to the namespace's running Merkle chain. The root is recomputed and stored. The <code>merkle_root</code> reflects the entire write history for that namespace.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <div class="step-body">
+          <h4>Proof returned in response</h4>
+          <p>Both <code>proof_hash</code> and <code>merkle_root</code> are included in the JSON response body. Store them in your agent's working context or pass them downstream to a verifier.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RESPONSE FORMAT -->
+  <div class="section">
+    <div class="section-label">API Reference</div>
+    <h2>New response format</h2>
+    <p>The <code style="font-family:var(--mono);color:var(--r);background:var(--rg);padding:1px 6px;border-radius:4px">POST /v1/memory-set</code> endpoint now returns two additional fields alongside the standard storage confirmation.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Request</span>
+        <span class="code-label">POST /v1/memory-set</span>
+      </div>
+      <pre><span class="comment">// Request body</span>
+{
+  <span class="key">"namespace"</span>: <span class="str">"project"</span>,
+  <span class="key">"key"</span>:       <span class="str">"findings"</span>,
+  <span class="key">"value"</span>:     <span class="str">"Latency is under 120ms on warm cache"</span>
+}</pre>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Response</span>
+        <span class="code-label">200 OK — with proof</span>
+      </div>
+      <pre>{
+  <span class="key">"status"</span>:      <span class="str">"stored"</span>,
+  <span class="key">"key"</span>:         <span class="str">"findings"</span>,
+  <span class="key">"namespace"</span>:   <span class="str">"project"</span>,
+  <span class="key">"version"</span>:     <span class="num">1</span>,
+  <span class="key">"proof_hash"</span>:  <span class="str">"a3f7b2c1d4e5f6789abc..."</span>,
+  <span class="key">"merkle_root"</span>: <span class="str">"e1d2c3b4a5f6789012ab..."</span>,
+  <span class="key">"_engine"</span>:     <span class="str">"real"</span>
+}</pre>
+    </div>
+
+    <div class="callout">
+      <span class="icon">&#128161;</span>
+      <p><b>proof_hash</b> is the SHA-256 leaf for this specific write. <b>merkle_root</b> is the running chain root for the entire namespace. Use <code style="font-family:var(--mono);color:var(--r)">proof_hash</code> to verify individual writes; use <code style="font-family:var(--mono);color:var(--r)">merkle_root</code> to verify the full namespace history.</p>
+    </div>
+  </div>
+
+  <!-- VERIFICATION -->
+  <div class="section">
+    <div class="section-label">Verification</div>
+    <h2>Verify a proof</h2>
+    <p>Any system — including your own script — can verify that a proof is valid. Slopshop exposes a dedicated verification endpoint for server-side checks, or you can recompute the hash locally.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Server-side verify</span>
+        <span class="code-label">POST /v1/proof/verify</span>
+      </div>
+      <pre><span class="comment">// Submit the leaf and the root you received</span>
+{
+  <span class="key">"leaf"</span>: <span class="str">"a3f7b2c1d4e5f6789abc..."</span>,
+  <span class="key">"root"</span>: <span class="str">"e1d2c3b4a5f6789012ab..."</span>
+}
+
+<span class="comment">// Response</span>
+{
+  <span class="key">"verified"</span>: <span class="val">true</span>,
+  <span class="key">"position"</span>: <span class="num">7</span>,
+  <span class="key">"namespace"</span>: <span class="str">"project"</span>
+}</pre>
+    </div>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Offline verify (Node.js)</span>
+        <span class="code-label">Recompute locally — no network needed</span>
+      </div>
+      <pre><span class="comment">// Recompute the leaf hash from raw values</span>
+<span class="key">const</span> crypto = require(<span class="str">'crypto'</span>);
+
+<span class="key">function</span> <span class="method">verifyMemoryWrite</span>({ namespace, key, value, timestamp, proof_hash }) {
+  <span class="key">const</span> input = <span class="str">`${namespace}:${key}:${value}:${timestamp}`</span>;
+  <span class="key">const</span> computed = crypto.createHash(<span class="str">'sha256'</span>).update(input).digest(<span class="str">'hex'</span>);
+  <span class="key">return</span> computed === proof_hash;
+}
+
+<span class="comment">// Returns true if the write was not tampered with</span>
+verifyMemoryWrite({
+  namespace:  <span class="str">'project'</span>,
+  key:        <span class="str">'findings'</span>,
+  value:      <span class="str">'Latency is under 120ms on warm cache'</span>,
+  timestamp:  <span class="str">'2026-03-31T14:22:00Z'</span>,
+  proof_hash: <span class="str">'a3f7b2c1d4e5f6789abc...'</span>
+}); <span class="comment">// => true</span></pre>
+    </div>
+  </div>
+
+  <!-- MEMORY PROOF RETRIEVAL -->
+  <div class="section">
+    <div class="section-label">Proof Retrieval</div>
+    <h2>Retrieve a memory proof by key</h2>
+    <p>Need to pull the proof for a specific memory key later? Use the proof retrieval endpoint. This is useful for audit workflows where you need to revalidate a past write without storing the proof hash in the agent's context.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">GET</span>
+        <span class="code-label">GET /v1/memory/proof/:key</span>
+      </div>
+      <pre><span class="comment">// Retrieve proof for a specific key in a namespace</span>
+GET /v1/memory/proof/findings?namespace=project
+
+<span class="comment">// Response</span>
+{
+  <span class="key">"key"</span>:         <span class="str">"findings"</span>,
+  <span class="key">"namespace"</span>:   <span class="str">"project"</span>,
+  <span class="key">"version"</span>:     <span class="num">1</span>,
+  <span class="key">"proof_hash"</span>:  <span class="str">"a3f7b2c1d4e5f6789abc..."</span>,
+  <span class="key">"merkle_root"</span>: <span class="str">"e1d2c3b4a5f6789012ab..."</span>,
+  <span class="key">"timestamp"</span>:   <span class="str">"2026-03-31T14:22:00Z"</span>
+}</pre>
+    </div>
+  </div>
+
+  <!-- OFFLINE VERIFICATION -->
+  <div class="section">
+    <div class="section-label">Offline Audit</div>
+    <h2>SHA-256 is deterministic — verify without Slopshop</h2>
+    <p>Because the hash function is deterministic and the inputs are plain text, any third party can verify a memory write without contacting Slopshop servers. This means:</p>
+    <div class="feature-grid">
+      <div class="feature-card">
+        <div class="icon">&#128274;</div>
+        <h4>Tamper evidence</h4>
+        <p>If a stored value is modified after writing, the recomputed hash won't match the proof returned at write time.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">&#128203;</div>
+        <h4>Audit trail</h4>
+        <p>Every write is a timestamped, hashed record. Export them from <code style="font-family:var(--mono);font-size:0.72rem;color:var(--r)">GET /v1/memory/audit</code> for compliance logs.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">&#127757;</div>
+        <h4>No trust required</h4>
+        <p>Proofs are verifiable by any SHA-256 implementation. Your compliance team or an external auditor can verify without credentials.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">&#128279;</div>
+        <h4>Merkle chain integrity</h4>
+        <p>The Merkle root chains all writes in order. Any gap or reordering in the history breaks the root, making deletions visible.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- INTEGRATION EXAMPLE -->
+  <div class="section">
+    <div class="section-label">Integration</div>
+    <h2>Using proof_hash in agent workflows</h2>
+    <p>Store the <code style="font-family:var(--mono);color:var(--r);background:var(--rg);padding:1px 6px;border-radius:4px">proof_hash</code> alongside your agent's findings so downstream agents or human reviewers can verify the data provenance without having to call back to Slopshop.</p>
+
+    <div class="code-block">
+      <div class="code-header">
+        <span class="code-lang">Python — agent workflow</span>
+        <span class="code-label">Write, store proof, pass downstream</span>
+      </div>
+      <pre>import requests
+
+SLOP_URL = <span class="str">"https://api.slopshop.gg/v1"</span>
+HEADERS  = {<span class="str">"Authorization"</span>: <span class="str">"Bearer sk-slop-..."</span>}
+
+<span class="comment"># 1. Write a memory entry</span>
+res = requests.post(f<span class="str">"{SLOP_URL}/memory-set"</span>,
+    headers=HEADERS,
+    json={
+        <span class="str">"namespace"</span>: <span class="str">"research"</span>,
+        <span class="str">"key"</span>:       <span class="str">"summary"</span>,
+        <span class="str">"value"</span>:     <span class="str">"Competitor A raised $40M Series B"</span>
+    }
+).json()
+
+proof_hash  = res[<span class="str">"proof_hash"</span>]
+merkle_root = res[<span class="str">"merkle_root"</span>]
+
+<span class="comment"># 2. Pass proof to the next agent in the chain</span>
+chain_payload = {
+    <span class="str">"finding"</span>:    <span class="str">"Competitor A raised $40M Series B"</span>,
+    <span class="str">"proof_hash"</span>: proof_hash,
+    <span class="str">"root"</span>:       merkle_root,
+    <span class="str">"verified"</span>:   <span class="val">True</span>  <span class="comment"># downstream agent can re-verify</span>
+}
+
+<span class="comment"># 3. Downstream agent verifies before acting on the data</span>
+verify = requests.post(f<span class="str">"{SLOP_URL}/proof/verify"</span>,
+    headers=HEADERS,
+    json={<span class="str">"leaf"</span>: proof_hash, <span class="str">"root"</span>: merkle_root}
+).json()
+
+assert verify[<span class="str">"verified"</span>] == <span class="val">True</span>
+print(<span class="str">"Data provenance confirmed ✓"</span>)</pre>
+    </div>
+
+    <div class="callout">
+      <span class="icon">&#128279;</span>
+      <p>Combine verifiable memory with the <b><a href="/vault">Credential Vault</a></b> to build fully auditable, secretless agent pipelines. Every credential access is logged; every memory write is provable.</p>
+    </div>
+  </div>
+
+  <!-- LINKS -->
+  <div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:8px">
+    <a href="/docs" class="btn btn-primary">Full API Docs</a>
+    <a href="/vault" class="btn btn-ghost">Credential Vault</a>
+    <a href="/security" class="btn btn-ghost">Security Overview</a>
+  </div>
+
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="logo-text">SLOP.gg</div>
+      <p>The self-hostable AI Agent OS. Memory, tools, vault, and identity in one API.</p>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h5>Product</h5>
+        <a href="/docs">Docs</a>
+        <a href="/tools">Tools</a>
+        <a href="/ecosystem">Ecosystem</a>
+        <a href="/security">Security</a>
+      </div>
+      <div class="footer-col">
+        <h5>Features</h5>
+        <a href="/verifiable-memory">Verifiable Memory</a>
+        <a href="/vault">Credential Vault</a>
+        <a href="/ecosystem">Integrations</a>
+      </div>
+      <div class="footer-col">
+        <h5>Company</h5>
+        <a href="/about">About</a>
+        <a href="https://x.com/slopshopgg" target="_blank" rel="noopener">Twitter / X</a>
+      </div>
+    </div>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <p>&copy; 2026 Slopshop. Self-host it. Own your memory.</p>
+</div>
+
+</body>
+</html>

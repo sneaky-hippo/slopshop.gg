@@ -7396,6 +7396,12 @@ async function cmdNatural(cmd, args) {
     const m = fullInput.match(/^(?:remember|store|save|set|put)\s+["']?(\S+?)["']?\s*[=:]\s*(.+)/i);
     return cmdMemory(['set', m[1].trim(), m[2].trim().replace(/^['"]|['"]$/g, '')]);
   }
+  // "remember that/: [sentence]" or "remember my project uses X" — free-form, no key=value
+  if (/^(remember|note|jot down|record)\s+(?:that\s+|this[:\s]+)?(.+)/i.test(fullInput) && !/[=:]/.test(fullInput.slice(fullInput.search(/\s/)+1, fullInput.search(/\s/)+30))) {
+    const content = fullInput.replace(/^(?:remember|note|jot down|record)\s+(?:that\s+)?/i, '').replace(/^['"]|['"]$/g, '').trim();
+    const key = 'note_' + Date.now();
+    return cmdMemory(['set', key, content]);
+  }
   if (/^(recall|get|fetch|retrieve|what is|what's|whats)\s+["']?(\S+?)["']?\s*$/i.test(fullInput)) {
     const m = fullInput.match(/^(?:recall|get|fetch|retrieve|what is|what's|whats)\s+["']?(\S+?)["']?\s*$/i);
     return cmdMemory(['get', m[1].trim()]);
@@ -7609,6 +7615,41 @@ async function cmdNatural(cmd, args) {
   if (/^(find|search|look for|what tools?|which api|how do i)\s+(.+)/i.test(fullInput)) {
     const query = fullInput.replace(/^(?:find|search|look for|what tools?|which api|how do i)\s+/i, '');
     return cmdSearch([query]);
+  }
+
+  // "synthesize my [namespace] notes [tonight/now]" — Dream Engine synthesis
+  if (/^(synthesize|consolidate|compress|distill)\s+(?:my\s+)?(.+?)\s*(?:notes?|memories|data|info)?\s*(?:tonight|now|today|overnight|async)?$/i.test(fullInput)) {
+    requireKey();
+    const m = fullInput.match(/^(?:synthesize|consolidate|compress|distill)\s+(?:my\s+)?(.+?)\s*(?:notes?|memories|data|info)?\s*(?:tonight|now|today|overnight|async)?$/i);
+    const namespace = m[1].trim().replace(/^['"]|['"]$/g, '') || 'default';
+    if (!quiet && !jsonMode) console.log(dim(`\n  Starting Dream Engine synthesis on namespace "${namespace}"...`));
+    const r = await request('POST', '/v1/memory/dream/start', { namespace, strategy: 'synthesize' });
+    if (jsonMode) return console.log(JSON.stringify(r.data, null, 2));
+    const d = r.data;
+    console.log(`\n  ${green('✓')} Dream Engine started: ${bold(namespace)}`);
+    console.log(`  ${dim('Strategy:')} synthesize`);
+    console.log(`  ${dim('Job ID:')}   ${d?.job_id || d?.id || 'queued'}`);
+    console.log(`  ${dim('Status:')}   ${d?.status || 'running'}`);
+    console.log(`\n  Check results: ${cyan('slop dream review')}\n`);
+    return;
+  }
+
+  // "share [workspace/memory] with my team [for a week]" — Multiplayer Memory
+  if (/^share\s+(?:this\s+)?(?:workspace|memory|space|memories|notes?|namespace)\s+with\s+(?:my\s+)?(?:team|everyone|collaborators?|colleagues?)/i.test(lower)) {
+    requireKey();
+    const retentionMatch = fullInput.match(/for\s+(?:a\s+)?(day|week|month|hour)/i);
+    const retMap = { day: 'daily', week: 'weekly', month: 'permanent', hour: 'session' };
+    const retention = retentionMatch ? (retMap[retentionMatch[1].toLowerCase()] || 'weekly') : 'weekly';
+    const spaceName = 'team-' + Math.random().toString(36).slice(2, 8);
+    const r = await request('POST', '/v1/memory/share/create', { name: spaceName, retention });
+    if (jsonMode) return console.log(JSON.stringify(r.data, null, 2));
+    const d = r.data;
+    console.log(`\n  ${green('✓')} Shared memory space created`);
+    console.log(`  ${dim('Space:')}     ${d?.space_id || spaceName}`);
+    console.log(`  ${dim('Retention:')} ${retention}`);
+    console.log(`  ${dim('Invite URL:')} ${d?.invite_url || 'use space ID to invite'}`);
+    console.log(`\n  Invite teammates: ${cyan('slop memory invite <space_id> <email>')}\n`);
+    return;
   }
 
   // Dream — background memory growth
