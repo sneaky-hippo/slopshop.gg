@@ -22,22 +22,24 @@ const log = {
 };
 
 // Global crash handlers — catch what Railway silently drops
+function _writeCrashLog(entry) {
+  const _fs = require('fs');
+  const _candidates = ['/app/data/crash.log', '/data/crash.log', '/tmp/crash.log'];
+  for (const p of _candidates) { try { _fs.appendFileSync(p, entry + '\n'); break; } catch(_) {} }
+}
 process.on('uncaughtException', (err) => {
-  console.error(JSON.stringify({ level: 'fatal', msg: 'uncaughtException', error: err.message, stack: err.stack, ts: new Date().toISOString() }));
-  try {
-    const fs = require('fs');
-    fs.appendFileSync('/data/crash.log', JSON.stringify({ ts: new Date().toISOString(), type: 'uncaughtException', error: err.message, stack: err.stack }) + '\n');
-  } catch(_) {}
+  process.stderr.write('FATAL uncaughtException ' + err.message + '\n' + err.stack + '\n');
+  _writeCrashLog(JSON.stringify({ ts: new Date().toISOString(), type: 'uncaughtException', error: err.message, stack: err.stack }));
   process.exit(1);
 });
 process.on('unhandledRejection', (reason) => {
   const msg = reason instanceof Error ? reason.message : String(reason);
   const stack = reason instanceof Error ? reason.stack : '';
-  console.error(JSON.stringify({ level: 'fatal', msg: 'unhandledRejection', error: msg, stack, ts: new Date().toISOString() }));
-  try {
-    const fs = require('fs');
-    fs.appendFileSync('/data/crash.log', JSON.stringify({ ts: new Date().toISOString(), type: 'unhandledRejection', error: msg, stack }) + '\n');
-  } catch(_) {}
+  process.stderr.write('FATAL unhandledRejection ' + msg + '\n' + stack + '\n');
+  _writeCrashLog(JSON.stringify({ ts: new Date().toISOString(), type: 'unhandledRejection', error: msg, stack }));
+});
+process.on('exit', (code) => {
+  process.stdout.write('PROCESS_EXIT code=' + code + ' ts=' + new Date().toISOString() + '\n');
 });
 
 const helmet = require('helmet');
@@ -711,7 +713,11 @@ for (const slug of Object.keys(API_DEFS)) {
   if (!allHandlers[slug]) missing.push(slug);
 }
 if (missing.length > 0) {
-  console.error('WARNING: APIs without handlers:', missing);
+  if (IS_RAILWAY) {
+    console.error('WARNING: APIs without handlers: ' + missing.length + ' slugs (suppressed on Railway)');
+  } else {
+    console.error('WARNING: APIs without handlers:', missing);
+  }
 }
 
 // Wire 'route' slug into allHandlers — lightweight version for batch/dispatcher use
@@ -2675,7 +2681,12 @@ app.delete('/v1/schedules/:id', auth, (req, res) => {
 });
 
 // Scheduler loop (checks every 30s for due schedules)
+let _schedulerRunning = false;
 setInterval(async () => {
+  if (_schedulerRunning) { process.stdout.write('SCHED_SKIP overlap\n'); return; }
+  _schedulerRunning = true;
+  const _tickStart = Date.now();
+  try {
   const due = dbGetDueSchedules.all(Date.now());
   for (const sched of due) {
     const acct = apiKeys.get(sched.api_key);
@@ -2870,6 +2881,11 @@ Respond with structured findings. This will be APPENDED (never replacing existin
       log.info('Dream complete', { id: dreamId, topic: dream.topic, cycles: insights.length, credits: totalCreditsUsed });
     }
   } catch(e) { log.warn('Dream processing error', { error: e.message }); }
+  } finally {
+    _schedulerRunning = false;
+    const _elapsed = Date.now() - _tickStart;
+    if (_elapsed > 5000) process.stdout.write('SCHED_TICK elapsed=' + _elapsed + 'ms\n');
+  }
 }, 30000);
 
 // ===== CURATED MCP RECOMMENDED TOOLS =====
@@ -20049,38 +20065,45 @@ const server = app.listen(PORT, () => {
   console.log(`  🌐 http://localhost:${PORT}/index.html\n`);
   console.log(`  💾 RSS: ${Math.round(mem.rss/1024/1024)}MB heap: ${Math.round(mem.heapUsed/1024/1024)}/${Math.round(mem.heapTotal/1024/1024)}MB railway:${IS_RAILWAY}`);
 
-  // Check for previous crash logs
-  try {
-    const fs = require('fs');
-    if (fs.existsSync('/data/crash.log')) {
-      const lines = fs.readFileSync('/data/crash.log', 'utf8').trim().split('\n').slice(-5);
-      console.log('  ⚠️  Previous crash logs:');
-      lines.forEach(l => console.log('    ' + l));
-      fs.writeFileSync('/data/crash.log', ''); // clear after reading
-    }
-  } catch(_) {}
+  // Check for previous crash logs (handled in watchdog block below since DB_PATH is available)
 });
 
-// Memory growth watchdog — samples every 5s, writes to /data/mem.log on Railway
+// Memory growth watchdog — samples every 5s, writes to {dataDir}/mem.log on Railway
 if (IS_RAILWAY) {
   const _memStart = Date.now();
   const _fs = require('fs');
-  const _memLogPath = '/data/mem.log';
+  // Use same dir as DB so it lands on the persistent volume
+  const _dataDir = DB_PATH ? require('path').dirname(DB_PATH) : '/app/data';
+  const _memLogPath = require('path').join(_dataDir, 'mem.log');
+  const _crashLogPath = require('path').join(_dataDir, 'crash.log');
   // Read and print mem.log from previous run on startup
   try {
     if (_fs.existsSync(_memLogPath)) {
-      const prev = _fs.readFileSync(_memLogPath, 'utf8').trim().split('\n').slice(-20);
-      console.log('  📊 Memory log from PREVIOUS run (last 20 samples):');
-      prev.forEach(l => console.log('    ' + l));
+      const prev = _fs.readFileSync(_memLogPath, 'utf8').trim().split('\n').slice(-30);
+      process.stdout.write('  PREV_MEM_LOG: ' + prev.join(' | ') + '\n');
       _fs.writeFileSync(_memLogPath, ''); // clear for this run
+    }
+  } catch(_) {}
+  try {
+    if (_fs.existsSync(_crashLogPath)) {
+      const lines = _fs.readFileSync(_crashLogPath, 'utf8').trim().split('\n').slice(-5);
+      process.stdout.write('  PREV_CRASH_LOG: ' + lines.join(' | ') + '\n');
+      _fs.writeFileSync(_crashLogPath, ''); // clear after reading
     }
   } catch(_) {}
   setInterval(() => {
     const m = process.memoryUsage();
-    const entry = JSON.stringify({ t: Math.round((Date.now()-_memStart)/1000), rss: Math.round(m.rss/1024/1024), heap: Math.round(m.heapUsed/1024/1024), htot: Math.round(m.heapTotal/1024/1024), ext: Math.round(m.external/1024/1024) });
-    console.log(JSON.stringify({ level: 'info', msg: 'mem_monitor', ...JSON.parse(entry), ts: new Date().toISOString() }));
+    const t = Math.round((Date.now()-_memStart)/1000);
+    const entry = `t=${t} rss=${Math.round(m.rss/1024/1024)} heap=${Math.round(m.heapUsed/1024/1024)}/${Math.round(m.heapTotal/1024/1024)} ext=${Math.round(m.external/1024/1024)}`;
+    process.stdout.write('MEM ' + entry + '\n');
     try { _fs.appendFileSync(_memLogPath, entry + '\n'); } catch(_) {}
-  }, 5000);
+    // Emergency shutdown if RSS exceeds 450MB (leave headroom before OOM kill)
+    if (m.rss > 450 * 1024 * 1024) {
+      process.stdout.write('EMERGENCY_SHUTDOWN rss=' + Math.round(m.rss/1024/1024) + 'MB exceeds 450MB limit\n');
+      try { _fs.appendFileSync(_crashLogPath, JSON.stringify({ ts: new Date().toISOString(), type: 'emergency_shutdown', rss_mb: Math.round(m.rss/1024/1024) }) + '\n'); } catch(_) {}
+      gracefulShutdown('MEMORY_LIMIT');
+    }
+  }, 3000);
 }
 
 function gracefulShutdown(signal) {
