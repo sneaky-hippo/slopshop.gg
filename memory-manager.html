@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>Memory Manager | Slopshop — Agent Memory OS</title>
-<meta name="description" content="View, search, and share your agent memory. No code required. Manage memory entries, shared spaces, and Dream Engine subscriptions.">
+<meta name="description" content="Manage your agent's memory. Browse entries, create shared spaces, and run Dream Engine synthesis. No code required.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -12,1526 +12,1337 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{
-  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
-  --b:#1a1a1a;--b2:#2a2a2a;
-  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
-  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
-  --o:#ff8800;--og:rgba(255,136,0,0.1);
-  --g:#00cc66;--gg:rgba(0,204,102,0.1);
-  --c:#00aaff;--cg:rgba(0,170,255,0.1);
-  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --bg:#09090b;--s1:#111113;--s2:#18181b;--s3:#27272a;
+  --b:#1e1e22;--b2:#27272a;
+  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+  --r:#06b6d4;--rg:rgba(6,182,212,0.08);
+  --o:#a78bfa;--og:rgba(167,139,250,0.1);
+  --g:#34d399;--gg:rgba(52,211,153,0.1);
+  --v:#818cf8;--vg:rgba(129,140,248,0.1);
+  --red:#ef4444;--redg:rgba(239,68,68,0.1);
+  --warn:#f59e0b;
   --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
 }
-body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;min-height:100vh}
-::selection{background:var(--r);color:#fff}
-a{color:var(--r);text-decoration:none}a:hover{opacity:0.8}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+::selection{background:var(--r);color:#000}
+a{color:var(--r);text-decoration:none}a:hover{opacity:.8}
 button{cursor:pointer;font-family:var(--sans)}
 input,textarea,select{font-family:var(--sans)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
 
-/* NAV */
-nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
-.nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
-.logo{font-family:var(--mono);font-weight:800;font-size:1rem;letter-spacing:0.1em;display:flex;align-items:center;gap:8px;color:var(--t)}
-.logo .mark{color:#ef4444;font-family:'Courier New',monospace;font-weight:900;letter-spacing:0.05em}
-.logo .vtag{font-size:0.55rem;color:#ff3333;border:1px solid rgba(255,51,51,0.2);padding:2px 6px;border-radius:4px;margin-left:8px}
-.nav-links{display:flex;gap:4px;align-items:center}
-.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:0.2s;font-family:var(--sans)}
-.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(9,9,11,0.9);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 24px}
+.nv{max-width:1280px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:.95rem;letter-spacing:.1em;display:flex;align-items:center;gap:8px;color:var(--t);text-decoration:none}
+.logo .mark{color:#ef4444;font-weight:900}
+.logo .vtag{font-size:.52rem;color:var(--r);border:1px solid rgba(6,182,212,.25);padding:2px 6px;border-radius:4px;margin-left:4px;letter-spacing:.05em}
+.nav-links{display:flex;gap:2px;align-items:center}
+.nav-links a{color:var(--t3);font-size:.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:.15s;font-family:var(--sans);opacity:1}
+.nav-links a:hover{color:var(--t);background:var(--s2)}
 .nav-links a.active{color:var(--t);background:var(--s2)}
-.nav-links .nav-cta{background:var(--r);color:#fff;padding:6px 16px;border-radius:6px;font-weight:600}
-.nav-links .nav-cta:hover{background:#e62e2e;opacity:1}
+.nav-cta{background:var(--r) !important;color:#000 !important;font-weight:700 !important;padding:6px 16px !important;border-radius:6px !important}
+.nav-cta:hover{opacity:.85 !important;background:var(--r) !important}
 
-/* LAYOUT */
-.page-wrap{padding-top:56px;min-height:100vh}
-.hero-bar{padding:48px 32px 32px;max-width:1200px;margin:0 auto}
-.hero-bar h1{font-family:var(--mono);font-size:clamp(1.6rem,4vw,2.4rem);font-weight:900;letter-spacing:0.02em;margin-bottom:8px}
-.hero-bar h1 .accent{color:var(--v)}
-.hero-bar .sub{color:var(--t2);font-size:0.9rem;margin-bottom:28px}
-
-/* CONNECT BAR */
-.connect-bar{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:20px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.connect-bar label{font-family:var(--mono);font-size:0.72rem;color:var(--t3);font-weight:600;white-space:nowrap}
-.connect-bar input{flex:1;min-width:240px;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:10px 14px;border-radius:8px;font-family:var(--mono);font-size:0.82rem;outline:none;transition:0.2s}
-.connect-bar input:focus{border-color:var(--v)}
-.connect-bar input::placeholder{color:var(--t4)}
-.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:8px;font-family:var(--mono);font-size:0.8rem;font-weight:700;border:none;transition:0.2s;white-space:nowrap}
-.btn-purple{background:var(--v);color:#fff}
-.btn-purple:hover{background:#7744ee;box-shadow:0 0 20px rgba(136,85,255,0.3)}
-.btn-sm{padding:7px 14px;font-size:0.72rem}
-.btn-ghost{background:var(--s2);color:var(--t2);border:1px solid var(--b2)}
-.btn-ghost:hover{border-color:var(--t3);color:var(--t)}
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:9px 18px;border-radius:8px;font-family:var(--mono);font-size:.78rem;font-weight:700;border:none;transition:.15s;white-space:nowrap;cursor:pointer;line-height:1}
+.btn-cyan{background:var(--r);color:#000}
+.btn-cyan:hover{background:#22d3ee;box-shadow:0 0 18px rgba(6,182,212,.35)}
 .btn-green{background:var(--g);color:#000}
-.btn-green:hover{background:#00b359}
-.btn-red{background:var(--r);color:#fff}
-.btn-red:hover{background:#e62e2e}
-.btn-blue{background:var(--c);color:#000}
-.btn-blue:hover{background:#0099ee}
-.btn-orange{background:var(--o);color:#000}
-.btn-orange:hover{background:#ee7700}
-.btn:disabled{opacity:0.4;cursor:not-allowed}
+.btn-green:hover{background:#6ee7b7;box-shadow:0 0 18px rgba(52,211,153,.35)}
+.btn-indigo{background:var(--v);color:#fff}
+.btn-indigo:hover{background:#a5b4fc;box-shadow:0 0 18px rgba(129,140,248,.35)}
+.btn-purple{background:var(--o);color:#fff}
+.btn-purple:hover{background:#c4b5fd}
+.btn-ghost{background:var(--s2);color:var(--t2);border:1px solid var(--b2)}
+.btn-ghost:hover{border-color:var(--t4);color:var(--t)}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{background:#f87171}
+.btn-sm{padding:6px 12px;font-size:.72rem}
+.btn-xs{padding:4px 9px;font-size:.68rem}
+.btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+.btn-icon{padding:7px;border-radius:6px}
 
-/* USER BADGE */
-.user-badge{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--b2);border-radius:99px;padding:6px 14px 6px 8px}
-.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--v);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:0.7rem;font-weight:800;color:#fff;flex-shrink:0}
-.user-name{font-family:var(--mono);font-size:0.75rem;font-weight:700;color:var(--t)}
-.user-credits{font-family:var(--mono);font-size:0.68rem;color:var(--g);background:var(--gg);padding:2px 8px;border-radius:4px}
+/* ── PAGE WRAP ── */
+.page-wrap{padding-top:56px;min-height:100vh}
 
-/* MAIN APP */
-.app-wrap{max-width:1200px;margin:0 auto;padding:0 32px 64px}
-.hidden{display:none!important}
+/* ── HERO (pre-connect) ── */
+#hero{padding:64px 24px 80px;max-width:800px;margin:0 auto;text-align:center}
+#hero .eyebrow{font-family:var(--mono);font-size:.7rem;font-weight:700;letter-spacing:.15em;color:var(--r);text-transform:uppercase;margin-bottom:16px}
+#hero h1{font-family:var(--mono);font-size:clamp(1.8rem,5vw,3rem);font-weight:900;letter-spacing:.02em;line-height:1.15;margin-bottom:16px}
+#hero h1 .c1{color:var(--r)}
+#hero h1 .c2{color:var(--v)}
+#hero .sub{color:var(--t2);font-size:1rem;line-height:1.65;max-width:560px;margin:0 auto 40px}
+.connect-card{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:28px 32px;max-width:560px;margin:0 auto 48px;text-align:left}
+.connect-card label{display:block;font-family:var(--mono);font-size:.68rem;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.connect-card .key-row{display:flex;gap:10px;align-items:stretch}
+.connect-card input{flex:1;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:11px 14px;border-radius:8px;font-family:var(--mono);font-size:.82rem;outline:none;transition:.15s}
+.connect-card input:focus{border-color:var(--r);box-shadow:0 0 0 3px rgba(6,182,212,.12)}
+.connect-card input::placeholder{color:var(--t4)}
+.connect-err{color:var(--red);font-size:.75rem;font-family:var(--mono);margin-top:8px;display:none}
+.features{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;max-width:700px;margin:0 auto;text-align:left}
+@media(max-width:600px){.features{grid-template-columns:1fr}}
+.feat-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:18px 20px}
+.feat-card .icon{font-size:1.25rem;margin-bottom:10px}
+.feat-card h3{font-size:.82rem;font-weight:700;margin-bottom:5px;font-family:var(--mono)}
+.feat-card p{font-size:.75rem;color:var(--t2);line-height:1.55}
+.feat-cyan .icon{color:var(--r)}
+.feat-green .icon{color:var(--g)}
+.feat-indigo .icon{color:var(--v)}
 
-/* TABS */
+/* ── DASHBOARD (post-connect) ── */
+#dashboard{display:none;max-width:1280px;margin:0 auto;padding:0 24px 80px}
+.dash-header{display:flex;align-items:center;justify-content:space-between;padding:24px 0 20px;flex-wrap:wrap;gap:12px}
+.dash-header h2{font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--t2)}
+.dash-header h2 span{color:var(--t)}
+.user-badge{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--b2);border-radius:99px;padding:5px 14px 5px 6px}
+.user-avatar{width:28px;height:28px;border-radius:50%;background:var(--v);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:.7rem;font-weight:800;color:#fff;flex-shrink:0}
+.user-name{font-family:var(--mono);font-size:.73rem;font-weight:700}
+.btn-disconnect{font-family:var(--mono);font-size:.68rem;color:var(--t3);background:none;border:none;cursor:pointer;padding:2px 0;margin-left:4px}
+.btn-disconnect:hover{color:var(--red)}
+
+/* ── TABS ── */
 .tabs{display:flex;gap:4px;border-bottom:1px solid var(--b);margin-bottom:28px}
-.tab-btn{background:none;border:none;color:var(--t3);padding:12px 20px;font-family:var(--mono);font-size:0.8rem;font-weight:600;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:0.2s}
+.tab-btn{font-family:var(--mono);font-size:.78rem;font-weight:700;padding:11px 20px;background:none;border:none;color:var(--t3);cursor:pointer;position:relative;transition:.15s;border-bottom:2px solid transparent;margin-bottom:-1px}
 .tab-btn:hover{color:var(--t)}
-.tab-btn.active{color:var(--v);border-bottom-color:var(--v)}
+.tab-btn.active-cyan{color:var(--r);border-bottom-color:var(--r)}
+.tab-btn.active-green{color:var(--g);border-bottom-color:var(--g)}
+.tab-btn.active-indigo{color:var(--v);border-bottom-color:var(--v)}
+.tab-pane{display:none}
+.tab-pane.active{display:block}
 
-/* TOP BAR */
-.top-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:20px}
-.top-bar select{background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:9px 12px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;outline:none;cursor:pointer}
-.top-bar select:focus{border-color:var(--v)}
-.search-wrap{position:relative;flex:1;min-width:200px}
-.search-wrap input{width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:9px 12px 9px 36px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;outline:none;transition:0.2s}
-.search-wrap input:focus{border-color:var(--v)}
-.search-wrap input::placeholder{color:var(--t4)}
-.search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--t4);font-size:0.85rem;pointer-events:none}
-.top-bar-spacer{flex:1}
+/* ── TOOLBAR ── */
+.toolbar{display:flex;gap:10px;align-items:center;margin-bottom:20px;flex-wrap:wrap}
+.search-wrap{position:relative;flex:1;min-width:220px}
+.search-wrap svg{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--t4);pointer-events:none}
+.search-input{width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:9px 14px 9px 38px;border-radius:8px;font-size:.82rem;outline:none;transition:.15s}
+.search-input:focus{border-color:var(--r);box-shadow:0 0 0 3px var(--rg)}
+.search-input::placeholder{color:var(--t4)}
+.select-field{background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:9px 32px 9px 12px;border-radius:8px;font-size:.78rem;font-family:var(--mono);outline:none;appearance:none;cursor:pointer;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2371717a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;transition:.15s}
+.select-field:focus{border-color:var(--r)}
 
-/* SKELETON */
-.skel{background:linear-gradient(90deg,var(--s2) 25%,var(--s3) 50%,var(--s2) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:6px}
-@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
-.skel-row{height:44px;border-radius:8px;margin-bottom:6px}
-
-/* MEMORY TABLE */
+/* ── TABLE ── */
 .mem-table-wrap{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden}
 .mem-table{width:100%;border-collapse:collapse}
-.mem-table thead th{padding:11px 14px;background:var(--s2);font-family:var(--mono);font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--t3);text-align:left;border-bottom:1px solid var(--b)}
-.mem-table tbody tr{border-bottom:1px solid var(--b);transition:0.15s;cursor:pointer}
-.mem-table tbody tr:hover{background:var(--s2)}
-.mem-table tbody tr:last-child{border-bottom:none}
-.mem-table td{padding:12px 14px;font-size:0.8rem;vertical-align:middle}
-.td-key{font-family:var(--mono);color:var(--c);font-weight:600;font-size:0.78rem;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.td-val{color:var(--t2);font-size:0.77rem;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.td-date{font-family:var(--mono);font-size:0.68rem;color:var(--t3);white-space:nowrap}
-.td-actions{white-space:nowrap;text-align:right}
-.td-actions button{background:none;border:none;color:var(--t3);padding:4px 8px;border-radius:5px;font-size:0.72rem;font-family:var(--mono);transition:0.15s;cursor:pointer}
-.td-actions button:hover{background:var(--s3);color:var(--t)}
-.td-actions .del-btn:hover{color:var(--r)}
-.tag-badge{display:inline-flex;align-items:center;background:var(--vg);border:1px solid rgba(136,85,255,0.2);color:var(--v);border-radius:4px;padding:2px 7px;font-size:0.62rem;font-family:var(--mono);font-weight:600;margin:1px}
-.tags-cell{max-width:140px}
+.mem-table thead tr{border-bottom:1px solid var(--b)}
+.mem-table th{padding:11px 16px;text-align:left;font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--t3);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap}
+.mem-table td{padding:12px 16px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:top;font-size:.8rem}
+.mem-table tr:last-child td{border-bottom:none}
+.mem-table tr.entry-row:hover td{background:rgba(255,255,255,.02)}
+.mem-table tr.entry-row{cursor:pointer;transition:.1s}
+.key-cell{font-family:var(--mono);font-size:.78rem;font-weight:600;color:var(--r);word-break:break-all;max-width:200px}
+.val-preview{color:var(--t2);font-size:.78rem;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.date-cell{font-family:var(--mono);font-size:.68rem;color:var(--t3);white-space:nowrap}
+.tags-cell{display:flex;flex-wrap:wrap;gap:4px}
+.tag{font-family:var(--mono);font-size:.62rem;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--rg);color:var(--r)}
+.action-cell{display:flex;gap:6px;justify-content:flex-end}
 
-/* EXPANDED ROW */
-.expand-row td{padding:0 14px 14px;background:var(--s1)}
-.expand-box{background:var(--bg);border:1px solid var(--b2);border-radius:8px;padding:14px 16px;font-family:var(--mono);font-size:0.78rem;color:var(--g);white-space:pre-wrap;word-break:break-all;max-height:300px;overflow-y:auto;line-height:1.6}
-.expand-meta{display:flex;gap:16px;margin-bottom:10px;flex-wrap:wrap}
-.expand-meta span{font-family:var(--mono);font-size:0.68rem;color:var(--t3)}
-.expand-meta span b{color:var(--t2)}
-.expand-actions{display:flex;gap:8px;margin-top:12px}
+/* ── EXPAND ROW ── */
+tr.expand-row td{padding:0}
+.expand-inner{padding:16px 20px;background:var(--s2);border-top:1px solid var(--b)}
+.expand-inner textarea{width:100%;background:var(--bg);border:1px solid var(--b2);color:var(--t);padding:12px;border-radius:8px;font-family:var(--mono);font-size:.78rem;resize:vertical;min-height:100px;outline:none;transition:.15s}
+.expand-inner textarea:focus{border-color:var(--r)}
+.expand-actions{display:flex;gap:8px;margin-top:10px;align-items:center}
+.expand-meta{font-family:var(--mono);font-size:.68rem;color:var(--t3);margin-left:auto}
 
-/* EMPTY STATE */
-.empty-state{text-align:center;padding:64px 32px;color:var(--t3)}
-.empty-state .empty-icon{font-size:3rem;margin-bottom:16px;opacity:0.5}
-.empty-state h3{font-family:var(--mono);font-size:1rem;font-weight:700;color:var(--t2);margin-bottom:8px}
-.empty-state p{font-size:0.82rem;margin-bottom:20px;line-height:1.6}
-
-/* LOAD MORE */
-.load-more-wrap{text-align:center;padding:20px}
-
-/* SPACE CARDS */
-.space-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px}
-.space-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:20px;transition:0.2s}
-.space-card:hover{border-color:var(--b2)}
-.space-card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:12px}
-.space-name{font-family:var(--mono);font-size:0.9rem;font-weight:700;color:var(--t);margin-bottom:4px}
-.space-ns{font-family:var(--mono);font-size:0.68rem;color:var(--v);background:var(--vg);padding:2px 8px;border-radius:4px}
-.space-desc{font-size:0.78rem;color:var(--t3);line-height:1.5;margin-bottom:14px}
-.space-meta{display:flex;gap:16px;margin-bottom:14px}
-.space-meta-item{font-family:var(--mono);font-size:0.7rem;color:var(--t3)}
-.space-meta-item b{color:var(--t2);display:block;font-size:0.82rem}
-.space-members{display:flex;gap:-4px;margin-bottom:14px}
-.member-pip{width:26px;height:26px;border-radius:50%;border:2px solid var(--s1);display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:0.58rem;font-weight:700;margin-right:-6px}
-.retention-badge{font-family:var(--mono);font-size:0.62rem;font-weight:700;padding:3px 8px;border-radius:4px}
-.ret-session{background:var(--cg);color:var(--c)}
-.ret-daily{background:var(--gg);color:var(--g)}
-.ret-weekly{background:var(--og);color:var(--o)}
-.ret-permanent{background:var(--vg);color:var(--v)}
-.space-actions{display:flex;gap:8px}
-
-/* DREAM SECTIONS */
-.section-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
-.section-head h3{font-family:var(--mono);font-size:0.95rem;font-weight:800;color:var(--t)}
-.section-head .section-sub{font-size:0.75rem;color:var(--t3);margin-top:2px}
-.dream-sub-list{display:flex;flex-direction:column;gap:10px;margin-bottom:32px}
-.dream-sub-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:16px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.dream-topic{font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--t);margin-bottom:4px}
-.dream-interval{font-family:var(--mono);font-size:0.7rem;color:var(--t3)}
-.dream-sub-meta{flex:1;min-width:200px}
-.dream-status{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:99px}
-.status-active{background:var(--gg);color:var(--g)}
-.status-paused{background:var(--og);color:var(--o)}
-.dream-sub-stats{display:flex;gap:16px}
-.dream-stat{font-family:var(--mono);font-size:0.68rem;color:var(--t3);text-align:center}
-.dream-stat b{display:block;font-size:0.82rem;color:var(--t2)}
-.dream-sub-actions{display:flex;gap:6px;flex-shrink:0}
-
-.dream-history-list{display:flex;flex-direction:column;gap:10px;margin-bottom:24px}
-.dream-hist-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;overflow:hidden}
-.dream-hist-head{padding:14px 18px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:0.15s}
-.dream-hist-head:hover{background:var(--s2)}
-.dream-hist-icon{width:36px;height:36px;background:var(--vg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0}
-.dream-hist-info{flex:1}
-.dream-hist-topic{font-family:var(--mono);font-size:0.82rem;font-weight:700;color:var(--t);margin-bottom:3px}
-.dream-hist-meta{font-family:var(--mono);font-size:0.68rem;color:var(--t3);display:flex;gap:12px;flex-wrap:wrap}
-.dream-hist-meta span b{color:var(--t2)}
-.dream-hist-arrow{color:var(--t4);transition:transform 0.2s;font-size:0.8rem;margin-left:auto}
-.dream-hist-card.open .dream-hist-arrow{transform:rotate(180deg)}
-.dream-hist-body{padding:0 18px;max-height:0;overflow:hidden;transition:max-height 0.3s ease,padding 0.2s}
-.dream-hist-card.open .dream-hist-body{max-height:500px;padding:0 18px 16px}
-.dream-insight{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--b)}
-.dream-insight:last-child{border-bottom:none}
-.dream-insight-num{font-family:var(--mono);font-size:0.65rem;color:var(--v);font-weight:700;flex-shrink:0;margin-top:2px}
-.dream-insight-text{font-size:0.78rem;color:var(--t2);line-height:1.5}
-
-/* DREAM NOW BOX */
-.dream-now-box{background:var(--s1);border:1px solid rgba(136,85,255,0.2);border-radius:12px;padding:24px;margin-bottom:28px}
-.dream-now-box h3{font-family:var(--mono);font-size:0.9rem;font-weight:800;color:var(--v);margin-bottom:4px}
-.dream-now-box p{font-size:0.78rem;color:var(--t3);margin-bottom:18px}
-.dream-form-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px}
-.dream-form-row input,.dream-form-row select{flex:1;min-width:160px;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:10px 12px;border-radius:8px;font-family:var(--mono);font-size:0.78rem;outline:none}
-.dream-form-row input:focus,.dream-form-row select:focus{border-color:var(--v)}
-.dream-progress{margin-top:16px}
-.progress-bar-wrap{background:var(--s2);border-radius:99px;height:6px;overflow:hidden;margin-bottom:8px}
-.progress-bar{height:100%;background:linear-gradient(90deg,var(--v),var(--c));border-radius:99px;transition:width 0.4s ease;animation:prog-pulse 1.2s ease infinite}
-@keyframes prog-pulse{0%,100%{opacity:1}50%{opacity:0.6}}
-.progress-label{font-family:var(--mono);font-size:0.7rem;color:var(--t3)}
-.dream-result{background:var(--bg);border:1px solid var(--v);border-radius:10px;padding:16px;margin-top:14px}
-.dream-result-title{font-family:var(--mono);font-size:0.75rem;font-weight:700;color:var(--v);margin-bottom:10px}
-
-/* MODALS */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
-.modal{background:var(--s1);border:1px solid var(--b2);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:28px}
-.modal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px}
-.modal-head h2{font-family:var(--mono);font-size:1rem;font-weight:800;color:var(--t)}
-.modal-close{background:none;border:none;color:var(--t3);font-size:1.2rem;cursor:pointer;padding:4px 8px;border-radius:6px;transition:0.15s}
-.modal-close:hover{background:var(--s3);color:var(--t)}
-.form-group{margin-bottom:16px}
-.form-group label{display:block;font-family:var(--mono);font-size:0.72rem;font-weight:700;color:var(--t3);margin-bottom:7px;text-transform:uppercase;letter-spacing:0.06em}
-.form-group input,.form-group textarea,.form-group select{width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:10px 14px;border-radius:8px;font-family:var(--mono);font-size:0.82rem;outline:none;transition:0.2s;resize:vertical}
-.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--v)}
+/* ── ADD FORM ── */
+.add-form{background:var(--s1);border:1px dashed var(--b2);border-radius:12px;padding:20px 24px;margin-bottom:20px;display:none}
+.add-form.open{display:block}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:640px){.form-grid{grid-template-columns:1fr}}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group label{font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--t3);letter-spacing:.08em;text-transform:uppercase}
+.form-group input,.form-group textarea,.form-group select{background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:9px 12px;border-radius:8px;font-size:.8rem;outline:none;transition:.15s}
+.form-group input:focus,.form-group textarea:focus,.form-group select:focus{border-color:var(--r);box-shadow:0 0 0 3px var(--rg)}
 .form-group input::placeholder,.form-group textarea::placeholder{color:var(--t4)}
-.form-group textarea{min-height:100px;line-height:1.5}
-.form-hint{font-family:var(--mono);font-size:0.65rem;color:var(--t4);margin-top:5px}
-.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:22px}
+.form-group textarea{font-family:var(--mono);font-size:.75rem;resize:vertical;min-height:80px}
+.form-full{grid-column:1/-1}
+.form-actions{display:flex;gap:8px;margin-top:16px}
 
-/* TOAST */
-.toast-container{position:fixed;bottom:24px;right:24px;z-index:300;display:flex;flex-direction:column;gap:8px;pointer-events:none}
-.toast{display:flex;align-items:center;gap:10px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:12px 16px;font-family:var(--mono);font-size:0.78rem;color:var(--t);min-width:260px;max-width:360px;pointer-events:all;box-shadow:0 8px 32px rgba(0,0,0,0.4);transform:translateX(0);opacity:1;transition:all 0.3s;animation:toast-in 0.3s ease}
-@keyframes toast-in{from{transform:translateX(40px);opacity:0}to{transform:translateX(0);opacity:1}}
-.toast.out{transform:translateX(40px);opacity:0}
-.toast-icon{font-size:1rem;flex-shrink:0}
-.toast.success{border-left:3px solid var(--g)}
-.toast.error{border-left:3px solid var(--r)}
-.toast.info{border-left:3px solid var(--c)}
+/* ── EMPTY STATE ── */
+.empty{padding:56px 24px;text-align:center}
+.empty .empty-icon{font-size:2.5rem;margin-bottom:12px;opacity:.35}
+.empty h3{font-family:var(--mono);font-size:.9rem;font-weight:700;margin-bottom:6px;color:var(--t2)}
+.empty p{font-size:.8rem;color:var(--t3);max-width:320px;margin:0 auto}
 
-/* ERROR BANNER */
-.error-banner{background:rgba(255,51,51,0.08);border:1px solid rgba(255,51,51,0.2);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:12px;margin-bottom:20px}
-.error-banner-msg{flex:1;font-family:var(--mono);font-size:0.78rem;color:var(--r2)}
+/* ── LOAD MORE ── */
+.load-more-wrap{padding:16px;text-align:center;border-top:1px solid var(--b)}
 
-/* INLINE CONFIRM */
-.confirm-row td{background:rgba(255,51,51,0.05);padding:10px 14px}
-.confirm-row .confirm-inner{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:0.78rem;color:var(--r2)}
-
-/* DIVIDER */
-.sec-divider{border:none;border-top:1px solid var(--b);margin:28px 0}
-
-/* FOOTER */
-footer{padding:36px 32px;text-align:center;border-top:1px solid var(--b)}
-.f-brand{font-family:var(--mono);font-size:1.1rem;font-weight:800;margin-bottom:10px}
-.f-brand .red{color:var(--r)}
-footer p{font-size:0.68rem;color:var(--t4);line-height:2.2;font-family:var(--mono)}
-footer a{color:var(--t3)}footer a:hover{color:var(--t);opacity:1}
-
-/* RESPONSIVE */
-@media(max-width:768px){
-  nav{padding:0 16px;height:50px}
-  .logo .mark{font-size:0.85rem}
-  .nav-links a:not(.nav-cta){display:none}
-  .hero-bar{padding:32px 16px 20px}
-  .app-wrap{padding:0 16px 48px}
-  .connect-bar{flex-direction:column;align-items:stretch}
-  .top-bar{gap:8px}
-  .form-row{grid-template-columns:1fr}
-  .mem-table td:nth-child(3),.mem-table th:nth-child(3){display:none}
-  .mem-table td:nth-child(4),.mem-table th:nth-child(4){display:none}
-  .space-grid{grid-template-columns:1fr}
-  .dream-form-row{flex-direction:column}
-}
-@media(max-width:480px){
-  .modal{padding:20px 16px}
-  .mem-table td:nth-child(2),.mem-table th:nth-child(2){display:none}
-}
-
-/* SPINNER */
-.spinner{width:18px;height:18px;border:2px solid rgba(255,255,255,0.2);border-top-color:#fff;border-radius:50%;animation:spin 0.7s linear infinite;display:inline-block}
+/* ── SPINNER ── */
+.spinner{width:20px;height:20px;border:2px solid var(--b2);border-top-color:var(--r);border-radius:50%;animation:spin .7s linear infinite;display:inline-block;flex-shrink:0}
+.spinner-sm{width:14px;height:14px;border-width:2px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.spinner-sm{width:14px;height:14px}
-.spinner-v{border-top-color:var(--v);border-color:rgba(136,85,255,0.2)}
+.loading-row td{padding:40px;text-align:center}
+.center-spinner{display:flex;align-items:center;justify-content:center;gap:10px;color:var(--t3);font-size:.82rem}
+
+/* ── SPACES (Tab 2) ── */
+.spaces-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;margin-top:4px}
+.space-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:20px 22px;transition:.15s}
+.space-card:hover{border-color:var(--b2)}
+.space-card-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:12px}
+.space-name{font-family:var(--mono);font-weight:700;font-size:.88rem;color:var(--g)}
+.space-badge{font-family:var(--mono);font-size:.62rem;font-weight:700;padding:3px 8px;border-radius:4px;background:var(--gg);color:var(--g)}
+.space-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-bottom:14px}
+.space-meta-item label{font-family:var(--mono);font-size:.6rem;color:var(--t4);text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:2px}
+.space-meta-item span{font-family:var(--mono);font-size:.75rem;color:var(--t2)}
+.space-actions{display:flex;gap:7px;flex-wrap:wrap}
+.share-link-row{margin-top:10px;display:flex;gap:8px;align-items:center}
+.share-link-input{flex:1;background:var(--bg);border:1px solid var(--b2);color:var(--t3);padding:7px 10px;border-radius:6px;font-family:var(--mono);font-size:.68rem;outline:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.invite-row{margin-top:8px;display:flex;gap:8px}
+.invite-row input{flex:1;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:8px 10px;border-radius:6px;font-family:var(--mono);font-size:.72rem;outline:none;transition:.15s}
+.invite-row input:focus{border-color:var(--g);box-shadow:0 0 0 3px var(--gg)}
+.invite-row input::placeholder{color:var(--t4)}
+
+/* ── DREAM ENGINE (Tab 3) ── */
+.dream-layout{display:grid;grid-template-columns:340px 1fr;gap:24px;align-items:start}
+@media(max-width:900px){.dream-layout{grid-template-columns:1fr}}
+.dream-start-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:22px 24px}
+.dream-start-card h3{font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--v);margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.dream-list-wrap{display:flex;flex-direction:column;gap:0}
+.dream-list-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.dream-list-header h3{font-family:var(--mono);font-size:.82rem;font-weight:700;color:var(--t2)}
+.dream-item{background:var(--s1);border:1px solid var(--b);border-radius:10px;padding:14px 16px;margin-bottom:10px;transition:.15s}
+.dream-item:hover{border-color:var(--b2)}
+.dream-item-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.dream-topic{font-family:var(--mono);font-size:.8rem;font-weight:700;color:var(--t);max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dream-status{font-family:var(--mono);font-size:.63rem;font-weight:700;padding:3px 8px;border-radius:4px}
+.status-running{background:rgba(251,191,36,.15);color:#fbbf24;animation:pulse 1.5s ease-in-out infinite}
+.status-complete{background:var(--gg);color:var(--g)}
+.status-pending{background:var(--vg);color:var(--v)}
+.status-failed{background:var(--redg);color:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+.dream-item-meta{display:flex;gap:14px;flex-wrap:wrap}
+.dream-meta-val{font-family:var(--mono);font-size:.67rem;color:var(--t3)}
+.dream-meta-val span{color:var(--t2)}
+.dream-progress{height:3px;background:var(--b2);border-radius:2px;margin-top:10px;overflow:hidden}
+.dream-progress-bar{height:100%;background:var(--v);border-radius:2px;transition:width .5s ease}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px)}
+.modal-overlay.open{display:flex}
+.modal{background:var(--s1);border:1px solid var(--b2);border-radius:16px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;padding:28px 32px;position:relative}
+.modal-lg{max-width:680px}
+.modal h2{font-family:var(--mono);font-size:.95rem;font-weight:800;margin-bottom:6px}
+.modal .modal-sub{font-size:.78rem;color:var(--t3);margin-bottom:22px}
+.modal-close{position:absolute;top:16px;right:16px;background:var(--s2);border:1px solid var(--b2);color:var(--t3);width:30px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1rem;transition:.15s}
+.modal-close:hover{background:var(--b2);color:var(--t)}
+.modal-actions{display:flex;gap:8px;margin-top:22px;justify-content:flex-end}
+.modal-actions.center{justify-content:center}
+.confirm-icon{font-size:2rem;text-align:center;margin-bottom:12px}
+.confirm-msg{text-align:center;color:var(--t2);font-size:.85rem;line-height:1.6;margin-bottom:4px}
+.confirm-key{font-family:var(--mono);color:var(--red);font-size:.82rem;font-weight:700}
+
+/* ── DREAM RESULTS ── */
+.dream-results-content{background:var(--bg);border:1px solid var(--b);border-radius:10px;padding:16px;font-family:var(--mono);font-size:.77rem;color:var(--t2);line-height:1.7;white-space:pre-wrap;word-break:break-word;max-height:400px;overflow-y:auto;margin-top:16px}
+.dream-result-meta{display:flex;gap:16px;flex-wrap:wrap;margin-top:12px}
+.dream-result-meta-item{font-family:var(--mono);font-size:.67rem;color:var(--t3)}
+.dream-result-meta-item span{color:var(--t2)}
+
+/* ── TOASTS ── */
+#toast-container{position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:12px 16px;font-size:.8rem;font-family:var(--sans);min-width:240px;max-width:360px;display:flex;align-items:center;gap:10px;pointer-events:all;animation:slideIn .25s ease;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+.toast.removing{animation:slideOut .25s ease forwards}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(40px)}}
+.toast-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.toast-success .toast-dot{background:var(--g)}
+.toast-error .toast-dot{background:var(--red)}
+.toast-info .toast-dot{background:var(--r)}
+.toast-warn .toast-dot{background:var(--warn)}
+.toast-msg{flex:1;color:var(--t);line-height:1.45}
+
+/* ── MISC ── */
+.section-label{font-family:var(--mono);font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--t4);margin-bottom:10px}
+.divider{border:none;border-top:1px solid var(--b);margin:20px 0}
+.badge{font-family:var(--mono);font-size:.62rem;font-weight:700;padding:2px 8px;border-radius:4px}
+.badge-cyan{background:var(--rg);color:var(--r)}
+.badge-green{background:var(--gg);color:var(--g)}
+.badge-indigo{background:var(--vg);color:var(--v)}
+.badge-red{background:var(--redg);color:var(--red)}
+.hidden{display:none !important}
+.mono{font-family:var(--mono)}
+.text-sm{font-size:.78rem}
+.text-xs{font-size:.7rem}
+.text-muted{color:var(--t3)}
+.credits-badge{font-family:var(--mono);font-size:.7rem;font-weight:700;background:var(--vg);color:var(--v);padding:4px 10px;border-radius:6px;display:inline-flex;align-items:center;gap:5px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:768px){
+  nav{padding:0 16px}
+  .nav-links a:not(.nav-cta){display:none}
+  #hero{padding:40px 16px 60px}
+  #dashboard{padding:0 16px 60px}
+  .mem-table thead{display:none}
+  .mem-table,.mem-table tbody,.mem-table tr,.mem-table td{display:block}
+  .mem-table td{padding:8px 12px;border-bottom:none}
+  .mem-table tr.entry-row{border-bottom:1px solid var(--b);padding:4px 0}
+  .key-cell::before{content:'Key: ';color:var(--t4);font-size:.65rem}
+  .val-preview::before{content:'Value: ';color:var(--t4);font-size:.65rem}
+  .action-cell{justify-content:flex-start;padding-top:0 !important}
+  .date-cell,.tags-cell{display:none}
+  .dash-header h2{font-size:.85rem}
+}
 </style>
 </head>
 <body>
 
-<nav><div class="nv">
-  <a href="/" class="logo"><span class="mark">SLOPSHOP.gg</span><span class="vtag">v4.0</span></a>
-  <div class="nav-links">
-    <a href="/">Home</a>
-    <a href="/tools">Tools</a>
-    <a href="/docs">Docs</a>
-    <a href="/pricing">Pricing</a>
-    <a href="/memory-manager.html" class="active">Memory</a>
-    <a href="/login" class="nav-cta">Login</a>
+<!-- ── NAV ── -->
+<nav>
+  <div class="nv">
+    <a href="/" class="logo">
+      <span class="mark">&#9830;</span>SLOPSHOP<span class="vtag">BETA</span>
+    </a>
+    <div class="nav-links">
+      <a href="/">Home</a>
+      <a href="/tools">Tools</a>
+      <a href="/docs">Docs</a>
+      <a href="/playground">Playground</a>
+      <a href="/signup" class="nav-cta">Sign Up</a>
+    </div>
   </div>
-</div></nav>
+</nav>
 
+<!-- ── PAGE ── -->
 <div class="page-wrap">
-  <div class="hero-bar">
-    <h1>Memory <span class="accent">Manager</span></h1>
-    <p class="sub">View, search, and share your agent memory. No code required.</p>
 
-    <div class="connect-bar" id="connectBar">
-      <label>API KEY</label>
-      <input type="password" id="apiKeyInput" placeholder="sk-..." autocomplete="off" spellcheck="false">
-      <button class="btn btn-purple" id="connectBtn" onclick="connect()">
-        <span id="connectBtnIcon">&#128273;</span> Connect
-      </button>
-      <div id="userBadge" class="user-badge hidden">
-        <div class="user-avatar" id="userAvatar">?</div>
-        <span class="user-name" id="userName">—</span>
-        <span class="user-credits" id="userCredits">0 cr</span>
-        <button class="btn btn-sm btn-ghost" style="margin-left:4px" onclick="disconnect()">Disconnect</button>
+  <!-- HERO (pre-connect) -->
+  <div id="hero">
+    <div class="eyebrow">Agent Memory OS</div>
+    <h1>Manage Your<br><span class="c1">Agent's</span> <span class="c2">Memory</span></h1>
+    <p class="sub">Browse, search, and edit your agent's stored knowledge. Create shared memory spaces for teams. Run Dream Engine synthesis to evolve what your agent knows.</p>
+
+    <div class="connect-card">
+      <label for="api-key-input">API Key</label>
+      <div class="key-row">
+        <input type="password" id="api-key-input" placeholder="sk-slop-xxxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+        <button class="btn btn-cyan" id="connect-btn" onclick="connectWithKey()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+          Connect
+        </button>
+      </div>
+      <div class="connect-err" id="connect-err"></div>
+    </div>
+
+    <div class="features">
+      <div class="feat-card feat-cyan">
+        <div class="icon">&#9632;</div>
+        <h3>Browse &amp; Edit Memory</h3>
+        <p>Full CRUD for your agent's key-value memory store. Search, filter, edit inline, delete entries.</p>
+      </div>
+      <div class="feat-card feat-green">
+        <div class="icon">&#9651;</div>
+        <h3>Shared Spaces</h3>
+        <p>Create team memory spaces. Invite collaborators, share links, set retention periods.</p>
+      </div>
+      <div class="feat-card feat-indigo">
+        <div class="icon">&#9670;</div>
+        <h3>Dream Engine</h3>
+        <p>Schedule REM-style synthesis runs. Your agent evolves its knowledge automatically.</p>
       </div>
     </div>
   </div>
 
-  <div class="app-wrap hidden" id="appWrap">
+  <!-- DASHBOARD (post-connect) -->
+  <div id="dashboard">
+    <div class="dash-header">
+      <h2>Memory Dashboard &mdash; <span id="dash-key-label"></span></h2>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span class="credits-badge" id="credits-badge" style="display:none">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+          <span id="credits-val">—</span> credits
+        </span>
+        <div class="user-badge">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <span class="user-name" id="user-name-badge">Connected</span>
+          <button class="btn-disconnect" onclick="disconnect()" title="Disconnect">&#x2715;</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TABS -->
     <div class="tabs">
-      <button class="tab-btn active" onclick="switchTab('memory')" id="tab-memory">&#129504; My Memory</button>
-      <button class="tab-btn" onclick="switchTab('shared')" id="tab-shared">&#128101; Shared Spaces</button>
-      <button class="tab-btn" onclick="switchTab('dream')" id="tab-dream">&#128164; Dream Engine</button>
+      <button class="tab-btn active-cyan" id="tab-memory" onclick="switchTab('memory')">
+        &#9632; My Memory
+      </button>
+      <button class="tab-btn" id="tab-spaces" onclick="switchTab('spaces')">
+        &#9651; Shared Spaces
+      </button>
+      <button class="tab-btn" id="tab-dream" onclick="switchTab('dream')">
+        &#9670; Dream Engine
+      </button>
     </div>
 
     <!-- TAB 1: MY MEMORY -->
-    <div id="pane-memory">
-      <div class="top-bar">
-        <select id="nsSelect" onchange="onNsChange()">
-          <option value="default">default</option>
-        </select>
+    <div class="tab-pane active" id="pane-memory">
+      <div class="toolbar">
         <div class="search-wrap">
-          <span class="search-icon">&#128269;</span>
-          <input type="text" id="searchInput" placeholder="Search memory… (⌘K)" oninput="onSearch()" autocomplete="off">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" class="search-input" id="mem-search" placeholder="Search memory..." oninput="debounceSearch()">
         </div>
-        <select id="sortSelect" onchange="loadMemory()">
-          <option value="newest">Newest first</option>
-          <option value="oldest">Oldest first</option>
-          <option value="key">Key name (A→Z)</option>
+        <select class="select-field" id="ns-selector" onchange="loadMemory()">
+          <option value="agent">agent</option>
+          <option value="user">user</option>
+          <option value="system">system</option>
+          <option value="global">global</option>
         </select>
-        <button class="btn btn-purple btn-sm" onclick="openNewEntry()">+ New Entry</button>
+        <button class="btn btn-cyan btn-sm" onclick="toggleAddForm()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Add Entry
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="loadMemory()" id="mem-refresh-btn" title="Refresh">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        </button>
       </div>
 
-      <div id="memErrorBanner" class="error-banner hidden">
-        <span class="error-banner-msg" id="memErrorMsg">Error loading memory.</span>
-        <button class="btn btn-sm btn-ghost" onclick="loadMemory()">Retry</button>
-      </div>
-
-      <div id="skelWrap">
-        <div class="skel skel-row"></div>
-        <div class="skel skel-row"></div>
-        <div class="skel skel-row"></div>
-        <div class="skel skel-row" style="opacity:0.5"></div>
-      </div>
-
-      <div id="memTableWrap" class="hidden">
-        <div class="mem-table-wrap">
-          <table class="mem-table">
-            <thead>
-              <tr>
-                <th>Key</th>
-                <th>Value Preview</th>
-                <th>Tags</th>
-                <th>Created</th>
-                <th style="text-align:right">Actions</th>
-              </tr>
-            </thead>
-            <tbody id="memTableBody"></tbody>
-          </table>
+      <!-- Add form -->
+      <div class="add-form" id="add-form">
+        <div class="section-label" style="margin-bottom:14px">New Memory Entry</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Key</label>
+            <input type="text" id="add-key" placeholder="my_preference" autocomplete="off">
+          </div>
+          <div class="form-group">
+            <label>Tags (comma-separated)</label>
+            <input type="text" id="add-tags" placeholder="preference, config" autocomplete="off">
+          </div>
+          <div class="form-group form-full">
+            <label>Value</label>
+            <textarea id="add-value" rows="3" placeholder="Enter value (text, JSON, or any string)"></textarea>
+          </div>
         </div>
-        <div class="load-more-wrap hidden" id="loadMoreWrap">
-          <button class="btn btn-ghost btn-sm" onclick="loadMore()">Load more entries</button>
+        <div class="form-actions">
+          <button class="btn btn-cyan btn-sm" onclick="saveNewEntry()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+            Save Entry
+          </button>
+          <button class="btn btn-ghost btn-sm" onclick="toggleAddForm()">Cancel</button>
         </div>
       </div>
 
-      <div id="memEmptyState" class="empty-state hidden">
-        <div class="empty-icon">&#129504;</div>
-        <h3>No memory entries yet</h3>
-        <p>This namespace is empty. Start by adding your first memory entry.</p>
-        <button class="btn btn-purple" onclick="openNewEntry()">+ Add First Entry</button>
+      <!-- Table -->
+      <div class="mem-table-wrap" id="mem-table-wrap">
+        <table class="mem-table" id="mem-table">
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Value</th>
+              <th>Created</th>
+              <th>Tags</th>
+              <th style="text-align:right">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="mem-tbody">
+            <tr class="loading-row"><td colspan="5"><div class="center-spinner"><div class="spinner"></div> Loading memory...</div></td></tr>
+          </tbody>
+        </table>
+        <div class="load-more-wrap hidden" id="load-more-wrap">
+          <button class="btn btn-ghost btn-sm" onclick="loadMoreMemory()">Load more entries</button>
+        </div>
       </div>
     </div>
 
     <!-- TAB 2: SHARED SPACES -->
-    <div id="pane-shared" class="hidden">
-      <div class="top-bar">
-        <div class="top-bar-spacer"></div>
-        <button class="btn btn-purple btn-sm" onclick="openCreateSpace()">+ Create Shared Space</button>
+    <div class="tab-pane" id="pane-spaces">
+      <div class="toolbar">
+        <div style="flex:1"></div>
+        <button class="btn btn-green btn-sm" onclick="openCreateSpaceModal()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          New Space
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="loadSpaces()" title="Refresh">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+        </button>
       </div>
-
-      <div id="sharedErrorBanner" class="error-banner hidden">
-        <span class="error-banner-msg" id="sharedErrorMsg">Error loading shared spaces.</span>
-        <button class="btn btn-sm btn-ghost" onclick="loadSharedSpaces()">Retry</button>
-      </div>
-
-      <div id="sharedSkelWrap">
-        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
-          <div class="skel" style="height:180px;border-radius:12px"></div>
-          <div class="skel" style="height:180px;border-radius:12px;opacity:0.6"></div>
-          <div class="skel" style="height:180px;border-radius:12px;opacity:0.3"></div>
-        </div>
-      </div>
-
-      <div id="sharedGrid" class="space-grid hidden"></div>
-
-      <div id="sharedEmpty" class="empty-state hidden">
-        <div class="empty-icon">&#128101;</div>
-        <h3>No shared spaces yet</h3>
-        <p>Create a shared space to collaborate on memory with your team or other agents.</p>
-        <button class="btn btn-purple" onclick="openCreateSpace()">+ Create Shared Space</button>
-      </div>
-
-      <div id="sharedSpaceMemoryWrap" class="hidden">
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-          <button class="btn btn-ghost btn-sm" onclick="closeSpaceMemory()">&#8592; Back to Spaces</button>
-          <span id="spaceMemoryTitle" style="font-family:var(--mono);font-size:0.85rem;font-weight:700;color:var(--v)"></span>
-        </div>
-        <div id="spaceMemSkelWrap">
-          <div class="skel skel-row"></div><div class="skel skel-row"></div><div class="skel skel-row" style="opacity:0.5"></div>
-        </div>
-        <div id="spaceMemTableWrap" class="hidden">
-          <div class="mem-table-wrap">
-            <table class="mem-table">
-              <thead><tr><th>Key</th><th>Value Preview</th><th>Tags</th><th>Created</th><th style="text-align:right">Actions</th></tr></thead>
-              <tbody id="spaceMemBody"></tbody>
-            </table>
-          </div>
-        </div>
-        <div id="spaceMemEmpty" class="empty-state hidden">
-          <div class="empty-icon">&#128220;</div>
-          <h3>No entries in this space</h3>
-          <p>This shared space has no memory entries yet.</p>
+      <div id="spaces-grid" class="spaces-grid">
+        <div class="empty" style="grid-column:1/-1">
+          <div class="center-spinner"><div class="spinner"></div> Loading spaces...</div>
         </div>
       </div>
     </div>
 
     <!-- TAB 3: DREAM ENGINE -->
-    <div id="pane-dream" class="hidden">
-
-      <!-- Run Dream Now -->
-      <div class="dream-now-box">
-        <h3>&#9889; Run Dream Now</h3>
-        <p>Synthesize and consolidate memory instantly. Runs a Dream Engine job and shows results live.</p>
-        <div class="dream-form-row">
-          <input type="text" id="dreamTopic" placeholder="Topic (e.g. 'user preferences', 'project context')">
-          <select id="dreamStrategy">
-            <option value="synthesize">synthesize</option>
-            <option value="compress">compress</option>
-            <option value="pattern_extract">pattern_extract</option>
-            <option value="insight_generate">insight_generate</option>
-            <option value="associate">associate</option>
-          </select>
-          <input type="text" id="dreamNsInput" placeholder="Namespace (default)">
-          <button class="btn btn-purple" id="dreamRunBtn" onclick="runDreamNow()">
-            <span id="dreamRunIcon">&#128164;</span> Dream Now
-          </button>
-        </div>
-        <div id="dreamProgress" class="dream-progress hidden">
-          <div class="progress-bar-wrap"><div class="progress-bar" id="dreamProgressBar" style="width:20%"></div></div>
-          <div class="progress-label" id="dreamProgressLabel">Starting dream engine...</div>
-        </div>
-        <div id="dreamResult" class="dream-result hidden">
-          <div class="dream-result-title">&#10024; Dream Complete</div>
-          <div id="dreamResultContent"></div>
-        </div>
-      </div>
-
-      <!-- Active Subscriptions -->
-      <div class="section-head">
+    <div class="tab-pane" id="pane-dream">
+      <div class="dream-layout">
+        <!-- Start panel -->
         <div>
-          <h3>Active Subscriptions</h3>
-          <div class="section-sub">Scheduled dream jobs that run automatically</div>
+          <div class="dream-start-card">
+            <h3>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+              Start New Dream
+            </h3>
+            <div class="form-group" style="margin-bottom:12px">
+              <label>Topic</label>
+              <input type="text" id="dream-topic" placeholder="What should the agent reflect on?" autocomplete="off">
+            </div>
+            <div class="form-group" style="margin-bottom:12px">
+              <label>Namespace</label>
+              <select class="select-field" id="dream-ns" style="width:100%">
+                <option value="agent">agent</option>
+                <option value="user">user</option>
+                <option value="system">system</option>
+                <option value="global">global</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:12px">
+              <label>Strategy</label>
+              <select class="select-field" id="dream-strategy" style="width:100%">
+                <option value="synthesize">synthesize — combine &amp; summarize</option>
+                <option value="pattern_extract">pattern_extract — find patterns</option>
+                <option value="insight_generate">insight_generate — derive insights</option>
+                <option value="compress">compress — reduce &amp; distill</option>
+                <option value="associate">associate — link related concepts</option>
+                <option value="evolve">evolve — refine over time</option>
+                <option value="forecast">forecast — predict next steps</option>
+                <option value="reflect">reflect — meta-analysis</option>
+                <option value="validate">validate — check consistency</option>
+              </select>
+            </div>
+            <div class="form-group" style="margin-bottom:12px">
+              <label>REM Cycles</label>
+              <select class="select-field" id="dream-cycles" style="width:100%">
+                <option value="1">1 cycle — quick pass</option>
+                <option value="3" selected>3 cycles — standard</option>
+                <option value="5">5 cycles — deep</option>
+                <option value="10">10 cycles — exhaustive</option>
+              </select>
+            </div>
+            <hr class="divider">
+            <button class="btn btn-indigo" style="width:100%" onclick="startDream()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              Run Dream Now
+            </button>
+          </div>
         </div>
-        <button class="btn btn-purple btn-sm" onclick="openNewSubscription()">+ New Subscription</button>
-      </div>
 
-      <div id="subSkelWrap">
-        <div class="skel" style="height:80px;border-radius:12px;margin-bottom:10px"></div>
-        <div class="skel" style="height:80px;border-radius:12px;opacity:0.5"></div>
-      </div>
-      <div id="dreamSubList" class="dream-sub-list hidden"></div>
-      <div id="dreamSubEmpty" class="empty-state hidden" style="padding:28px">
-        <div class="empty-icon" style="font-size:2rem">&#128164;</div>
-        <h3>No active dream subscriptions</h3>
-        <p>Schedule recurring dream jobs to keep your memory fresh and synthesized.</p>
-        <button class="btn btn-purple" onclick="openNewSubscription()">+ Schedule Dream</button>
-      </div>
-
-      <hr class="sec-divider">
-
-      <!-- Recent Dreams -->
-      <div class="section-head">
+        <!-- History panel -->
         <div>
-          <h3>Recent Dreams</h3>
-          <div class="section-sub">Completed dream jobs and their insights</div>
+          <div class="dream-list-header">
+            <h3>Dream History</h3>
+            <button class="btn btn-ghost btn-sm" onclick="loadDreams()">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 11-2.12-9.36L23 10"/></svg>
+              Refresh
+            </button>
+          </div>
+          <div id="dream-list">
+            <div class="center-spinner" style="padding:40px 0"><div class="spinner"></div> Loading dreams...</div>
+          </div>
         </div>
       </div>
-
-      <div id="histSkelWrap">
-        <div class="skel" style="height:64px;border-radius:12px;margin-bottom:10px"></div>
-        <div class="skel" style="height:64px;border-radius:12px;opacity:0.6"></div>
-        <div class="skel" style="height:64px;border-radius:12px;opacity:0.3"></div>
-      </div>
-      <div id="dreamHistList" class="dream-history-list hidden"></div>
-      <div id="dreamHistEmpty" class="empty-state hidden" style="padding:28px">
-        <div class="empty-icon" style="font-size:2rem">&#128196;</div>
-        <h3>No dream history yet</h3>
-        <p>Run a dream above or create a subscription to see results here.</p>
-      </div>
     </div>
-  </div>
-</div>
 
-<!-- TOAST CONTAINER -->
-<div class="toast-container" id="toastContainer"></div>
+  </div><!-- /dashboard -->
+</div><!-- /page-wrap -->
 
-<!-- MODAL: New/Edit Entry -->
-<div class="modal-overlay hidden" id="entryModal">
+<!-- ── MODALS ── -->
+
+<!-- Delete confirm -->
+<div class="modal-overlay" id="modal-delete" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="modal-head">
-      <h2 id="entryModalTitle">New Memory Entry</h2>
-      <button class="modal-close" onclick="closeModal('entryModal')">&#10005;</button>
-    </div>
-    <div class="form-group">
-      <label>Key</label>
-      <input type="text" id="entryKey" placeholder="my_key_name">
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Namespace</label>
-        <input type="text" id="entryNs" placeholder="default">
-      </div>
-      <div class="form-group">
-        <label>TTL (seconds, optional)</label>
-        <input type="number" id="entryTtl" placeholder="e.g. 86400">
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Value</label>
-      <textarea id="entryValue" rows="5" placeholder="Any value: plain text, JSON, code..."></textarea>
-    </div>
-    <div class="form-group">
-      <label>Tags <span style="font-weight:400;text-transform:none;letter-spacing:0">(comma-separated)</span></label>
-      <input type="text" id="entryTags" placeholder="tag1, tag2, tag3">
-      <div class="form-hint">Tags help organize and filter your memory entries</div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('entryModal')">Cancel</button>
-      <button class="btn btn-purple" id="entrySaveBtn" onclick="saveEntry()">
-        <span id="entrySaveBtnText">Save Entry</span>
-      </button>
+    <button class="modal-close" onclick="closeModal('modal-delete')">&times;</button>
+    <div class="confirm-icon">&#128465;</div>
+    <p class="confirm-msg">Delete memory entry <strong class="confirm-key" id="delete-key-label"></strong>?<br>This cannot be undone.</p>
+    <div class="modal-actions center">
+      <button class="btn btn-red btn-sm" onclick="confirmDelete()">Delete</button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-delete')">Cancel</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Share Entry -->
-<div class="modal-overlay hidden" id="shareModal">
+<!-- Create space -->
+<div class="modal-overlay" id="modal-create-space" role="dialog" aria-modal="true">
   <div class="modal">
-    <div class="modal-head">
-      <h2>Share Memory Entry</h2>
-      <button class="modal-close" onclick="closeModal('shareModal')">&#10005;</button>
+    <button class="modal-close" onclick="closeModal('modal-create-space')">&times;</button>
+    <h2 style="color:var(--g)">Create Shared Space</h2>
+    <p class="modal-sub">A shared space lets multiple agents or collaborators read and write the same memory namespace.</p>
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Space Name</label>
+      <input type="text" id="space-name-input" placeholder="team-knowledge-base" autocomplete="off">
     </div>
-    <div style="background:var(--cg);border:1px solid rgba(0,170,255,0.15);border-radius:8px;padding:12px 14px;margin-bottom:18px;font-size:0.78rem;color:var(--t2);line-height:1.6">
-      Sharing copies this entry to a shared namespace accessible to both you and the recipient.
+    <div class="form-group" style="margin-bottom:12px">
+      <label>Retention Period</label>
+      <select class="select-field" id="space-retention-input" style="width:100%">
+        <option value="1h">1 hour</option>
+        <option value="24h" selected>24 hours</option>
+        <option value="7d">7 days</option>
+        <option value="30d">30 days</option>
+      </select>
     </div>
-    <div class="form-group">
-      <label>Entry Key</label>
-      <input type="text" id="shareEntryKey" readonly style="color:var(--c)">
-    </div>
-    <div class="form-group">
-      <label>Share with (API Key or User ID)</label>
-      <input type="text" id="shareWithKey" placeholder="sk-... or user ID">
-      <div class="form-hint">The other user's API key prefix or user identifier</div>
-    </div>
-    <div class="form-group">
-      <label>Shared Namespace</label>
-      <input type="text" id="shareNs" placeholder="shared-space-name">
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('shareModal')">Cancel</button>
-      <button class="btn btn-blue" id="shareSaveBtn" onclick="shareEntry()">
-        <span id="shareSaveBtnText">Share in Shared Space</span>
+    <div class="modal-actions">
+      <button class="btn btn-green btn-sm" onclick="submitCreateSpace()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Create Space
       </button>
+      <button class="btn btn-ghost btn-sm" onclick="closeModal('modal-create-space')">Cancel</button>
     </div>
   </div>
 </div>
 
-<!-- MODAL: Create Shared Space -->
-<div class="modal-overlay hidden" id="createSpaceModal">
-  <div class="modal">
-    <div class="modal-head">
-      <h2>Create Shared Space</h2>
-      <button class="modal-close" onclick="closeModal('createSpaceModal')">&#10005;</button>
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Space Name</label>
-        <input type="text" id="spaceName" placeholder="my-team-space">
-      </div>
-      <div class="form-group">
-        <label>Namespace</label>
-        <input type="text" id="spaceNs" placeholder="shared-default">
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Description</label>
-      <input type="text" id="spaceDesc" placeholder="What is this space for?">
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Retention Tier</label>
-        <select id="spaceRetention">
-          <option value="session">Session (24h)</option>
-          <option value="daily">Daily (7d)</option>
-          <option value="weekly" selected>Weekly (30d)</option>
-          <option value="permanent">Permanent</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>Max Members</label>
-        <input type="number" id="spaceMaxMembers" value="10" min="1" max="100">
-      </div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('createSpaceModal')">Cancel</button>
-      <button class="btn btn-purple" id="createSpaceBtn" onclick="createSpace()">
-        <span id="createSpaceBtnText">Create Space</span>
-      </button>
-    </div>
+<!-- Dream results -->
+<div class="modal-overlay" id="modal-dream-result" role="dialog" aria-modal="true">
+  <div class="modal modal-lg">
+    <button class="modal-close" onclick="closeModal('modal-dream-result')">&times;</button>
+    <h2 style="color:var(--v)" id="dream-result-title">Dream Results</h2>
+    <p class="modal-sub" id="dream-result-sub"></p>
+    <div class="dream-results-content" id="dream-results-content">Loading...</div>
+    <div class="dream-result-meta" id="dream-result-meta"></div>
   </div>
 </div>
 
-<!-- MODAL: New Dream Subscription -->
-<div class="modal-overlay hidden" id="dreamSubModal">
-  <div class="modal">
-    <div class="modal-head">
-      <h2>New Dream Subscription</h2>
-      <button class="modal-close" onclick="closeModal('dreamSubModal')">&#10005;</button>
-    </div>
-    <div class="form-group">
-      <label>Topic</label>
-      <input type="text" id="subTopic" placeholder="e.g. 'user behavior patterns'">
-    </div>
-    <div class="form-row">
-      <div class="form-group">
-        <label>Interval</label>
-        <select id="subInterval">
-          <option value="6h">Every 6 hours</option>
-          <option value="12h">Every 12 hours</option>
-          <option value="24h" selected>Every 24 hours</option>
-          <option value="48h">Every 48 hours</option>
-          <option value="weekly">Weekly</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label>REM Cycles (1–5)</label>
-        <input type="number" id="subRem" value="3" min="1" max="5">
-      </div>
-    </div>
-    <div class="form-group">
-      <label>Credits per Dream</label>
-      <input type="number" id="subCredits" value="10" min="1">
-      <div class="form-hint">Estimated credits consumed each time the dream runs</div>
-    </div>
-    <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="closeModal('dreamSubModal')">Cancel</button>
-      <button class="btn btn-purple" id="subSaveBtn" onclick="createSubscription()">
-        <span id="subSaveBtnText">Subscribe</span>
-      </button>
-    </div>
-  </div>
-</div>
-
-<footer>
-  <div class="f-brand">&#129438; <span class="red">SLOP</span>.GG</div>
-  <p>
-    <a href="/">Home</a> &nbsp;·&nbsp;
-    <a href="/docs">Docs</a> &nbsp;·&nbsp;
-    <a href="/pricing">Pricing</a> &nbsp;·&nbsp;
-    <a href="/tools">Tools</a> &nbsp;·&nbsp;
-    <a href="https://github.com/slopshop" target="_blank" rel="noopener">GitHub</a>
-    <br>
-    &copy; 2026 Slopshop &mdash; The Living Agentic Backend OS
-  </p>
-</footer>
+<!-- Toast container -->
+<div id="toast-container"></div>
 
 <script>
-const BASE = 'https://slopshop-production.up.railway.app';
-let apiKey = '';
-let currentUser = null;
-let currentNs = 'default';
-let allEntries = [];
-let displayedCount = 0;
-const PAGE_SIZE = 50;
-let searchTimer = null;
-let editingKey = null;
-let editingNs = null;
-let currentSpaceNs = null;
-let dreamPollTimer = null;
+'use strict';
 
-// ─── CONNECT ────────────────────────────────────────────────────────────────
-async function connect() {
-  const input = document.getElementById('apiKeyInput');
-  const key = input.value.trim();
-  if (!key) { toast('Enter your API key first.', 'error'); return; }
-  const btn = document.getElementById('connectBtn');
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner spinner-sm"></span> Connecting…';
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+const BASE = '/v1';
+const LS_KEY = 'slop_mem_key';
+const MEMORY_LIMIT = 50;
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let apiKey = '';
+let memoryOffset = 0;
+let memoryHasMore = false;
+let memoryAllEntries = [];
+let pendingDeleteKey = '';
+let pendingDeleteNs = '';
+let dreamPollInterval = null;
+let activeTab = 'memory';
+let searchDebounce = null;
+let expandedKey = null;
+
+// ── API HELPERS ──────────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${apiKey}`
+    }
+  };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(BASE + path, opts);
+  if (res.status === 401) {
+    showToast('Invalid API key. Please reconnect.', 'error');
+    disconnect();
+    throw new Error('401');
+  }
+  const text = await res.text();
+  let data;
+  try { data = JSON.parse(text); } catch { data = { result: text }; }
+  if (!res.ok) {
+    const msg = data?.error || data?.message || `HTTP ${res.status}`;
+    throw new Error(msg);
+  }
+  return data;
+}
+
+async function apiSafe(method, path, body) {
   try {
-    const res = await apiFetch('/v1/me', { method: 'GET' }, key);
-    if (!res.ok) throw new Error(res.error || 'Invalid API key');
-    apiKey = key;
-    currentUser = res;
-    showApp();
-  } catch(e) {
-    toast('Connection failed: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<span>&#128273;</span> Connect';
+    return await api(method, path, body);
+  } catch (e) {
+    if (e.message === '401') throw e;
+    return null;
   }
 }
 
-function showApp() {
-  const u = currentUser;
-  document.getElementById('userAvatar').textContent = (u.username || u.user_id || 'U').slice(0,2).toUpperCase();
-  document.getElementById('userName').textContent = u.username || u.user_id || 'User';
-  document.getElementById('userCredits').textContent = (u.credits ?? u.balance ?? '—') + ' cr';
-  document.getElementById('userBadge').classList.remove('hidden');
-  document.getElementById('apiKeyInput').classList.add('hidden');
-  document.querySelector('#connectBar label').classList.add('hidden');
-  document.getElementById('connectBtn').classList.add('hidden');
-  document.getElementById('appWrap').classList.remove('hidden');
-  loadNamespaces();
+// ── CONNECT / DISCONNECT ─────────────────────────────────────────────────────
+async function connectWithKey() {
+  const input = document.getElementById('api-key-input');
+  const key = input.value.trim();
+  const errEl = document.getElementById('connect-err');
+  errEl.style.display = 'none';
+  if (!key) { errEl.textContent = 'Please enter an API key.'; errEl.style.display = 'block'; return; }
+
+  const btn = document.getElementById('connect-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner spinner-sm"></div> Connecting...';
+
+  try {
+    apiKey = key;
+    // Verify key with a lightweight call
+    const res = await apiSafe('POST', '/memory-list', { namespace: 'agent', limit: 1 });
+    if (res === null) {
+      // Fallback: try /memory-get with a known-miss key
+      const r2 = await apiSafe('POST', '/memory-get', { namespace: 'agent', key: '__probe__' });
+      if (r2 === null) {
+        errEl.textContent = 'Could not verify key. Check your API key and try again.';
+        errEl.style.display = 'block';
+        apiKey = '';
+        return;
+      }
+    }
+    localStorage.setItem(LS_KEY, key);
+    showDashboard(key);
+  } catch (e) {
+    if (e.message !== '401') {
+      errEl.textContent = 'Connection failed: ' + e.message;
+      errEl.style.display = 'block';
+      apiKey = '';
+    }
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg> Connect';
+  }
+}
+
+function showDashboard(key) {
+  const short = key.length > 16 ? key.slice(0, 10) + '…' + key.slice(-6) : key;
+  document.getElementById('dash-key-label').textContent = short;
+  document.getElementById('user-avatar').textContent = key.slice(-2).toUpperCase();
+  document.getElementById('user-name-badge').textContent = short;
+  document.getElementById('hero').style.display = 'none';
+  document.getElementById('dashboard').style.display = 'block';
+  switchTab('memory');
   loadMemory();
-  toast('Connected as ' + (u.username || u.user_id), 'success');
 }
 
 function disconnect() {
   apiKey = '';
-  currentUser = null;
-  allEntries = [];
-  document.getElementById('userBadge').classList.add('hidden');
-  document.getElementById('apiKeyInput').classList.remove('hidden');
-  document.querySelector('#connectBar label').classList.remove('hidden');
-  document.getElementById('connectBtn').classList.remove('hidden');
-  document.getElementById('apiKeyInput').value = '';
-  document.getElementById('appWrap').classList.add('hidden');
-  toast('Disconnected.', 'info');
+  localStorage.removeItem(LS_KEY);
+  clearInterval(dreamPollInterval);
+  document.getElementById('hero').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('api-key-input').value = '';
+  document.getElementById('connect-err').style.display = 'none';
+  showToast('Disconnected', 'info');
 }
 
-// ─── API ─────────────────────────────────────────────────────────────────────
-async function apiFetch(path, opts = {}, key = null) {
-  const k = key || apiKey;
-  const res = await fetch(BASE + path, {
-    ...opts,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer ' + k,
-      'x-api-key': k,
-      ...(opts.headers || {})
-    },
-    body: opts.body ? JSON.stringify(opts.body) : undefined
-  });
-  const text = await res.text();
-  let data;
-  try { data = JSON.parse(text); } catch { data = { raw: text }; }
-  if (!res.ok) throw Object.assign(new Error(data.error || data.message || 'Request failed'), { status: res.status, data });
-  return data;
-}
-
-// ─── TABS ─────────────────────────────────────────────────────────────────────
-function switchTab(name) {
-  ['memory','shared','dream'].forEach(t => {
-    document.getElementById('pane-'+t).classList.add('hidden');
-    document.getElementById('tab-'+t).classList.remove('active');
-  });
-  document.getElementById('pane-'+name).classList.remove('hidden');
-  document.getElementById('tab-'+name).classList.add('active');
-  if (name === 'shared' && !document.getElementById('sharedGrid').children.length) loadSharedSpaces();
-  if (name === 'dream') { loadDreamSubscriptions(); loadDreamHistory(); }
-}
-
-// ─── NAMESPACES ───────────────────────────────────────────────────────────────
-async function loadNamespaces() {
-  try {
-    const res = await apiFetch('/v1/memory/list', { method: 'GET' });
-    const namespaces = res.namespaces || res.keys?.map(k => k.namespace).filter(Boolean) || ['default'];
-    const unique = [...new Set(['default', ...namespaces])];
-    const sel = document.getElementById('nsSelect');
-    sel.innerHTML = unique.map(ns => `<option value="${esc(ns)}">${esc(ns)}</option>`).join('');
-  } catch { /* use default */ }
-}
-
-function onNsChange() {
-  currentNs = document.getElementById('nsSelect').value;
-  loadMemory();
-}
-
-// ─── MEMORY LIST ──────────────────────────────────────────────────────────────
-async function loadMemory(append = false) {
-  if (!append) {
-    displayedCount = 0;
-    allEntries = [];
-    showSkel('skelWrap', true);
-    showEl('memTableWrap', false);
-    showEl('memEmptyState', false);
-    showEl('memErrorBanner', false);
+// Auto-connect from localStorage
+window.addEventListener('DOMContentLoaded', () => {
+  const saved = localStorage.getItem(LS_KEY);
+  if (saved) {
+    document.getElementById('api-key-input').value = saved;
+    apiKey = saved;
+    showDashboard(saved);
   }
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeAllModals();
+  });
+});
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  const panes = ['memory', 'spaces', 'dream'];
+  const colors = { memory: 'cyan', spaces: 'green', dream: 'indigo' };
+  panes.forEach(p => {
+    const btn = document.getElementById('tab-' + p);
+    const pane = document.getElementById('pane-' + p);
+    btn.className = 'tab-btn';
+    pane.classList.remove('active');
+    if (p === tab) {
+      btn.classList.add('active-' + colors[p]);
+      pane.classList.add('active');
+    }
+  });
+  if (tab === 'spaces') loadSpaces();
+  if (tab === 'dream') loadDreams();
+}
+
+// ── MY MEMORY ────────────────────────────────────────────────────────────────
+function getNs() { return document.getElementById('ns-selector').value; }
+
+async function loadMemory(reset = true) {
+  if (reset) { memoryOffset = 0; memoryHasMore = false; expandedKey = null; }
+  const ns = getNs();
+  const tbody = document.getElementById('mem-tbody');
+  if (reset) tbody.innerHTML = '<tr class="loading-row"><td colspan="5"><div class="center-spinner"><div class="spinner"></div> Loading memory...</div></td></tr>';
+  document.getElementById('load-more-wrap').classList.add('hidden');
+
   try {
-    const res = await apiFetch(`/v1/memory/list?namespace=${encodeURIComponent(currentNs)}&limit=200`, { method: 'GET' });
-    const entries = res.entries || res.keys || res.data || [];
-    allEntries = entries;
-    renderMemory();
-  } catch(e) {
-    showSkel('skelWrap', false);
-    document.getElementById('memErrorMsg').textContent = e.message;
-    showEl('memErrorBanner', true);
+    const data = await api('POST', '/memory-list',{ namespace: ns, limit: MEMORY_LIMIT, offset: memoryOffset });
+    const entries = data.entries || data.results || data.data || data.memories || [];
+    if (reset) memoryAllEntries = entries;
+    else memoryAllEntries = [...memoryAllEntries, ...entries];
+    memoryHasMore = entries.length === MEMORY_LIMIT;
+    renderMemoryTable(memoryAllEntries);
+    if (memoryHasMore) document.getElementById('load-more-wrap').classList.remove('hidden');
+  } catch (e) {
+    if (e.message === '401') return;
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty"><div class="empty-icon">&#9888;</div><h3>Could not load memory</h3><p>${escHtml(e.message)}</p></div></td></tr>`;
   }
 }
 
-function renderMemory(filtered = null) {
-  showSkel('skelWrap', false);
-  const sort = document.getElementById('sortSelect').value;
-  let entries = filtered !== null ? filtered : [...allEntries];
-
-  if (sort === 'newest') entries.sort((a,b) => new Date(b.created_at||b.updated_at||0) - new Date(a.created_at||a.updated_at||0));
-  else if (sort === 'oldest') entries.sort((a,b) => new Date(a.created_at||a.updated_at||0) - new Date(b.created_at||b.updated_at||0));
-  else if (sort === 'key') entries.sort((a,b) => (a.key||'').localeCompare(b.key||''));
-
-  const show = entries.slice(0, displayedCount + PAGE_SIZE);
-  displayedCount = show.length;
-
-  const tbody = document.getElementById('memTableBody');
-  tbody.innerHTML = show.map(e => entryRow(e)).join('');
-
-  showEl('memTableWrap', entries.length > 0);
-  showEl('memEmptyState', entries.length === 0);
-  const hasMore = entries.length > displayedCount;
-  showEl('loadMoreWrap', hasMore);
+async function loadMoreMemory() {
+  memoryOffset += MEMORY_LIMIT;
+  await loadMemory(false);
 }
 
-function entryRow(e) {
-  const key = e.key || '';
-  const val = typeof e.value === 'object' ? JSON.stringify(e.value) : (e.value || '');
-  const preview = val.length > 80 ? val.slice(0,80) + '…' : val;
-  const tags = Array.isArray(e.tags) ? e.tags : (e.tags ? String(e.tags).split(',').map(t=>t.trim()).filter(Boolean) : []);
-  const date = e.created_at ? fmtDate(e.created_at) : '—';
-  const rowId = 'row-' + btoa(key).replace(/[^a-z0-9]/gi,'').slice(0,12);
-  return `<tr id="${rowId}" onclick="toggleExpand('${rowId}',${JSON.stringify(key)},${JSON.stringify(e.namespace||currentNs)})">
-    <td class="td-key" title="${esc(key)}">${esc(key)}</td>
-    <td class="td-val">${esc(preview)}</td>
-    <td class="tags-cell">${tags.map(t=>`<span class="tag-badge">${esc(t)}</span>`).join('')}</td>
-    <td class="td-date">${date}</td>
-    <td class="td-actions" onclick="event.stopPropagation()">
-      <button onclick="openEditEntry('${esc(key)}','${esc(e.namespace||currentNs)}')" title="Edit">&#9998;</button>
-      <button onclick="openShareDialog('${esc(key)}','${esc(e.namespace||currentNs)}')" title="Share">&#128257;</button>
-      <button class="del-btn" onclick="confirmDelete('${rowId}','${esc(key)}','${esc(e.namespace||currentNs)}')" title="Delete">&#10005;</button>
-    </td>
-  </tr>`;
+function renderMemoryTable(entries) {
+  const tbody = document.getElementById('mem-tbody');
+  if (!entries.length) {
+    tbody.innerHTML = `<tr><td colspan="5"><div class="empty">
+      <div class="empty-icon">&#9632;</div>
+      <h3>No memory entries yet</h3>
+      <p>Your agent will start storing knowledge here. Use the Add Entry button to create entries manually.</p>
+    </div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = '';
+  entries.forEach(entry => {
+    const key = entry.key || entry.id || '';
+    const value = entry.value !== undefined ? String(entry.value) : (entry.content || '');
+    const created = entry.created_at || entry.timestamp || entry.updated_at || '';
+    const tags = entry.tags || [];
+    const tagsArr = Array.isArray(tags) ? tags : (typeof tags === 'string' ? tags.split(',').map(t => t.trim()).filter(Boolean) : []);
+    const dateStr = created ? new Date(created).toLocaleString(undefined, { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    const preview = value.length > 80 ? value.slice(0, 80) + '…' : value;
+
+    const tr = document.createElement('tr');
+    tr.className = 'entry-row';
+    tr.dataset.key = key;
+    tr.innerHTML = `
+      <td class="key-cell">${escHtml(key)}</td>
+      <td class="val-preview">${escHtml(preview)}</td>
+      <td class="date-cell">${escHtml(dateStr)}</td>
+      <td class="tags-cell">${tagsArr.map(t => `<span class="tag">${escHtml(t)}</span>`).join('')}</td>
+      <td class="action-cell">
+        <button class="btn btn-ghost btn-xs btn-icon" onclick="expandEntry(event,'${escAttr(key)}',${JSON.stringify(escHtml(value)).replace(/"/g,'&quot;')})" title="Edit">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        </button>
+        <button class="btn btn-ghost btn-xs btn-icon" onclick="openDeleteModal(event,'${escAttr(key)}')" title="Delete" style="color:var(--red)">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>
+        </button>
+      </td>`;
+
+    tbody.appendChild(tr);
+
+    // Expand row placeholder
+    const expandTr = document.createElement('tr');
+    expandTr.className = 'expand-row hidden';
+    expandTr.id = 'expand-' + sanitizeId(key);
+    expandTr.innerHTML = `<td colspan="5"><div class="expand-inner" id="expand-inner-${sanitizeId(key)}"></div></td>`;
+    tbody.appendChild(expandTr);
+  });
 }
 
-function toggleExpand(rowId, key, ns) {
-  const existingExpand = document.getElementById('expand-' + rowId);
-  if (existingExpand) { existingExpand.remove(); return; }
-  // Remove other expanded
-  document.querySelectorAll('[id^="expand-"]').forEach(el => el.remove());
-  const row = document.getElementById(rowId);
-  if (!row) return;
-  const expandRow = document.createElement('tr');
-  expandRow.id = 'expand-' + rowId;
-  expandRow.innerHTML = `<td colspan="5" class="expand-row-td">
-    <div style="padding:0 0 12px">
-      <div class="expand-meta">
-        <span>Key: <b>${esc(key)}</b></span>
-        <span>Namespace: <b>${esc(ns)}</b></span>
-      </div>
-      <div class="expand-box" id="expandVal-${rowId}"><span class="spinner spinner-v spinner-sm"></span></div>
-      <div class="expand-actions">
-        <button class="btn btn-ghost btn-sm" onclick="openEditEntry('${esc(key)}','${esc(ns)}')">&#9998; Edit</button>
-        <button class="btn btn-ghost btn-sm" onclick="openShareDialog('${esc(key)}','${esc(ns)}')">&#128257; Share</button>
-        <button class="btn btn-sm" style="background:var(--rg);color:var(--r);border:1px solid rgba(255,51,51,0.2)" onclick="confirmDelete('${rowId}','${esc(key)}','${esc(ns)}')">&#10005; Delete</button>
-      </div>
+function expandEntry(evt, key, value) {
+  evt.stopPropagation();
+  const id = sanitizeId(key);
+  const existingRow = document.getElementById('expand-' + id);
+  if (!existingRow) return;
+
+  // If already open, close it
+  if (!existingRow.classList.contains('hidden')) {
+    existingRow.classList.add('hidden');
+    expandedKey = null;
+    return;
+  }
+
+  // Close any other open row
+  document.querySelectorAll('.expand-row').forEach(r => r.classList.add('hidden'));
+  expandedKey = key;
+
+  const inner = document.getElementById('expand-inner-' + id);
+  const ns = getNs();
+  inner.innerHTML = `
+    <div style="margin-bottom:8px;display:flex;align-items:center;justify-content:space-between">
+      <span class="mono text-xs" style="color:var(--r)">${escHtml(key)}</span>
+      <span class="expand-meta">namespace: <strong>${escHtml(ns)}</strong></span>
     </div>
-  </td>`;
-  row.after(expandRow);
-  // Load full value
-  apiFetch(`/v1/memory/get?key=${encodeURIComponent(key)}&namespace=${encodeURIComponent(ns)}`, { method: 'GET' })
-    .then(r => {
-      const v = r.value !== undefined ? r.value : r.data;
-      const display = typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v ?? '');
-      const el = document.getElementById('expandVal-' + rowId);
-      if (el) el.textContent = display;
-    })
-    .catch(e => {
-      const el = document.getElementById('expandVal-' + rowId);
-      if (el) el.textContent = 'Error loading value: ' + e.message;
-    });
+    <textarea id="edit-val-${id}" rows="4">${escHtml(value)}</textarea>
+    <div class="expand-actions">
+      <button class="btn btn-cyan btn-sm" onclick="saveEditEntry('${escAttr(key)}','${escAttr(ns)}','${id}')">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Save
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="closeExpand('${id}')">Cancel</button>
+      <span class="expand-meta" id="save-status-${id}"></span>
+    </div>`;
+
+  existingRow.classList.remove('hidden');
 }
 
-function loadMore() {
-  displayedCount += PAGE_SIZE;
-  renderMemory();
+function closeExpand(id) {
+  const row = document.getElementById('expand-' + id);
+  if (row) row.classList.add('hidden');
+  expandedKey = null;
 }
 
-// ─── SEARCH ───────────────────────────────────────────────────────────────────
-function onSearch() {
-  clearTimeout(searchTimer);
-  const q = document.getElementById('searchInput').value.trim();
-  if (!q) { renderMemory(); return; }
-  searchTimer = setTimeout(() => doSearch(q), 350);
-}
-
-async function doSearch(q) {
+async function saveEditEntry(key, ns, id) {
+  const ta = document.getElementById('edit-val-' + id);
+  const statusEl = document.getElementById('save-status-' + id);
+  const value = ta.value;
+  statusEl.innerHTML = '<div class="spinner spinner-sm"></div>';
   try {
-    const res = await apiFetch('/v1/memory/search', {
-      method: 'POST',
-      body: { query: q, namespace: currentNs, limit: 50 }
-    });
-    const results = res.results || res.entries || res.data || [];
-    renderMemory(results);
-  } catch {
+    await api('POST', '/memory-set',{ namespace: ns, key, value });
+    statusEl.innerHTML = '<span style="color:var(--g)">Saved</span>';
+    showToast(`Saved: ${key}`, 'success');
+    setTimeout(() => loadMemory(), 600);
+  } catch (e) {
+    statusEl.innerHTML = `<span style="color:var(--red)">${escHtml(e.message)}</span>`;
+    showToast('Save failed: ' + e.message, 'error');
+  }
+}
+
+// Search
+function debounceSearch() {
+  clearTimeout(searchDebounce);
+  searchDebounce = setTimeout(doSearch, 400);
+}
+
+async function doSearch() {
+  const q = document.getElementById('mem-search').value.trim();
+  if (!q) { loadMemory(); return; }
+  const ns = getNs();
+  const tbody = document.getElementById('mem-tbody');
+  tbody.innerHTML = '<tr class="loading-row"><td colspan="5"><div class="center-spinner"><div class="spinner"></div> Searching...</div></td></tr>';
+  document.getElementById('load-more-wrap').classList.add('hidden');
+  try {
+    const data = await api('POST', '/memory-search',{ namespace: ns, query: q, limit: 50 });
+    const entries = data.results || data.entries || data.data || [];
+    memoryAllEntries = entries;
+    renderMemoryTable(entries);
+  } catch (e) {
+    if (e.message === '401') return;
     // Fallback: client-side filter
-    const filtered = allEntries.filter(e =>
-      (e.key||'').toLowerCase().includes(q.toLowerCase()) ||
-      String(e.value||'').toLowerCase().includes(q.toLowerCase())
-    );
-    renderMemory(filtered);
-  }
-}
-
-// ─── NEW / EDIT ENTRY ─────────────────────────────────────────────────────────
-function openNewEntry() {
-  editingKey = null; editingNs = null;
-  document.getElementById('entryModalTitle').textContent = 'New Memory Entry';
-  document.getElementById('entryKey').value = '';
-  document.getElementById('entryKey').readOnly = false;
-  document.getElementById('entryNs').value = currentNs;
-  document.getElementById('entryValue').value = '';
-  document.getElementById('entryTags').value = '';
-  document.getElementById('entryTtl').value = '';
-  document.getElementById('entrySaveBtnText').textContent = 'Save Entry';
-  openModal('entryModal');
-  setTimeout(() => document.getElementById('entryKey').focus(), 100);
-}
-
-async function openEditEntry(key, ns) {
-  editingKey = key; editingNs = ns;
-  document.getElementById('entryModalTitle').textContent = 'Edit Entry';
-  document.getElementById('entryKey').value = key;
-  document.getElementById('entryKey').readOnly = true;
-  document.getElementById('entryNs').value = ns;
-  document.getElementById('entryValue').value = 'Loading…';
-  document.getElementById('entryTags').value = '';
-  document.getElementById('entryTtl').value = '';
-  document.getElementById('entrySaveBtnText').textContent = 'Update Entry';
-  openModal('entryModal');
-  try {
-    const r = await apiFetch(`/v1/memory/get?key=${encodeURIComponent(key)}&namespace=${encodeURIComponent(ns)}`, { method: 'GET' });
-    const v = r.value !== undefined ? r.value : r.data;
-    document.getElementById('entryValue').value = typeof v === 'object' ? JSON.stringify(v, null, 2) : String(v ?? '');
-    if (r.tags) document.getElementById('entryTags').value = Array.isArray(r.tags) ? r.tags.join(', ') : r.tags;
-    if (r.ttl) document.getElementById('entryTtl').value = r.ttl;
-  } catch(e) {
-    document.getElementById('entryValue').value = '';
-    toast('Could not load entry: ' + e.message, 'error');
-  }
-}
-
-async function saveEntry() {
-  const key = document.getElementById('entryKey').value.trim();
-  const ns = document.getElementById('entryNs').value.trim() || 'default';
-  const value = document.getElementById('entryValue').value;
-  const tags = document.getElementById('entryTags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  const ttl = parseInt(document.getElementById('entryTtl').value) || undefined;
-  if (!key) { toast('Key is required.', 'error'); return; }
-  if (!value) { toast('Value is required.', 'error'); return; }
-  const btn = document.getElementById('entrySaveBtn');
-  btn.disabled = true;
-  document.getElementById('entrySaveBtnText').innerHTML = '<span class="spinner spinner-sm"></span>';
-  try {
-    await apiFetch('/v1/memory/set', { method: 'POST', body: { key, value, namespace: ns, tags, ttl } });
-    toast(editingKey ? 'Entry updated.' : 'Entry saved.', 'success');
-    closeModal('entryModal');
-    loadMemory();
-    loadNamespaces();
-  } catch(e) {
-    toast('Save failed: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    document.getElementById('entrySaveBtnText').textContent = editingKey ? 'Update Entry' : 'Save Entry';
-  }
-}
-
-// ─── SHARE ────────────────────────────────────────────────────────────────────
-function openShareDialog(key, ns) {
-  document.getElementById('shareEntryKey').value = key;
-  document.getElementById('shareWithKey').value = '';
-  document.getElementById('shareNs').value = 'shared-' + ns;
-  openModal('shareModal');
-  setTimeout(() => document.getElementById('shareWithKey').focus(), 100);
-}
-
-async function shareEntry() {
-  const key = document.getElementById('shareEntryKey').value;
-  const withKey = document.getElementById('shareWithKey').value.trim();
-  const ns = document.getElementById('shareNs').value.trim();
-  if (!withKey) { toast('Enter a user to share with.', 'error'); return; }
-  const btn = document.getElementById('shareSaveBtn');
-  btn.disabled = true;
-  document.getElementById('shareSaveBtnText').innerHTML = '<span class="spinner spinner-sm"></span>';
-  try {
-    // Copy entry to shared namespace
-    const entry = await apiFetch(`/v1/memory/get?key=${encodeURIComponent(key)}&namespace=${encodeURIComponent(currentNs)}`, { method: 'GET' });
-    const v = entry.value !== undefined ? entry.value : entry.data;
-    await apiFetch('/v1/memory/set', { method: 'POST', body: { key, value: v, namespace: ns, tags: entry.tags } });
-    toast('Entry shared to namespace "' + ns + '".', 'success');
-    closeModal('shareModal');
-  } catch(e) {
-    toast('Share failed: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    document.getElementById('shareSaveBtnText').textContent = 'Share in Shared Space';
-  }
-}
-
-// ─── DELETE ───────────────────────────────────────────────────────────────────
-function confirmDelete(rowId, key, ns) {
-  // Remove any existing confirm
-  document.querySelectorAll('.confirm-row').forEach(r => r.remove());
-  const row = document.getElementById(rowId);
-  if (!row) return;
-  const confirmRow = document.createElement('tr');
-  confirmRow.className = 'confirm-row';
-  confirmRow.id = 'confirm-' + rowId;
-  confirmRow.innerHTML = `<td colspan="5">
-    <div class="confirm-inner">
-      <span>Delete <b>${esc(key)}</b>?</span>
-      <button class="btn btn-red btn-sm" onclick="doDelete('${rowId}','${esc(key)}','${esc(ns)}')">Confirm Delete</button>
-      <button class="btn btn-ghost btn-sm" onclick="document.getElementById('confirm-${rowId}')?.remove()">Cancel</button>
-    </div>
-  </td>`;
-  // Insert after expanded row if open, else after the row
-  const expandEl = document.getElementById('expand-' + rowId);
-  (expandEl || row).after(confirmRow);
-}
-
-async function doDelete(rowId, key, ns) {
-  try {
-    await apiFetch('/v1/memory/delete', { method: 'DELETE', body: { key, namespace: ns } });
-    document.getElementById('confirm-' + rowId)?.remove();
-    document.getElementById('expand-' + rowId)?.remove();
-    document.getElementById(rowId)?.remove();
-    allEntries = allEntries.filter(e => !(e.key === key && (e.namespace||currentNs) === ns));
-    if (document.querySelectorAll('#memTableBody tr:not(.confirm-row):not([id^="expand-"])').length === 0) {
-      showEl('memTableWrap', false);
-      showEl('memEmptyState', true);
-    }
-    toast('Entry deleted.', 'success');
-  } catch(e) {
-    toast('Delete failed: ' + e.message, 'error');
-  }
-}
-
-// ─── SHARED SPACES ────────────────────────────────────────────────────────────
-async function loadSharedSpaces() {
-  showSkel('sharedSkelWrap', true);
-  showEl('sharedGrid', false);
-  showEl('sharedEmpty', false);
-  showEl('sharedErrorBanner', false);
-  showEl('sharedSpaceMemoryWrap', false);
-  try {
-    const res = await apiFetch('/v1/memory/share/list', { method: 'GET' });
-    const spaces = res.spaces || res.data || res.items || [];
-    showSkel('sharedSkelWrap', false);
-    renderSharedSpaces(spaces);
-  } catch(e) {
-    showSkel('sharedSkelWrap', false);
-    document.getElementById('sharedErrorMsg').textContent = e.message;
-    showEl('sharedErrorBanner', true);
-  }
-}
-
-function renderSharedSpaces(spaces) {
-  if (!spaces.length) { showEl('sharedEmpty', true); return; }
-  const grid = document.getElementById('sharedGrid');
-  grid.innerHTML = spaces.map(s => spaceCard(s)).join('');
-  showEl('sharedGrid', true);
-}
-
-function spaceCard(s) {
-  const members = s.members || s.collaborators || [];
-  const pipColors = ['#ff3333','#00cc66','#00aaff','#8855ff','#ff8800'];
-  const pips = members.slice(0,5).map((m,i) =>
-    `<div class="member-pip" style="background:${pipColors[i%5]}">${(m.username||m.user_id||'?').slice(0,2).toUpperCase()}</div>`
-  ).join('');
-  const ret = s.retention_tier || s.retention || 'weekly';
-  return `<div class="space-card">
-    <div class="space-card-head">
-      <div>
-        <div class="space-name">${esc(s.name||s.space_name||'Unnamed')}</div>
-        <span class="space-ns">${esc(s.namespace||s.ns||'default')}</span>
-      </div>
-      <span class="retention-badge ret-${ret}">${ret}</span>
-    </div>
-    <div class="space-desc">${esc(s.description||s.desc||'No description.')}</div>
-    <div class="space-meta">
-      <div class="space-meta-item"><b>${s.memory_count||s.entry_count||0}</b>entries</div>
-      <div class="space-meta-item"><b>${s.max_members||s.member_limit||10}</b>max members</div>
-      <div class="space-meta-item"><b>${members.length}</b>members</div>
-    </div>
-    ${pips ? `<div class="space-members">${pips}</div>` : ''}
-    <div class="space-actions">
-      <button class="btn btn-blue btn-sm" onclick="viewSpaceMemory('${esc(s.namespace||s.ns||'')}','${esc(s.name||s.space_name||'')}')">View Memory</button>
-      <button class="btn btn-ghost btn-sm" onclick="leaveSpace('${esc(s.id||s.space_id||'')}','${esc(s.name||s.space_name||'')}')">Leave</button>
-    </div>
-  </div>`;
-}
-
-async function viewSpaceMemory(ns, name) {
-  currentSpaceNs = ns;
-  showEl('sharedGrid', false);
-  showEl('sharedEmpty', false);
-  document.getElementById('spaceMemoryTitle').textContent = name + ' / ' + ns;
-  showEl('sharedSpaceMemoryWrap', true);
-  showSkel('spaceMemSkelWrap', true);
-  showEl('spaceMemTableWrap', false);
-  showEl('spaceMemEmpty', false);
-  try {
-    const res = await apiFetch(`/v1/memory/list?namespace=${encodeURIComponent(ns)}&limit=100`, { method: 'GET' });
-    const entries = res.entries || res.keys || res.data || [];
-    showSkel('spaceMemSkelWrap', false);
-    if (!entries.length) { showEl('spaceMemEmpty', true); return; }
-    const tbody = document.getElementById('spaceMemBody');
-    tbody.innerHTML = entries.map(e => {
-      const val = typeof e.value === 'object' ? JSON.stringify(e.value) : (e.value||'');
-      const preview = val.length > 80 ? val.slice(0,80)+'…' : val;
-      const tags = Array.isArray(e.tags) ? e.tags : [];
-      return `<tr>
-        <td class="td-key">${esc(e.key||'')}</td>
-        <td class="td-val">${esc(preview)}</td>
-        <td class="tags-cell">${tags.map(t=>`<span class="tag-badge">${esc(t)}</span>`).join('')}</td>
-        <td class="td-date">${e.created_at ? fmtDate(e.created_at) : '—'}</td>
-        <td class="td-actions"></td>
-      </tr>`;
-    }).join('');
-    showEl('spaceMemTableWrap', true);
-  } catch(e) {
-    showSkel('spaceMemSkelWrap', false);
-    toast('Could not load space memory: ' + e.message, 'error');
-    showEl('spaceMemEmpty', true);
-  }
-}
-
-function closeSpaceMemory() {
-  showEl('sharedSpaceMemoryWrap', false);
-  loadSharedSpaces();
-}
-
-async function leaveSpace(id, name) {
-  if (!confirm('Leave "' + name + '"?')) return;
-  try {
-    await apiFetch('/v1/memory/share/leave', { method: 'POST', body: { space_id: id } });
-    toast('Left space "' + name + '".', 'success');
-    loadSharedSpaces();
-  } catch(e) {
-    toast('Leave failed: ' + e.message, 'error');
-  }
-}
-
-function openCreateSpace() {
-  document.getElementById('spaceName').value = '';
-  document.getElementById('spaceNs').value = '';
-  document.getElementById('spaceDesc').value = '';
-  document.getElementById('spaceRetention').value = 'weekly';
-  document.getElementById('spaceMaxMembers').value = '10';
-  openModal('createSpaceModal');
-  setTimeout(() => document.getElementById('spaceName').focus(), 100);
-}
-
-async function createSpace() {
-  const name = document.getElementById('spaceName').value.trim();
-  const ns = document.getElementById('spaceNs').value.trim();
-  const desc = document.getElementById('spaceDesc').value.trim();
-  const retention = document.getElementById('spaceRetention').value;
-  const maxMembers = parseInt(document.getElementById('spaceMaxMembers').value) || 10;
-  if (!name) { toast('Space name is required.', 'error'); return; }
-  if (!ns) { toast('Namespace is required.', 'error'); return; }
-  const btn = document.getElementById('createSpaceBtn');
-  btn.disabled = true;
-  document.getElementById('createSpaceBtnText').innerHTML = '<span class="spinner spinner-sm"></span>';
-  try {
-    await apiFetch('/v1/memory/share/create', { method: 'POST', body: { name, namespace: ns, description: desc, retention_tier: retention, max_members: maxMembers } });
-    toast('Shared space "' + name + '" created.', 'success');
-    closeModal('createSpaceModal');
-    loadSharedSpaces();
-  } catch(e) {
-    toast('Create failed: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    document.getElementById('createSpaceBtnText').textContent = 'Create Space';
-  }
-}
-
-// ─── DREAM ENGINE ─────────────────────────────────────────────────────────────
-async function loadDreamSubscriptions() {
-  showSkel('subSkelWrap', true);
-  showEl('dreamSubList', false);
-  showEl('dreamSubEmpty', false);
-  try {
-    const res = await apiFetch('/v1/memory/dream/subscriptions', { method: 'GET' });
-    const subs = res.subscriptions || res.data || res.items || [];
-    showSkel('subSkelWrap', false);
-    if (!subs.length) { showEl('dreamSubEmpty', true); return; }
-    const list = document.getElementById('dreamSubList');
-    list.innerHTML = subs.map(s => dreamSubCard(s)).join('');
-    showEl('dreamSubList', true);
-  } catch(e) {
-    showSkel('subSkelWrap', false);
-    showEl('dreamSubEmpty', true);
-  }
-}
-
-function dreamSubCard(s) {
-  const status = s.status || 'active';
-  const nextTime = s.next_run ? fmtDate(s.next_run) : '—';
-  return `<div class="dream-sub-card">
-    <div class="dream-sub-meta">
-      <div class="dream-topic">${esc(s.topic||'Untitled')}</div>
-      <div class="dream-interval">Every ${esc(s.interval||'24h')} &middot; ${s.rem_cycles||3} REM cycles &middot; ${s.credits_per_run||10} cr/run</div>
-    </div>
-    <div class="dream-sub-stats">
-      <div class="dream-stat"><b>${s.total_runs||0}</b>runs</div>
-      <div class="dream-stat"><b>${s.insights_generated||0}</b>insights</div>
-      <div class="dream-stat"><b>${nextTime}</b>next run</div>
-    </div>
-    <span class="dream-status status-${status}">
-      <span style="width:6px;height:6px;border-radius:50%;background:currentColor;display:inline-block"></span>
-      ${status}
-    </span>
-    <div class="dream-sub-actions">
-      ${status === 'active'
-        ? `<button class="btn btn-ghost btn-sm" onclick="pauseResumeSub('${esc(s.id||s.subscription_id||'')}','pause')">Pause</button>`
-        : `<button class="btn btn-ghost btn-sm" onclick="pauseResumeSub('${esc(s.id||s.subscription_id||'')}','resume')">Resume</button>`
-      }
-      <button class="btn btn-sm" style="background:var(--rg);color:var(--r);border:1px solid rgba(255,51,51,0.2)" onclick="deleteSub('${esc(s.id||s.subscription_id||'')}')">&#10005;</button>
-    </div>
-  </div>`;
-}
-
-async function pauseResumeSub(id, action) {
-  try {
-    await apiFetch(`/v1/memory/dream/subscription/${encodeURIComponent(id)}/${action}`, { method: 'POST' });
-    toast('Subscription ' + action + 'd.', 'success');
-    loadDreamSubscriptions();
-  } catch(e) { toast(action + ' failed: ' + e.message, 'error'); }
-}
-
-async function deleteSub(id) {
-  if (!confirm('Delete this dream subscription?')) return;
-  try {
-    await apiFetch(`/v1/memory/dream/subscription/${encodeURIComponent(id)}`, { method: 'DELETE' });
-    toast('Subscription deleted.', 'success');
-    loadDreamSubscriptions();
-  } catch(e) { toast('Delete failed: ' + e.message, 'error'); }
-}
-
-function openNewSubscription() {
-  document.getElementById('subTopic').value = '';
-  document.getElementById('subInterval').value = '24h';
-  document.getElementById('subRem').value = '3';
-  document.getElementById('subCredits').value = '10';
-  openModal('dreamSubModal');
-  setTimeout(() => document.getElementById('subTopic').focus(), 100);
-}
-
-async function createSubscription() {
-  const topic = document.getElementById('subTopic').value.trim();
-  const interval = document.getElementById('subInterval').value;
-  const rem = parseInt(document.getElementById('subRem').value) || 3;
-  const credits = parseInt(document.getElementById('subCredits').value) || 10;
-  if (!topic) { toast('Topic is required.', 'error'); return; }
-  const btn = document.getElementById('subSaveBtn');
-  btn.disabled = true;
-  document.getElementById('subSaveBtnText').innerHTML = '<span class="spinner spinner-sm"></span>';
-  try {
-    await apiFetch('/v1/memory/dream/subscribe', { method: 'POST', body: { topic, interval, rem_cycles: rem, credits_per_run: credits } });
-    toast('Dream subscription created.', 'success');
-    closeModal('dreamSubModal');
-    loadDreamSubscriptions();
-  } catch(e) {
-    toast('Subscribe failed: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    document.getElementById('subSaveBtnText').textContent = 'Subscribe';
-  }
-}
-
-async function loadDreamHistory() {
-  showSkel('histSkelWrap', true);
-  showEl('dreamHistList', false);
-  showEl('dreamHistEmpty', false);
-  try {
-    const res = await apiFetch('/v1/memory/dream/history', { method: 'GET' });
-    const dreams = res.dreams || res.history || res.data || res.items || [];
-    showSkel('histSkelWrap', false);
-    if (!dreams.length) { showEl('dreamHistEmpty', true); return; }
-    const list = document.getElementById('dreamHistList');
-    list.innerHTML = dreams.slice(0,20).map(d => dreamHistCard(d)).join('');
-    showEl('dreamHistList', true);
-  } catch {
-    showSkel('histSkelWrap', false);
-    showEl('dreamHistEmpty', true);
-  }
-}
-
-function dreamHistCard(d) {
-  const id = d.id || d.dream_id || '';
-  const safeId = id.replace(/[^a-z0-9]/gi,'').slice(0,16) || Math.random().toString(36).slice(2,8);
-  const insights = d.insights || d.results?.insights || [];
-  const strategies = Array.isArray(d.strategies) ? d.strategies.join(', ') : (d.strategy || '—');
-  return `<div class="dream-hist-card" id="dhc-${safeId}">
-    <div class="dream-hist-head" onclick="toggleDreamHist('dhc-${safeId}')">
-      <div class="dream-hist-icon">&#128164;</div>
-      <div class="dream-hist-info">
-        <div class="dream-hist-topic">${esc(d.topic||'Dream')}</div>
-        <div class="dream-hist-meta">
-          <span>ID: <b>${esc(id.slice(0,16)||'—')}</b></span>
-          <span>Strategy: <b>${esc(strategies)}</b></span>
-          <span>Insights: <b>${insights.length}</b></span>
-          <span>Credits: <b>${d.credits_used||d.credits||0}</b></span>
-          <span>${d.created_at ? fmtDate(d.created_at) : '—'}</span>
-        </div>
-      </div>
-      <div class="dream-hist-arrow">&#8964;</div>
-    </div>
-    <div class="dream-hist-body">
-      ${insights.length
-        ? insights.map((ins,i) => `<div class="dream-insight">
-            <span class="dream-insight-num">#${i+1}</span>
-            <span class="dream-insight-text">${esc(typeof ins === 'string' ? ins : JSON.stringify(ins))}</span>
-          </div>`).join('')
-        : `<div style="font-family:var(--mono);font-size:0.75rem;color:var(--t3);padding:10px 0">No insights data available.</div>`
-      }
-      ${insights.length ? `<div style="margin-top:12px"><button class="btn btn-purple btn-sm" onclick="applyDreamToMemory('${esc(id)}',event)">Apply to Memory</button></div>` : ''}
-    </div>
-  </div>`;
-}
-
-function toggleDreamHist(id) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  el.classList.toggle('open');
-}
-
-async function applyDreamToMemory(dreamId, evt) {
-  const btn = evt.target;
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner spinner-sm"></span>';
-  try {
-    await apiFetch('/v1/memory/dream/apply', { method: 'POST', body: { dream_id: dreamId, namespace: currentNs } });
-    toast('Dream insights applied to memory.', 'success');
-  } catch(e) {
-    toast('Apply failed: ' + e.message, 'error');
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'Apply to Memory';
-  }
-}
-
-// ─── RUN DREAM NOW ────────────────────────────────────────────────────────────
-async function runDreamNow() {
-  const topic = document.getElementById('dreamTopic').value.trim();
-  const strategy = document.getElementById('dreamStrategy').value;
-  const ns = document.getElementById('dreamNsInput').value.trim() || 'default';
-  if (!topic) { toast('Enter a topic first.', 'error'); document.getElementById('dreamTopic').focus(); return; }
-  const btn = document.getElementById('dreamRunBtn');
-  btn.disabled = true;
-  document.getElementById('dreamRunIcon').innerHTML = '<span class="spinner spinner-sm"></span>';
-  showEl('dreamProgress', true);
-  showEl('dreamResult', false);
-  document.getElementById('dreamProgressBar').style.width = '15%';
-  document.getElementById('dreamProgressLabel').textContent = 'Submitting dream job...';
-  try {
-    const res = await apiFetch('/v1/memory/dream/start', {
-      method: 'POST',
-      body: { topic, strategy, namespace: ns, rem_cycles: 3 }
+    const filtered = memoryAllEntries.filter(en => {
+      const k = (en.key || '').toLowerCase();
+      const v = String(en.value || '').toLowerCase();
+      const qLow = q.toLowerCase();
+      return k.includes(qLow) || v.includes(qLow);
     });
-    const dreamId = res.dream_id || res.id || res.job_id;
-    if (dreamId) {
-      document.getElementById('dreamProgressLabel').textContent = 'Dream running (ID: ' + dreamId.slice(0,12) + '…)';
-      await pollDreamStatus(dreamId);
-    } else {
-      // Immediate result
-      showDreamResult(res);
+    renderMemoryTable(filtered);
+  }
+}
+
+// Add entry
+function toggleAddForm() {
+  const form = document.getElementById('add-form');
+  const isOpen = form.classList.contains('open');
+  form.classList.toggle('open');
+  if (!isOpen) document.getElementById('add-key').focus();
+}
+
+async function saveNewEntry() {
+  const key = document.getElementById('add-key').value.trim();
+  const value = document.getElementById('add-value').value;
+  const tagsRaw = document.getElementById('add-tags').value.trim();
+  const ns = getNs();
+  if (!key) { showToast('Key is required', 'warn'); return; }
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+  try {
+    await api('POST', '/memory-set',{ namespace: ns, key, value, tags });
+    showToast(`Created: ${key}`, 'success');
+    document.getElementById('add-key').value = '';
+    document.getElementById('add-value').value = '';
+    document.getElementById('add-tags').value = '';
+    document.getElementById('add-form').classList.remove('open');
+    loadMemory();
+  } catch (e) {
+    showToast('Failed to create: ' + e.message, 'error');
+  }
+}
+
+// Delete
+function openDeleteModal(evt, key) {
+  evt.stopPropagation();
+  pendingDeleteKey = key;
+  pendingDeleteNs = getNs();
+  document.getElementById('delete-key-label').textContent = key;
+  openModal('modal-delete');
+}
+
+async function confirmDelete() {
+  if (!pendingDeleteKey) return;
+  try {
+    await api('POST', '/memory-delete',{ namespace: pendingDeleteNs, key: pendingDeleteKey });
+    showToast(`Deleted: ${pendingDeleteKey}`, 'success');
+    closeModal('modal-delete');
+    loadMemory();
+  } catch (e) {
+    showToast('Delete failed: ' + e.message, 'error');
+    closeModal('modal-delete');
+  }
+  pendingDeleteKey = '';
+  pendingDeleteNs = '';
+}
+
+// ── SHARED SPACES ────────────────────────────────────────────────────────────
+async function loadSpaces() {
+  const grid = document.getElementById('spaces-grid');
+  grid.innerHTML = '<div class="center-spinner" style="grid-column:1/-1;padding:48px 0"><div class="spinner"></div> Loading spaces...</div>';
+
+  let spaces = [];
+
+  // Try GET endpoint first
+  try {
+    const d = await api('GET', '/memory/spaces', undefined);
+    spaces = d.spaces || d.data || d.results || (Array.isArray(d) ? d : []);
+  } catch (e1) {
+    if (e1.message === '401') return;
+    // Try POST fallback
+    try {
+      const d2 = await api('POST', '/memory/spaces/list', {});
+      spaces = d2.spaces || d2.data || d2.results || (Array.isArray(d2) ? d2 : []);
+    } catch (e2) {
+      if (e2.message !== '401') {
+        grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+          <div class="empty-icon">&#9651;</div>
+          <h3>Feature not available</h3>
+          <p>Shared spaces endpoint is not yet active on your plan.</p>
+        </div>`;
+        return;
+      }
     }
-  } catch(e) {
-    toast('Dream failed: ' + e.message, 'error');
-    showEl('dreamProgress', false);
+  }
+
+  if (!spaces.length) {
+    grid.innerHTML = `<div class="empty" style="grid-column:1/-1">
+      <div class="empty-icon">&#9651;</div>
+      <h3>No shared spaces yet</h3>
+      <p>Create your first shared space to collaborate with teammates or other agents.</p>
+    </div>`;
+    return;
+  }
+
+  grid.innerHTML = '';
+  spaces.forEach(sp => renderSpaceCard(sp, grid));
+}
+
+function renderSpaceCard(sp, container) {
+  const id = sp.id || sp.space_id || '';
+  const name = sp.name || id || 'Unnamed Space';
+  const members = sp.member_count || sp.members || 0;
+  const count = sp.memory_count || sp.entries || 0;
+  const expires = sp.expires_at || sp.expiry || '';
+  const expStr = expires ? new Date(expires).toLocaleDateString() : 'No expiry';
+  const link = sp.share_link || sp.link || (window.location.origin + '/space/' + id);
+
+  const card = document.createElement('div');
+  card.className = 'space-card';
+  card.dataset.spaceId = id;
+  card.innerHTML = `
+    <div class="space-card-top">
+      <span class="space-name">${escHtml(name)}</span>
+      <span class="space-badge">${escHtml(String(members))} member${members !== 1 ? 's' : ''}</span>
+    </div>
+    <div class="space-meta">
+      <div class="space-meta-item"><label>Memory Entries</label><span>${escHtml(String(count))}</span></div>
+      <div class="space-meta-item"><label>Expires</label><span>${escHtml(expStr)}</span></div>
+    </div>
+    <div class="space-actions">
+      <button class="btn btn-ghost btn-xs" onclick="viewSpaceMemory('${escAttr(id)}','${escAttr(name)}')">View Memory</button>
+      <button class="btn btn-ghost btn-xs" onclick="toggleInvite('${escAttr(id)}')">Invite</button>
+      <button class="btn btn-ghost btn-xs" onclick="copyShareLink('${escAttr(link)}')" title="Copy share link">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10 13a5 5 0 007.54.54l3-3a5 5 0 00-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 00-7.54-.54l-3 3a5 5 0 007.07 7.07l1.71-1.71"/></svg>
+        Copy Link
+      </button>
+    </div>
+    <div class="share-link-row">
+      <input class="share-link-input" readonly value="${escAttr(link)}" title="${escAttr(link)}">
+    </div>
+    <div class="invite-row hidden" id="invite-row-${sanitizeId(id)}">
+      <input type="text" id="invite-input-${sanitizeId(id)}" placeholder="Invitee API key or email">
+      <button class="btn btn-green btn-xs" onclick="sendInvite('${escAttr(id)}')">Invite</button>
+    </div>`;
+
+  container.appendChild(card);
+}
+
+function toggleInvite(id) {
+  const row = document.getElementById('invite-row-' + sanitizeId(id));
+  if (!row) return;
+  row.classList.toggle('hidden');
+  if (!row.classList.contains('hidden')) {
+    const inp = document.getElementById('invite-input-' + sanitizeId(id));
+    if (inp) inp.focus();
+  }
+}
+
+async function sendInvite(spaceId) {
+  const inp = document.getElementById('invite-input-' + sanitizeId(spaceId));
+  if (!inp) return;
+  const inviteeKey = inp.value.trim();
+  if (!inviteeKey) { showToast('Enter an invitee key or email', 'warn'); return; }
+  try {
+    await api('POST', '/memory/collaborator/invite', { space_id: spaceId, invitee_key: inviteeKey });
+    showToast('Invite sent', 'success');
+    inp.value = '';
+    const row = document.getElementById('invite-row-' + sanitizeId(spaceId));
+    if (row) row.classList.add('hidden');
+  } catch (e) {
+    showToast('Invite failed: ' + e.message, 'error');
+  }
+}
+
+function copyShareLink(link) {
+  navigator.clipboard.writeText(link).then(() => showToast('Share link copied', 'success')).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = link;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Share link copied', 'success');
+  });
+}
+
+function viewSpaceMemory(spaceId, spaceName) {
+  switchTab('memory');
+  // Add as custom namespace option
+  const sel = document.getElementById('ns-selector');
+  let found = false;
+  for (let i = 0; i < sel.options.length; i++) {
+    if (sel.options[i].value === spaceId) { sel.selectedIndex = i; found = true; break; }
+  }
+  if (!found) {
+    const opt = document.createElement('option');
+    opt.value = spaceId;
+    opt.textContent = spaceName || spaceId;
+    sel.appendChild(opt);
+    sel.value = spaceId;
+  }
+  loadMemory();
+  showToast(`Viewing memory for: ${spaceName || spaceId}`, 'info');
+}
+
+// Create space modal
+function openCreateSpaceModal() {
+  document.getElementById('space-name-input').value = '';
+  document.getElementById('space-retention-input').value = '24h';
+  openModal('modal-create-space');
+  setTimeout(() => document.getElementById('space-name-input').focus(), 100);
+}
+
+async function submitCreateSpace() {
+  const name = document.getElementById('space-name-input').value.trim();
+  const retention = document.getElementById('space-retention-input').value;
+  if (!name) { showToast('Space name is required', 'warn'); return; }
+  try {
+    const res = await api('POST', '/memory/share/create', { name, retention });
+    showToast(`Space "${name}" created`, 'success');
+    closeModal('modal-create-space');
+    loadSpaces();
+  } catch (e) {
+    showToast('Create failed: ' + e.message, 'error');
+  }
+}
+
+// ── DREAM ENGINE ─────────────────────────────────────────────────────────────
+async function loadDreams() {
+  const list = document.getElementById('dream-list');
+  list.innerHTML = '<div class="center-spinner" style="padding:40px 0"><div class="spinner"></div> Loading...</div>';
+
+  let dreams = [];
+  try {
+    const d = await api('GET', '/memory/dream/subscriptions', undefined);
+    dreams = d.dreams || d.subscriptions || d.data || d.results || (Array.isArray(d) ? d : []);
+  } catch (e1) {
+    if (e1.message === '401') return;
+    try {
+      const d2 = await api('POST', '/memory/dream/list', {});
+      dreams = d2.dreams || d2.data || d2.results || (Array.isArray(d2) ? d2 : []);
+    } catch (e2) {
+      if (e2.message !== '401') {
+        list.innerHTML = `<div class="empty">
+          <div class="empty-icon">&#9670;</div>
+          <h3>No dream history yet</h3>
+          <p>Start your first dream to see REM synthesis results here.</p>
+        </div>`;
+        return;
+      }
+    }
+  }
+
+  if (!dreams.length) {
+    list.innerHTML = `<div class="empty">
+      <div class="empty-icon">&#9670;</div>
+      <h3>No dreams yet</h3>
+      <p>Start your first Dream Engine run using the panel on the left.</p>
+    </div>`;
+    return;
+  }
+
+  renderDreamList(dreams);
+  // Auto-poll any running dreams
+  const running = dreams.filter(d => d.status === 'running' || d.status === 'pending');
+  if (running.length) startDreamPolling(running.map(d => d.id || d.dream_id));
+}
+
+function renderDreamList(dreams) {
+  const list = document.getElementById('dream-list');
+  list.innerHTML = '';
+  dreams.forEach(dream => {
+    const id = dream.id || dream.dream_id || '';
+    const topic = dream.topic || dream.name || 'Unnamed Dream';
+    const status = dream.status || 'pending';
+    const strategy = dream.strategy || '—';
+    const ns = dream.namespace || dream.ns || '—';
+    const ts = dream.created_at || dream.timestamp || '';
+    const tsStr = ts ? new Date(ts).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—';
+    const progress = dream.progress || (status === 'complete' ? 100 : status === 'running' ? 60 : 0);
+
+    const div = document.createElement('div');
+    div.className = 'dream-item';
+    div.id = 'dream-' + sanitizeId(id);
+    div.innerHTML = `
+      <div class="dream-item-top">
+        <span class="dream-topic" title="${escAttr(topic)}">${escHtml(topic)}</span>
+        <span class="dream-status status-${escHtml(status)}">${escHtml(status)}</span>
+      </div>
+      <div class="dream-item-meta">
+        <span class="dream-meta-val">strategy: <span>${escHtml(strategy)}</span></span>
+        <span class="dream-meta-val">ns: <span>${escHtml(ns)}</span></span>
+        <span class="dream-meta-val">${escHtml(tsStr)}</span>
+      </div>
+      ${status === 'running' ? `<div class="dream-progress"><div class="dream-progress-bar" id="dpb-${sanitizeId(id)}" style="width:${progress}%"></div></div>` : ''}
+      ${status === 'complete' ? `<div style="margin-top:10px"><button class="btn btn-ghost btn-xs" onclick="viewDreamResult('${escAttr(id)}','${escAttr(topic)}')">View Results</button></div>` : ''}`;
+
+    list.appendChild(div);
+  });
+}
+
+async function startDream() {
+  const topic = document.getElementById('dream-topic').value.trim();
+  const ns = document.getElementById('dream-ns').value;
+  const strategy = document.getElementById('dream-strategy').value;
+  const cycles = parseInt(document.getElementById('dream-cycles').value, 10);
+
+  if (!topic) { showToast('Topic is required', 'warn'); document.getElementById('dream-topic').focus(); return; }
+
+  const btn = document.querySelector('#pane-dream .btn-indigo');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner spinner-sm"></div> Starting...';
+
+  try {
+    const res = await api('POST', '/memory/dream/start', { namespace: ns, strategy, topic, rem_cycles: cycles });
+    const id = res.id || res.dream_id || res.job_id;
+    showToast('Dream started!', 'success');
+    document.getElementById('dream-topic').value = '';
+
+    // Switch to history and reload
+    await loadDreams();
+
+    // Poll if we got an ID
+    if (id) startDreamPolling([id]);
+  } catch (e) {
+    showToast('Dream start failed: ' + e.message, 'error');
   } finally {
     btn.disabled = false;
-    document.getElementById('dreamRunIcon').textContent = '💤';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="5 3 19 12 5 21 5 3"/></svg> Run Dream Now';
   }
 }
 
-async function pollDreamStatus(id) {
-  let progress = 20;
-  const maxAttempts = 30;
-  for (let i = 0; i < maxAttempts; i++) {
-    await sleep(2000);
-    progress = Math.min(90, progress + 5);
-    document.getElementById('dreamProgressBar').style.width = progress + '%';
-    try {
-      const res = await apiFetch(`/v1/memory/dream/status/${encodeURIComponent(id)}`, { method: 'GET' });
-      const status = res.status || res.state;
-      document.getElementById('dreamProgressLabel').textContent = `Status: ${status} (${Math.round(progress)}%)`;
-      if (status === 'complete' || status === 'completed' || status === 'done') {
-        document.getElementById('dreamProgressBar').style.width = '100%';
-        showDreamResult(res);
-        loadDreamHistory();
-        return;
+function startDreamPolling(ids) {
+  clearInterval(dreamPollInterval);
+  if (!ids.length) return;
+  let remaining = [...ids];
+  dreamPollInterval = setInterval(async () => {
+    if (!remaining.length) { clearInterval(dreamPollInterval); return; }
+    const next = [];
+    for (const id of remaining) {
+      try {
+        const d = await api('GET', `/memory/dream/status/${encodeURIComponent(id)}`, undefined);
+        updateDreamItem(id, d);
+        if (d.status !== 'complete' && d.status !== 'failed') next.push(id);
+      } catch (e) {
+        if (e.message === '401') { clearInterval(dreamPollInterval); return; }
+        next.push(id); // Keep polling on transient errors
       }
-      if (status === 'error' || status === 'failed') {
-        toast('Dream job failed: ' + (res.error||'unknown'), 'error');
-        showEl('dreamProgress', false);
-        return;
-      }
-    } catch { /* keep polling */ }
-  }
-  toast('Dream timed out. Check history later.', 'info');
-  showEl('dreamProgress', false);
+    }
+    remaining = next;
+    if (!remaining.length) clearInterval(dreamPollInterval);
+  }, 3000);
 }
 
-function showDreamResult(res) {
-  showEl('dreamProgress', false);
-  const insights = res.insights || res.results?.insights || res.data?.insights || [];
-  const content = document.getElementById('dreamResultContent');
-  if (insights.length) {
-    content.innerHTML = insights.map((ins, i) =>
-      `<div class="dream-insight"><span class="dream-insight-num">#${i+1}</span><span class="dream-insight-text">${esc(typeof ins === 'string' ? ins : JSON.stringify(ins))}</span></div>`
-    ).join('');
-  } else {
-    const raw = JSON.stringify(res, null, 2);
-    content.innerHTML = `<div class="expand-box" style="max-height:200px">${esc(raw.slice(0,1200))}</div>`;
-  }
-  showEl('dreamResult', true);
-  toast('Dream complete! ' + insights.length + ' insights generated.', 'success');
-}
-
-// ─── UTILS ────────────────────────────────────────────────────────────────────
-function esc(str) {
-  return String(str||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-}
-function fmtDate(iso) {
-  if (!iso) return '—';
-  const d = new Date(iso);
-  if (isNaN(d)) return iso;
-  const now = new Date();
-  const diff = (now - d) / 1000;
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
-  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
-  if (diff < 604800) return Math.floor(diff/86400) + 'd ago';
-  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-}
-function showEl(id, visible) {
-  const el = document.getElementById(id);
+function updateDreamItem(id, data) {
+  const el = document.getElementById('dream-' + sanitizeId(id));
   if (!el) return;
-  if (visible) el.classList.remove('hidden');
-  else el.classList.add('hidden');
+  const status = data.status || 'running';
+  const progress = data.progress || (status === 'complete' ? 100 : 70);
+  const statusEl = el.querySelector('.dream-status');
+  if (statusEl) { statusEl.className = 'dream-status status-' + status; statusEl.textContent = status; }
+  const bar = document.getElementById('dpb-' + sanitizeId(id));
+  if (bar) bar.style.width = progress + '%';
+  if (status === 'complete') {
+    const progDiv = el.querySelector('.dream-progress');
+    if (progDiv) progDiv.remove();
+    const meta = el.querySelector('.dream-item-meta');
+    if (meta && !el.querySelector('.btn')) {
+      const viewBtn = document.createElement('div');
+      viewBtn.style.marginTop = '10px';
+      const topic = el.querySelector('.dream-topic')?.textContent || id;
+      viewBtn.innerHTML = `<button class="btn btn-ghost btn-xs" onclick="viewDreamResult('${escAttr(id)}','${escAttr(topic)}')">View Results</button>`;
+      el.appendChild(viewBtn);
+    }
+    showToast('Dream complete!', 'success');
+  }
 }
-function showSkel(id, visible) { showEl(id, visible); }
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-function toast(msg, type = 'info') {
-  const container = document.getElementById('toastContainer');
-  const icons = { success: '✓', error: '✕', info: 'ℹ' };
-  const el = document.createElement('div');
-  el.className = `toast ${type}`;
-  el.innerHTML = `<span class="toast-icon">${icons[type]||'ℹ'}</span><span>${esc(msg)}</span>`;
-  container.appendChild(el);
-  setTimeout(() => {
-    el.classList.add('out');
-    setTimeout(() => el.remove(), 350);
-  }, 3500);
+async function viewDreamResult(id, topic) {
+  document.getElementById('dream-result-title').textContent = 'Dream Results';
+  document.getElementById('dream-result-sub').textContent = topic;
+  document.getElementById('dream-results-content').textContent = 'Loading results...';
+  document.getElementById('dream-result-meta').innerHTML = '';
+  openModal('modal-dream-result');
+
+  try {
+    const d = await api('GET', `/memory/dream/status/${encodeURIComponent(id)}`, undefined);
+    const result = d.result || d.output || d.synthesis || d.content || d.insights || JSON.stringify(d, null, 2);
+    document.getElementById('dream-results-content').textContent = typeof result === 'string' ? result : JSON.stringify(result, null, 2);
+    const meta = [];
+    if (d.strategy) meta.push(`strategy: <span>${d.strategy}</span>`);
+    if (d.namespace) meta.push(`ns: <span>${d.namespace}</span>`);
+    if (d.rem_cycles) meta.push(`cycles: <span>${d.rem_cycles}</span>`);
+    if (d.created_at) meta.push(`run: <span>${new Date(d.created_at).toLocaleString()}</span>`);
+    document.getElementById('dream-result-meta').innerHTML = meta.map(m => `<span class="dream-result-meta-item">${m}</span>`).join('');
+  } catch (e) {
+    document.getElementById('dream-results-content').textContent = 'Could not load results: ' + e.message;
+  }
 }
 
+// ── MODALS ───────────────────────────────────────────────────────────────────
 function openModal(id) {
-  document.getElementById(id).classList.remove('hidden');
+  document.getElementById(id).classList.add('open');
   document.body.style.overflow = 'hidden';
 }
+
 function closeModal(id) {
-  document.getElementById(id).classList.add('hidden');
+  document.getElementById(id).classList.remove('open');
   document.body.style.overflow = '';
 }
 
-// ─── KEYBOARD SHORTCUTS ───────────────────────────────────────────────────────
-document.addEventListener('keydown', e => {
-  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
-    e.preventDefault();
-    const si = document.getElementById('searchInput');
-    if (si && !si.closest('.hidden')) { si.focus(); si.select(); }
-  }
-  if (e.key === 'Escape') {
-    ['entryModal','shareModal','createSpaceModal','dreamSubModal'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el && !el.classList.contains('hidden')) closeModal(id);
-    });
-  }
-});
+function closeAllModals() {
+  document.querySelectorAll('.modal-overlay').forEach(m => m.classList.remove('open'));
+  document.body.style.overflow = '';
+}
 
-// Close modal on overlay click
+// Close modal when clicking overlay
 document.querySelectorAll('.modal-overlay').forEach(overlay => {
   overlay.addEventListener('click', e => {
-    if (e.target === overlay) {
-      const modal = overlay.id;
-      if (modal) closeModal(modal);
-    }
+    if (e.target === overlay) closeAllModals();
   });
 });
 
-// ─── API KEY FROM URL ─────────────────────────────────────────────────────────
-(function() {
-  const params = new URLSearchParams(window.location.search);
-  const k = params.get('key') || params.get('api_key');
-  if (k) {
-    document.getElementById('apiKeyInput').value = k;
-    connect();
-  }
-  // Check localStorage
-  const saved = localStorage.getItem('slop_api_key');
-  if (saved && !k) {
-    document.getElementById('apiKeyInput').value = saved;
-  }
-})();
+// ── TOASTS ───────────────────────────────────────────────────────────────────
+function showToast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast toast-${type}`;
+  el.innerHTML = `<div class="toast-dot"></div><div class="toast-msg">${escHtml(msg)}</div>`;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('removing');
+    setTimeout(() => el.remove(), 280);
+  }, 3000);
+}
 
-// Save key on connect
-const origConnect = connect;
+// ── UTILS ────────────────────────────────────────────────────────────────────
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function escAttr(str) {
+  return String(str).replace(/'/g, "\\'").replace(/"/g, '&quot;');
+}
+
+function sanitizeId(str) {
+  return String(str).replace(/[^a-zA-Z0-9_-]/g, '_');
+}
 </script>
 </body>
 </html>
