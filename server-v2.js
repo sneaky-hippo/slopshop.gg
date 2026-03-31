@@ -185,26 +185,28 @@ setInterval(() => {
 }, 300000);
 
 // Background cleanup: expired TTL memory entries + expired shared spaces (runs every 10 min)
+// Module-level cleanup statements (avoid GC finalizer crashes from inline db.prepare)
+const _dbGetExpiredMem = db.prepare("SELECT namespace, key FROM memory WHERE ttl > 0 AND (created + ttl * 1000) < ?");
+const _dbDelExpiredMem = db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?');
+const _dbDelExpiredMemTx = db.transaction(rows => { for (const r of rows) _dbDelExpiredMem.run(r.namespace, r.key); });
+const _dbGetExpiredSpaces = db.prepare('SELECT id FROM shared_memory_spaces WHERE expires_at IS NOT NULL AND expires_at < ?');
+const _dbDelSpaceMembers = db.prepare('DELETE FROM shared_memory_members WHERE space_id = ?');
+const _dbDelSpaceMemory = db.prepare("DELETE FROM memory WHERE namespace = ?");
+const _dbDelSpace = db.prepare('DELETE FROM shared_memory_spaces WHERE id = ?');
+
 setInterval(() => {
   try {
     const now = Date.now();
-    // Expire TTL memory entries (ttl > 0 and created + ttl*1000 < now)
-    const expiredMem = db.prepare("SELECT namespace, key, created, ttl FROM memory WHERE ttl > 0 AND (created + ttl * 1000) < ?").all(now);
-    if (expiredMem.length > 0) {
-      const delMem = db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?');
-      const delMany = db.transaction(rows => { for (const r of rows) delMem.run(r.namespace, r.key); });
-      delMany(expiredMem);
-    }
-    // Expire shared memory spaces with retention TTL
-    const expiredSpaces = db.prepare('SELECT id FROM shared_memory_spaces WHERE expires_at IS NOT NULL AND expires_at < ?').all(now);
+    const expiredMem = _dbGetExpiredMem.all(now);
+    if (expiredMem.length > 0) _dbDelExpiredMemTx(expiredMem);
+    const expiredSpaces = _dbGetExpiredSpaces.all(now);
     if (expiredSpaces.length > 0) {
       for (const s of expiredSpaces) {
-        db.prepare('DELETE FROM shared_memory_members WHERE space_id = ?').run(s.id);
-        db.prepare("DELETE FROM memory WHERE namespace = ?").run('shared:' + s.id);
-        db.prepare('DELETE FROM shared_memory_spaces WHERE id = ?').run(s.id);
+        _dbDelSpaceMembers.run(s.id);
+        _dbDelSpaceMemory.run('shared:' + s.id);
+        _dbDelSpace.run(s.id);
       }
     }
-    // Evict old research cache entries
     const cacheNow = Date.now();
     for (const [k, v] of _researchCache) { if (cacheNow - v.ts > RESEARCH_CACHE_TTL * 2) _researchCache.delete(k); }
   } catch(e) { /* cleanup is best-effort */ }
@@ -2612,6 +2614,10 @@ const dbGetSchedules = db.prepare('SELECT * FROM schedules WHERE api_key = ?');
 const dbGetDueSchedules = db.prepare('SELECT * FROM schedules WHERE enabled = 1 AND next_run <= ?');
 const dbUpdateScheduleRun = db.prepare('UPDATE schedules SET last_run = ?, next_run = ?, runs = runs + 1 WHERE id = ?');
 const dbDisableSchedule = db.prepare('UPDATE schedules SET enabled = 0 WHERE id = ?');
+const dbInsertScheduleRunOk = db.prepare('INSERT INTO schedule_runs (schedule_id, api_key, ran_at, status, credits_used) VALUES (?, ?, ?, ?, ?)');
+const dbInsertScheduleRunErr = db.prepare('INSERT INTO schedule_runs (schedule_id, api_key, ran_at, status, error) VALUES (?, ?, ?, ?, ?)');
+const dbGetDueDreams = db.prepare('SELECT * FROM dream_subscriptions WHERE active = 1 AND (last_dream IS NULL OR last_dream < ?)');
+const dbUpdateDreamLastRun = db.prepare('UPDATE dream_subscriptions SET last_dream = ?, total_dreams = total_dreams + 1 WHERE id = ?');
 const dbDeleteSchedule = db.prepare('DELETE FROM schedules WHERE id = ? AND api_key = ?');
 
 // Create a schedule
@@ -2716,11 +2722,11 @@ setInterval(async () => {
         }
       }
       // Log run to history
-      try { db.prepare('INSERT INTO schedule_runs (schedule_id, api_key, ran_at, status, credits_used) VALUES (?, ?, ?, ?, ?)').run(sched.id, sched.api_key, Date.now(), runStatus, creditsUsed); } catch(_) {}
+      try { dbInsertScheduleRunOk.run(sched.id, sched.api_key, Date.now(), runStatus, creditsUsed); } catch(_) {}
       // Pipes and templates are handled by their respective endpoints internally
       dbUpdateScheduleRun.run(Date.now(), Date.now() + sched.interval_ms, sched.id);
     } catch (e) {
-      try { db.prepare('INSERT INTO schedule_runs (schedule_id, api_key, ran_at, status, error) VALUES (?, ?, ?, ?, ?)').run(sched.id, sched.api_key, Date.now(), 'error', e.message); } catch(_) {}
+      try { dbInsertScheduleRunErr.run(sched.id, sched.api_key, Date.now(), 'error', e.message); } catch(_) {}
       dbUpdateScheduleRun.run(Date.now(), Date.now() + sched.interval_ms, sched.id);
     }
   }
@@ -2731,7 +2737,7 @@ setInterval(async () => {
     log.warn('Scheduler: skipping dream engine — memory pressure', { heap_mb: Math.round(_schedMem.heapUsed/1024/1024) });
   } else
   try {
-    const dueDreams = db.prepare('SELECT * FROM dream_subscriptions WHERE active = 1 AND (last_dream IS NULL OR last_dream < ?)').all(new Date(Date.now() - 900000).toISOString());
+    const dueDreams = dbGetDueDreams.all(new Date(Date.now() - 900000).toISOString());
     for (const dream of dueDreams) {
       const hoursSinceLastDream = dream.last_dream ? (Date.now() - new Date(dream.last_dream).getTime()) / 3600000 : Infinity;
       if (hoursSinceLastDream < dream.interval_hours) continue;
@@ -2876,7 +2882,7 @@ Respond with structured findings. This will be APPENDED (never replacing existin
         });
       } catch(e) {}
 
-      db.prepare('UPDATE dream_subscriptions SET last_dream = ?, total_dreams = total_dreams + 1 WHERE id = ?').run(new Date().toISOString(), dream.id);
+      dbUpdateDreamLastRun.run(new Date().toISOString(), dream.id);
       persistKey(dream.api_key);
       log.info('Dream complete', { id: dreamId, topic: dream.topic, cycles: insights.length, credits: totalCreditsUsed });
     }
