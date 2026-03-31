@@ -20068,14 +20068,19 @@ const server = app.listen(PORT, () => {
   // Check for previous crash logs (handled in watchdog block below since DB_PATH is available)
 });
 
-// Startup alive probes — every 1s for first 15s to pinpoint crash window
+// Startup alive probes — every 100ms for first 15s to pinpoint crash window
 if (IS_RAILWAY) {
-  let _probeN = 1;
+  let _probeN = 0;
   const _probeInterval = setInterval(() => {
-    const m = process.memoryUsage();
-    process.stdout.write('ALIVE t=' + _probeN + ' rss=' + Math.round(m.rss/1024/1024) + '\n');
-    if (++_probeN > 15) clearInterval(_probeInterval);
-  }, 1000);
+    _probeN++;
+    if (_probeN % 10 === 0) { // log every full second
+      const m = process.memoryUsage();
+      process.stdout.write('ALIVE t=' + (_probeN/10).toFixed(0) + ' rss=' + Math.round(m.rss/1024/1024) + '\n');
+    } else {
+      process.stdout.write('A' + _probeN + '\n'); // sub-second probe
+    }
+    if (_probeN >= 150) clearInterval(_probeInterval);
+  }, 100);
 }
 
 // Memory growth watchdog — samples every 3s, writes to {dataDir}/mem.log on Railway
@@ -20117,12 +20122,12 @@ if (IS_RAILWAY) {
 }
 
 function gracefulShutdown(signal) {
-  console.log(`\n${signal} received. Shutting down gracefully...`);
+  process.stdout.write('\nGRACEFUL_SHUTDOWN signal=' + signal + ' ts=' + new Date().toISOString() + '\n');
   try { flushDirtyKeys(); } catch(_) {}
   try { flushAuditBatch(); } catch(_) {}
   server.close(() => {
-    console.log('HTTP server closed.');
-    try { db.close(); console.log('Database closed.'); } catch(e) {}
+    process.stdout.write('HTTP_SERVER_CLOSED\n');
+    try { db.close(); process.stdout.write('DB_CLOSED\n'); } catch(e) {}
     process.exit(0);
   });
   setTimeout(() => { console.error('Forced shutdown after timeout'); process.exit(1); }, 10000);
