@@ -2278,6 +2278,18 @@ require('./agent')(app, allHandlers, API_DEFS, db, apiKeys, auth);
 require('./zapier')(app, allHandlers, API_DEFS, apiKeys, auth);
 require('./pipes')(app, allHandlers, API_DEFS, auth);
 
+// ── Tables required by route modules (must exist before mounting) ────────────
+db.exec(`CREATE TABLE IF NOT EXISTS pubsub (channel TEXT, message TEXT, sender TEXT, ts INTEGER)`);
+db.exec(`CREATE TABLE IF NOT EXISTS hives (
+  id TEXT PRIMARY KEY, api_key TEXT, name TEXT, config TEXT DEFAULT '{}',
+  channels TEXT DEFAULT '["general","standup","random","alerts"]',
+  members TEXT DEFAULT '[]', created INTEGER
+)`);
+db.exec(`CREATE TABLE IF NOT EXISTS hive_messages (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, hive_id TEXT, channel TEXT,
+  sender TEXT, message TEXT, type TEXT DEFAULT 'message', ts INTEGER
+)`);
+
 // ===== NEW ROUTE MODULES =====
 try { require('./routes/identity')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: identity -', e.message); }
 try { require('./routes/observe')(app, db, apiKeys, ipLimits); } catch (e) { console.warn('Route load skipped: observe -', e.message); }
