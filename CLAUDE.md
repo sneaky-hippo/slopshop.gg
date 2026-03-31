@@ -5,7 +5,7 @@
 
 Agents that synthesize knowledge overnight (Dream Engine). Teams that share intelligence in real time (Multiplayer Memory). Self-hostable, multi-model, open forever.
 
-> "Claude controls the screen. Slopshop runs the brain — openly, on any model, forever."
+> "Living, breathing memory — free, multiplayer, self-growing — on any model, forever yours."
 
 ## Headline Products
 
