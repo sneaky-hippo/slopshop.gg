@@ -33,7 +33,6 @@
     { "source": "/creative-os", "destination": "/creative-os", "permanent": false }
   ],
   "rewrites": [
-    { "source": "/developers", "destination": "/home" },
     { "source": "/v1/:path*", "destination": "https://slopshop-production.up.railway.app/v1/:path*" },
     { "source": "/auth/:path*", "destination": "https://slopshop-production.up.railway.app/auth/:path*" },
     { "source": "/zapier/:path*", "destination": "https://slopshop-production.up.railway.app/zapier/:path*" },
