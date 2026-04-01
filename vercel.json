@@ -21,6 +21,7 @@
   ],
   "rewrites": [
     { "source": "/v1/:path*", "destination": "https://slopshop-production.up.railway.app/v1/:path*" },
+    { "source": "/auth/:path*", "destination": "https://slopshop-production.up.railway.app/auth/:path*" },
     { "source": "/zapier/:path*", "destination": "https://slopshop-production.up.railway.app/zapier/:path*" },
     { "source": "/.well-known/:path*", "destination": "https://slopshop-production.up.railway.app/.well-known/:path*" }
   ]

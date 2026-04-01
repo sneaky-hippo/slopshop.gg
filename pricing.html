@@ -273,7 +273,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <h1><span class="white">Simple pricing for</span> <span class="red">useful AI agents</span></h1>
   <p class="sub">Start free, pay as you build, and avoid subscriptions you do not need.</p>
   <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
-    <a href="/dashboard.html" class="btn-primary">Get 500 free credits &#129438;</a>
+    <a href="/consumer" class="btn-primary">Get 500 free credits &#129438;</a>
     <a href="/#playground" class="btn-secondary">Try the playground first</a>
   </div>
 </section>
@@ -291,7 +291,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <div class="unit">credits on signup</div>
       <div class="price">$0</div>
       <div class="per-credit" style="color:var(--g)">+ 8 core memory APIs free forever</div>
-      <a href="/dashboard.html" class="cta-btn" style="background:rgba(0,204,102,0.15);color:var(--g);border-color:rgba(0,204,102,0.3)">Start free</a>
+      <a href="/consumer" class="cta-btn" style="background:rgba(0,204,102,0.15);color:var(--g);border-color:rgba(0,204,102,0.3)">Start free</a>
     </div>
     <div class="tier">
       <div class="emoji">&#129438;</div>
@@ -300,7 +300,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <div class="unit">credits</div>
       <div class="price">$9</div>
       <div class="per-credit">$0.009 / credit</div>
-      <a href="/dashboard.html" class="cta-btn">Buy pack</a>
+      <button class="cta-btn" onclick="buyPack('baby')">Buy pack</button>
     </div>
     <div class="tier hot">
       <div class="emoji">&#129438;</div>
@@ -309,7 +309,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <div class="unit">credits</div>
       <div class="price">$49</div>
       <div class="per-credit">$0.0049 / credit</div>
-      <a href="/dashboard.html" class="cta-btn">Buy pack</a>
+      <button class="cta-btn" onclick="buyPack('lobster')">Buy pack</button>
     </div>
     <div class="tier">
       <div class="emoji">&#129438;</div>
@@ -318,7 +318,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <div class="unit">credits</div>
       <div class="price">$299</div>
       <div class="per-credit">$0.00299 / credit</div>
-      <a href="/dashboard.html" class="cta-btn">Buy pack</a>
+      <button class="cta-btn" onclick="buyPack('big')">Buy pack</button>
     </div>
     <div class="tier">
       <div class="emoji">&#129514;</div>
@@ -327,7 +327,7 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
       <div class="unit">credits</div>
       <div class="price">$1,999</div>
       <div class="per-credit">$0.002 / credit</div>
-      <a href="/dashboard.html" class="cta-btn">Buy pack</a>
+      <button class="cta-btn" onclick="buyPack('tank')">Buy pack</button>
     </div>
     <div class="tier tier-enterprise" style="border-color:rgba(255,51,51,0.3);background:linear-gradient(to bottom,rgba(255,51,51,0.05),var(--s1))">
       <div class="emoji">&#127381;</div>
@@ -598,15 +598,15 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
   <h2>Get started with 500 free credits</h2>
   <p>No credit card required. Instant access to the full catalog of tools.</p>
   <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-    <a href="/dashboard.html" class="btn-primary">Start for free &#129438;</a>
-    <a href="/getting-started.html" class="btn-secondary">Read the quickstart</a>
+    <a href="/consumer" class="btn-primary">Start for free &#129438;</a>
+    <a href="/docs" class="btn-secondary">Read the quickstart</a>
   </div>
 </div>
 
 <footer>
   <div class="f-brand">&#129438; <span class="red">SLOP</span>SHOP<span style="color:var(--t4)">.GG</span></div>
   <p>
-    <a href="/">Home</a> &middot; <a href="/docs.html">Docs</a> &middot; <a href="/getting-started.html">Get Started</a> &middot; <a href="/compare.html">Compare</a> &middot; <a href="/for-agents.html">For Agents</a> &middot; <a href="/dashboard.html">Dashboard</a> &middot; <a href="https://x.com/slopshopgg">@slopshopgg</a><br>
+    <a href="/">Home</a> &middot; <a href="/docs">Docs</a> &middot; <a href="/docs">Get Started</a> &middot; <a href="/compare.html">Compare</a> &middot; <a href="/for-agents.html">For Agents</a> &middot; <a href="/brain">Dashboard</a> &middot; <a href="https://x.com/slopshopgg">@slopshopgg</a><br>
     82 categories of tools &middot; all real &middot; credit-based &middot; slopshop.gg
   </p>
 </footer>
@@ -683,5 +683,33 @@ function toggleFaq(el){
   <p style="margin-top:8px">82 categories · 1,303 handlers · 925 self-hostable pure-compute · 8 core memory APIs free forever · 500 free credits on signup</p>
   <p>memory-set · memory-get · memory-search · memory-list · memory-delete · memory-stats · memory-namespace-list · counter-get — always 0 credits</p>
 </div>
+<script>
+async function buyPack(pack) {
+  try {
+    const btn = event.currentTarget;
+    btn.disabled = true;
+    btn.textContent = 'Loading...';
+    const r = await fetch('/v1/billing/checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ pack })
+    });
+    const data = await r.json();
+    if (data.url) {
+      window.location.href = data.url;
+    } else {
+      alert('Error: ' + (data.error || 'Could not start checkout'));
+      btn.disabled = false;
+      btn.textContent = 'Buy pack';
+    }
+  } catch (e) {
+    alert('Error: ' + e.message);
+    const btn = event.currentTarget;
+    btn.disabled = false;
+    btn.textContent = 'Buy pack';
+  }
+}
+</script>
 </body>
 </html>

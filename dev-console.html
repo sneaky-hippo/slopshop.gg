@@ -646,9 +646,9 @@ tr:hover td{background:var(--s2)}
           <div class="stat-sub">remaining balance</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">This Month</div>
+          <div class="stat-label">Total Calls</div>
           <div class="stat-value purple" id="stat-month">—</div>
-          <div class="stat-sub">requests</div>
+          <div class="stat-sub">all time</div>
         </div>
         <div class="stat-card">
           <div class="stat-label">Total Requests</div>
@@ -881,17 +881,20 @@ async function connectWithKey() {
   statusEl.innerHTML = '<div class="spinner"></div> Validating...';
   statusEl.className = 'auth-status';
   try {
-    const r = await fetch('/v1/memory/score', {
+    const r = await fetch('/v1/auth/me', {
       headers: { 'Authorization': 'Bearer ' + key }
     });
     if (r.status === 401 || r.status === 403) {
       throw new Error('Invalid API key');
     }
-    // accept any non-5xx as "key works"
     if (r.status >= 500) throw new Error('Server error — try again');
+    const meData = await r.json();
+    const balance = meData.balance != null ? meData.balance : null;
+    const tier = meData.tier || '';
     localStorage.setItem('slop_key', key);
     currentKey = key;
-    statusEl.textContent = 'Connected!';
+    const balanceStr = balance != null ? ` — ${Number(balance).toLocaleString()} credits (${tier})` : '';
+    statusEl.textContent = 'Connected!' + balanceStr;
     statusEl.className = 'auth-status ok';
     setTimeout(() => {
       showApikeyMode();
@@ -1105,24 +1108,41 @@ async function loadUsage() {
   try {
     const headers = {};
     const fetchOpts = {};
-    if (sessionUser) { fetchOpts.credentials = 'include'; if (sessionUser.api_key) headers['Authorization'] = 'Bearer ' + sessionUser.api_key; }
-    else headers['Authorization'] = 'Bearer ' + currentKey;
+    if (sessionUser) {
+      fetchOpts.credentials = 'include';
+      if (sessionUser.api_key) headers['Authorization'] = 'Bearer ' + sessionUser.api_key;
+    } else {
+      headers['Authorization'] = 'Bearer ' + currentKey;
+    }
     fetchOpts.headers = headers;
 
-    const r = await fetch('/v1/observe/analytics', fetchOpts);
-    if (!r.ok) throw new Error('analytics unavailable');
-    const data = await r.json();
+    const [meRes, dashRes] = await Promise.all([
+      fetch('/v1/auth/me', fetchOpts),
+      fetch('/v1/dashboard', fetchOpts)
+    ]);
 
-    const analytics = data.analytics || data;
-    document.getElementById('stat-credits').textContent = analytics.credits_remaining != null
-      ? Number(analytics.credits_remaining).toLocaleString() : '—';
-    document.getElementById('stat-month').textContent = analytics.requests_this_month != null
-      ? Number(analytics.requests_this_month).toLocaleString() : '—';
-    document.getElementById('stat-total').textContent = analytics.total_requests != null
-      ? Number(analytics.total_requests).toLocaleString() : '—';
+    let balance = null;
+    if (meRes.ok) {
+      const meData = await meRes.json();
+      balance = meData.balance != null ? meData.balance : null;
+    }
 
-    const rows = analytics.recent_events || analytics.events || [];
-    renderUsageTable(rows);
+    let totalCalls = null;
+    let recentCalls = [];
+    if (dashRes.ok) {
+      const dashData = await dashRes.json();
+      totalCalls = dashData.total_calls != null ? dashData.total_calls : null;
+      recentCalls = dashData.recent_calls || [];
+    }
+
+    document.getElementById('stat-credits').textContent = balance != null
+      ? Number(balance).toLocaleString() : '—';
+    document.getElementById('stat-month').textContent = totalCalls != null
+      ? Number(totalCalls).toLocaleString() : '—';
+    document.getElementById('stat-total').textContent = totalCalls != null
+      ? Number(totalCalls).toLocaleString() : '—';
+
+    renderUsageTable(recentCalls);
   } catch {
     renderUsageTable([]);
   }
@@ -1134,14 +1154,22 @@ function renderUsageTable(rows) {
     tbody.innerHTML = '<tr class="placeholder-row"><td colspan="5">No recent activity</td></tr>';
     return;
   }
-  tbody.innerHTML = rows.slice(0, 50).map(r => `
+  tbody.innerHTML = rows.slice(0, 50).map(r => {
+    const endpoint = r.api ? '/v1/' + r.api : (r.endpoint || r.path || '—');
+    const method = r.engine || 'API';
+    const statusLabel = r.credits === 0 ? 'free' : (r.credits != null ? r.credits + ' cr' : '—');
+    const statusClass = r.credits === 0 ? 'status-ok' : '';
+    const credits = r.credits != null ? r.credits : '—';
+    const time = r.time ? formatRelative(new Date(r.time)) : (r.created_at ? formatRelative(new Date(r.created_at)) : '—');
+    return `
 <tr>
-  <td class="mono">${r.endpoint || r.path || '—'}</td>
-  <td class="mono">${r.method || '—'}</td>
-  <td class="${(r.status || 0) >= 400 ? 'status-err' : 'status-ok'}">${r.status || '—'}</td>
-  <td>${r.credits != null ? r.credits : '—'}</td>
-  <td style="color:var(--t4)">${r.created_at ? formatRelative(new Date(r.created_at)) : '—'}</td>
-</tr>`).join('');
+  <td class="mono">${endpoint}</td>
+  <td class="mono">${method}</td>
+  <td class="${statusClass}">${statusLabel}</td>
+  <td>${credits}</td>
+  <td style="color:var(--t4)">${time}</td>
+</tr>`;
+  }).join('');
 }
 
 /* ─── PLAYGROUND ─────────────────────────────────────── */

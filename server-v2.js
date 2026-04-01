@@ -2329,6 +2329,8 @@ try { require('./routes/voice-wearable')(app, db, apiKeys); console.log('Route l
 try { require('./routes/demo')(app, db, apiKeys); console.log('Route loaded: demo'); } catch (e) { console.error('Route load FAILED: demo -', e.message, e.stack); }
 // ===== AUTH ENHANCEMENTS (server-side OAuth2, anomaly detection, portal routing) =====
 try { require('./routes/auth-enhancements')(app, db, apiKeys); console.log('Route loaded: auth-enhancements'); } catch (e) { console.error('Route load FAILED: auth-enhancements -', e.message, e.stack); }
+// ===== BILLING (Stripe checkout, webhook, portal) =====
+try { require('./routes/billing')(app, db, apiKeys); console.log('[server] billing routes loaded'); } catch(e) { console.error('[server] billing load error:', e.message); }
 // ===================================
 // ============================
 
