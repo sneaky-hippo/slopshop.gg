@@ -171,7 +171,7 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
   // ── GET /auth/google — kick off OAuth2 flow ──────────────────────────────────
   app.get('/auth/google', (req, res) => {
     if (!process.env.GOOGLE_CLIENT_ID) {
-      return res.redirect('/consumer.html?error=google_not_configured');
+      return res.redirect('/home?error=google_not_configured');
     }
 
     try {
@@ -191,7 +191,7 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
       return res.redirect('https://accounts.google.com/o/oauth2/v2/auth?' + params.toString());
     } catch (e) {
       console.error('[auth-enhancements] /auth/google error:', e.message);
-      return res.redirect('/consumer.html?error=oauth_init_failed');
+      return res.redirect('/home?error=oauth_init_failed');
     }
   });
 
@@ -201,17 +201,17 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
 
     // Google returned an error (e.g. user denied consent)
     if (oauthError) {
-      return res.redirect('/consumer.html?error=' + encodeURIComponent(oauthError));
+      return res.redirect('/home?error=' + encodeURIComponent(oauthError));
     }
 
     if (!code || !state) {
-      return res.redirect('/consumer.html?error=missing_callback_params');
+      return res.redirect('/home?error=missing_callback_params');
     }
 
     // Validate CSRF state
     const stateRow = db.prepare('SELECT state FROM oauth_states WHERE state = ?').get(state);
     if (!stateRow) {
-      return res.redirect('/consumer.html?error=invalid_state');
+      return res.redirect('/home?error=invalid_state');
     }
     // Consume the state — delete regardless of subsequent outcome
     db.prepare('DELETE FROM oauth_states WHERE state = ?').run(state);
@@ -228,11 +228,11 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
 
       if (tokenData.error) {
         console.error('[auth-enhancements] token exchange error:', tokenData.error);
-        return res.redirect('/consumer.html?error=token_exchange_failed');
+        return res.redirect('/home?error=token_exchange_failed');
       }
 
       if (!tokenData.id_token) {
-        return res.redirect('/consumer.html?error=no_id_token');
+        return res.redirect('/home?error=no_id_token');
       }
 
       // Decode (not verify) the id_token payload
@@ -240,16 +240,16 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
       try {
         payload = decodeJwtPayload(tokenData.id_token);
       } catch (_) {
-        return res.redirect('/consumer.html?error=id_token_decode_failed');
+        return res.redirect('/home?error=id_token_decode_failed');
       }
 
       const { email, sub: googleSub, name, email_verified } = payload;
 
       if (!email_verified) {
-        return res.redirect('/consumer.html?error=unverified_email');
+        return res.redirect('/home?error=unverified_email');
       }
       if (!email || !googleSub) {
-        return res.redirect('/consumer.html?error=missing_google_claims');
+        return res.redirect('/home?error=missing_google_claims');
       }
 
       // Find or create user
@@ -293,7 +293,7 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
       }
 
       if (!user) {
-        return res.redirect('/consumer.html?error=user_create_failed');
+        return res.redirect('/home?error=user_create_failed');
       }
 
       // Create 30-day session
@@ -317,7 +317,7 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
 
     } catch (err) {
       console.error('[auth-enhancements] callback error:', err.message);
-      return res.redirect('/consumer.html?error=auth_callback_failed');
+      return res.redirect('/home?error=auth_callback_failed');
     }
   });
 
