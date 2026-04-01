@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dream Recipes — Community Memory Consolidation Presets | Slopshop</title>
+<meta name="description" content="Community-tested Dream Engine configurations. 14 one-click presets for memory consolidation — research, code, business, creative, and more.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://slopshop.gg/dream-recipes">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/dream-recipes">
+<meta property="og:title" content="Dream Recipes — One-Click Intelligence Configs | Slopshop">
+<meta property="og:description" content="Community-tested memory consolidation presets. One click to configure, one night to transform your agent's intelligence.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--g:#00cc66;--y:#ffcc00;--cy:#00d4ff;--pu:#a855f7;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+html{font-size:14px;scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+::selection{background:var(--r);color:#000}
+a{color:var(--r);text-decoration:none}
+a:hover{opacity:.8}
+button{cursor:pointer;font-family:var(--sans)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:300;
+  height:56px;
+  background:rgba(5,5,5,0.94);
+  backdrop-filter:blur(24px) saturate(180%);
+  border-bottom:1px solid var(--b2);
+  display:flex;align-items:center;padding:0 24px;
+}
+.nv{max-width:1280px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{
+  font-family:var(--mono);font-weight:800;font-size:.95rem;letter-spacing:.1em;
+  display:flex;align-items:center;gap:6px;color:var(--t);text-decoration:none;
+}
+.logo .mark{color:var(--r)}
+.logo .gg{color:var(--t4);font-size:.65rem;font-weight:500}
+.nav-links{display:flex;gap:2px;align-items:center}
+.nav-links a{
+  color:var(--t3);font-size:.75rem;font-weight:500;
+  padding:6px 12px;border-radius:6px;transition:.15s;text-decoration:none;
+}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links a.active{color:var(--cy)}
+.nav-links a.pill-signup{
+  background:var(--r);color:#fff;font-weight:700;
+  padding:6px 16px;border-radius:20px;margin-left:4px;
+}
+.nav-links a.pill-signup:hover{background:var(--r2);opacity:1}
+.nav-links a.c-green{color:var(--g)}
+.nav-links a.c-cyan{color:var(--cy)}
+.nav-links a.c-purple{color:var(--pu)}
+
+/* ── LAYOUT ── */
+.page-wrap{padding-top:56px}
+.page-inner{max-width:1260px;margin:0 auto;padding:0 24px 100px}
+
+/* ── HERO ── */
+.hero{
+  text-align:center;padding:64px 0 52px;
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:700px;height:400px;
+  background:radial-gradient(ellipse at 50% 0%, rgba(255,51,51,.08) 0%, rgba(168,85,247,.06) 40%, transparent 70%);
+  pointer-events:none;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(255,51,51,.08);
+  border:1px solid rgba(255,51,51,.2);
+  color:var(--r);font-family:var(--mono);font-size:.68rem;font-weight:600;
+  padding:5px 14px;border-radius:20px;letter-spacing:.06em;text-transform:uppercase;
+  margin-bottom:22px;
+}
+.eyebrow-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--r);
+  animation:pulse-dot 2s ease-in-out infinite;
+}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.65)}}
+.hero h1{
+  font-family:var(--mono);font-size:clamp(2.2rem,5.5vw,3.4rem);
+  font-weight:800;letter-spacing:-.03em;line-height:1.08;
+  margin-bottom:18px;
+}
+.hero h1 .accent{color:var(--r)}
+.hero-sub{
+  color:var(--t2);font-size:1rem;max-width:560px;
+  margin:0 auto 36px;line-height:1.7;
+}
+.hero-stats{
+  display:flex;align-items:center;justify-content:center;gap:32px;
+  margin-top:40px;flex-wrap:wrap;
+}
+.hero-stat{text-align:center}
+.hero-stat-val{font-family:var(--mono);font-size:1.5rem;font-weight:800}
+.hero-stat-val.cv{color:var(--r)}
+.hero-stat-val.cg{color:var(--g)}
+.hero-stat-val.cp{color:var(--pu)}
+.hero-stat-val.cy{color:var(--cy)}
+.hero-stat-label{font-size:.68rem;color:var(--t4);margin-top:3px;font-family:var(--mono);letter-spacing:.05em;text-transform:uppercase}
+.hero-sep{width:1px;height:36px;background:var(--b2)}
+
+/* ── FILTER BAR ── */
+.filter-bar{
+  background:var(--s1);border:1px solid var(--b2);border-radius:12px;
+  padding:14px 20px;margin-bottom:32px;
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.filter-label{
+  font-family:var(--mono);font-size:.65rem;color:var(--t4);
+  text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;flex-shrink:0;
+}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1}
+.fpill{
+  background:var(--b2);border:1px solid rgba(255,255,255,.06);
+  color:var(--t3);font-family:var(--mono);font-size:.72rem;font-weight:500;
+  padding:5px 14px;border-radius:20px;cursor:pointer;transition:.15s;
+  border-width:1px;
+}
+.fpill:hover{color:var(--t);border-color:var(--t4)}
+.fpill.active{background:rgba(255,51,51,.1);border-color:rgba(255,51,51,.3);color:var(--r)}
+.fpill.active-all{background:rgba(255,51,51,.1);border-color:rgba(255,51,51,.3);color:var(--r)}
+.filter-sep{width:1px;height:24px;background:var(--b2);flex-shrink:0}
+.filter-count{
+  font-family:var(--mono);font-size:.7rem;color:var(--t4);
+  white-space:nowrap;flex-shrink:0;
+}
+.filter-count span{color:var(--r)}
+
+/* ── RECIPE GRID ── */
+.section-hd{
+  display:flex;align-items:center;justify-content:space-between;
+  margin-bottom:20px;gap:12px;
+}
+.section-title-label{
+  font-family:var(--mono);font-size:.68rem;font-weight:700;
+  color:var(--t4);text-transform:uppercase;letter-spacing:.12em;
+  display:flex;align-items:center;gap:8px;
+}
+.section-title-label::after{content:'';flex:1;height:1px;background:var(--b2)}
+.recipe-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:16px;
+}
+@media(max-width:1000px){.recipe-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.recipe-grid{grid-template-columns:1fr}}
+
+/* ── RECIPE CARD ── */
+.recipe-card{
+  background:var(--s1);
+  border:1px solid var(--b2);
+  border-radius:12px;
+  overflow:hidden;
+  display:flex;flex-direction:column;
+  transition:border-color .2s, transform .2s, box-shadow .2s;
+  position:relative;
+}
+.recipe-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 8px 32px rgba(0,0,0,.5);
+}
+.recipe-card-accent{height:3px;width:100%;flex-shrink:0}
+.recipe-card-body{padding:18px 18px 14px;flex:1;display:flex;flex-direction:column;gap:10px}
+.recipe-card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.recipe-card-title{
+  font-family:var(--mono);font-size:.92rem;font-weight:700;
+  color:var(--t);line-height:1.25;
+}
+.recipe-cat-tag{
+  font-family:var(--mono);font-size:.6rem;font-weight:700;
+  padding:3px 8px;border-radius:4px;text-transform:uppercase;
+  letter-spacing:.06em;white-space:nowrap;flex-shrink:0;
+}
+.recipe-desc{
+  font-size:.8rem;color:var(--t3);line-height:1.6;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.recipe-stages{display:flex;flex-wrap:wrap;gap:5px;margin-top:2px}
+.stage-pill{
+  font-family:var(--mono);font-size:.58rem;font-weight:600;
+  padding:2px 7px;border-radius:4px;letter-spacing:.03em;
+  border:1px solid;
+}
+.recipe-metrics{
+  display:flex;align-items:center;gap:16px;
+  padding:10px 0;border-top:1px solid var(--b2);
+  margin-top:auto;
+}
+.metric-item{display:flex;flex-direction:column;gap:2px}
+.metric-val{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--t)}
+.metric-label{font-family:var(--mono);font-size:.58rem;color:var(--t4);text-transform:uppercase;letter-spacing:.05em}
+.recipe-card-footer{
+  padding:12px 18px;border-top:1px solid var(--b2);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+}
+.recipe-author{display:flex;align-items:center;gap:7px}
+.author-avatar{
+  width:22px;height:22px;border-radius:50%;
+  background:linear-gradient(135deg,var(--r),var(--pu));
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:.55rem;font-weight:800;color:#fff;
+  flex-shrink:0;
+}
+.author-name{font-size:.72rem;color:var(--t4);font-family:var(--mono)}
+.recipe-btns{display:flex;align-items:center;gap:6px}
+.btn-preview{
+  background:transparent;border:1px solid var(--b2);color:var(--t3);
+  font-family:var(--mono);font-size:.67rem;font-weight:600;
+  padding:5px 10px;border-radius:6px;transition:.15s;cursor:pointer;white-space:nowrap;
+}
+.btn-preview:hover{border-color:var(--t4);color:var(--t);background:var(--b2)}
+.btn-launch{
+  background:var(--r);color:#fff;border:none;
+  font-family:var(--mono);font-size:.67rem;font-weight:700;
+  padding:5px 11px;border-radius:6px;transition:.15s;cursor:pointer;white-space:nowrap;
+  text-decoration:none;display:inline-flex;align-items:center;gap:4px;
+}
+.btn-launch:hover{background:var(--r2);opacity:1;box-shadow:0 0 12px rgba(255,51,51,.3)}
+
+/* ── MODAL OVERLAY ── */
+#modal-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(5,5,5,.88);
+  backdrop-filter:blur(12px);
+  display:none;align-items:center;justify-content:center;padding:24px;
+}
+#modal-overlay.open{display:flex}
+.modal{
+  background:var(--s1);border:1px solid var(--b2);border-radius:16px;
+  max-width:680px;width:100%;max-height:88vh;overflow-y:auto;
+  display:flex;flex-direction:column;
+  animation:modal-in .18s ease-out;
+}
+@keyframes modal-in{from{opacity:0;transform:scale(.97) translateY(8px)}to{opacity:1;transform:none}}
+.modal-accent-bar{height:3px;width:100%;border-radius:16px 16px 0 0;flex-shrink:0}
+.modal-header{
+  padding:22px 24px 16px;border-bottom:1px solid var(--b2);
+  display:flex;align-items:flex-start;justify-content:space-between;gap:12px;
+}
+.modal-title-group{display:flex;flex-direction:column;gap:6px}
+.modal-title{font-family:var(--mono);font-size:1.1rem;font-weight:800;color:var(--t)}
+.modal-cat-tag{
+  display:inline-flex;align-items:center;
+  font-family:var(--mono);font-size:.62rem;font-weight:700;
+  padding:3px 9px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em;width:fit-content;
+}
+.modal-close{
+  background:var(--b2);border:none;color:var(--t3);
+  width:28px;height:28px;border-radius:6px;
+  font-size:1rem;line-height:1;transition:.15s;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+}
+.modal-close:hover{background:var(--s2);color:var(--t)}
+.modal-body{padding:20px 24px;display:flex;flex-direction:column;gap:20px}
+.modal-desc{font-size:.85rem;color:var(--t2);line-height:1.7}
+.modal-section-title{
+  font-family:var(--mono);font-size:.65rem;font-weight:700;
+  color:var(--t4);text-transform:uppercase;letter-spacing:.1em;
+  margin-bottom:10px;
+}
+.modal-stages{display:flex;flex-direction:column;gap:8px}
+.modal-stage-row{
+  display:flex;align-items:center;gap:12px;
+  padding:10px 14px;background:var(--s2);border:1px solid var(--b2);
+  border-radius:8px;
+}
+.modal-stage-pill{
+  font-family:var(--mono);font-size:.62rem;font-weight:700;
+  padding:3px 8px;border-radius:4px;letter-spacing:.03em;
+  border:1px solid;flex-shrink:0;min-width:100px;text-align:center;
+}
+.modal-stage-desc{font-size:.78rem;color:var(--t3);line-height:1.4}
+.modal-json-wrap{
+  background:var(--bg);border:1px solid var(--b2);border-radius:8px;
+  overflow:hidden;
+}
+.modal-json-header{
+  padding:8px 14px;border-bottom:1px solid var(--b2);
+  display:flex;align-items:center;justify-content:space-between;
+}
+.modal-json-label{font-family:var(--mono);font-size:.62rem;color:var(--t4);text-transform:uppercase;letter-spacing:.08em}
+.btn-copy-json{
+  background:transparent;border:1px solid var(--b2);color:var(--t3);
+  font-family:var(--mono);font-size:.62rem;font-weight:600;
+  padding:3px 9px;border-radius:5px;transition:.15s;cursor:pointer;
+}
+.btn-copy-json:hover{border-color:var(--g);color:var(--g)}
+.btn-copy-json.copied{border-color:var(--g);color:var(--g)}
+pre.modal-json{
+  padding:14px;font-family:var(--mono);font-size:.75rem;
+  color:var(--g);line-height:1.6;overflow-x:auto;
+  white-space:pre;
+}
+.modal-footer{
+  padding:16px 24px;border-top:1px solid var(--b2);
+  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+}
+.btn-open-studio{
+  background:var(--cy);color:#000;border:none;
+  font-family:var(--mono);font-size:.75rem;font-weight:700;
+  padding:9px 18px;border-radius:8px;transition:.15s;cursor:pointer;
+  text-decoration:none;display:inline-flex;align-items:center;gap:5px;
+}
+.btn-open-studio:hover{opacity:.85;box-shadow:0 0 16px rgba(0,212,255,.25);color:#000}
+
+/* ── SUBMIT SECTION ── */
+.submit-section{
+  margin-top:80px;
+  background:linear-gradient(135deg,rgba(255,51,51,.06),rgba(168,85,247,.05));
+  border:1px solid rgba(255,51,51,.15);
+  border-radius:16px;
+  padding:48px 40px;
+  text-align:center;
+  position:relative;overflow:hidden;
+}
+.submit-section::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:200px;height:200px;
+  background:radial-gradient(circle,rgba(168,85,247,.08) 0%,transparent 70%);
+  pointer-events:none;
+}
+.submit-section::after{
+  content:'';position:absolute;bottom:-40px;left:-40px;
+  width:150px;height:150px;
+  background:radial-gradient(circle,rgba(255,51,51,.06) 0%,transparent 70%);
+  pointer-events:none;
+}
+.submit-eyebrow{
+  font-family:var(--mono);font-size:.65rem;font-weight:700;
+  color:var(--pu);text-transform:uppercase;letter-spacing:.12em;
+  margin-bottom:14px;display:block;
+}
+.submit-section h2{
+  font-family:var(--mono);font-size:1.5rem;font-weight:800;
+  margin-bottom:12px;letter-spacing:-.02em;
+}
+.submit-section p{
+  color:var(--t2);font-size:.9rem;max-width:480px;
+  margin:0 auto 28px;line-height:1.65;
+}
+.submit-note{
+  font-family:var(--mono);font-size:.68rem;color:var(--t4);
+  margin-top:14px;
+}
+.btn-submit-recipe{
+  display:inline-flex;align-items:center;gap:8px;
+  background:linear-gradient(135deg,var(--r),var(--pu));
+  color:#fff;border:none;font-family:var(--mono);
+  font-size:.82rem;font-weight:700;padding:11px 24px;
+  border-radius:8px;cursor:pointer;transition:.15s;
+  text-decoration:none;letter-spacing:.02em;
+}
+.btn-submit-recipe:hover{opacity:.9;box-shadow:0 0 24px rgba(255,51,51,.25);color:#fff}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--s1);border-top:1px solid var(--b2);
+  padding:60px 0 32px;margin-top:80px;
+}
+.footer-inner{max-width:1260px;margin:0 auto;padding:0 24px}
+.footer-top{display:flex;gap:48px;margin-bottom:40px;flex-wrap:wrap}
+.footer-brand{
+  flex:0 0 200px;
+  font-family:var(--mono);font-weight:800;font-size:1rem;
+  letter-spacing:.08em;color:var(--t);display:flex;align-items:center;gap:6px;
+}
+.footer-brand .mark{color:var(--r)}
+.footer-brand .gg{color:var(--t4);font-size:.65rem;font-weight:500}
+.footer-tagline{
+  font-size:.78rem;color:var(--t4);margin-top:8px;line-height:1.55;
+  max-width:180px;
+}
+.footer-grid{
+  flex:1;display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:32px;
+}
+@media(max-width:800px){.footer-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.footer-grid{grid-template-columns:1fr 1fr};.footer-top{gap:28px}}
+.footer-col h4{
+  font-family:var(--mono);font-size:.65rem;font-weight:700;
+  color:var(--t4);text-transform:uppercase;letter-spacing:.12em;
+  margin-bottom:14px;
+}
+.footer-col a{
+  display:block;font-size:.78rem;color:var(--t4);
+  margin-bottom:8px;transition:.15s;text-decoration:none;
+}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-bottom{
+  border-top:1px solid var(--b2);padding-top:20px;
+  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;
+}
+.footer-copy{font-family:var(--mono);font-size:.65rem;color:var(--t4)}
+.footer-links{display:flex;gap:16px}
+.footer-links a{font-size:.7rem;color:var(--t4);text-decoration:none;transition:.15s}
+.footer-links a:hover{color:var(--t);opacity:1}
+
+/* ── TOAST ── */
+#toast{
+  position:fixed;bottom:24px;right:24px;z-index:600;
+  background:var(--g);color:#000;font-family:var(--mono);
+  font-size:.75rem;font-weight:700;padding:9px 16px;border-radius:8px;
+  transform:translateY(20px);opacity:0;transition:.25s;pointer-events:none;
+}
+#toast.show{transform:translateY(0);opacity:1}
+
+/* ── NO RESULTS ── */
+.no-results{
+  grid-column:1/-1;text-align:center;padding:60px 20px;
+  color:var(--t4);font-family:var(--mono);font-size:.9rem;
+}
+.no-results span{display:block;font-size:2rem;margin-bottom:12px}
+
+/* ── RESPONSIVE NAV ── */
+@media(max-width:900px){
+  .nav-links a:not(.pill-signup):not(.c-green):not(.c-cyan):not(.c-purple){display:none}
+}
+@media(max-width:600px){
+  .nav-links a.c-green,.nav-links a.c-purple{display:none}
+}
+html,body{overflow-x:hidden;max-width:100vw}
+img,video,iframe{max-width:100%}
+pre,code{overflow-x:auto;max-width:100%}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+@media(max-width:640px){
+  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
+  nav{padding:0 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav>
+  <div class="nv">
+    <a href="/" class="logo"><span class="mark">SLOPSHOP</span><span class="gg">.GG</span></a>
+    <div class="nav-links">
+      <a href="/docs">Docs</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/memory-hub" class="c-green">Memory Hub</a>
+      <a href="/dream-studio" class="c-cyan">Dream Studio</a>
+      <a href="/team-hives" class="c-purple">Team Hives</a>
+      <a href="/signup" class="pill-signup">Sign Up</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<div class="page-wrap">
+<div class="page-inner">
+
+  <!-- ── HERO ── -->
+  <div class="hero">
+    <div class="hero-eyebrow">
+      <span class="eyebrow-dot"></span>
+      Dream Engine &rsaquo; Community Recipes
+    </div>
+    <h1>Dream <span class="accent">Recipes</span></h1>
+    <p class="hero-sub">Community-tested memory consolidation presets. One click to configure, one night to transform your agent's intelligence.</p>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar" style="max-width:800px;margin:0 auto 0">
+      <span class="filter-label">Filter:</span>
+      <div class="filter-pills">
+        <button class="fpill active-all" data-filter="All" onclick="setFilter('All',this)">All</button>
+        <button class="fpill" data-filter="Research" onclick="setFilter('Research',this)">Research</button>
+        <button class="fpill" data-filter="Code" onclick="setFilter('Code',this)">Code</button>
+        <button class="fpill" data-filter="Business" onclick="setFilter('Business',this)">Business</button>
+        <button class="fpill" data-filter="Creative" onclick="setFilter('Creative',this)">Creative</button>
+        <button class="fpill" data-filter="Fast" onclick="setFilter('Fast',this)">Fast</button>
+        <button class="fpill" data-filter="Power" onclick="setFilter('Power',this)">Power</button>
+      </div>
+      <div class="filter-sep"></div>
+      <div class="filter-count"><span id="visible-count">14</span> recipes</div>
+    </div>
+
+    <div class="hero-stats">
+      <div class="hero-stat"><div class="hero-stat-val cv">14</div><div class="hero-stat-label">Presets</div></div>
+      <div class="hero-sep"></div>
+      <div class="hero-stat"><div class="hero-stat-val cg">9</div><div class="hero-stat-label">REM Stages</div></div>
+      <div class="hero-sep"></div>
+      <div class="hero-stat"><div class="hero-stat-val cp">50</div><div class="hero-stat-label">Min Credits</div></div>
+      <div class="hero-sep"></div>
+      <div class="hero-stat"><div class="hero-stat-val cy">45</div><div class="hero-stat-label">Max Score</div></div>
+    </div>
+  </div>
+
+  <!-- ── RECIPE GRID ── -->
+  <div class="section-hd">
+    <div class="section-title-label">Community Recipes</div>
+  </div>
+  <div class="recipe-grid" id="recipe-grid">
+    <!-- Cards injected by JS -->
+  </div>
+
+  <!-- ── SUBMIT SECTION ── -->
+  <div class="submit-section">
+    <span class="submit-eyebrow">Community</span>
+    <h2>Built a great Dream Recipe?</h2>
+    <p>Share it with the community. The best recipes get featured in the gallery and earn credits.</p>
+    <a href="/dream-studio" class="btn-submit-recipe">Submit Recipe &rarr;</a>
+    <div class="submit-note">Recipes are reviewed by the Slopshop team before publishing.</div>
+  </div>
+
+</div>
+</div>
+
+<!-- ── MODAL ── -->
+<div id="modal-overlay" role="dialog" aria-modal="true" aria-label="Recipe preview">
+  <div class="modal" id="modal">
+    <div class="modal-accent-bar" id="modal-accent"></div>
+    <div class="modal-header">
+      <div class="modal-title-group">
+        <div class="modal-title" id="modal-title">Recipe</div>
+        <div class="modal-cat-tag" id="modal-cat"></div>
+      </div>
+      <button class="modal-close" onclick="closeModal()" title="Close">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p class="modal-desc" id="modal-desc"></p>
+
+      <div>
+        <div class="modal-section-title">Stages Included</div>
+        <div class="modal-stages" id="modal-stages"></div>
+      </div>
+
+      <div>
+        <div class="modal-section-title">Configuration JSON</div>
+        <div class="modal-json-wrap">
+          <div class="modal-json-header">
+            <span class="modal-json-label">config.json</span>
+            <button class="btn-copy-json" id="copy-json-btn" onclick="copyJSON()">Copy</button>
+          </div>
+          <pre class="modal-json" id="modal-json"></pre>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <a href="#" class="btn-open-studio" id="modal-studio-link">Open in Dream Studio &rarr;</a>
+      <button class="btn-preview" style="border-color:var(--b2)" onclick="closeModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div id="toast">Copied!</div>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <div class="footer-brand"><span class="mark">SLOPSHOP</span><span class="gg">.GG</span></div>
+        <div class="footer-tagline">Living agentic backend OS. Dream Engine + Multiplayer Memory.</div>
+      </div>
+      <div class="footer-grid">
+        <div class="footer-col">
+          <h4>Product</h4>
+          <a href="/memory-hub" style="color:var(--g)">Memory Hub</a>
+          <a href="/dream-studio" style="color:var(--cy)">Dream Studio</a>
+          <a href="/dream-recipes" style="color:var(--r)">Dream Recipes</a>
+          <a href="/dream-reports">Dream Reports</a>
+          <a href="/team-hives" style="color:var(--pu)">Team Hives</a>
+          <a href="/memory-explorer">Memory Explorer</a>
+          <a href="/skills-forge">Skills Forge</a>
+          <a href="/pricing">Pricing</a>
+        </div>
+        <div class="footer-col">
+          <h4>Integrations</h4>
+          <a href="/integrate-claude-code">Claude Code</a>
+          <a href="/integrate-openai">OpenAI</a>
+          <a href="/integrate-langchain">LangChain</a>
+          <a href="/integrate-grok">Grok</a>
+          <a href="/integrate-crewai">CrewAI</a>
+          <a href="/integrate-autogen">AutoGen</a>
+        </div>
+        <div class="footer-col">
+          <h4>Resources</h4>
+          <a href="/docs">Docs</a>
+          <a href="/api-reference">API Reference</a>
+          <a href="/changelog">Changelog</a>
+          <a href="/benchmarks">Benchmarks</a>
+          <a href="/playground">Playground</a>
+          <a href="/examples">Examples</a>
+        </div>
+        <div class="footer-col">
+          <h4>Company</h4>
+          <a href="/about">About</a>
+          <a href="/security">Security</a>
+          <a href="/terms">Terms</a>
+          <a href="/privacy">Privacy</a>
+          <a href="/status">Status</a>
+          <a href="https://github.com/slopshopgg">GitHub</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div class="footer-copy">&copy; 2026 Slopshop Inc. All rights reserved.</div>
+      <div class="footer-links">
+        <a href="/llms.txt">llms.txt</a>
+        <a href="/sitemap.xml">Sitemap</a>
+        <a href="https://x.com/slopshopgg">Twitter / X</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── AUTH HELPERS ─────────────────────────────────────────────────────────
+function getApiKey() {
+  return localStorage.getItem('slopshop_api_key') || localStorage.getItem('slop_api_key') || '';
+}
+
+function renderNoAuthBanner() {
+  if (getApiKey()) return;
+  const existing = document.getElementById('no-auth-banner');
+  if (existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'no-auth-banner';
+  banner.style.cssText = 'background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.25);border-radius:8px;padding:12px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:24px;font-size:0.8rem;color:#ffcc00;font-family:var(--mono)';
+  banner.innerHTML = '<span>No API key detected — Live Launch will not work.</span><a href="/login" style="color:#ffcc00;font-weight:700;text-decoration:underline">Add your API key to unlock live data →</a>';
+  const grid = document.getElementById('recipe-grid');
+  if (grid && grid.parentNode) grid.parentNode.insertBefore(banner, grid);
+}
+
+// ── QUICK LAUNCH ──────────────────────────────────────────────────────────
+async function quickLaunch(recipeId) {
+  const r = RECIPES.find(x => x.id === recipeId);
+  if (!r) return;
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    showToast('No API key set. Visit /login to add your key.');
+    return;
+  }
+  const ns = prompt('Namespace to run dream on:', 'agent:assistant:main');
+  if (!ns) return;
+
+  const isFullCycle = r.config && r.config.strategy === 'full_cycle';
+  const payload = isFullCycle
+    ? { namespace: ns, strategy: 'full_cycle', budget: r.config.budget || 500, adversarial: r.config.adversarial || false }
+    : { namespace: ns, strategies: r.strategies, budget: r.config.budget || 100, adversarial: r.config.adversarial || false };
+
+  const toastEl = document.getElementById('toast');
+  toastEl.textContent = 'Launching dream…';
+  toastEl.classList.add('show');
+
+  try {
+    const res = await fetch('/v1/memory/dream/start', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      toastEl.textContent = `Error: ${data.error || res.statusText}`;
+      setTimeout(() => toastEl.classList.remove('show'), 3000);
+      return;
+    }
+    const dreamId = data.dream_id || data.id || '?';
+    toastEl.textContent = `Dream started! ID: ${dreamId}`;
+    setTimeout(() => toastEl.classList.remove('show'), 3000);
+  } catch (e) {
+    toastEl.textContent = `Launch failed: ${e.message}`;
+    setTimeout(() => toastEl.classList.remove('show'), 3000);
+  }
+}
+
+// ── RECIPE DATA ──────────────────────────────────────────────────────────
+
+const RECIPES = [
+  {
+    id: 'full-rem',
+    name: 'Full REM Cycle',
+    category: 'Power',
+    color: '#a855f7',
+    desc: 'All 9 stages in sequence. Maximum intelligence extraction. Run overnight for transformative results.',
+    strategies: ['synthesize','pattern_extract','insight_generate','validate','evolve','forecast','compress','associate','reflect'],
+    credits: 450,
+    duration: '8-12 min',
+    score: '28-45',
+    badge: 'All 9 Stages',
+    config: { strategy: 'full_cycle', budget: 500, adversarial: false }
+  },
+  {
+    id: 'overnight-researcher',
+    name: 'Overnight Researcher',
+    category: 'Research',
+    color: '#00d4ff',
+    desc: 'Deep synthesis + pattern extraction for research agents. Surfaces non-obvious connections across large memory corpora.',
+    strategies: ['synthesize','pattern_extract','insight_generate','associate'],
+    credits: 200,
+    duration: '3-5 min',
+    score: '15-22',
+    config: { strategy: 'synthesize', budget: 250, adversarial: false }
+  },
+  {
+    id: 'code-archaeologist',
+    name: 'Code Archaeologist',
+    category: 'Code',
+    color: '#00cc66',
+    desc: 'Extract patterns from coding session memories. Identify recurring bugs, solutions, and architectural insights.',
+    strategies: ['pattern_extract','insight_generate','reflect'],
+    credits: 150,
+    duration: '2-4 min',
+    score: '12-18',
+    config: { strategy: 'pattern_extract', budget: 200, adversarial: false }
+  },
+  {
+    id: 'debate-prep',
+    name: 'Adversarial Debate Prep',
+    category: 'Research',
+    color: '#ff3333',
+    desc: 'Adversarial mode enabled. Generates counterfactuals and challenges assumptions in your memory base. Inspired by Deperrois 2022.',
+    strategies: ['insight_generate','validate','evolve'],
+    credits: 180,
+    duration: '3-5 min',
+    score: '14-20',
+    config: { strategy: 'insight_generate', budget: 200, adversarial: true }
+  },
+  {
+    id: 'biz-intelligence',
+    name: 'Business Intelligence Brief',
+    category: 'Business',
+    color: '#ffcc00',
+    desc: 'Synthesize business context and forecast strategic implications. Outputs board-ready insights.',
+    strategies: ['synthesize','forecast','compress'],
+    credits: 160,
+    duration: '2-4 min',
+    score: '10-16',
+    config: { strategy: 'forecast', budget: 200, adversarial: false }
+  },
+  {
+    id: 'learning-accelerator',
+    name: 'Learning Accelerator',
+    category: 'Research',
+    color: '#00d4ff',
+    desc: 'Maximize knowledge retention. Builds associative networks between concepts to accelerate skill acquisition.',
+    strategies: ['insight_generate','associate','reflect'],
+    credits: 140,
+    duration: '2-3 min',
+    score: '11-17',
+    config: { strategy: 'associate', budget: 160, adversarial: false }
+  },
+  {
+    id: 'risk-analyst',
+    name: 'Risk Analyst',
+    category: 'Business',
+    color: '#ff8800',
+    desc: 'Validate memory consistency, identify contradictions, and forecast failure modes. Essential before high-stakes decisions.',
+    strategies: ['validate','forecast','reflect'],
+    credits: 150,
+    duration: '2-4 min',
+    score: '10-15',
+    config: { strategy: 'validate', budget: 180, adversarial: false }
+  },
+  {
+    id: 'creative-catalyst',
+    name: 'Creative Catalyst',
+    category: 'Creative',
+    color: '#a855f7',
+    desc: 'Adversarial insight generation for creative agents. Generates wild, non-obvious connections. High novelty_score outputs.',
+    strategies: ['insight_generate','associate'],
+    credits: 120,
+    duration: '1-3 min',
+    score: '8-14',
+    config: { strategy: 'insight_generate', budget: 150, adversarial: true }
+  },
+  {
+    id: 'memory-compressor',
+    name: 'Memory Compressor',
+    category: 'Fast',
+    color: '#00cc66',
+    desc: 'SHY-protocol compression. Removes redundant memories, distills essentials. Reduces memory namespace size by 40-60%.',
+    strategies: ['compress','associate'],
+    credits: 80,
+    duration: '1-2 min',
+    score: '5-10',
+    config: { strategy: 'compress', budget: 100, adversarial: false }
+  },
+  {
+    id: 'skills-extractor',
+    name: 'Procedural Skills Extractor',
+    category: 'Power',
+    color: '#a855f7',
+    desc: 'Harvest \u201cif X \u2192 do Y\u201d patterns from experience memories. Outputs procedural skills for system prompt injection.',
+    strategies: ['reflect','evolve','forecast'],
+    credits: 200,
+    duration: '3-5 min',
+    score: '14-22',
+    config: { strategy: 'reflect', budget: 250, adversarial: false }
+  },
+  {
+    id: 'knowledge-graph',
+    name: 'Knowledge Graph Builder',
+    category: 'Research',
+    color: '#00d4ff',
+    desc: 'Build dense associative networks between concepts. Pairs with Memory Explorer for visual graph navigation.',
+    strategies: ['associate','pattern_extract'],
+    credits: 100,
+    duration: '1-3 min',
+    score: '7-12',
+    config: { strategy: 'associate', budget: 130, adversarial: false }
+  },
+  {
+    id: 'strategic-forecaster',
+    name: 'Strategic Forecaster',
+    category: 'Business',
+    color: '#ffcc00',
+    desc: 'Evolution + forecasting combo. Adapts memory weights then projects future states. 6-month strategic outlook from past patterns.',
+    strategies: ['evolve','forecast'],
+    credits: 130,
+    duration: '2-4 min',
+    score: '12-19',
+    config: { strategy: 'evolve', budget: 160, adversarial: false }
+  },
+  {
+    id: 'team-sync',
+    name: 'Team Intelligence Sync',
+    category: 'Power',
+    color: '#a855f7',
+    desc: 'Collective Dream preset. Synthesizes cross-agent memories from a shared space. Requires Team Hives setup.',
+    strategies: ['synthesize','pattern_extract','insight_generate'],
+    credits: 250,
+    duration: '4-8 min',
+    score: '18-30',
+    config: { strategy: 'synthesize', budget: 300, adversarial: false, collective: true }
+  },
+  {
+    id: 'speed-synth',
+    name: 'Speed Synthesizer',
+    category: 'Fast',
+    color: '#00cc66',
+    desc: 'Single-pass synthesis. Best bang-for-buck for daily use. Run every morning for fresh insights in under 60 seconds.',
+    strategies: ['synthesize'],
+    credits: 50,
+    duration: '30-60 sec',
+    score: '3-8',
+    config: { strategy: 'synthesize', budget: 60, adversarial: false }
+  }
+];
+
+// ── STRATEGY CONFIG ──────────────────────────────────────────────────────
+
+const STAGE_COLORS = {
+  synthesize:     { color: '#ff3333', bg: 'rgba(255,51,51,.1)' },
+  pattern_extract:{ color: '#00d4ff', bg: 'rgba(0,212,255,.1)' },
+  insight_generate:{ color: '#ffcc00', bg: 'rgba(255,204,0,.1)' },
+  validate:       { color: '#00cc66', bg: 'rgba(0,204,102,.1)' },
+  evolve:         { color: '#a855f7', bg: 'rgba(168,85,247,.1)' },
+  forecast:       { color: '#ff8800', bg: 'rgba(255,136,0,.1)' },
+  compress:       { color: '#666',    bg: 'rgba(102,102,102,.1)' },
+  associate:      { color: '#00d4ff', bg: 'rgba(0,212,255,.1)' },
+  reflect:        { color: '#ff3333', bg: 'rgba(255,51,51,.1)' }
+};
+
+const STAGE_DESCS = {
+  synthesize:      'Distills raw memories into high-level summaries and conceptual maps.',
+  pattern_extract: 'Identifies recurring patterns, motifs, and structural regularities.',
+  insight_generate:'Generates novel insights and hypotheses from memory intersections.',
+  validate:        'Checks memory consistency, surfaces contradictions and gaps.',
+  evolve:          'Re-weights memories based on recency, salience, and relevance.',
+  forecast:        'Projects future states and extrapolates trends from memory data.',
+  compress:        'Removes redundant entries via SHY-protocol. Reduces namespace size.',
+  associate:       'Builds associative graph edges between conceptually linked memories.',
+  reflect:         'Extracts procedural "if X \u2192 do Y" skills for system prompt injection.'
+};
+
+const CAT_COLORS = {
+  Power:    { color: '#a855f7', bg: 'rgba(168,85,247,.15)' },
+  Research: { color: '#00d4ff', bg: 'rgba(0,212,255,.12)' },
+  Code:     { color: '#00cc66', bg: 'rgba(0,204,102,.12)' },
+  Business: { color: '#ffcc00', bg: 'rgba(255,204,0,.12)' },
+  Creative: { color: '#a855f7', bg: 'rgba(168,85,247,.12)' },
+  Fast:     { color: '#00cc66', bg: 'rgba(0,204,102,.12)' }
+};
+
+// ── STATE ────────────────────────────────────────────────────────────────
+let activeFilter = 'All';
+let currentRecipe = null;
+
+// ── RENDER ───────────────────────────────────────────────────────────────
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function renderStagePill(s, small) {
+  const sc = STAGE_COLORS[s] || { color: '#666', bg: 'rgba(102,102,102,.1)' };
+  const sz = small ? '.56rem' : '.62rem';
+  return `<span class="stage-pill" style="color:${sc.color};background:${sc.bg};border-color:${sc.color}30;font-size:${sz}">${esc(s)}</span>`;
+}
+
+function renderCard(r) {
+  const cat = CAT_COLORS[r.category] || { color: '#666', bg: 'rgba(100,100,100,.1)' };
+  const stagePills = r.strategies.map(s => renderStagePill(s, true)).join('');
+  return `
+<div class="recipe-card" data-category="${esc(r.category)}" data-id="${esc(r.id)}"
+  style="border-top-color:${r.color}20">
+  <div class="recipe-card-accent" style="background:${r.color}"></div>
+  <div class="recipe-card-body">
+    <div class="recipe-card-top">
+      <div class="recipe-card-title">${esc(r.name)}</div>
+      <span class="recipe-cat-tag" style="color:${cat.color};background:${cat.bg}">${esc(r.category)}</span>
+    </div>
+    <div class="recipe-desc">${esc(r.desc)}</div>
+    ${r.badge ? `<div style="margin-top:6px"><span style="font-family:var(--mono);font-size:0.62rem;font-weight:700;padding:3px 9px;border-radius:99px;background:rgba(168,85,247,0.15);color:#a855f7;border:1px solid rgba(168,85,247,0.3)">${esc(r.badge)}</span></div>` : ''}
+    <div class="recipe-stages">${stagePills}</div>
+    <div class="recipe-metrics">
+      <div class="metric-item">
+        <div class="metric-val">${esc(String(r.credits))}</div>
+        <div class="metric-label">Credits</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-val">${esc(r.duration)}</div>
+        <div class="metric-label">Duration</div>
+      </div>
+      <div class="metric-item">
+        <div class="metric-val" style="color:var(--g)">${esc(r.score)}</div>
+        <div class="metric-label">Score</div>
+      </div>
+    </div>
+  </div>
+  <div class="recipe-card-footer">
+    <div class="recipe-author">
+      <div class="author-avatar" style="background:linear-gradient(135deg,${r.color},#ff3333)">S</div>
+      <span class="author-name">Slopshop Team</span>
+    </div>
+    <div class="recipe-btns">
+      <button class="btn-preview" onclick="openModal('${esc(r.id)}')">Preview Config</button>
+      <button class="btn-launch" onclick="quickLaunch('${esc(r.id)}')" style="background:${r.color}">Quick Launch &rarr;</button>
+    </div>
+  </div>
+</div>`;
+}
+
+function renderGrid() {
+  const grid = document.getElementById('recipe-grid');
+  const countEl = document.getElementById('visible-count');
+  const filtered = activeFilter === 'All'
+    ? RECIPES
+    : RECIPES.filter(r => r.category === activeFilter);
+
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="no-results"><span>&#x1F52D;</span>No recipes found for this filter.</div>';
+    countEl.textContent = '0';
+    return;
+  }
+
+  grid.innerHTML = filtered.map(renderCard).join('');
+  countEl.textContent = filtered.length;
+}
+
+// ── FILTER ───────────────────────────────────────────────────────────────
+function setFilter(cat, btn) {
+  activeFilter = cat;
+  document.querySelectorAll('.fpill').forEach(b => {
+    b.classList.remove('active', 'active-all');
+  });
+  if (cat === 'All') {
+    btn.classList.add('active-all');
+  } else {
+    btn.classList.add('active');
+  }
+  renderGrid();
+}
+
+// ── MODAL ────────────────────────────────────────────────────────────────
+function openModal(id) {
+  const r = RECIPES.find(x => x.id === id);
+  if (!r) return;
+  currentRecipe = r;
+
+  document.getElementById('modal-accent').style.background = r.color;
+  document.getElementById('modal-title').textContent = r.name;
+
+  const cat = CAT_COLORS[r.category] || { color: '#666', bg: 'rgba(100,100,100,.1)' };
+  const catEl = document.getElementById('modal-cat');
+  catEl.textContent = r.category;
+  catEl.style.color = cat.color;
+  catEl.style.background = cat.bg;
+
+  document.getElementById('modal-desc').textContent = r.desc;
+
+  // Stages breakdown
+  const stagesEl = document.getElementById('modal-stages');
+  stagesEl.innerHTML = r.strategies.map(s => {
+    const sc = STAGE_COLORS[s] || { color: '#666', bg: 'rgba(102,102,102,.1)' };
+    const desc = STAGE_DESCS[s] || '';
+    return `<div class="modal-stage-row">
+      <span class="modal-stage-pill" style="color:${sc.color};background:${sc.bg};border-color:${sc.color}40">${esc(s)}</span>
+      <span class="modal-stage-desc">${esc(desc)}</span>
+    </div>`;
+  }).join('');
+
+  // JSON
+  document.getElementById('modal-json').textContent = JSON.stringify(r.config, null, 2);
+
+  // Copy btn reset
+  const copyBtn = document.getElementById('copy-json-btn');
+  copyBtn.textContent = 'Copy';
+  copyBtn.classList.remove('copied');
+
+  // Studio link
+  document.getElementById('modal-studio-link').href = `/dream-studio#recipe=${id}`;
+
+  // Show
+  const overlay = document.getElementById('modal-overlay');
+  overlay.classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeModal() {
+  document.getElementById('modal-overlay').classList.remove('open');
+  document.body.style.overflow = '';
+  currentRecipe = null;
+}
+
+// Close on overlay click
+document.getElementById('modal-overlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// Close on Escape
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') closeModal();
+});
+
+// ── COPY JSON ────────────────────────────────────────────────────────────
+function copyJSON() {
+  if (!currentRecipe) return;
+  const text = JSON.stringify(currentRecipe.config, null, 2);
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(() => {
+      showCopyFeedback();
+    }).catch(() => fallbackCopy(text));
+  } else {
+    fallbackCopy(text);
+  }
+}
+
+function fallbackCopy(text) {
+  const ta = document.createElement('textarea');
+  ta.value = text;
+  ta.style.position = 'fixed';
+  ta.style.opacity = '0';
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(ta);
+  showCopyFeedback();
+}
+
+function showCopyFeedback() {
+  const btn = document.getElementById('copy-json-btn');
+  btn.textContent = 'Copied!';
+  btn.classList.add('copied');
+  setTimeout(() => {
+    btn.textContent = 'Copy';
+    btn.classList.remove('copied');
+  }, 2000);
+
+  const toast = document.getElementById('toast');
+  toast.textContent = 'Config copied!';
+  toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2200);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+renderGrid();
+renderNoAuthBanner();
+
+// Apply hash-based filter on load if present
+(function() {
+  const hash = window.location.hash.replace('#','');
+  if (hash && hash !== '') {
+    const btn = document.querySelector(`.fpill[data-filter="${CSS.escape(hash)}"]`);
+    if (btn) setFilter(hash, btn);
+    // Also handle ?filter= param
+  }
+  const params = new URLSearchParams(window.location.search);
+  const f = params.get('filter');
+  if (f) {
+    const btn = document.querySelector(`.fpill[data-filter="${CSS.escape(f)}"]`);
+    if (btn) setFilter(f, btn);
+  }
+})();
+</script>
+</body>
+</html>

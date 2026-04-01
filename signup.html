@@ -77,7 +77,20 @@ a{color:var(--r);text-decoration:none;transition:opacity .15s}a:hover{opacity:.8
 .page-footer a:hover{color:var(--t2)}
 .spinner{display:inline-block;width:13px;height:13px;border:2px solid rgba(0,0,0,.25);border-top-color:#000;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px}
 @keyframes spin{to{transform:rotate(360deg)}}
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--t3);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--b2)}
+#googleSignInSection{margin-bottom:4px}
+.google-loading{text-align:center;padding:12px;color:var(--t3);font-size:0.8rem;display:none}
+html,body{overflow-x:hidden;max-width:100vw}
+img,video,iframe{max-width:100%}
+pre,code{overflow-x:auto;max-width:100%}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+@media(max-width:640px){
+  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
+  nav{padding:0 16px}
+}
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
@@ -105,6 +118,26 @@ a{color:var(--r);text-decoration:none;transition:opacity .15s}a:hover{opacity:.8
     <!-- SIGN UP FORM -->
     <div id="signupForm">
       <div class="form-box">
+        <!-- Google Sign-In -->
+        <div id="googleSignInSection">
+          <div id="g_id_onload"
+            data-client_id=""
+            data-callback="handleGoogleCredential"
+            data-auto_select="false"
+            data-context="signin">
+          </div>
+          <div class="g_id_signin"
+            data-type="standard"
+            data-size="large"
+            data-theme="filled_black"
+            data-text="signup_with"
+            data-shape="rectangular"
+            data-logo_alignment="left"
+            data-width="340">
+          </div>
+          <div class="divider"><span>or continue with email</span></div>
+        </div>
+
         <div class="form-group">
           <label class="form-label" for="sEmail">Email</label>
           <input type="email" id="sEmail" class="form-input" placeholder="you@example.com" autocomplete="email" autofocus>
@@ -126,7 +159,7 @@ a{color:var(--r);text-decoration:none;transition:opacity .15s}a:hover{opacity:.8
       <div class="perks">
         <div class="perk"><div class="perk-icon green">✓</div><span><strong style="color:var(--t)">500 free credits</strong> — no card, no expiry</span></div>
         <div class="perk"><div class="perk-icon cyan">∞</div><span><strong style="color:var(--t)">Memory APIs always free</strong> — Dream Engine + shared spaces</span></div>
-        <div class="perk"><div class="perk-icon violet">⚡</div><span><strong style="color:var(--t)">1,400+ tools</strong> — self-hostable, forever yours</span></div>
+        <div class="perk"><div class="perk-icon violet">⚡</div><span><strong style="color:var(--t)">600+ tools</strong> — self-hostable, forever yours</span></div>
       </div>
     </div>
 
@@ -142,6 +175,7 @@ a{color:var(--r);text-decoration:none;transition:opacity .15s}a:hover{opacity:.8
           <label class="form-label" for="lPw">Password</label>
           <input type="password" id="lPw" class="form-input" placeholder="Your password" autocomplete="current-password">
           <div class="form-error" id="lPwErr"></div>
+          <a href="/forgot-password" style="display:block;text-align:right;font-size:0.74rem;color:var(--t3);margin-top:4px">Forgot password?</a>
         </div>
         <div class="form-error" id="lGenErr" style="margin-bottom:12px"></div>
         <button class="btn-primary" id="btnLogin" onclick="doLogin()">Log In →</button>
@@ -284,6 +318,8 @@ function toggleKey() { document.getElementById('keySection').classList.toggle('v
 
 function onSuccess(key, balance) {
   localStorage.setItem('slopshop_api_key', key);
+  localStorage.setItem('slop_api_key', key);
+  localStorage.setItem('slop_mem_key', key);
   document.getElementById('signupForm').style.display = 'none';
   document.getElementById('loginForm').style.display = 'none';
   document.getElementById('keyDisplay').textContent = key;
@@ -315,6 +351,58 @@ document.addEventListener('keydown', e => {
   if (document.getElementById('tabSignup').classList.contains('active')) doSignup();
   else doLogin();
 });
+
+// Load Google Client ID from server and initialize Google Sign-In
+async function initGoogleAuth() {
+  try {
+    const res = await fetch('/v1/auth/providers');
+    const data = await res.json();
+    if (data.google && data.google_client_id) {
+      const onloadEl = document.getElementById('g_id_onload');
+      if (onloadEl) onloadEl.setAttribute('data-client_id', data.google_client_id);
+    } else {
+      // Hide Google section if not configured
+      const gs = document.getElementById('googleSignInSection');
+      if (gs) gs.style.display = 'none';
+    }
+  } catch(e) {
+    const gs = document.getElementById('googleSignInSection');
+    if (gs) gs.style.display = 'none';
+  }
+}
+initGoogleAuth();
+
+async function handleGoogleCredential(response) {
+  const credential = response.credential;
+  try {
+    const res = await fetch('/v1/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      // Store auth data
+      localStorage.setItem('slopshop_api_key', data.api_key);
+      localStorage.setItem('slop_api_key', data.api_key);
+      if (data.token) localStorage.setItem('slopshop_session', data.token);
+      localStorage.setItem('slopshop_email', data.email);
+      // Redirect to dashboard (Google already verified email)
+      const redirect = new URLSearchParams(location.search).get('redirect') || '/dashboard';
+      location.href = redirect;
+    } else {
+      // Show error
+      const errEl = document.querySelector('.form-error') || document.getElementById('sGenErr');
+      if (errEl) {
+        errEl.textContent = data.error?.message || 'Google sign-in failed.';
+        errEl.style.display = 'block';
+        errEl.classList.add('visible');
+      }
+    }
+  } catch(e) {
+    console.error('Google auth failed:', e);
+  }
+}
 </script>
 </body>
 </html>

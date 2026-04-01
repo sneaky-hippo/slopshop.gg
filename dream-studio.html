@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dream Engine Studio — Slopshop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09090b;--s1:#111113;--s2:#18181b;--b:#1e1e22;--b2:#27272a;
+  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+  --r:#06b6d4;--r2:#22d3ee;--rg:rgba(6,182,212,0.06);
+  --o:#a78bfa;--og:rgba(167,139,250,0.08);
+  --g:#34d399;--gg:rgba(52,211,153,0.08);
+  --v:#818cf8;
+  --font-mono:'JetBrains Mono',monospace;
+  --font-sans:'Inter',sans-serif;
+  --nav-h:56px;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--t);font-family:var(--font-sans);font-size:14px;line-height:1.6;min-height:100vh}
+
+/* NAV */
+nav{
+  position:fixed;top:0;left:0;right:0;height:var(--nav-h);z-index:100;
+  background:rgba(9,9,11,0.85);backdrop-filter:blur(16px);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;justify-content:space-between;padding:0 24px;
+}
+.nav-logo{font-family:var(--font-mono);font-weight:600;font-size:15px;color:var(--t);text-decoration:none;display:flex;align-items:center;gap:8px}
+.nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--r);box-shadow:0 0 8px var(--r)}
+.nav-links{display:flex;align-items:center;gap:4px}
+.nav-link{color:var(--t2);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;transition:color .15s,background .15s}
+.nav-link:hover{color:var(--t);background:var(--s2)}
+.nav-btn{background:var(--r);color:#000;font-weight:600;font-size:13px;padding:6px 14px;border-radius:6px;text-decoration:none;transition:background .15s}
+.nav-btn:hover{background:var(--r2)}
+
+/* MAIN */
+main{padding-top:var(--nav-h)}
+
+/* HERO */
+.hero{text-align:center;padding:64px 24px 48px;max-width:720px;margin:0 auto}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:6px;
+  background:var(--rg);border:1px solid rgba(6,182,212,0.2);
+  color:var(--r);font-size:11px;font-family:var(--font-mono);font-weight:500;
+  padding:4px 12px;border-radius:20px;margin-bottom:20px;letter-spacing:.04em;
+}
+.hero h1{font-size:36px;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-bottom:12px}
+.hero h1 span{color:var(--r)}
+.hero p{color:var(--t2);font-size:15px;max-width:480px;margin:0 auto}
+
+/* SECTION */
+.section{padding:0 24px 48px;max-width:1200px;margin:0 auto}
+.section-title{font-size:11px;font-family:var(--font-mono);font-weight:500;letter-spacing:.1em;color:var(--t3);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
+
+/* PIPELINE STEPPER */
+.pipeline-wrap{display:grid;grid-template-columns:1fr 320px;gap:24px;margin-bottom:48px}
+@media(max-width:900px){.pipeline-wrap{grid-template-columns:1fr}}
+.stages-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:600px){.stages-grid{grid-template-columns:repeat(2,1fr)}}
+.stage-card{
+  background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:10px;
+  padding:14px;cursor:pointer;transition:border-color .15s,background .15s,transform .1s;
+  position:relative;overflow:hidden;
+}
+.stage-card:hover{border-color:rgba(6,182,212,0.3);background:var(--s2);transform:translateY(-1px)}
+.stage-card.active{border-color:var(--r);background:var(--rg)}
+.stage-card.active::before{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--r),var(--r2));
+}
+.stage-num{font-family:var(--font-mono);font-size:10px;color:var(--t4);margin-bottom:6px;font-weight:500}
+.stage-icon{font-size:20px;margin-bottom:6px;display:block}
+.stage-name{font-family:var(--font-mono);font-weight:600;font-size:13px;color:var(--t);margin-bottom:4px}
+.stage-desc{font-size:11px;color:var(--t3);line-height:1.4}
+.stage-cost{
+  display:inline-flex;align-items:center;gap:3px;margin-top:8px;
+  background:rgba(167,139,250,0.12);color:var(--o);
+  font-family:var(--font-mono);font-size:10px;font-weight:500;
+  padding:2px 7px;border-radius:4px;
+}
+
+/* STAGE DETAIL PANEL */
+.stage-detail{
+  background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:12px;
+  padding:20px;position:sticky;top:calc(var(--nav-h) + 16px);align-self:start;
+}
+.detail-label{font-size:10px;font-family:var(--font-mono);color:var(--t4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.detail-name{font-size:18px;font-weight:700;color:var(--t);margin-bottom:4px;font-family:var(--font-mono)}
+.detail-desc{font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.5}
+.detail-props{display:grid;gap:10px}
+.detail-prop{background:var(--b);border-radius:8px;padding:10px 12px}
+.detail-prop-label{font-size:10px;color:var(--t4);font-family:var(--font-mono);margin-bottom:3px}
+.detail-prop-val{font-size:12px;color:var(--t2);font-family:var(--font-mono)}
+.detail-flow{display:flex;flex-direction:column;gap:4px;margin-top:14px}
+.flow-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t3);padding:4px 0}
+.flow-item::before{content:'→';color:var(--r);font-family:var(--font-mono);font-size:11px}
+
+/* CONFIG PANEL */
+.config-grid{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start}
+@media(max-width:900px){.config-grid{grid-template-columns:1fr}}
+
+.strategies-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
+@media(max-width:500px){.strategies-grid{grid-template-columns:repeat(2,1fr)}}
+.strategy-card{
+  background:var(--b);border:1px solid rgba(255,255,255,0.06);border-radius:8px;
+  padding:12px;cursor:pointer;transition:border-color .15s,background .15s;
+}
+.strategy-card:hover{border-color:rgba(6,182,212,0.25)}
+.strategy-card.selected{border-color:var(--r);background:var(--rg)}
+.strategy-card input[type=checkbox]{display:none}
+.strat-name{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--t);margin-bottom:2px}
+.strat-desc{font-size:10px;color:var(--t3);line-height:1.3}
+.strat-cost{font-family:var(--font-mono);font-size:10px;color:var(--o);margin-top:6px}
+
+/* FORM CONTROLS */
+.form-group{margin-bottom:16px}
+.form-label{display:block;font-size:11px;font-family:var(--font-mono);color:var(--t3);margin-bottom:6px;font-weight:500}
+.form-input{
+  width:100%;background:var(--b);border:1px solid rgba(255,255,255,0.08);
+  border-radius:7px;padding:9px 12px;font-family:var(--font-mono);font-size:13px;
+  color:var(--t);outline:none;transition:border-color .15s;
+}
+.form-input:focus{border-color:rgba(6,182,212,0.4);box-shadow:0 0 0 3px rgba(6,182,212,0.06)}
+.form-input option{background:var(--b2)}
+.form-select{
+  width:100%;background:var(--b);border:1px solid rgba(255,255,255,0.08);
+  border-radius:7px;padding:9px 12px;font-family:var(--font-mono);font-size:13px;
+  color:var(--t);outline:none;cursor:pointer;transition:border-color .15s;
+  appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2371717a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
+}
+.form-select:focus{border-color:rgba(6,182,212,0.4)}
+.slider-wrap{display:flex;align-items:center;gap:10px}
+input[type=range]{
+  flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
+  background:var(--b2);outline:none;cursor:pointer;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--r);cursor:pointer;border:2px solid var(--bg);
+  box-shadow:0 0 6px rgba(6,182,212,0.4);
+}
+.slider-val{font-family:var(--font-mono);font-size:12px;color:var(--r);min-width:32px;text-align:right}
+
+/* TOGGLE */
+.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.toggle-label{font-size:13px;color:var(--t2)}
+.toggle{position:relative;display:inline-flex;align-items:center;cursor:pointer}
+.toggle input{opacity:0;position:absolute;width:0;height:0}
+.toggle-track{
+  width:36px;height:20px;background:var(--b2);border-radius:10px;
+  transition:background .2s;display:block;position:relative;
+}
+.toggle-track::after{
+  content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;
+  border-radius:50%;background:var(--t4);transition:transform .2s,background .2s;
+}
+.toggle input:checked+.toggle-track{background:rgba(6,182,212,0.3);border:1px solid rgba(6,182,212,0.4)}
+.toggle input:checked+.toggle-track::after{transform:translateX(16px);background:var(--r)}
+
+/* RUN BUTTON */
+.run-btn{
+  width:100%;padding:13px;background:var(--r);color:#000;
+  font-family:var(--font-mono);font-weight:700;font-size:14px;
+  border:none;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s;
+  margin-top:16px;letter-spacing:.02em;
+}
+.run-btn:hover{background:var(--r2);transform:translateY(-1px)}
+.run-btn:active{transform:translateY(0)}
+.run-btn:disabled{background:var(--b2);color:var(--t4);cursor:not-allowed;transform:none}
+
+/* SIDE CONFIG PANEL */
+.config-side{background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;position:sticky;top:calc(var(--nav-h)+16px)}
+.cost-display{
+  background:var(--og);border:1px solid rgba(167,139,250,0.15);border-radius:8px;
+  padding:12px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;
+}
+.cost-label{font-size:11px;color:var(--t3);font-family:var(--font-mono)}
+.cost-val{font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--o)}
+
+/* EXECUTION PANEL */
+.exec-panel{
+  background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:12px;
+  padding:24px;margin-bottom:48px;display:none;
+}
+.exec-panel.visible{display:block}
+.exec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
+.exec-id{font-family:var(--font-mono);font-size:12px;color:var(--t3)}
+.status-badge{
+  font-family:var(--font-mono);font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:20px;
+}
+.status-badge.pending{background:rgba(113,113,122,0.2);color:var(--t3)}
+.status-badge.running{background:rgba(6,182,212,0.15);color:var(--r);animation:pulse-badge 1.5s ease-in-out infinite}
+.status-badge.complete{background:rgba(52,211,153,0.15);color:var(--g)}
+.status-badge.failed{background:rgba(239,68,68,0.15);color:#f87171}
+@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.6}}
+
+/* PROGRESS STAGES */
+.progress-stages{display:flex;gap:0;margin-bottom:24px;overflow-x:auto;padding-bottom:4px}
+.prog-stage{
+  flex:1;min-width:80px;display:flex;flex-direction:column;align-items:center;
+  gap:6px;padding:8px 4px;position:relative;
+}
+.prog-stage:not(:last-child)::after{
+  content:'';position:absolute;top:20px;right:-1px;width:2px;height:16px;
+  background:rgba(255,255,255,0.06);z-index:1;
+}
+.prog-dot{
+  width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,0.1);
+  background:var(--b);display:flex;align-items:center;justify-content:center;
+  font-size:13px;transition:all .3s;
+}
+.prog-dot.done{border-color:var(--g);background:var(--gg)}
+.prog-dot.active{border-color:var(--r);background:var(--rg);animation:pulse-dot 1s ease-in-out infinite}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(6,182,212,0.3)}50%{box-shadow:0 0 0 6px rgba(6,182,212,0)}}
+.prog-label{font-family:var(--font-mono);font-size:9px;color:var(--t4);text-align:center}
+
+/* RESULT */
+.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+.result-stat{background:var(--b);border-radius:8px;padding:14px;text-align:center}
+.result-stat-val{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--r);margin-bottom:4px}
+.result-stat-label{font-size:11px;color:var(--t3)}
+.result-brief{
+  background:var(--b);border:1px solid rgba(255,255,255,0.06);border-radius:8px;
+  padding:14px;margin-top:12px;font-size:13px;color:var(--t2);line-height:1.6;
+  font-family:var(--font-mono);
+}
+
+/* RECIPE GALLERY */
+.recipes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:48px}
+.recipe-card{
+  background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:10px;
+  padding:16px;cursor:pointer;transition:border-color .15s,background .15s,transform .1s;
+}
+.recipe-card:hover{border-color:rgba(6,182,212,0.3);background:var(--s2);transform:translateY(-1px)}
+.recipe-name{font-weight:600;font-size:13px;margin-bottom:4px}
+.recipe-meta{font-size:11px;color:var(--t3);margin-bottom:10px}
+.recipe-tags{display:flex;flex-wrap:wrap;gap:4px}
+.recipe-tag{
+  font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:4px;
+  background:var(--b2);color:var(--t3);
+}
+.recipe-tag.cyan{background:var(--rg);color:var(--r)}
+.recipe-icon{font-size:22px;margin-bottom:8px}
+
+/* SDK CODE GEN */
+.code-panel{background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:12px;overflow:hidden;margin-bottom:48px}
+.code-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,0.06)}
+.code-tab{
+  padding:10px 18px;font-family:var(--font-mono);font-size:12px;font-weight:500;
+  color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
+  background:none;border-top:none;border-left:none;border-right:none;
+}
+.code-tab:hover{color:var(--t2)}
+.code-tab.active{color:var(--r);border-bottom-color:var(--r)}
+.code-copy-btn{
+  margin-left:auto;margin-right:8px;padding:6px 12px;background:var(--b);border:1px solid rgba(255,255,255,0.08);
+  border-radius:5px;color:var(--t3);font-family:var(--font-mono);font-size:11px;cursor:pointer;
+  align-self:center;transition:color .15s,border-color .15s;
+}
+.code-copy-btn:hover{color:var(--t);border-color:rgba(255,255,255,0.15)}
+.code-body{padding:20px;overflow-x:auto}
+pre{font-family:var(--font-mono);font-size:12px;color:var(--t2);line-height:1.7;white-space:pre;tab-size:2}
+.tok-key{color:var(--o)}
+.tok-str{color:var(--g)}
+.tok-num{color:#fb923c}
+.tok-cmt{color:var(--t4)}
+.tok-fn{color:var(--r)}
+.tok-kw{color:var(--v)}
+
+/* AUTH OVERLAY */
+.auth-overlay{
+  position:fixed;inset:0;background:rgba(9,9,11,0.92);backdrop-filter:blur(12px);
+  z-index:200;display:flex;align-items:center;justify-content:center;
+}
+.auth-box{
+  background:var(--s1);border:1px solid rgba(255,255,255,0.08);border-radius:14px;
+  padding:32px;max-width:420px;width:90%;text-align:center;
+}
+.auth-icon{font-size:36px;margin-bottom:12px}
+.auth-title{font-size:20px;font-weight:700;margin-bottom:6px}
+.auth-sub{color:var(--t2);font-size:13px;margin-bottom:24px}
+.auth-input-wrap{display:flex;gap:8px;margin-bottom:12px}
+.auth-key-input{
+  flex:1;background:var(--b);border:1px solid rgba(255,255,255,0.08);
+  border-radius:7px;padding:10px 12px;font-family:var(--font-mono);font-size:13px;
+  color:var(--t);outline:none;
+}
+.auth-key-input:focus{border-color:rgba(6,182,212,0.4)}
+.auth-submit{
+  background:var(--r);color:#000;font-weight:700;font-family:var(--font-mono);
+  font-size:13px;padding:10px 18px;border:none;border-radius:7px;cursor:pointer;white-space:nowrap;
+}
+.auth-note{font-size:11px;color:var(--t4)}
+
+/* UTILITIES */
+.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}
+.hidden{display:none!important}
+.schedule-extra{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05)}
+html,body{overflow-x:hidden;max-width:100vw}
+img,video,iframe{max-width:100%}
+pre,code{overflow-x:auto;max-width:100%}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+@media(max-width:640px){
+  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
+  nav{padding:0 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH OVERLAY -->
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-icon">🔑</div>
+    <div class="auth-title">API Key Required</div>
+    <div class="auth-sub">Enter your Slopshop API key to access Dream Engine Studio</div>
+    <div class="auth-input-wrap">
+      <input class="auth-key-input" id="authInput" type="password" placeholder="slop_sk_...">
+      <button class="auth-submit" onclick="saveApiKey()">Connect</button>
+    </div>
+    <div class="auth-note">Your key is stored locally and never sent to our servers unencrypted</div>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo"><span class="nav-logo-dot"></span>slopshop</a>
+  <div class="nav-links">
+    <a href="/memory-hub" class="nav-link" style="color:var(--g)">Memory Hub</a>
+    <a href="/dream-studio" class="nav-link" style="color:var(--r)">Dream Studio</a>
+    <a href="/dream-recipes" class="nav-link">Dream Recipes</a>
+    <a href="/team-hives" class="nav-link" style="color:var(--o)">Team Hives</a>
+    <a href="/memory-copilot" class="nav-link">Memory Copilot</a>
+    <a href="/dashboard" class="nav-link">Dashboard</a>
+    <a href="/signup" class="nav-btn">Sign Up</a>
+  </div>
+</nav>
+
+<main>
+  <!-- HERO -->
+  <div class="hero">
+    <div class="hero-badge">Neuroscience-grounded · Multi-model · Zero-code</div>
+    <h1>Dream Engine <span>Studio</span></h1>
+    <p>Configure 9-stage REM-cycle memory synthesis for your agents</p>
+  </div>
+
+  <!-- PIPELINE STEPPER -->
+  <div class="section">
+    <div class="section-title">9-Stage REM Pipeline</div>
+    <div class="pipeline-wrap">
+      <div class="stages-grid" id="stagesGrid"></div>
+      <div class="stage-detail" id="stageDetail">
+        <div class="detail-label">Select a stage to inspect</div>
+        <div class="detail-name" id="detailName">—</div>
+        <div class="detail-desc" id="detailDesc">Click any stage card to see its internals, inputs, outputs, and credit cost.</div>
+        <div class="detail-props" id="detailProps"></div>
+        <div class="detail-flow" id="detailFlow"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIG + SIDE PANEL -->
+  <div class="section">
+    <div class="section-title">Dream Configuration</div>
+    <div class="config-grid">
+      <div>
+        <div class="section-title" style="font-size:10px;margin-bottom:10px">Select Strategies (multi-select)</div>
+        <div class="strategies-grid" id="strategiesGrid"></div>
+
+        <div class="form-group">
+          <label class="form-label" for="nsInput">Namespace</label>
+          <input class="form-input" id="nsInput" type="text" placeholder="agent:assistant:main" value="agent:assistant:main">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Memory Budget — <span id="budgetLabel">20 memories</span></label>
+          <div class="slider-wrap">
+            <input type="range" id="budgetSlider" min="10" max="100" value="20" step="5">
+            <span class="slider-val" id="budgetVal">20</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="modelSelect">Model</label>
+          <select class="form-select" id="modelSelect">
+            <option value="auto">auto (recommended)</option>
+            <option value="claude-haiku-4-5">claude-haiku-4-5</option>
+            <option value="claude-sonnet-4-6" selected>claude-sonnet-4-6</option>
+            <option value="gpt-4o-mini">gpt-4o-mini</option>
+          </select>
+        </div>
+
+        <div class="toggle-row">
+          <span class="toggle-label">Dry Run (free preview)</span>
+          <label class="toggle"><input type="checkbox" id="dryRunToggle"><span class="toggle-track"></span></label>
+        </div>
+        <div class="toggle-row">
+          <span class="toggle-label">Schedule (recurring)</span>
+          <label class="toggle"><input type="checkbox" id="scheduleToggle" onchange="toggleSchedule()"><span class="toggle-track"></span></label>
+        </div>
+        <div class="schedule-extra hidden" id="scheduleExtra">
+          <div class="form-group" style="margin-top:12px;margin-bottom:0">
+            <label class="form-label" for="intervalInput">Interval (hours)</label>
+            <input class="form-input" id="intervalInput" type="number" min="1" max="168" value="24" placeholder="24">
+          </div>
+        </div>
+      </div>
+
+      <div class="config-side">
+        <div class="cost-display">
+          <div>
+            <div class="cost-label">Estimated Cost</div>
+            <div style="font-size:10px;color:var(--t4);font-family:var(--font-mono)">based on selected strategies</div>
+          </div>
+          <div class="cost-val" id="totalCost">0 cr</div>
+        </div>
+
+        <div style="margin-bottom:12px">
+          <div class="detail-label" style="margin-bottom:8px">Selected</div>
+          <div id="selectedSummary" style="font-family:var(--font-mono);font-size:11px;color:var(--t3)">No strategies selected</div>
+        </div>
+
+        <div style="margin-bottom:12px">
+          <div class="detail-label" style="margin-bottom:8px">Model</div>
+          <div id="modelSummary" style="font-family:var(--font-mono);font-size:12px;color:var(--r)">claude-sonnet-4-6</div>
+        </div>
+
+        <div>
+          <div class="detail-label" style="margin-bottom:8px">Namespace</div>
+          <div id="nsSummary" style="font-family:var(--font-mono);font-size:12px;color:var(--t2);word-break:break-all">agent:assistant:main</div>
+        </div>
+
+        <button class="run-btn" id="runBtn" onclick="runDream()">Run Dream</button>
+        <div id="runError" style="font-size:11px;color:#f87171;text-align:center;margin-top:8px;font-family:var(--font-mono);display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXECUTION PANEL -->
+  <div class="section">
+    <div class="exec-panel" id="execPanel">
+      <div class="exec-header">
+        <div>
+          <div class="detail-label">Dream Execution</div>
+          <div class="exec-id" id="execId">dream_—</div>
+        </div>
+        <div class="status-badge pending" id="statusBadge">pending</div>
+      </div>
+      <div class="progress-stages" id="progressStages"></div>
+      <div id="execResult" class="hidden">
+        <div class="result-grid">
+          <div class="result-stat"><div class="result-stat-val" id="resInsights">—</div><div class="result-stat-label">Insights</div></div>
+          <div class="result-stat"><div class="result-stat-val" id="resScore">—</div><div class="result-stat-label">Intelligence Score</div></div>
+          <div class="result-stat"><div class="result-stat-val" id="resDuration">—</div><div class="result-stat-label">Duration (s)</div></div>
+        </div>
+        <div class="result-brief" id="resBrief"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECIPE GALLERY -->
+  <div class="section">
+    <div class="section-title">Recipe Gallery</div>
+    <div class="recipes-grid" id="recipesGrid"></div>
+  </div>
+
+  <!-- SDK CODE GEN -->
+  <div class="section">
+    <div class="section-title">SDK Code Generator</div>
+    <div class="code-panel">
+      <div class="code-tabs" id="codeTabs">
+        <button class="code-tab active" data-lang="curl" onclick="switchLang('curl')">cURL</button>
+        <button class="code-tab" data-lang="python" onclick="switchLang('python')">Python</button>
+        <button class="code-tab" data-lang="node" onclick="switchLang('node')">Node.js</button>
+        <button class="code-copy-btn" onclick="copyCode()">Copy</button>
+      </div>
+      <div class="code-body"><pre id="codeOutput"></pre></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const STAGES = [
+  {num:1,icon:'🧭',name:'ORIENT',desc:'Sample memories (recent 60% + random 40%)',input:'namespace, budget',output:'memory_sample[]',timeout:'5s',credits:'~2 cr',flow:['Read recent memories (60%)','Random sample remaining (40%)','Deduplicate & rank by relevance']},
+  {num:2,icon:'📋',name:'GATHER',desc:'Build strategy-specific LLM prompt',input:'memory_sample[], strategy',output:'prompt_context',timeout:'3s',credits:'~1 cr',flow:['Select strategy template','Inject memory excerpts','Attach system instructions']},
+  {num:3,icon:'🧠',name:'CONSOLIDATE',desc:'LLM synthesis (90s timeout)',input:'prompt_context, model',output:'raw_synthesis',timeout:'90s',credits:'varies by model',flow:['Submit to LLM endpoint','Stream response chunks','Enforce 90s hard timeout']},
+  {num:4,icon:'✅',name:'VALIDATE',desc:'Cross-check consistency & accuracy',input:'raw_synthesis',output:'validated_synthesis',timeout:'10s',credits:'~3 cr',flow:['Extract factual claims','Check cross-memory consistency','Flag contradictions']},
+  {num:5,icon:'📈',name:'EVOLVE',desc:'Bayesian belief updating',input:'validated_synthesis, priors',output:'updated_beliefs',timeout:'15s',credits:'~5 cr',flow:['Load prior belief weights','Apply Bayesian update rule','Write posterior estimates']},
+  {num:6,icon:'🔮',name:'FORECAST',desc:'Monte-Carlo probabilistic forecasting',input:'updated_beliefs',output:'forecast_distribution',timeout:'20s',credits:'~8 cr',flow:['Sample N=1000 trajectories','Compute percentile distribution','Attach confidence intervals']},
+  {num:7,icon:'🔍',name:'EXTRACT',desc:'Parse & structure LLM output',input:'raw_synthesis',output:'structured_insights[]',timeout:'5s',credits:'~2 cr',flow:['Parse JSON or markdown blocks','Normalize field schemas','Score each insight']},
+  {num:8,icon:'💾',name:'STORE',desc:'Write dream outputs to namespace:dreams',input:'structured_insights[]',output:'dream_record',timeout:'5s',credits:'~1 cr',flow:['Serialize to memory format','Write to namespace:dreams','Index for retrieval']},
+  {num:9,icon:'🪞',name:'REFLECT',desc:'Metacognitive self-analysis',input:'dream_record',output:'meta_report',timeout:'30s',credits:'~5 cr',flow:['Analyze synthesis quality','Rate insight novelty','Update agent self-model']},
+];
+
+const STRATEGIES = [
+  {id:'synthesize',name:'synthesize',desc:'Consolidate themes & patterns',credits:25},
+  {id:'pattern_extract',name:'pattern_extract',desc:'Find recurring patterns & gaps',credits:20},
+  {id:'insight_generate',name:'insight_generate',desc:'Novel cross-memory connections',credits:30},
+  {id:'compress',name:'compress',desc:'Eliminate redundancy, preserve signal',credits:15},
+  {id:'associate',name:'associate',desc:'Build knowledge graph links',credits:20},
+  {id:'validate',name:'validate',desc:'Check consistency & flag conflicts',credits:20},
+  {id:'evolve',name:'evolve',desc:'Bayesian belief updates',credits:30},
+  {id:'forecast',name:'forecast',desc:'Monte-Carlo probabilistic forecasts',credits:35},
+  {id:'reflect',name:'reflect',desc:'Metacognitive self-analysis',credits:25},
+  {id:'full_cycle',name:'full_cycle',desc:'Full REM Cycle — All 9 Stages in sequence',credits:200,color:'#a855f7'},
+];
+
+const RECIPES = [
+  {icon:'🌙',name:'Overnight Synthesis',meta:'Budget 50 · Scheduled nightly',strategies:['synthesize'],budget:50,model:'claude-sonnet-4-6',schedule:true,interval:8,tags:['synthesize','nightly','budget:50']},
+  {icon:'🕵️',name:'Pattern Hunter',meta:'Budget 30 · On-demand',strategies:['pattern_extract','associate'],budget:30,model:'claude-haiku-4-5',schedule:false,interval:null,tags:['pattern_extract','associate','budget:30']},
+  {icon:'🎲',name:'Bayesian Update',meta:'Budget 20 · Fast cycle',strategies:['evolve','validate'],budget:20,model:'auto',schedule:false,interval:null,tags:['evolve','validate','budget:20']},
+  {icon:'💤',name:'Full REM Cycle',meta:'All 9 strategies · Budget 100',strategies:['synthesize','pattern_extract','insight_generate','compress','associate','validate','evolve','forecast','reflect'],budget:100,model:'claude-sonnet-4-6',schedule:true,interval:24,tags:['all strategies','budget:100','full']},
+];
+
+let selectedStage = null;
+let selectedStrategies = new Set();
+let currentLang = 'curl';
+let pollInterval = null;
+let currentDreamId = null;
+let currentStageIdx = -1;
+
+// --- AUTH ---
+function getApiKey(){
+  return localStorage.getItem('slopshop_api_key') || localStorage.getItem('slop_api_key') || '';
+}
+function saveApiKey(){
+  const v = document.getElementById('authInput').value.trim();
+  if(!v){return;}
+  localStorage.setItem('slopshop_api_key', v);
+  document.getElementById('authOverlay').style.display = 'none';
+  updateCode();
+}
+function checkAuth(){
+  if(getApiKey()){
+    document.getElementById('authOverlay').style.display = 'none';
+  }
+}
+function renderNoAuthBanner(){
+  if(getApiKey()) return;
+  const existing = document.getElementById('no-auth-banner');
+  if(existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'no-auth-banner';
+  banner.style.cssText = 'background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.3);border-radius:10px;padding:12px 18px;margin:0 0 18px 0;display:flex;align-items:center;gap:12px;font-size:14px;color:#ffd700;';
+  banner.innerHTML = '<span style="font-size:18px">⚠</span><span style="flex:1">No API key detected — live dream runs will not work.</span><a href="/login" style="color:#a855f7;font-weight:600;white-space:nowrap;text-decoration:none;">Add your API key to unlock live data →</a>';
+  const configGrid = document.querySelector('.config-grid');
+  if(configGrid && configGrid.parentNode) configGrid.parentNode.insertBefore(banner, configGrid);
+}
+document.getElementById('authInput').addEventListener('keydown', e => { if(e.key === 'Enter') saveApiKey(); });
+
+// --- STAGES ---
+function renderStages(){
+  const grid = document.getElementById('stagesGrid');
+  grid.innerHTML = STAGES.map(s => `
+    <div class="stage-card" data-stage="${s.num}" onclick="selectStage(${s.num})">
+      <div class="stage-num">Stage ${s.num}</div>
+      <span class="stage-icon">${s.icon}</span>
+      <div class="stage-name">${s.name}</div>
+      <div class="stage-desc">${s.desc}</div>
+      <div class="stage-cost">${s.credits}</div>
+    </div>
+  `).join('');
+}
+
+function selectStage(num){
+  document.querySelectorAll('.stage-card').forEach(c => c.classList.remove('active'));
+  document.querySelector(`.stage-card[data-stage="${num}"]`).classList.add('active');
+  const s = STAGES.find(x => x.num === num);
+  document.getElementById('detailName').textContent = `${s.icon} ${s.name}`;
+  document.getElementById('detailDesc').textContent = s.desc;
+  document.getElementById('detailProps').innerHTML = `
+    <div class="detail-prop"><div class="detail-prop-label">Input</div><div class="detail-prop-val">${s.input}</div></div>
+    <div class="detail-prop"><div class="detail-prop-label">Output</div><div class="detail-prop-val">${s.output}</div></div>
+    <div class="detail-prop"><div class="detail-prop-label">Timeout</div><div class="detail-prop-val">${s.timeout}</div></div>
+    <div class="detail-prop"><div class="detail-prop-label">Credits</div><div class="detail-prop-val" style="color:var(--o)">${s.credits}</div></div>
+  `;
+  document.getElementById('detailFlow').innerHTML = `
+    <div class="detail-label" style="margin-top:4px">Execution Flow</div>
+    ${s.flow.map(f => `<div class="flow-item">${f}</div>`).join('')}
+  `;
+}
+
+// --- STRATEGIES ---
+function renderStrategies(){
+  const grid = document.getElementById('strategiesGrid');
+  grid.innerHTML = STRATEGIES.map(s => {
+    const extraStyle = s.color ? `border-color:${s.color}40;` : '';
+    const nameStyle = s.color ? `color:${s.color}` : '';
+    const badge = s.id === 'full_cycle' ? `<span style="font-size:9px;font-family:var(--font-mono);font-weight:700;padding:1px 6px;border-radius:99px;background:rgba(168,85,247,0.15);color:#a855f7;border:1px solid rgba(168,85,247,0.3);margin-left:4px">All 9</span>` : '';
+    return `<div class="strategy-card" id="sc-${s.id}" onclick="toggleStrategy('${s.id}')" style="${extraStyle}">
+      <div class="strat-name" style="${nameStyle}">${s.name}${badge}</div>
+      <div class="strat-desc">${s.desc}</div>
+      <div class="strat-cost">${s.credits} cr</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleStrategy(id){
+  if(selectedStrategies.has(id)){
+    selectedStrategies.delete(id);
+    document.getElementById(`sc-${id}`).classList.remove('selected');
+  } else {
+    selectedStrategies.add(id);
+    document.getElementById(`sc-${id}`).classList.add('selected');
+  }
+  updateSummary();
+  updateCode();
+}
+
+function setStrategies(ids){
+  selectedStrategies.clear();
+  document.querySelectorAll('.strategy-card').forEach(c => c.classList.remove('selected'));
+  ids.forEach(id => {
+    selectedStrategies.add(id);
+    const el = document.getElementById(`sc-${id}`);
+    if(el) el.classList.add('selected');
+  });
+  updateSummary();
+  updateCode();
+}
+
+function updateSummary(){
+  const sel = [...selectedStrategies];
+  const total = sel.reduce((sum,id) => { const s = STRATEGIES.find(x => x.id===id); return sum + (s ? s.credits : 0); }, 0);
+  document.getElementById('totalCost').textContent = total ? `${total} cr` : '0 cr';
+  document.getElementById('selectedSummary').textContent = sel.length ? sel.join(', ') : 'No strategies selected';
+  document.getElementById('modelSummary').textContent = document.getElementById('modelSelect').value;
+  document.getElementById('nsSummary').textContent = document.getElementById('nsInput').value || '—';
+}
+
+// --- SLIDER ---
+document.getElementById('budgetSlider').addEventListener('input', function(){
+  document.getElementById('budgetVal').textContent = this.value;
+  document.getElementById('budgetLabel').textContent = `${this.value} memories`;
+  updateCode();
+});
+
+document.getElementById('modelSelect').addEventListener('change', () => { updateSummary(); updateCode(); });
+document.getElementById('nsInput').addEventListener('input', () => { updateSummary(); updateCode(); });
+
+// --- SCHEDULE TOGGLE ---
+function toggleSchedule(){
+  const on = document.getElementById('scheduleToggle').checked;
+  document.getElementById('scheduleExtra').classList.toggle('hidden', !on);
+  updateCode();
+}
+document.getElementById('intervalInput').addEventListener('input', updateCode);
+document.getElementById('dryRunToggle').addEventListener('change', updateCode);
+
+// --- RECIPES ---
+function renderRecipes(){
+  const grid = document.getElementById('recipesGrid');
+  grid.innerHTML = RECIPES.map(r => `
+    <div class="recipe-card" onclick='applyRecipe(${JSON.stringify(r)})'>
+      <div class="recipe-icon">${r.icon}</div>
+      <div class="recipe-name">${r.name}</div>
+      <div class="recipe-meta">${r.meta}</div>
+      <div class="recipe-tags">${r.tags.map(t => `<span class="recipe-tag${t.includes(':')?' cyan':''}">${t}</span>`).join('')}</div>
+    </div>
+  `).join('');
+}
+
+function applyRecipe(r){
+  setStrategies(r.strategies);
+  document.getElementById('budgetSlider').value = r.budget;
+  document.getElementById('budgetVal').textContent = r.budget;
+  document.getElementById('budgetLabel').textContent = `${r.budget} memories`;
+  document.getElementById('modelSelect').value = r.model;
+  document.getElementById('scheduleToggle').checked = r.schedule;
+  document.getElementById('scheduleExtra').classList.toggle('hidden', !r.schedule);
+  if(r.interval) document.getElementById('intervalInput').value = r.interval;
+  updateSummary();
+  updateCode();
+  document.querySelector('.config-grid').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+// --- RUN DREAM ---
+async function runDream(){
+  const sel = [...selectedStrategies];
+  const errEl = document.getElementById('runError');
+  errEl.style.display = 'none';
+  if(!sel.length){ errEl.textContent = 'Select at least one strategy'; errEl.style.display = 'block'; return; }
+  const ns = document.getElementById('nsInput').value.trim();
+  if(!ns){ errEl.textContent = 'Namespace is required'; errEl.style.display = 'block'; return; }
+  const apiKey = getApiKey();
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.textContent = 'Launching...';
+  const isDry = document.getElementById('dryRunToggle').checked;
+  const isScheduled = document.getElementById('scheduleToggle').checked;
+  const isFullCycle = sel.length === 1 && sel[0] === 'full_cycle';
+  const payload = {
+    namespace: ns,
+    ...(isFullCycle ? { strategy: 'full_cycle' } : { strategies: sel }),
+    budget: parseInt(document.getElementById('budgetSlider').value),
+    model: document.getElementById('modelSelect').value,
+    dry_run: isDry,
+    ...(isScheduled ? { schedule: { interval_hours: parseInt(document.getElementById('intervalInput').value)||24 } } : {})
+  };
+  showExecPanel();
+  const endpoint = isScheduled ? '/v1/memory/dream/schedule' : '/v1/memory/dream/start';
+  try {
+    const res = await fetch(endpoint, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','X-API-Key':apiKey},
+      body:JSON.stringify(payload)
+    });
+    const data = await res.json().catch(() => ({}));
+    const dreamId = data.dream_id || data.id || `dream_${Math.random().toString(36).slice(2,10)}`;
+    currentDreamId = dreamId;
+    document.getElementById('execId').textContent = dreamId;
+    if(!res.ok){
+      setStatus('failed');
+      btn.disabled = false;
+      btn.textContent = 'Run Dream';
+      return;
+    }
+    if(isDry){
+      setStatus('complete');
+      showResult({insights:0,score:'N/A',duration:0,brief:'Dry run complete — no credits consumed. Configuration is valid.'});
+    } else {
+      setStatus('running');
+      startPolling(dreamId);
+    }
+  } catch(e) {
+    // Demo mode for UI preview
+    const dreamId = `dream_${Math.random().toString(36).slice(2,10)}`;
+    currentDreamId = dreamId;
+    document.getElementById('execId').textContent = dreamId;
+    if(isDry){
+      setStatus('complete');
+      showResult({insights:0,score:'N/A',duration:0,brief:'Dry run complete (demo mode) — no API endpoint reachable.'});
+    } else {
+      setStatus('running');
+      simulateProgress();
+    }
+  }
+  btn.disabled = false;
+  btn.textContent = 'Run Dream';
+}
+
+function showExecPanel(){
+  const panel = document.getElementById('execPanel');
+  panel.classList.add('visible');
+  document.getElementById('execResult').classList.add('hidden');
+  currentStageIdx = -1;
+  renderProgressStages();
+  panel.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function renderProgressStages(){
+  const wrap = document.getElementById('progressStages');
+  wrap.innerHTML = STAGES.map((s,i) => `
+    <div class="prog-stage" id="ps-${i}">
+      <div class="prog-dot" id="pd-${i}">${s.icon}</div>
+      <div class="prog-label">${s.name}</div>
+    </div>
+  `).join('');
+}
+
+function setStageProgress(idx){
+  STAGES.forEach((_,i) => {
+    const dot = document.getElementById(`pd-${i}`);
+    if(!dot) return;
+    dot.className = 'prog-dot';
+    if(i < idx) dot.classList.add('done');
+    else if(i === idx) dot.classList.add('active');
+  });
+  currentStageIdx = idx;
+}
+
+function setStatus(s){
+  const el = document.getElementById('statusBadge');
+  el.className = `status-badge ${s}`;
+  el.textContent = s;
+}
+
+function showResult(data){
+  const el = document.getElementById('execResult');
+  el.classList.remove('hidden');
+  document.getElementById('resInsights').textContent = data.insights ?? '—';
+  document.getElementById('resScore').textContent = data.score ?? '—';
+  document.getElementById('resDuration').textContent = data.duration ?? '—';
+  document.getElementById('resBrief').textContent = data.brief || 'Dream synthesis complete.';
+}
+
+async function startPolling(id){
+  let tries = 0;
+  pollInterval = setInterval(async () => {
+    tries++;
+    try {
+      const res = await fetch(`/v1/memory/dream/status/${id}`, {
+        headers:{'X-API-Key':getApiKey()}
+      });
+      const data = await res.json().catch(() => ({}));
+      const stage = data.current_stage ?? Math.min(tries - 1, 8);
+      setStageProgress(stage);
+      if(data.status === 'complete' || stage >= 8){
+        clearInterval(pollInterval);
+        setStageProgress(9);
+        setStatus('complete');
+        showResult({
+          insights: data.insights_count ?? data.insights ?? '—',
+          score: data.intelligence_score ?? data.score ?? '—',
+          duration: data.duration_seconds ?? '—',
+          brief: data.brief ?? data.summary ?? 'Dream synthesis complete.'
+        });
+      } else if(data.status === 'failed'){
+        clearInterval(pollInterval);
+        setStatus('failed');
+      }
+    } catch(e){ }
+  }, 3000);
+}
+
+function simulateProgress(){
+  let stage = 0;
+  const tick = () => {
+    setStageProgress(stage);
+    stage++;
+    if(stage < 9){ setTimeout(tick, 900 + Math.random()*600); }
+    else {
+      setStageProgress(9);
+      setStatus('complete');
+      showResult({
+        insights: Math.floor(8+Math.random()*12),
+        score: (0.7+Math.random()*0.25).toFixed(2),
+        duration: Math.floor(12+Math.random()*20),
+        brief: 'Dream synthesis complete (demo). ' + [...selectedStrategies].length + ' strateg' + (selectedStrategies.size===1?'y':'ies') + ' applied to ' + document.getElementById('nsInput').value + '.'
+      });
+    }
+  };
+  setTimeout(tick, 600);
+}
+
+// --- CODE GEN ---
+function switchLang(lang){
+  currentLang = lang;
+  document.querySelectorAll('.code-tab').forEach(t => t.classList.toggle('active', t.dataset.lang===lang));
+  updateCode();
+}
+
+function copyCode(){
+  const text = document.getElementById('codeOutput').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.querySelector('.code-copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 1500);
+  });
+}
+
+function buildPayload(){
+  const sel = [...selectedStrategies];
+  const ns = document.getElementById('nsInput').value || 'agent:assistant:main';
+  const budget = parseInt(document.getElementById('budgetSlider').value);
+  const model = document.getElementById('modelSelect').value;
+  const dry = document.getElementById('dryRunToggle').checked;
+  const sched = document.getElementById('scheduleToggle').checked;
+  const interval = parseInt(document.getElementById('intervalInput').value)||24;
+  return {sel,ns,budget,model,dry,sched,interval};
+}
+
+function h(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+
+function updateCode(){
+  const {sel,ns,budget,model,dry,sched,interval} = buildPayload();
+  const endpoint = sched ? '/v1/memory/dream/schedule' : '/v1/memory/dream/start';
+  const apiKeyPlaceholder = 'YOUR_API_KEY';
+  let out = '';
+  if(currentLang==='curl'){
+    const body = JSON.stringify({
+      namespace: ns,
+      strategies: sel,
+      budget,
+      model,
+      dry_run: dry,
+      ...(sched?{schedule:{interval_hours:interval}}:{})
+    }, null, 2);
+    out = `<span class="tok-fn">curl</span> -X POST \\
+  <span class="tok-str">https://api.slopshop.gg${h(endpoint)}</span> \\
+  -H <span class="tok-str">"Authorization: Bearer ${apiKeyPlaceholder}"</span> \\
+  -H <span class="tok-str">"Content-Type: application/json"</span> \\
+  -d <span class="tok-str">'${h(body)}'</span>`;
+    if(!dry){
+      out += `\n\n<span class="tok-cmt"># Poll status</span>\n<span class="tok-fn">curl</span> -X GET \\
+  <span class="tok-str">https://api.slopshop.gg/v1/memory/dream/status/{dream_id}</span> \\
+  -H <span class="tok-str">"Authorization: Bearer ${apiKeyPlaceholder}"</span>`;
+    }
+  } else if(currentLang==='python'){
+    const stratsStr = sel.map(s=>`"${s}"`).join(', ');
+    out = `<span class="tok-kw">import</span> requests
+
+<span class="tok-kw">API_KEY</span> = <span class="tok-str">"${apiKeyPlaceholder}"</span>
+<span class="tok-kw">BASE</span>   = <span class="tok-str">"https://api.slopshop.gg"</span>
+headers = {<span class="tok-str">"Authorization"</span>: <span class="tok-fn">f</span><span class="tok-str">"Bearer {API_KEY}"</span>, <span class="tok-str">"Content-Type"</span>: <span class="tok-str">"application/json"</span>}
+
+payload = {
+    <span class="tok-str">"namespace"</span>:   <span class="tok-str">"${h(ns)}"</span>,
+    <span class="tok-str">"strategies"</span>:  [${stratsStr}],
+    <span class="tok-str">"budget"</span>:      <span class="tok-num">${budget}</span>,
+    <span class="tok-str">"model"</span>:       <span class="tok-str">"${model}"</span>,
+    <span class="tok-str">"dry_run"</span>:     <span class="tok-kw">${dry?'True':'False'}</span>,${sched?`\n    <span class="tok-str">"schedule"</span>:    {<span class="tok-str">"interval_hours"</span>: <span class="tok-num">${interval}</span>},`:''}
+}
+
+res  = requests.<span class="tok-fn">post</span>(<span class="tok-fn">f</span><span class="tok-str">"{BASE}${h(endpoint)}"</span>, json=payload, headers=headers)
+data = res.<span class="tok-fn">json</span>()
+print(<span class="tok-str">f"Dream ID: {data['dream_id']}"</span>)
+${!dry?`
+<span class="tok-kw">import</span> time
+
+<span class="tok-kw">while</span> <span class="tok-kw">True</span>:
+    s = requests.<span class="tok-fn">get</span>(<span class="tok-fn">f</span><span class="tok-str">"{BASE}/v1/memory/dream/status/{data['dream_id']}"</span>, headers=headers).<span class="tok-fn">json</span>()
+    print(<span class="tok-str">f"Status: {s['status']} | Stage: {s.get('current_stage', '?')}"</span>)
+    <span class="tok-kw">if</span> s[<span class="tok-str">'status'</span>] <span class="tok-kw">in</span> (<span class="tok-str">'complete'</span>, <span class="tok-str">'failed'</span>):
+        <span class="tok-kw">break</span>
+    time.<span class="tok-fn">sleep</span>(<span class="tok-num">3</span>)`:''}`;
+  } else {
+    const stratsStr = JSON.stringify(sel);
+    out = `<span class="tok-kw">const</span> <span class="tok-fn">slopshop</span> = <span class="tok-fn">require</span>(<span class="tok-str">"@slopshop/sdk"</span>); <span class="tok-cmt">// npm i @slopshop/sdk</span>
+
+<span class="tok-kw">const</span> client = <span class="tok-kw">new</span> <span class="tok-fn">slopshop</span>.<span class="tok-fn">Client</span>({ apiKey: <span class="tok-str">"${apiKeyPlaceholder}"</span> });
+
+<span class="tok-kw">async function</span> <span class="tok-fn">main</span>() {
+  <span class="tok-kw">const</span> dream = <span class="tok-kw">await</span> client.memory.dream.<span class="tok-fn">start</span>({
+    namespace:  <span class="tok-str">"${h(ns)}"</span>,
+    strategies: <span class="tok-num">${h(stratsStr)}</span>,
+    budget:     <span class="tok-num">${budget}</span>,
+    model:      <span class="tok-str">"${model}"</span>,
+    dry_run:    <span class="tok-kw">${dry}</span>,${sched?`\n    schedule:   { interval_hours: <span class="tok-num">${interval}</span> },`:''}
+  });
+
+  console.<span class="tok-fn">log</span>(<span class="tok-str">\`Dream started: \${dream.dream_id}\`</span>);
+${!dry?`
+  <span class="tok-cmt">// Poll until complete</span>
+  <span class="tok-kw">const</span> result = <span class="tok-kw">await</span> dream.<span class="tok-fn">waitForCompletion</span>({ pollInterval: <span class="tok-num">3000</span> });
+  console.<span class="tok-fn">log</span>(<span class="tok-str">\`Insights: \${result.insights_count}, Score: \${result.intelligence_score}\`</span>);`:''}
+}
+
+<span class="tok-fn">main</span>().<span class="tok-fn">catch</span>(console.error);`;
+  }
+  document.getElementById('codeOutput').innerHTML = out;
+}
+
+// --- INIT ---
+function init(){
+  checkAuth();
+  renderNoAuthBanner();
+  renderStages();
+  renderStrategies();
+  renderRecipes();
+  selectStage(1);
+  updateSummary();
+  updateCode();
+}
+
+init();
+</script>
+</body>
+</html>

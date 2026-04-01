@@ -10,14 +10,14 @@
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://slopshop.gg/docs">
 <meta property="og:title" content="API Documentation | Slopshop">
-<meta property="og:description" content="Complete API reference for Slopshop tools across 82 categories and 1,421+ endpoints. Quickstart, SDK, CLI, pipes, and MCP setup.">
+<meta property="og:description" content="Complete API reference for Slopshop tools across 82 categories and 600+ endpoints. Quickstart, SDK, CLI, pipes, and MCP setup.">
 <meta property="og:image" content="https://slopshop.gg/og.png">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@slopshopgg">
 <meta name="twitter:title" content="API Documentation | Slopshop">
-<meta name="twitter:description" content="Complete API reference for Slopshop tools across 82 categories and 1,421+ endpoints. Guides, SDK, CLI, MCP.">
+<meta name="twitter:description" content="Complete API reference for Slopshop tools across 82 categories and 600+ endpoints. Guides, SDK, CLI, MCP.">
 <meta name="twitter:image" content="https://slopshop.gg/og.png">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for Slopshop tools across 82 categories and 1,421+ endpoints.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"TechArticle","name":"Slopshop API Documentation","url":"https://slopshop.gg/docs","description":"Complete API reference for Slopshop tools across 82 categories and 600+ endpoints.","author":{"@type":"Organization","name":"Slopshop","url":"https://slopshop.gg"}}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <style>
 @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
@@ -154,6 +154,14 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
 .scroll-top{position:fixed;bottom:24px;right:24px;width:40px;height:40px;background:var(--r);color:#fff;border:none;border-radius:8px;cursor:pointer;font-size:1rem;display:none;align-items:center;justify-content:center;z-index:50;transition:.15s;box-shadow:0 4px 12px rgba(0,0,0,0.4)}
 .scroll-top:hover{background:#dc2626}
 .scroll-top.show{display:flex}
+html,body{overflow-x:hidden;max-width:100vw}
+img,video,iframe{max-width:100%}
+pre,code{overflow-x:auto;max-width:100%}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+@media(max-width:640px){
+  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
+  nav{padding:0 16px}
+}
 </style>
 </head>
 <body>
@@ -173,7 +181,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a href="/security">Security</a>
       <a href="/about">About</a>
       <a href="/signup" style="background:var(--r);color:#fff;padding:4px 12px;border-radius:6px;font-weight:600;font-size:0.7rem">Sign Up Free</a>
-      <span class="pill">1,421+ endpoints &middot; 82 categories</span>
+      <span class="pill">600+ endpoints &middot; 82 categories</span>
     </div>
   </div>
 </div>
@@ -222,7 +230,11 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
       <a class="sb-link" href="#memory-collaborator">Multiplayer Memory</a>
       <a class="sb-link" href="#memory-compression">Memory Compression</a>
       <a class="sb-link" href="#dream-tiers">Dream Tiers</a>
-      <a class="sb-link" href="#dream-engine">Dream Engine ✨</a>
+      <a class="sb-link" href="#dream-engine">Dream Engine v5.1 ✨</a>
+      <a class="sb-link" href="#dream-report">Intelligence Score &amp; Reports</a>
+      <a class="sb-link" href="#tmr">TMR — Targeted Memory Reactivation</a>
+      <a class="sb-link" href="#collective-dream">Collective Dream</a>
+      <a class="sb-link" href="#procedural-skills">Procedural Skills</a>
       <a class="sb-link" href="#snapshot-branching">Snapshot Branching v5</a>
       <a class="sb-link" href="#bayesian-memory">Bayesian Memory v5</a>
       <a class="sb-link" href="#episodic-chains">Episodic Chains v5</a>
@@ -277,7 +289,7 @@ a{color:var(--r);text-decoration:none}a:hover{text-decoration:underline}
     <!-- GETTING STARTED -->
     <h1 id="getting-started">Getting Started</h1>
     <p>
-      Slopshop is the Self-Hostable MCP Agent Runtime OS for the Computer-Use Era — 1,421+ real tools across 82 categories. <strong>Dream Engine</strong> (REM-style memory consolidation, 5 strategies, schedule-based, restart-persistent) and <strong>Multiplayer Memory</strong> (shared spaces, collaborator invites, retention tiers) are the north-star features. Free evolving persistent memory (GraphRAG + episodic), zero-trust agent identity (NIST-aligned SPIFFE/SVID), computer use backend, MCP gateway + policy engine, visual DAG workflow builder, marketplace, and Army-scale orchestration. Every response includes <code>_engine: "real"</code>. Self-hostable, air-gapped, designed for production agents.
+      Slopshop is the Self-Hostable MCP Agent Runtime OS for the Computer-Use Era — 600+ real tools across 82 categories. <strong>Dream Engine</strong> (REM-style memory consolidation, 5 strategies, schedule-based, restart-persistent) and <strong>Multiplayer Memory</strong> (shared spaces, collaborator invites, retention tiers) are the north-star features. Free evolving persistent memory (GraphRAG + episodic), zero-trust agent identity (NIST-aligned SPIFFE/SVID), computer use backend, MCP gateway + policy engine, visual DAG workflow builder, marketplace, and Army-scale orchestration. Every response includes <code>_engine: "real"</code>. Self-hostable, air-gapped, designed for production agents.
     </p>
 
     <h3>Quick Install</h3>
@@ -329,7 +341,7 @@ slop memory get mykey</code></pre></div>
     <ul>
       <li><strong>The computation actually ran</strong> — your input was processed by real Node.js code, not proxied to an LLM or returned from a template</li>
       <li><strong>Deterministic outputs</strong> — the same input always produces the same output for compute-tier APIs</li>
-      <li><strong>Sub-millisecond execution</strong> — 1,421+ compute handlers benchmarked at &lt;1ms average</li>
+      <li><strong>Sub-millisecond execution</strong> — 600+ compute handlers benchmarked at &lt;1ms average</li>
     </ul>
 
     <h3>What "execution proof" means today</h3>
@@ -541,7 +553,7 @@ POST /v1/memory-get  {"key":"chain_results"}</code></pre></div>
 
     <!-- API REFERENCE -->
     <h2 id="api-reference">API Reference</h2>
-    <p>All 82 categories and 1,421+ endpoints documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
+    <p>All 82 categories and 600+ endpoints documented below. Each API accepts a POST request with a JSON body and returns JSON. The base URL is <code>https://slopshop.gg/v1/{slug}</code>.</p>
 
     <h3>Machine-Readable Specs</h3>
     <table class="doc-table">
@@ -1833,35 +1845,53 @@ curl -X POST https://slopshop.gg/v1/memory-get \
   -H "Content-Type: application/json" \
   -d '{"namespace": "my-research", "tier": "advanced"}'</code></pre></div>
 
-    <!-- DREAM ENGINE v4.0 -->
-    <h2 id="dream-engine">Dream Engine ✨ <span class="badge badge-compute">v4.0</span></h2>
-    <p>The Dream Engine is Slopshop's REM-style memory consolidation system. It runs in the background, synthesizing, compressing, and evolving your agent's memory on a schedule — like a brain consolidating the day's learning overnight. Schedules are persisted to a <code>dream_schedules</code> SQLite table and survive server restarts.</p>
+    <!-- DREAM ENGINE v5.1 -->
+    <h2 id="dream-engine">Dream Engine v5.1 ✨ <span class="badge badge-compute">v5.1</span></h2>
+    <p>The Dream Engine is Slopshop's REM-cycle memory consolidation system. It runs in the background, synthesizing, compressing, and evolving your agent's memory on a schedule — like a brain consolidating the day's learning overnight. Schedules are persisted to a <code>dream_schedules</code> SQLite table and survive server restarts. v5.1 adds four new strategies (validate, evolve, forecast, reflect), two new start parameters (adversarial mode and salience threshold), a full Intelligence Score report endpoint, and Collective Dream across shared memory spaces.</p>
 
-    <h3>9 Consolidation Strategies</h3>
+    <div style="background:rgba(139,92,246,0.08);border:1px solid rgba(139,92,246,0.25);border-left:3px solid #8b5cf6;border-radius:8px;padding:14px 18px;margin:16px 0 20px">
+      <p style="margin:0 0 6px;font-family:var(--mono);font-size:0.78rem;font-weight:700;color:#8b5cf6">Neuroscience Grounding</p>
+      <p style="margin:0;font-size:0.83rem;color:var(--t2)">Each Dream Engine stage maps to peer-reviewed neuroscience: <strong>synthesize</strong> mirrors slow-wave sleep memory replay; <strong>pattern_extract</strong> mirrors hippocampal theta rhythms; <strong>insight_generate</strong> mirrors REM dreaming and cross-domain binding; <strong>compress</strong> mirrors synaptic downscaling; <strong>associate</strong> mirrors neocortical consolidation; <strong>validate</strong> mirrors prefrontal error detection; <strong>evolve</strong> mirrors Bayesian neural belief revision; <strong>forecast</strong> mirrors prospective memory simulation; <strong>reflect</strong> mirrors metacognitive default-mode activity. Full references at <a href="/dream">/dream</a>.</p>
+    </div>
+
+    <h3>All 9 Consolidation Strategies</h3>
     <table class="doc-table">
-      <tr><th>Strategy</th><th>What It Does</th><th>Credits</th></tr>
-      <tr><td><code>synthesize</code></td><td>Merges related memories into unified summaries, reducing redundancy</td><td>25</td></tr>
-      <tr><td><code>pattern_extract</code></td><td>Identifies recurring patterns and themes across memory entries</td><td>20</td></tr>
-      <tr><td><code>insight_generate</code></td><td>Derives higher-order insights and connections from raw memory</td><td>30</td></tr>
-      <tr><td><code>compress</code></td><td>Applies zlib compression to bulky values; auto-decompresses on read</td><td>15</td></tr>
-      <tr><td><code>associate</code></td><td>Builds associative links between semantically related memories</td><td>20</td></tr>
-      <tr><td><code>validate</code> <span class="badge badge-compute">v5</span></td><td>Checks memories for consistency, contradictions, and outdated beliefs</td><td>20</td></tr>
-      <tr><td><code>evolve</code> <span class="badge badge-compute">v5</span></td><td>Bayesian belief update — strengthens, weakens, or revises beliefs based on evidence</td><td>30</td></tr>
-      <tr><td><code>forecast</code> <span class="badge badge-compute">v5</span></td><td>Monte Carlo probabilistic forecasting from memory patterns with confidence intervals</td><td>35</td></tr>
-      <tr><td><code>reflect</code> <span class="badge badge-compute">v5</span></td><td>Metacognitive self-analysis of knowledge quality, growth, blind spots, and next steps</td><td>25</td></tr>
+      <tr><th>Strategy</th><th>What It Does</th><th>Credits</th><th>Key Output</th></tr>
+      <tr><td><code>synthesize</code></td><td>Theme consolidation — merges semantically related memories into unified summaries, eliminates redundancy, surfaces cross-entry threads</td><td>25</td><td>Merged summaries, theme clusters</td></tr>
+      <tr><td><code>pattern_extract</code></td><td>Recurring pattern mining — identifies patterns, contradictions, and knowledge gaps across the full memory namespace</td><td>20</td><td>Pattern list, contradiction map, gap report</td></tr>
+      <tr><td><code>insight_generate</code></td><td>Novel cross-domain connection synthesis — derives higher-order insights from raw memory; enable <code>adversarial: true</code> for counterfactual generation that challenges stored assumptions</td><td>30</td><td>Insight list, adversarial challenges (if enabled)</td></tr>
+      <tr><td><code>compress</code></td><td>Redundancy elimination — applies zlib compression to bulky values, preserving signal while reducing storage; auto-decompresses on every read</td><td>15</td><td>Compressed entries, bytes saved</td></tr>
+      <tr><td><code>associate</code></td><td>GraphRAG knowledge graph linking — builds weighted associative edges between semantically related memories; results queryable via the graph API</td><td>20</td><td>Edge list, updated graph node count</td></tr>
+      <tr><td><code>validate</code> <span class="badge badge-compute">v5.1</span></td><td>Consistency checking and contradiction detection — scans memory for logical conflicts, stale beliefs, and internal contradictions; flags entries that need reconciliation</td><td>20</td><td>Contradiction pairs, stale keys, consistency score</td></tr>
+      <tr><td><code>evolve</code> <span class="badge badge-compute">v5.1</span></td><td>Bayesian belief updating — strengthens, weakens, or revises beliefs based on accumulated evidence; confidence scores are recalibrated on each run</td><td>30</td><td>Updated posteriors, revised belief map</td></tr>
+      <tr><td><code>forecast</code> <span class="badge badge-compute">v5.1</span></td><td>Monte Carlo probabilistic forecasting — projects future states and outcomes from observed memory patterns; returns confidence intervals and probability distributions</td><td>35</td><td>Forecasts, confidence intervals, scenario tree</td></tr>
+      <tr><td><code>reflect</code> <span class="badge badge-compute">v5.1</span></td><td>Metacognitive self-analysis — examines knowledge quality, growth trajectory, blind spots, and next learning steps; also extracts reusable procedural skill definitions from episodic chains</td><td>25</td><td>Meta-report, extracted procedural skills</td></tr>
     </table>
 
     <h3>Start a Dream Run (One-Shot)</h3>
-    <p>Trigger an immediate consolidation pass on a namespace. Returns a run ID for status polling.</p>
+    <p>Trigger an immediate consolidation pass on a namespace. Returns a run ID for status polling. v5.1 adds <code>adversarial</code> and <code>salience_threshold</code> parameters.</p>
     <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/dream/start \
   -H "Authorization: Bearer $KEY" \
   -H "Content-Type: application/json" \
   -d '{
     "namespace": "my-agent",
-    "strategy": "synthesize"
+    "strategy": "insight_generate",
+    "adversarial": true,
+    "salience_threshold": 0.4
   }'
 
-# Returns: {"run_id": "dream_run_abc123", "status": "started", "strategy": "synthesize"}</code></pre></div>
+# Returns: {"run_id": "dream_run_abc123", "status": "started", "strategy": "insight_generate"}</code></pre></div>
+
+    <h3>POST /v1/memory/dream/start — Full Parameter Reference</h3>
+    <table class="doc-table">
+      <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+      <tr><td><code>namespace</code></td><td>string</td><td>Yes</td><td>Memory namespace to consolidate</td></tr>
+      <tr><td><code>strategy</code></td><td>string</td><td>Yes</td><td>One of the 9 strategies above</td></tr>
+      <tr><td><code>adversarial</code></td><td>boolean</td><td>No</td><td>Enable counterfactual generation in <code>insight_generate</code> — produces challenges that stress-test stored assumptions. Default: <code>false</code></td></tr>
+      <tr><td><code>salience_threshold</code></td><td>float 0–1</td><td>No</td><td>Minimum salience score for a memory entry to be included in the consolidation pass. Lower values include more entries; higher values focus on high-signal memories only. Default: <code>0.0</code> (all entries)</td></tr>
+      <tr><td><code>model</code></td><td>string</td><td>No</td><td>Override the LLM used for this run (claude, grok, deepseek). Defaults to account model preference.</td></tr>
+      <tr><td><code>budget</code></td><td>integer</td><td>No</td><td>Hard credit cap for this run. Dream stops early if the cap is reached.</td></tr>
+    </table>
 
     <h3>Check Dream Status</h3>
     <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>GET /v1/memory/dream/status/:run_id
@@ -1878,12 +1908,14 @@ Authorization: Bearer $KEY
     "namespace": "my-agent",
     "cron": "0 2 * * *",
     "strategy": "insight_generate",
+    "adversarial": true,
+    "salience_threshold": 0.3,
     "active": true
   }'
 
 # cron field accepts standard 5-part cron expressions
 # active: true/false — pause/resume without deleting
-# Returns: {"schedule_id": "sched_xyz", "next_run": "2026-04-01T02:00:00Z"}</code></pre></div>
+# Returns: {"schedule_id": "sched_xyz", "next_run": "2026-04-02T02:00:00Z"}</code></pre></div>
 
     <h3>Manage Schedules</h3>
     <div class="code-block"><div class="code-header"><span>Endpoints</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>GET    /v1/memory/dream/schedules          — List all schedules for your key
@@ -1899,6 +1931,201 @@ POST   /v1/dream/run             — Trigger immediate topic research
 POST   /v1/dream/deploy          — Deploy insight into agent memory
 POST   /v1/dream/dismiss         — Dismiss insight
 GET    /v1/dream/subscriptions   — List subscriptions</code></pre></div>
+
+    <!-- INTELLIGENCE SCORE & DREAM REPORTS -->
+    <h2 id="dream-report">Intelligence Score &amp; Dream Reports <span class="badge badge-compute">v5.1</span></h2>
+    <p>After a dream run completes, retrieve a full Intelligence Brief: insights count, strategy depth score, procedural skills extracted, duration, and the two composite KPI metrics — <strong>Intelligence Score</strong> and <strong>Dream Efficiency Score</strong>.</p>
+
+    <div style="background:rgba(6,182,212,0.08);border:1px solid rgba(6,182,212,0.25);border-left:3px solid #06b6d4;border-radius:8px;padding:14px 18px;margin:16px 0 20px">
+      <p style="margin:0 0 8px;font-family:var(--mono);font-size:0.78rem;font-weight:700;color:#06b6d4">Intelligence Score — Formula</p>
+      <p style="margin:0 0 6px;font-family:var(--mono);font-size:0.82rem;color:var(--t)">Intelligence Score = (insights × strategy_depth × 10) / duration_sec</p>
+      <p style="margin:0 0 6px;font-family:var(--mono);font-size:0.82rem;color:var(--t)">Dream Efficiency Score = (insights × depth × 10 + skills × 15) / duration_sec</p>
+      <p style="margin:0;font-size:0.82rem;color:var(--t2)">Both scores are capped at 100. Higher is better. A score of 80+ in under 60 seconds is considered excellent. View all historical sessions at <a href="/dream-reports">/dream-reports</a>.</p>
+    </div>
+
+    <h3>Strategy Depth Multipliers</h3>
+    <table class="doc-table">
+      <tr><th>Strategy</th><th>Depth Multiplier</th><th>Rationale</th></tr>
+      <tr><td><code>synthesize</code></td><td>1.0</td><td>Single-pass merge — baseline depth</td></tr>
+      <tr><td><code>pattern_extract</code></td><td>1.2</td><td>Multi-pass scan across all entries</td></tr>
+      <tr><td><code>compress</code></td><td>0.5</td><td>Structural, not semantic — lower depth</td></tr>
+      <tr><td><code>associate</code></td><td>1.3</td><td>Graph construction requires cross-entry linking</td></tr>
+      <tr><td><code>insight_generate</code></td><td>1.5</td><td>Higher-order reasoning, cross-domain binding</td></tr>
+      <tr><td><code>validate</code></td><td>1.2</td><td>Contradiction detection across namespace</td></tr>
+      <tr><td><code>evolve</code></td><td>1.5</td><td>Bayesian update requires prior + likelihood computation</td></tr>
+      <tr><td><code>forecast</code></td><td>2.0</td><td>Monte Carlo simulation — highest compute depth</td></tr>
+      <tr><td><code>reflect</code></td><td>1.8</td><td>Metacognitive analysis + skill extraction</td></tr>
+    </table>
+
+    <h3>Example Calculation</h3>
+    <div style="background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:14px 18px;margin:12px 0 20px;font-size:0.83rem;color:var(--t2)">
+      <p style="margin:0 0 6px">Dream run: <code>strategy=forecast</code>, <code>insights=12</code>, <code>skills=3</code>, <code>duration=45s</code></p>
+      <p style="margin:0 0 4px;font-family:var(--mono);color:var(--t)">Intelligence Score = (12 × 2.0 × 10) / 45 = 240 / 45 = <strong>53.3</strong></p>
+      <p style="margin:0;font-family:var(--mono);color:var(--t)">Dream Efficiency Score = (12 × 2.0 × 10 + 3 × 15) / 45 = 285 / 45 = <strong>63.3</strong></p>
+    </div>
+
+    <h3>GET /v1/memory/dream/report/:dream_id</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl https://slopshop.gg/v1/memory/dream/report/dream_run_abc123 \
+  -H "Authorization: Bearer $KEY"
+
+# Returns:
+{
+  "dream_id": "dream_run_abc123",
+  "namespace": "my-agent",
+  "strategy": "forecast",
+  "status": "complete",
+  "duration_sec": 45,
+  "memories_processed": 142,
+  "insights_generated": 12,
+  "procedural_skills_extracted": 3,
+  "intelligence_score": 53.3,
+  "dream_efficiency_score": 63.3,
+  "entries": [...],
+  "meta": {
+    "model": "claude-3-5-sonnet",
+    "adversarial": false,
+    "salience_threshold": 0.0,
+    "credits_used": 35
+  }
+}</code></pre></div>
+
+    <!-- TMR — TARGETED MEMORY REACTIVATION -->
+    <h2 id="tmr">TMR — Targeted Memory Reactivation <span class="badge badge-compute">v5.1</span></h2>
+    <p>Targeted Memory Reactivation (TMR) is a neuroscience-grounded technique for priming specific memories before a Dream Engine run or agent session. Queue high-priority memory keys, set a reactivation mode, and retrieve a combined reactivation prompt that your agent injects at session start. TMR increases the probability those memories become part of the next consolidation cycle.</p>
+
+    <h3>POST /v1/memory/tmr/queue</h3>
+    <p>Queue one or more memory keys for targeted reactivation.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/tmr/queue \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "my-agent",
+    "target_keys": ["project-brief", "competitor-analysis", "q1-goals"],
+    "priority": 8,
+    "mode": "consolidate",
+    "personalization": "Focus on strategic risks and opportunity gaps"
+  }'
+
+# Returns:
+{
+  "cue_id": "tmr_cue_xyz789",
+  "queued_keys": 3,
+  "combined_reactivation_prompt": "Before this session, recall: [project-brief]... [competitor-analysis]... [q1-goals]... Focus on strategic risks and opportunity gaps.",
+  "expires_at": "2026-04-02T02:00:00Z"
+}</code></pre></div>
+
+    <table class="doc-table">
+      <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+      <tr><td><code>namespace</code></td><td>string</td><td>Yes</td><td>Memory namespace containing the target keys</td></tr>
+      <tr><td><code>target_keys</code></td><td>string[]</td><td>Yes</td><td>Array of memory keys to reactivate</td></tr>
+      <tr><td><code>priority</code></td><td>integer 1–10</td><td>No</td><td>Reactivation weight — higher priority keys appear first in the combined prompt and receive higher salience during the next dream run. Default: <code>5</code></td></tr>
+      <tr><td><code>mode</code></td><td>string</td><td>No</td><td><code>consolidate</code> (default) | <code>recall</code> | <code>challenge</code> — how memories are framed in the reactivation prompt</td></tr>
+      <tr><td><code>personalization</code></td><td>string</td><td>No</td><td>Free-text instruction appended to the combined reactivation prompt</td></tr>
+    </table>
+
+    <h3>GET /v1/memory/tmr/cues</h3>
+    <p>Retrieve pending TMR cues for a namespace. Use this at agent session start to inject the reactivation prompt into the system message.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl "https://slopshop.gg/v1/memory/tmr/cues?namespace=my-agent&limit=10&mode=consolidate" \
+  -H "Authorization: Bearer $KEY"
+
+# Returns:
+{
+  "cues": [
+    {
+      "cue_id": "tmr_cue_xyz789",
+      "target_keys": ["project-brief", "competitor-analysis", "q1-goals"],
+      "priority": 8,
+      "mode": "consolidate",
+      "created_at": "2026-04-01T22:00:00Z"
+    }
+  ],
+  "combined_reactivation_prompt": "Before this session, recall: [project-brief summary]... [competitor-analysis summary]... [q1-goals summary]...",
+  "total": 1
+}</code></pre></div>
+
+    <table class="doc-table">
+      <tr><th>Query Param</th><th>Type</th><th>Description</th></tr>
+      <tr><td><code>namespace</code></td><td>string</td><td>Required. Namespace to fetch cues for.</td></tr>
+      <tr><td><code>limit</code></td><td>integer</td><td>Max cues to return. Default: <code>20</code></td></tr>
+      <tr><td><code>mode</code></td><td>string</td><td>Filter by mode (<code>consolidate</code>, <code>recall</code>, <code>challenge</code>). Omit for all.</td></tr>
+    </table>
+
+    <!-- COLLECTIVE DREAM -->
+    <h2 id="collective-dream">Collective Dream <span class="badge badge-compute">v5.1</span></h2>
+    <p>Run the Dream Engine across a shared Multiplayer Memory space — consolidating the collective knowledge of an entire team or agent swarm in a single overnight pass. Collective Dream reads from a shared space created via <code>POST /v1/memory/share/create</code> and writes insights back to the same space, visible to all collaborators.</p>
+
+    <h3>POST /v1/memory/dream/collective</h3>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl -X POST https://slopshop.gg/v1/memory/dream/collective \
+  -H "Authorization: Bearer $KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "space_id": "space_team_abc123",
+    "strategy": "synthesize",
+    "budget": 500,
+    "model": "claude"
+  }'
+
+# Returns:
+{
+  "dream_id": "collective_dream_xyz",
+  "space_id": "space_team_abc123",
+  "status": "started",
+  "poll_endpoint": "/v1/memory/dream/status/collective_dream_xyz",
+  "report_endpoint": "/v1/memory/dream/report/collective_dream_xyz"
+}</code></pre></div>
+
+    <table class="doc-table">
+      <tr><th>Parameter</th><th>Type</th><th>Required</th><th>Description</th></tr>
+      <tr><td><code>space_id</code></td><td>string</td><td>Yes</td><td>Shared memory space ID from <code>POST /v1/memory/share/create</code></td></tr>
+      <tr><td><code>strategy</code></td><td>string</td><td>Yes</td><td>Any of the 9 Dream Engine strategies</td></tr>
+      <tr><td><code>budget</code></td><td>integer</td><td>No</td><td>Hard credit cap for this collective run. Cost is debited from the space owner's account. Default: <code>1000</code></td></tr>
+      <tr><td><code>model</code></td><td>string</td><td>No</td><td>LLM to use: <code>claude</code> | <code>grok</code> | <code>deepseek</code>. Defaults to account preference.</td></tr>
+      <tr><td><code>adversarial</code></td><td>boolean</td><td>No</td><td>Enable counterfactual mode (applies to <code>insight_generate</code> strategy).</td></tr>
+      <tr><td><code>salience_threshold</code></td><td>float 0–1</td><td>No</td><td>Minimum salience to include in the collective consolidation pass.</td></tr>
+    </table>
+
+    <div style="background:rgba(249,115,22,0.08);border:1px solid rgba(249,115,22,0.25);border-left:3px solid #f97316;border-radius:8px;padding:14px 18px;margin:16px 0 20px">
+      <p style="margin:0 0 4px;font-family:var(--mono);font-size:0.78rem;font-weight:700;color:#f97316">Prerequisite</p>
+      <p style="margin:0;font-size:0.83rem;color:var(--t2)">Collective Dream requires a shared memory space. Create one first with <code>POST /v1/memory/share/create</code>, then invite collaborators via <code>POST /v1/memory/collaborator/invite</code>. See the <a href="#memory-collaborator">Multiplayer Memory</a> section.</p>
+    </div>
+
+    <!-- PROCEDURAL SKILLS -->
+    <h2 id="procedural-skills">Procedural Skills <span class="badge badge-compute">v5.1</span></h2>
+    <p>Procedural skills are reusable, parameterized action patterns extracted by the Dream Engine's <code>reflect</code>, <code>forecast</code>, and <code>evolve</code> strategies. Each skill encodes a learned workflow — a sequence of steps the agent has successfully executed — along with a confidence score derived from repeated application. Skills can be injected directly into agent system prompts via the <a href="/skills-forge">/skills-forge</a> interface.</p>
+
+    <h3>GET /v1/memory/skills</h3>
+    <p>List procedural skills extracted for a namespace. Filter by confidence threshold, extracting strategy, or limit.</p>
+    <div class="code-block"><div class="code-header"><span>curl</span><button class="copy-btn" onclick="copyCode(this)">Copy</button></div><pre><code>curl "https://slopshop.gg/v1/memory/skills?namespace=my-agent&min_confidence=0.7&strategy=reflect&limit=20" \
+  -H "Authorization: Bearer $KEY"
+
+# Returns:
+{
+  "skills": [
+    {
+      "skill_id": "skill_abc123",
+      "name": "competitive-intelligence-loop",
+      "description": "Search competitors, extract signals, synthesize into structured report",
+      "tool_chain": ["search-web", "extract-text", "llm-think", "memory-set"],
+      "confidence": 0.91,
+      "applications": 14,
+      "extracted_by": "reflect",
+      "dream_id": "dream_run_abc123",
+      "created_at": "2026-04-01T03:00:00Z"
+    }
+  ],
+  "total": 1,
+  "namespace": "my-agent"
+}</code></pre></div>
+
+    <table class="doc-table">
+      <tr><th>Query Param</th><th>Type</th><th>Description</th></tr>
+      <tr><td><code>namespace</code></td><td>string</td><td>Required. Namespace to query skills for.</td></tr>
+      <tr><td><code>min_confidence</code></td><td>float 0–1</td><td>Only return skills at or above this confidence score. Default: <code>0.0</code></td></tr>
+      <tr><td><code>strategy</code></td><td>string</td><td>Filter by extracting strategy: <code>reflect</code>, <code>forecast</code>, or <code>evolve</code>. Omit for all.</td></tr>
+      <tr><td><code>limit</code></td><td>integer</td><td>Max skills to return. Default: <code>50</code></td></tr>
+    </table>
+
+    <p>Procedural skills feed directly into the <a href="/skills-forge">Skills Forge</a> page, where you can browse extracted skills, test them, and generate agent system prompts that include your highest-confidence learned workflows.</p>
 
     <!-- SNAPSHOT BRANCHING -->
     <h2 id="snapshot-branching">Snapshot Branching <span class="badge badge-compute">v5.0</span></h2>
@@ -2332,7 +2559,7 @@ docker run -p 3000:3000 \
 
     <!-- ERROR CODES & REFUNDS -->
     <h2 id="error-codes">Error Codes &amp; Refunds</h2>
-    <p>Slopshop uses consistent error codes across all 1,421+ endpoints. Credits are automatically refunded when a handler errors &mdash; you only pay for successful calls.</p>
+    <p>Slopshop uses consistent error codes across all 600+ endpoints. Credits are automatically refunded when a handler errors &mdash; you only pay for successful calls.</p>
 
     <h3>Auto-Refund Policy</h3>
     <p>If an API handler throws an error after credits are deducted, those credits are <strong>automatically refunded</strong> to your account. You will never be charged for a failed call. The refund is instant and reflected in your balance immediately.</p>
@@ -2361,7 +2588,7 @@ docker run -p 3000:3000 \
 
 <script>
 // ============================================================
-// DATA: All API definitions across 82 categories and 1,421+ endpoints
+// DATA: All API definitions across 82 categories and 600+ endpoints
 // We fetch from /v1/tools to stay in sync, with a static fallback
 // ============================================================
 const STATIC_APIS = {
@@ -3221,7 +3448,7 @@ init();
 </script>
 <div style="background:#18181b;padding:24px;text-align:center;font-size:13px;color:#a1a1aa;border-top:1px solid #27272a">
   <p style="font-family:monospace;color:white">Slopshop is a self-hostable backend for AI agents: real tools, persistent memory, one execution layer.</p>
-  <p style="margin-top:8px">82 categories · 1,421+ handlers · Dream Engine + Multiplayer Memory · Planet Research · 8 core memory APIs free forever · 500 free credits on signup</p>
+  <p style="margin-top:8px">82 categories · 600+ handlers · Dream Engine + Multiplayer Memory · Planet Research · 8 core memory APIs free forever · 500 free credits on signup</p>
   <p>memory-set · memory-get · memory-search · memory-list · memory-delete · memory-stats · memory-namespace-list · counter-get — always 0 credits</p>
 </div>
 </body>

@@ -39,17 +39,9 @@ body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-sm
 a{color:var(--r);text-decoration:none;transition:color 0.15s,opacity 0.15s}
 a:hover{opacity:0.8}
 
-nav{
-  position:fixed;top:0;left:0;right:0;z-index:100;height:56px;
-  background:rgba(5,5,5,0.85);
-  backdrop-filter:blur(20px) saturate(180%);
-  border-bottom:1px solid var(--b);
-  display:flex;align-items:center;padding:0 32px
-}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:56px;background:rgba(5,5,5,0.85);backdrop-filter:blur(20px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 32px}
 .nv{max-width:1200px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
 .logo{font-family:var(--mono);font-weight:700;font-size:0.95rem;letter-spacing:0.08em;display:flex;align-items:center;gap:8px;color:var(--t);text-decoration:none}
-.logo .mark{color:#fff}
-.logo .gg{color:var(--t3);font-weight:500;font-size:0.7rem;margin-left:1px}
 .nav-links{display:flex;gap:4px;align-items:center}
 .nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:color 0.15s,background 0.15s}
 .nav-links a:hover{color:var(--t);background:var(--s2)}
@@ -60,44 +52,60 @@ nav{
 .card .subtitle{color:var(--t2);font-size:0.8rem;text-align:center;margin-bottom:32px}
 
 label{display:block;font-size:0.72rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px}
-input[type="email"],input[type="password"]{
-  width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--b2);border-radius:8px;
-  color:var(--t);font-family:var(--sans);font-size:0.85rem;outline:none;transition:border-color 0.2s;
-  margin-bottom:20px
-}
+input[type="email"],input[type="password"]{width:100%;padding:12px 14px;background:var(--bg);border:1px solid var(--b2);border-radius:8px;color:var(--t);font-family:var(--sans);font-size:0.85rem;outline:none;transition:border-color 0.2s;margin-bottom:20px}
 input[type="email"]:focus,input[type="password"]:focus{border-color:var(--r)}
 input[type="email"]::placeholder,input[type="password"]::placeholder{color:var(--t4)}
 
-.btn-submit{
-  width:100%;padding:14px;background:var(--r);color:#fff;border:none;border-radius:10px;
-  font-family:var(--mono);font-size:0.85rem;font-weight:700;cursor:pointer;transition:background 0.2s,transform 0.15s
-}
+.pw-row{position:relative;margin-bottom:8px}
+.pw-row input{margin-bottom:0;padding-right:44px}
+.pw-toggle{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--t3);cursor:pointer;padding:4px;font-size:0.8rem}
+.pw-toggle:hover{color:var(--t)}
+.forgot-link{display:block;text-align:right;font-size:0.74rem;color:var(--t3);margin-bottom:20px}
+.forgot-link:hover{color:var(--r)}
+
+.btn-submit{width:100%;padding:14px;background:var(--r);color:#fff;border:none;border-radius:10px;font-family:var(--mono);font-size:0.85rem;font-weight:700;cursor:pointer;transition:background 0.2s,transform 0.15s;margin-top:4px}
 .btn-submit:hover{background:var(--r2)}
 .btn-submit:active{transform:scale(0.98)}
 .btn-submit:disabled{opacity:0.6;cursor:not-allowed}
 
 .error-msg{display:none;background:rgba(255,51,51,0.1);border:1px solid rgba(255,51,51,0.2);color:var(--r2);padding:10px 14px;border-radius:8px;font-size:0.8rem;margin-bottom:16px;text-align:center}
 
-.signup-link{text-align:center;margin-top:24px;font-size:0.78rem;color:var(--t3)}
-.signup-link a{color:var(--r);font-weight:600}
+.bottom-links{text-align:center;margin-top:24px;font-size:0.78rem;color:var(--t3);display:flex;flex-direction:column;gap:8px}
+.bottom-links a{color:var(--r);font-weight:600}
 
-.account-info{margin-top:20px}
+.account-info{margin-top:4px}
 .info-row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--b)}
 .info-row:last-child{border-bottom:none}
 .info-label{font-size:0.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;font-weight:600}
 .info-value{font-family:var(--mono);font-size:0.82rem;color:var(--t)}
+.copy-btn{margin-left:8px;background:var(--r);color:#fff;border:none;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:0.7rem;font-family:var(--mono);transition:background 0.15s}
+.copy-btn:hover{background:var(--r2)}
 
-@media(max-width:480px){
-  .card{padding:36px 24px;border-radius:12px}
-  nav{padding:0 12px;height:50px}
+.success-badge{background:rgba(0,204,102,0.1);border:1px solid rgba(0,204,102,0.2);color:var(--g);padding:10px 14px;border-radius:8px;font-size:0.8rem;margin-bottom:20px;text-align:center;font-weight:600}
+.redirect-note{color:var(--t3);font-size:0.75rem;text-align:center;margin-top:16px}
+
+@media(max-width:480px){.card{padding:36px 24px;border-radius:12px}nav{padding:0 12px;height:50px}}
+.divider{display:flex;align-items:center;gap:12px;margin:20px 0;color:var(--t3);font-size:0.72rem;text-transform:uppercase;letter-spacing:0.08em}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--b2)}
+#googleSignInSection{margin-bottom:4px}
+.google-loading{text-align:center;padding:12px;color:var(--t3);font-size:0.8rem;display:none}
+html,body{overflow-x:hidden;max-width:100vw}
+img,video,iframe{max-width:100%}
+pre,code{overflow-x:auto;max-width:100%}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+@media(max-width:640px){
+  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
+  nav{padding:0 16px}
 }
 </style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
 
 <nav><div class="nv">
   <a href="/" class="logo">
-    <span class="mark" style="color:#ef4444;font-family:'Courier New',monospace;font-weight:900;letter-spacing:0.05em">SLOPSHOP.gg</span><span style="font-size:0.55rem;color:#ff3333;border:1px solid rgba(255,51,51,0.2);padding:2px 6px;border-radius:4px;margin-left:8px">v4.0</span>
+    <span style="color:#ef4444;font-family:'Courier New',monospace;font-weight:900;letter-spacing:0.05em">SLOPSHOP.gg</span>
+    <span style="font-size:0.55rem;color:#ff3333;border:1px solid rgba(255,51,51,0.2);padding:2px 6px;border-radius:4px;margin-left:8px">v4.0</span>
   </a>
   <div class="nav-links">
     <a href="/tools">Tools</a>
@@ -113,75 +121,137 @@ input[type="email"]::placeholder,input[type="password"]::placeholder{color:var(-
 
     <div id="error" class="error-msg"></div>
 
+    <!-- Google Sign-In -->
+    <div id="googleSignInSection">
+      <div id="g_id_onload"
+        data-client_id=""
+        data-callback="handleGoogleCredential"
+        data-auto_select="false"
+        data-context="signin">
+      </div>
+      <div class="g_id_signin"
+        data-type="standard"
+        data-size="large"
+        data-theme="filled_black"
+        data-text="signin_with"
+        data-shape="rectangular"
+        data-logo_alignment="left"
+        data-width="340">
+      </div>
+      <div class="divider"><span>or continue with email</span></div>
+    </div>
+
     <form id="loginForm" autocomplete="on">
       <label for="email">Email</label>
       <input type="email" id="email" name="email" placeholder="you@example.com" required autocomplete="email">
 
       <label for="password">Password</label>
-      <input type="password" id="password" name="password" placeholder="Your password" required autocomplete="current-password">
+      <div class="pw-row">
+        <input type="password" id="password" name="password" placeholder="Your password" required autocomplete="current-password">
+        <button type="button" class="pw-toggle" onclick="togglePw()" title="Show/hide password">👁</button>
+      </div>
+      <a href="/forgot-password" class="forgot-link">Forgot password?</a>
 
       <button type="submit" id="submitBtn" class="btn-submit">Log In</button>
     </form>
 
     <div id="result"></div>
 
-    <p class="signup-link">Don't have an account? <a href="/signup">Sign up free</a></p>
+    <div class="bottom-links">
+      <span>Don't have an account? <a href="/signup">Sign up free →</a></span>
+    </div>
   </div>
 </div>
 
 <script>
+const params = new URLSearchParams(location.search);
+const redirectTo = params.get('from') || '/playground';
+
+// If already logged in, redirect
+const saved = localStorage.getItem('slopshop_api_key');
+if (saved && !params.get('force')) {
+  location.href = redirectTo;
+}
+
+function togglePw() {
+  const p = document.getElementById('password');
+  p.type = p.type === 'password' ? 'text' : 'password';
+}
+
 document.getElementById('loginForm').addEventListener('submit', async (e) => {
   e.preventDefault();
-  const email = document.getElementById('email').value;
+  const email    = document.getElementById('email').value.trim();
   const password = document.getElementById('password').value;
-  const btn = document.getElementById('submitBtn');
-  const result = document.getElementById('result');
-  const error = document.getElementById('error');
+  const btn      = document.getElementById('submitBtn');
+  const error    = document.getElementById('error');
 
   btn.disabled = true;
   btn.textContent = 'Logging in...';
   error.style.display = 'none';
 
   try {
-    const res = await fetch('/v1/auth/login', {
-      method: 'POST',
+    const res  = await fetch('/v1/auth/login', {
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+      body:    JSON.stringify({ email, password }),
     });
     const data = await res.json();
 
-    if (data.api_key || data.data?.api_key) {
-      const key = data.api_key || data.data?.api_key;
-      const credits = data.credits ?? data.data?.credits ?? '---';
-      const tier = data.tier || data.data?.tier || 'free';
-      result.innerHTML = `
-        <div style="background:var(--s1);border:1px solid var(--g);border-radius:8px;padding:24px;margin-top:20px">
-          <div style="color:var(--g);font-weight:700;margin-bottom:16px">&#10003; Logged in successfully</div>
-          <div class="account-info">
-            <div class="info-row">
-              <span class="info-label">API Key</span>
-              <span class="info-value" style="word-break:break-all;text-align:right;max-width:60%">${key}
-                <button onclick="navigator.clipboard.writeText('${key}');this.textContent='Copied!'" style="margin-left:8px;background:var(--r);color:#fff;border:none;padding:3px 10px;border-radius:4px;cursor:pointer;font-size:0.7rem;font-family:var(--mono)">Copy</button>
-              </span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Credits</span>
-              <span class="info-value" style="color:var(--g)">${Number(credits).toLocaleString()}</span>
-            </div>
-            <div class="info-row">
-              <span class="info-label">Tier</span>
-              <span class="info-value" style="text-transform:capitalize">${tier}</span>
-            </div>
-          </div>
-          <div style="font-size:0.8rem;color:var(--t3);margin-top:16px;line-height:2">
-            <strong style="color:var(--t2)">Quick start:</strong><br>
-            <code style="background:var(--s2);padding:2px 6px;border-radius:3px">slop key set ${key}</code><br>
-            <code style="background:var(--s2);padding:2px 6px;border-radius:3px">slop call crypto-hash-sha256 --text "hello world"</code>
-          </div>
-        </div>`;
+    if (data.api_key) {
+      const key     = data.api_key;
+      const credits = data.balance ?? 0;
+      const tier    = data.tier || 'free';
+
+      // Save to localStorage so all tools work immediately
+      localStorage.setItem('slopshop_api_key', key);
+      // Legacy keys used by older tool pages
+      localStorage.setItem('slop_api_key', key);
+      localStorage.setItem('slop_mem_key', key);
+
       document.getElementById('loginForm').style.display = 'none';
+      document.getElementById('result').innerHTML = `
+        <div class="success-badge">&#10003; Logged in successfully</div>
+        <div class="account-info">
+          <div class="info-row">
+            <span class="info-label">API Key</span>
+            <span class="info-value" style="word-break:break-all;text-align:right;max-width:60%">
+              <span id="keyDisplay">${key.slice(0,16)}...</span>
+              <button class="copy-btn" id="copyBtn" onclick="copyKey('${key}')">Copy</button>
+            </span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Credits</span>
+            <span class="info-value" style="color:var(--g)">${Number(credits).toLocaleString()}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Tier</span>
+            <span class="info-value" style="text-transform:capitalize">${tier}</span>
+          </div>
+          <div class="info-row">
+            <span class="info-label">Email</span>
+            <span class="info-value" style="color:var(--t2)">${data.email || email}</span>
+          </div>
+        </div>
+        <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px">
+          <a href="${redirectTo}" style="display:block;text-align:center;background:var(--r);color:#fff;padding:12px;border-radius:8px;font-family:var(--mono);font-weight:700;font-size:0.85rem">
+            Go to Dashboard →
+          </a>
+          <a href="/account" style="display:block;text-align:center;background:var(--s2);color:var(--t);padding:10px;border-radius:8px;font-size:0.8rem;border:1px solid var(--b2)">
+            Manage Account
+          </a>
+        </div>
+        <p class="redirect-note">Redirecting in <span id="countdown">3</span>s…</p>`;
+
+      let n = 3;
+      const tick = setInterval(() => {
+        n--;
+        const el = document.getElementById('countdown');
+        if (el) el.textContent = n;
+        if (n <= 0) { clearInterval(tick); location.href = redirectTo; }
+      }, 1000);
+
     } else {
-      error.textContent = data.error?.message || data.message || 'Login failed. Check your credentials.';
+      error.textContent = data.error?.message || 'Login failed. Check your email and password.';
       error.style.display = 'block';
       btn.disabled = false;
       btn.textContent = 'Log In';
@@ -193,6 +263,66 @@ document.getElementById('loginForm').addEventListener('submit', async (e) => {
     btn.textContent = 'Log In';
   }
 });
+
+function copyKey(key) {
+  navigator.clipboard.writeText(key).then(() => {
+    const btn = document.getElementById('copyBtn');
+    const disp = document.getElementById('keyDisplay');
+    if (btn) { btn.textContent = 'Copied!'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+    if (disp) { disp.textContent = key; }
+  });
+}
+
+// Load Google Client ID from server and initialize Google Sign-In
+async function initGoogleAuth() {
+  try {
+    const res = await fetch('/v1/auth/providers');
+    const data = await res.json();
+    if (data.google && data.google_client_id) {
+      const onloadEl = document.getElementById('g_id_onload');
+      if (onloadEl) onloadEl.setAttribute('data-client_id', data.google_client_id);
+    } else {
+      // Hide Google section if not configured
+      const gs = document.getElementById('googleSignInSection');
+      if (gs) gs.style.display = 'none';
+    }
+  } catch(e) {
+    const gs = document.getElementById('googleSignInSection');
+    if (gs) gs.style.display = 'none';
+  }
+}
+initGoogleAuth();
+
+async function handleGoogleCredential(response) {
+  const credential = response.credential;
+  try {
+    const res = await fetch('/v1/auth/google', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ credential })
+    });
+    const data = await res.json();
+    if (data.ok) {
+      // Store auth data
+      localStorage.setItem('slopshop_api_key', data.api_key);
+      localStorage.setItem('slop_api_key', data.api_key);
+      if (data.token) localStorage.setItem('slopshop_session', data.token);
+      localStorage.setItem('slopshop_email', data.email);
+      // Redirect
+      const redirect = new URLSearchParams(location.search).get('redirect') || '/dashboard';
+      location.href = redirect;
+    } else {
+      // Show error
+      const errEl = document.getElementById('error');
+      if (errEl) {
+        errEl.textContent = data.error?.message || 'Google sign-in failed.';
+        errEl.style.display = 'block';
+      }
+    }
+  } catch(e) {
+    console.error('Google auth failed:', e);
+  }
+}
 </script>
 </body>
 </html>

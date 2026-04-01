@@ -65,7 +65,7 @@ app.use(helmet({
 app.use(cors({
   origin: process.env.CORS_ORIGIN || '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-Id', 'X-Admin-Secret'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-Id', 'X-Admin-Secret'],
   exposedHeaders: [
     'X-Request-Id', 'X-Credits-Used', 'X-Credits-Remaining', 'X-Latency-Ms', 'X-Engine', 'X-Cost-USD',
     'X-RateLimit-Limit', 'X-RateLimit-Remaining', 'X-RateLimit-Reset',
@@ -990,7 +990,8 @@ log.info('API keys initialized', { dbKeys: keyCount, memoryKeys: apiKeys.size })
 // Migration path: once all keys are rotated/re-issued, drop the plaintext 'key' column.
 
 function auth(req, res, next) {
-  let h = req.headers.authorization;
+  // Accept both Authorization: Bearer <key> and X-API-Key: <key>
+  let h = req.headers.authorization || (req.headers['x-api-key'] ? 'Bearer ' + req.headers['x-api-key'] : null);
 
   // Session cookie fallback for web dashboard
   if ((!h || !h.startsWith('Bearer ')) && req.cookies?.slop_session) {
@@ -1093,6 +1094,18 @@ app.use((req, res, next) => {
 
   next();
 });
+// Root routing: / → consumer portal (brain if session, consumer landing if not)
+app.get('/', (req, res, next) => {
+  const token = req.cookies && req.cookies.slop_session;
+  if (token) {
+    const session = (() => { try { return require('./routes/db-compat') && null; } catch(_) { return null; } })();
+    // If session cookie exists, send to consumer app; the app itself validates the session
+    return res.redirect('/brain.html');
+  }
+  return res.redirect('/consumer.html');
+});
+// /developer → developer console
+app.get('/developer', (req, res) => res.redirect('/dev-console.html'));
 app.use(express.static(path.join(__dirname), { maxAge: 0, etag: false, lastModified: true }));
 
 // Enforce HTTPS in production
@@ -2133,7 +2146,9 @@ app.post('/v1/pipe', auth, async (req, res) => {
       if (req.acct.balance < def.credits) return res.status(402).json({ error: { code: 'insufficient_credits' } });
       req.acct.balance -= def.credits; totalCr += def.credits;
       const input = lastResult ? { ...step.input, _previous: lastResult } : (step.input || {});
-      try { lastResult = await allHandlers[step.api](input); }
+      const h = allHandlers[step.api];
+      if (!h) return res.status(501).json({ error: { code: 'no_handler', message: `No handler implemented for ${step.api}`, api: step.api, log } });
+      try { lastResult = await h(input); }
       catch (e) { lastResult = { error: e.message }; }
       log.push({ api: step.api, iteration: iter, credits: def.credits });
     }
@@ -2158,6 +2173,11 @@ app.post('/v1/async/:slug', auth, async (req, res) => {
   // SECURITY FIX (HIGH-01): Store owner key on job for access control
   jobs.set(jobId, { status: 'processing', api: req.params.slug, created: Date.now(), _owner: req.apiKey });
   const handler = allHandlers[req.params.slug];
+  if (!handler) {
+    const j = jobs.get(jobId);
+    j.status = 'failed'; j.error = 'no_handler_for_api'; j.completed_at = new Date().toISOString();
+    return res.status(501).json({ error: { code: 'no_handler', message: `No handler implemented for ${req.params.slug}` }, job_id: jobId });
+  }
   (async () => {
     try { const r = await handler(req.body || {}); jobs.get(jobId).status = 'completed'; jobs.get(jobId).result = r; }
     catch (e) { jobs.get(jobId).status = 'failed'; jobs.get(jobId).error = e.message; }
@@ -2271,7 +2291,7 @@ app.get('/v1/dashboard', auth, (_, res) => {
 });
 
 // ===== MOUNT EXTENSIONS (before wildcard!) =====
-require('./auth')(app, db, apiKeys, persistKey);
+require('./auth')(app, db, apiKeys, persistKey, allHandlers);
 require('./stripe')(app, db, apiKeys, persistKey);
 require('./polar')(app, db, apiKeys, persistKey);
 require('./agent')(app, allHandlers, API_DEFS, db, apiKeys, auth);
@@ -2300,6 +2320,16 @@ try { require('./routes/workflow-builder')(app, db, apiKeys); } catch (e) { cons
 try { require('./routes/marketplace')(app, db, apiKeys); } catch (e) { console.warn('Route load skipped: marketplace -', e.message); }
 try { require('./routes/coding-session')(app, db, apiKeys); console.log('Route loaded: coding-session'); } catch (e) { console.error('Route load FAILED: coding-session -', e.message, e.stack); }
 try { require('./routes/chat-session-auth')(app, db, apiKeys); console.log('Route loaded: chat-session-auth'); } catch (e) { console.error('Route load FAILED: chat-session-auth -', e.message, e.stack); }
+// ===== STRAT 13 ROUTE MODULES =====
+try { require('./routes/dream-engine-v2')(app, db, apiKeys); console.log('Route loaded: dream-engine-v2'); } catch (e) { console.error('Route load FAILED: dream-engine-v2 -', e.message, e.stack); }
+try { require('./routes/brain-glow')(app, db, apiKeys); console.log('Route loaded: brain-glow'); } catch (e) { console.error('Route load FAILED: brain-glow -', e.message, e.stack); }
+try { require('./routes/background-extractors')(app, db, apiKeys); console.log('Route loaded: background-extractors'); } catch (e) { console.error('Route load FAILED: background-extractors -', e.message, e.stack); }
+try { require('./routes/voice-wearable')(app, db, apiKeys); console.log('Route loaded: voice-wearable'); } catch (e) { console.error('Route load FAILED: voice-wearable -', e.message, e.stack); }
+// ===== PUBLIC DEMO ROUTES (no auth required) =====
+try { require('./routes/demo')(app, db, apiKeys); console.log('Route loaded: demo'); } catch (e) { console.error('Route load FAILED: demo -', e.message, e.stack); }
+// ===== AUTH ENHANCEMENTS (server-side OAuth2, anomaly detection, portal routing) =====
+try { require('./routes/auth-enhancements')(app, db, apiKeys); console.log('Route loaded: auth-enhancements'); } catch (e) { console.error('Route load FAILED: auth-enhancements -', e.message, e.stack); }
+// ===================================
 // ============================
 
 // ===== PIPE ENDPOINTS (run / create / gallery) =====
@@ -2960,7 +2990,7 @@ const MCP_RECOMMENDED = new Set([
   // High-value compute (1cr)
   'crypto-hash-sha256','crypto-hash-sha512','text-word-count','text-token-count','text-slugify',
   'text-extract-emails','text-extract-urls','text-json-validate','text-diff','text-readability-score',
-  'math-statistics','math-eval','gen-uuid','gen-short-id','gen-fake-name','date-parse','date-format',
+  'math-statistics','math-evaluate','crypto-uuid','gen-short-id','gen-fake-name','date-parse','date-format',
   // Data transforms (1-3cr)
   'text-csv-to-json','text-json-to-csv','exec-filter-json','exec-sort-json','exec-join-json',
   'analyze-json-stats','data-pivot',
@@ -10802,22 +10832,22 @@ const NL_INTENT_BOOSTS = [
   { patterns: ['extract phone','find phone','phone numbers in','pull phone'], slugs: ['text-extract-phones'], boost: 25 },
   { patterns: ['redact pii','remove pii','anonymize','remove personal','mask personal'], slugs: ['text-redact-pii'], boost: 22 },
   { patterns: ['summarize','summary','tldr','tl;dr','summarise'], slugs: ['text-summarize-extractive','llm-summarize'], boost: 20 },
-  { patterns: ['translate','translation','convert language','change language','to english','to spanish','to french','to german'], slugs: ['text-translate','llm-translate'], boost: 20 },
+  { patterns: ['translate','translation','convert language','change language','to english','to spanish','to french','to german'], slugs: ['llm-translate'], boost: 20 },
   { patterns: ['token count','count tokens','how many tokens','tokenize'], slugs: ['text-token-count'], boost: 25 },
   { patterns: ['test regex','regex match','regular expression test','match pattern'], slugs: ['text-regex-test'], boost: 22 },
   { patterns: ['text diff','compare text','text difference'], slugs: ['text-diff'], boost: 22 },
-  { patterns: ['readability','reading level','flesch','reading score'], slugs: ['text-readability'], boost: 22 },
+  { patterns: ['readability','reading level','flesch','reading score'], slugs: ['marketing-readability-score'], boost: 22 },
   { patterns: ['levenshtein','edit distance','string distance','string similarity'], slugs: ['text-levenshtein'], boost: 25 },
   { patterns: ['lorem ipsum','placeholder text','dummy text','filler text'], slugs: ['text-lorem-ipsum'], boost: 25 },
   { patterns: ['extract dates','find dates','dates in text'], slugs: ['text-extract-dates'], boost: 25 },
   // Math
-  { patterns: ['calculate','math expression','evaluate expression','compute expression'], slugs: ['math-eval'], boost: 18 },
+  { patterns: ['calculate','math expression','evaluate expression','compute expression'], slugs: ['math-evaluate'], boost: 18 },
   { patterns: ['fibonacci','fib sequence','fib number'], slugs: ['math-fibonacci'], boost: 28 },
   { patterns: ['is prime','prime check','check if prime'], slugs: ['math-prime-check'], boost: 28 },
-  { patterns: ['statistics','mean','median','std dev','standard deviation','variance'], slugs: ['math-stats'], boost: 22 },
+  { patterns: ['statistics','mean','median','std dev','standard deviation','variance'], slugs: ['math-statistics'], boost: 22 },
   { patterns: ['percentage','percent of','what percent'], slugs: ['math-percentage'], boost: 22 },
-  { patterns: ['mortgage','loan payment','amortize','monthly payment'], slugs: ['math-mortgage'], boost: 25 },
-  { patterns: ['matrix','matrix multiply','determinant','dot product'], slugs: ['math-matrix'], boost: 22 },
+  { patterns: ['mortgage','loan payment','amortize','monthly payment'], slugs: ['finance-mortgage-calc'], boost: 25 },
+  { patterns: ['matrix','matrix multiply','determinant','dot product'], slugs: ['math-matrix-multiply'], boost: 22 },
   { patterns: ['compound interest','investment return','future value'], slugs: ['math-compound-interest'], boost: 22 },
   { patterns: ['factorial','n factorial','compute factorial'], slugs: ['math-factorial'], boost: 25 },
   { patterns: ['gcd','lcm','greatest common divisor','least common multiple'], slugs: ['math-gcd'], boost: 25 },
@@ -10830,7 +10860,7 @@ const NL_INTENT_BOOSTS = [
   { patterns: ['search memory','find memory','search memories','query memory','what did i store'], slugs: ['memory-search'], boost: 25 },
   { patterns: ['delete memory','forget','remove memory','clear memory'], slugs: ['memory-delete'], boost: 22 },
   { patterns: ['memory score','score memory','rate memory'], slugs: ['memory-score'], boost: 22 },
-  { patterns: ['memory drift','evolve memory','dream'], slugs: ['memory-evolve'], boost: 22 },
+  { patterns: ['memory drift','evolve memory','dream'], slugs: ['memory-history'], boost: 22 },
   { patterns: ['kv set','key value set','store key value'], slugs: ['kv-set'], boost: 20 },
   { patterns: ['kv get','key value get','get key value'], slugs: ['kv-get'], boost: 20 },
   { patterns: ['queue push','enqueue','add to queue','job queue','task queue'], slugs: ['queue-push'], boost: 22 },
@@ -10845,28 +10875,28 @@ const NL_INTENT_BOOSTS = [
   { patterns: ['validate credit card','credit card valid','luhn check','card number valid'], slugs: ['validate-credit-card'], boost: 25 },
   { patterns: ['validate phone','phone valid','check phone number'], slugs: ['validate-phone'], boost: 25 },
   { patterns: ['validate iban','iban valid','bank account valid'], slugs: ['validate-iban'], boost: 25 },
-  { patterns: ['validate json','json valid','is valid json'], slugs: ['validate-json'], boost: 22 },
+  { patterns: ['validate json','json valid','is valid json'], slugs: ['validate-json-schema'], boost: 22 },
   // Date / time
   { patterns: ['current date','today date','what is today','what day is it','todays date'], slugs: ['date-now'], boost: 28 },
   { patterns: ['current time','what time is it'], slugs: ['date-now'], boost: 20 },
   { patterns: ['format date','date format','convert date format'], slugs: ['date-format'], boost: 25 },
   { patterns: ['parse date','read date string','parse timestamp'], slugs: ['date-parse'], boost: 25 },
-  { patterns: ['business days','working days','weekday count','skip weekends'], slugs: ['date-business-days'], boost: 25 },
+  { patterns: ['business days','working days','weekday count','skip weekends'], slugs: ['date-business-days-between'], boost: 25 },
   { patterns: ['cron next','cron expression','next cron run','schedule cron'], slugs: ['date-cron-next'], boost: 25 },
   { patterns: ['date diff','days between','time difference','how many days between'], slugs: ['date-diff'], boost: 22 },
-  { patterns: ['unix timestamp','epoch time','to epoch','from epoch'], slugs: ['date-to-unix'], boost: 22 },
+  { patterns: ['unix timestamp','epoch time','to epoch','from epoch'], slugs: ['date-iso-to-unix'], boost: 22 },
   { patterns: ['add days','add months','add years','date add','date math'], slugs: ['date-add'], boost: 22 },
-  { patterns: ['timezone convert','convert timezone','utc to local','local to utc'], slugs: ['date-timezone'], boost: 22 },
+  { patterns: ['timezone convert','convert timezone','utc to local','local to utc'], slugs: ['date-timezone-convert'], boost: 22 },
   // Network
   { patterns: ['dns lookup','dns resolve','lookup domain','resolve hostname'], slugs: ['net-dns-lookup'], boost: 25 },
-  { patterns: ['is site up','is site down','check website','ping website','website status','http check'], slugs: ['net-http-check'], boost: 25 },
+  { patterns: ['is site up','is site down','check website','ping website','website status','http check'], slugs: ['net-http-status'], boost: 25 },
   { patterns: ['ssl check','certificate check','ssl cert','https cert'], slugs: ['net-ssl-check'], boost: 25 },
   { patterns: ['ping host','icmp ping','is host alive','ping ip'], slugs: ['net-ping'], boost: 25 },
   { patterns: ['http headers','response headers','get headers'], slugs: ['net-http-headers'], boost: 22 },
-  { patterns: ['ip geolocation','where is ip','locate ip','ip location','ip geo','geolocate ip'], slugs: ['net-ip-geo'], boost: 25 },
+  { patterns: ['ip geolocation','where is ip','locate ip','ip location','ip geo','geolocate ip'], slugs: ['net-ip-geolocation'], boost: 25 },
   { patterns: ['whois','domain owner','registrar','domain registration'], slugs: ['net-whois'], boost: 25 },
   { patterns: ['port scan','check port','is port open','open ports'], slugs: ['net-port-scan'], boost: 25 },
-  { patterns: ['my ip','what is my ip','external ip'], slugs: ['net-my-ip'], boost: 25 },
+  { patterns: ['my ip','what is my ip','external ip'], slugs: ['net-http-status'], boost: 15 },
   { patterns: ['email deliverability','mx check','smtp check'], slugs: ['net-email-validate'], boost: 22 },
   // Data transform
   { patterns: ['csv to json','parse csv','convert csv'], slugs: ['data-csv-to-json'], boost: 25 },
@@ -10874,52 +10904,50 @@ const NL_INTENT_BOOSTS = [
   { patterns: ['xml to json','parse xml'], slugs: ['data-xml-to-json'], boost: 25 },
   { patterns: ['yaml to json','parse yaml'], slugs: ['data-yaml-to-json'], boost: 25 },
   { patterns: ['json to yaml','convert to yaml'], slugs: ['data-json-to-yaml'], boost: 25 },
-  { patterns: ['compress','gzip','deflate compress'], slugs: ['data-compress'], boost: 18 },
-  { patterns: ['flatten json','flatten object','flatten array'], slugs: ['data-flatten'], boost: 22 },
+  { patterns: ['compress','gzip','deflate compress'], slugs: ['data-zip-encode'], boost: 18 },
+  { patterns: ['flatten json','flatten object','flatten array'], slugs: ['data-json-flatten'], boost: 22 },
   { patterns: ['json diff','compare json','object diff'], slugs: ['data-json-diff'], boost: 22 },
-  { patterns: ['json schema validate','validate against schema'], slugs: ['data-json-schema-validate'], boost: 22 },
-  { patterns: ['qr code','generate qr','make qr'], slugs: ['data-qr-generate'], boost: 25 },
-  { patterns: ['barcode','generate barcode'], slugs: ['data-barcode-generate'], boost: 25 },
+  { patterns: ['json schema validate','validate against schema'], slugs: ['validate-json-schema'], boost: 22 },
+  { patterns: ['qr code','generate qr','make qr'], slugs: ['vision-qr-generate'], boost: 25 },
+  { patterns: ['barcode','generate barcode'], slugs: ['vision-barcode-generate'], boost: 25 },
   { patterns: ['data forecast','trend forecast','predict values'], slugs: ['data-forecast'], boost: 22 },
   // Code utilities
   { patterns: ['format sql','sql format','beautify sql','sql pretty'], slugs: ['code-sql-format'], boost: 28 },
   { patterns: ['run sql','execute sql','sql query on data','sql on json'], slugs: ['exec-sql-on-json'], boost: 28 },
   { patterns: ['explain regex','what does regex','regex explanation'], slugs: ['code-regex-explain'], boost: 25 },
   { patterns: ['semver','version compare','semantic version'], slugs: ['code-semver-compare'], boost: 25 },
-  { patterns: ['parse env','dotenv','env file parse'], slugs: ['code-parse-env'], boost: 22 },
-  { patterns: ['format json','pretty json','json beautify','json pretty print'], slugs: ['code-json-format'], boost: 22 },
+  { patterns: ['parse env','dotenv','env file parse'], slugs: ['code-env-parse'], boost: 22 },
+  { patterns: ['format json','pretty json','json beautify','json pretty print'], slugs: ['text-json-format'], boost: 22 },
   { patterns: ['code review','review code'], slugs: ['llm-code-review'], boost: 22 },
   { patterns: ['generate code','write code','code generation','code this'], slugs: ['llm-code-generate'], boost: 20 },
-  { patterns: ['fix code','debug code','repair code'], slugs: ['llm-code-fix'], boost: 22 },
+  { patterns: ['fix code','debug code','repair code'], slugs: ['llm-code-generate'], boost: 22 },
   // LLM / AI
-  { patterns: ['ask claude','ask ai','chat with ai','ask the ai'], slugs: ['llm-chat'], boost: 22 },
+  { patterns: ['ask claude','ask ai','chat with ai','ask the ai'], slugs: ['llm-think'], boost: 22 },
   { patterns: ['think','reason through','deep think'], slugs: ['llm-think'], boost: 18 },
   { patterns: ['classify text','classify this','categorize','what category'], slugs: ['llm-classify'], boost: 22 },
-  { patterns: ['extract data','extract structured','parse this into json','structured extract'], slugs: ['llm-data-extract'], boost: 22 },
-  { patterns: ['write blog','blog post','write article'], slugs: ['llm-blog'], boost: 22 },
-  { patterns: ['generate text','write text','compose text','draft this'], slugs: ['llm-generate'], boost: 18 },
+  { patterns: ['extract data','extract structured','parse this into json','structured extract'], slugs: ['llm-extract-entities'], boost: 22 },
+  { patterns: ['write blog','blog post','write article'], slugs: ['llm-blog-draft'], boost: 22 },
+  { patterns: ['generate text','write text','compose text','draft this'], slugs: ['llm-email-draft'], boost: 18 },
   { patterns: ['council','multi model','ask multiple models','model council'], slugs: ['llm-council'], boost: 22 },
   // Fleet / agents
-  { patterns: ['register agent','new agent','add agent to fleet'], slugs: ['fleet-register'], boost: 25 },
-  { patterns: ['dispatch task','send task to agent','assign task'], slugs: ['fleet-dispatch'], boost: 25 },
-  { patterns: ['agent status','fleet status','list agents','all agents'], slugs: ['fleet-status'], boost: 25 },
-  { patterns: ['heartbeat','agent heartbeat','ping agent'], slugs: ['fleet-heartbeat'], boost: 25 },
-  { patterns: ['deregister agent','remove agent','retire agent'], slugs: ['fleet-deregister'], boost: 25 },
-  { patterns: ['chain agents','run pipeline','orchestrate'], slugs: ['agent-chain'], boost: 22 },
+  { patterns: ['register agent','new agent','add agent to fleet'], slugs: ['entangle-agents'], boost: 22 },
+  { patterns: ['dispatch task','send task to agent','assign task'], slugs: ['army-deploy'], boost: 25 },
+  { patterns: ['agent status','fleet status','list agents','all agents'], slugs: ['agent-benchmark-score'], boost: 20 },
+  { patterns: ['chain agents','run pipeline','orchestrate'], slugs: ['army-deploy'], boost: 22 },
   { patterns: ['army','deploy army','multi agent','agent swarm','spawn agents'], slugs: ['army-deploy'], boost: 22 },
-  // GraphRAG
+  // GraphRAG (served by route module — slugs are route-only, boost is advisory)
   { patterns: ['add to graph','add node','add knowledge','insert to graph'], slugs: ['graphrag-add'], boost: 25 },
   { patterns: ['query graph','search graph','graph search','find in graph'], slugs: ['graphrag-query'], boost: 25 },
   { patterns: ['link nodes','connect nodes','add edge','relate nodes'], slugs: ['graphrag-link'], boost: 25 },
   // Hive / NorthStar
-  { patterns: ['daily brief','daily intelligence','daily hive','hive brief'], slugs: ['hive-daily-intelligence'], boost: 28 },
-  { patterns: ['hive workspace','run hive','hive session'], slugs: ['hive-run'], boost: 22 },
+  { patterns: ['daily brief','daily intelligence','daily hive','hive brief'], slugs: ['hive-standup'], boost: 28 },
+  { patterns: ['hive workspace','run hive','hive session'], slugs: ['hive-create'], boost: 22 },
   { patterns: ['north star','set northstar','northstar goal'], slugs: ['northstar-set'], boost: 25 },
   { patterns: ['get northstar','my northstar','what is my goal'], slugs: ['northstar-get'], boost: 25 },
   // Weather / external
   { patterns: ['weather','weather forecast','temperature forecast','weather report','current weather'], slugs: ['weather-report'], boost: 28 },
   { patterns: ['send email','email someone','mail to'], slugs: ['ext-email-send'], boost: 25 },
-  { patterns: ['slack message','send slack','post to slack'], slugs: ['ext-slack-send'], boost: 25 },
+  { patterns: ['slack message','send slack','post to slack'], slugs: ['ext-slack-post'], boost: 25 },
   { patterns: ['github issue','github pr','github repo'], slugs: ['ext-github-issue'], boost: 22 },
   { patterns: ['s3 upload','upload to s3','upload file'], slugs: ['ext-s3-upload'], boost: 25 },
   // Vision
@@ -10928,12 +10956,12 @@ const NL_INTENT_BOOSTS = [
   { patterns: ['color palette','image colors','dominant colors','extract colors'], slugs: ['vision-color-palette'], boost: 25 },
   { patterns: ['image metadata','exif','image info'], slugs: ['vision-image-metadata'], boost: 25 },
   // Finance / vertical
-  { patterns: ['stock price','stock quote','share price'], slugs: ['finance-stock-price'], boost: 25 },
-  { patterns: ['crypto price','bitcoin price','eth price','coin price'], slugs: ['finance-crypto-price'], boost: 25 },
-  { patterns: ['exchange rate','currency convert','forex','convert currency'], slugs: ['finance-exchange-rate'], boost: 25 },
-  { patterns: ['legal doc','generate contract','nda generate','legal template'], slugs: ['legal-doc-generate'], boost: 22 },
-  { patterns: ['seo analyze','seo score','seo check'], slugs: ['marketing-seo-analyze'], boost: 22 },
-  { patterns: ['competitor research','competitive analysis'], slugs: ['marketing-competitor-research'], boost: 22 },
+  { patterns: ['stock price','stock quote','share price'], slugs: ['sense-crypto-price'], boost: 18 },
+  { patterns: ['crypto price','bitcoin price','eth price','coin price'], slugs: ['sense-crypto-price'], boost: 25 },
+  { patterns: ['exchange rate','currency convert','forex','convert currency'], slugs: ['math-currency-convert'], boost: 25 },
+  { patterns: ['legal doc','generate contract','nda generate','legal template'], slugs: ['legal-contract-scan'], boost: 18 },
+  { patterns: ['seo analyze','seo score','seo check'], slugs: ['seo-keyword-density'], boost: 22 },
+  { patterns: ['competitor research','competitive analysis'], slugs: ['llm-competitor-brief'], boost: 22 },
 ];
 
 // NL param extractor — pulls structured input params from a natural language query string
@@ -10963,7 +10991,7 @@ function nlExtractParams(query, slug) {
   if (slug === 'math-fibonacci') { const n = q.match(/\d+/)?.[0]; return { n: n ? parseInt(n) : 10 }; }
   if (slug === 'math-prime-check' || slug === 'math-prime') { const n = q.match(/\d+/)?.[0]; return { number: n ? parseInt(n) : 7 }; }
   if (slug === 'math-factorial') { const n = q.match(/\d+/)?.[0]; return { n: n ? parseInt(n) : 5 }; }
-  if (slug === 'math-eval' || slug === 'math-evaluate') { return { expression: quoted(q) || q.replace(/calculate|evaluate|compute|what is|the result of|math/gi, '').trim() || q }; }
+  if (slug === 'math-evaluate') { return { expression: quoted(q) || q.replace(/calculate|evaluate|compute|what is|the result of|math/gi, '').trim() || q }; }
   if (slug === 'memory-set') {
     const am = q.match(/as\s+([\w-]+)(?:\s|$)/i);
     return { key: am ? am[1] : 'auto_' + Date.now().toString(36), value: quoted(q) || q.replace(/store|save|remember|persist|memorize|in memory|write to memory|as\s+[\w-]+/gi, '').trim() || q };
@@ -17492,6 +17520,33 @@ try {
   `);
 } catch (e) { /* table already exists */ }
 
+// Bootstrap dream_insights table (idempotent)
+db.exec(`CREATE TABLE IF NOT EXISTS dream_insights (
+  id TEXT PRIMARY KEY,
+  dream_id TEXT,
+  strategy TEXT,
+  namespace TEXT,
+  insight_type TEXT,
+  content TEXT,
+  salience_score REAL DEFAULT 0.5,
+  confidence REAL DEFAULT 0.7,
+  source_keys TEXT DEFAULT '[]',
+  created INTEGER
+)`);
+
+db.exec(`CREATE TABLE IF NOT EXISTS procedural_skills (
+  id TEXT PRIMARY KEY,
+  dream_id TEXT,
+  namespace TEXT,
+  trigger_condition TEXT,
+  action_description TEXT,
+  confidence REAL DEFAULT 0.7,
+  source_strategy TEXT,
+  tmr_boosted INTEGER DEFAULT 0,
+  deploy_count INTEGER DEFAULT 0,
+  created INTEGER
+)`);
+
 const activeDreamSessions = new Map(); // dream_id -> session metadata
 const dreamSchedules = new Map();      // schedule_id -> { timer, config }
 
@@ -17586,7 +17641,7 @@ const dreamSchedules = new Map();      // schedule_id -> { timer, config }
   }
 })();
 
-const DREAM_STRATEGIES = ['synthesize', 'pattern_extract', 'insight_generate', 'compress', 'associate', 'validate', 'evolve', 'forecast', 'reflect'];
+const DREAM_STRATEGIES = ['synthesize', 'pattern_extract', 'insight_generate', 'compress', 'associate', 'validate', 'evolve', 'forecast', 'reflect', 'full_cycle'];
 
 // Per-strategy LLM prompts — each returns a function(namespace, memoriesText) -> string
 const DREAM_PROMPTS = {
@@ -17596,8 +17651,12 @@ const DREAM_PROMPTS = {
   pattern_extract: function(ns, memories) {
     return 'You are a pattern recognition system analyzing stored memories.\n\nNamespace: ' + ns + '\n\nMemories to analyze:\n\n' + memories + '\n\nFind recurring patterns, contradictions, and gaps. Output a structured pattern map.\n\nRespond ONLY in valid JSON with this structure:\n{"patterns": [{"key": "pattern_<slug>", "value": "<pattern description and evidence>", "type": "recurring|contradiction|gap|trend", "frequency": 1, "source_keys": ["<key1>"]}], "meta": {"pattern_count": 0, "contradictions_found": 0, "gaps_found": 0}}';
   },
-  insight_generate: function(ns, memories) {
-    return 'You are a creative insight engine processing stored memories.\n\nNamespace: ' + ns + '\n\nMemories to combine:\n\n' + memories + '\n\nGenerate novel insights by combining these memories in unexpected ways. Look for non-obvious connections, analogies, and emergent ideas not present in any single memory.\n\nRespond ONLY in valid JSON with this structure:\n{"insights": [{"key": "insight_<slug>", "value": "<novel insight with explanation>", "novelty_score": 0.8, "connecting_keys": ["<key1>", "<key2>"]}], "meta": {"total_insights": 0, "avg_novelty": 0.8, "breakthrough_idea": "<idea>"}}';
+  insight_generate: function(ns, memories, opts) {
+    const adversarial = opts && opts.adversarial;
+    const adversarialInstruction = adversarial
+      ? '\n\nADVERSARIAL MODE: Also generate 3 counterfactual scenarios ("what if the opposite were true?") for the most surprising insights. Add a "counterfactuals" array to each high-novelty insight.'
+      : '';
+    return 'You are a creative insight engine processing stored memories.\n\nNamespace: ' + ns + '\n\nMemories to combine:\n\n' + memories + adversarialInstruction + '\n\nGenerate novel insights by combining these memories in unexpected ways. Look for non-obvious connections, analogies, and emergent ideas not present in any single memory.\n\nRespond ONLY in valid JSON with this structure:\n{"insights": [{"key": "insight_<slug>", "value": "<novel insight with explanation>", "novelty_score": 0.8, "connecting_keys": ["<key1>", "<key2>"], "counterfactuals": []}], "meta": {"total_insights": 0, "avg_novelty": 0.8, "breakthrough_idea": "<idea>"}}';
   },
   compress: function(ns, memories) {
     return 'You are a memory compression system reducing redundancy.\n\nNamespace: ' + ns + '\n\nPotentially redundant memories:\n\n' + memories + '\n\nCompress similar or redundant memories into fewer, richer entries. Preserve all unique information while eliminating repetition.\n\nRespond ONLY in valid JSON with this structure:\n{"compressed": [{"key": "compressed_<slug>", "value": "<dense compressed content>", "replaces_keys": ["<key1>", "<key2>"], "compression_ratio": 2.0}], "meta": {"original_count": 0, "compressed_count": 0, "bytes_saved_estimate": 0}}';
@@ -17617,6 +17676,9 @@ const DREAM_PROMPTS = {
   reflect: function(ns, memories) {
     return 'You are a metacognitive reflection engine performing deep self-analysis of memory quality and growth.\n\nNamespace: ' + ns + '\n\nMemories to reflect on:\n\n' + memories + '\n\nReflect on: how knowledge has evolved over time, what was learned and unlearned, blind spots in reasoning, quality of past predictions, growth in understanding, and strategic next steps for improving knowledge in this namespace.\n\nRespond ONLY in valid JSON with this structure:\n{"reflections": [{"key": "reflect_<slug>", "value": "<deep reflection on a theme>", "theme": "<reflection theme>", "growth_indicator": "positive|negative|neutral", "insight_depth": 0.8, "action_items": ["<action1>"]}], "meta": {"knowledge_maturity": 0.7, "growth_rate": "accelerating|steady|plateauing", "top_blind_spots": [], "recommended_next_strategy": "<strategy>"}}';
   },
+  full_cycle: function(ns, memories) {
+    return 'You are performing a complete 9-stage REM memory consolidation cycle on stored agent memories.\n\nNamespace: ' + ns + '\n\nMemories to process:\n' + memories + '\n\nRun ALL 9 stages sequentially:\n1. SYNTHESIZE — Combine into unified concepts (Buzsáki hippocampal replay)\n2. PATTERN_EXTRACT — Surface recurring themes and patterns\n3. INSIGHT_GENERATE — Create novel cross-memory connections (Tononi cortical binding)\n4. VALIDATE — Filter and strengthen reliable insights\n5. EVOLVE — Adapt knowledge weights based on patterns (Hebbian plasticity)\n6. FORECAST — Generate forward predictions (Clark predictive coding)\n7. COMPRESS — Distill and remove redundancy (Tononi/Cirelli SHY hypothesis)\n8. ASSOCIATE — Build semantic connection networks (Collins/Loftus spreading activation)\n9. REFLECT — Extract procedural skills and lessons learned\n\nReturn ONLY valid JSON:\n{"full_cycle_results": [{"key": "full_<slug>", "value": "<insight>", "stage": "<stage_name>", "novelty_score": 0.8}], "meta": {"total_stages": 9, "stage_counts": {"synthesize": 0, "pattern_extract": 0, "insight_generate": 0, "validate": 0, "evolve": 0, "forecast": 0, "compress": 0, "associate": 0, "reflect": 0}, "breakthrough_idea": "<idea>"}}';
+  },
 };
 
 // Credits cost per strategy
@@ -17630,6 +17692,7 @@ const DREAM_CREDITS = {
   evolve:           30,
   forecast:         35,
   reflect:          25,
+  full_cycle:       150,
 };
 
 // Sample memory keys from a namespace: mix of recent + random for breadth
@@ -17667,12 +17730,21 @@ function formatMemoriesForLLM(rows) {
 // Extract result entries from LLM response based on strategy
 function extractDreamEntries(strategy, parsed) {
   if (!parsed) return [];
+  if (strategy === 'full_cycle') {
+    let entries = [];
+    if (parsed.full_cycle_results) entries = parsed.full_cycle_results;
+    return Array.isArray(entries) ? entries : [];
+  }
   const map = {
     synthesize:       parsed.synthesis,
     pattern_extract:  parsed.patterns,
     insight_generate: parsed.insights,
     compress:         parsed.compressed,
     associate:        parsed.associations,
+    validate:         parsed.validated,
+    evolve:           parsed.evolved,
+    forecast:         parsed.forecasts,
+    reflect:          parsed.reflections,
   };
   return Array.isArray(map[strategy]) ? map[strategy] : [];
 }
@@ -17706,11 +17778,16 @@ const DREAM_STRATEGY_KEY = {
   insight_generate: 'insights',
   compress:         'compressed',
   associate:        'associations',
+  validate:         'validated',
+  evolve:           'evolved',
+  forecast:         'forecasts',
+  reflect:          'reflections',
+  full_cycle:       'full_cycle_results',
 };
 
 // Core dream execution — called by both the route and the scheduler.
 // dryRun=true returns a preview without persisting anything or spending credits.
-async function executeDream(dreamId, apiKey, namespace, strategy, budget, model, dryRun) {
+async function executeDream(dreamId, apiKey, namespace, strategy, budget, model, dryRun, opts) {
   const startTime = Date.now();
 
   if (!dryRun) {
@@ -17742,10 +17819,190 @@ async function executeDream(dreamId, apiKey, namespace, strategy, budget, model,
     const keySampled = rows.map(function(r) { return r.key; });
     const formattedMemories = formatMemoriesForLLM(rows);
 
+    // full_cycle: run all 9 strategies sequentially, each stage's output enriches the next
+    if (strategy === 'full_cycle') {
+      const fullCycleStages = ['synthesize', 'pattern_extract', 'insight_generate', 'validate', 'evolve', 'forecast', 'compress', 'associate', 'reflect'];
+      const allEntries = [];
+      const stageCounts = {};
+      let cumulativeContext = formattedMemories;
+      let breakthroughIdea = null;
+
+      for (let si = 0; si < fullCycleStages.length; si++) {
+        const stg = fullCycleStages[si];
+        const stgPromptFn = DREAM_PROMPTS[stg];
+        if (!stgPromptFn) continue;
+        const stgPrompt = stgPromptFn(namespace, cumulativeContext, opts || {});
+
+        const llmHandlerFC = allHandlers['llm-think'];
+        if (!llmHandlerFC) throw new Error('No LLM handler available.');
+        const provider = dreamModelToProvider(model);
+        let stgResult;
+        try {
+          stgResult = await withDreamTimeout(
+            llmHandlerFC({
+              text: stgPrompt,
+              model: (model && model !== 'auto') ? model : undefined,
+              provider: provider,
+              max_tokens: 2000,
+              system_prompt: 'You are a memory consolidation engine. Always respond in valid JSON only. No markdown, no prose outside JSON.',
+            }),
+            90000,
+            'Dream full_cycle stage ' + stg
+          );
+        } catch (_stgErr) {
+          stageCounts[stg] = 0;
+          continue;
+        }
+
+        if (stgResult && stgResult._engine === 'needs_key') {
+          throw new Error('No LLM provider key configured.');
+        }
+
+        const stgKey = DREAM_STRATEGY_KEY[stg];
+        let stgParsed = null;
+        if (stgResult && Array.isArray(stgResult[stgKey])) {
+          stgParsed = stgResult;
+        } else {
+          const rawText = stgResult
+            ? (typeof stgResult.answer === 'string' ? stgResult.answer
+              : typeof stgResult.raw === 'string' ? stgResult.raw
+              : typeof stgResult.text === 'string' ? stgResult.text
+              : JSON.stringify(stgResult))
+            : '{}';
+          try {
+            const jm = rawText.match(/\{[\s\S]*\}/);
+            if (jm) stgParsed = JSON.parse(jm[0]);
+          } catch (_) {}
+        }
+
+        const stgEntries = stgParsed ? extractDreamEntries(stg, stgParsed) : [];
+        stageCounts[stg] = stgEntries.length;
+        if (stgParsed && stgParsed.meta && stgParsed.meta.breakthrough_idea && !breakthroughIdea) {
+          breakthroughIdea = stgParsed.meta.breakthrough_idea;
+        }
+
+        // Tag entries with their stage and add to combined list
+        for (let ei = 0; ei < stgEntries.length; ei++) {
+          const e = stgEntries[ei];
+          if (!e || !e.key) continue;
+          allEntries.push(Object.assign({}, e, {
+            key: 'full_' + stg + '_' + e.key,
+            stage: stg,
+            novelty_score: e.novelty_score || e.insight_depth || e.probability || 0.7,
+          }));
+        }
+
+        // Enrich context: append summarized stage output for next stage
+        if (stgEntries.length > 0) {
+          const stgSummary = stgEntries.slice(0, 5).map(function(e, i) {
+            return '[' + stg.toUpperCase() + '-' + (i + 1) + '] ' + String(e.value || '').slice(0, 300);
+          }).join('\n');
+          cumulativeContext = cumulativeContext + '\n\n--- ' + stg.toUpperCase() + ' STAGE OUTPUTS ---\n' + stgSummary;
+        }
+      }
+
+      // Build combined meta
+      const totalInsights = allEntries.length;
+      const fcMeta = {
+        total_stages: 9,
+        stages_completed: Object.keys(stageCounts).length,
+        stage_counts: stageCounts,
+        breakthrough_idea: breakthroughIdea || null,
+        total_insights: totalInsights,
+      };
+
+      // Build brief
+      const brief = 'Dream Engine ran full_cycle (9 stages) on ' + keySampled.length + ' memories, producing ' + totalInsights + ' total insights across all stages. '
+        + (breakthroughIdea ? 'Breakthrough: ' + String(breakthroughIdea).slice(0, 120) + '.' : 'No single breakthrough detected.');
+
+      // Store dream outputs
+      const dreamNamespace = namespace + ':dreams';
+      const dreamTags = ['dream', 'synthesized', 'full_cycle'];
+      const bulkEntries = [];
+      for (let ei = 0; ei < allEntries.length; ei++) {
+        const entry = allEntries[ei];
+        if (!entry || !entry.key) continue;
+        const memKey = dreamId + ':' + entry.key;
+        bulkEntries.push({
+          key: memKey,
+          value: Object.assign({}, entry, {
+            dream_id: dreamId,
+            strategy: 'full_cycle',
+            source_namespace: namespace,
+            dreamed_at: new Date().toISOString(),
+            model: model,
+            meta: fcMeta,
+          }),
+          tags: dreamTags,
+          type: 'dream',
+        });
+      }
+      bulkEntries.push({
+        key: dreamId + ':manifest',
+        value: {
+          dream_id: dreamId,
+          strategy: 'full_cycle',
+          source_namespace: namespace,
+          keys_sampled: keySampled,
+          entries_generated: allEntries.length,
+          brief: brief,
+          meta: fcMeta,
+          dreamed_at: new Date().toISOString(),
+          model: model,
+        },
+        tags: ['dream', 'manifest', 'full_cycle'],
+        type: 'dream',
+      });
+
+      let memoriesCreated = 0;
+      if (!dryRun && bulkEntries.length > 0) {
+        try {
+          const bulkResult = allHandlers['memory-bulk-set']({ namespace: dreamNamespace, entries: bulkEntries });
+          memoriesCreated = (bulkResult && typeof bulkResult.stored === 'number') ? bulkResult.stored : bulkEntries.length;
+        } catch (_be) {
+          memoriesCreated = 0;
+        }
+      } else if (dryRun) {
+        memoriesCreated = bulkEntries.length;
+      }
+
+      const durationMs = Date.now() - startTime;
+      const entriesSummary = allEntries.slice(0, 20).map(function(e) {
+        return { key: e.key, value: typeof e.value === 'string' ? e.value.slice(0, 300) : e.value, type: e.stage || 'full_cycle' };
+      });
+
+      const fcResult = {
+        dream_id: dreamId,
+        strategy: 'full_cycle',
+        namespace: namespace,
+        dream_namespace: dreamNamespace,
+        keys_sampled: keySampled.length,
+        keys_sampled_list: keySampled,
+        insights_generated: totalInsights,
+        memories_created: memoriesCreated,
+        keys_pruned: 0,
+        duration_ms: durationMs,
+        model: model,
+        brief: brief,
+        entries: entriesSummary,
+        meta: fcMeta,
+        _engine: 'llm',
+      };
+      if (dryRun) fcResult._dry_run = true;
+
+      if (!dryRun) {
+        db.prepare('UPDATE dream_sessions SET status = ?, keys_sampled = ?, memories_created = ?, completed_at = ?, duration_ms = ?, result = ? WHERE id = ?')
+          .run('complete', keySampled.length, memoriesCreated, Date.now(), durationMs, JSON.stringify(fcResult), dreamId);
+        if (session) Object.assign(session, { status: 'complete', keys_sampled: keySampled.length, memories_created: memoriesCreated, duration_ms: durationMs });
+      }
+
+      return fcResult;
+    }
+
     // 2. Gather — build strategy-specific LLM prompt
     const promptFn = DREAM_PROMPTS[strategy];
     if (!promptFn) throw new Error('Unknown strategy: ' + strategy);
-    const userPrompt = promptFn(namespace, formattedMemories);
+    const userPrompt = promptFn(namespace, formattedMemories, opts || {});
 
     // 3. Consolidate — invoke LLM with provider auto-mapped from model name; 90s hard timeout
     const llmHandler = allHandlers['llm-think'];
@@ -17871,6 +18128,23 @@ async function executeDream(dreamId, apiKey, namespace, strategy, budget, model,
       memoriesCreated = bulkEntries.length; // preview count only
     }
 
+    // Extract procedural skills from reflect/forecast entries
+    if (!dryRun && (strategy === 'reflect' || strategy === 'forecast' || strategy === 'evolve')) {
+      const skillStmt = db.prepare('INSERT INTO procedural_skills (id, dream_id, namespace, trigger_condition, action_description, confidence, source_strategy, created) VALUES (?, ?, ?, ?, ?, ?, ?, ?)');
+      for (let si = 0; si < entries.length; si++) {
+        const entry = entries[si];
+        const hasSkill = (entry.action_items && entry.action_items.length > 0) || (entry.probability && entry.probability > 0.65);
+        if (!hasSkill) continue;
+        const trigger = entry.theme || entry.domain || entry.key || 'pattern_detected';
+        const action = entry.action_items ? entry.action_items.join('; ') : (entry.value || '');
+        const conf = entry.insight_depth || entry.probability || entry.posterior_confidence || 0.7;
+        const skillId = 'skill-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 6);
+        try {
+          skillStmt.run(skillId, dreamId, namespace, String(trigger).slice(0, 500), String(action).slice(0, 2000), conf, strategy, Date.now());
+        } catch (_) {}
+      }
+    }
+
     // 7. Prune — for compress strategy, delete source keys the LLM said it replaced
     let pruned = 0;
     if (!dryRun && strategy === 'compress') {
@@ -17951,6 +18225,8 @@ app.post('/v1/memory/dream/start', auth, async (req, res) => {
   const budget = Math.min(Math.max(1, parseInt(req.body.budget) || 20), 100);
   const model = req.body.model || 'claude-haiku-4-5';
   const dryRun = req.body.dry_run === true || req.body.dry_run === 'true';
+  const adversarial = req.body.adversarial === true || req.body.adversarial === 'true';
+  const salienceThreshold = parseFloat(req.body.salience_threshold) || 0.0;
 
   if (!DREAM_STRATEGIES.includes(strategy)) {
     return res.status(400).json({ error: { code: 'invalid_strategy', message: 'strategy must be one of: ' + DREAM_STRATEGIES.join(', ') } });
@@ -17962,7 +18238,7 @@ app.post('/v1/memory/dream/start', auth, async (req, res) => {
   if (dryRun) {
     const dryId = 'dry-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
     try {
-      const preview = await executeDream(dryId, req.apiKey, namespace, strategy, budget, model, true);
+      const preview = await executeDream(dryId, req.apiKey, namespace, strategy, budget, model, true, { adversarial, salienceThreshold });
       return res.json(Object.assign({ ok: true, _dry_run: true, credits_would_charge: credits }, preview));
     } catch (dryErr) {
       return res.status(500).json({ error: { code: 'dry_run_failed', message: dryErr.message } });
@@ -17998,7 +18274,7 @@ app.post('/v1/memory/dream/start', auth, async (req, res) => {
   dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory/dream/start', credits, 0, 'llm');
 
   // Fire-and-forget — client polls /v1/memory/dream/status/:id
-  executeDream(dreamId, req.apiKey, namespace, strategy, budget, model, false)
+  executeDream(dreamId, req.apiKey, namespace, strategy, budget, model, false, { adversarial, salienceThreshold })
     .then(function() { activeDreamSessions.delete(dreamId); })
     .catch(function(err) {
       log.error('Dream execution failed', { dreamId: dreamId, error: err.message });
@@ -18239,6 +18515,314 @@ app.get('/v1/memory/dream/schedules', auth, function(req, res) {
     schedules.push(safe);
   });
   res.json({ ok: true, schedules: schedules, count: schedules.length, _engine: 'real' });
+});
+
+// GET /v1/memory/dream/report/:dream_id — Full intelligence report with score
+app.get('/v1/memory/dream/report/:dream_id', auth, function(req, res) {
+  const dream_id = req.params.dream_id;
+  const session = db.prepare('SELECT * FROM dream_sessions WHERE id = ? AND api_key = ?').get(dream_id, req.apiKey);
+  if (!session) return res.status(404).json({ error: { code: 'not_found', message: 'Dream session not found' } });
+  if (session.status !== 'complete') {
+    return res.status(400).json({ error: { code: 'not_complete', message: 'Dream session has not completed yet', status: session.status } });
+  }
+
+  let result = null;
+  try { result = session.result ? JSON.parse(session.result) : {}; } catch (_) { result = {}; }
+
+  const insightsGenerated = result.insights_generated || result.memories_created || 0;
+  const durationSec = (session.duration_ms || 1) / 1000;
+  // Intelligence Score: insights normalized by compute time, boosted by strategy depth
+  const strategyDepth = {
+    synthesize: 1.0, pattern_extract: 1.1, insight_generate: 1.4, compress: 0.8,
+    associate: 1.2, validate: 1.1, evolve: 1.5, forecast: 1.6, reflect: 1.3,
+    full_cycle: 2.0,
+  };
+  const depth = strategyDepth[session.strategy] || 1.0;
+  const rawScore = (insightsGenerated * depth * 10) / Math.max(durationSec, 1);
+  const intelligenceScore = Math.min(100, Math.round(rawScore * 10) / 10);
+
+  // Count procedural skills extracted (forecast entries with high probability)
+  const entries = result.entries || [];
+  const proceduralSkills = entries.filter(function(e) {
+    return e.type === 'forecast' || (e.probability && e.probability > 0.7);
+  }).length;
+
+  // Count actual stored procedural skills for this dream
+  let storedSkillsCount = 0;
+  try {
+    const skillRow = db.prepare('SELECT COUNT(*) as cnt FROM procedural_skills WHERE dream_id = ?').get(dream_id);
+    storedSkillsCount = skillRow ? skillRow.cnt : 0;
+  } catch (_) {}
+
+  // Dream Efficiency Score: intelligence output per compute unit
+  // Formula: (insights × depth × 10 + procedural_skills × 15) / max(duration_sec, 1)
+  const efficiencyRaw = ((insightsGenerated * depth * 10) + (storedSkillsCount * 15)) / Math.max(durationSec, 1);
+  const dreamEfficiencyScore = Math.min(100, Math.round(efficiencyRaw * 10) / 10);
+
+  // Fetch previous dream sessions to compute growth trend
+  const prevSessions = db.prepare(
+    'SELECT memories_created, duration_ms, strategy FROM dream_sessions WHERE api_key = ? AND status = ? AND id != ? ORDER BY started_at DESC LIMIT 5'
+  ).all(req.apiKey, 'complete', dream_id);
+  const avgPrev = prevSessions.length > 0
+    ? prevSessions.reduce(function(s, r) { return s + (r.memories_created || 0); }, 0) / prevSessions.length
+    : 0;
+  const graphGrowth = avgPrev > 0 ? Math.round(((insightsGenerated - avgPrev) / avgPrev) * 100) : 0;
+
+  res.json({
+    ok: true,
+    dream_id: dream_id,
+    strategy: session.strategy,
+    namespace: session.namespace,
+    model: session.model,
+    status: session.status,
+    started_at: new Date(session.started_at).toISOString(),
+    completed_at: session.completed_at ? new Date(session.completed_at).toISOString() : null,
+    duration_ms: session.duration_ms,
+    keys_sampled: session.keys_sampled,
+    insights_generated: insightsGenerated,
+    procedural_skills_extracted: proceduralSkills,
+    procedural_skills_stored: storedSkillsCount,
+    dream_efficiency_score: dreamEfficiencyScore,
+    graph_growth_pct: graphGrowth,
+    intelligence_score: intelligenceScore,
+    intelligence_score_breakdown: {
+      insights_generated: insightsGenerated,
+      strategy_depth_multiplier: depth,
+      duration_sec: Math.round(durationSec * 10) / 10,
+      formula: '(insights × strategy_depth × 10) / duration_sec, capped at 100',
+    },
+    brief: result.brief || null,
+    entries: result.entries || [],
+    meta: result.meta || {},
+    _engine: 'real',
+  });
+});
+
+// POST /v1/memory/tmr/queue — Queue a Targeted Memory Reactivation cue
+// TMR: closed-loop priority-weighted memory reactivation inspired by sleep neuroscience
+app.post('/v1/memory/tmr/queue', auth, function(req, res) {
+  const rawNamespace = req.body.namespace || 'default';
+  if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const namespace = req.acct._nsPrefix + ':' + rawNamespace;
+  const targetKeys = req.body.target_keys || [];
+  const priority = Math.min(10, Math.max(1, parseInt(req.body.priority) || 5));
+  const mode = req.body.mode || 'salience'; // salience | difficulty | contradiction | custom
+  const personalization = req.body.personalization || null;
+
+  if (!Array.isArray(targetKeys) || targetKeys.length === 0) {
+    return res.status(400).json({ error: { code: 'missing_keys', message: 'target_keys must be a non-empty array of memory keys' } });
+  }
+  if (targetKeys.length > 50) {
+    return res.status(400).json({ error: { code: 'too_many_keys', message: 'max 50 target_keys per TMR cue' } });
+  }
+
+  // Verify the target keys exist in this namespace
+  const existingKeys = targetKeys.filter(function(k) {
+    try { return !!db.prepare('SELECT key FROM memory WHERE namespace = ? AND key = ?').get(namespace, k); }
+    catch (_) { return false; }
+  });
+
+  const cueId = 'tmr-' + Date.now().toString(36) + '-' + crypto.randomBytes(3).toString('hex');
+  const cue = {
+    id: cueId,
+    namespace: rawNamespace,
+    api_key: req.apiKey,
+    target_keys: targetKeys,
+    existing_keys: existingKeys,
+    priority: priority,
+    mode: mode,
+    personalization: personalization,
+    status: 'pending',
+    created_at: new Date().toISOString(),
+  };
+
+  // Store in memory as a TMR cue entry
+  try {
+    const tmrNamespace = namespace + ':tmr';
+    allHandlers['memory-set']({
+      namespace: tmrNamespace,
+      key: cueId,
+      value: cue,
+      tags: ['tmr', 'cue', mode],
+      ttl_seconds: 86400, // 24h TTL — cues expire after a day
+    });
+  } catch (storeErr) {
+    return res.status(500).json({ error: { code: 'store_failed', message: storeErr.message } });
+  }
+
+  // Generate reactivation prompt prefix for personalized cue injection
+  const cuePrompt = personalization
+    ? 'For user context "' + String(personalization).slice(0, 200) + '": Reactivate memory of ' + existingKeys.slice(0, 3).join(', ')
+    : 'Reactivate and reinforce: ' + existingKeys.slice(0, 3).join(', ');
+
+  res.json({
+    ok: true,
+    cue_id: cueId,
+    namespace: rawNamespace,
+    target_keys_requested: targetKeys.length,
+    target_keys_found: existingKeys.length,
+    priority: priority,
+    mode: mode,
+    cue_prompt_preview: cuePrompt,
+    status: 'pending',
+    expires_in: '24h',
+    tip: 'Fetch pending cues with GET /v1/memory/tmr/cues. Include the cue_prompt in your next agent prompt to reactivate these memories.',
+    _engine: 'real',
+  });
+});
+
+// GET /v1/memory/tmr/cues — Fetch pending TMR cues for this namespace
+app.get('/v1/memory/tmr/cues', auth, function(req, res) {
+  const rawNamespace = req.query.namespace || 'default';
+  if (!req.acct._nsPrefix) req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const namespace = req.acct._nsPrefix + ':' + rawNamespace;
+  const tmrNamespace = namespace + ':tmr';
+  const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+  const mode = req.query.mode || null; // filter by mode
+
+  try {
+    let rows;
+    if (mode) {
+      rows = db.prepare(
+        'SELECT key, value FROM memory WHERE namespace = ? AND tags LIKE ? ORDER BY updated DESC LIMIT ?'
+      ).all(tmrNamespace, '%' + mode + '%', limit);
+    } else {
+      rows = db.prepare(
+        'SELECT key, value FROM memory WHERE namespace = ? AND tags LIKE ? ORDER BY updated DESC LIMIT ?'
+      ).all(tmrNamespace, '%tmr%', limit);
+    }
+
+    const cues = rows.map(function(r) {
+      let rawVal = r.value || '';
+      // Decompress if stored with zlib prefix
+      if (rawVal.startsWith('~z~')) {
+        try { rawVal = require('zlib').inflateRawSync(Buffer.from(rawVal.slice(3), 'base64')).toString('utf8'); } catch(_) {}
+      }
+      let cue;
+      try {
+        cue = JSON.parse(rawVal);
+        // Safety: handle legacy double-encoded values
+        if (typeof cue === 'string') cue = JSON.parse(cue);
+      } catch (_) { cue = { raw: rawVal }; }
+      return Object.assign({ id: r.key }, cue);
+    });
+
+    // Sort by priority desc
+    cues.sort(function(a, b) { return (b.priority || 5) - (a.priority || 5); });
+
+    // Generate a combined reactivation prompt from top 3 cues
+    const topCues = cues.slice(0, 3);
+    const combinedPrompt = topCues.length > 0
+      ? '[TMR Reactivation] Focus on these memory clusters: ' +
+        topCues.map(function(c) { return (c.target_keys || []).slice(0, 2).join(', '); }).join(' | ')
+      : null;
+
+    res.json({
+      ok: true,
+      namespace: rawNamespace,
+      cues: cues,
+      count: cues.length,
+      combined_reactivation_prompt: combinedPrompt,
+      tip: 'Prepend combined_reactivation_prompt to your agent system prompt to trigger TMR-style memory consolidation.',
+      _engine: 'real',
+    });
+  } catch (err) {
+    res.status(500).json({ error: { code: 'query_failed', message: err.message } });
+  }
+});
+
+// POST /v1/memory/dream/collective — Run Dream Engine across a shared memory space (Collective Dream)
+// All members of a shared space contribute memories. This synthesizes cross-agent intelligence.
+app.post('/v1/memory/dream/collective', auth, async (req, res) => {
+  const spaceId = req.body.space_id || req.body.hive_id; // support both param names
+  const strategy = req.body.strategy || 'synthesize';
+  const budget = Math.min(Math.max(1, parseInt(req.body.budget) || 30), 100);
+  const model = req.body.model || 'claude-haiku-4-5';
+
+  if (!spaceId) return res.status(400).json({ error: { code: 'missing_space_id', message: 'space_id is required (a shared_memory_spaces id from POST /v1/memory/share/create)' } });
+  if (!DREAM_STRATEGIES.includes(strategy)) {
+    return res.status(400).json({ error: { code: 'invalid_strategy', message: 'strategy must be one of: ' + DREAM_STRATEGIES.join(', ') } });
+  }
+
+  // Verify this API key is a member of the shared memory space
+  let space;
+  try { space = db.prepare('SELECT * FROM shared_memory_spaces WHERE id = ?').get(spaceId); } catch (_) { space = null; }
+  if (!space) return res.status(404).json({ error: { code: 'space_not_found', message: 'Shared memory space not found. Create one with POST /v1/memory/share/create' } });
+
+  let membership;
+  try { membership = db.prepare('SELECT * FROM shared_memory_members WHERE space_id = ? AND api_key = ?').get(spaceId, req.apiKey); } catch (_) { membership = null; }
+  if (!membership) return res.status(403).json({ error: { code: 'not_a_member', message: 'Your API key is not a member of this shared space. Ask the owner to invite you with POST /v1/memory/share/invite' } });
+
+  const credits = (DREAM_CREDITS[strategy] || 20) + 10; // +10 for collective overhead
+  if (req.acct.balance < credits) {
+    return res.status(402).json({ error: { code: 'insufficient_credits', required: credits, balance: req.acct.balance } });
+  }
+
+  // Use the shared space's namespace for collective dreaming
+  const hiveNamespace = 'shared:' + spaceId;
+  const hiveId = spaceId; // alias for response fields
+  const dreamId = 'cdream-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
+  const now = Date.now();
+
+  db.prepare(
+    'INSERT INTO dream_sessions (id, api_key, namespace, strategy, status, keys_sampled, memories_created, model, started_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+  ).run(dreamId, req.apiKey, hiveNamespace, strategy, 'pending', 0, 0, model, now);
+
+  activeDreamSessions.set(dreamId, {
+    id: dreamId, api_key: req.apiKey, namespace: hiveNamespace, strategy: strategy,
+    budget: budget, model: model, status: 'pending', collective: true, hive_id: hiveId,
+    started_at: new Date(now).toISOString(), keys_sampled: 0, memories_created: 0,
+  });
+
+  req.acct.balance -= credits;
+  persistKey(req.apiKey);
+  dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory/dream/collective', credits, 0, 'llm');
+
+  executeDream(dreamId, req.apiKey, hiveNamespace, strategy, budget, model, false)
+    .then(function() { activeDreamSessions.delete(dreamId); })
+    .catch(function(err) {
+      log.error('Collective dream failed', { dreamId, hiveId, error: err.message });
+      activeDreamSessions.delete(dreamId);
+    });
+
+  res.json({
+    ok: true,
+    dream_id: dreamId,
+    space_id: hiveId,
+    collective: true,
+    status: 'running',
+    strategy: strategy,
+    budget: budget,
+    model: model,
+    credits_charged: credits,
+    namespace: hiveNamespace,
+    member_role: membership ? membership.role : 'member',
+    poll_endpoint: 'GET /v1/memory/dream/status/' + dreamId,
+    report_endpoint: 'GET /v1/memory/dream/report/' + dreamId,
+    _engine: 'real',
+  });
+});
+
+// GET /v1/memory/skills — List procedural skills extracted by Dream Engine
+app.get('/v1/memory/skills', auth, function(req, res) {
+  const rawNamespace = req.query.namespace || 'default';
+  if (!req.acct._nsPrefix) req.acct._nsPrefix = require('crypto').createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+  const namespace = req.acct._nsPrefix + ':' + rawNamespace;
+  const limit = Math.min(parseInt(req.query.limit) || 50, 200);
+  const minConf = parseFloat(req.query.min_confidence) || 0.0;
+  const strategy = req.query.strategy || null;
+
+  try {
+    let skills;
+    if (strategy) {
+      skills = db.prepare('SELECT * FROM procedural_skills WHERE namespace = ? AND confidence >= ? AND source_strategy = ? ORDER BY confidence DESC, created DESC LIMIT ?').all(namespace, minConf, strategy, limit);
+    } else {
+      skills = db.prepare('SELECT * FROM procedural_skills WHERE namespace = ? AND confidence >= ? ORDER BY confidence DESC, created DESC LIMIT ?').all(namespace, minConf, limit);
+    }
+    res.json({ ok: true, namespace: rawNamespace, skills: skills, count: skills.length, _engine: 'real' });
+  } catch (err) {
+    res.status(500).json({ error: { code: 'query_failed', message: err.message } });
+  }
 });
 
 // ===== FEATURE: Swarm Live SSE Stream =====

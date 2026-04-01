@@ -9,12 +9,50 @@ Agents that synthesize knowledge overnight (Dream Engine). Teams that share inte
 
 ## Headline Products
 
-- **Dream Engine** — REM-style memory consolidation. Agents synthesize, compress, and evolve their memory on a schedule. `POST /v1/memory/dream/start` → `GET /v1/memory/dream/status/:id`
-- **Multiplayer Memory** — Shared memory spaces with collaborator invites. Real-time team intelligence. `POST /v1/memory/share/create` → `POST /v1/memory/collaborator/invite`
+- **Dream Engine** — 9-stage REM-cycle memory consolidation. All 9 strategies: synthesize, pattern_extract, insight_generate, compress, associate, validate, evolve, forecast, reflect. `POST /v1/memory/dream/start` → `GET /v1/memory/dream/status/:id` → `GET /v1/memory/dream/report/:id`
+- **Multiplayer Memory** — Shared memory spaces with collaborator invites. Collective Dream runs across hive namespaces. `POST /v1/memory/share/create` → `POST /v1/memory/collaborator/invite` → `POST /v1/memory/dream/collective`
+- **TMR (Targeted Memory Reactivation)** — Priority-weighted memory reactivation. `POST /v1/memory/tmr/queue` → `GET /v1/memory/tmr/cues`
+- **Intelligence Score** — KPI metric: (insights × strategy_depth × 10) / duration_sec. Returned by `GET /v1/memory/dream/report/:id`
 
-Everything else (1,421+ APIs, 82 categories, visual DAG workflows, hive coordination, GraphRAG, northstar goal-anchoring) supports and extends these two primitives.
+## New Frontend Pages (Strat 12)
+
+- `/memory-hub` — Brain Cockpit dashboard (Intelligence Score, sessions, quick launcher, TMR)
+- `/dream-studio` — Dream Engine Studio (9-stage config, recipe gallery, SDK generator)
+- `/dream-reports` — Morning Intelligence Brief (session analytics, trends, procedural skills)
+- `/team-hives` — Multiplayer Living Memory (hive management, collective dreams, team score)
+- `/memory-explorer` — Visual Knowledge Graph (force-directed, real API calls)
+- `/skills-forge` — Procedural Skills Library (extracted skills, system prompt builder)
 
 API definitions live in four registries: `registry.js` (530 base), `registry-expansion.js`, `registry-hackathon.js`, and `registry-new.js` (vision/vertical/memory-upgrade).
+
+## Strat 13 Features (2026-04-01)
+
+### Dream Engine v2 (`routes/dream-engine-v2.js`)
+- **Pre-Dream Prep** — `POST /v1/memory/dream/prep` — questionnaire-based readiness scoring (0–100) + recommended strategy selection
+- **TDI Mode** — `POST /v1/memory/dream/incubate` — Targeted Dream Incubation with metacognitive check + affective profiling
+- **Metacognitive Check** — pure-JS simulation of prefrontal tACS (40 Hz gamma binding) + alpha-theta phase-amplitude coupling; returns `prefrontal_binding_score`, `alpha_theta_pac_score`, `theta_gamma_coupling`, `memory_consolidation_readiness`, `recommended_depth`, `stage_weights`
+- **Emotional Intelligence Layer** — `POST /v1/memory/dream/emotional-tag` — affective tagging (valence/arousal/dominance/primary_emotion/consolidation_bias) stored in `memory_emotional_tags`
+- **Incubation Status** — `GET /v1/memory/dream/incubate/:incubation_id`
+
+### Brain Glow Score (`routes/brain-glow.js`)
+- **Score** — `GET /v1/memory/score` — Brain Glow formula: `(insights × relevance × dream_depth × emotional_depth × user_shaping × collective_boost) / duration_sec`, capped 0–100; ranks: Spark→Ember→Flame→Blaze→Inferno
+- **Force Compute** — `POST /v1/memory/score/compute`
+- **Morning Briefing** — `GET /v1/memory/briefing` — brain_glow + dream_recap + top_insights + tmr_cues + emotional_summary + recommended_strategies
+- **History** — `GET /v1/memory/score/history?limit=30&days=90`
+- **Streak Check-in** — `POST /v1/memory/score/streak/checkin`
+
+### Background Extractors (`routes/background-extractors.js`)
+- **Extract** — `POST /v1/memory/background/extract` — tokenize → entity extraction → density score → Jaccard clustering → memory chunks; optional `auto_dream` queuing
+- **Discovery Scan** — `POST /v1/memory/discovery/scan` — multi-source scan (text/url_hint/key_value_pairs) with threshold filtering
+- **Runs** — `GET /v1/memory/background/runs`, `GET /v1/memory/background/runs/:run_id`, `DELETE /v1/memory/background/runs/:run_id`
+- **Memories** — `GET /v1/memory/background/memories`
+
+### Voice + Wearable (`routes/voice-wearable.js`)
+- **Voice Store** — `POST /v1/voice/transcribe-and-store` — accepts pre-transcribed text, computes speaking_rate + key_phrases + memory_value_score, optional chunk extraction
+- **Voice List/Delete** — `GET /v1/voice/transcripts`, `DELETE /v1/voice/transcript/:id`
+- **Wearable Sync** — `POST /v1/wearable/sync` — ingests biometrics (Oura/Whoop/Garmin/Apple Watch), computes `memory_consolidation_index` from REM/deep sleep, auto-schedules TMR if MCI > 60
+- **Wearable Data/Correlation** — `GET /v1/wearable/data`, `GET /v1/wearable/sleep-correlation`
+- **Multiplayer Voice Rooms** — `POST /v1/voice/multiplayer/room`, `GET /v1/voice/multiplayer/room/:id`, `POST /v1/voice/multiplayer/room/:id/join`, `POST /v1/voice/multiplayer/room/:id/transcript`, `GET /v1/voice/multiplayer/room/:id/transcripts`
 
 ## Running the server
 

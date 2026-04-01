@@ -1,0 +1,1724 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Memory Hub — Slopshop.gg</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #09090b;
+    --s1: #111113;
+    --s2: #18181b;
+    --b: #1e1e22;
+    --b2: #27272a;
+    --t: #fafafa;
+    --t2: #a1a1aa;
+    --t3: #71717a;
+    --t4: #52525b;
+    --r: #06b6d4;
+    --r2: #22d3ee;
+    --rg: rgba(6,182,212,0.06);
+    --o: #a78bfa;
+    --og: rgba(167,139,250,0.08);
+    --g: #34d399;
+    --gg: rgba(52,211,153,0.08);
+    --v: #818cf8;
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Inter', system-ui, sans-serif;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--t);
+    font-family: var(--sans);
+    font-size: 14px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* NAV */
+  nav {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 56px;
+    background: rgba(9,9,11,0.85);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    z-index: 100;
+    gap: 24px;
+  }
+  .nav-logo {
+    font-family: var(--mono);
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--t);
+    text-decoration: none;
+    letter-spacing: -0.5px;
+    margin-right: auto;
+  }
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .nav-links a {
+    color: var(--t2);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .nav-links a:hover { color: var(--t); background: var(--b); }
+  .btn-signup {
+    background: var(--r) !important;
+    color: var(--bg) !important;
+    font-weight: 600 !important;
+    padding: 6px 16px !important;
+    border-radius: 6px;
+    transition: opacity 0.15s !important;
+  }
+  .btn-signup:hover { opacity: 0.9; background: var(--r) !important; }
+
+  /* LAYOUT */
+  .layout {
+    display: flex;
+    padding-top: 70px;
+    min-height: 100vh;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 240px;
+    position: fixed;
+    top: 56px;
+    left: 0;
+    bottom: 0;
+    background: var(--s1);
+    border-right: 1px solid rgba(255,255,255,0.05);
+    padding: 16px 8px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .sidebar-section-label {
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--t4);
+    padding: 8px 12px 4px;
+    font-family: var(--mono);
+  }
+  .sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    color: var(--t3);
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+    font-size: 13px;
+    font-weight: 500;
+    user-select: none;
+  }
+  .sidebar-item:hover { background: var(--b); color: var(--t2); }
+  .sidebar-item.active { background: var(--rg); color: var(--r); }
+  .sidebar-item .icon { font-size: 15px; width: 18px; text-align: center; }
+  .sidebar-badge {
+    margin-left: auto;
+    background: var(--b2);
+    color: var(--t3);
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 1px 6px;
+    border-radius: 10px;
+    font-weight: 600;
+  }
+  .sidebar-item.active .sidebar-badge { background: var(--r); color: var(--bg); }
+
+  /* CONTENT */
+  .content {
+    flex: 1;
+    margin-left: 240px;
+    padding: 24px 28px 48px;
+    max-width: calc(100vw - 240px);
+  }
+
+  .page-section {
+    display: none;
+  }
+  .page-section.active {
+    display: block;
+  }
+
+  /* PAGE HEADER */
+  .page-header {
+    margin-bottom: 24px;
+  }
+  .page-header h1 {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--t);
+    margin-bottom: 4px;
+  }
+  .page-header p {
+    color: var(--t3);
+    font-size: 13px;
+  }
+
+  /* INTELLIGENCE SCORE */
+  .intel-score-card {
+    background: var(--s1);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    padding: 28px;
+    display: flex;
+    gap: 32px;
+    align-items: center;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .intel-score-card::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 220px; height: 220px;
+    background: radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  .gauge-wrap {
+    position: relative;
+    width: 130px;
+    height: 130px;
+    flex-shrink: 0;
+  }
+  .gauge-svg { width: 130px; height: 130px; transform: rotate(-90deg); }
+  .gauge-track { fill: none; stroke: var(--b2); stroke-width: 10; }
+  .gauge-fill {
+    fill: none;
+    stroke: var(--r);
+    stroke-width: 10;
+    stroke-linecap: round;
+    stroke-dasharray: 339.292;
+    stroke-dashoffset: 339.292;
+    transition: stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1);
+    filter: drop-shadow(0 0 6px rgba(6,182,212,0.5));
+  }
+  .gauge-center {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%,-50%);
+    text-align: center;
+  }
+  .gauge-score {
+    font-family: var(--mono);
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--r);
+    line-height: 1;
+  }
+  .gauge-label {
+    font-size: 10px;
+    color: var(--t4);
+    font-family: var(--mono);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+  .intel-meta {
+    flex: 1;
+  }
+  .intel-meta h2 {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--t);
+    margin-bottom: 6px;
+  }
+  .intel-tagline {
+    color: var(--t3);
+    font-size: 12px;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .intel-tagline::before {
+    content: '●';
+    color: var(--g);
+    font-size: 8px;
+    animation: pulse-dot 2s ease-in-out infinite;
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+  .intel-breakdown {
+    display: flex;
+    gap: 24px;
+  }
+  .intel-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .intel-stat-val {
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--t);
+  }
+  .intel-stat-label {
+    font-size: 11px;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .intel-formula {
+    margin-top: 16px;
+    background: var(--b);
+    border-radius: 6px;
+    padding: 8px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--t3);
+    border: 1px solid rgba(255,255,255,0.05);
+  }
+  .intel-formula .hl { color: var(--r2); }
+
+  /* STATS ROW */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .stat-card {
+    background: var(--s1);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 10px;
+    padding: 18px 20px;
+    transition: border-color 0.15s;
+  }
+  .stat-card:hover { border-color: rgba(255,255,255,0.1); }
+  .stat-card-label {
+    font-size: 11px;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-bottom: 10px;
+    font-weight: 600;
+  }
+  .stat-card-val {
+    font-family: var(--mono);
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--t);
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-card-sub {
+    font-size: 11px;
+    color: var(--t4);
+  }
+  .stat-card.cyan .stat-card-val { color: var(--r); }
+  .stat-card.purple .stat-card-val { color: var(--o); }
+  .stat-card.green .stat-card-val { color: var(--g); }
+  .stat-card.indigo .stat-card-val { color: var(--v); }
+
+  /* SECTION CARD */
+  .section-card {
+    background: var(--s1);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--t);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .section-title .icon { font-size: 15px; }
+
+  /* TABLE */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .data-table th {
+    text-align: left;
+    padding: 10px 16px;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--t4);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    font-family: var(--mono);
+  }
+  .data-table td {
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+    vertical-align: middle;
+  }
+  .data-table tr:last-child td { border-bottom: none; }
+  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .data-table .mono { font-family: var(--mono); font-size: 12px; color: var(--t3); }
+
+  /* BADGES */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: var(--mono);
+    white-space: nowrap;
+  }
+  .badge-pending { background: rgba(251,191,36,0.12); color: #fbbf24; }
+  .badge-running { background: var(--rg); color: var(--r); }
+  .badge-running::before {
+    content: '●';
+    animation: pulse-dot 1s ease-in-out infinite;
+  }
+  .badge-complete { background: var(--gg); color: var(--g); }
+  .badge-error { background: rgba(239,68,68,0.12); color: #ef4444; }
+
+  .strategy-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-family: var(--mono);
+    font-weight: 500;
+    background: var(--og);
+    color: var(--o);
+  }
+
+  /* BUTTONS */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border: none;
+    font-family: var(--sans);
+    transition: opacity 0.15s, background 0.15s;
+    text-decoration: none;
+  }
+  .btn:hover { opacity: 0.85; }
+  .btn-primary { background: var(--r); color: var(--bg); }
+  .btn-secondary { background: var(--b2); color: var(--t2); border: 1px solid rgba(255,255,255,0.06); }
+  .btn-ghost { background: transparent; color: var(--t3); border: 1px solid rgba(255,255,255,0.08); }
+  .btn-ghost:hover { color: var(--t2); background: var(--b); border-color: rgba(255,255,255,0.12); }
+  .btn-sm { padding: 4px 10px; font-size: 11px; }
+  .btn-purple { background: var(--og); color: var(--o); border: 1px solid rgba(167,139,250,0.2); }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* DREAM LAUNCHER */
+  .launcher-body { padding: 20px; }
+  .form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 14px;
+  }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--t3);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-family: var(--mono);
+  }
+  .form-input, .form-select {
+    background: var(--b);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 6px;
+    color: var(--t);
+    font-size: 13px;
+    padding: 8px 12px;
+    font-family: var(--sans);
+    outline: none;
+    transition: border-color 0.15s;
+    width: 100%;
+  }
+  .form-input:focus, .form-select:focus { border-color: var(--r); }
+  .form-select { cursor: pointer; }
+  option { background: var(--b2); }
+
+  .slider-row { display: flex; align-items: center; gap: 12px; }
+  .form-range {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    background: var(--b2);
+    border-radius: 2px;
+    outline: none;
+  }
+  .form-range::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--r);
+    cursor: pointer;
+    box-shadow: 0 0 6px rgba(6,182,212,0.4);
+  }
+  .slider-val {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--r);
+    min-width: 36px;
+    text-align: right;
+  }
+
+  .toggle-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: var(--b);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 6px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+  }
+  .toggle-label { font-size: 13px; color: var(--t2); }
+  .toggle-sub { font-size: 11px; color: var(--t4); margin-top: 1px; }
+  .toggle {
+    position: relative;
+    width: 40px; height: 22px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; }
+  .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: var(--b2);
+    border-radius: 11px;
+    transition: background 0.2s;
+  }
+  .toggle-slider::after {
+    content: '';
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    background: var(--t3);
+    border-radius: 50%;
+    transition: transform 0.2s, background 0.2s;
+  }
+  .toggle input:checked + .toggle-slider { background: var(--r); }
+  .toggle input:checked + .toggle-slider::after {
+    transform: translateX(18px);
+    background: var(--bg);
+  }
+
+  .launcher-footer { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+  .result-box {
+    background: var(--b);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 14px;
+    margin-top: 14px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--t2);
+    line-height: 1.6;
+    display: none;
+  }
+  .result-box.visible { display: block; }
+  .result-box.success { border-color: rgba(52,211,153,0.2); color: var(--g); }
+  .result-box.error { border-color: rgba(239,68,68,0.2); color: #ef4444; }
+
+  /* TMR */
+  .tmr-body { padding: 20px; }
+  .tmr-cue-item {
+    background: var(--b);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 10px;
+  }
+  .tmr-cue-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+  }
+  .tmr-cue-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--t4);
+  }
+  .code-block {
+    background: var(--s2);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--t2);
+    line-height: 1.5;
+    position: relative;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .copy-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    background: var(--b2);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 4px;
+    color: var(--t3);
+    font-size: 10px;
+    font-family: var(--mono);
+    padding: 3px 7px;
+    cursor: pointer;
+    transition: color 0.15s;
+  }
+  .copy-btn:hover { color: var(--t); }
+
+  /* MEMORY BROWSER */
+  .memory-browser-body { padding: 20px; display: flex; gap: 16px; }
+  .memory-list-col { width: 280px; flex-shrink: 0; }
+  .memory-detail-col {
+    flex: 1;
+    background: var(--b);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 14px;
+    min-height: 200px;
+  }
+  .memory-key-item {
+    padding: 8px 12px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.1s;
+    border-bottom: 1px solid rgba(255,255,255,0.03);
+  }
+  .memory-key-item:hover { background: var(--b); }
+  .memory-key-item.selected { background: var(--rg); }
+  .memory-key-text {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--t2);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .memory-key-ns {
+    font-size: 10px;
+    color: var(--t4);
+    margin-top: 2px;
+    font-family: var(--mono);
+  }
+  .memory-detail-key {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--r);
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+  }
+  .memory-detail-val {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--t2);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .memory-detail-meta {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255,255,255,0.05);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .meta-chip {
+    font-family: var(--mono);
+    font-size: 10px;
+    color: var(--t4);
+  }
+  .meta-chip span { color: var(--t3); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(4px);
+    z-index: 200;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--s1);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    width: 460px;
+    max-width: 95vw;
+    padding: 24px;
+  }
+  .modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  .modal-title { font-size: 16px; font-weight: 600; }
+  .modal-close {
+    background: none;
+    border: none;
+    color: var(--t3);
+    font-size: 18px;
+    cursor: pointer;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+  .modal-close:hover { color: var(--t); }
+  .modal-form { display: flex; flex-direction: column; gap: 14px; }
+  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+  /* AUTH OVERLAY */
+  .auth-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(9,9,11,0.95);
+    backdrop-filter: blur(8px);
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: 16px;
+    text-align: center;
+    padding: 24px;
+  }
+  .auth-overlay h2 { font-size: 20px; font-weight: 700; }
+  .auth-overlay p { color: var(--t3); max-width: 360px; font-size: 13px; line-height: 1.6; }
+  .auth-key-input-row {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+    max-width: 420px;
+  }
+  .auth-key-input-row .form-input { flex: 1; }
+
+  /* EMPTY STATE */
+  .empty-state {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--t4);
+    font-size: 13px;
+  }
+  .empty-state .empty-icon { font-size: 28px; margin-bottom: 10px; }
+
+  /* LOADING */
+  .loading-row td { color: var(--t4); font-style: italic; }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(255,255,255,0.1);
+    border-top-color: var(--r);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* MISC */
+  .text-muted { color: var(--t3); }
+  .text-mono { font-family: var(--mono); font-size: 12px; }
+  .flex-row { display: flex; align-items: center; gap: 8px; }
+  .divider { height: 1px; background: rgba(255,255,255,0.05); margin: 12px 0; }
+  .pill {
+    display: inline-block;
+    background: var(--b2);
+    border-radius: 20px;
+    padding: 2px 8px;
+    font-size: 10px;
+    font-family: var(--mono);
+    color: var(--t3);
+  }
+html,body{overflow-x:hidden;max-width:100vw}
+img,video,iframe{max-width:100%}
+pre,code{overflow-x:auto;max-width:100%}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+@media(max-width:640px){
+  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
+  nav{padding:0 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-logo">SLOPSHOP<span style="color:#71717a">.gg</span></a>
+  <div class="nav-links">
+    <a href="/memory-hub" style="color:var(--g)">Memory Hub</a>
+    <a href="/dream-studio" style="color:var(--r)">Dream Studio</a>
+    <a href="/dream-recipes">Dream Recipes</a>
+    <a href="/team-hives" style="color:var(--o)">Team Hives</a>
+    <a href="/memory-copilot">Memory Copilot</a>
+    <a href="/dashboard">Dashboard</a>
+    <a href="/signup" class="btn-signup">Sign Up</a>
+  </div>
+</nav>
+
+<!-- AUTH OVERLAY -->
+<div class="auth-overlay" id="authOverlay">
+  <div style="font-size:32px">🧠</div>
+  <h2>Memory Hub requires authentication</h2>
+  <p>Enter your Slopshop API key to access your agent memory, Dream Engine sessions, and TMR cues.</p>
+  <div class="auth-key-input-row">
+    <input type="password" class="form-input" id="authKeyInput" placeholder="slop_live_..." autocomplete="off">
+    <button class="btn btn-primary" onclick="submitAuthKey()">Connect</button>
+  </div>
+  <p style="font-size:11px;color:var(--t4)">No account? <a href="/signup" style="color:var(--r);text-decoration:none">Sign up free</a> — or paste your key from the <a href="/dashboard" style="color:var(--r);text-decoration:none">dashboard</a>.</p>
+</div>
+
+<!-- LAYOUT -->
+<div class="layout">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section-label">Memory Hub</div>
+    <div class="sidebar-item active" onclick="showSection('overview', this)">
+      <span class="icon">◈</span> Overview
+    </div>
+    <div class="sidebar-item" onclick="showSection('dreams', this)">
+      <span class="icon">◉</span> Dream Sessions
+      <span class="sidebar-badge" id="dreamCountBadge">–</span>
+    </div>
+    <div class="sidebar-item" onclick="showSection('memory', this)">
+      <span class="icon">◫</span> Memory Explorer
+      <span class="sidebar-badge" id="memCountBadge">–</span>
+    </div>
+    <div class="sidebar-item" onclick="showSection('skills', this)">
+      <span class="icon">◌</span> Skills
+    </div>
+    <div class="sidebar-item" onclick="showSection('tmr', this)">
+      <span class="icon">◎</span> TMR Cues
+      <span class="sidebar-badge" id="tmrCountBadge">–</span>
+    </div>
+    <div class="sidebar-item" onclick="showSection('hives', this)">
+      <span class="icon">⬡</span> Team Hives
+    </div>
+    <div class="divider" style="margin:8px 4px"></div>
+    <div class="sidebar-section-label">System</div>
+    <div class="sidebar-item" onclick="showSection('settings', this)">
+      <span class="icon">◧</span> Settings
+    </div>
+  </aside>
+
+  <!-- CONTENT -->
+  <main class="content">
+
+    <!-- OVERVIEW -->
+    <section class="page-section active" id="section-overview">
+      <div class="page-header">
+        <h1>Brain Cockpit</h1>
+        <p>Central command for your agent memory and Dream Engine intelligence.</p>
+      </div>
+
+      <!-- INTELLIGENCE SCORE -->
+      <div class="intel-score-card" id="intelCard">
+        <div class="gauge-wrap">
+          <svg class="gauge-svg" viewBox="0 0 120 120">
+            <circle class="gauge-track" cx="60" cy="60" r="54"/>
+            <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="54"/>
+          </svg>
+          <div class="gauge-center">
+            <div class="gauge-score" id="gaugeScore">–</div>
+            <div class="gauge-label">/ 100</div>
+          </div>
+        </div>
+        <div class="intel-meta">
+          <h2>Intelligence Score</h2>
+          <div class="intel-tagline" id="intelTagline">Your agents are getting smarter</div>
+          <div class="intel-breakdown" id="intelBreakdown">
+            <div class="intel-stat">
+              <div class="intel-stat-val" id="iInsights">–</div>
+              <div class="intel-stat-label">Insights</div>
+            </div>
+            <div class="intel-stat">
+              <div class="intel-stat-val" id="iDepth">–</div>
+              <div class="intel-stat-label">Strategy Depth</div>
+            </div>
+            <div class="intel-stat">
+              <div class="intel-stat-val" id="iDuration">–</div>
+              <div class="intel-stat-label">Duration (s)</div>
+            </div>
+            <div class="intel-stat">
+              <div class="intel-stat-val" id="iStrategy">–</div>
+              <div class="intel-stat-label">Strategy</div>
+            </div>
+          </div>
+          <div class="intel-formula">
+            score = <span class="hl">(insights × strategy_depth × 10)</span> / <span class="hl">duration_sec</span>
+            &nbsp;·&nbsp; capped at 100
+          </div>
+        </div>
+      </div>
+
+      <!-- STATS -->
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card cyan">
+          <div class="stat-card-label">Total Memories</div>
+          <div class="stat-card-val" id="statMemories"><span class="spinner"></span></div>
+          <div class="stat-card-sub">across all namespaces</div>
+        </div>
+        <div class="stat-card purple">
+          <div class="stat-card-label">Dream Sessions</div>
+          <div class="stat-card-val" id="statDreams"><span class="spinner"></span></div>
+          <div class="stat-card-sub">total runs logged</div>
+        </div>
+        <div class="stat-card green">
+          <div class="stat-card-label">Latest Intel Score</div>
+          <div class="stat-card-val" id="statScore"><span class="spinner"></span></div>
+          <div class="stat-card-sub">most recent session</div>
+        </div>
+        <div class="stat-card indigo">
+          <div class="stat-card-label">Active Schedules</div>
+          <div class="stat-card-val" id="statSchedules"><span class="spinner"></span></div>
+          <div class="stat-card-sub">dream auto-runs</div>
+        </div>
+      </div>
+
+      <!-- RECENT DREAMS SUMMARY -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><span class="icon">◉</span> Recent Dream Sessions</div>
+          <button class="btn btn-ghost btn-sm" onclick="showSection('dreams', document.querySelector('[onclick*=dreams]'))">View all →</button>
+        </div>
+        <div id="overviewDreamsTable">
+          <table class="data-table">
+            <thead><tr>
+              <th>ID</th><th>Strategy</th><th>Status</th><th>Keys</th><th>Insights</th><th>Duration</th><th>Started</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="overviewDreamsTbody">
+              <tr class="loading-row"><td colspan="8"><span class="spinner"></span>Loading sessions…</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- QUICK LAUNCHER (overview copy) -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><span class="icon">▶</span> Quick Dream Launcher</div>
+          <span class="pill">POST /v1/memory/dream/start</span>
+        </div>
+        <div class="launcher-body">
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Namespace</label>
+              <input type="text" class="form-input" id="launchNs" placeholder="default" value="default">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Strategy</label>
+              <select class="form-select" id="launchStrategy">
+                <option value="synthesize">🔮 synthesize</option>
+                <option value="pattern_extract">🔍 pattern_extract</option>
+                <option value="insight_generate">💡 insight_generate</option>
+                <option value="compress">📦 compress</option>
+                <option value="associate">🔗 associate</option>
+                <option value="validate">✓ validate</option>
+                <option value="evolve">⚡ evolve</option>
+                <option value="forecast">📈 forecast</option>
+                <option value="reflect">🪞 reflect</option>
+                <option value="full_cycle">✨ Full REM Cycle (All 9 Stages)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Model</label>
+              <select class="form-select" id="launchModel">
+                <option value="claude-haiku-4-5">claude-haiku-4-5</option>
+                <option value="claude-sonnet-4-6" selected>claude-sonnet-4-6</option>
+                <option value="gpt-4o-mini">gpt-4o-mini</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Memory Budget: <span id="budgetVal">30</span></label>
+              <div class="slider-row">
+                <input type="range" class="form-range" id="launchBudget" min="10" max="100" value="30" oninput="document.getElementById('budgetVal').textContent=this.value">
+                <span class="slider-val" id="budgetDisplay"></span>
+              </div>
+            </div>
+          </div>
+          <div class="toggle-row">
+            <div>
+              <div class="toggle-label">Dry Run</div>
+              <div class="toggle-sub">Simulate without persisting results</div>
+            </div>
+            <label class="toggle">
+              <input type="checkbox" id="launchDryRun">
+              <span class="toggle-slider"></span>
+            </label>
+          </div>
+          <div class="launcher-footer">
+            <button class="btn btn-primary" id="launchBtn" onclick="launchDream()">
+              <span>▶</span> Launch Dream
+            </button>
+            <span class="text-muted" id="launchStatus" style="font-size:12px"></span>
+          </div>
+          <div class="result-box" id="launchResult"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DREAM SESSIONS -->
+    <section class="page-section" id="section-dreams">
+      <div class="page-header">
+        <h1>Dream Sessions</h1>
+        <p>Full history of Dream Engine runs. Click a session to view the full report.</p>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><span class="icon">◉</span> All Sessions</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadDreams()">↻ Refresh</button>
+        </div>
+        <table class="data-table">
+          <thead><tr>
+            <th>ID</th><th>Strategy</th><th>Status</th><th>Keys</th><th>Insights</th><th>Duration</th><th>Started</th><th>Actions</th>
+          </tr></thead>
+          <tbody id="allDreamsTbody">
+            <tr class="loading-row"><td colspan="8"><span class="spinner"></span>Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- MEMORY EXPLORER -->
+    <section class="page-section" id="section-memory">
+      <div class="page-header">
+        <h1>Memory Explorer</h1>
+        <p>Browse and inspect your stored agent memories by namespace and key.</p>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><span class="icon">◫</span> Namespace Browser</div>
+          <div class="flex-row">
+            <input type="text" class="form-input" id="memNsFilter" placeholder="Filter by namespace…" style="width:200px" oninput="filterMemoryList()">
+            <button class="btn btn-ghost btn-sm" onclick="loadMemoryList()">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="memory-browser-body">
+          <div class="memory-list-col">
+            <div id="memoryKeyList">
+              <div class="empty-state"><span class="spinner"></span> Loading memories…</div>
+            </div>
+          </div>
+          <div class="memory-detail-col" id="memoryDetail">
+            <div class="empty-state">
+              <div class="empty-icon">◫</div>
+              Select a memory key to inspect its value.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SKILLS -->
+    <section class="page-section" id="section-skills">
+      <div class="page-header">
+        <h1>Skills</h1>
+        <p>Procedural skills extracted by the Dream Engine. If X → run tool Y patterns.</p>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><span class="icon">◌</span> Procedural Skills</div>
+          <button class="btn btn-ghost btn-sm" onclick="loadSkillsSection()">↻ Refresh</button>
+        </div>
+        <div id="skills-section-loading" style="padding:40px 20px;text-align:center;display:none">
+          <span class="spinner"></span><span style="color:var(--t3);margin-left:8px">Loading skills…</span>
+        </div>
+        <div id="skills-section-list" style="padding:0 20px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:16px"></div>
+        <div id="skills-section-empty" class="empty-state" style="padding:60px 20px;display:none">
+          <div class="empty-icon">◌</div>
+          <div style="margin-bottom:8px;color:var(--t3)">No skills found</div>
+          <div style="color:var(--t4);font-size:12px">Run the Dream Engine with a <code style="font-family:var(--mono);font-size:11px;color:var(--r)">forecast</code> or <code style="font-family:var(--mono);font-size:11px;color:var(--r)">evolve</code> strategy to extract skills.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- TMR CUES -->
+    <section class="page-section" id="section-tmr">
+      <div class="page-header">
+        <h1>TMR Cues</h1>
+        <p>Targeted Memory Reactivation — pending cues queued for your agents.</p>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><span class="icon">◎</span> Pending Cues</div>
+          <div class="flex-row">
+            <button class="btn btn-ghost btn-sm" onclick="loadTmrCues()">↻ Refresh</button>
+            <button class="btn btn-primary btn-sm" onclick="openTmrModal()">+ Queue New Cue</button>
+          </div>
+        </div>
+        <div class="tmr-body" id="tmrBody">
+          <div class="empty-state"><span class="spinner"></span> Loading cues…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- HIVES -->
+    <section class="page-section" id="section-hives">
+      <div class="page-header">
+        <h1>Team Hives</h1>
+        <p>Shared agent memory pools for your organization.</p>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><span class="icon">⬡</span> Hive Directory</div>
+        </div>
+        <div class="empty-state" style="padding:60px 20px">
+          <div class="empty-icon">⬡</div>
+          <div style="margin-bottom:8px;color:var(--t3)">No hives created yet</div>
+          <div style="color:var(--t4);font-size:12px">Create a team hive via the API or upgrade to a team plan.</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+    <section class="page-section" id="section-settings">
+      <div class="page-header">
+        <h1>Settings</h1>
+        <p>API key, preferences, and account configuration.</p>
+      </div>
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-title"><span class="icon">◧</span> API Key</div>
+        </div>
+        <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
+          <div class="form-group">
+            <label class="form-label">Current API Key</label>
+            <div class="flex-row">
+              <input type="password" class="form-input" id="settingsKeyInput" placeholder="slop_live_..." style="max-width:380px">
+              <button class="btn btn-secondary" onclick="saveSettingsKey()">Save</button>
+              <button class="btn btn-ghost" onclick="clearKey()">Clear</button>
+            </div>
+          </div>
+          <div class="form-group" id="settingsKeyStatus" style="font-size:12px;color:var(--t4)"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<!-- TMR MODAL -->
+<div class="modal-overlay" id="tmrModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">Queue New TMR Cue</div>
+      <button class="modal-close" onclick="closeTmrModal()">✕</button>
+    </div>
+    <div class="modal-form">
+      <div class="form-group">
+        <label class="form-label">Namespace</label>
+        <input type="text" class="form-input" id="tmrNs" placeholder="default">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Memory Keys (comma-separated)</label>
+        <input type="text" class="form-input" id="tmrKeys" placeholder="key1, key2, key3">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Context / Prompt Override (optional)</label>
+        <input type="text" class="form-input" id="tmrContext" placeholder="Reactivate these memories in context of…">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="closeTmrModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="submitTmrCue()">Queue Cue</button>
+      </div>
+      <div class="result-box" id="tmrResult"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ─── AUTH ─────────────────────────────────────────────────────────────────────
+let API_KEY = localStorage.getItem('slopshop_api_key') || localStorage.getItem('slop_api_key') || '';
+let dreamPollInterval = null;
+let allMemoryData = [];
+
+function renderNoAuthBanner() {
+  if (API_KEY) return;
+  const existing = document.getElementById('no-auth-banner');
+  if (existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'no-auth-banner';
+  banner.style.cssText = 'background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.3);border-radius:10px;padding:12px 18px;margin:0 0 18px 0;display:flex;align-items:center;gap:12px;font-size:14px;color:#ffd700;position:sticky;top:8px;z-index:50;';
+  banner.innerHTML = '<span style="font-size:18px">⚠</span><span style="flex:1">Add your API key to unlock live data.</span><a href="/login" style="color:#a855f7;font-weight:600;white-space:nowrap;text-decoration:none;">Add your API key to unlock live data →</a>';
+  const mainContent = document.querySelector('.main-content') || document.querySelector('main') || document.body;
+  mainContent.insertBefore(banner, mainContent.firstChild);
+}
+
+function checkAuth() {
+  if (!API_KEY) {
+    renderNoAuthBanner();
+    document.getElementById('authOverlay').style.display = 'flex';
+  } else {
+    document.getElementById('authOverlay').style.display = 'none';
+    initDashboard();
+  }
+}
+
+function submitAuthKey() {
+  const val = document.getElementById('authKeyInput').value.trim();
+  if (!val) return;
+  API_KEY = val;
+  localStorage.setItem('slopshop_api_key', val);
+  document.getElementById('authOverlay').style.display = 'none';
+  initDashboard();
+}
+
+document.getElementById('authKeyInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') submitAuthKey();
+});
+
+// ─── NAVIGATION ───────────────────────────────────────────────────────────────
+function showSection(id, el) {
+  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
+  document.getElementById('section-' + id).classList.add('active');
+  if (el) el.classList.add('active');
+  if (id === 'dreams') loadDreams();
+  if (id === 'memory') loadMemoryList();
+  if (id === 'tmr') loadTmrCues();
+  if (id === 'skills') loadSkillsSection();
+  if (id === 'settings') populateSettings();
+}
+
+// ─── API HELPER ───────────────────────────────────────────────────────────────
+async function apiFetch(path, options = {}) {
+  const res = await fetch(path, {
+    ...options,
+    headers: {
+      'X-API-Key': API_KEY,
+      'Content-Type': 'application/json',
+      ...(options.headers || {})
+    }
+  });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`${res.status}: ${txt}`);
+  }
+  return res.json();
+}
+
+// ─── STRATEGY CONFIG ──────────────────────────────────────────────────────────
+const STRATEGY_META = {
+  synthesize:       { icon: '🔮', depth: 9 },
+  pattern_extract:  { icon: '🔍', depth: 7 },
+  insight_generate: { icon: '💡', depth: 8 },
+  compress:         { icon: '📦', depth: 5 },
+  associate:        { icon: '🔗', depth: 6 },
+  validate:         { icon: '✓',  depth: 6 },
+  evolve:           { icon: '⚡', depth: 8 },
+  forecast:         { icon: '📈', depth: 9 },
+  reflect:          { icon: '🪞', depth: 7 },
+};
+
+function stratDepth(strategy) {
+  return (STRATEGY_META[strategy] || { depth: 5 }).depth;
+}
+
+function stratIcon(strategy) {
+  return (STRATEGY_META[strategy] || { icon: '◈' }).icon;
+}
+
+function computeScore(session) {
+  const insights = session.insights_generated ?? session.insights ?? 0;
+  const depth = stratDepth(session.strategy);
+  const dur = session.duration_seconds ?? session.duration_sec ?? session.duration ?? 1;
+  const raw = (insights * depth * 10) / Math.max(dur, 0.1);
+  return Math.min(100, Math.round(raw));
+}
+
+// ─── INTELLIGENCE SCORE ───────────────────────────────────────────────────────
+function renderIntelScore(session) {
+  if (!session) {
+    document.getElementById('gaugeScore').textContent = 'N/A';
+    return;
+  }
+  const score = computeScore(session);
+  const insights = session.insights_generated ?? session.insights ?? 0;
+  const depth = stratDepth(session.strategy);
+  const dur = session.duration_seconds ?? session.duration_sec ?? session.duration ?? 0;
+
+  document.getElementById('gaugeScore').textContent = score;
+  document.getElementById('iInsights').textContent = insights;
+  document.getElementById('iDepth').textContent = depth;
+  document.getElementById('iDuration').textContent = typeof dur === 'number' ? dur.toFixed(1) : dur;
+  document.getElementById('iStrategy').textContent = session.strategy || '–';
+
+  // Animate gauge
+  const circumference = 339.292;
+  const offset = circumference - (score / 100) * circumference;
+  setTimeout(() => {
+    document.getElementById('gaugeFill').style.strokeDashoffset = offset;
+  }, 100);
+
+  // Color gauge by score
+  const fill = document.getElementById('gaugeFill');
+  if (score >= 70) { fill.style.stroke = 'var(--g)'; document.getElementById('gaugeScore').style.color = 'var(--g)'; }
+  else if (score >= 40) { fill.style.stroke = 'var(--r)'; document.getElementById('gaugeScore').style.color = 'var(--r)'; }
+  else { fill.style.stroke = '#fbbf24'; document.getElementById('gaugeScore').style.color = '#fbbf24'; }
+}
+
+// ─── DREAMS ───────────────────────────────────────────────────────────────────
+let dreamData = [];
+
+async function loadDreams() {
+  try {
+    const data = await apiFetch('/v1/memory/dream/log');
+    dreamData = Array.isArray(data) ? data : (data.sessions || data.logs || data.data || []);
+    renderDreamsTable(dreamData, 'overviewDreamsTbody', 5);
+    renderDreamsTable(dreamData, 'allDreamsTbody', null);
+    updateDreamStats(dreamData);
+    updateSidebarBadge('dreamCountBadge', dreamData.length);
+  } catch (e) {
+    setTableError('overviewDreamsTbody', 8, e.message);
+    setTableError('allDreamsTbody', 8, e.message);
+    document.getElementById('statDreams').textContent = 'Err';
+    document.getElementById('statScore').textContent = 'Err';
+  }
+}
+
+function updateDreamStats(sessions) {
+  document.getElementById('statDreams').textContent = sessions.length;
+  const completed = sessions.filter(s => s.status === 'complete' || s.status === 'completed');
+  if (completed.length > 0) {
+    const latest = completed[0];
+    const score = computeScore(latest);
+    document.getElementById('statScore').textContent = score;
+    renderIntelScore(latest);
+  } else {
+    document.getElementById('statScore').textContent = '–';
+    document.getElementById('gaugeScore').textContent = '–';
+  }
+
+  // Active schedules: check for pending/running
+  const active = sessions.filter(s => s.status === 'running' || s.status === 'pending').length;
+  document.getElementById('statSchedules').textContent = active;
+}
+
+function renderDreamsTable(sessions, tbodyId, limit) {
+  const tbody = document.getElementById(tbodyId);
+  if (!tbody) return;
+  const rows = limit ? sessions.slice(0, limit) : sessions;
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="padding:24px 16px;color:var(--t4);text-align:center">No dream sessions found. Launch your first dream below.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = rows.map(s => {
+    const id = s.dream_id || s.id || '–';
+    const shortId = typeof id === 'string' ? id.slice(0, 8) + '…' : id;
+    const strategy = s.strategy || '–';
+    const status = s.status || 'unknown';
+    const keys = s.keys_sampled ?? s.num_keys ?? s.key_count ?? '–';
+    const insights = s.insights_generated ?? s.insights ?? '–';
+    const dur = s.duration_seconds ?? s.duration_sec ?? s.duration;
+    const durStr = dur != null ? (typeof dur === 'number' ? dur.toFixed(1) + 's' : dur) : '–';
+    const started = s.started_at || s.created_at || s.timestamp;
+    const startedStr = started ? new Date(started).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–';
+    return `<tr>
+      <td class="mono" title="${id}">${shortId}</td>
+      <td><span class="strategy-badge">${stratIcon(strategy)} ${strategy}</span></td>
+      <td>${statusBadge(status)}</td>
+      <td class="mono">${keys}</td>
+      <td class="mono">${insights}</td>
+      <td class="mono">${durStr}</td>
+      <td class="mono">${startedStr}</td>
+      <td>
+        <div class="flex-row">
+          <a href="/dream-reports?id=${encodeURIComponent(id)}" class="btn btn-ghost btn-sm">Report</a>
+          <button class="btn btn-purple btn-sm" onclick="runAgain('${strategy}')">Run Again</button>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function statusBadge(status) {
+  const map = {
+    pending: 'badge-pending',
+    running: 'badge-running',
+    complete: 'badge-complete',
+    completed: 'badge-complete',
+    error: 'badge-error',
+    failed: 'badge-error',
+  };
+  const cls = map[status] || 'badge-pending';
+  return `<span class="badge ${cls}">${status}</span>`;
+}
+
+function setTableError(tbodyId, cols, msg) {
+  const tbody = document.getElementById(tbodyId);
+  if (tbody) tbody.innerHTML = `<tr><td colspan="${cols}" style="padding:16px;color:#ef4444;font-size:12px;font-family:var(--mono)">Error: ${msg}</td></tr>`;
+}
+
+function runAgain(strategy) {
+  showSection('overview', document.querySelector('[onclick*=overview]'));
+  if (strategy && strategy !== '–') {
+    document.getElementById('launchStrategy').value = strategy;
+  }
+  document.getElementById('launchBtn').focus();
+}
+
+// ─── DREAM LAUNCHER ───────────────────────────────────────────────────────────
+async function launchDream() {
+  const btn = document.getElementById('launchBtn');
+  const resultBox = document.getElementById('launchResult');
+  const statusEl = document.getElementById('launchStatus');
+
+  const ns = document.getElementById('launchNs').value.trim() || 'default';
+  const strategy = document.getElementById('launchStrategy').value;
+  const model = document.getElementById('launchModel').value;
+  const budget = parseInt(document.getElementById('launchBudget').value);
+  const dryRun = document.getElementById('launchDryRun').checked;
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span> Launching…';
+  statusEl.textContent = '';
+  resultBox.className = 'result-box';
+  resultBox.style.display = 'none';
+
+  try {
+    const isFullCycle = strategy === 'full_cycle';
+    const body = isFullCycle
+      ? { namespace: ns, strategy: 'full_cycle', model, max_keys: budget, dry_run: dryRun }
+      : { namespace: ns, strategies: [strategy], model, max_keys: budget, dry_run: dryRun };
+    const data = await apiFetch('/v1/memory/dream/start', {
+      method: 'POST',
+      body: JSON.stringify(body)
+    });
+
+    const dreamId = data.dream_id || data.id || 'unknown';
+    resultBox.className = 'result-box visible success';
+    resultBox.textContent = `Dream started ✓\nID: ${dreamId}\nStatus: ${data.status || 'pending'}\n${dryRun ? '[Dry Run — no changes persisted]' : ''}`;
+
+    if (data.status === 'running' || data.status === 'pending') {
+      statusEl.textContent = 'Polling for completion…';
+      startDreamPoll(dreamId);
+    }
+    loadDreams();
+  } catch (e) {
+    resultBox.className = 'result-box visible error';
+    resultBox.textContent = `Launch failed: ${e.message}`;
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span>▶</span> Launch Dream';
+  }
+}
+
+function startDreamPoll(dreamId) {
+  clearInterval(dreamPollInterval);
+  let attempts = 0;
+  const statusEl = document.getElementById('launchStatus');
+  dreamPollInterval = setInterval(async () => {
+    attempts++;
+    if (attempts > 40) {
+      clearInterval(dreamPollInterval);
+      statusEl.textContent = 'Polling timed out.';
+      return;
+    }
+    try {
+      const data = await apiFetch(`/v1/memory/dream/status/${encodeURIComponent(dreamId)}`);
+      const status = data.status || 'unknown';
+      statusEl.textContent = `Status: ${status} (${attempts * 3}s)`;
+      if (status === 'complete' || status === 'completed' || status === 'error' || status === 'failed') {
+        clearInterval(dreamPollInterval);
+        statusEl.textContent = `Completed: ${status}`;
+        loadDreams();
+      }
+    } catch (_) {
+      // silently retry
+    }
+  }, 3000);
+}
+
+// ─── MEMORY BROWSER ───────────────────────────────────────────────────────────
+async function loadMemoryList() {
+  document.getElementById('memoryKeyList').innerHTML = '<div class="empty-state"><span class="spinner"></span> Loading…</div>';
+  try {
+    const data = await apiFetch('/v1/memory/list');
+    allMemoryData = Array.isArray(data) ? data : (data.memories || data.keys || data.data || []);
+    updateSidebarBadge('memCountBadge', allMemoryData.length);
+    document.getElementById('statMemories').textContent = allMemoryData.length;
+    renderMemoryList(allMemoryData);
+  } catch (e) {
+    document.getElementById('memoryKeyList').innerHTML = `<div class="empty-state" style="color:#ef4444;font-size:12px">${e.message}</div>`;
+    document.getElementById('statMemories').textContent = 'Err';
+  }
+}
+
+function filterMemoryList() {
+  const q = document.getElementById('memNsFilter').value.toLowerCase();
+  const filtered = allMemoryData.filter(m => {
+    const key = m.key || m.memory_key || '';
+    const ns = m.namespace || '';
+    return key.toLowerCase().includes(q) || ns.toLowerCase().includes(q);
+  });
+  renderMemoryList(filtered);
+}
+
+function renderMemoryList(items) {
+  const container = document.getElementById('memoryKeyList');
+  if (!items.length) {
+    container.innerHTML = '<div class="empty-state">No memories found.</div>';
+    return;
+  }
+  container.innerHTML = items.slice(0, 200).map((m, i) => {
+    const key = m.key || m.memory_key || `item_${i}`;
+    const ns = m.namespace || 'default';
+    return `<div class="memory-key-item" onclick="showMemoryDetail(${i})" data-idx="${i}">
+      <div class="memory-key-text" title="${key}">${key}</div>
+      <div class="memory-key-ns">${ns}</div>
+    </div>`;
+  }).join('');
+}
+
+function showMemoryDetail(idx) {
+  document.querySelectorAll('.memory-key-item').forEach(el => el.classList.remove('selected'));
+  const el = document.querySelector(`.memory-key-item[data-idx="${idx}"]`);
+  if (el) el.classList.add('selected');
+
+  const m = allMemoryData[idx];
+  if (!m) return;
+  const key = m.key || m.memory_key || '';
+  const val = m.value || m.content || m.data || JSON.stringify(m, null, 2);
+  const detail = document.getElementById('memoryDetail');
+
+  detail.innerHTML = `
+    <div class="memory-detail-key">${key}</div>
+    <div class="memory-detail-val">${escHtml(typeof val === 'string' ? val : JSON.stringify(val, null, 2))}</div>
+    <div class="memory-detail-meta">
+      ${m.namespace ? `<div class="meta-chip">namespace <span>${m.namespace}</span></div>` : ''}
+      ${m.created_at ? `<div class="meta-chip">created <span>${new Date(m.created_at).toLocaleString()}</span></div>` : ''}
+      ${m.updated_at ? `<div class="meta-chip">updated <span>${new Date(m.updated_at).toLocaleString()}</span></div>` : ''}
+      ${m.score != null ? `<div class="meta-chip">score <span>${m.score}</span></div>` : ''}
+      ${m.decay_rate != null ? `<div class="meta-chip">decay <span>${m.decay_rate}</span></div>` : ''}
+    </div>`;
+}
+
+// ─── TMR CUES ─────────────────────────────────────────────────────────────────
+async function loadTmrCues() {
+  document.getElementById('tmrBody').innerHTML = '<div class="empty-state"><span class="spinner"></span> Loading cues…</div>';
+  try {
+    const data = await apiFetch('/v1/memory/tmr/cues');
+    const cues = Array.isArray(data) ? data : (data.cues || data.data || []);
+    updateSidebarBadge('tmrCountBadge', cues.length);
+    renderTmrCues(cues);
+  } catch (e) {
+    document.getElementById('tmrBody').innerHTML = `<div class="empty-state" style="color:#ef4444;font-size:12px">${e.message}</div>`;
+  }
+}
+
+function renderTmrCues(cues) {
+  const body = document.getElementById('tmrBody');
+  if (!cues.length) {
+    body.innerHTML = '<div class="empty-state"><div class="empty-icon">◎</div>No pending TMR cues.<br><span style="font-size:11px;color:var(--t4)">Queue a cue to schedule memory reactivation for your agents.</span></div>';
+    return;
+  }
+  body.innerHTML = cues.map(c => {
+    const id = c.cue_id || c.id || '–';
+    const ns = c.namespace || 'default';
+    const prompt = c.combined_reactivation_prompt || c.prompt || c.reactivation_prompt || '';
+    const keys = Array.isArray(c.memory_keys) ? c.memory_keys.join(', ') : (c.memory_keys || '–');
+    const created = c.created_at ? new Date(c.created_at).toLocaleString() : '';
+    return `<div class="tmr-cue-item">
+      <div class="tmr-cue-meta">
+        <span class="tmr-cue-id">ID: ${id}</span>
+        <span class="badge badge-pending">${c.status || 'pending'}</span>
+        <span class="pill">${ns}</span>
+        ${created ? `<span style="font-size:11px;color:var(--t4)">${created}</span>` : ''}
+      </div>
+      ${keys !== '–' ? `<div style="font-size:11px;color:var(--t3);margin-bottom:8px">Keys: <span style="font-family:var(--mono);color:var(--t2)">${escHtml(keys)}</span></div>` : ''}
+      ${prompt ? `<div style="position:relative"><div class="code-block">${escHtml(prompt)}</div><button class="copy-btn" onclick="copyText(this, ${JSON.stringify(prompt)})">copy</button></div>` : '<div style="color:var(--t4);font-size:11px;font-style:italic">No reactivation prompt generated yet.</div>'}
+    </div>`;
+  }).join('');
+}
+
+function openTmrModal() {
+  document.getElementById('tmrModal').classList.add('open');
+}
+function closeTmrModal() {
+  document.getElementById('tmrModal').classList.remove('open');
+  document.getElementById('tmrResult').className = 'result-box';
+  document.getElementById('tmrResult').style.display = 'none';
+}
+
+async function submitTmrCue() {
+  const ns = document.getElementById('tmrNs').value.trim() || 'default';
+  const keysRaw = document.getElementById('tmrKeys').value.trim();
+  const context = document.getElementById('tmrContext').value.trim();
+  const resultBox = document.getElementById('tmrResult');
+
+  if (!keysRaw) {
+    resultBox.className = 'result-box visible error';
+    resultBox.textContent = 'Please enter at least one memory key.';
+    return;
+  }
+
+  const keys = keysRaw.split(',').map(k => k.trim()).filter(Boolean);
+  try {
+    const body = { namespace: ns, target_keys: keys };
+    if (context) body.personalization = context;
+    const data = await apiFetch('/v1/memory/tmr/queue', { method: 'POST', body: JSON.stringify(body) });
+    resultBox.className = 'result-box visible success';
+    resultBox.textContent = `Cue queued ✓\nID: ${data.cue_id || data.id || 'created'}`;
+    setTimeout(() => { closeTmrModal(); loadTmrCues(); }, 1500);
+  } catch (e) {
+    resultBox.className = 'result-box visible error';
+    resultBox.textContent = `Error: ${e.message}`;
+  }
+}
+
+// ─── SKILLS ───────────────────────────────────────────────────────────────────
+async function loadSkillsSection() {
+  const loadEl  = document.getElementById('skills-section-loading');
+  const listEl  = document.getElementById('skills-section-list');
+  const emptyEl = document.getElementById('skills-section-empty');
+  loadEl.style.display = 'block';
+  listEl.style.display = 'none';
+  emptyEl.style.display = 'none';
+  listEl.innerHTML = '';
+
+  try {
+    const ns = localStorage.getItem('slopshop_ns') || 'default';
+    const data = await apiFetch(`/v1/memory/skills?namespace=${encodeURIComponent(ns)}&min_confidence=0.6`);
+    const skills = Array.isArray(data.skills) ? data.skills :
+                   Array.isArray(data.memories) ? data.memories :
+                   Array.isArray(data) ? data : [];
+    loadEl.style.display = 'none';
+    if (!skills.length) { emptyEl.style.display = 'block'; return; }
+    listEl.style.display = 'grid';
+    listEl.innerHTML = skills.map(sk => {
+      const conf  = Math.round((sk.confidence ?? sk.probability ?? 0) * 100);
+      const src   = sk.source || sk.strategy || 'dream';
+      const title = sk.title || sk.key || sk.id || 'Unnamed Skill';
+      const trigger = sk.trigger || sk.trigger_condition || sk.condition || '—';
+      const action  = sk.action || sk.action_description || sk.description || '—';
+      return `<div style="background:var(--s1);border:1px solid var(--b2);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--t)">${esc(title)}</div>
+          <span class="strategy-badge">${esc(src)}</span>
+        </div>
+        <div style="font-size:11px;color:var(--t3)"><span style="color:var(--t4);font-family:var(--mono);font-size:10px">TRIGGER</span><br>${esc(trigger)}</div>
+        <div style="font-size:11px;color:var(--t2)">${esc(action)}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+          <div style="font-family:var(--mono);font-size:11px;color:var(--g)">${conf}% confidence</div>
+          <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify('IF ' + trigger + '\nTHEN ' + action)});this.textContent='Copied!'">Copy as Prompt</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (err) {
+    loadEl.style.display = 'none';
+    emptyEl.style.display = 'block';
+    console.warn('Skills fetch failed:', err.message);
+  }
+}
+
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ─── SETTINGS ─────────────────────────────────────────────────────────────────
+function populateSettings() {
+  const inp = document.getElementById('settingsKeyInput');
+  if (inp) inp.value = API_KEY;
+  const status = document.getElementById('settingsKeyStatus');
+  if (status) status.textContent = API_KEY ? `Connected — key ending in …${API_KEY.slice(-6)}` : 'No key saved.';
+}
+
+function saveSettingsKey() {
+  const val = document.getElementById('settingsKeyInput').value.trim();
+  if (!val) return;
+  API_KEY = val;
+  localStorage.setItem('slopshop_api_key', val);
+  document.getElementById('settingsKeyStatus').textContent = `Saved — key ending in …${val.slice(-6)}`;
+}
+
+function clearKey() {
+  API_KEY = '';
+  localStorage.removeItem('slopshop_api_key');
+  localStorage.removeItem('slop_api_key');
+  document.getElementById('settingsKeyInput').value = '';
+  document.getElementById('settingsKeyStatus').textContent = 'Key cleared.';
+}
+
+// ─── UTILS ────────────────────────────────────────────────────────────────────
+function updateSidebarBadge(id, count) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = count > 0 ? count : '0';
+}
+
+function copyText(btn, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'copied!';
+    setTimeout(() => btn.textContent = 'copy', 1800);
+  });
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+async function initDashboard() {
+  // Load all data in parallel
+  await Promise.allSettled([loadDreams(), loadMemoryList()]);
+}
+
+// Boot
+checkAuth();
+</script>
+</body>
+</html>

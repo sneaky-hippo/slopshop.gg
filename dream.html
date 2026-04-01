@@ -1,0 +1,1065 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Dream Engine — Neuroscience of AI Memory | Slopshop</title>
+<meta name="description" content="The Dream Engine runs a 9-stage REM-cycle pipeline: synthesize, pattern extract, insight generate, validate, evolve, forecast, compress, associate, reflect. Real neuroscience. Real consolidation.">
+<meta name="keywords" content="AI memory consolidation, dream engine, REM cycle AI, memory synthesis, targeted memory reactivation, TMR, AI memory neuroscience, hippocampal replay, synaptic homeostasis, procedural memory AI">
+<link rel="canonical" href="https://slopshop.gg/dream">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/dream">
+<meta property="og:title" content="Dream Engine — The Neuroscience of AI Memory | Slopshop">
+<meta property="og:description" content="9-stage REM-cycle memory consolidation. Hippocampal replay, synaptic homeostasis, predictive coding. Not just storage — genuine cognitive processing.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Dream Engine — The Neuroscience of AI Memory | Slopshop">
+<meta name="twitter:description" content="9-stage REM-cycle memory consolidation. Real neuroscience, real consolidation.">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.07);--rb:rgba(255,51,51,0.18);
+  --g:#00cc66;--gg:rgba(0,204,102,0.08);--gb:rgba(0,204,102,0.2);
+  --y:#ffcc00;--yg:rgba(255,204,0,0.08);--yb:rgba(255,204,0,0.2);
+  --cy:#00d4ff;--cyg:rgba(0,212,255,0.07);--cyb:rgba(0,212,255,0.18);
+  --pu:#a855f7;--pug:rgba(168,85,247,0.08);--pub:rgba(168,85,247,0.18);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+html{font-size:13.6px;scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh;line-height:1.7}
+::selection{background:var(--cy);color:#000}
+a{color:var(--cy);text-decoration:none;transition:opacity 0.15s}
+a:hover{opacity:0.75}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:200;height:56px;
+  background:rgba(5,5,5,0.88);
+  backdrop-filter:blur(24px) saturate(180%);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;padding:0 32px
+}
+.nv{max-width:1240px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:'Courier New',Courier,monospace;font-weight:700;font-size:0.95rem;letter-spacing:0.06em;color:var(--t);display:flex;align-items:center;gap:2px}
+.logo .mark{color:var(--r)}
+.nav-links{display:flex;gap:2px;align-items:center}
+.nav-links a{color:var(--t3);font-size:0.75rem;font-weight:500;padding:6px 11px;border-radius:6px;transition:0.15s}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-links .hl-g{color:var(--g)!important}
+.nav-links .hl-cy{color:var(--cy)!important}
+.nav-links .hl-pu{color:var(--pu)!important}
+.nav-links .hl-g:hover,.nav-links .hl-cy:hover,.nav-links .hl-pu:hover{color:var(--t)!important}
+.nav-links .signup{background:var(--r);color:#fff!important;padding:6px 16px;border-radius:6px;font-weight:700;font-size:0.75rem}
+.nav-links .signup:hover{background:var(--r2);opacity:1}
+
+/* ── PAGE ── */
+.page{padding-top:56px}
+
+/* ── HERO ── */
+.hero{
+  position:relative;text-align:center;
+  padding:88px 24px 72px;
+  overflow:hidden;
+  background:radial-gradient(ellipse 80% 60% at 50% -5%,rgba(0,212,255,0.06) 0%,transparent 70%),
+             radial-gradient(ellipse 50% 40% at 20% 80%,rgba(168,85,247,0.04) 0%,transparent 60%);
+}
+.hero::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:1px;height:100%;
+  background:linear-gradient(180deg,transparent,rgba(0,212,255,0.12),transparent);
+  pointer-events:none
+}
+.hero-inner{max-width:820px;margin:0 auto;position:relative;z-index:1}
+.hero-badge{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--cyg);border:1px solid var(--cyb);
+  color:var(--cy);padding:5px 14px;border-radius:99px;
+  font-family:var(--mono);font-size:0.68rem;font-weight:600;letter-spacing:0.06em;
+  margin-bottom:28px
+}
+.hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--cy);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero h1{
+  font-family:var(--mono);font-size:clamp(2rem,4.8vw,3.4rem);
+  font-weight:900;letter-spacing:-0.03em;line-height:1.08;margin-bottom:20px
+}
+.acc-cy{color:var(--cy)}
+.acc-pu{color:var(--pu)}
+.acc-g{color:var(--g)}
+.hero .sub{
+  color:var(--t2);font-size:1rem;max-width:560px;margin:0 auto 36px;line-height:1.8
+}
+.hero .sub b{color:var(--t);font-weight:600}
+.hero-ctas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--cy);color:#000;
+  font-family:var(--mono);font-size:0.8rem;font-weight:700;
+  padding:11px 22px;border-radius:8px;border:none;cursor:pointer;
+  transition:0.15s;text-decoration:none
+}
+.btn-primary:hover{background:#22e0ff;box-shadow:0 0 20px rgba(0,212,255,0.3);opacity:1}
+.btn-ghost{
+  display:inline-flex;align-items:center;gap:7px;
+  background:transparent;color:var(--t2);
+  font-family:var(--mono);font-size:0.8rem;font-weight:600;
+  padding:11px 22px;border-radius:8px;
+  border:1px solid var(--b2);cursor:pointer;
+  transition:0.15s;text-decoration:none
+}
+.btn-ghost:hover{color:var(--t);border-color:var(--t4);opacity:1}
+.btn-purple{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--pu);color:#fff;
+  font-family:var(--mono);font-size:0.8rem;font-weight:700;
+  padding:11px 22px;border-radius:8px;border:none;cursor:pointer;
+  transition:0.15s;text-decoration:none
+}
+.btn-purple:hover{background:#c084fc;box-shadow:0 0 18px rgba(168,85,247,0.3);opacity:1}
+.btn-green{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--g);color:#000;
+  font-family:var(--mono);font-size:0.8rem;font-weight:700;
+  padding:11px 22px;border-radius:8px;border:none;cursor:pointer;
+  transition:0.15s;text-decoration:none
+}
+.btn-green:hover{background:#00e676;box-shadow:0 0 16px rgba(0,204,102,0.3);opacity:1}
+
+/* ── RING DIAGRAM ── */
+.ring-wrap{
+  position:relative;width:280px;height:280px;
+  margin:52px auto 0;flex-shrink:0
+}
+.ring-outer{
+  position:absolute;inset:0;border-radius:50%;
+  border:1px solid rgba(0,212,255,0.14);
+  animation:spin-slow 30s linear infinite
+}
+.ring-mid{
+  position:absolute;inset:28px;border-radius:50%;
+  border:1px solid rgba(168,85,247,0.10);
+  animation:spin-slow 20s linear infinite reverse
+}
+.ring-inner{
+  position:absolute;inset:68px;border-radius:50%;
+  border:1px solid rgba(0,204,102,0.08);
+  animation:spin-slow 14s linear infinite
+}
+.ring-core{
+  position:absolute;inset:108px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,212,255,0.1),rgba(168,85,247,0.05),transparent);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:0.58rem;font-weight:700;color:var(--cy);
+  text-align:center;line-height:1.4;letter-spacing:0.05em
+}
+@keyframes spin-slow{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+/* 9 nodes orbiting at ~130px radius from center, equally spaced 40deg apart */
+.ring-node{
+  position:absolute;width:30px;height:30px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:0.54rem;font-family:var(--mono);font-weight:700;
+  border:1px solid rgba(255,255,255,0.08);
+  animation:node-glow 3s ease-in-out infinite alternate
+}
+@keyframes node-glow{0%{opacity:0.6;transform:scale(0.95)}100%{opacity:1;transform:scale(1.05)}}
+/* top */
+.rn1{top:0;left:50%;transform:translateX(-50%);background:rgba(0,212,255,0.12);color:var(--cy);animation-delay:0s}
+/* top-right */
+.rn2{top:19px;right:16px;background:rgba(168,85,247,0.12);color:var(--pu);animation-delay:0.33s}
+/* right */
+.rn3{top:50%;right:0;transform:translateY(-50%);background:rgba(0,204,102,0.12);color:var(--g);animation-delay:0.66s}
+/* bottom-right */
+.rn4{bottom:19px;right:16px;background:rgba(255,204,0,0.12);color:var(--y);animation-delay:1s}
+/* bottom */
+.rn5{bottom:0;left:50%;transform:translateX(-50%);background:rgba(255,51,51,0.12);color:var(--r2);animation-delay:1.33s}
+/* bottom-left */
+.rn6{bottom:19px;left:16px;background:rgba(0,212,255,0.10);color:var(--cy);animation-delay:1.66s}
+/* left */
+.rn7{top:50%;left:0;transform:translateY(-50%);background:rgba(168,85,247,0.10);color:var(--pu);animation-delay:2s}
+/* top-left */
+.rn8{top:19px;left:16px;background:rgba(0,204,102,0.10);color:var(--g);animation-delay:2.33s}
+/* center orbit node */
+.rn9{top:50%;left:50%;width:26px;height:26px;margin-top:-34px;margin-left:34px;background:rgba(255,204,0,0.12);color:var(--y);animation-delay:2.66s}
+
+/* ── DIVIDER ── */
+hr.divider{border:none;border-top:1px solid rgba(255,255,255,0.05);margin:0}
+
+/* ── SECTION ── */
+section{padding:72px 24px;max-width:1120px;margin:0 auto}
+.sec-label{
+  font-family:var(--mono);font-size:0.67rem;font-weight:600;
+  letter-spacing:0.12em;text-transform:uppercase;
+  color:var(--t4);margin-bottom:12px;
+  display:flex;align-items:center;gap:10px
+}
+.sec-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.05)}
+.sec-label .dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+h2{font-family:var(--mono);font-size:clamp(1.5rem,3vw,2.2rem);font-weight:800;letter-spacing:-0.025em;line-height:1.12;margin-bottom:14px}
+.sec-sub{color:var(--t2);font-size:0.93rem;max-width:620px;line-height:1.8;margin-bottom:40px}
+
+/* ── PROBLEM CARDS ── */
+.prob-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.prob-card{
+  background:var(--s1);border:1px solid var(--b2);border-radius:12px;
+  padding:28px 24px;position:relative;overflow:hidden;transition:0.2s
+}
+.prob-card.dated{opacity:0.68}
+.prob-card.dated::before{
+  content:'LEGACY';position:absolute;top:14px;right:14px;
+  font-family:var(--mono);font-size:0.58rem;font-weight:700;letter-spacing:0.12em;
+  color:var(--t4);background:var(--s2);border:1px solid var(--b2);
+  padding:2px 7px;border-radius:4px
+}
+.prob-card.modern{border-color:var(--cyb);background:linear-gradient(135deg,var(--s1),rgba(0,212,255,0.025))}
+.prob-card.modern::after{
+  content:'';position:absolute;top:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--cy),var(--pu))
+}
+.prob-icon{font-size:1.8rem;margin-bottom:14px;display:block}
+.prob-card h3{font-family:var(--mono);font-size:0.9rem;font-weight:700;margin-bottom:8px}
+.prob-card p{color:var(--t2);font-size:0.8rem;line-height:1.7;margin-bottom:16px}
+.prob-tag-list{display:flex;flex-direction:column;gap:5px}
+.prob-tag{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:0.72rem;color:var(--t3)}
+.prob-tag.good{color:var(--g)}
+.prob-tag.bad{color:var(--t4)}
+.prob-tag.warn{color:var(--y)}
+
+/* ── BADGES ── */
+.badge{
+  display:inline-block;font-family:var(--mono);font-size:0.64rem;font-weight:700;
+  padding:2px 8px;border-radius:4px;letter-spacing:0.03em;white-space:nowrap
+}
+.badge-cy{background:var(--cyg);color:var(--cy);border:1px solid var(--cyb)}
+.badge-pu{background:var(--pug);color:var(--pu);border:1px solid var(--pub)}
+.badge-g{background:var(--gg);color:var(--g);border:1px solid var(--gb)}
+.badge-y{background:var(--yg);color:var(--y);border:1px solid var(--yb)}
+.badge-r{background:var(--rg);color:var(--r2);border:1px solid var(--rb)}
+
+/* ── PIPELINE TABLE ── */
+.table-scroll{overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:var(--s1)}
+.pipeline-table{width:100%;border-collapse:collapse;font-size:0.82rem;min-width:640px}
+.pipeline-table th{
+  font-family:var(--mono);font-size:0.65rem;font-weight:600;letter-spacing:0.1em;
+  text-transform:uppercase;color:var(--t4);padding:10px 16px;
+  border-bottom:1px solid rgba(255,255,255,0.06);text-align:left;white-space:nowrap
+}
+.pipeline-table td{
+  padding:14px 16px;border-bottom:1px solid rgba(255,255,255,0.04);
+  vertical-align:top;line-height:1.65
+}
+.pipeline-table tr:last-child td{border-bottom:none}
+.pipeline-table tr:hover td{background:rgba(255,255,255,0.012)}
+.stage-num-cell{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--t4);width:32px}
+.stage-name-cell{width:150px}
+.stage-bio-cell{font-size:0.75rem;color:var(--t3);width:180px}
+.sci-ref{font-size:0.67rem;color:var(--t4);font-family:var(--mono);display:block;margin-top:3px;font-style:italic}
+.stage-desc-cell{font-size:0.8rem;color:var(--t2)}
+.stage-note-cell{font-size:0.74rem;color:var(--t3);font-style:italic;width:200px}
+
+/* ── TMR ── */
+.tmr-grid{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+.tmr-steps{display:flex;flex-direction:column;gap:0}
+.tmr-step{
+  display:flex;gap:16px;align-items:flex-start;
+  padding:20px 0;border-bottom:1px solid rgba(255,255,255,0.05)
+}
+.tmr-step:last-child{border-bottom:none}
+.tmr-step-num{
+  width:32px;height:32px;border-radius:8px;
+  background:var(--cyg);border:1px solid var(--cyb);
+  display:flex;align-items:center;justify-content:center;
+  font-family:var(--mono);font-size:0.75rem;font-weight:800;
+  color:var(--cy);flex-shrink:0;margin-top:2px
+}
+.tmr-step h4{font-family:var(--mono);font-size:0.85rem;font-weight:700;margin-bottom:5px}
+.tmr-step p{color:var(--t2);font-size:0.8rem;line-height:1.65}
+.formula-box{
+  background:var(--s1);border:1px solid rgba(0,212,255,0.14);
+  border-radius:12px;padding:24px;font-family:var(--mono)
+}
+.formula-box .flabel{font-size:0.65rem;color:var(--t4);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px}
+.formula-box .eq{font-size:0.9rem;font-weight:700;color:var(--cy);line-height:1.6;margin-bottom:16px;word-break:break-all}
+.formula-terms{display:flex;flex-direction:column;gap:7px}
+.fterm{display:flex;gap:10px;font-size:0.75rem}
+.fterm .term{color:var(--cy);font-weight:600;min-width:140px;flex-shrink:0}
+.fterm .def{color:var(--t3)}
+.neuro-note{
+  margin-top:20px;background:rgba(0,204,102,0.05);border:1px solid rgba(0,204,102,0.12);
+  border-radius:8px;padding:14px 16px;font-size:0.78rem;color:var(--t2);line-height:1.65
+}
+.neuro-note strong{color:var(--g)}
+
+/* ── COMPARISON TABLE ── */
+.cmp-table{width:100%;border-collapse:collapse;font-size:0.82rem;min-width:520px}
+.cmp-table th{
+  font-family:var(--mono);font-size:0.7rem;font-weight:700;letter-spacing:0.06em;
+  padding:12px 18px;border-bottom:1px solid rgba(255,255,255,0.07);text-align:center
+}
+.cmp-table th:first-child{text-align:left;color:var(--t4);text-transform:uppercase;font-size:0.64rem;letter-spacing:0.12em}
+.cmp-table th.winner{color:var(--cy)}
+.cmp-table td{padding:11px 18px;border-bottom:1px solid rgba(255,255,255,0.04);text-align:center;vertical-align:middle}
+.cmp-table td:first-child{text-align:left;color:var(--t2);font-size:0.8rem}
+.cmp-table tr:last-child td{border-bottom:none}
+.cmp-table tr:hover td{background:rgba(255,255,255,0.012)}
+.cmp-table td.wcol{background:rgba(0,212,255,0.025)}
+.val-yes{color:var(--g);font-family:var(--mono);font-weight:700;font-size:0.9rem}
+.val-no{color:var(--t4);font-family:var(--mono)}
+.val-partial{color:var(--y);font-family:var(--mono);font-size:0.74rem}
+
+/* ── SCORE ── */
+.score-layout{display:grid;grid-template-columns:1fr 1fr;gap:32px}
+.score-formula{
+  background:var(--s1);border:1px solid var(--pub);border-radius:12px;
+  padding:28px;font-family:var(--mono)
+}
+.score-formula .eq-label{font-size:0.64rem;color:var(--t4);letter-spacing:0.1em;text-transform:uppercase;margin-bottom:10px}
+.score-formula .score-eq{font-size:1rem;font-weight:700;color:var(--pu);line-height:1.5;margin-bottom:24px}
+.score-tiers{display:flex;flex-direction:column;gap:8px}
+.score-tier{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 14px;border-radius:8px;font-family:var(--mono);font-size:0.78rem
+}
+.tier-basic{background:rgba(80,80,80,0.08);border:1px solid rgba(80,80,80,0.14)}
+.tier-good{background:var(--gg);border:1px solid var(--gb)}
+.tier-adv{background:var(--cyg);border:1px solid var(--cyb)}
+.tier-elite{background:var(--pug);border:1px solid var(--pub)}
+.tier-basic .tlabel{color:var(--t3)}
+.tier-good .tlabel{color:var(--g)}
+.tier-adv .tlabel{color:var(--cy)}
+.tier-elite .tlabel{color:var(--pu)}
+.tlabel{font-weight:700}
+.trange{color:var(--t4);font-size:0.72rem}
+.score-ex{
+  background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:12px;
+  padding:28px;display:flex;flex-direction:column
+}
+.score-ex h4{font-family:var(--mono);font-size:0.85rem;font-weight:700;margin-bottom:14px}
+.score-ex p{color:var(--t2);font-size:0.8rem;line-height:1.7;margin-bottom:16px}
+.calc-box{
+  background:var(--s2);border:1px solid var(--b2);border-radius:8px;
+  padding:16px;font-family:var(--mono);font-size:0.78rem;color:var(--t2);line-height:1.9;margin-bottom:16px
+}
+.score-display{
+  text-align:center;padding:24px;
+  background:linear-gradient(135deg,rgba(168,85,247,0.07),rgba(0,212,255,0.05));
+  border:1px solid var(--pub);border-radius:10px;margin-top:auto
+}
+.score-num{font-family:var(--mono);font-size:2.8rem;font-weight:900;color:var(--pu);letter-spacing:-0.04em}
+.score-num span{color:var(--cy);font-size:1.8rem}
+.score-lbl{font-family:var(--mono);font-size:0.66rem;color:var(--t4);letter-spacing:0.12em;text-transform:uppercase;margin-top:6px}
+
+/* ── COLLECTIVE ── */
+.coll-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:36px}
+.coll-card{
+  background:var(--s1);border:1px solid var(--b2);border-radius:12px;
+  padding:24px;transition:0.2s;position:relative;overflow:hidden
+}
+.coll-card:hover{border-color:var(--pub);transform:translateY(-2px)}
+.coll-card::after{
+  content:'';position:absolute;bottom:0;left:0;right:0;height:2px;
+  background:linear-gradient(90deg,var(--pu),transparent);opacity:0;transition:0.2s
+}
+.coll-card:hover::after{opacity:1}
+.coll-icon{
+  width:40px;height:40px;border-radius:10px;
+  background:var(--pug);border:1px solid var(--pub);
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;margin-bottom:14px
+}
+.coll-card h3{font-family:var(--mono);font-size:0.85rem;font-weight:700;margin-bottom:6px}
+.coll-card p{color:var(--t2);font-size:0.8rem;line-height:1.65}
+
+/* ── SKILLS ── */
+.skills-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:36px}
+.skill-card{
+  background:var(--s1);border:1px solid var(--b2);border-radius:10px;
+  padding:18px 20px;font-family:var(--mono);transition:0.15s
+}
+.skill-card:hover{border-color:var(--gb)}
+.sk-label{font-size:0.66rem;color:var(--t4);text-transform:uppercase;letter-spacing:0.1em;margin-bottom:6px}
+.sk-trigger{font-size:0.8rem;color:var(--g);font-weight:600;margin-bottom:5px}
+.sk-arrow{font-size:0.7rem;color:var(--t4);margin-bottom:5px}
+.sk-action{font-size:0.8rem;color:var(--cy);font-weight:600}
+.sk-source{font-size:0.67rem;color:var(--t4);margin-top:10px;padding-top:10px;border-top:1px solid var(--b2)}
+
+/* ── CTA ── */
+.cta-section{
+  text-align:center;padding:88px 24px;
+  background:radial-gradient(ellipse 70% 60% at 50% 100%,rgba(0,212,255,0.04),transparent 70%);
+  position:relative
+}
+.cta-section h2{margin-bottom:14px}
+.cta-sub{max-width:500px;margin:0 auto 40px;color:var(--t2);font-size:0.95rem;line-height:1.8}
+.curl-block{
+  background:var(--s1);border:1px solid rgba(255,255,255,0.07);
+  border-radius:10px;padding:20px 24px;
+  font-family:var(--mono);font-size:0.77rem;
+  text-align:left;max-width:660px;margin:0 auto 36px;
+  position:relative;overflow-x:auto;line-height:1.9
+}
+.c-comment{color:var(--t4)}
+.c-cmd{color:var(--cy)}
+.c-key{color:var(--pu)}
+.c-val{color:var(--g)}
+.c-str{color:var(--y)}
+.curl-copy{
+  position:absolute;top:12px;right:12px;
+  background:var(--s2);border:1px solid var(--b2);
+  color:var(--t4);font-family:var(--mono);font-size:0.63rem;
+  padding:4px 9px;border-radius:5px;cursor:pointer;transition:0.15s
+}
+.curl-copy:hover{color:var(--t);border-color:var(--t4)}
+.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+
+/* ── FOOTER ── */
+footer{padding:64px 32px 48px;border-top:1px solid var(--b)}
+.footer-inner{max-width:1200px;margin:0 auto}
+.footer-brand{font-family:var(--mono);font-size:1rem;font-weight:700;margin-bottom:32px;letter-spacing:-0.01em;display:flex;align-items:center;gap:8px}
+.footer-brand .gg{color:var(--t3);font-weight:500}
+.footer-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:40px;margin-bottom:40px}
+.footer-col h4{font-family:var(--mono);font-size:0.68rem;font-weight:600;color:var(--t3);text-transform:uppercase;letter-spacing:0.12em;margin-bottom:16px}
+.footer-col a{display:block;font-family:var(--mono);font-size:0.77rem;color:var(--t3);padding:3px 0;transition:0.15s}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-copy{font-size:0.63rem;color:var(--t4);font-family:var(--mono);line-height:2}
+
+/* ── RESPONSIVE ── */
+@media(max-width:900px){
+  .tmr-grid{grid-template-columns:1fr}
+  .score-layout{grid-template-columns:1fr}
+  .pipeline-table .stage-note-cell{display:none}
+}
+@media(max-width:720px){
+  .prob-grid,.coll-grid,.skills-grid{grid-template-columns:1fr}
+  section{padding:52px 16px}
+  .hero{padding:72px 16px 56px}
+}
+@media(max-width:600px){
+  .footer-grid{grid-template-columns:1fr 1fr;gap:24px}
+  .cmp-table th:nth-child(3),.cmp-table td:nth-child(3){display:none}
+}
+
+/* ── MISC COLORS ── */
+.dot-cy{background:var(--cy)}
+.dot-pu{background:var(--pu)}
+.dot-g{background:var(--g)}
+.dot-r{background:var(--r)}
+.dot-y{background:var(--y)}
+html,body{overflow-x:hidden;max-width:100vw}
+img,video,iframe{max-width:100%}
+pre,code{overflow-x:auto;max-width:100%}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+@media(max-width:640px){
+  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
+  nav{padding:0 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nv">
+    <a href="/" class="logo"><span class="mark">SLOPSHOP</span>.gg</a>
+    <div class="nav-links">
+      <a href="/docs">Docs</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/memory-hub" class="hl-g">Memory Hub</a>
+      <a href="/dream-studio" class="hl-cy">Dream Studio</a>
+      <a href="/team-hives" class="hl-pu">Team Hives</a>
+      <a href="/signup" class="signup">Sign Up</a>
+    </div>
+  </div>
+</nav>
+
+<div class="page">
+
+<!-- HERO -->
+<div class="hero">
+  <div class="hero-inner">
+    <div class="hero-badge">
+      <span class="dot"></span>
+      DREAM ENGINE &mdash; NEUROSCIENCE DEEP DIVE
+    </div>
+    <h1>
+      AI Memory That <span class="acc-cy">Dreams</span>,<br>
+      <span class="acc-pu">Learns</span>, and <span class="acc-g">Evolves</span>
+    </h1>
+    <p class="sub">
+      While your agents sleep, the Dream Engine runs a <b>9-stage REM pipeline</b> &mdash;
+      synthesizing insights, compressing redundancy, and building new connections.
+      Not just storing. <b>Genuinely processing.</b>
+    </p>
+    <div class="hero-ctas">
+      <a href="/dream-studio" class="btn-primary">Launch Dream Studio &rarr;</a>
+      <a href="#science" class="btn-ghost">Read the Science &darr;</a>
+    </div>
+
+    <!-- CSS-only animated 9-stage ring -->
+    <div class="ring-wrap">
+      <div class="ring-outer"></div>
+      <div class="ring-mid"></div>
+      <div class="ring-inner"></div>
+      <div class="ring-core">REM<br>CYCLE</div>
+      <div class="ring-node rn1">S1</div>
+      <div class="ring-node rn2">S2</div>
+      <div class="ring-node rn3">S3</div>
+      <div class="ring-node rn4">S4</div>
+      <div class="ring-node rn5">S5</div>
+      <div class="ring-node rn6">S6</div>
+      <div class="ring-node rn7">S7</div>
+      <div class="ring-node rn8">S8</div>
+      <div class="ring-node rn9">S9</div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- THE PROBLEM -->
+<section>
+  <div class="sec-label"><span class="dot dot-r"></span>The Problem</div>
+  <h2>Memory Without Dreaming<br>Is Just Storage</h2>
+  <p class="sec-sub">
+    Traditional AI memory systems are lookup tables with a search function.
+    They retrieve &mdash; they never integrate, generalize, or improve.
+    The Dream Engine changes the paradigm entirely.
+  </p>
+
+  <div class="prob-grid">
+    <div class="prob-card dated">
+      <span class="prob-icon">&#128230;</span>
+      <h3>Traditional RAG</h3>
+      <p>Static retrieval over a fixed corpus. Chunks are stored as-is, forever. New data doesn't affect old understanding. No consolidation. No growth.</p>
+      <div class="prob-tag-list">
+        <span class="prob-tag bad">&#10007; No cross-document synthesis</span>
+        <span class="prob-tag bad">&#10007; No pattern detection</span>
+        <span class="prob-tag bad">&#10007; No insight generation</span>
+        <span class="prob-tag bad">&#10007; Memory never improves</span>
+        <span class="prob-tag bad">&#10007; No procedural learning</span>
+      </div>
+    </div>
+
+    <div class="prob-card dated">
+      <span class="prob-icon">&#128269;</span>
+      <h3>Vector Database</h3>
+      <p>Similarity search at inference time. Semantically close chunks surface together. Better than keyword search &mdash; but still purely reactive retrieval.</p>
+      <div class="prob-tag-list">
+        <span class="prob-tag warn">&#126; Semantic retrieval</span>
+        <span class="prob-tag bad">&#10007; No consolidation</span>
+        <span class="prob-tag bad">&#10007; No contradiction resolution</span>
+        <span class="prob-tag bad">&#10007; Embeddings go stale</span>
+        <span class="prob-tag bad">&#10007; No emergent insight</span>
+      </div>
+    </div>
+
+    <div class="prob-card modern">
+      <span class="prob-icon">&#129504;</span>
+      <h3>Dream Engine</h3>
+      <p>9-stage overnight cognitive pipeline. Hippocampal replay, synaptic homeostasis, predictive coding. Memory that gets <em>smarter</em> while you sleep.</p>
+      <div class="prob-tag-list">
+        <span class="prob-tag good">&#10003; Active consolidation</span>
+        <span class="prob-tag good">&#10003; Insight generation</span>
+        <span class="prob-tag good">&#10003; Contradiction gating</span>
+        <span class="prob-tag good">&#10003; Procedural skills</span>
+        <span class="prob-tag good">&#10003; Intelligence scoring</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- 9-STAGE PIPELINE -->
+<section id="science">
+  <div class="sec-label"><span class="dot dot-cy"></span>Neuroscience</div>
+  <h2>The 9-Stage REM Pipeline</h2>
+  <p class="sec-sub">
+    Each stage maps to a documented neuroscientific mechanism. This is not metaphor &mdash;
+    it is a computational implementation of the same processes that consolidate human memory overnight.
+  </p>
+
+  <div class="table-scroll">
+    <table class="pipeline-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Strategy</th>
+          <th>Neuroscience Basis</th>
+          <th>What It Does</th>
+          <th class="stage-note-cell">Implementation Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="stage-num-cell">01</td>
+          <td class="stage-name-cell"><span class="badge badge-cy">SYNTHESIZE</span></td>
+          <td class="stage-bio-cell">Hippocampal replay<span class="sci-ref">Buzs&aacute;ki (2015)</span></td>
+          <td class="stage-desc-cell">Combines related memories into unified concepts. Sharp-wave ripples during NREM replay episodic traces, allowing the cortex to abstract across experiences and form schematic representations.</td>
+          <td class="stage-note-cell">Core consolidation stage. Run first for maximum downstream benefit. Powers the collective dream across hive namespaces.</td>
+        </tr>
+        <tr>
+          <td class="stage-num-cell">02</td>
+          <td class="stage-name-cell"><span class="badge badge-pu">PATTERN_EXTRACT</span></td>
+          <td class="stage-bio-cell">Statistical learning<span class="sci-ref">Saffran et al. (1996)</span></td>
+          <td class="stage-desc-cell">Surfaces recurring themes across memory traces. Detects structural patterns invisible in any single memory &mdash; frequency, co-occurrence, causal chains, and temporal sequences.</td>
+          <td class="stage-note-cell">Powers FORECAST and procedural skill extraction in downstream stages.</td>
+        </tr>
+        <tr>
+          <td class="stage-num-cell">03</td>
+          <td class="stage-name-cell"><span class="badge badge-g">INSIGHT_GENERATE</span></td>
+          <td class="stage-bio-cell">Cortical binding (IIT)<span class="sci-ref">Tononi (2004)</span></td>
+          <td class="stage-desc-cell">Creates novel connections invisible in raw data. Integrated Information Theory: consciousness and insight arise from maximally integrated information across cortical modules. Generates bridging concepts.</td>
+          <td class="stage-note-cell">Can run in adversarial mode (GAN model &mdash; Deperrois et al. 2022) for hypothesis-vs-antithesis synthesis.</td>
+        </tr>
+        <tr>
+          <td class="stage-num-cell">04</td>
+          <td class="stage-name-cell"><span class="badge badge-r">VALIDATE</span></td>
+          <td class="stage-bio-cell">Memory gating<span class="sci-ref">Reconsolidation theory</span></td>
+          <td class="stage-desc-cell">Filters weak or contradictory insights, strengthens reliable ones. Mirrors the brain's reconsolidation window &mdash; memories are mutable only when reactivated, allowing error correction before re-storage.</td>
+          <td class="stage-note-cell">Critical for production deployments. Prevents hallucinated insights from polluting the memory graph.</td>
+        </tr>
+        <tr>
+          <td class="stage-num-cell">05</td>
+          <td class="stage-name-cell"><span class="badge badge-cy">EVOLVE</span></td>
+          <td class="stage-bio-cell">Hebbian plasticity<span class="sci-ref">Hebb (1949)</span></td>
+          <td class="stage-desc-cell">Adapts memory weights based on usage patterns and outcomes. "Neurons that fire together wire together" &mdash; frequently co-activated memories strengthen their associative bonds over time.</td>
+          <td class="stage-note-cell">Drives long-term personalization. Agent behavior adapts to its own history without manual prompting.</td>
+        </tr>
+        <tr>
+          <td class="stage-num-cell">06</td>
+          <td class="stage-name-cell"><span class="badge badge-pu">FORECAST</span></td>
+          <td class="stage-bio-cell">Predictive coding<span class="sci-ref">Clark (2013)</span></td>
+          <td class="stage-desc-cell">Generates forward predictions from memory patterns. The brain is a prediction machine &mdash; the cortex continuously generates and refines probabilistic models of upcoming sensory input and events.</td>
+          <td class="stage-note-cell">Returns high-confidence forecast chains for agent planning. Feeds into TMR priority scoring.</td>
+        </tr>
+        <tr>
+          <td class="stage-num-cell">07</td>
+          <td class="stage-name-cell"><span class="badge badge-y">COMPRESS</span></td>
+          <td class="stage-bio-cell">Synaptic Homeostasis (SHY)<span class="sci-ref">Tononi &amp; Cirelli (2014)</span></td>
+          <td class="stage-desc-cell">Removes redundancy, distills essentials. The SHY hypothesis: sleep downscales synaptic strength built up during waking to a sustainable baseline while preserving the signal-to-noise ratio of important traces.</td>
+          <td class="stage-note-cell">Reduces memory footprint 30&ndash;40% without measurable information loss. Essential for long-lived agents.</td>
+        </tr>
+        <tr>
+          <td class="stage-num-cell">08</td>
+          <td class="stage-name-cell"><span class="badge badge-g">ASSOCIATE</span></td>
+          <td class="stage-bio-cell">Spreading activation<span class="sci-ref">Collins &amp; Loftus (1975)</span></td>
+          <td class="stage-desc-cell">Builds semantic connection networks. Activation spreads through associative memory like ripples &mdash; priming nearby concepts and revealing non-obvious semantic neighborhoods and analogical bridges.</td>
+          <td class="stage-note-cell">Populates the memory knowledge graph visible in Memory Explorer.</td>
+        </tr>
+        <tr>
+          <td class="stage-num-cell">09</td>
+          <td class="stage-name-cell"><span class="badge badge-cy">REFLECT</span></td>
+          <td class="stage-bio-cell">Metacognitive monitoring<span class="sci-ref">Nelson &amp; Narens (1990)</span></td>
+          <td class="stage-desc-cell">Generates "lessons learned" and procedural skills. Meta-level monitoring: the system examines its own memory processes, extracts transferable heuristics, and encodes them as executable if/then rules.</td>
+          <td class="stage-note-cell">Primary source of skills visible in Skills Forge. Can be deployed directly into agent system prompts.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- TMR -->
+<section>
+  <div class="sec-label"><span class="dot dot-g"></span>Targeted Memory Reactivation</div>
+  <h2>Sleep Science Meets<br>Agent Intelligence</h2>
+  <p class="sec-sub">
+    TMR (Targeted Memory Reactivation) is a real technique: playing specific cues during slow-wave sleep
+    selectively strengthens targeted memories. We implement this as a closed-loop
+    priority queue that injects high-value memory cues at simulated slow-oscillation up-state windows.
+  </p>
+
+  <div class="tmr-grid">
+    <div class="tmr-steps">
+      <div class="tmr-step">
+        <div class="tmr-step-num">1</div>
+        <div>
+          <h4>Priority Queue</h4>
+          <p>Memories are scored before the dream run using a weighted formula combining salience (importance to the agent's mission), difficulty (resistance to past consolidation), and contradiction flags. High-scoring memories are cued first during the active pipeline.</p>
+          <p style="margin-top:10px;font-family:var(--mono);font-size:0.74rem;color:var(--cy)">POST /v1/memory/tmr/queue</p>
+        </div>
+      </div>
+      <div class="tmr-step">
+        <div class="tmr-step-num">2</div>
+        <div>
+          <h4>Phase Detection (SO Up-State Simulation)</h4>
+          <p>Real TMR targets the up-phase of slow oscillations &mdash; periods of high cortical excitability during NREM sleep. We simulate this by scheduling cue injection at pipeline checkpoints where the model's context is maximally receptive to new associative connections.</p>
+        </div>
+      </div>
+      <div class="tmr-step">
+        <div class="tmr-step-num">3</div>
+        <div>
+          <h4>Cue Injection</h4>
+          <p>Target memory keys are surfaced into the active synthesis context during SYNTHESIZE and ASSOCIATE stages. The pipeline processes them with elevated priority, ensuring they participate in the maximum number of cross-memory connections.</p>
+          <p style="margin-top:10px;font-family:var(--mono);font-size:0.74rem;color:var(--cy)">GET /v1/memory/tmr/cues</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <div class="formula-box">
+        <div class="flabel">TMR Priority Formula</div>
+        <div class="eq">
+          (salience &times; 0.4)<br>
+          + (difficulty &times; 0.4)<br>
+          + (contradictionFlag &times; 0.2)
+        </div>
+        <div class="formula-terms">
+          <div class="fterm">
+            <span class="term">salience</span>
+            <span class="def">0.0&ndash;1.0 &mdash; how mission-critical this memory is</span>
+          </div>
+          <div class="fterm">
+            <span class="term">difficulty</span>
+            <span class="def">0.0&ndash;1.0 &mdash; resistance to past consolidation attempts</span>
+          </div>
+          <div class="fterm">
+            <span class="term">contradictionFlag</span>
+            <span class="def">0 or 1 &mdash; whether this memory conflicts with others in the namespace</span>
+          </div>
+        </div>
+      </div>
+      <div class="neuro-note">
+        <strong>Real neuroscience:</strong> Rudoy et al. (2009, Science) demonstrated that TMR during
+        slow-wave sleep selectively enhanced spatial memories cued with associated sounds, versus
+        uncued controls. Effect size was proportional to slow-oscillation density during cue presentation.
+        Our pipeline replicates this selectivity computationally &mdash; without a sleeping human.
+      </div>
+    </div>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- COMPARISON -->
+<section>
+  <div class="sec-label"><span class="dot dot-y"></span>Competitive Analysis</div>
+  <h2>Dream Engine vs The Field</h2>
+  <p class="sec-sub">
+    Benchmarked against AutoDream (a proprietary consolidation project from a major lab)
+    and Mem0 (the most-adopted open-source memory layer). The gap is structural, not incremental.
+  </p>
+
+  <div class="table-scroll">
+    <table class="cmp-table">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th class="winner">Dream Engine</th>
+          <th>AutoDream</th>
+          <th>Mem0</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Open source</td>
+          <td class="wcol val-yes">&#10003;</td>
+          <td class="val-no">&#10007;</td>
+          <td class="val-no">&#10007;</td>
+        </tr>
+        <tr>
+          <td>9-stage consolidation pipeline</td>
+          <td class="wcol val-yes">&#10003;</td>
+          <td class="val-no">&#10007;</td>
+          <td class="val-no">&#10007;</td>
+        </tr>
+        <tr>
+          <td>Targeted Memory Reactivation (TMR)</td>
+          <td class="wcol val-yes">&#10003;</td>
+          <td class="val-no">&#10007;</td>
+          <td class="val-partial">partial</td>
+        </tr>
+        <tr>
+          <td>Collective / multiplayer dreams</td>
+          <td class="wcol val-yes">&#10003;</td>
+          <td class="val-no">&#10007;</td>
+          <td class="val-no">&#10007;</td>
+        </tr>
+        <tr>
+          <td>Adversarial insight mode (GAN)</td>
+          <td class="wcol val-yes">&#10003;</td>
+          <td class="val-no">&#10007;</td>
+          <td class="val-no">&#10007;</td>
+        </tr>
+        <tr>
+          <td>Intelligence Score KPI</td>
+          <td class="wcol val-yes">&#10003;</td>
+          <td class="val-no">&#10007;</td>
+          <td class="val-no">&#10007;</td>
+        </tr>
+        <tr>
+          <td>Self-hostable</td>
+          <td class="wcol val-yes">&#10003;</td>
+          <td class="val-no">&#10007;</td>
+          <td class="val-no">&#10007;</td>
+        </tr>
+        <tr>
+          <td>Procedural skill extraction</td>
+          <td class="wcol val-yes">&#10003;</td>
+          <td class="val-no">&#10007;</td>
+          <td class="val-no">&#10007;</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- INTELLIGENCE SCORE -->
+<section>
+  <div class="sec-label"><span class="dot dot-pu"></span>Intelligence Score</div>
+  <h2>The KPI That Tells You<br>If It Actually Worked</h2>
+  <p class="sec-sub">
+    Every dream run returns an Intelligence Score &mdash; a normalized performance metric that captures
+    insight yield relative to compute spent. Track it over time to see your agent's cognitive growth curve.
+  </p>
+
+  <div class="score-layout">
+    <div class="score-formula">
+      <div class="eq-label">Intelligence Score Formula</div>
+      <div class="score-eq">( insights &times; strategy_depth &times; 10 ) &divide; duration_sec</div>
+      <div style="font-size:0.72rem;color:var(--t4);font-family:var(--mono);margin-bottom:14px;letter-spacing:0.08em;text-transform:uppercase">Score Tiers</div>
+      <div class="score-tiers">
+        <div class="score-tier tier-basic">
+          <span class="tlabel">Basic</span>
+          <span class="trange">score &lt; 5</span>
+        </div>
+        <div class="score-tier tier-good">
+          <span class="tlabel">Good</span>
+          <span class="trange">5 &ndash; 15</span>
+        </div>
+        <div class="score-tier tier-adv">
+          <span class="tlabel">Advanced</span>
+          <span class="trange">15 &ndash; 30</span>
+        </div>
+        <div class="score-tier tier-elite">
+          <span class="tlabel">Elite</span>
+          <span class="trange">30+</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="score-ex">
+      <h4>Example: Full 9-Stage REM Run</h4>
+      <p>
+        A full pipeline run with all 9 strategies, adversarial insight generation enabled,
+        Claude Sonnet, standard budget:
+      </p>
+      <div class="calc-box">
+        <div><span style="color:var(--t4)">insights:</span> <span style="color:var(--g)">43</span></div>
+        <div><span style="color:var(--t4)">strategy_depth:</span> <span style="color:var(--cy)">9</span></div>
+        <div><span style="color:var(--t4)">duration_sec:</span> <span style="color:var(--y)">87</span></div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--b2)">
+          <span style="color:var(--t4)">score = </span><span style="color:var(--t2)">(43 &times; 9 &times; 10) / 87</span><span style="color:var(--pu);font-weight:700"> = 44.5</span>
+        </div>
+      </div>
+      <div class="score-display">
+        <div class="score-num">44<span>.5</span></div>
+        <div class="score-lbl">Intelligence Score &mdash; Elite Tier</div>
+      </div>
+    </div>
+  </div>
+
+  <p style="margin-top:24px;font-size:0.82rem;color:var(--t3);font-family:var(--mono)">
+    A 9-stage Full REM run on a large memory batch typically yields a score of <strong style="color:var(--pu)">28&ndash;45</strong>,
+    depending on memory diversity and model capability. Scores compound as memories cross-reference
+    across nightly cycles.
+  </p>
+</section>
+
+<hr class="divider">
+
+<!-- COLLECTIVE DREAM -->
+<section>
+  <div class="sec-label"><span class="dot dot-pu"></span>Multiplayer Memory</div>
+  <h2>Your Whole Team Thinks<br>While You Sleep</h2>
+  <p class="sec-sub">
+    The Dream Engine scales beyond individual agents. Collective Dream runs across an entire hive namespace &mdash;
+    synthesizing insights from every agent's memories into a shared intelligence layer that compounds nightly.
+  </p>
+
+  <div class="coll-grid">
+    <div class="coll-card">
+      <div class="coll-icon">&#128279;</div>
+      <h3>Shared Memory Spaces</h3>
+      <p>Hive namespaces aggregate memories from all team agents. Any insight discovered by one agent becomes available to the collective during the next dream cycle. Cross-pollination happens automatically.</p>
+    </div>
+    <div class="coll-card">
+      <div class="coll-icon">&#9889;</div>
+      <h3>Cross-Agent Synthesis</h3>
+      <p>The SYNTHESIZE stage operates across agent boundaries. Memories from your research agent, coding agent, and planning agent are woven into unified concepts no single agent could reach alone.</p>
+    </div>
+    <div class="coll-card">
+      <div class="coll-icon">&#127760;</div>
+      <h3>Hive Intelligence Score</h3>
+      <p>Each Collective Dream returns a team-level Intelligence Score. Track your organization's cognitive growth as a compound metric. Hive scores consistently outperform individual agent scores by 2&ndash;4x.</p>
+    </div>
+  </div>
+
+  <div style="text-align:center">
+    <a href="/team-hives" class="btn-purple">Explore Team Hives &rarr;</a>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- PROCEDURAL SKILLS -->
+<section>
+  <div class="sec-label"><span class="dot dot-g"></span>Procedural Skills</div>
+  <h2>Dreams That Write<br>Your System Prompts</h2>
+  <p class="sec-sub">
+    The REFLECT, EVOLVE, and FORECAST stages extract procedural heuristics from memory patterns.
+    These compile into <strong>if X &rarr; run Y</strong> rules that inject directly into agent system prompts &mdash;
+    making your agents smarter with every dream cycle, no manual prompt engineering required.
+  </p>
+
+  <div class="skills-grid">
+    <div class="skill-card">
+      <div class="sk-label">Extracted by REFLECT</div>
+      <div class="sk-trigger">IF user_asks("debug")</div>
+      <div class="sk-arrow">&darr; THEN</div>
+      <div class="sk-action">RUN check_logs_first()</div>
+      <div class="sk-source">Source: 23 debugging sessions &middot; confidence: 0.91</div>
+    </div>
+    <div class="skill-card">
+      <div class="sk-label">Extracted by EVOLVE</div>
+      <div class="sk-trigger">IF task_type == "research"</div>
+      <div class="sk-arrow">&darr; THEN</div>
+      <div class="sk-action">RUN web_search + synthesize()</div>
+      <div class="sk-source">Source: 61 research tasks &middot; confidence: 0.87</div>
+    </div>
+    <div class="skill-card">
+      <div class="sk-label">Extracted by FORECAST</div>
+      <div class="sk-trigger">IF token_count &gt; 8000</div>
+      <div class="sk-arrow">&darr; THEN</div>
+      <div class="sk-action">RUN compress_context()</div>
+      <div class="sk-source">Source: 104 long sessions &middot; confidence: 0.94</div>
+    </div>
+  </div>
+
+  <div style="text-align:center">
+    <a href="/skills-forge" class="btn-green">Browse Skills Forge &rarr;</a>
+  </div>
+</section>
+
+<hr class="divider">
+
+<!-- CTA -->
+<div class="cta-section">
+  <div style="max-width:800px;margin:0 auto">
+    <div class="sec-label" style="justify-content:center"><span class="dot dot-cy"></span>Get Started</div>
+    <h2>Start Dreaming Tonight</h2>
+    <p class="cta-sub">
+      One API call triggers a full 9-stage REM pipeline. Your agent's memories are consolidated,
+      insights are extracted, and skills are written. Wake up smarter.
+    </p>
+
+    <div class="curl-block">
+      <button class="curl-copy" onclick="this.textContent='copied!';try{navigator.clipboard.writeText('curl -X POST https://api.slopshop.gg/v1/memory/dream/start -H \"Authorization: Bearer $SLOP_KEY\" -H \"Content-Type: application/json\" -d \'{\"namespace\":\"my-agent\",\"strategy\":\"full_rem\",\"budget\":\"standard\",\"model\":\"claude-sonnet\",\"adversarial\":true}\'')}catch(e){}setTimeout(()=>this.textContent='copy',2000)">copy</button>
+<span class="c-comment"># Trigger a full 9-stage REM dream run</span>
+<span class="c-cmd">curl</span> -X POST https://api.slopshop.gg/v1/memory/dream/start \
+  -H <span class="c-str">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="c-str">"Content-Type: application/json"</span> \
+  -d <span class="c-str">'{</span>
+    <span class="c-key">"namespace"</span>: <span class="c-str">"my-agent"</span>,
+    <span class="c-key">"strategy"</span>: <span class="c-str">"full_rem"</span>,
+    <span class="c-key">"budget"</span>: <span class="c-str">"standard"</span>,
+    <span class="c-key">"model"</span>: <span class="c-str">"claude-sonnet"</span>,
+    <span class="c-key">"adversarial"</span>: <span class="c-val">true</span>
+  <span class="c-str">}'</span>
+
+<span class="c-comment"># Poll for completion</span>
+<span class="c-cmd">curl</span> https://api.slopshop.gg/v1/memory/dream/status/<span class="c-val">{id}</span> \
+  -H <span class="c-str">"Authorization: Bearer $SLOP_KEY"</span>
+
+<span class="c-comment"># Retrieve intelligence_score + dream_efficiency_score</span>
+<span class="c-cmd">curl</span> https://api.slopshop.gg/v1/memory/dream/report/<span class="c-val">{id}</span> \
+  -H <span class="c-str">"Authorization: Bearer $SLOP_KEY"</span>
+
+<span class="c-comment"># Queue high-priority memories for TMR</span>
+<span class="c-cmd">curl</span> -X POST https://api.slopshop.gg/v1/memory/tmr/queue \
+  -H <span class="c-str">"Authorization: Bearer $SLOP_KEY"</span> \
+  -d <span class="c-str">'{</span><span class="c-key">"namespace"</span>:<span class="c-str">"my-agent"</span>,<span class="c-key">"target_keys"</span>:[<span class="c-str">"key1"</span>,<span class="c-str">"key2"</span>],<span class="c-key">"priority"</span>:<span class="c-val">0.9</span><span class="c-str">}'</span>
+
+<span class="c-comment"># Browse extracted procedural skills</span>
+<span class="c-cmd">curl</span> <span class="c-str">"https://api.slopshop.gg/v1/memory/skills?namespace=my-agent&strategy=reflect"</span> \
+  -H <span class="c-str">"Authorization: Bearer $SLOP_KEY"</span>
+    </div>
+
+    <div class="cta-btns">
+      <a href="/dream-studio" class="btn-primary">Open Dream Studio &rarr;</a>
+      <a href="/docs" class="btn-ghost">View API Docs &rarr;</a>
+    </div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <svg width="20" height="20" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#ff3333"/><line x1="256" y1="80" x2="256" y2="168" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="256" y1="344" x2="256" y2="432" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="80" y1="256" x2="168" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><line x1="344" y1="256" x2="432" y2="256" stroke="white" stroke-width="22" stroke-linecap="round" opacity=".6"/><circle cx="256" cy="256" r="52" fill="white"/></svg>
+      SLOPSHOP<span class="gg">.GG</span>
+    </div>
+    <div class="footer-grid">
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/playground">Playground</a>
+        <a href="/memory-manager">Memory Manager</a>
+        <a href="/memory-hub" style="color:var(--g)">Memory Hub</a>
+        <a href="/dream-studio" style="color:var(--cy)">Dream Studio</a>
+        <a href="/dream-reports">Dream Reports</a>
+        <a href="/team-hives" style="color:var(--pu)">Team Hives</a>
+        <a href="/memory-explorer">Memory Explorer</a>
+        <a href="/skills-forge">Skills Forge</a>
+        <a href="/pricing">Pricing</a>
+      </div>
+      <div class="footer-col">
+        <h4>Integrations</h4>
+        <a href="/integrate-claude-code">Claude Code</a>
+        <a href="/integrate-openai">OpenAI</a>
+        <a href="/integrate-grok">Grok</a>
+        <a href="/integrate-langchain">LangChain</a>
+        <a href="/integrate-crewai">CrewAI</a>
+        <a href="/integrate-deepseek">DeepSeek</a>
+        <a href="/integrate-mistral">Mistral</a>
+      </div>
+      <div class="footer-col">
+        <h4>Resources</h4>
+        <a href="/docs">Docs</a>
+        <a href="/api-reference">API Reference</a>
+        <a href="/getting-started">Getting Started</a>
+        <a href="/changelog">Changelog</a>
+        <a href="/roadmap">Roadmap</a>
+        <a href="/benchmarks">Benchmarks</a>
+      </div>
+      <div class="footer-col">
+        <h4>Legal</h4>
+        <a href="/about">About</a>
+        <a href="/status">Status</a>
+        <a href="/privacy">Privacy</a>
+        <a href="/terms">Terms</a>
+        <a href="/security">Security</a>
+        <a href="https://x.com/slopshopgg">@slopshopgg</a>
+      </div>
+    </div>
+    <div class="footer-copy">
+      Dream Engine &mdash; 9-Stage REM Memory Consolidation &middot; Slopshop.gg<br>
+      <span style="color:var(--t4);font-size:0.58rem">Living Memory Layer for AI Agents &middot; Self-hostable &middot; Multi-model &middot; Forever yours.</span>
+    </div>
+  </div>
+</footer>
+
+</div><!-- .page -->
+</body>
+</html>

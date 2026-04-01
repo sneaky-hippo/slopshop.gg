@@ -1,0 +1,1414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Slopshop — Your Brain</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #050505;
+      --surface: #0c0c0c;
+      --surface-2: #141414;
+      --surface-3: #1a1a1a;
+      --border: #1c1c1c;
+      --border-hover: #2e2e2e;
+      --text: #ffffff;
+      --text-2: #9a9a9a;
+      --text-3: #5a5a5a;
+      --accent: #00D4FF;
+      --accent-bg: rgba(0, 212, 255, 0.06);
+      --accent-border: rgba(0, 212, 255, 0.2);
+      --green: #10b981;
+      --green-bg: rgba(16, 185, 129, 0.08);
+      --font: 'Inter', -apple-system, sans-serif;
+      --radius: 14px;
+      --radius-sm: 8px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* ── NAV ─────────────────────────────────────────────────────── */
+    .nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 56px;
+      background: rgba(5, 5, 5, 0.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+    }
+
+    .nav-logo {
+      font-size: 1rem;
+      font-weight: 700;
+      color: var(--text);
+      text-decoration: none;
+      letter-spacing: -0.02em;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .nav-links a {
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .nav-links a:hover { color: var(--text); background: var(--surface-3); }
+    .nav-links a.active { color: var(--text); }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      position: relative;
+    }
+
+    .user-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 5px 12px 5px 5px;
+      cursor: pointer;
+      transition: border-color 0.15s;
+    }
+
+    .user-btn:hover { border-color: var(--border-hover); }
+
+    .user-avatar {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--accent) 0%, #7B5EA7 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #000;
+      flex-shrink: 0;
+    }
+
+    .user-name {
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .user-chevron {
+      font-size: 0.625rem;
+      color: var(--text-3);
+      transition: transform 0.15s;
+    }
+
+    .dropdown {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      min-width: 180px;
+      overflow: hidden;
+      display: none;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.6);
+    }
+
+    .dropdown.open { display: block; }
+
+    .dropdown a, .dropdown button {
+      display: block;
+      width: 100%;
+      padding: 10px 16px;
+      font-size: 0.875rem;
+      font-weight: 400;
+      color: var(--text-2);
+      text-decoration: none;
+      background: none;
+      border: none;
+      text-align: left;
+      cursor: pointer;
+      transition: background 0.1s, color 0.1s;
+      font-family: var(--font);
+    }
+
+    .dropdown a:hover, .dropdown button:hover {
+      background: var(--surface-3);
+      color: var(--text);
+    }
+
+    .dropdown-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 4px 0;
+    }
+
+    .dropdown button#signOutBtn { color: #ef4444; }
+    .dropdown button#signOutBtn:hover { background: rgba(239,68,68,0.08); color: #ef4444; }
+
+    /* ── HAMBURGER ───────────────────────────────────────────────── */
+    .hamburger {
+      display: none;
+      flex-direction: column;
+      gap: 5px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 6px;
+    }
+
+    .hamburger span {
+      display: block;
+      width: 22px;
+      height: 2px;
+      background: var(--text-2);
+      border-radius: 2px;
+      transition: transform 0.2s, opacity 0.2s;
+    }
+
+    .mobile-menu {
+      position: fixed;
+      top: 56px;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(5, 5, 5, 0.97);
+      z-index: 99;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      transform: translateX(-100%);
+      transition: transform 0.25s ease;
+    }
+
+    .mobile-menu.open { transform: translateX(0); }
+
+    .mobile-menu a, .mobile-menu button {
+      display: block;
+      color: var(--text-2);
+      text-decoration: none;
+      font-size: 1.125rem;
+      font-weight: 500;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+      background: none;
+      border-left: none;
+      border-right: none;
+      border-top: none;
+      cursor: pointer;
+      text-align: left;
+      font-family: var(--font);
+      transition: color 0.15s;
+    }
+
+    .mobile-menu a:last-child, .mobile-menu button:last-child { border-bottom: none; }
+    .mobile-menu a:hover, .mobile-menu button:hover { color: var(--text); }
+
+    /* ── MAIN LAYOUT ─────────────────────────────────────────────── */
+    .main {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 88px 24px 80px;
+    }
+
+    /* ── GREETING ────────────────────────────────────────────────── */
+    .greeting-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      margin-bottom: 20px;
+    }
+
+    .greeting-text {
+      font-size: 1rem;
+      font-weight: 400;
+      color: var(--text-2);
+    }
+
+    .greeting-name { color: var(--text); font-weight: 600; }
+
+    .greeting-date {
+      font-size: 0.875rem;
+      color: var(--text-2);
+      font-weight: 400;
+    }
+
+    .greeting-divider {
+      border: none;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 32px;
+    }
+
+    /* ── SECTION TITLE ───────────────────────────────────────────── */
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+
+    .section-title {
+      font-size: 1.125rem;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .section-meta {
+      font-size: 0.8125rem;
+      color: var(--text-3);
+    }
+
+    /* ── SCORE CARD ──────────────────────────────────────────────── */
+    .score-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 40px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 40px;
+      margin-bottom: 32px;
+    }
+
+    .score-label {
+      font-size: 0.8rem;
+      font-weight: 500;
+      color: var(--text-2);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 8px;
+    }
+
+    .score-number {
+      font-size: 5rem;
+      font-weight: 900;
+      color: var(--text);
+      line-height: 1;
+      margin-bottom: 16px;
+      letter-spacing: -0.04em;
+    }
+
+    .score-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .rank-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 12px;
+      border: 1px solid var(--accent-border);
+      border-radius: 20px;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--accent);
+      background: var(--accent-bg);
+      width: fit-content;
+    }
+
+    .streak-text {
+      font-size: 0.875rem;
+      color: var(--text-2);
+    }
+
+    .trend-rising { font-size: 0.875rem; color: var(--green); font-weight: 500; }
+    .trend-stable { font-size: 0.875rem; color: var(--text-2); font-weight: 500; }
+    .trend-declining { font-size: 0.875rem; color: var(--text-3); font-weight: 500; }
+
+    .score-components {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 12px;
+      align-content: start;
+    }
+
+    .component-pill {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+
+    .component-label {
+      font-size: 0.75rem;
+      color: var(--text-3);
+      margin-bottom: 4px;
+      font-weight: 400;
+    }
+
+    .component-value {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    /* ── BRIEFING GRID ───────────────────────────────────────────── */
+    .briefing-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .briefing-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .briefing-card-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .briefing-card-icon {
+      font-size: 0.875rem;
+      color: var(--text-3);
+    }
+
+    .briefing-card-title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .dream-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dream-row:last-child { border-bottom: none; }
+
+    .dream-strategy {
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text);
+    }
+
+    .dream-time {
+      font-size: 0.8125rem;
+      color: var(--text-3);
+    }
+
+    .insight-row {
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .insight-row:last-child { border-bottom: none; }
+
+    .insight-text {
+      font-size: 0.875rem;
+      color: var(--text-2);
+      line-height: 1.5;
+      margin-bottom: 4px;
+    }
+
+    .insight-time {
+      font-size: 0.75rem;
+      color: var(--text-3);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 24px 0;
+    }
+
+    .empty-text {
+      font-size: 0.875rem;
+      color: var(--text-3);
+      margin-bottom: 16px;
+      line-height: 1.6;
+    }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 8px 16px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: none;
+      color: var(--text-2);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: var(--font);
+      transition: border-color 0.15s, color 0.15s;
+    }
+
+    .btn-ghost:hover { border-color: var(--border-hover); color: var(--text); }
+
+    /* ── EMOTIONAL SUMMARY ───────────────────────────────────────── */
+    .emotional-card {
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 20px 24px;
+      margin-bottom: 32px;
+      display: flex;
+      align-items: center;
+      gap: 32px;
+      flex-wrap: wrap;
+    }
+
+    .emotional-label {
+      font-size: 0.8125rem;
+      color: var(--text-3);
+      margin-bottom: 4px;
+    }
+
+    .emotional-value {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .valence-section { flex: 1; min-width: 160px; }
+
+    .valence-label {
+      font-size: 0.75rem;
+      color: var(--text-3);
+      margin-bottom: 6px;
+    }
+
+    .valence-bar-track {
+      height: 4px;
+      background: var(--surface-3);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .valence-bar-fill {
+      height: 100%;
+      background: var(--accent);
+      border-radius: 4px;
+      transition: width 0.8s ease;
+    }
+
+    .emotional-trend-improving { font-size: 0.875rem; color: var(--green); font-weight: 500; }
+    .emotional-trend-stable { font-size: 0.875rem; color: var(--text-2); font-weight: 500; }
+    .emotional-trend-declining { font-size: 0.875rem; color: var(--text-3); font-weight: 500; }
+
+    /* ── TMR CUES ────────────────────────────────────────────────── */
+    .tmr-section {
+      margin-bottom: 32px;
+    }
+
+    .tmr-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .tmr-title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .tooltip-wrap {
+      position: relative;
+      display: inline-flex;
+    }
+
+    .tooltip-icon {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.6875rem;
+      color: var(--text-3);
+      cursor: default;
+    }
+
+    .tooltip-tip {
+      position: absolute;
+      bottom: calc(100% + 6px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--surface-3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 10px;
+      font-size: 0.75rem;
+      color: var(--text-2);
+      white-space: nowrap;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .tooltip-wrap:hover .tooltip-tip { opacity: 1; }
+
+    .cue-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .cue-chip {
+      padding: 6px 12px;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      font-size: 0.8125rem;
+      color: var(--text-2);
+    }
+
+    /* ── QUICK ACTIONS ───────────────────────────────────────────── */
+    .actions-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+
+    .action-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 28px 24px;
+      cursor: pointer;
+      text-decoration: none;
+      display: block;
+      transition: border-color 0.15s, transform 0.15s;
+    }
+
+    .action-card:hover {
+      border-color: var(--border-hover);
+      transform: translateY(-2px);
+    }
+
+    .action-icon {
+      font-size: 1.375rem;
+      margin-bottom: 12px;
+    }
+
+    .action-title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+
+    .action-desc {
+      font-size: 0.8125rem;
+      color: var(--text-3);
+      line-height: 1.5;
+    }
+
+    /* ── VOICE CAPTURE ───────────────────────────────────────────── */
+    .voice-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 32px;
+      margin-bottom: 32px;
+      transition: border-color 0.2s;
+    }
+
+    .voice-card.active { border-color: var(--accent-border); }
+
+    .voice-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .voice-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .voice-title {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .voice-textarea {
+      width: 100%;
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 16px;
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 0.9375rem;
+      line-height: 1.6;
+      resize: vertical;
+      min-height: 100px;
+      transition: border-color 0.15s;
+      outline: none;
+    }
+
+    .voice-textarea::placeholder { color: var(--text-3); }
+    .voice-textarea:focus { border-color: var(--accent-border); }
+
+    .voice-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+    }
+
+    .voice-hint { font-size: 0.8125rem; color: var(--text-3); }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: var(--accent);
+      border: none;
+      border-radius: var(--radius-sm);
+      color: #000;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-primary:hover { opacity: 0.88; }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .voice-success {
+      margin-top: 12px;
+      padding: 10px 16px;
+      background: var(--green-bg);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      border-radius: var(--radius-sm);
+      font-size: 0.875rem;
+      color: var(--green);
+      display: none;
+    }
+
+    .voice-success.show { display: block; }
+
+    /* ── FOOTER ──────────────────────────────────────────────────── */
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+
+    footer a {
+      font-size: 0.8125rem;
+      color: var(--text-3);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+
+    footer a:hover { color: var(--text-2); }
+
+    /* ── SKELETON ────────────────────────────────────────────────── */
+    @keyframes shimmer {
+      0% { background-position: -400px 0; }
+      100% { background-position: 400px 0; }
+    }
+
+    .skeleton {
+      background: linear-gradient(90deg, #111 25%, #1c1c1c 50%, #111 75%);
+      background-size: 800px 100%;
+      animation: shimmer 1.4s infinite linear;
+      border-radius: 6px;
+    }
+
+    .sk-score-num { width: 120px; height: 80px; margin-bottom: 16px; border-radius: 8px; }
+    .sk-badge { width: 72px; height: 26px; border-radius: 20px; margin-bottom: 10px; }
+    .sk-streak { width: 100px; height: 18px; margin-bottom: 8px; }
+    .sk-trend { width: 64px; height: 18px; }
+    .sk-pill { height: 56px; border-radius: var(--radius-sm); }
+    .sk-row { height: 44px; border-radius: 6px; margin-bottom: 10px; }
+    .sk-row:last-child { margin-bottom: 0; }
+
+    /* ── RESPONSIVE ──────────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .nav-links { display: none; }
+      .hamburger { display: flex; }
+      .user-name { display: none; }
+
+      .score-card {
+        grid-template-columns: 1fr;
+        gap: 28px;
+        padding: 28px 20px;
+      }
+
+      .score-number { font-size: 4rem; }
+
+      .score-components { grid-template-columns: 1fr 1fr 1fr; }
+
+      .briefing-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions-grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+
+      .action-card { padding: 20px; }
+
+      .emotional-card { gap: 20px; }
+
+      .greeting-row { flex-direction: column; gap: 4px; }
+      .greeting-date { font-size: 0.8125rem; }
+    }
+
+    @media (max-width: 480px) {
+      .main { padding: 80px 16px 60px; }
+      .score-components { grid-template-columns: 1fr 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <a class="nav-logo" href="/brain.html">Slopshop</a>
+
+    <div class="nav-links">
+      <a href="/brain.html" class="active">Home</a>
+      <a href="/dream-studio.html">Dream Lab</a>
+      <a href="/memory-explorer.html">Memory</a>
+      <a href="#voice" onclick="document.getElementById('voice').scrollIntoView({behavior:'smooth'});return false;">Voice</a>
+    </div>
+
+    <div class="nav-right">
+      <button class="user-btn" id="userMenuBtn" aria-expanded="false" aria-haspopup="true">
+        <div class="user-avatar" id="userAvatar">?</div>
+        <span class="user-name" id="userName">Loading…</span>
+        <span class="user-chevron">▾</span>
+      </button>
+      <div class="dropdown" id="userDropdown" role="menu">
+        <a href="/dev-console.html" role="menuitem">Developer Console</a>
+        <div class="dropdown-divider"></div>
+        <button id="signOutBtn" role="menuitem">Sign Out</button>
+      </div>
+    </div>
+
+    <button class="hamburger" id="hamburgerBtn" aria-label="Open menu">
+      <span></span>
+      <span></span>
+      <span></span>
+    </button>
+  </nav>
+
+  <!-- MOBILE MENU -->
+  <div class="mobile-menu" id="mobileMenu" role="dialog" aria-label="Navigation">
+    <a href="/brain.html">Home</a>
+    <a href="/dream-studio.html">Dream Lab</a>
+    <a href="/memory-explorer.html">Memory</a>
+    <a href="#voice" onclick="closeMobileMenu();setTimeout(()=>document.getElementById('voice').scrollIntoView({behavior:'smooth'}),100);">Voice</a>
+    <a href="/dev-console.html">Developer Console</a>
+    <button id="signOutBtnMobile">Sign Out</button>
+  </div>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- Section 1: Greeting -->
+    <div class="greeting-row">
+      <p class="greeting-text">Good <span id="timeOfDay">morning</span>, <span class="greeting-name" id="greetingName">…</span></p>
+      <span class="greeting-date" id="greetingDate"></span>
+    </div>
+    <hr class="greeting-divider">
+
+    <!-- Section 2: Brain Score -->
+    <div class="section-header">
+      <!-- intentionally empty — score card has its own label -->
+    </div>
+
+    <div class="score-card" id="scoreCard">
+      <!-- Left -->
+      <div>
+        <div class="score-label">Brain Score</div>
+        <div class="score-number" id="scoreNumber">
+          <div class="skeleton sk-score-num"></div>
+        </div>
+        <div class="score-meta" id="scoreMeta">
+          <div class="skeleton sk-badge"></div>
+          <div class="skeleton sk-streak"></div>
+          <div class="skeleton sk-trend"></div>
+        </div>
+      </div>
+
+      <!-- Right: components grid -->
+      <div class="score-components" id="scoreComponents">
+        <div class="skeleton sk-pill"></div>
+        <div class="skeleton sk-pill"></div>
+        <div class="skeleton sk-pill"></div>
+        <div class="skeleton sk-pill"></div>
+        <div class="skeleton sk-pill"></div>
+        <div class="skeleton sk-pill"></div>
+      </div>
+    </div>
+
+    <!-- Section 3: Morning Briefing -->
+    <div class="section-header" style="margin-top: 8px;">
+      <h2 class="section-title">Today's Briefing</h2>
+      <span class="section-meta" id="briefingDate"></span>
+    </div>
+
+    <div class="briefing-grid" id="briefingGrid">
+      <!-- Left: Dream Recap -->
+      <div class="briefing-card">
+        <div class="briefing-card-header">
+          <span class="briefing-card-icon">◆</span>
+          <span class="briefing-card-title">Last Dreams</span>
+        </div>
+        <div id="dreamList">
+          <div class="skeleton sk-row"></div>
+          <div class="skeleton sk-row"></div>
+          <div class="skeleton sk-row"></div>
+        </div>
+      </div>
+
+      <!-- Right: Insights -->
+      <div class="briefing-card">
+        <div class="briefing-card-header">
+          <span class="briefing-card-icon">○</span>
+          <span class="briefing-card-title">Latest Insights</span>
+        </div>
+        <div id="insightList">
+          <div class="skeleton sk-row"></div>
+          <div class="skeleton sk-row"></div>
+          <div class="skeleton sk-row"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 4: Emotional Summary -->
+    <div class="emotional-card" id="emotionalCard">
+      <div>
+        <div class="emotional-label">Feeling</div>
+        <div class="emotional-value" id="emotionLabel">
+          <div class="skeleton" style="width:80px;height:20px;"></div>
+        </div>
+      </div>
+      <div class="valence-section">
+        <div class="valence-label">Mood level</div>
+        <div class="valence-bar-track">
+          <div class="valence-bar-fill" id="valenceBar" style="width: 0%;"></div>
+        </div>
+      </div>
+      <div>
+        <div class="emotional-label">Trend</div>
+        <div id="emotionTrend">
+          <div class="skeleton" style="width:64px;height:18px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Section 5: TMR Cues (hidden until data loads) -->
+    <div class="tmr-section" id="tmrSection" style="display: none;">
+      <div class="tmr-header">
+        <span class="tmr-title">Memory Cues</span>
+        <div class="tooltip-wrap">
+          <div class="tooltip-icon">?</div>
+          <div class="tooltip-tip">Topics scheduled for review</div>
+        </div>
+      </div>
+      <div class="cue-chips" id="cueChips"></div>
+    </div>
+
+    <!-- Section 6: Quick Actions -->
+    <div class="section-header">
+      <h2 class="section-title">Quick Actions</h2>
+    </div>
+
+    <div class="actions-grid" style="margin-bottom: 32px;">
+      <a class="action-card" href="/dream-studio.html">
+        <div class="action-icon">✦</div>
+        <div class="action-title">Dream Lab</div>
+        <div class="action-desc">Start a dream session tonight</div>
+      </a>
+      <a class="action-card" href="#voice" onclick="document.getElementById('voice').scrollIntoView({behavior:'smooth'});return false;">
+        <div class="action-icon">◎</div>
+        <div class="action-title">Voice Journal</div>
+        <div class="action-desc">Record a thought right now</div>
+      </a>
+      <a class="action-card" href="/memory-explorer.html">
+        <div class="action-icon">⬡</div>
+        <div class="action-title">Explore Memory</div>
+        <div class="action-desc">Browse your memory graph</div>
+      </a>
+    </div>
+
+    <!-- Section 7: Voice Quick Capture -->
+    <div class="section-header">
+      <h2 class="section-title">Capture a Thought</h2>
+    </div>
+
+    <div class="voice-card" id="voice">
+      <div class="voice-header">
+        <div class="voice-dot"></div>
+        <span class="voice-title">What's on your mind?</span>
+      </div>
+      <textarea
+        class="voice-textarea"
+        id="voiceInput"
+        placeholder="Speak your mind… type anything here and it goes straight into your memory."
+        rows="4"
+      ></textarea>
+      <div class="voice-footer">
+        <span class="voice-hint">Goes directly into your personal memory.</span>
+        <button class="btn-primary" id="voiceSendBtn">
+          <span>Save to Memory</span>
+        </button>
+      </div>
+      <div class="voice-success" id="voiceSuccess"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer>
+      <a href="/privacy.html">Privacy</a>
+      <a href="/terms.html">Terms</a>
+      <a href="/dev-console.html">Developer Console</a>
+      <a href="/docs.html">Docs</a>
+    </footer>
+
+  </main>
+
+  <script>
+    // ── HELPERS ───────────────────────────────────────────────────────────
+
+    function formatRelativeTime(ts) {
+      if (!ts) return '';
+      const date = new Date(ts);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.round(diffMs / 60000);
+      const diffHours = Math.round(diffMs / 3600000);
+      const diffDays = Math.round(diffMs / 86400000);
+      if (diffMins < 2) return 'Just now';
+      if (diffMins < 60) return `${diffMins} minutes ago`;
+      if (diffHours === 1) return '1 hour ago';
+      if (diffHours < 24) return `${diffHours} hours ago`;
+      if (diffDays === 1) return 'Yesterday';
+      if (diffDays < 7) return `${diffDays} days ago`;
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+
+    function strategyLabel(raw) {
+      const map = {
+        synthesize: 'Synthesis',
+        pattern_extract: 'Pattern Discovery',
+        reflect: 'Reflection',
+        consolidate: 'Consolidation',
+        explore: 'Exploration',
+        integrate: 'Integration',
+        analyze: 'Analysis',
+        creative: 'Creative Synthesis',
+        review: 'Review',
+        dream: 'Dream Session',
+      };
+      if (!raw) return 'Session';
+      const key = raw.toLowerCase();
+      return map[key] || raw.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function emotionLabel(raw) {
+      if (!raw) return 'Neutral';
+      const map = {
+        calm: 'Calm', relaxed: 'Calm', neutral: 'Neutral',
+        energized: 'Energized', excited: 'Energized', happy: 'Energized',
+        reflective: 'Reflective', thoughtful: 'Reflective', pensive: 'Reflective',
+        focused: 'Focused', determined: 'Focused', productive: 'Focused',
+        anxious: 'Unsettled', stressed: 'Unsettled', tense: 'Unsettled',
+        sad: 'Low', melancholy: 'Low', down: 'Low',
+      };
+      return map[raw.toLowerCase()] || raw.replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    function getTimeOfDay() {
+      const h = new Date().getHours();
+      if (h < 12) return 'morning';
+      if (h < 17) return 'afternoon';
+      return 'evening';
+    }
+
+    function formatDate(d) {
+      return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    }
+
+    function truncate(str, len) {
+      if (!str) return '';
+      return str.length > len ? str.slice(0, len).trimEnd() + '…' : str;
+    }
+
+    function initials(name) {
+      if (!name) return '?';
+      return name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
+    }
+
+    // ── POPULATE GREETING ─────────────────────────────────────────────────
+
+    function populateGreeting(me) {
+      const name = me?.name || me?.display_name || me?.email?.split('@')[0] || 'there';
+      document.getElementById('timeOfDay').textContent = getTimeOfDay();
+      document.getElementById('greetingName').textContent = name;
+      document.getElementById('greetingDate').textContent = formatDate(new Date());
+
+      // Avatar
+      const avatar = document.getElementById('userAvatar');
+      const userNameEl = document.getElementById('userName');
+      if (me?.picture || me?.avatar_url) {
+        avatar.innerHTML = `<img src="${me.picture || me.avatar_url}" alt="${name}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+      } else {
+        avatar.textContent = initials(name);
+      }
+      userNameEl.textContent = name.split(' ')[0];
+    }
+
+    // ── POPULATE SCORE ────────────────────────────────────────────────────
+
+    function populateScore(data) {
+      const scoreNum = document.getElementById('scoreNumber');
+      const scoreMeta = document.getElementById('scoreMeta');
+      const scoreComponents = document.getElementById('scoreComponents');
+
+      if (!data) {
+        scoreNum.textContent = '—';
+        scoreMeta.innerHTML = '<span style="color:var(--text-3);font-size:0.875rem;">Could not load score</span>';
+        scoreComponents.innerHTML = '';
+        return;
+      }
+
+      const score = data.score ?? data.total_score ?? data.intelligence_score ?? 0;
+      const rank = data.rank ?? data.rank_label ?? 'Explorer';
+      const streak = data.streak ?? data.streak_days ?? 0;
+      const trend = data.trend ?? data.momentum ?? 'stable';
+
+      scoreNum.textContent = Math.round(score);
+
+      let trendHtml = '';
+      if (trend === 'rising' || trend === 'up' || trend === 'improving') {
+        trendHtml = `<span class="trend-rising">↑ Rising</span>`;
+      } else if (trend === 'declining' || trend === 'down') {
+        trendHtml = `<span class="trend-declining">↓ Declining</span>`;
+      } else {
+        trendHtml = `<span class="trend-stable">→ Stable</span>`;
+      }
+
+      scoreMeta.innerHTML = `
+        <div class="rank-badge">${rank}</div>
+        <div class="streak-text">🔥 ${streak}-day streak</div>
+        ${trendHtml}
+      `;
+
+      const components = [
+        { key: 'insights', label: 'Insights' },
+        { key: 'dream_depth', label: 'Dream Depth' },
+        { key: 'emotional_depth', label: 'Emotional Depth' },
+        { key: 'user_shaping', label: 'Shaping' },
+        { key: 'collective_boost', label: 'Collective' },
+        { key: 'memory_density', label: 'Memory' },
+      ];
+
+      const comps = data.components ?? data.breakdown ?? {};
+
+      scoreComponents.innerHTML = components.map(c => {
+        const val = comps[c.key] ?? data[c.key];
+        const display = (val !== undefined && val !== null) ? (typeof val === 'number' ? Math.round(val) : val) : '—';
+        return `
+          <div class="component-pill">
+            <div class="component-label">${c.label}</div>
+            <div class="component-value">${display}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ── POPULATE BRIEFING ─────────────────────────────────────────────────
+
+    function populateBriefing(briefing) {
+      document.getElementById('briefingDate').textContent = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+      // Dream Recap
+      const dreamList = document.getElementById('dreamList');
+      const dreams = briefing?.dream_recap ?? [];
+
+      if (dreams.length === 0) {
+        dreamList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-text">No dream sessions yet. Start your first Dream Lab session.</div>
+            <a class="btn-ghost" href="/dream-studio.html">Go to Dream Lab</a>
+          </div>
+        `;
+      } else {
+        dreamList.innerHTML = dreams.slice(0, 3).map(d => `
+          <div class="dream-row">
+            <span class="dream-strategy">${strategyLabel(d.strategy ?? d.type ?? d.name)}</span>
+            <span class="dream-time">${formatRelativeTime(d.created_at ?? d.timestamp ?? d.ts)}</span>
+          </div>
+        `).join('');
+      }
+
+      // Insights
+      const insightList = document.getElementById('insightList');
+      const insights = briefing?.top_insights ?? briefing?.insights ?? [];
+
+      if (insights.length === 0) {
+        insightList.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-text">No insights yet. Your first dream session will generate insights.</div>
+          </div>
+        `;
+      } else {
+        insightList.innerHTML = insights.slice(0, 5).map(i => {
+          const text = i.text ?? i.content ?? i.insight ?? '';
+          const ts = i.created_at ?? i.timestamp ?? i.ts;
+          return `
+            <div class="insight-row">
+              <div class="insight-text">${truncate(text, 120)}</div>
+              ${ts ? `<div class="insight-time">${formatRelativeTime(ts)}</div>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      // Emotional Summary
+      const emo = briefing?.emotional_summary ?? briefing?.emotional ?? null;
+      const emotionLabelEl = document.getElementById('emotionLabel');
+      const valenceBar = document.getElementById('valenceBar');
+      const emotionTrend = document.getElementById('emotionTrend');
+
+      if (emo) {
+        const dominant = emo.dominant_emotion ?? emo.emotion ?? emo.primary ?? 'Neutral';
+        const valence = emo.valence ?? 0.5;
+        const trend = emo.trend ?? emo.direction ?? 'stable';
+        const valPct = Math.round(Math.max(0, Math.min(1, valence)) * 50 + 50);
+
+        emotionLabelEl.textContent = emotionLabel(dominant);
+        valenceBar.style.width = valPct + '%';
+
+        let trendClass = 'emotional-trend-stable';
+        let trendText = 'Stable';
+        if (trend === 'improving' || trend === 'up' || trend === 'rising') {
+          trendClass = 'emotional-trend-improving';
+          trendText = 'Improving';
+        } else if (trend === 'declining' || trend === 'down' || trend === 'worsening') {
+          trendClass = 'emotional-trend-declining';
+          trendText = 'Declining';
+        }
+
+        emotionTrend.innerHTML = `<span class="${trendClass}">${trendText}</span>`;
+      } else {
+        emotionLabelEl.textContent = '—';
+        emotionTrend.innerHTML = '<span style="color:var(--text-3)">—</span>';
+      }
+
+      // TMR Cues
+      const tmrCues = briefing?.tmr_cues ?? briefing?.memory_cues ?? [];
+      const tmrSection = document.getElementById('tmrSection');
+
+      if (tmrCues.length > 0) {
+        tmrSection.style.display = 'block';
+        const chips = document.getElementById('cueChips');
+        chips.innerHTML = tmrCues.map(c => {
+          const label = c.memory_ref ?? c.cue ?? c.label ?? c;
+          return `<div class="cue-chip">${label}</div>`;
+        }).join('');
+      }
+    }
+
+    // ── SIGN OUT ──────────────────────────────────────────────────────────
+
+    async function signOut() {
+      try {
+        await fetch('/v1/auth/logout', { method: 'POST', credentials: 'include' });
+      } catch (_) {}
+      window.location.replace('/consumer.html');
+    }
+
+    document.getElementById('signOutBtn')?.addEventListener('click', signOut);
+    document.getElementById('signOutBtnMobile')?.addEventListener('click', signOut);
+
+    // ── VOICE CAPTURE ─────────────────────────────────────────────────────
+
+    const voiceInput = document.getElementById('voiceInput');
+    const voiceCard = document.getElementById('voice');
+
+    voiceInput?.addEventListener('focus', () => voiceCard.classList.add('active'));
+    voiceInput?.addEventListener('blur', () => voiceCard.classList.remove('active'));
+
+    document.getElementById('voiceSendBtn')?.addEventListener('click', async () => {
+      const text = voiceInput?.value?.trim();
+      if (!text) return;
+
+      const btn = document.getElementById('voiceSendBtn');
+      btn.disabled = true;
+      btn.querySelector('span').textContent = 'Saving…';
+
+      try {
+        const r = await fetch('/v1/voice/transcribe-and-store', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({
+            transcript: text,
+            source: 'typed',
+            namespace: 'default',
+            auto_extract: true
+          })
+        });
+
+        const data = r.ok ? await r.json() : null;
+        const wordCount = data?.word_count ?? text.split(/\s+/).filter(Boolean).length;
+
+        const successEl = document.getElementById('voiceSuccess');
+        successEl.textContent = `Captured! ${wordCount} ${wordCount === 1 ? 'word' : 'words'} saved to memory.`;
+        successEl.classList.add('show');
+        voiceInput.value = '';
+
+        setTimeout(() => successEl.classList.remove('show'), 4000);
+      } catch (err) {
+        const successEl = document.getElementById('voiceSuccess');
+        successEl.textContent = 'Something went wrong. Please try again.';
+        successEl.style.background = 'rgba(239,68,68,0.08)';
+        successEl.style.borderColor = 'rgba(239,68,68,0.2)';
+        successEl.style.color = '#ef4444';
+        successEl.classList.add('show');
+        setTimeout(() => {
+          successEl.classList.remove('show');
+          successEl.style.cssText = '';
+        }, 4000);
+      } finally {
+        btn.disabled = false;
+        btn.querySelector('span').textContent = 'Save to Memory';
+      }
+    });
+
+    // ── USER DROPDOWN ─────────────────────────────────────────────────────
+
+    const userMenuBtn = document.getElementById('userMenuBtn');
+    const userDropdown = document.getElementById('userDropdown');
+
+    userMenuBtn?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = userDropdown.classList.toggle('open');
+      userMenuBtn.setAttribute('aria-expanded', open);
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!userMenuBtn?.contains(e.target) && !userDropdown?.contains(e.target)) {
+        userDropdown?.classList.remove('open');
+        userMenuBtn?.setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    // ── HAMBURGER ─────────────────────────────────────────────────────────
+
+    const hamburgerBtn = document.getElementById('hamburgerBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+
+    hamburgerBtn?.addEventListener('click', () => {
+      mobileMenu.classList.toggle('open');
+    });
+
+    function closeMobileMenu() {
+      mobileMenu?.classList.remove('open');
+    }
+
+    mobileMenu?.querySelectorAll('a').forEach(a => {
+      a.addEventListener('click', closeMobileMenu);
+    });
+
+    // ── INIT ──────────────────────────────────────────────────────────────
+
+    async function init() {
+      // Set static date bits immediately
+      document.getElementById('timeOfDay').textContent = getTimeOfDay();
+      document.getElementById('greetingDate').textContent = formatDate(new Date());
+      document.getElementById('briefingDate').textContent = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' });
+
+      // 1. Auth check
+      let sessionRes;
+      try {
+        sessionRes = await fetch('/v1/auth/session', { credentials: 'include' });
+      } catch (_) {
+        window.location.replace('/consumer.html');
+        return;
+      }
+      if (!sessionRes.ok) {
+        window.location.replace('/consumer.html');
+        return;
+      }
+
+      // 2. Fetch all data in parallel
+      const [meRes, scoreRes, briefingRes] = await Promise.all([
+        fetch('/v1/auth/me', { credentials: 'include' }).catch(() => null),
+        fetch('/v1/memory/score', { credentials: 'include' }).catch(() => null),
+        fetch('/v1/memory/briefing', { credentials: 'include' }).catch(() => null)
+      ]);
+
+      const me = (meRes && meRes.ok) ? await meRes.json().catch(() => null) : null;
+      const scoreData = (scoreRes && scoreRes.ok) ? await scoreRes.json().catch(() => null) : null;
+      const briefing = (briefingRes && briefingRes.ok) ? await briefingRes.json().catch(() => null) : null;
+
+      // 3. Populate UI
+      populateGreeting(me);
+      populateScore(scoreData);
+      populateBriefing(briefing);
+    }
+
+    init().catch(console.error);
+  </script>
+</body>
+</html>

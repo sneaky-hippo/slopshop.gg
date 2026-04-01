@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Morning Intelligence Brief — Dream Reports | Slopshop</title>
+<meta name="description" content="Detailed analytics and reports from Dream Engine sessions. Intelligence scores, pattern analysis, and procedural skills extracted from overnight memory synthesis.">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://slopshop.gg/dream-reports">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/dream-reports">
+<meta property="og:title" content="Morning Intelligence Brief — Slopshop Dream Engine">
+<meta property="og:description" content="Your agents dreamed. Here's what they learned.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#09090b;--s1:#111113;--s2:#18181b;
+  --b:#1e1e22;--b2:#27272a;
+  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+  --r:#06b6d4;--rg:rgba(6,182,212,0.06);
+  --o:#a78bfa;--g:#34d399;--gg:rgba(52,211,153,0.08);
+  --v:#818cf8;
+  --warn:#f59e0b;--wg:rgba(245,158,11,0.08);
+  --red:#ef4444;--redg:rgba(239,68,68,0.08);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+html{font-size:14px}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden}
+::selection{background:var(--r);color:#000}
+a{color:var(--r);text-decoration:none}a:hover{opacity:.8}
+button{cursor:pointer;font-family:var(--sans)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:200;height:56px;background:rgba(9,9,11,0.92);backdrop-filter:blur(24px) saturate(180%);border-bottom:1px solid var(--b);display:flex;align-items:center;padding:0 24px}
+.nv{max-width:1280px;width:100%;margin:0 auto;display:flex;align-items:center;justify-content:space-between}
+.logo{font-family:var(--mono);font-weight:800;font-size:.95rem;letter-spacing:.1em;display:flex;align-items:center;gap:6px;color:var(--t);text-decoration:none}
+.logo .mark{color:#ef4444;font-weight:900}
+.nav-links{display:flex;gap:2px;align-items:center}
+.nav-links a{color:var(--t3);font-size:.75rem;font-weight:500;padding:6px 12px;border-radius:6px;transition:.15s;font-family:var(--sans)}
+.nav-links a:hover{color:var(--t);background:var(--s2);opacity:1}
+.nav-cta{background:var(--r) !important;color:#000 !important;font-weight:700 !important;padding:6px 16px !important;border-radius:6px !important}
+.nav-cta:hover{opacity:.85 !important}
+
+/* ── AUTH OVERLAY ── */
+#auth-overlay{position:fixed;inset:0;z-index:500;background:rgba(9,9,11,.96);backdrop-filter:blur(16px);display:flex;align-items:center;justify-content:center;padding:24px}
+.auth-card{background:var(--s1);border:1px solid var(--b2);border-radius:16px;padding:36px 40px;max-width:440px;width:100%;text-align:center}
+.auth-card .auth-icon{font-size:2.5rem;margin-bottom:16px;line-height:1}
+.auth-card h2{font-family:var(--mono);font-size:1.1rem;font-weight:800;margin-bottom:8px}
+.auth-card p{color:var(--t2);font-size:.85rem;line-height:1.65;margin-bottom:24px}
+.auth-input-wrap{text-align:left;margin-bottom:16px}
+.auth-input-wrap label{display:block;font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--t3);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px}
+.auth-input{width:100%;background:var(--s2);border:1px solid var(--b2);color:var(--t);padding:11px 14px;border-radius:8px;font-family:var(--mono);font-size:.82rem;outline:none;transition:.15s}
+.auth-input:focus{border-color:var(--r);box-shadow:0 0 0 3px var(--rg)}
+.auth-input::placeholder{color:var(--t4)}
+.auth-err{color:var(--red);font-family:var(--mono);font-size:.72rem;margin-top:6px;display:none}
+.btn-auth{width:100%;background:var(--r);color:#000;border:none;border-radius:8px;padding:12px;font-family:var(--mono);font-size:.82rem;font-weight:700;cursor:pointer;transition:.15s;margin-top:4px}
+.btn-auth:hover{background:#22d3ee;box-shadow:0 0 20px rgba(6,182,212,.3)}
+.auth-skip{margin-top:14px;font-size:.75rem;color:var(--t3)}
+.auth-skip a{color:var(--t2)}
+
+/* ── LAYOUT ── */
+.page-wrap{padding-top:56px;min-height:100vh}
+.page-inner{max-width:1100px;margin:0 auto;padding:0 24px 80px}
+
+/* ── PAGE HEADER ── */
+.page-header{padding:48px 0 36px;border-bottom:1px solid var(--b);margin-bottom:36px}
+.page-header-top{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.page-header-left .eyebrow{font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--r);letter-spacing:.15em;text-transform:uppercase;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.page-header-left h1{font-family:var(--mono);font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;letter-spacing:-.01em;margin-bottom:8px}
+.page-header-left .sub{color:var(--t2);font-size:.9rem;line-height:1.65}
+.page-header-meta{display:flex;align-items:center;gap:10px;margin-top:18px;flex-wrap:wrap}
+.date-badge{font-family:var(--mono);font-size:.72rem;color:var(--t3);background:var(--s2);border:1px solid var(--b);padding:5px 12px;border-radius:6px}
+.latest-badge{font-family:var(--mono);font-size:.68rem;font-weight:700;color:#000;background:var(--g);padding:4px 10px;border-radius:99px;letter-spacing:.05em}
+.back-btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:.72rem;color:var(--t3);background:var(--s2);border:1px solid var(--b);padding:7px 14px;border-radius:7px;cursor:pointer;transition:.15s;border-width:1px}
+.back-btn:hover{color:var(--t);border-color:var(--b2)}
+
+/* ── SUMMARY STATS ── */
+.summary-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:32px}
+.stat-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:18px 20px}
+.stat-card .stat-label{font-family:var(--mono);font-size:.62rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.stat-card .stat-val{font-family:var(--mono);font-size:1.5rem;font-weight:800;line-height:1}
+.stat-card .stat-sub{font-size:.72rem;color:var(--t3);margin-top:4px}
+.stat-cyan .stat-val{color:var(--r)}
+.stat-green .stat-val{color:var(--g)}
+.stat-purple .stat-val{color:var(--o)}
+.stat-indigo .stat-val{color:var(--v)}
+
+/* ── SESSION LIST ── */
+.section-title{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.12em;margin-bottom:14px}
+.sessions-list{display:flex;flex-direction:column;gap:10px;margin-bottom:36px}
+.session-card{background:var(--s1);border:1px solid var(--b);border-radius:12px;padding:18px 20px;cursor:pointer;transition:.15s;display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center}
+.session-card:hover{border-color:var(--b2);background:var(--s2);transform:translateY(-1px)}
+.session-card-left{display:flex;flex-direction:column;gap:6px}
+.session-card-top{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.session-strategy{font-family:var(--mono);font-size:.68rem;font-weight:700;padding:3px 8px;border-radius:4px;text-transform:uppercase;letter-spacing:.06em}
+.session-status-badge{font-family:var(--mono);font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:4px}
+.status-completed{background:var(--gg);color:var(--g)}
+.status-running{background:var(--rg);color:var(--r)}
+.status-failed{background:var(--redg);color:var(--red)}
+.status-pending{background:var(--wg);color:var(--warn)}
+.session-ns{font-family:var(--mono);font-size:.68rem;color:var(--t4)}
+.session-card-meta{display:flex;gap:16px;flex-wrap:wrap}
+.session-meta-item{font-size:.75rem;color:var(--t3)}
+.session-meta-item span{color:var(--t2);font-weight:600}
+.session-date{font-family:var(--mono);font-size:.68rem;color:var(--t4);text-align:right}
+.session-score{text-align:right}
+.session-score-val{font-family:var(--mono);font-size:1.2rem;font-weight:800}
+.session-score-label{font-size:.62rem;color:var(--t3);font-family:var(--mono)}
+
+/* ── REPORT VIEW ── */
+.report-grid{display:grid;grid-template-columns:1fr 340px;gap:24px;margin-bottom:32px}
+@media(max-width:900px){.report-grid{grid-template-columns:1fr}}
+
+/* Gauge */
+.gauge-card{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:28px;text-align:center}
+.gauge-card .gauge-title{font-family:var(--mono);font-size:.65rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.12em;margin-bottom:20px}
+.gauge-wrap{position:relative;width:180px;height:100px;margin:0 auto 20px}
+.gauge-svg{width:100%;height:auto}
+.gauge-value-display{position:absolute;bottom:0;left:50%;transform:translateX(-50%);text-align:center}
+.gauge-number{font-family:var(--mono);font-size:2rem;font-weight:900;line-height:1}
+.gauge-unit{font-family:var(--mono);font-size:.65rem;color:var(--t3);margin-top:2px}
+.gauge-tier{font-family:var(--mono);font-size:.75rem;font-weight:700;margin-top:10px;padding:4px 12px;border-radius:99px;display:inline-block}
+.tier-exceptional{background:var(--gg);color:var(--g)}
+.tier-strong{background:rgba(6,182,212,0.1);color:var(--r)}
+.tier-good{background:rgba(129,140,248,0.1);color:var(--v)}
+.tier-weak{background:var(--wg);color:var(--warn)}
+.tier-low{background:var(--redg);color:var(--red)}
+
+/* Score breakdown */
+.breakdown-card{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:24px}
+.breakdown-card h3{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px}
+.breakdown-table{width:100%;border-collapse:collapse}
+.breakdown-table td{padding:7px 0;font-size:.8rem;border-bottom:1px solid var(--b)}
+.breakdown-table tr:last-child td{border-bottom:none}
+.breakdown-table td:first-child{color:var(--t3)}
+.breakdown-table td:last-child{text-align:right;font-family:var(--mono);font-weight:600;color:var(--t)}
+.breakdown-table .formula-row td{color:var(--t3);font-family:var(--mono);font-size:.7rem;padding-top:12px;border-bottom:none}
+.formula-highlight{background:var(--s2);border:1px solid var(--b2);border-radius:6px;padding:8px 12px;font-family:var(--mono);font-size:.72rem;color:var(--r);margin-top:8px;text-align:center}
+
+/* Meta card */
+.meta-card{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:24px}
+.meta-card h3{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px}
+.meta-row{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;padding:6px 0;border-bottom:1px solid var(--b)}
+.meta-row:last-child{border-bottom:none}
+.meta-row .meta-key{font-size:.78rem;color:var(--t3);flex-shrink:0}
+.meta-row .meta-val{font-family:var(--mono);font-size:.75rem;color:var(--t);text-align:right;word-break:break-all}
+
+/* Before/After */
+.before-after{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:24px;margin-bottom:24px}
+.before-after h3{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px}
+.ba-grid{display:grid;grid-template-columns:1fr 40px 1fr;gap:12px;align-items:center}
+.ba-col{background:var(--s2);border:1px solid var(--b2);border-radius:10px;padding:14px 16px}
+.ba-col-title{font-family:var(--mono);font-size:.6rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+.ba-items{display:flex;flex-direction:column;gap:4px}
+.ba-item{font-size:.75rem;padding:4px 8px;border-radius:4px;background:var(--b);color:var(--t2);font-family:var(--mono)}
+.ba-item.in{border-left:2px solid var(--t4)}
+.ba-item.out{border-left:2px solid var(--g);color:var(--g)}
+.ba-arrow{display:flex;align-items:center;justify-content:center;font-size:1.2rem;color:var(--r)}
+
+/* Entries */
+.entries-section{margin-bottom:32px}
+.entries-section h3{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px}
+.entry-card{background:var(--s1);border:1px solid var(--b);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.entry-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;cursor:pointer;gap:10px;transition:.15s}
+.entry-header:hover{background:var(--s2)}
+.entry-header-left{display:flex;align-items:center;gap:10px;flex:1;min-width:0}
+.entry-type-badge{font-family:var(--mono);font-size:.6rem;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0;text-transform:uppercase}
+.entry-type-insight{background:var(--gg);color:var(--g)}
+.entry-type-synthesis{background:rgba(6,182,212,0.1);color:var(--r)}
+.entry-type-pattern{background:rgba(167,139,250,0.1);color:var(--o)}
+.entry-type-forecast{background:rgba(129,140,248,0.1);color:var(--v)}
+.entry-type-compress{background:var(--wg);color:var(--warn)}
+.entry-type-default{background:var(--b2);color:var(--t3)}
+.entry-key{font-family:var(--mono);font-size:.72rem;color:var(--t2);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.entry-prob{font-family:var(--mono);font-size:.68rem;color:var(--t3);flex-shrink:0}
+.entry-expand{font-size:.6rem;color:var(--t4);flex-shrink:0;transition:.2s}
+.entry-expand.open{transform:rotate(90deg)}
+.entry-body{display:none;padding:0 16px 14px;border-top:1px solid var(--b)}
+.entry-body.open{display:block}
+.entry-value{font-family:var(--mono);font-size:.75rem;color:var(--t2);line-height:1.7;padding-top:12px;white-space:pre-wrap;word-break:break-word}
+
+/* ── TREND CHART ── */
+.chart-section{background:var(--s1);border:1px solid var(--b);border-radius:16px;padding:24px;margin-bottom:32px}
+.chart-section h3{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:20px}
+.chart-wrap{display:flex;align-items:flex-end;gap:8px;height:100px;padding-bottom:8px;border-bottom:1px solid var(--b)}
+.chart-bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:0}
+.chart-bar{width:100%;border-radius:4px 4px 0 0;transition:height .6s cubic-bezier(.4,0,.2,1);cursor:pointer;position:relative}
+.chart-bar:hover::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 6px);left:50%;transform:translateX(-50%);background:var(--b2);color:var(--t);font-family:var(--mono);font-size:.62rem;padding:3px 7px;border-radius:4px;white-space:nowrap;z-index:10;pointer-events:none}
+.chart-label{font-family:var(--mono);font-size:.6rem;color:var(--t4);text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;width:100%}
+.chart-empty{color:var(--t3);font-size:.82rem;text-align:center;padding:32px 0}
+
+/* ── FORMULA BOX ── */
+.formula-box{background:var(--s2);border:1px solid var(--b2);border-radius:14px;padding:24px;margin-bottom:32px}
+.formula-box h3{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:16px}
+.formula-big{font-family:var(--mono);font-size:.88rem;color:var(--r);background:var(--s1);border:1px solid var(--b);border-radius:8px;padding:12px 16px;margin-bottom:16px;text-align:center;line-height:1.7}
+.formula-box .hint{font-size:.78rem;color:var(--t3);line-height:1.6;margin-bottom:16px}
+.multipliers-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px}
+.mult-item{display:flex;justify-content:space-between;align-items:center;background:var(--s1);border:1px solid var(--b);border-radius:6px;padding:7px 12px}
+.mult-strategy{font-family:var(--mono);font-size:.7rem;color:var(--t2)}
+.mult-val{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--g)}
+
+/* ── SKILLS ── */
+.skills-section{margin-bottom:32px}
+.skills-section h3{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:14px}
+.skills-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+.skill-card{background:var(--s1);border:1px solid rgba(129,140,248,0.2);border-radius:10px;padding:16px 18px}
+.skill-card-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.skill-conf{font-family:var(--mono);font-size:.68rem;font-weight:700;color:var(--v)}
+.skill-source{font-family:var(--mono);font-size:.6rem;color:var(--t4)}
+.skill-desc{font-size:.78rem;color:var(--t2);line-height:1.6}
+.skills-empty{color:var(--t3);font-size:.82rem;padding:16px 0}
+
+/* ── EXPORT ── */
+.export-section{background:var(--s1);border:1px solid var(--b);border-radius:14px;padding:20px 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap}
+.export-label{font-family:var(--mono);font-size:.72rem;color:var(--t3);text-transform:uppercase;letter-spacing:.1em}
+.export-btns{display:flex;gap:10px;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:7px;font-family:var(--mono);font-size:.72rem;font-weight:700;border:none;transition:.15s;cursor:pointer;white-space:nowrap}
+.btn-cyan{background:var(--r);color:#000}
+.btn-cyan:hover{background:#22d3ee;box-shadow:0 0 16px rgba(6,182,212,.3)}
+.btn-ghost{background:var(--s2);color:var(--t2);border:1px solid var(--b2)}
+.btn-ghost:hover{border-color:var(--t4);color:var(--t)}
+.btn-green{background:var(--g);color:#000}
+.btn-green:hover{background:#6ee7b7;box-shadow:0 0 16px rgba(52,211,153,.3)}
+.btn-purple{background:var(--o);color:#fff}
+.btn-purple:hover{background:#c4b5fd}
+.btn:disabled{opacity:.35;cursor:not-allowed;pointer-events:none}
+
+/* ── THEMES ── */
+.themes-list{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.theme-tag{font-family:var(--mono);font-size:.65rem;padding:3px 10px;border-radius:99px;background:rgba(167,139,250,0.1);color:var(--o);border:1px solid rgba(167,139,250,0.2)}
+
+/* ── EMPTY / LOADING ── */
+.loading-row{display:flex;align-items:center;gap:12px;padding:48px 0;justify-content:center;color:var(--t3);font-size:.85rem}
+.spinner{width:20px;height:20px;border:2px solid var(--b2);border-top-color:var(--r);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{text-align:center;padding:64px 24px;color:var(--t3)}
+.empty-state .empty-icon{font-size:2.5rem;margin-bottom:16px}
+.empty-state h3{font-family:var(--mono);font-size:.95rem;font-weight:700;color:var(--t2);margin-bottom:8px}
+.empty-state p{font-size:.82rem;line-height:1.65;max-width:400px;margin:0 auto 20px}
+.empty-state a.btn{text-decoration:none}
+
+/* ── COPY TOAST ── */
+#toast{position:fixed;bottom:28px;right:28px;z-index:9999;background:var(--g);color:#000;font-family:var(--mono);font-size:.75rem;font-weight:700;padding:10px 18px;border-radius:8px;opacity:0;transform:translateY(12px);transition:.25s;pointer-events:none}
+#toast.show{opacity:1;transform:translateY(0)}
+
+@media(max-width:720px){
+  .ba-grid{grid-template-columns:1fr}
+  .ba-arrow{display:none}
+  .report-grid{grid-template-columns:1fr}
+  .nav-links a:nth-child(n+3){display:none}
+  .export-section{flex-direction:column;align-items:flex-start}
+}
+@media(max-width:480px){
+  .page-header-top{flex-direction:column}
+  .summary-stats{grid-template-columns:1fr 1fr}
+}
+html,body{overflow-x:hidden;max-width:100vw}
+img,video,iframe{max-width:100%}
+pre,code{overflow-x:auto;max-width:100%}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+@media(max-width:640px){
+  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
+  nav{padding:0 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nv">
+    <a href="/" class="logo"><span class="mark">S</span>LOPSHOP</a>
+    <div class="nav-links">
+      <a href="/memory-hub" style="color:var(--g)">Memory Hub</a>
+      <a href="/dream-studio" style="color:var(--r)">Dream Studio</a>
+      <a href="/dream-recipes">Dream Recipes</a>
+      <a href="/team-hives" style="color:var(--o)">Team Hives</a>
+      <a href="/memory-copilot">Memory Copilot</a>
+      <a href="/dashboard">Dashboard</a>
+      <a href="/signup" class="nav-cta">Sign Up</a>
+    </div>
+  </div>
+</nav>
+
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-icon">&#128332;</div>
+    <h2>Intelligence Brief</h2>
+    <p>Connect your API key to view Dream Engine session reports and extracted intelligence.</p>
+    <div class="auth-input-wrap">
+      <label>API Key</label>
+      <input class="auth-input" id="auth-key-input" type="password" placeholder="sk-slop-..." autocomplete="off" spellcheck="false">
+      <div class="auth-err" id="auth-err">Invalid or missing API key.</div>
+    </div>
+    <button class="btn-auth" id="auth-connect-btn">View Reports</button>
+    <div class="auth-skip">No key? <a href="/signup.html">Get 500 free credits &rarr;</a></div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="page-wrap">
+  <div class="page-inner" id="main-content" style="display:none">
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div class="page-header-top">
+        <div class="page-header-left">
+          <div class="eyebrow">Dream Engine &#8250; Intelligence Reports</div>
+          <h1>Morning Intelligence Brief</h1>
+          <div class="sub">Your agents dreamed. Here&rsquo;s what they learned.</div>
+          <div class="page-header-meta">
+            <span class="date-badge" id="today-date-badge"></span>
+            <span class="latest-badge" id="latest-badge" style="display:none">Latest Report</span>
+          </div>
+        </div>
+        <div id="report-back-wrap" style="display:none">
+          <button class="back-btn" id="back-btn">&#8592; All Reports</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIST VIEW -->
+    <div id="list-view">
+      <div class="summary-stats" id="summary-stats">
+        <div class="stat-card stat-cyan">
+          <div class="stat-label">Total Dreams</div>
+          <div class="stat-val" id="stat-total">--</div>
+          <div class="stat-sub">sessions recorded</div>
+        </div>
+        <div class="stat-card stat-green">
+          <div class="stat-label">Total Insights</div>
+          <div class="stat-val" id="stat-insights">--</div>
+          <div class="stat-sub">entries generated</div>
+        </div>
+        <div class="stat-card stat-purple">
+          <div class="stat-label">Avg Intelligence</div>
+          <div class="stat-val" id="stat-avg-score">--</div>
+          <div class="stat-sub">score (weighted)</div>
+        </div>
+        <div class="stat-card stat-indigo">
+          <div class="stat-label">Last Session</div>
+          <div class="stat-val" id="stat-last" style="font-size:.95rem">--</div>
+          <div class="stat-sub">most recent run</div>
+        </div>
+      </div>
+
+      <!-- Trend chart -->
+      <div class="chart-section">
+        <h3>Intelligence Score — Last 7 Sessions</h3>
+        <div class="chart-wrap" id="trend-chart">
+          <div class="chart-empty">Loading chart data...</div>
+        </div>
+      </div>
+
+      <!-- Sessions -->
+      <div class="section-title">Dream Sessions</div>
+      <div id="sessions-loading" class="loading-row"><div class="spinner"></div> Loading sessions&hellip;</div>
+      <div id="sessions-list" class="sessions-list" style="display:none"></div>
+      <div id="sessions-empty" class="empty-state" style="display:none">
+        <div class="empty-icon">&#128332;</div>
+        <h3>No dream sessions yet</h3>
+        <p>Start your first Dream Engine session to see intelligence reports here.</p>
+        <a href="/dream-studio" class="btn btn-cyan">Launch Dream Engine &rarr;</a>
+      </div>
+    </div>
+
+    <!-- REPORT VIEW -->
+    <div id="report-view" style="display:none">
+      <div id="report-loading" class="loading-row"><div class="spinner"></div> Loading report&hellip;</div>
+      <div id="report-content" style="display:none">
+
+        <!-- Score + Breakdown -->
+        <div class="report-grid">
+          <div>
+            <div class="gauge-card" id="gauge-card">
+              <div class="gauge-title">Intelligence Score</div>
+              <div class="gauge-wrap">
+                <svg class="gauge-svg" viewBox="0 0 180 100" xmlns="http://www.w3.org/2000/svg">
+                  <path id="gauge-track" d="M 20 90 A 70 70 0 0 1 160 90" fill="none" stroke="#1e1e22" stroke-width="12" stroke-linecap="round"/>
+                  <path id="gauge-fill" d="M 20 90 A 70 70 0 0 1 160 90" fill="none" stroke="#34d399" stroke-width="12" stroke-linecap="round" stroke-dasharray="220" stroke-dashoffset="220" style="transition:stroke-dashoffset 1.2s cubic-bezier(.4,0,.2,1),stroke .4s"/>
+                </svg>
+                <div class="gauge-value-display">
+                  <div class="gauge-number" id="gauge-number">0</div>
+                  <div class="gauge-unit">pts</div>
+                </div>
+              </div>
+              <div id="gauge-tier" class="gauge-tier tier-good">Good</div>
+              <div id="efficiency-row" style="display:none;margin-top:12px;background:var(--s2);border:1px solid var(--b2);border-radius:8px;padding:10px 14px">
+                <div style="font-family:var(--mono);font-size:.6rem;font-weight:700;color:var(--t4);text-transform:uppercase;letter-spacing:.1em;margin-bottom:4px">Dream Efficiency Score</div>
+                <div style="display:flex;align-items:baseline;gap:6px">
+                  <span id="efficiency-value" style="font-family:var(--mono);font-size:1.4rem;font-weight:800;color:var(--r)">—</span>
+                  <span style="font-family:var(--mono);font-size:.65rem;color:var(--t3)">efficiency</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="breakdown-card" style="margin-top:16px" id="breakdown-card">
+              <h3>Score Breakdown</h3>
+              <table class="breakdown-table" id="breakdown-table">
+                <tbody></tbody>
+              </table>
+              <div class="formula-highlight" id="formula-inline"></div>
+            </div>
+          </div>
+
+          <div>
+            <div class="meta-card" id="meta-card">
+              <h3>Session Details</h3>
+              <div id="meta-rows"></div>
+            </div>
+            <div class="meta-card" style="margin-top:14px" id="themes-card">
+              <h3>Dominant Themes</h3>
+              <div id="themes-wrap"><div class="themes-list" id="themes-list"></div></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Before/After -->
+        <div class="before-after" id="before-after">
+          <h3>Memory In &#8594; Insights Out</h3>
+          <div class="ba-grid">
+            <div class="ba-col">
+              <div class="ba-col-title">Input Keys Sampled</div>
+              <div class="ba-items" id="ba-in"></div>
+            </div>
+            <div class="ba-arrow">&#8594;</div>
+            <div class="ba-col">
+              <div class="ba-col-title">Generated Insights</div>
+              <div class="ba-items" id="ba-out"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Entries -->
+        <div class="entries-section">
+          <h3>Dream Outputs <span id="entry-count-badge" style="font-family:var(--mono);font-size:.65rem;color:var(--t4);font-weight:400;margin-left:6px"></span></h3>
+          <div id="entries-list"></div>
+        </div>
+
+        <!-- Procedural Skills -->
+        <div class="skills-section">
+          <h3>Procedural Skills Extracted <span style="font-family:var(--mono);font-size:.62rem;color:var(--t4);font-weight:400;margin-left:6px">(forecast probability &gt; 0.70)</span></h3>
+          <div class="skills-grid" id="skills-grid"></div>
+          <div class="skills-empty" id="skills-empty" style="display:none">No high-confidence forecast entries found in this session.</div>
+        </div>
+
+        <!-- Export -->
+        <div class="export-section">
+          <div class="export-label">Export</div>
+          <div class="export-btns">
+            <button class="btn btn-cyan" id="copy-md-btn">Copy as Markdown</button>
+            <button class="btn btn-ghost" id="copy-link-btn">Copy Share Link</button>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Formula Box (always visible) -->
+    <div class="formula-box" style="margin-top:32px">
+      <h3>How Intelligence Score Works</h3>
+      <div class="formula-big">
+        Intelligence Score = (insights &times; strategy_depth &times; 10) / duration_sec
+      </div>
+      <div class="hint">Higher scores = more insights per unit of compute. A session that extracts 20 insights in 30 seconds scores higher than one that takes 3 minutes for 5 insights. Strategy depth multipliers reflect algorithmic complexity.</div>
+      <div class="multipliers-grid">
+        <div class="mult-item"><span class="mult-strategy">synthesize</span><span class="mult-val">1.0&times;</span></div>
+        <div class="mult-item"><span class="mult-strategy">pattern_extract</span><span class="mult-val">1.1&times;</span></div>
+        <div class="mult-item"><span class="mult-strategy">insight_generate</span><span class="mult-val">1.4&times;</span></div>
+        <div class="mult-item"><span class="mult-strategy">compress</span><span class="mult-val">0.8&times;</span></div>
+        <div class="mult-item"><span class="mult-strategy">associate</span><span class="mult-val">1.2&times;</span></div>
+        <div class="mult-item"><span class="mult-strategy">validate</span><span class="mult-val">1.1&times;</span></div>
+        <div class="mult-item"><span class="mult-strategy">evolve</span><span class="mult-val">1.5&times;</span></div>
+        <div class="mult-item"><span class="mult-strategy">forecast</span><span class="mult-val">1.6&times;</span></div>
+        <div class="mult-item"><span class="mult-strategy">reflect</span><span class="mult-val">1.3&times;</span></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div id="toast">Copied!</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────
+const BASE = '';
+const STRATEGY_DEPTH = {
+  synthesize:1.0, pattern_extract:1.1, insight_generate:1.4,
+  compress:0.8, associate:1.2, validate:1.1,
+  evolve:1.5, forecast:1.6, reflect:1.3
+};
+
+// ── STATE ───────────────────────────────────────────────────────────────
+let apiKey = '';
+let allSessions = [];
+let currentReport = null;
+
+// ── UTILS ────────────────────────────────────────────────────────────────
+function getKey(){
+  return localStorage.getItem('slopshop_api_key') || localStorage.getItem('slop_api_key') || '';
+}
+function setKey(k){
+  localStorage.setItem('slopshop_api_key', k);
+  localStorage.setItem('slop_api_key', k);
+}
+
+function calcScore(insights, strategy, duration){
+  const depth = STRATEGY_DEPTH[strategy] || 1.0;
+  if(!duration || duration <= 0) return 0;
+  return Math.round((insights * depth * 10) / duration * 10) / 10;
+}
+
+function scoreColor(s){
+  if(s >= 15) return '#34d399';
+  if(s >= 8)  return '#06b6d4';
+  if(s >= 4)  return '#818cf8';
+  if(s >= 1)  return '#f59e0b';
+  return '#ef4444';
+}
+
+function scoreTier(s){
+  if(s >= 15) return {cls:'tier-exceptional', label:'Exceptional'};
+  if(s >= 8)  return {cls:'tier-strong',      label:'Strong'};
+  if(s >= 4)  return {cls:'tier-good',         label:'Good'};
+  if(s >= 1)  return {cls:'tier-weak',         label:'Weak'};
+  return {cls:'tier-low', label:'Low'};
+}
+
+function fmtDate(ts){
+  if(!ts) return '—';
+  const d = new Date(ts);
+  if(isNaN(d)) return ts;
+  return d.toLocaleString('en-US',{month:'short',day:'numeric',year:'numeric',hour:'2-digit',minute:'2-digit'});
+}
+
+function fmtDateShort(ts){
+  if(!ts) return '—';
+  const d = new Date(ts);
+  if(isNaN(d)) return ts;
+  return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});
+}
+
+function strategyColor(s){
+  const map = {
+    synthesize:'#06b6d4', pattern_extract:'#a78bfa', insight_generate:'#34d399',
+    compress:'#f59e0b', associate:'#818cf8', validate:'#71717a',
+    evolve:'#f87171', forecast:'#c084fc', reflect:'#6ee7b7'
+  };
+  return map[s] || '#52525b';
+}
+
+function esc(s){
+  if(!s) return '';
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function statusBadge(status){
+  const map = {
+    completed: 'status-completed',
+    running:   'status-running',
+    failed:    'status-failed',
+    pending:   'status-pending'
+  };
+  return `<span class="session-status-badge ${map[status]||'status-pending'}">${esc(status||'unknown')}</span>`;
+}
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg || 'Copied!';
+  t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+function setParam(key, val){
+  const url = new URL(window.location.href);
+  if(val) url.searchParams.set(key, val);
+  else url.searchParams.delete(key);
+  history.pushState({}, '', url);
+}
+
+function getParam(key){
+  return new URL(window.location.href).searchParams.get(key);
+}
+
+// ── AUTH ─────────────────────────────────────────────────────────────────
+function renderNoAuthBanner(){
+  if(getKey()) return;
+  const existing = document.getElementById('no-auth-banner');
+  if(existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'no-auth-banner';
+  banner.style.cssText = 'background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.3);border-radius:10px;padding:12px 18px;margin:0 0 18px 0;display:flex;align-items:center;gap:12px;font-size:14px;color:#ffd700;';
+  banner.innerHTML = '<span style="font-size:18px">⚠</span><span style="flex:1">No API key detected — dream reports will not load.</span><a href="/login" style="color:#a855f7;font-weight:600;white-space:nowrap;text-decoration:none;">Add your API key to unlock live data →</a>';
+  const mainEl = document.querySelector('.page-wrapper') || document.querySelector('main') || document.body;
+  mainEl.insertBefore(banner, mainEl.firstChild);
+}
+
+function initAuth(){
+  const k = getKey();
+  if(k){
+    apiKey = k;
+    hideAuthOverlay();
+    initPage();
+  } else {
+    renderNoAuthBanner();
+    document.getElementById('auth-overlay').style.display = 'flex';
+    document.getElementById('auth-key-input').addEventListener('keydown', e=>{
+      if(e.key==='Enter') connectAuth();
+    });
+    document.getElementById('auth-connect-btn').addEventListener('click', connectAuth);
+  }
+}
+
+async function connectAuth(){
+  const input = document.getElementById('auth-key-input');
+  const err   = document.getElementById('auth-err');
+  const btn   = document.getElementById('auth-connect-btn');
+  const k = input.value.trim();
+  if(!k){ err.style.display='block'; err.textContent='Please enter your API key.'; return; }
+  btn.textContent = 'Connecting...';
+  btn.disabled = true;
+  try {
+    const res = await fetch(`${BASE}/v1/memory/dream/log?limit=1`, {
+      headers: {'X-API-Key': k}
+    });
+    if(res.status === 401 || res.status === 403){
+      err.style.display = 'block';
+      err.textContent = 'Invalid API key.';
+      btn.textContent = 'View Reports';
+      btn.disabled = false;
+      return;
+    }
+    setKey(k);
+    apiKey = k;
+    hideAuthOverlay();
+    initPage();
+  } catch(e){
+    // allow offline/network errors to pass through
+    setKey(k);
+    apiKey = k;
+    hideAuthOverlay();
+    initPage();
+  }
+}
+
+function hideAuthOverlay(){
+  const ov = document.getElementById('auth-overlay');
+  ov.style.opacity = '0';
+  ov.style.transition = 'opacity .3s';
+  setTimeout(()=>{ ov.style.display='none'; }, 300);
+  document.getElementById('main-content').style.display = 'block';
+}
+
+// ── TODAY DATE ───────────────────────────────────────────────────────────
+function renderDateBadge(){
+  const now = new Date();
+  const s = now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('today-date-badge').textContent = s;
+}
+
+// ── PAGE INIT ─────────────────────────────────────────────────────────────
+function initPage(){
+  renderDateBadge();
+  const dreamId = getParam('id');
+  if(dreamId){
+    showReportView(dreamId);
+  } else {
+    showListView();
+  }
+  window.addEventListener('popstate', ()=>{
+    const id = getParam('id');
+    if(id) showReportView(id);
+    else   showListView();
+  });
+}
+
+// ── LIST VIEW ─────────────────────────────────────────────────────────────
+async function showListView(){
+  document.getElementById('list-view').style.display = 'block';
+  document.getElementById('report-view').style.display = 'none';
+  document.getElementById('report-back-wrap').style.display = 'none';
+
+  const loading = document.getElementById('sessions-loading');
+  const list    = document.getElementById('sessions-list');
+  const empty   = document.getElementById('sessions-empty');
+
+  loading.style.display = 'flex';
+  list.style.display    = 'none';
+  empty.style.display   = 'none';
+
+  try {
+    const res  = await fetch(`${BASE}/v1/memory/dream/log?limit=50`, {
+      headers: {'X-API-Key': apiKey}
+    });
+    const data = await res.json();
+    const sessions = data.sessions || data.logs || data.data || (Array.isArray(data) ? data : []);
+    allSessions = sessions;
+
+    loading.style.display = 'none';
+
+    if(!sessions.length){
+      empty.style.display = 'flex';
+      renderSummaryStats([]);
+      renderTrendChart([]);
+      return;
+    }
+
+    list.style.display = 'flex';
+    renderSummaryStats(sessions);
+    renderTrendChart(sessions);
+    renderSessionsList(sessions, list);
+
+    // check if any session is from today
+    const today = new Date().toDateString();
+    const hasToday = sessions.some(s=>{
+      const d = new Date(s.started_at || s.created_at || s.timestamp);
+      return d.toDateString() === today;
+    });
+    if(hasToday) document.getElementById('latest-badge').style.display = 'inline-block';
+
+  } catch(e){
+    loading.innerHTML = `<span style="color:var(--red)">Failed to load sessions: ${esc(e.message)}</span>`;
+  }
+}
+
+function renderSummaryStats(sessions){
+  const total    = sessions.length;
+  const insights = sessions.reduce((a,s)=> a + (parseInt(s.insights_generated || s.insights || 0) || 0), 0);
+  const scores   = sessions
+    .map(s=> calcScore(
+      parseInt(s.insights_generated || s.insights || 0) || 0,
+      s.strategy || 'synthesize',
+      parseFloat(s.duration_sec || s.duration || 0) || 0
+    ))
+    .filter(n=>n>0);
+  const avg = scores.length ? (scores.reduce((a,b)=>a+b,0)/scores.length).toFixed(1) : '—';
+  const last = sessions[0] ? fmtDateShort(sessions[0].started_at || sessions[0].created_at || sessions[0].timestamp) : '—';
+
+  document.getElementById('stat-total').textContent   = total;
+  document.getElementById('stat-insights').textContent = insights.toLocaleString();
+  document.getElementById('stat-avg-score').textContent = avg;
+  document.getElementById('stat-last').textContent    = last;
+}
+
+function renderTrendChart(sessions){
+  const chart = document.getElementById('trend-chart');
+  const recent = [...sessions].reverse().slice(-7);
+  if(!recent.length){
+    chart.innerHTML = '<div class="chart-empty">No sessions to chart yet.</div>';
+    return;
+  }
+  const scores = recent.map(s=> calcScore(
+    parseInt(s.insights_generated || s.insights || 0) || 0,
+    s.strategy || 'synthesize',
+    parseFloat(s.duration_sec || s.duration || 0) || 0
+  ));
+  const maxScore = Math.max(...scores, 1);
+  chart.innerHTML = '';
+  recent.forEach((s,i)=>{
+    const score = scores[i];
+    const pct   = Math.max(4, Math.round((score / maxScore) * 92));
+    const color = scoreColor(score);
+    const label = fmtDateShort(s.started_at || s.created_at || s.timestamp);
+    const group = document.createElement('div');
+    group.className = 'chart-bar-group';
+    group.innerHTML = `
+      <div class="chart-bar" style="height:${pct}px;background:${color}" data-tip="${score} pts"></div>
+      <div class="chart-label">${esc(label)}</div>`;
+    chart.appendChild(group);
+  });
+}
+
+function renderSessionsList(sessions, container){
+  container.innerHTML = '';
+  sessions.forEach(s=>{
+    const id       = s.id || s.session_id || s.dream_id;
+    const strategy = s.strategy || 'synthesize';
+    const status   = s.status || 'completed';
+    const keys     = parseInt(s.keys_sampled || s.keys || 0) || 0;
+    const insights = parseInt(s.insights_generated || s.insights || 0) || 0;
+    const dur      = parseFloat(s.duration_sec || s.duration || 0) || 0;
+    const ns       = s.namespace || s.ns || '';
+    const score    = calcScore(insights, strategy, dur);
+    const col      = scoreColor(score);
+    const date     = fmtDate(s.started_at || s.created_at || s.timestamp);
+
+    const card = document.createElement('div');
+    card.className = 'session-card';
+    card.innerHTML = `
+      <div class="session-card-left">
+        <div class="session-card-top">
+          <span class="session-strategy" style="background:${strategyColor(strategy)}22;color:${strategyColor(strategy)}">${esc(strategy)}</span>
+          ${statusBadge(status)}
+          ${ns ? `<span class="session-ns">${esc(ns)}</span>` : ''}
+        </div>
+        <div class="session-card-meta">
+          <div class="session-meta-item">Keys: <span>${keys}</span></div>
+          <div class="session-meta-item">Insights: <span>${insights}</span></div>
+          ${dur ? `<div class="session-meta-item">Duration: <span>${dur.toFixed(1)}s</span></div>` : ''}
+          ${id ? `<div class="session-meta-item" style="font-family:var(--mono);font-size:.68rem;color:var(--t4)">${esc(String(id).slice(0,20))}${String(id).length>20?'…':''}</div>` : ''}
+        </div>
+      </div>
+      <div>
+        <div class="session-score">
+          <div class="session-score-val" style="color:${col}">${score > 0 ? score : '—'}</div>
+          <div class="session-score-label">IQ score</div>
+        </div>
+        <div class="session-date" style="margin-top:8px">${esc(date)}</div>
+      </div>`;
+    if(id){
+      card.addEventListener('click', ()=>{
+        setParam('id', id);
+        showReportView(id);
+      });
+    }
+    container.appendChild(card);
+  });
+}
+
+// ── REPORT VIEW ────────────────────────────────────────────────────────────
+async function showReportView(dreamId){
+  document.getElementById('list-view').style.display    = 'none';
+  document.getElementById('report-view').style.display  = 'block';
+  document.getElementById('report-back-wrap').style.display = 'block';
+  document.getElementById('report-loading').style.display  = 'flex';
+  document.getElementById('report-content').style.display  = 'none';
+  document.getElementById('latest-badge').style.display    = 'none';
+
+  document.getElementById('back-btn').onclick = ()=>{
+    setParam('id', null);
+    showListView();
+  };
+
+  try {
+    const res  = await fetch(`${BASE}/v1/memory/dream/report/${dreamId}`, {
+      headers: {'X-API-Key': apiKey}
+    });
+    if(!res.ok){
+      const txt = await res.text().catch(()=>'');
+      throw new Error(`HTTP ${res.status}${txt ? ': ' + txt : ''}`);
+    }
+    const data = await res.json();
+    currentReport = data;
+    document.getElementById('report-loading').style.display  = 'none';
+    document.getElementById('report-content').style.display  = 'block';
+    renderReport(data, dreamId);
+  } catch(e){
+    document.getElementById('report-loading').innerHTML =
+      `<span style="color:var(--red)">Failed to load report: ${esc(e.message)}</span>`;
+  }
+}
+
+function renderReport(data, dreamId){
+  // Normalize fields
+  const report   = data.report || data;
+  const session  = data.session || data;
+  const entries  = data.entries || data.insights || report.entries || [];
+  const meta     = data.meta || report.meta || {};
+
+  const strategy = session.strategy || report.strategy || 'synthesize';
+  const insights = parseInt(session.insights_generated || report.insights_generated || entries.length || 0);
+  const dur      = parseFloat(session.duration_sec || report.duration_sec || 0) || 0;
+  const keys     = parseInt(session.keys_sampled || report.keys_sampled || 0) || 0;
+  const model    = session.model || report.model || meta.model || '—';
+  const ns       = session.namespace || report.namespace || meta.namespace || '—';
+  const startedAt   = session.started_at || report.started_at || '';
+  const completedAt = session.completed_at || report.completed_at || '';
+  const status      = session.status || report.status || 'completed';
+
+  // Score
+  const score = data.intelligence_score != null
+    ? parseFloat(data.intelligence_score)
+    : calcScore(insights, strategy, dur);
+  const tier  = scoreTier(score);
+  const col   = scoreColor(score);
+
+  // -- Gauge animation
+  const gaugeEl = document.getElementById('gauge-fill');
+  const numEl   = document.getElementById('gauge-number');
+  const tierEl  = document.getElementById('gauge-tier');
+  const maxScore = 20;
+  const pct  = Math.min(score / maxScore, 1);
+  const arc  = 220;
+  const offset = arc - arc * pct;
+  gaugeEl.style.stroke = col;
+  setTimeout(()=>{ gaugeEl.style.strokeDashoffset = offset; }, 80);
+  tierEl.className = `gauge-tier ${tier.cls}`;
+  tierEl.textContent = tier.label;
+
+  // -- Dream efficiency score
+  const efficiencyRaw = data.dream_efficiency_score ?? report.dream_efficiency_score ?? meta.dream_efficiency_score;
+  const efficiencyRow = document.getElementById('efficiency-row');
+  const efficiencyVal = document.getElementById('efficiency-value');
+  if (efficiencyRaw != null) {
+    efficiencyRow.style.display = 'block';
+    efficiencyVal.textContent = parseFloat(efficiencyRaw).toFixed(2);
+  } else {
+    efficiencyRow.style.display = 'none';
+  }
+
+  // Animate number
+  let current = 0;
+  const step = score / 40;
+  const ticker = setInterval(()=>{
+    current = Math.min(current + step, score);
+    numEl.textContent = current.toFixed(current < 10 ? 1 : 0);
+    if(current >= score) clearInterval(ticker);
+  }, 30);
+
+  // -- Breakdown table
+  const depth = STRATEGY_DEPTH[strategy] || 1.0;
+  const tbody = document.querySelector('#breakdown-table tbody');
+  tbody.innerHTML = `
+    <tr><td>Insights generated</td><td>${insights}</td></tr>
+    <tr><td>Strategy</td><td>${esc(strategy)}</td></tr>
+    <tr><td>Strategy depth multiplier</td><td>${depth}&times;</td></tr>
+    <tr><td>Duration</td><td>${dur > 0 ? dur.toFixed(2) + 's' : '—'}</td></tr>
+    <tr class="formula-row"><td colspan="2" style="padding-top:12px;color:var(--t4);font-size:.68rem">= (${insights} &times; ${depth} &times; 10) / ${dur||'?'} = <span style="color:var(--r)">${score}</span></td></tr>`;
+
+  // -- Meta rows
+  const metaRows = [
+    ['Status',    statusBadge(status)],
+    ['Model',     esc(model)],
+    ['Namespace', esc(ns)],
+    ['Keys Sampled', keys.toString()],
+    ['Insights Generated', insights.toString()],
+    ['Duration', dur > 0 ? dur.toFixed(2) + 's' : '—'],
+    ['Started',   esc(fmtDate(startedAt))],
+    ['Completed', esc(fmtDate(completedAt))],
+    ['Session ID', `<span style="font-size:.65rem;opacity:.7">${esc(dreamId)}</span>`],
+  ];
+  document.getElementById('meta-rows').innerHTML = metaRows
+    .map(([k,v])=>`<div class="meta-row"><span class="meta-key">${k}</span><span class="meta-val">${v}</span></div>`)
+    .join('');
+
+  // -- Themes
+  const themes = meta.dominant_themes || meta.themes || data.themes || [];
+  const themeList = document.getElementById('themes-list');
+  if(themes.length){
+    themeList.innerHTML = themes.map(t=>`<span class="theme-tag">${esc(t)}</span>`).join('');
+  } else {
+    document.getElementById('themes-card').style.display = 'none';
+  }
+
+  // -- Before/After
+  const sampleKeys = data.sampled_keys || session.sampled_keys || meta.sampled_keys || [];
+  const baIn  = document.getElementById('ba-in');
+  const baOut = document.getElementById('ba-out');
+  if(sampleKeys.length){
+    baIn.innerHTML = sampleKeys.slice(0,6).map(k=>`<div class="ba-item in">${esc(k)}</div>`).join('');
+    if(sampleKeys.length > 6) baIn.innerHTML += `<div class="ba-item" style="color:var(--t4)">+${sampleKeys.length-6} more</div>`;
+  } else {
+    baIn.innerHTML = `<div class="ba-item" style="color:var(--t4)">${keys} keys sampled</div>`;
+  }
+  baOut.innerHTML = `
+    <div class="ba-item out">${insights} insight${insights!==1?'s':''} generated</div>
+    ${entries.slice(0,4).map(e=>`<div class="ba-item out">${esc(String(e.key||e.insight_key||e.id||'').slice(0,32))}</div>`).join('')}
+    ${entries.length > 4 ? `<div class="ba-item" style="color:var(--t4)">+${entries.length-4} more</div>` : ''}`;
+
+  // -- Entries
+  document.getElementById('entry-count-badge').textContent = entries.length ? `(${entries.length})` : '';
+  const entriesList = document.getElementById('entries-list');
+  entriesList.innerHTML = '';
+  if(entries.length){
+    entries.forEach((e,i)=>{
+      const key   = e.key || e.insight_key || e.id || `entry_${i+1}`;
+      const value = e.value || e.content || e.insight || e.text || '';
+      const type  = e.type || e.entry_type || (e.probability != null ? 'forecast' : 'insight');
+      const prob  = e.probability != null ? e.probability : null;
+      const typeClass = `entry-type-${['insight','synthesis','pattern','forecast','compress'].includes(type)?type:'default'}`;
+      const card = document.createElement('div');
+      card.className = 'entry-card';
+      card.innerHTML = `
+        <div class="entry-header" data-idx="${i}">
+          <div class="entry-header-left">
+            <span class="entry-type-badge ${typeClass}">${esc(type)}</span>
+            <span class="entry-key">${esc(key)}</span>
+          </div>
+          ${prob!=null ? `<span class="entry-prob">${Math.round(prob*100)}%</span>` : ''}
+          <span class="entry-expand" id="exp-${i}">&#9654;</span>
+        </div>
+        <div class="entry-body" id="body-${i}">
+          <div class="entry-value">${esc(typeof value === 'object' ? JSON.stringify(value, null, 2) : String(value))}</div>
+        </div>`;
+      card.querySelector('.entry-header').addEventListener('click', ()=>{
+        const body = document.getElementById(`body-${i}`);
+        const exp  = document.getElementById(`exp-${i}`);
+        const open = body.classList.toggle('open');
+        exp.classList.toggle('open', open);
+      });
+      entriesList.appendChild(card);
+    });
+  } else {
+    entriesList.innerHTML = '<div style="color:var(--t3);font-size:.82rem;padding:16px 0">No entries found in this report.</div>';
+  }
+
+  // -- Procedural Skills (forecast entries with prob > 0.7)
+  const skills = entries.filter(e=>{
+    const t = e.type || e.entry_type || '';
+    const p = e.probability != null ? parseFloat(e.probability) : -1;
+    return t === 'forecast' && p > 0.7;
+  });
+  const skillsGrid  = document.getElementById('skills-grid');
+  const skillsEmpty = document.getElementById('skills-empty');
+  if(skills.length){
+    skillsEmpty.style.display = 'none';
+    skillsGrid.innerHTML = skills.map(e=>`
+      <div class="skill-card">
+        <div class="skill-card-top">
+          <span class="skill-conf">${Math.round((e.probability||0)*100)}% confidence</span>
+          <span class="skill-source">${esc(dreamId).slice(0,12)}…</span>
+        </div>
+        <div class="skill-desc">${esc(e.value || e.content || e.insight || e.text || e.key || 'No description')}</div>
+      </div>`).join('');
+  } else {
+    skillsEmpty.style.display = 'block';
+    skillsGrid.innerHTML = '';
+  }
+
+  // -- Export buttons
+  document.getElementById('copy-md-btn').onclick = ()=> copyAsMarkdown(data, dreamId, score, insights, dur, strategy, entries, themes);
+  document.getElementById('copy-link-btn').onclick = ()=>{
+    const url = window.location.origin + window.location.pathname + '?id=' + dreamId;
+    navigator.clipboard.writeText(url).then(()=> showToast('Link copied!')).catch(()=>{
+      prompt('Copy this link:', url);
+    });
+  };
+}
+
+function copyAsMarkdown(data, dreamId, score, insights, dur, strategy, entries, themes){
+  const session = data.session || data;
+  const ns  = session.namespace || data.namespace || '—';
+  const model = session.model || data.model || '—';
+  const started = fmtDate(session.started_at || data.started_at || '');
+  const today = new Date().toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+
+  let md = `# Morning Intelligence Brief\n`;
+  md += `**Date:** ${today}  \n`;
+  md += `**Session:** \`${dreamId}\`  \n`;
+  md += `**Intelligence Score:** ${score} pts  \n`;
+  md += `**Strategy:** ${strategy}  \n`;
+  md += `**Model:** ${model}  \n`;
+  md += `**Namespace:** ${ns}  \n`;
+  md += `**Started:** ${started}  \n`;
+  md += `**Insights Generated:** ${insights}  \n`;
+  md += `**Duration:** ${dur > 0 ? dur.toFixed(2) + 's' : '—'}  \n\n`;
+
+  if(themes.length){
+    md += `## Dominant Themes\n`;
+    md += themes.map(t => `- ${t}`).join('\n') + '\n\n';
+  }
+
+  if(entries.length){
+    md += `## Dream Outputs (${entries.length})\n\n`;
+    entries.forEach((e,i)=>{
+      const key   = e.key || e.insight_key || `entry_${i+1}`;
+      const value = e.value || e.content || e.insight || e.text || '';
+      const prob  = e.probability != null ? ` (${Math.round(e.probability*100)}%)` : '';
+      md += `### ${key}${prob}\n`;
+      md += `${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}\n\n`;
+    });
+  }
+
+  md += `---\n_Generated by Slopshop Dream Engine — [slopshop.gg](https://slopshop.gg)_\n`;
+
+  navigator.clipboard.writeText(md).then(()=> showToast('Copied as Markdown!')).catch(()=>{
+    const ta = document.createElement('textarea');
+    ta.value = md;
+    ta.style.position = 'fixed';
+    ta.style.opacity  = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('Copied as Markdown!');
+  });
+}
+
+// ── BOOT ──────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', initAuth);
+</script>
+</body>
+</html>

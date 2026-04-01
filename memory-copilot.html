@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Memory Copilot — Slopshop</title>
+<meta name="description" content="Query your agent's entire living memory and Dream Engine history in natural language. The AI Memory Copilot for Slopshop.">
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#09090b;--s1:#111113;--s2:#18181b;--b:#1e1e22;--b2:#27272a;
+  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
+  --r:#06b6d4;--rg:rgba(6,182,212,0.06);--rb:rgba(6,182,212,0.18);
+  --o:#a78bfa;--og:rgba(167,139,250,0.08);
+  --g:#34d399;--gg:rgba(52,211,153,0.08);
+  --v:#818cf8;
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',system-ui,sans-serif;
+  --nav-h:56px;
+}
+html,body{height:100%}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);font-size:14px;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+::selection{background:var(--r);color:#000}
+a{color:var(--r);text-decoration:none}
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ===== NAV ===== */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:300;height:var(--nav-h);
+  background:rgba(9,9,11,0.92);backdrop-filter:blur(24px) saturate(180%);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+  display:flex;align-items:center;padding:0 24px;gap:4px;
+}
+.nav-logo{
+  font-family:var(--mono);font-weight:700;font-size:15px;color:var(--t);
+  text-decoration:none;display:flex;align-items:center;gap:7px;margin-right:auto;
+}
+.nav-logo .dot{width:8px;height:8px;border-radius:50%;background:var(--r);box-shadow:0 0 8px var(--r)}
+.nav-link{color:var(--t3);font-size:13px;font-weight:500;padding:6px 11px;border-radius:6px;transition:.15s}
+.nav-link:hover{color:var(--t);background:var(--s2)}
+.nav-link.active{color:var(--r)}
+.nav-btn{background:var(--r);color:#000!important;font-weight:700;font-size:13px;padding:6px 16px;border-radius:6px;transition:.15s}
+.nav-btn:hover{opacity:0.85}
+
+/* ===== AUTH OVERLAY ===== */
+#auth-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(9,9,11,0.96);backdrop-filter:blur(20px);
+  display:flex;align-items:center;justify-content:center;padding:24px;
+}
+#auth-overlay.hidden{display:none}
+.auth-card{
+  background:var(--s1);border:1px solid var(--b2);border-radius:16px;
+  padding:40px 36px;width:100%;max-width:440px;text-align:center;
+}
+.auth-icon{font-size:36px;margin-bottom:16px}
+.auth-card h2{font-family:var(--mono);font-size:1.15rem;font-weight:700;margin-bottom:8px;color:var(--t)}
+.auth-card p{color:var(--t2);font-size:0.85rem;margin-bottom:28px;line-height:1.7}
+.auth-card p strong{color:var(--r)}
+.auth-input{
+  width:100%;font-family:var(--mono);font-size:0.82rem;
+  background:var(--s2);border:1px solid var(--b2);color:var(--t);
+  padding:11px 14px;border-radius:8px;outline:none;margin-bottom:12px;transition:.2s;
+}
+.auth-input:focus{border-color:var(--r);box-shadow:0 0 0 2px var(--rg)}
+.auth-input::placeholder{color:var(--t4)}
+.btn-primary{
+  display:inline-flex;align-items:center;justify-content:center;gap:8px;
+  background:var(--r);color:#000;font-family:var(--mono);font-size:0.82rem;font-weight:700;
+  padding:11px 22px;border-radius:8px;border:none;cursor:pointer;transition:.15s;width:100%;
+}
+.btn-primary:hover{opacity:0.85}
+.auth-note{color:var(--t4);font-size:0.75rem;margin-top:14px}
+.auth-note a{color:var(--r)}
+
+/* ===== SPLIT LAYOUT ===== */
+.shell{
+  display:flex;height:100vh;padding-top:var(--nav-h);
+}
+
+/* ===== LEFT PANEL ===== */
+.left-panel{
+  width:280px;min-width:280px;
+  background:var(--s1);border-right:1px solid rgba(255,255,255,0.05);
+  display:flex;flex-direction:column;
+  overflow-y:auto;overflow-x:hidden;
+  position:relative;
+}
+.panel-section{padding:16px 16px 0}
+.panel-label{
+  font-family:var(--mono);font-size:10px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.1em;color:var(--t4);
+  margin-bottom:8px;padding-left:2px;
+}
+
+/* Namespace selector */
+.ns-row{display:flex;align-items:center;gap:8px;margin-bottom:16px}
+.ns-input{
+  flex:1;font-family:var(--mono);font-size:12px;
+  background:var(--b);border:1px solid rgba(255,255,255,0.08);
+  color:var(--t2);padding:7px 10px;border-radius:6px;outline:none;transition:.2s;
+}
+.ns-input:focus{border-color:var(--r);color:var(--t);box-shadow:0 0 0 2px var(--rg)}
+.ns-input::placeholder{color:var(--t4)}
+
+/* Suggested queries */
+.suggestion{
+  display:flex;align-items:flex-start;gap:8px;
+  padding:8px 10px;border-radius:7px;border:1px solid transparent;
+  cursor:pointer;transition:.15s;margin-bottom:4px;
+  font-size:12.5px;color:var(--t2);line-height:1.45;
+}
+.suggestion:hover{background:var(--b);border-color:rgba(255,255,255,0.07);color:var(--t)}
+.suggestion .sq-arrow{color:var(--r);font-size:11px;margin-top:1px;flex-shrink:0;font-family:var(--mono)}
+
+/* Quick actions */
+.qa-btn{
+  display:flex;align-items:center;gap:8px;width:100%;
+  padding:8px 10px;border-radius:7px;border:1px solid rgba(255,255,255,0.07);
+  background:var(--b);color:var(--t2);font-size:12.5px;font-weight:500;
+  cursor:pointer;transition:.15s;margin-bottom:6px;text-decoration:none;
+}
+.qa-btn:hover{border-color:var(--r);color:var(--r);background:var(--rg)}
+.qa-btn .qa-icon{font-size:14px;flex-shrink:0}
+
+/* Stats sidebar */
+.stat-row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);
+  font-size:12px;
+}
+.stat-row:last-child{border-bottom:none}
+.stat-label{color:var(--t3)}
+.stat-val{font-family:var(--mono);font-weight:600;color:var(--t)}
+.stat-val.cyan{color:var(--r)}
+.stat-val.green{color:var(--g)}
+.stat-val.purple{color:var(--o)}
+
+.panel-divider{height:1px;background:rgba(255,255,255,0.05);margin:12px 0}
+
+/* ===== RIGHT MAIN — CHAT ===== */
+.right-main{
+  flex:1;display:flex;flex-direction:column;overflow:hidden;
+  background:var(--bg);
+}
+
+/* Chat header */
+.chat-header{
+  padding:16px 24px;border-bottom:1px solid rgba(255,255,255,0.05);
+  display:flex;align-items:center;gap:12px;flex-shrink:0;
+  background:var(--bg);
+}
+.chat-header-title{font-size:15px;font-weight:600;color:var(--t)}
+.chat-header-sub{font-size:12px;color:var(--t3);margin-top:1px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--g);box-shadow:0 0 6px var(--g);animation:pulse-dot 2s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.5}}
+.chat-ns-badge{
+  margin-left:auto;font-family:var(--mono);font-size:11px;
+  background:var(--rg);border:1px solid var(--rb);
+  color:var(--r);padding:3px 10px;border-radius:12px;
+}
+
+/* Chat scroll area */
+.chat-scroll{
+  flex:1;overflow-y:auto;padding:24px;
+  display:flex;flex-direction:column;gap:16px;
+}
+
+/* Quick action chips (desktop, below chat-scroll on mobile) */
+.quick-chips{
+  display:flex;gap:8px;padding:12px 24px;
+  border-top:1px solid rgba(255,255,255,0.04);
+  flex-wrap:wrap;flex-shrink:0;
+  background:var(--s1);
+}
+.chip{
+  font-size:12px;font-weight:500;font-family:var(--mono);
+  padding:5px 12px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);
+  color:var(--t2);cursor:pointer;transition:.15s;background:var(--b);
+  white-space:nowrap;
+}
+.chip:hover{border-color:var(--r);color:var(--r);background:var(--rg)}
+
+/* Input bar */
+.chat-input-row{
+  display:flex;align-items:flex-end;gap:10px;
+  padding:14px 24px 18px;border-top:1px solid rgba(255,255,255,0.05);
+  background:var(--bg);flex-shrink:0;
+}
+.chat-textarea{
+  flex:1;font-family:var(--sans);font-size:14px;
+  background:var(--s1);border:1px solid rgba(255,255,255,0.09);
+  color:var(--t);padding:11px 14px;border-radius:10px;outline:none;
+  resize:none;max-height:120px;line-height:1.5;transition:.2s;
+}
+.chat-textarea:focus{border-color:var(--r);box-shadow:0 0 0 2px var(--rg)}
+.chat-textarea::placeholder{color:var(--t4)}
+.send-btn{
+  width:40px;height:40px;border-radius:10px;border:none;
+  background:var(--r);color:#000;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:.15s;flex-shrink:0;
+}
+.send-btn:hover{opacity:0.85}
+.send-btn:disabled{opacity:0.4;cursor:not-allowed}
+.voice-btn{
+  width:40px;height:40px;border-radius:10px;border:1px solid rgba(255,255,255,0.1);
+  background:var(--b);color:var(--t3);cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;transition:.15s;flex-shrink:0;
+}
+.voice-btn:hover{border-color:var(--o);color:var(--o)}
+
+/* ===== MESSAGE BUBBLES ===== */
+.msg{display:flex;flex-direction:column;gap:4px;max-width:820px}
+.msg.user{align-items:flex-end;align-self:flex-end}
+.msg.assistant{align-items:flex-start;align-self:flex-start;width:100%;max-width:820px}
+.bubble{
+  padding:12px 16px;border-radius:12px;line-height:1.6;font-size:14px;
+  white-space:pre-wrap;word-break:break-word;
+}
+.msg.user .bubble{background:var(--r);color:#000;border-bottom-right-radius:4px;font-weight:500}
+.msg.assistant .bubble{background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-bottom-left-radius:4px;color:var(--t2)}
+.msg-time{font-size:11px;color:var(--t4);font-family:var(--mono);padding:0 4px}
+
+/* Command badge */
+.cmd-badge{
+  display:inline-flex;align-items:center;gap:5px;
+  font-family:var(--mono);font-size:10px;font-weight:600;
+  background:var(--b2);border:1px solid rgba(255,255,255,0.08);
+  color:var(--t3);padding:2px 8px;border-radius:4px;margin-bottom:10px;
+}
+.cmd-badge.cyan{background:var(--rg);border-color:var(--rb);color:var(--r)}
+.cmd-badge.purple{background:var(--og);border-color:rgba(167,139,250,0.2);color:var(--o)}
+.cmd-badge.green{background:var(--gg);border-color:rgba(52,211,153,0.2);color:var(--g)}
+
+/* Result cards inside bubbles */
+.res-cards{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.res-card{
+  background:var(--b);border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+  padding:12px 14px;position:relative;overflow:hidden;
+}
+.res-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--r)}
+.res-card.green::before{background:var(--g)}
+.res-card.purple::before{background:var(--o)}
+.res-card.amber::before{background:#f59e0b}
+.res-card-title{font-size:13px;font-weight:600;color:var(--t);margin-bottom:4px}
+.res-card-sub{font-size:12px;color:var(--t3);line-height:1.5}
+.res-card-meta{
+  display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;
+}
+.res-tag{
+  font-family:var(--mono);font-size:10px;
+  background:var(--s1);border:1px solid rgba(255,255,255,0.08);
+  color:var(--t4);padding:2px 7px;border-radius:4px;
+}
+.res-tag.cyan{background:var(--rg);color:var(--r);border-color:var(--rb)}
+.res-tag.green{background:var(--gg);color:var(--g);border-color:rgba(52,211,153,0.2)}
+.res-tag.purple{background:var(--og);color:var(--o);border-color:rgba(167,139,250,0.2)}
+
+.view-link{
+  display:inline-flex;align-items:center;gap:4px;
+  font-size:12px;font-weight:600;color:var(--r);
+  margin-top:12px;font-family:var(--mono);transition:.15s;
+}
+.view-link:hover{opacity:.75}
+
+/* Score display */
+.score-big{
+  display:flex;align-items:baseline;gap:6px;margin:10px 0;
+}
+.score-num{font-family:var(--mono);font-size:36px;font-weight:700;color:var(--r)}
+.score-unit{font-size:13px;color:var(--t3)}
+
+/* Table */
+.res-table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px}
+.res-table th{text-align:left;font-family:var(--mono);font-size:10px;font-weight:600;color:var(--t4);text-transform:uppercase;letter-spacing:.06em;padding:6px 10px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.res-table td{padding:8px 10px;border-bottom:1px solid rgba(255,255,255,0.04);color:var(--t2);vertical-align:top}
+.res-table tr:last-child td{border-bottom:none}
+.res-table tr:hover td{background:rgba(255,255,255,0.02)}
+
+/* Skill card */
+.skill-card{
+  background:var(--b);border:1px solid rgba(255,255,255,0.07);border-radius:8px;
+  padding:12px 14px;margin-bottom:6px;
+}
+.skill-card-header{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.skill-icon{font-size:16px}
+.skill-name{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--t)}
+.skill-badge{font-size:10px;padding:2px 7px;border-radius:4px;font-family:var(--mono);font-weight:600}
+.skill-badge.high{background:var(--gg);color:var(--g);border:1px solid rgba(52,211,153,.2)}
+.skill-badge.med{background:var(--og);color:var(--o);border:1px solid rgba(167,139,250,.2)}
+.skill-body{font-size:12px;color:var(--t3);line-height:1.5;font-family:var(--mono)}
+
+/* Typing indicator */
+.typing-bubble{
+  background:var(--s1);border:1px solid rgba(255,255,255,0.06);
+  border-radius:12px;border-bottom-left-radius:4px;
+  padding:14px 18px;display:flex;align-items:center;gap:5px;
+}
+.typing-dot{
+  width:7px;height:7px;border-radius:50%;background:var(--t4);
+  animation:typing-bounce 1.4s infinite;
+}
+.typing-dot:nth-child(2){animation-delay:.2s}
+.typing-dot:nth-child(3){animation-delay:.4s}
+@keyframes typing-bounce{0%,60%,100%{transform:translateY(0)}30%{transform:translateY(-6px)}}
+
+/* ===== EMPTY STATE ===== */
+.empty-state{
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  min-height:320px;text-align:center;padding:32px;
+  gap:16px;
+}
+.empty-icon{font-size:48px;margin-bottom:4px}
+.empty-state h3{font-size:18px;font-weight:700;color:var(--t)}
+.empty-state p{font-size:14px;color:var(--t3);max-width:440px;line-height:1.6}
+.example-chips{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:8px}
+.ex-chip{
+  font-size:12px;font-family:var(--mono);
+  padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,0.1);
+  color:var(--t2);cursor:pointer;transition:.15s;background:var(--s1);
+}
+.ex-chip:hover{border-color:var(--r);color:var(--r);background:var(--rg)}
+
+/* ===== DREAM INLINE LAUNCHER ===== */
+.dream-launcher{
+  background:var(--b);border:1px solid rgba(6,182,212,0.2);border-radius:10px;
+  padding:16px;margin-top:10px;
+}
+.dream-launcher-title{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--r);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.dream-strategies{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.strat-chip{
+  font-size:11px;font-family:var(--mono);padding:4px 10px;border-radius:4px;
+  background:var(--s2);border:1px solid rgba(255,255,255,0.08);color:var(--t3);
+  cursor:pointer;transition:.15s;
+}
+.strat-chip.selected{background:var(--rg);border-color:var(--rb);color:var(--r)}
+.strat-chip:hover{color:var(--t)}
+.launch-btn{
+  background:var(--r);color:#000;font-family:var(--mono);font-size:12px;font-weight:700;
+  padding:8px 18px;border-radius:7px;border:none;cursor:pointer;transition:.15s;
+}
+.launch-btn:hover{opacity:.85}
+.launch-btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){
+  .left-panel{display:none}
+  .right-main{width:100%}
+}
+html,body{overflow-x:hidden;max-width:100vw}
+img,video,iframe{max-width:100%}
+pre,code{overflow-x:auto;max-width:100%}
+table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+@media(max-width:640px){
+  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
+  nav{padding:0 16px}
+}
+</style>
+</head>
+<body>
+
+<!-- AUTH OVERLAY -->
+<div id="auth-overlay">
+  <div class="auth-card">
+    <div class="auth-icon">🧠</div>
+    <h2>Memory Copilot</h2>
+    <p>Enter your API key to access the Copilot. It queries your agent's <strong>living memory</strong>, Dream Engine history, and procedural skills in natural language.</p>
+    <input class="auth-input" id="auth-key-input" type="text" placeholder="sk-..." autocomplete="off" spellcheck="false">
+    <button class="btn-primary" id="auth-submit-btn">
+      <span>⚡</span> Launch Copilot
+    </button>
+    <p class="auth-note">No account? <a href="/signup.html">Create one free</a> — no credit card required.</p>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav>
+  <a class="nav-logo" href="/">
+    <span class="dot"></span>slopshop<span style="color:var(--t4)">.gg</span>
+  </a>
+  <a class="nav-link" href="/memory-hub.html">Memory Hub</a>
+  <a class="nav-link" href="/dream-studio.html">Dream Studio</a>
+  <a class="nav-link" href="/dashboard.html">Dashboard</a>
+  <a class="nav-btn" href="/signup.html">Sign Up</a>
+</nav>
+
+<!-- SHELL -->
+<div class="shell">
+
+  <!-- LEFT PANEL -->
+  <aside class="left-panel" id="left-panel">
+
+    <!-- Namespace -->
+    <div class="panel-section">
+      <div class="panel-label">Namespace</div>
+      <div class="ns-row">
+        <input class="ns-input" id="ns-input" type="text" placeholder="default" value="default" autocomplete="off" spellcheck="false">
+      </div>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <!-- Suggested queries -->
+    <div class="panel-section">
+      <div class="panel-label">Suggested Queries</div>
+      <div id="suggestions-list">
+        <div class="suggestion" data-q="What did my agents learn this week?">
+          <span class="sq-arrow">→</span>
+          <span>What did my agents learn this week?</span>
+        </div>
+        <div class="suggestion" data-q="Show me all contradictions detected">
+          <span class="sq-arrow">→</span>
+          <span>Show me all contradictions detected</span>
+        </div>
+        <div class="suggestion" data-q="List procedural skills extracted recently">
+          <span class="sq-arrow">→</span>
+          <span>List procedural skills extracted recently</span>
+        </div>
+        <div class="suggestion" data-q="What patterns are emerging in my data?">
+          <span class="sq-arrow">→</span>
+          <span>What patterns are emerging in my data?</span>
+        </div>
+        <div class="suggestion" data-q="What's my latest intelligence score?">
+          <span class="sq-arrow">→</span>
+          <span>What's my latest intelligence score?</span>
+        </div>
+        <div class="suggestion" data-q="Find memories about topic">
+          <span class="sq-arrow">→</span>
+          <span>Find memories about [topic]</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <!-- Quick actions -->
+    <div class="panel-section">
+      <div class="panel-label">Quick Actions</div>
+      <button class="qa-btn" id="qa-dream">
+        <span class="qa-icon">🌙</span> Run Dream Now
+      </button>
+      <button class="qa-btn" id="qa-tmr">
+        <span class="qa-icon">⚡</span> Queue TMR Cue
+      </button>
+      <a class="qa-btn" href="/skills-forge.html">
+        <span class="qa-icon">🔬</span> View Skills Forge
+      </a>
+    </div>
+
+    <div class="panel-divider"></div>
+
+    <!-- Stats -->
+    <div class="panel-section" style="padding-bottom:20px">
+      <div class="panel-label">Memory Stats</div>
+      <div class="stat-row">
+        <span class="stat-label">Memory Count</span>
+        <span class="stat-val cyan" id="stat-memories">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Last Dream</span>
+        <span class="stat-val" id="stat-last-dream">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Skills Extracted</span>
+        <span class="stat-val green" id="stat-skills">—</span>
+      </div>
+      <div class="stat-row">
+        <span class="stat-label">Namespace</span>
+        <span class="stat-val purple" id="stat-ns">default</span>
+      </div>
+    </div>
+
+  </aside>
+
+  <!-- RIGHT MAIN -->
+  <div class="right-main">
+
+    <!-- Chat header -->
+    <div class="chat-header">
+      <div style="display:flex;flex-direction:column;gap:2px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="status-dot"></div>
+          <span class="chat-header-title">Memory Copilot</span>
+        </div>
+        <span class="chat-header-sub">Natural language access to your agent's living memory</span>
+      </div>
+      <span class="chat-ns-badge" id="header-ns-badge">ns: default</span>
+    </div>
+
+    <!-- Chat scroll area -->
+    <div class="chat-scroll" id="chat-scroll">
+      <!-- Empty state shown until first message -->
+      <div class="empty-state" id="empty-state">
+        <div class="empty-icon">🧠</div>
+        <h3>Ask Your Memory Anything</h3>
+        <p>The Memory Copilot routes your natural language questions to the right API endpoints — Dream Engine logs, skills library, TMR cues, intelligence scores, and semantic search — then formats the results for you.</p>
+        <div class="example-chips">
+          <span class="ex-chip" data-q="What did my agents learn this week?">What did I learn this week?</span>
+          <span class="ex-chip" data-q="Show me all contradictions detected">Show contradictions</span>
+          <span class="ex-chip" data-q="What's my latest intelligence score?">Intelligence score</span>
+          <span class="ex-chip" data-q="List procedural skills extracted recently">Recent skills</span>
+          <span class="ex-chip" data-q="What patterns are emerging in my data?">Emerging patterns</span>
+          <span class="ex-chip" data-q="Show me TMR cues">TMR cues</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick action chips -->
+    <div class="quick-chips">
+      <span class="chip" data-q="Summarize what my agents learned this week">Summarize this week</span>
+      <span class="chip" data-q="List procedural skills extracted recently">Show skill library</span>
+      <span class="chip" data-q="What's my latest intelligence score?">Check intelligence score</span>
+      <span class="chip" data-q="What did my agents learn this week?">List recent dreams</span>
+    </div>
+
+    <!-- Input bar -->
+    <div class="chat-input-row">
+      <button class="voice-btn" title="Voice input (coming soon)">🎙</button>
+      <textarea class="chat-textarea" id="chat-input" rows="1" placeholder="Ask anything about your agent's memory…"></textarea>
+      <button class="send-btn" id="send-btn" title="Send">➤</button>
+    </div>
+
+  </div>
+</div>
+
+<script>
+'use strict';
+
+// ─── CONFIG ──────────────────────────────────────────────────────────────────
+const API_BASE = '';  // same-origin
+
+// ─── AUTH ────────────────────────────────────────────────────────────────────
+const authOverlay = document.getElementById('auth-overlay');
+const authKeyInput = document.getElementById('auth-key-input');
+const authSubmitBtn = document.getElementById('auth-submit-btn');
+
+let apiKey = localStorage.getItem('slopshop_api_key') || localStorage.getItem('slop_api_key') || '';
+
+function renderNoAuthBanner() {
+  if (apiKey) return;
+  const existing = document.getElementById('no-auth-banner');
+  if (existing) return;
+  const banner = document.createElement('div');
+  banner.id = 'no-auth-banner';
+  banner.style.cssText = 'background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.3);border-radius:10px;padding:12px 18px;margin:0 0 18px 0;display:flex;align-items:center;gap:12px;font-size:14px;color:#ffd700;';
+  banner.innerHTML = '<span style="font-size:18px">⚠</span><span style="flex:1">No API key detected — live data will not load.</span><a href="/login" style="color:#a855f7;font-weight:600;white-space:nowrap;text-decoration:none;">Add your API key to unlock live data →</a>';
+  const mainEl = document.querySelector('main') || document.querySelector('.main-content') || document.body;
+  mainEl.insertBefore(banner, mainEl.firstChild);
+}
+
+function checkAuth() {
+  if (apiKey) {
+    authOverlay.classList.add('hidden');
+    onAuthed();
+  } else {
+    renderNoAuthBanner();
+  }
+}
+
+authSubmitBtn.addEventListener('click', () => {
+  const v = authKeyInput.value.trim();
+  if (!v) { authKeyInput.focus(); return; }
+  apiKey = v;
+  localStorage.setItem('slopshop_api_key', v);
+  authOverlay.classList.add('hidden');
+  onAuthed();
+});
+authKeyInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter') authSubmitBtn.click();
+});
+
+// ─── NAMESPACE ───────────────────────────────────────────────────────────────
+const nsInput = document.getElementById('ns-input');
+const headerNsBadge = document.getElementById('header-ns-badge');
+const statNs = document.getElementById('stat-ns');
+
+function getNamespace() { return (nsInput.value.trim() || 'default'); }
+
+nsInput.addEventListener('input', () => {
+  const ns = getNamespace();
+  headerNsBadge.textContent = 'ns: ' + ns;
+  statNs.textContent = ns;
+});
+
+// ─── STATS LOADER ────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const ns = getNamespace();
+    const headers = { 'X-API-Key': apiKey, 'Content-Type': 'application/json' };
+
+    // Fetch dream log for last dream + count
+    const logRes = await fetch(`${API_BASE}/v1/memory/dream/log?namespace=${encodeURIComponent(ns)}&limit=5`, { headers });
+    if (logRes.ok) {
+      const data = await logRes.json();
+      const sessions = data.sessions || data.logs || data.data || [];
+      if (sessions.length > 0) {
+        const last = sessions[0];
+        const ts = last.created_at || last.started_at || last.timestamp;
+        document.getElementById('stat-last-dream').textContent = ts ? relativeTime(ts) : 'N/A';
+      } else {
+        document.getElementById('stat-last-dream').textContent = 'None yet';
+      }
+    }
+
+    // Skills count
+    const skillsRes = await fetch(`${API_BASE}/v1/memory/skills?namespace=${encodeURIComponent(ns)}&limit=1`, { headers });
+    if (skillsRes.ok) {
+      const data = await skillsRes.json();
+      const total = data.total || (data.skills || []).length || '?';
+      document.getElementById('stat-skills').textContent = total;
+    }
+
+    // Memory count via search
+    const srchRes = await fetch(`${API_BASE}/v1/memory/search`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({ query: '*', namespace: ns, limit: 1 })
+    });
+    if (srchRes.ok) {
+      const data = await srchRes.json();
+      document.getElementById('stat-memories').textContent = data.total || (data.results || []).length || '?';
+    }
+  } catch (e) {
+    // stats are best-effort
+  }
+}
+
+// ─── CHAT ENGINE ─────────────────────────────────────────────────────────────
+const chatScroll = document.getElementById('chat-scroll');
+const emptyState = document.getElementById('empty-state');
+const chatInput = document.getElementById('chat-input');
+const sendBtn = document.getElementById('send-btn');
+let messageCount = 0;
+
+function now() {
+  return new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+}
+
+function relativeTime(ts) {
+  const d = new Date(ts);
+  if (isNaN(d)) return ts;
+  const diff = Date.now() - d.getTime();
+  if (diff < 60000) return 'just now';
+  if (diff < 3600000) return Math.floor(diff / 60000) + 'm ago';
+  if (diff < 86400000) return Math.floor(diff / 3600000) + 'h ago';
+  return Math.floor(diff / 86400000) + 'd ago';
+}
+
+function hideEmpty() {
+  if (emptyState) emptyState.style.display = 'none';
+}
+
+function appendUserMsg(text) {
+  hideEmpty();
+  const el = document.createElement('div');
+  el.className = 'msg user';
+  el.innerHTML = `
+    <div class="bubble">${escHtml(text)}</div>
+    <div class="msg-time">${now()}</div>
+  `;
+  chatScroll.appendChild(el);
+  scrollBottom();
+  messageCount++;
+}
+
+function appendTyping() {
+  hideEmpty();
+  const el = document.createElement('div');
+  el.className = 'msg assistant';
+  el.id = 'typing-indicator';
+  el.innerHTML = `<div class="typing-bubble"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>`;
+  chatScroll.appendChild(el);
+  scrollBottom();
+  return el;
+}
+
+function removeTyping() {
+  const t = document.getElementById('typing-indicator');
+  if (t) t.remove();
+}
+
+function appendAssistantMsg(html, cmdLabel, cmdColor) {
+  const el = document.createElement('div');
+  el.className = 'msg assistant';
+  const badge = cmdLabel
+    ? `<div class="cmd-badge ${cmdColor || ''}">${escHtml(cmdLabel)}</div>`
+    : '';
+  el.innerHTML = `
+    <div class="bubble" style="width:100%">${badge}${html}</div>
+    <div class="msg-time">${now()}</div>
+  `;
+  chatScroll.appendChild(el);
+  scrollBottom();
+}
+
+function scrollBottom() {
+  chatScroll.scrollTop = chatScroll.scrollHeight;
+}
+
+function escHtml(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function escAttr(s) { return escHtml(s); }
+
+// ─── API HELPERS ──────────────────────────────────────────────────────────────
+function headers() {
+  return { 'X-API-Key': apiKey, 'Content-Type': 'application/json' };
+}
+
+async function apiGet(path) {
+  const res = await fetch(API_BASE + path, { headers: headers() });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => res.statusText);
+    throw new Error(`${res.status}: ${txt}`);
+  }
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  const res = await fetch(API_BASE + path, {
+    method: 'POST', headers: headers(), body: JSON.stringify(body)
+  });
+  if (!res.ok) {
+    const txt = await res.text().catch(() => res.statusText);
+    throw new Error(`${res.status}: ${txt}`);
+  }
+  return res.json();
+}
+
+// ─── INTENT ROUTER ───────────────────────────────────────────────────────────
+function classifyIntent(q) {
+  const lower = q.toLowerCase();
+  if (/\b(run dream|start dream|trigger dream|dream now)\b/.test(lower)) return 'dream_launch';
+  if (/\b(what did|learned?|learn|recent|this week|last week|latest dreams?)\b/.test(lower) && !/(skill|score|pattern)/.test(lower)) return 'dream_log';
+  if (/\b(skill|procedural|extract|abilities?)\b/.test(lower)) return 'skills';
+  if (/\b(score|intelligence|iq|kpi)\b/.test(lower)) return 'score';
+  if (/\b(contradiction|conflict|inconsisten|mismatch)\b/.test(lower)) return 'contradiction';
+  if (/\b(tmr|cue|targeted memory|reactivat)\b/.test(lower)) return 'tmr';
+  if (/\b(pattern|trend|emerging|recurring)\b/.test(lower)) return 'patterns';
+  if (/\b(find|search|about|memor(?:y|ies) about)\b/.test(lower)) {
+    const m = q.match(/(?:find|about|memories?\s+about|search(?:\s+for)?)\s+(.+)/i);
+    return { type: 'search', query: m ? m[1].trim() : q };
+  }
+  return { type: 'search', query: q };
+}
+
+// ─── FORMATTERS ──────────────────────────────────────────────────────────────
+function fmtDreamLog(sessions) {
+  if (!sessions || sessions.length === 0) {
+    return '<p style="color:var(--t3);font-size:13px">No dream sessions found for this namespace yet. Run your first dream to get started.</p>';
+  }
+  let html = `<div class="res-cards">`;
+  sessions.slice(0, 6).forEach(s => {
+    const status = s.status || 'unknown';
+    const stColor = status === 'complete' ? 'green' : status === 'running' ? 'cyan' : '';
+    const insights = s.insights_count || s.insights || s.result?.insights_count || '?';
+    const strategies = (s.strategies_run || s.strategies || []).join(', ') || 'N/A';
+    const ts = s.created_at || s.started_at || s.timestamp || '';
+    html += `<div class="res-card ${stColor}">
+      <div class="res-card-title">Dream Session ${escHtml(s.id || s.session_id || '—')}</div>
+      <div class="res-card-sub">${ts ? relativeTime(ts) : ''} &mdash; ${escHtml(strategies)}</div>
+      <div class="res-card-meta">
+        <span class="res-tag ${stColor}">${escHtml(status)}</span>
+        <span class="res-tag">${escHtml(String(insights))} insights</span>
+      </div>
+    </div>`;
+  });
+  html += `</div>
+  <a class="view-link" href="/dream-reports.html">View all dream reports →</a>`;
+  return html;
+}
+
+function fmtSkills(skills) {
+  if (!skills || skills.length === 0) {
+    return '<p style="color:var(--t3);font-size:13px">No procedural skills extracted yet. Run a Dream Engine session with the <code style="color:var(--r)">synthesize</code> strategy to extract skills.</p>';
+  }
+  let html = '';
+  skills.slice(0, 6).forEach(sk => {
+    const conf = sk.confidence || sk.score || 0;
+    const tier = conf >= 0.7 ? 'high' : 'med';
+    html += `<div class="skill-card">
+      <div class="skill-card-header">
+        <span class="skill-icon">🔬</span>
+        <span class="skill-name">${escHtml(sk.name || sk.skill_name || 'Unnamed Skill')}</span>
+        <span class="skill-badge ${tier}">${Math.round(conf*100)}% conf</span>
+      </div>
+      <div class="skill-body">${escHtml(sk.pattern || sk.description || sk.body || '(no description)')}</div>
+    </div>`;
+  });
+  html += `<a class="view-link" href="/skills-forge.html">Open Skills Forge →</a>`;
+  return html;
+}
+
+function fmtScore(report) {
+  if (!report) return '<p style="color:var(--t3)">No complete dream report found.</p>';
+  const score = report.intelligence_score ?? report.score ?? '—';
+  const insights = report.insights_count ?? report.insights ?? '—';
+  const duration = report.duration_sec ?? report.duration ?? '—';
+  const depth = report.strategy_depth ?? report.strategies_run?.length ?? '—';
+  return `
+    <div class="score-big">
+      <span class="score-num">${escHtml(String(score))}</span>
+      <span class="score-unit">intelligence score</span>
+    </div>
+    <table class="res-table">
+      <tr><th>Metric</th><th>Value</th></tr>
+      <tr><td>Insights Generated</td><td style="color:var(--g);font-family:var(--mono)">${escHtml(String(insights))}</td></tr>
+      <tr><td>Strategy Depth</td><td style="color:var(--o);font-family:var(--mono)">${escHtml(String(depth))}</td></tr>
+      <tr><td>Duration</td><td style="color:var(--t2);font-family:var(--mono)">${escHtml(String(duration))}s</td></tr>
+    </table>
+    <a class="view-link" href="/dream-reports.html">View full intelligence brief →</a>
+  `;
+}
+
+function fmtSearch(results, queryLabel) {
+  if (!results || results.length === 0) {
+    return `<p style="color:var(--t3);font-size:13px">No memories found matching "${escHtml(queryLabel)}". Try a broader search or a different namespace.</p>`;
+  }
+  let html = `<div class="res-cards">`;
+  results.slice(0, 5).forEach(r => {
+    const content = r.content || r.text || r.value || r.memory || '(no content)';
+    const ts = r.created_at || r.timestamp || '';
+    const score = r.score != null ? Math.round(r.score * 100) : null;
+    html += `<div class="res-card">
+      <div class="res-card-title">${escHtml(String(content).slice(0, 80))}${content.length > 80 ? '…' : ''}</div>
+      <div class="res-card-sub">${ts ? relativeTime(ts) : ''}${r.namespace ? ' &middot; ns: ' + escHtml(r.namespace) : ''}</div>
+      <div class="res-card-meta">
+        ${score != null ? `<span class="res-tag cyan">${score}% match</span>` : ''}
+        ${r.type ? `<span class="res-tag">${escHtml(r.type)}</span>` : ''}
+      </div>
+    </div>`;
+  });
+  html += `</div>
+  <a class="view-link" href="/memory-explorer.html">Explore in Memory Graph →</a>`;
+  return html;
+}
+
+function fmtTMR(cues) {
+  if (!cues || cues.length === 0) {
+    return '<p style="color:var(--t3);font-size:13px">No TMR cues queued. Add cues to prioritize memories during the next dream cycle.</p>';
+  }
+  let html = `<table class="res-table">
+    <tr><th>Memory ID</th><th>Priority</th><th>Queued</th></tr>`;
+  cues.slice(0, 8).forEach(c => {
+    const pri = c.priority || c.weight || 1;
+    const ts = c.queued_at || c.created_at || '';
+    html += `<tr>
+      <td style="font-family:var(--mono);color:var(--r)">${escHtml(c.memory_id || c.id || '—')}</td>
+      <td style="color:var(--g);font-family:var(--mono)">${escHtml(String(pri))}</td>
+      <td style="color:var(--t3)">${ts ? relativeTime(ts) : '—'}</td>
+    </tr>`;
+  });
+  html += `</table>
+  <a class="view-link" href="/memory-hub.html">Manage TMR cues →</a>`;
+  return html;
+}
+
+function fmtPatterns(sessions) {
+  if (!sessions || sessions.length === 0) {
+    return '<p style="color:var(--t3)">No pattern extraction sessions found yet.</p>';
+  }
+  const patternSessions = sessions.filter(s =>
+    (s.strategies_run || s.strategies || []).includes('pattern_extract') ||
+    (s.strategies_run || s.strategies || []).includes('pattern')
+  );
+  const src = patternSessions.length > 0 ? patternSessions : sessions;
+  let html = `<p style="color:var(--t3);font-size:12px;margin-bottom:10px">Based on Dream Engine sessions using <span style="color:var(--o);font-family:var(--mono)">pattern_extract</span> strategy:</p>
+  <div class="res-cards">`;
+  src.slice(0, 4).forEach(s => {
+    const patterns = s.result?.patterns || s.patterns || [];
+    const patStr = patterns.length > 0
+      ? patterns.slice(0, 3).map(p => `• ${typeof p === 'string' ? p : p.description || JSON.stringify(p)}`).join('\n')
+      : 'Run a dream with pattern_extract strategy to surface patterns.';
+    html += `<div class="res-card purple">
+      <div class="res-card-title">Session ${escHtml(String(s.id || s.session_id || '').slice(0, 8))}</div>
+      <div class="res-card-sub" style="white-space:pre-line">${escHtml(patStr)}</div>
+      <div class="res-card-meta">
+        <span class="res-tag">${relativeTime(s.created_at || s.started_at || '')}</span>
+        <span class="res-tag purple">${(s.insights_count || s.insights || 0)} insights</span>
+      </div>
+    </div>`;
+  });
+  html += `</div>
+  <a class="view-link" href="/dream-reports.html">View full analysis →</a>`;
+  return html;
+}
+
+// ─── DREAM LAUNCHER INLINE ───────────────────────────────────────────────────
+function buildDreamLauncher() {
+  const strategies = ['synthesize','pattern_extract','insight_generate','compress','associate','validate','evolve','forecast','reflect'];
+  let chips = strategies.map(s =>
+    `<span class="strat-chip selected" data-strat="${s}">${s}</span>`
+  ).join('');
+  return `
+    <p style="color:var(--t3);font-size:13px;margin-bottom:10px">Start a Dream Engine cycle for namespace <span style="color:var(--r);font-family:var(--mono)">${escHtml(getNamespace())}</span>:</p>
+    <div class="dream-launcher">
+      <div class="dream-launcher-title">🌙 Configure Dream Cycle</div>
+      <p style="font-size:11px;color:var(--t3);margin-bottom:8px;font-family:var(--mono)">Select strategies to run:</p>
+      <div class="dream-strategies" id="dream-strat-chips">${chips}</div>
+      <button class="launch-btn" id="launch-dream-btn">Start Dream →</button>
+      <span id="launch-status" style="font-size:12px;color:var(--t3);margin-left:12px;font-family:var(--mono)"></span>
+    </div>
+  `;
+}
+
+function attachDreamLauncher() {
+  const stratsEl = document.getElementById('dream-strat-chips');
+  const launchBtn = document.getElementById('launch-dream-btn');
+  const statusEl = document.getElementById('launch-status');
+  if (!stratsEl || !launchBtn) return;
+
+  stratsEl.addEventListener('click', e => {
+    const chip = e.target.closest('.strat-chip');
+    if (chip) chip.classList.toggle('selected');
+  });
+
+  launchBtn.addEventListener('click', async () => {
+    const selected = [...stratsEl.querySelectorAll('.strat-chip.selected')].map(c => c.dataset.strat);
+    if (selected.length === 0) { statusEl.textContent = 'Select at least one strategy.'; return; }
+    launchBtn.disabled = true;
+    statusEl.textContent = 'Starting…';
+    try {
+      const data = await apiPost('/v1/memory/dream/start', {
+        namespace: getNamespace(),
+        strategies: selected
+      });
+      const id = data.session_id || data.id || '?';
+      statusEl.innerHTML = `<span style="color:var(--g)">✓ Started — session ${id}</span>`;
+    } catch (e) {
+      statusEl.innerHTML = `<span style="color:#f87171">Error: ${escHtml(e.message)}</span>`;
+      launchBtn.disabled = false;
+    }
+  });
+}
+
+// ─── MAIN QUERY HANDLER ───────────────────────────────────────────────────────
+async function handleQuery(q) {
+  if (!q.trim()) return;
+  appendUserMsg(q);
+  sendBtn.disabled = true;
+  const typingEl = appendTyping();
+  const ns = getNamespace();
+
+  try {
+    const intent = classifyIntent(q);
+    const intentType = typeof intent === 'string' ? intent : intent.type;
+
+    let html = '';
+    let cmdLabel = '';
+    let cmdColor = '';
+
+    if (intentType === 'dream_launch') {
+      removeTyping();
+      cmdLabel = 'Interactive launcher';
+      cmdColor = 'cyan';
+      html = buildDreamLauncher();
+      appendAssistantMsg(html, cmdLabel, cmdColor);
+      attachDreamLauncher();
+      sendBtn.disabled = false;
+      return;
+    }
+
+    if (intentType === 'dream_log') {
+      const data = await apiGet(`/v1/memory/dream/log?namespace=${encodeURIComponent(ns)}&limit=10`);
+      const sessions = data.sessions || data.logs || data.data || [];
+      cmdLabel = `GET /v1/memory/dream/log`;
+      cmdColor = 'cyan';
+      html = `<p style="color:var(--t2);margin-bottom:4px">Found <strong style="color:var(--t)">${sessions.length}</strong> dream session(s) in namespace <span style="color:var(--r);font-family:var(--mono)">${escHtml(ns)}</span>:</p>` + fmtDreamLog(sessions);
+    }
+
+    else if (intentType === 'skills') {
+      const data = await apiGet(`/v1/memory/skills?namespace=${encodeURIComponent(ns)}&limit=20`);
+      const skills = data.skills || data.data || data.results || [];
+      cmdLabel = `GET /v1/memory/skills`;
+      cmdColor = 'green';
+      html = `<p style="color:var(--t2);margin-bottom:4px">Found <strong style="color:var(--t)">${skills.length}</strong> procedural skill(s) extracted:</p>` + fmtSkills(skills);
+    }
+
+    else if (intentType === 'score') {
+      // Step 1: get log, find latest complete session
+      const logData = await apiGet(`/v1/memory/dream/log?namespace=${encodeURIComponent(ns)}&limit=10`);
+      const sessions = logData.sessions || logData.logs || logData.data || [];
+      const complete = sessions.find(s => s.status === 'complete') || sessions[0];
+      cmdLabel = `GET /v1/memory/dream/report/:id`;
+      cmdColor = 'cyan';
+      if (!complete) {
+        html = '<p style="color:var(--t3)">No complete dream sessions found. Run a Dream Engine cycle to generate an intelligence score.</p>';
+      } else {
+        const sid = complete.id || complete.session_id;
+        try {
+          const report = await apiGet(`/v1/memory/dream/report/${encodeURIComponent(sid)}`);
+          html = fmtScore(report);
+        } catch (e2) {
+          // Fall back to session data
+          html = fmtScore(complete.report || complete);
+        }
+      }
+    }
+
+    else if (intentType === 'contradiction') {
+      const data = await apiPost('/v1/memory/search', { query: 'contradiction conflict inconsistency', namespace: ns, limit: 10 });
+      const results = data.results || data.data || [];
+      cmdLabel = `POST /v1/memory/search {query: "contradiction"}`;
+      cmdColor = 'purple';
+      html = `<p style="color:var(--t2);margin-bottom:4px">Contradiction search returned <strong style="color:var(--t)">${results.length}</strong> result(s):</p>` + fmtSearch(results, 'contradiction');
+    }
+
+    else if (intentType === 'tmr') {
+      const data = await apiGet(`/v1/memory/tmr/cues?namespace=${encodeURIComponent(ns)}`);
+      const cues = data.cues || data.data || data.results || [];
+      cmdLabel = `GET /v1/memory/tmr/cues`;
+      cmdColor = 'purple';
+      html = `<p style="color:var(--t2);margin-bottom:4px">Found <strong style="color:var(--t)">${cues.length}</strong> TMR cue(s) queued:</p>` + fmtTMR(cues);
+    }
+
+    else if (intentType === 'patterns') {
+      const data = await apiGet(`/v1/memory/dream/log?namespace=${encodeURIComponent(ns)}&limit=20`);
+      const sessions = data.sessions || data.logs || data.data || [];
+      cmdLabel = `GET /v1/memory/dream/log → filter pattern_extract`;
+      cmdColor = 'purple';
+      html = fmtPatterns(sessions);
+    }
+
+    else {
+      // generic search
+      const searchQ = typeof intent === 'object' ? intent.query : q;
+      const data = await apiPost('/v1/memory/search', { query: searchQ, namespace: ns, limit: 10 });
+      const results = data.results || data.data || [];
+      cmdLabel = `POST /v1/memory/search`;
+      cmdColor = 'cyan';
+      html = `<p style="color:var(--t2);margin-bottom:4px">Search returned <strong style="color:var(--t)">${results.length}</strong> result(s) for "<em>${escHtml(searchQ.slice(0,60))}</em>":</p>` + fmtSearch(results, searchQ);
+    }
+
+    removeTyping();
+    appendAssistantMsg(html, cmdLabel, cmdColor);
+
+  } catch (err) {
+    removeTyping();
+    const errHtml = `<p style="color:#f87171;font-family:var(--mono);font-size:13px">Error: ${escHtml(err.message)}</p>
+    <p style="color:var(--t3);font-size:12px;margin-top:6px">Check your API key and namespace, or try again.</p>`;
+    appendAssistantMsg(errHtml, 'API Error', '');
+  }
+
+  sendBtn.disabled = false;
+}
+
+// ─── SEND HANDLER ─────────────────────────────────────────────────────────────
+sendBtn.addEventListener('click', () => {
+  const q = chatInput.value.trim();
+  if (!q) return;
+  chatInput.value = '';
+  adjustTextarea();
+  handleQuery(q);
+});
+
+chatInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendBtn.click();
+  }
+});
+
+// Auto-grow textarea
+function adjustTextarea() {
+  chatInput.style.height = 'auto';
+  chatInput.style.height = Math.min(chatInput.scrollHeight, 120) + 'px';
+}
+chatInput.addEventListener('input', adjustTextarea);
+
+// ─── SIDEBAR INTERACTIONS ──────────────────────────────────────────────────────
+document.querySelectorAll('.suggestion').forEach(el => {
+  el.addEventListener('click', () => {
+    const q = el.dataset.q;
+    chatInput.value = q;
+    handleQuery(q);
+    chatInput.value = '';
+  });
+});
+
+document.querySelectorAll('.chip, .ex-chip').forEach(el => {
+  el.addEventListener('click', () => {
+    const q = el.dataset.q;
+    chatInput.value = q;
+    handleQuery(q);
+    chatInput.value = '';
+  });
+});
+
+// Quick action: Run Dream
+document.getElementById('qa-dream').addEventListener('click', () => {
+  handleQuery('run dream now');
+});
+
+// Quick action: Queue TMR Cue
+document.getElementById('qa-tmr').addEventListener('click', async () => {
+  const cueId = prompt('Memory ID to queue for TMR reactivation:');
+  if (!cueId) return;
+  const priority = parseInt(prompt('Priority (1-10):', '5') || '5', 10);
+  appendUserMsg(`Queue TMR cue for memory: ${cueId}`);
+  const typingEl = appendTyping();
+  try {
+    const data = await apiPost('/v1/memory/tmr/queue', {
+      memory_id: cueId,
+      priority: isNaN(priority) ? 5 : priority,
+      namespace: getNamespace()
+    });
+    removeTyping();
+    const html = `<p style="color:var(--g);font-size:13px">✓ TMR cue queued successfully.</p>
+    <div class="res-card green" style="margin-top:10px">
+      <div class="res-card-title">Cue ID: ${escHtml(data.cue_id || data.id || '—')}</div>
+      <div class="res-card-sub">Memory <span style="color:var(--r);font-family:var(--mono)">${escHtml(cueId)}</span> will be reactivated at priority <strong>${escHtml(String(priority))}</strong> during the next dream cycle.</div>
+    </div>
+    <a class="view-link" href="/memory-hub.html">Manage TMR cues →</a>`;
+    appendAssistantMsg(html, 'POST /v1/memory/tmr/queue', 'green');
+  } catch (e) {
+    removeTyping();
+    appendAssistantMsg(`<p style="color:#f87171;font-family:var(--mono);font-size:13px">Error: ${escHtml(e.message)}</p>`, 'API Error', '');
+  }
+});
+
+// Namespace change syncs badge + stats
+nsInput.addEventListener('change', () => {
+  loadStats();
+  statNs.textContent = getNamespace();
+});
+
+// ─── BOOT ─────────────────────────────────────────────────────────────────────
+function onAuthed() {
+  loadStats();
+}
+
+checkAuth();
+</script>
+</body>
+</html>
