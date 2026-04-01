@@ -9,99 +9,179 @@
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     :root {
-      --bg: #09090b;
-      --surface: #111113;
-      --surface2: #18181b;
-      --surface3: #222226;
-      --border: #2a2a2e;
-      --accent: #00D4FF;
-      --accent-dim: rgba(0, 212, 255, 0.12);
-      --accent-dim2: rgba(0, 212, 255, 0.06);
-      --text: #e4e4e7;
-      --text-muted: #71717a;
-      --text-dim: #52525b;
-      --green: #22c55e;
-      --green-dim: rgba(34, 197, 94, 0.12);
-      --cyan: #06b6d4;
-      --cyan-dim: rgba(6, 182, 212, 0.12);
-      --red: #ef4444;
-      --red-dim: rgba(239, 68, 68, 0.12);
-      --yellow: #eab308;
-      --radius: 8px;
-      --radius-sm: 5px;
+      --bg:#0a0a0a;--surface:#111111;--surface2:#161616;
+      --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+      --text:#f0f0f0;--text2:rgba(240,240,240,0.55);--text3:rgba(240,240,240,0.28);
+      --accent:#00D4FF;--accent-dim:rgba(0,212,255,0.08);--accent-border:rgba(0,212,255,0.18);
+      --green:#22c55e;--yellow:#f59e0b;--red:#ef4444;
+      --font:'Inter',-apple-system,sans-serif;--nav-h:58px;
     }
 
     html, body {
       height: 100%;
       background: var(--bg);
       color: var(--text);
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font);
       font-size: 14px;
       line-height: 1.5;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
-    /* NAV */
-    nav {
-      height: 52px;
-      background: var(--surface);
-      border-bottom: 1px solid var(--border);
+    /* ── NAV ── */
+    .app-nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: var(--nav-h);
+      background: rgba(10,10,10,0.92);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
       display: flex;
       align-items: center;
+      justify-content: space-between;
       padding: 0 20px;
-      gap: 24px;
-      flex-shrink: 0;
-      position: relative;
-      z-index: 10;
+      z-index: 100;
     }
 
-    .nav-brand {
-      font-size: 15px;
+    .nav-logo {
+      font-size: 0.9375rem;
       font-weight: 700;
       color: var(--text);
       text-decoration: none;
-      letter-spacing: -0.01em;
+      letter-spacing: -0.02em;
     }
 
-    .nav-brand span { color: var(--accent); }
-
-    .nav-links {
+    .nav-center {
       display: flex;
-      gap: 4px;
-      margin-left: auto;
+      align-items: center;
+      gap: 2px;
     }
 
     .nav-link {
-      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text2);
       text-decoration: none;
-      font-size: 13px;
+      font-size: 0.875rem;
       font-weight: 500;
-      padding: 5px 10px;
-      border-radius: var(--radius-sm);
+      padding: 5px 12px;
+      border-radius: 7px;
       transition: color 0.15s, background 0.15s;
+      border-bottom: 2px solid transparent;
     }
 
-    .nav-link:hover { color: var(--text); background: var(--surface2); }
+    .nav-link:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav-link.active { color: var(--text); border-bottom-color: var(--accent); }
 
-    /* LAYOUT */
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-user {
+      font-size: 0.8125rem;
+      color: var(--text2);
+      text-decoration: none;
+      font-weight: 500;
+      padding: 5px 12px;
+      border-radius: 7px;
+      transition: color 0.15s, background 0.15s;
+      border-bottom: 2px solid transparent;
+    }
+    .nav-user:hover { color: var(--text); background: rgba(255,255,255,0.05); }
+    .nav-user.active { color: var(--text); border-bottom-color: var(--accent); }
+
+    .nav-home {
+      font-size: 0.8125rem;
+      color: var(--text3);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .nav-home:hover { color: var(--text2); }
+
+    /* ── APP SHELL ── */
     .app {
       display: flex;
-      height: calc(100vh - 52px);
+      height: 100vh;
+      padding-top: calc(var(--nav-h) + 38px);
       overflow: hidden;
     }
 
-    /* LEFT PANEL */
-    .left-panel {
-      width: 300px;
+    /* ── SIDEBAR TOGGLE (mobile) ── */
+    .sidebar-toggle {
+      display: none;
+      position: fixed;
+      top: calc(var(--nav-h) + 10px);
+      left: 12px;
+      z-index: 50;
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 8px 12px;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: background 0.15s;
+    }
+    .sidebar-toggle:hover { background: var(--surface2); }
+
+    /* ── JOURNEY BANNER ── */
+    .journey-banner {
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--text3);
+      flex-shrink: 0;
+      position: fixed;
+      top: var(--nav-h);
+      left: 0; right: 0;
+      z-index: 90;
+    }
+
+    .journey-banner span { white-space: nowrap; }
+    .journey-banner .step-active {
+      color: var(--accent);
+      font-weight: 600;
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-border);
+      padding: 2px 10px;
+      border-radius: 20px;
+    }
+    .journey-banner .sep { color: var(--text3); }
+
+    .banner-h { height: 38px; }
+
+    /* ── LAYOUT ── */
+    .layout {
+      display: flex;
+      flex: 1;
+      height: 100%;
+      margin-top: 38px; /* banner */
+      overflow: hidden;
+    }
+
+    /* ── LEFT SIDEBAR ── */
+    .sidebar {
+      width: 280px;
       flex-shrink: 0;
       background: var(--surface);
       border-right: 1px solid var(--border);
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      transition: transform 0.2s;
     }
 
-    .panel-header {
+    .sidebar-header {
       padding: 16px 16px 12px;
       border-bottom: 1px solid var(--border);
       display: flex;
@@ -110,29 +190,13 @@
       flex-shrink: 0;
     }
 
-    .panel-title {
-      font-size: 13px;
+    .sidebar-title {
+      font-size: 0.75rem;
       font-weight: 600;
-      color: var(--text);
+      color: var(--text3);
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
     }
-
-    .btn-create {
-      background: var(--accent);
-      color: #000;
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 5px 10px;
-      font-size: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      transition: opacity 0.15s;
-      white-space: nowrap;
-    }
-
-    .btn-create:hover { opacity: 0.85; }
 
     .hive-list {
       flex: 1;
@@ -142,50 +206,79 @@
 
     .hive-list::-webkit-scrollbar { width: 4px; }
     .hive-list::-webkit-scrollbar-track { background: transparent; }
-    .hive-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .hive-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
-    .hive-card {
-      border-left: 3px solid var(--accent);
-      border-radius: var(--radius);
-      background: var(--surface2);
-      padding: 12px 12px 12px 14px;
-      margin-bottom: 6px;
+    .hive-item {
+      border-left: 3px solid transparent;
+      border-radius: 8px;
+      background: transparent;
+      padding: 11px 12px 11px 13px;
+      margin-bottom: 4px;
       cursor: pointer;
-      transition: background 0.15s, border-color 0.15s;
+      transition: background 0.12s, border-color 0.12s;
     }
 
-    .hive-card:hover { background: var(--surface3); }
+    .hive-item:hover { background: var(--surface2); border-left-color: var(--border2); }
 
-    .hive-card.active {
-      background: var(--accent-dim2);
+    .hive-item.active {
+      background: var(--accent-dim);
       border-left-color: var(--accent);
-      outline: 1px solid rgba(0,212,255,0.3);
     }
 
-    .hive-card-name {
+    .hive-item-name {
       font-weight: 600;
-      font-size: 13px;
+      font-size: 0.875rem;
       color: var(--text);
       margin-bottom: 4px;
-    }
-
-    .hive-card-desc {
-      font-size: 12px;
-      color: var(--text-muted);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      margin-bottom: 6px;
-    }
-
-    .hive-card-meta {
       display: flex;
       align-items: center;
       gap: 6px;
     }
 
+    .hive-item-meta {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      color: var(--text3);
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 9px 18px;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: all 0.15s;
+      white-space: nowrap;
+      font-family: var(--font);
+    }
+
+    .btn-primary { background: var(--accent); color: #000; font-weight: 600; }
+    .btn-primary:hover { opacity: 0.88; box-shadow: 0 4px 16px rgba(0,212,255,0.25); }
+
+    .btn-secondary { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+    .btn-secondary:hover { background: var(--surface2); }
+
+    .btn-ghost { background: transparent; color: var(--text2); }
+    .btn-ghost:hover { color: var(--text); background: var(--surface); }
+
+    .btn-danger { background: transparent; color: var(--red); border: 1px solid rgba(239,68,68,0.25); }
+    .btn-danger:hover { background: rgba(239,68,68,0.08); }
+
+    .btn-sm { padding: 6px 12px; font-size: 0.8125rem; }
+
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+
+    /* ── BADGE ── */
     .badge {
-      font-size: 10px;
+      font-size: 0.625rem;
       font-weight: 600;
       padding: 2px 7px;
       border-radius: 100px;
@@ -193,24 +286,12 @@
       letter-spacing: 0.04em;
     }
 
-    .badge-owner  { background: var(--green-dim); color: var(--green); }
-    .badge-editor { background: var(--cyan-dim);  color: var(--cyan); }
-    .badge-viewer { background: rgba(113,113,122,0.15); color: var(--text-muted); }
+    .badge-owner  { background: rgba(34,197,94,0.12); color: var(--green); }
+    .badge-editor { background: rgba(0,212,255,0.10); color: var(--accent); }
+    .badge-viewer { background: rgba(240,240,240,0.06); color: var(--text2); }
 
-    .hive-meta-text { font-size: 11px; color: var(--text-dim); }
-
-    .empty-state {
-      padding: 32px 16px;
-      text-align: center;
-      color: var(--text-muted);
-      font-size: 13px;
-      line-height: 1.6;
-    }
-
-    .empty-state-icon { font-size: 32px; margin-bottom: 10px; opacity: 0.5; }
-
-    /* RIGHT PANEL */
-    .right-panel {
+    /* ── MAIN PANEL ── */
+    .main-panel {
       flex: 1;
       display: flex;
       flex-direction: column;
@@ -218,20 +299,48 @@
       background: var(--bg);
     }
 
-    .empty-workspace {
+    /* ── EMPTY STATES ── */
+    .empty-full {
       flex: 1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      color: var(--text-muted);
-      gap: 12px;
+      gap: 16px;
+      padding: 40px;
+      text-align: center;
     }
 
-    .empty-workspace-icon { font-size: 48px; opacity: 0.3; }
-    .empty-workspace-text { font-size: 14px; }
+    .empty-icon { font-size: 3rem; opacity: 0.4; }
 
-    /* HIVE WORKSPACE */
+    .empty-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .empty-desc {
+      font-size: 0.875rem;
+      color: var(--text2);
+      max-width: 360px;
+      line-height: 1.6;
+    }
+
+    .sidebar-empty {
+      padding: 28px 16px;
+      text-align: center;
+      color: var(--text3);
+      font-size: 0.8125rem;
+      line-height: 1.6;
+    }
+
+    .sidebar-empty-icon {
+      font-size: 1.75rem;
+      margin-bottom: 8px;
+      opacity: 0.4;
+    }
+
+    /* ── HIVE WORKSPACE ── */
     .hive-workspace {
       flex: 1;
       display: flex;
@@ -240,7 +349,7 @@
     }
 
     .hive-header {
-      padding: 18px 24px 16px;
+      padding: 18px 24px 14px;
       border-bottom: 1px solid var(--border);
       background: var(--surface);
       flex-shrink: 0;
@@ -250,19 +359,19 @@
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
     }
 
     .hive-name {
-      font-size: 18px;
+      font-size: 1.125rem;
       font-weight: 700;
       color: var(--text);
       letter-spacing: -0.01em;
     }
 
-    .hive-header-desc {
-      font-size: 13px;
-      color: var(--text-muted);
+    .hive-desc {
+      font-size: 0.8125rem;
+      color: var(--text2);
       margin-bottom: 8px;
     }
 
@@ -274,29 +383,28 @@
 
     .hive-id {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 11px;
-      color: var(--text-dim);
+      font-size: 0.6875rem;
+      color: var(--text3);
       background: var(--surface2);
       padding: 3px 8px;
-      border-radius: var(--radius-sm);
+      border-radius: 5px;
       border: 1px solid var(--border);
     }
 
-    .btn-copy {
+    .btn-copy-id {
       background: transparent;
       border: 1px solid var(--border);
-      color: var(--text-muted);
-      border-radius: var(--radius-sm);
+      color: var(--text3);
+      border-radius: 5px;
       padding: 3px 8px;
-      font-size: 11px;
+      font-size: 0.6875rem;
       cursor: pointer;
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font);
       transition: border-color 0.15s, color 0.15s;
     }
+    .btn-copy-id:hover { border-color: var(--accent); color: var(--accent); }
 
-    .btn-copy:hover { border-color: var(--accent); color: var(--accent); }
-
-    /* TABS */
+    /* ── TABS ── */
     .tabs-bar {
       display: flex;
       border-bottom: 1px solid var(--border);
@@ -309,12 +417,12 @@
       background: transparent;
       border: none;
       border-bottom: 2px solid transparent;
-      color: var(--text-muted);
-      font-size: 13px;
+      color: var(--text2);
+      font-size: 0.875rem;
       font-weight: 500;
       padding: 10px 14px;
       cursor: pointer;
-      font-family: 'Inter', sans-serif;
+      font-family: var(--font);
       transition: color 0.15s, border-color 0.15s;
       margin-bottom: -1px;
     }
@@ -330,106 +438,73 @@
 
     .tab-content::-webkit-scrollbar { width: 4px; }
     .tab-content::-webkit-scrollbar-track { background: transparent; }
-    .tab-content::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+    .tab-content::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
 
     .tab-pane { display: none; }
     .tab-pane.active { display: block; }
 
-    /* INPUTS */
+    /* ── INPUTS ── */
     .input {
-      background: var(--surface);
+      background: var(--surface2);
       border: 1px solid var(--border);
       color: var(--text);
-      border-radius: var(--radius-sm);
-      padding: 8px 12px;
-      font-size: 13px;
-      font-family: 'Inter', sans-serif;
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-size: 0.875rem;
+      font-family: var(--font);
       outline: none;
       transition: border-color 0.15s;
       width: 100%;
     }
 
-    .input:focus { border-color: var(--accent); }
-    .input::placeholder { color: var(--text-dim); }
+    .input:focus { border-color: var(--accent-border); }
+    .input::placeholder { color: var(--text3); }
 
     textarea.input { resize: vertical; min-height: 72px; }
 
     select.input {
       appearance: none;
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%2371717a' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2 4l4 4 4-4' stroke='%23888' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
       background-repeat: no-repeat;
       background-position: right 10px center;
       padding-right: 28px;
       cursor: pointer;
     }
 
-    /* BUTTONS */
-    .btn {
-      background: var(--accent);
-      color: #000;
-      border: none;
-      border-radius: var(--radius-sm);
-      padding: 8px 16px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-      font-family: 'Inter', sans-serif;
-      white-space: nowrap;
-      transition: opacity 0.15s;
-    }
-
-    .btn:hover { opacity: 0.85; }
-    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
-
-    .btn-ghost {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-    }
-
-    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-dim); }
-
-    /* SEARCH */
-    .search-row {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-
-    /* SECTION LABEL */
+    /* ── SECTION LABEL ── */
     .section-label {
-      font-size: 11px;
+      font-size: 0.6875rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: var(--text-dim);
+      letter-spacing: 0.08em;
+      color: var(--text3);
       margin-bottom: 10px;
     }
 
-    /* MEMORY LIST */
-    .memory-list { margin-bottom: 24px; }
+    /* ── MEMORY CARDS ── */
+    .memory-list { margin-bottom: 20px; }
 
-    .memory-row {
+    .memory-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: 8px;
       padding: 12px 14px;
       margin-bottom: 6px;
       transition: border-color 0.15s;
     }
 
-    .memory-row:hover { border-color: rgba(0,212,255,0.4); }
+    .memory-card:hover { border-color: var(--accent-border); }
 
     .memory-key {
       font-family: 'JetBrains Mono', monospace;
-      font-size: 12px;
+      font-size: 0.75rem;
       color: var(--accent);
       margin-bottom: 4px;
       font-weight: 500;
     }
 
     .memory-value {
-      font-size: 13px;
+      font-size: 0.875rem;
       color: var(--text);
       margin-bottom: 6px;
       white-space: pre-wrap;
@@ -437,8 +512,8 @@
     }
 
     .memory-meta {
-      font-size: 11px;
-      color: var(--text-dim);
+      font-size: 0.6875rem;
+      color: var(--text3);
       display: flex;
       gap: 10px;
       flex-wrap: wrap;
@@ -448,17 +523,18 @@
     .memory-score {
       background: var(--accent-dim);
       color: var(--accent);
+      border: 1px solid var(--accent-border);
       padding: 1px 6px;
       border-radius: 100px;
-      font-size: 10px;
+      font-size: 0.625rem;
       font-weight: 600;
     }
 
-    /* ADD MEMORY */
-    .add-memory-form {
+    /* ── STORE MEMORY FORM ── */
+    .store-form {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: 8px;
       padding: 16px;
       margin-top: 8px;
     }
@@ -466,13 +542,13 @@
     .form-row { margin-bottom: 10px; }
 
     .form-label {
-      font-size: 11px;
+      font-size: 0.6875rem;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--text2);
       margin-bottom: 5px;
       display: block;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      letter-spacing: 0.06em;
     }
 
     .form-actions {
@@ -481,11 +557,17 @@
       justify-content: flex-end;
     }
 
-    /* MEMBERS */
+    .search-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    /* ── MEMBERS ── */
     .member-row {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: 8px;
       padding: 12px 14px;
       margin-bottom: 6px;
       display: flex;
@@ -494,15 +576,15 @@
     }
 
     .member-avatar {
-      width: 32px;
-      height: 32px;
+      width: 34px;
+      height: 34px;
       border-radius: 50%;
       background: var(--accent-dim);
-      border: 1px solid rgba(0,212,255,0.3);
+      border: 1px solid var(--accent-border);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 12px;
+      font-size: 0.75rem;
       font-weight: 700;
       color: var(--accent);
       flex-shrink: 0;
@@ -510,59 +592,60 @@
     }
 
     .member-info { flex: 1; min-width: 0; }
-    .member-name { font-size: 13px; font-weight: 500; color: var(--text); }
-    .member-key { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--text-dim); }
+    .member-name { font-size: 0.875rem; font-weight: 500; color: var(--text); }
+    .member-key { font-family: 'JetBrains Mono', monospace; font-size: 0.6875rem; color: var(--text3); margin-top: 2px; }
 
     .invite-box {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: 8px;
       padding: 16px;
       margin-top: 16px;
     }
 
     .invite-title {
-      font-size: 13px;
+      font-size: 0.875rem;
       font-weight: 600;
       color: var(--text);
       margin-bottom: 12px;
     }
 
     .share-info {
-      background: var(--accent-dim2);
-      border: 1px solid rgba(0,212,255,0.15);
-      border-radius: var(--radius-sm);
+      background: var(--accent-dim);
+      border: 1px solid var(--accent-border);
+      border-radius: 7px;
       padding: 10px 12px;
       margin-top: 12px;
-      font-size: 12px;
-      color: var(--text-muted);
+      font-size: 0.8125rem;
+      color: var(--text2);
       line-height: 1.5;
     }
 
     .share-info code {
       font-family: 'JetBrains Mono', monospace;
       color: var(--accent);
-      font-size: 11px;
+      font-size: 0.75rem;
     }
 
-    /* DREAM TAB */
-    .dream-section {
+    /* ── DREAM TAB ── */
+    .dream-card {
       background: var(--surface);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: 8px;
       padding: 20px;
+      margin-bottom: 16px;
     }
 
-    .dream-title {
-      font-size: 15px;
+    .dream-card-title {
+      font-size: 0.9375rem;
       font-weight: 700;
       color: var(--text);
       margin-bottom: 6px;
     }
 
-    .dream-desc {
-      font-size: 13px;
-      color: var(--text-muted);
+    .dream-card-desc {
+      font-size: 0.875rem;
+      color: var(--text2);
       margin-bottom: 16px;
       line-height: 1.6;
     }
@@ -582,12 +665,12 @@
       padding: 8px 10px;
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
+      border-radius: 7px;
       transition: border-color 0.15s, background 0.15s;
       user-select: none;
     }
 
-    .strategy-check:hover { border-color: var(--accent); background: var(--accent-dim2); }
+    .strategy-check:hover { border-color: var(--accent-border); background: var(--accent-dim); }
 
     .strategy-check input[type="checkbox"] {
       accent-color: var(--accent);
@@ -597,75 +680,75 @@
       flex-shrink: 0;
     }
 
-    .strategy-check span { font-size: 12px; color: var(--text); font-weight: 500; }
+    .strategy-check span { font-size: 0.8125rem; color: var(--text); font-weight: 500; }
 
     .dream-result {
       background: var(--surface2);
       border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border-radius: 8px;
       padding: 14px;
       margin-top: 16px;
     }
 
     .dream-result-label {
-      font-size: 11px;
+      font-size: 0.6875rem;
       font-weight: 600;
       text-transform: uppercase;
-      letter-spacing: 0.06em;
+      letter-spacing: 0.08em;
       color: var(--accent);
       margin-bottom: 8px;
     }
 
     .dream-result-text {
-      font-size: 13px;
+      font-size: 0.875rem;
       color: var(--text);
       line-height: 1.7;
       white-space: pre-wrap;
     }
 
     .coming-soon-notice {
-      background: rgba(234,179,8,0.07);
-      border: 1px solid rgba(234,179,8,0.22);
-      border-radius: var(--radius);
+      background: rgba(245,158,11,0.07);
+      border: 1px solid rgba(245,158,11,0.22);
+      border-radius: 8px;
       padding: 14px 16px;
       margin-top: 16px;
-      font-size: 13px;
+      font-size: 0.875rem;
       color: var(--yellow);
       line-height: 1.6;
     }
 
-    /* MODAL */
+    /* ── MODAL ── */
     .modal-overlay {
       position: fixed;
       inset: 0;
       background: rgba(0,0,0,0.7);
       backdrop-filter: blur(4px);
-      z-index: 100;
+      z-index: 200;
       display: flex;
       align-items: center;
       justify-content: center;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.2s;
+      transition: opacity 0.18s;
     }
 
     .modal-overlay.open { opacity: 1; pointer-events: all; }
 
     .modal {
       background: var(--surface);
-      border: 1px solid var(--border);
+      border: 1px solid var(--border2);
       border-radius: 12px;
       padding: 24px;
       width: 440px;
       max-width: calc(100vw - 32px);
       transform: translateY(12px) scale(0.98);
-      transition: transform 0.2s;
+      transition: transform 0.18s;
     }
 
     .modal-overlay.open .modal { transform: translateY(0) scale(1); }
 
     .modal-title {
-      font-size: 16px;
+      font-size: 1rem;
       font-weight: 700;
       color: var(--text);
       margin-bottom: 18px;
@@ -678,7 +761,7 @@
       margin-top: 18px;
     }
 
-    /* TOAST */
+    /* ── TOAST ── */
     .toast-container {
       position: fixed;
       bottom: 20px;
@@ -692,10 +775,10 @@
 
     .toast {
       background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+      border: 1px solid var(--border2);
+      border-radius: 8px;
       padding: 10px 14px;
-      font-size: 13px;
+      font-size: 0.875rem;
       color: var(--text);
       max-width: 300px;
       pointer-events: all;
@@ -707,17 +790,10 @@
     .toast.error   { border-left: 3px solid var(--red); }
     .toast.info    { border-left: 3px solid var(--accent); }
 
-    @keyframes toastIn {
-      from { opacity: 0; transform: translateX(20px); }
-      to   { opacity: 1; transform: translateX(0); }
-    }
+    @keyframes toastIn  { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:translateX(0); } }
+    @keyframes toastOut { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(20px); } }
 
-    @keyframes toastOut {
-      from { opacity: 1; transform: translateX(0); }
-      to   { opacity: 0; transform: translateX(20px); }
-    }
-
-    /* SPINNER */
+    /* ── SPINNER ── */
     .spinner {
       display: inline-block;
       width: 14px;
@@ -735,10 +811,10 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 40px;
-      color: var(--text-muted);
+      padding: 36px;
+      color: var(--text2);
       gap: 10px;
-      font-size: 13px;
+      font-size: 0.875rem;
     }
 
     .divider { height: 1px; background: var(--border); margin: 16px 0; }
@@ -746,174 +822,280 @@
     .no-results {
       text-align: center;
       padding: 24px;
-      color: var(--text-dim);
-      font-size: 13px;
+      color: var(--text3);
+      font-size: 0.875rem;
     }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      /* Nav */
+      .app-nav { padding: 0 16px; }
+      .nav-center { display: none; }
+      .nav-home { display: none; }
+
+      /* Buttons never overflow */
+      .btn { white-space: nowrap; max-width: 100%; }
+
+      /* No horizontal scroll */
+      body { overflow-x: hidden; }
+      * { max-width: 100%; }
+
+      .sidebar-toggle { display: block; }
+
+      /* Hive layout */
+      .hive-layout { flex-direction: column; }
+      .hive-sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--border); }
+
+      .sidebar {
+        position: fixed;
+        top: var(--nav-h);
+        left: 0;
+        bottom: 0;
+        z-index: 80;
+        transform: translateX(-100%);
+        width: 280px;
+        padding-top: 38px; /* banner */
+      }
+
+      .sidebar.open { transform: translateX(0); }
+
+      .layout { margin-top: 38px; }
+
+      .tab-btn { padding: 10px 10px; font-size: 0.8rem; }
+      .tab-content { padding: 16px; }
+      .hive-header { padding: 14px 16px 12px; }
+
+      /* Profile card */
+      .profile-card { padding: 16px; }
+      .prefs-grid { grid-template-columns: 1fr 1fr; }
+      .key-display { font-size: 0.7rem; }
+    }
+
+    @media (max-width: 520px) {
+      .nav-home { display: none; }
+      .search-row { flex-direction: column; }
+      .btn-sm, .btn { min-height: 44px; }
+      .modal { padding: 18px; }
+    }
+
+    @media (max-width: 480px) {
+      /* Nav: emojis only */
+      .nav-center a .nav-text { display: none; }
+      .nav-center a { padding: 6px; font-size: 1rem; }
+
+      .prefs-grid { grid-template-columns: 1fr; }
+    }
+
+    /* ── COLLECTIVE PROMO ── */
+    .collective-promo {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      background: linear-gradient(135deg, rgba(0,212,255,0.06), rgba(245,158,11,0.06));
+      border: 1px solid rgba(0,212,255,0.12);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .cp-icon { font-size: 2rem; flex-shrink: 0; }
+    .cp-text h4 { font-size: 1rem; font-weight: 600; margin-bottom: 6px; }
+    .cp-text p { font-size: 0.875rem; color: rgba(240,240,240,0.6); line-height: 1.5; }
   </style>
 </head>
 <body>
 
 <!-- NAV -->
-<nav>
-  <a href="/" class="nav-brand">slopshop <span>/</span> hive</a>
-  <div class="nav-links">
-    <a href="/memory-hub" class="nav-link">Memory</a>
-    <a href="/dream-studio" class="nav-link">Dreams</a>
-    <a href="/brain" class="nav-link">Dashboard</a>
-    <a href="/profile" class="nav-link">Profile</a>
+<nav class="app-nav">
+  <a href="/brain" class="nav-logo">Slopshop</a>
+  <div class="nav-center">
+    <a href="/memory-hub" class="nav-link" id="nl-memory">🧠 Memory</a>
+    <a href="/dream-studio" class="nav-link" id="nl-dreams">💤 Dreams</a>
+    <a href="/team-hives" class="nav-link active" id="nl-hive">🐝 Hive</a>
+  </div>
+  <div class="nav-right">
+    <a href="/profile" class="nav-user" id="navEmail">Account</a>
+    <a href="/" class="nav-home">← Home</a>
   </div>
 </nav>
 
+<!-- JOURNEY BAR -->
+<div class="journey-banner">
+  <a href="/memory-hub" style="color:inherit;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='rgba(240,240,240,0.7)'" onmouseout="this.style.color='inherit'">🧠 Memory</a>
+  <span class="sep">→</span>
+  <a href="/dream-studio" style="color:inherit;text-decoration:none;transition:color 0.15s;" onmouseover="this.style.color='rgba(240,240,240,0.7)'" onmouseout="this.style.color='inherit'">💤 Dreams</a>
+  <span class="sep">→</span>
+  <span class="step-active">🐝 Hive</span>
+</div>
+
+<!-- SIDEBAR TOGGLE (mobile) -->
+<button class="sidebar-toggle" onclick="toggleSidebar()">☰ Hives</button>
+
 <div class="app">
+  <div class="layout">
 
-  <!-- LEFT PANEL: HIVE LIST -->
-  <div class="left-panel">
-    <div class="panel-header">
-      <span class="panel-title">Your Hives</span>
-      <button class="btn-create" onclick="openCreateModal()">+ Create Hive</button>
-    </div>
-    <div class="hive-list" id="hiveList">
-      <div class="loading-state"><span class="spinner"></span> Loading hives…</div>
-    </div>
+    <!-- LEFT SIDEBAR -->
+    <aside class="sidebar" id="sidebar">
+      <div class="sidebar-header">
+        <span class="sidebar-title">Hive Spaces</span>
+        <button class="btn btn-primary btn-sm" onclick="openCreateModal()">+ Create</button>
+      </div>
+      <div class="hive-list" id="hiveList">
+        <div class="loading-state"><span class="spinner"></span></div>
+      </div>
+    </aside>
+
+    <!-- MAIN PANEL -->
+    <main class="main-panel" id="mainPanel">
+
+      <!-- EMPTY WORKSPACE -->
+      <div class="empty-full" id="emptyWorkspace">
+        <div class="empty-icon">🐝</div>
+        <div class="empty-title">Select a hive to get started</div>
+        <div class="empty-desc">Choose a hive from the sidebar, or create your first shared memory space.</div>
+        <button class="btn btn-primary" onclick="openCreateModal()">Create Hive →</button>
+      </div>
+
+      <!-- HIVE WORKSPACE -->
+      <div class="hive-workspace" id="hiveWorkspace" style="display:none;">
+
+        <!-- HIVE HEADER -->
+        <div class="hive-header">
+          <div class="hive-header-top">
+            <span class="hive-name" id="wsHiveName">—</span>
+            <span class="badge" id="wsRoleBadge"></span>
+          </div>
+          <div class="hive-desc" id="wsHiveDesc"></div>
+          <div class="hive-id-row">
+            <span class="hive-id" id="wsHiveId">—</span>
+            <button class="btn-copy-id" onclick="copySpaceId()">Copy ID</button>
+          </div>
+        </div>
+
+        <!-- TABS -->
+        <div class="tabs-bar">
+          <button class="tab-btn active" onclick="switchTab('members', this)">Members</button>
+          <button class="tab-btn"        onclick="switchTab('memory',  this)">Shared Memory</button>
+          <button class="tab-btn"        onclick="switchTab('dream',   this)">Collective Dream</button>
+        </div>
+
+        <div class="tab-content">
+
+          <!-- TAB: MEMBERS -->
+          <div class="tab-pane active" id="tab-members">
+            <div class="section-label">Members</div>
+            <div id="memberList">
+              <div class="loading-state"><span class="spinner"></span></div>
+            </div>
+
+            <!-- OWNER: invite form -->
+            <div class="invite-box" id="inviteBox" style="display:none;">
+              <div class="invite-title">+ Invite by API Key</div>
+              <div class="form-row">
+                <label class="form-label" for="inviteKey">Their Slopshop API key</label>
+                <input class="input" id="inviteKey" type="text" placeholder="sk-…" />
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary btn-sm" onclick="inviteMember()">Invite</button>
+              </div>
+              <div class="share-info">
+                Share your Hive ID with teammates: <code id="shareSpaceId">—</code>
+              </div>
+            </div>
+
+            <!-- NON-OWNER: share info -->
+            <div class="share-info" id="shareInfoViewer" style="display:none;margin-top:16px;">
+              Your Hive ID: <code id="shareSpaceIdViewer">—</code>
+            </div>
+          </div>
+
+          <!-- TAB: SHARED MEMORY -->
+          <div class="tab-pane" id="tab-memory">
+            <div class="search-row">
+              <input class="input" id="memSearchInput" type="text"
+                     placeholder="Search memories… (Ctrl+K)" oninput="debounceSearch()" />
+              <button class="btn btn-secondary btn-sm" onclick="searchMemories()">Search</button>
+            </div>
+
+            <div class="section-label">Results</div>
+            <div class="memory-list" id="memoryList">
+              <div class="loading-state"><span class="spinner"></span></div>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="section-label">Store to Hive</div>
+            <div class="store-form">
+              <div class="form-row">
+                <label class="form-label" for="memKey">Key</label>
+                <input class="input" id="memKey" type="text"
+                       placeholder="e.g. project/roadmap"
+                       style="font-family:'JetBrains Mono',monospace;font-size:0.8125rem;" />
+              </div>
+              <div class="form-row">
+                <label class="form-label" for="memValue">Value</label>
+                <textarea class="input" id="memValue" placeholder="Enter value…"></textarea>
+              </div>
+              <div class="form-actions">
+                <button class="btn btn-primary btn-sm" onclick="storeMemory()">Store Memory</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB: COLLECTIVE DREAM -->
+          <div class="tab-pane" id="tab-dream">
+
+            <div class="collective-promo">
+              <div class="cp-icon">💤🐝</div>
+              <div class="cp-text">
+                <h4>Collective Dream</h4>
+                <p>Run Dream Engine synthesis across your entire team's shared memory. Discover patterns that no individual would find alone.</p>
+              </div>
+            </div>
+
+            <div class="dream-card">
+              <div class="dream-card-title">Collective Dream</div>
+              <div class="dream-card-desc">
+                Run a Dream Engine synthesis across ALL team members' shared memory.
+                Surface collective patterns and intelligence from your entire hive.
+              </div>
+
+              <div class="section-label">Strategies</div>
+              <div class="strategy-grid">
+                <label class="strategy-check">
+                  <input type="checkbox" value="synthesize" checked />
+                  <span>Synthesize</span>
+                </label>
+                <label class="strategy-check">
+                  <input type="checkbox" value="pattern_extract" checked />
+                  <span>Pattern Extract</span>
+                </label>
+                <label class="strategy-check">
+                  <input type="checkbox" value="insight_generate" checked />
+                  <span>Insight Generate</span>
+                </label>
+              </div>
+
+              <button class="btn btn-primary" id="dreamBtn" onclick="runCollectiveDream()">
+                Run Collective Dream →
+              </button>
+
+              <div id="dreamResult" style="display:none;"></div>
+              <div class="coming-soon-notice" id="dreamComingSoon" style="display:none;">
+                Collective Dream processes your entire team's shared memories overnight.
+                Coming soon for this hive.
+              </div>
+            </div>
+
+            <!-- Past collective dreams placeholder -->
+            <div id="pastDreams"></div>
+          </div>
+
+        </div><!-- /tab-content -->
+      </div><!-- /hive-workspace -->
+
+    </main>
   </div>
-
-  <!-- RIGHT PANEL: WORKSPACE -->
-  <div class="right-panel" id="rightPanel">
-
-    <!-- EMPTY STATE -->
-    <div class="empty-workspace" id="emptyWorkspace">
-      <div class="empty-workspace-icon">🐝</div>
-      <div class="empty-workspace-text">Select a hive to get started</div>
-    </div>
-
-    <!-- ACTIVE HIVE WORKSPACE -->
-    <div class="hive-workspace" id="hiveWorkspace" style="display:none;">
-
-      <!-- HIVE HEADER -->
-      <div class="hive-header">
-        <div class="hive-header-top">
-          <span class="hive-name" id="wsHiveName">—</span>
-          <span class="badge" id="wsRoleBadge"></span>
-        </div>
-        <div class="hive-header-desc" id="wsHiveDesc"></div>
-        <div class="hive-id-row">
-          <span class="hive-id" id="wsHiveId">—</span>
-          <button class="btn-copy" onclick="copySpaceId()">Copy ID</button>
-        </div>
-      </div>
-
-      <!-- TABS -->
-      <div class="tabs-bar">
-        <button class="tab-btn active" onclick="switchTab('memories', this)">Memories</button>
-        <button class="tab-btn"        onclick="switchTab('members',  this)">Members</button>
-        <button class="tab-btn"        onclick="switchTab('dream',    this)">Dream</button>
-      </div>
-
-      <div class="tab-content">
-
-        <!-- TAB: MEMORIES -->
-        <div class="tab-pane active" id="tab-memories">
-          <div class="search-row">
-            <input class="input" id="memSearchInput" type="text"
-                   placeholder="Search memories… (Ctrl+K)" oninput="debounceSearch()" />
-            <button class="btn" onclick="searchMemories()">Search</button>
-          </div>
-
-          <div class="section-label">Results</div>
-          <div class="memory-list" id="memoryList">
-            <div class="loading-state"><span class="spinner"></span> Loading…</div>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="section-label">Add Memory</div>
-          <div class="add-memory-form">
-            <div class="form-row">
-              <label class="form-label" for="memKey">Key</label>
-              <input class="input" id="memKey" type="text"
-                     placeholder="e.g. project/roadmap"
-                     style="font-family:'JetBrains Mono',monospace;font-size:12px;" />
-            </div>
-            <div class="form-row">
-              <label class="form-label" for="memValue">Value</label>
-              <textarea class="input" id="memValue" placeholder="Enter value…"></textarea>
-            </div>
-            <div class="form-actions">
-              <button class="btn" onclick="storeMemory()">Store</button>
-            </div>
-          </div>
-        </div>
-
-        <!-- TAB: MEMBERS -->
-        <div class="tab-pane" id="tab-members">
-          <div class="section-label">Members</div>
-          <div id="memberList">
-            <div class="loading-state"><span class="spinner"></span></div>
-          </div>
-
-          <!-- OWNER: invite box -->
-          <div class="invite-box" id="inviteBox" style="display:none;">
-            <div class="invite-title">Invite Member</div>
-            <div class="form-row">
-              <label class="form-label" for="inviteKey">Enter their Slopshop API key</label>
-              <input class="input" id="inviteKey" type="text" placeholder="sk-…" />
-            </div>
-            <div class="form-actions">
-              <button class="btn" onclick="inviteMember()">Invite</button>
-            </div>
-            <div class="share-info">
-              Share your Hive ID with teammates: <code id="shareSpaceId">—</code>
-            </div>
-          </div>
-
-          <!-- NON-OWNER: share info -->
-          <div class="share-info" id="shareInfoViewer" style="display:none;margin-top:12px;">
-            Share your Hive ID with teammates: <code id="shareSpaceIdViewer">—</code>
-          </div>
-        </div>
-
-        <!-- TAB: DREAM -->
-        <div class="tab-pane" id="tab-dream">
-          <div class="dream-section">
-            <div class="dream-title">Collective Dream</div>
-            <div class="dream-desc">
-              Synthesize your entire team's shared memories into collective insights.
-              Surface patterns and intelligence across all team knowledge.
-            </div>
-
-            <div class="section-label">Strategies</div>
-            <div class="strategy-grid">
-              <label class="strategy-check">
-                <input type="checkbox" value="synthesize" checked />
-                <span>Synthesize</span>
-              </label>
-              <label class="strategy-check">
-                <input type="checkbox" value="pattern_extract" checked />
-                <span>Pattern Extract</span>
-              </label>
-              <label class="strategy-check">
-                <input type="checkbox" value="insight_generate" checked />
-                <span>Insight Generate</span>
-              </label>
-            </div>
-
-            <button class="btn" id="dreamBtn" onclick="runCollectiveDream()">
-              Run Collective Dream
-            </button>
-
-            <div id="dreamResult" style="display:none;"></div>
-            <div class="coming-soon-notice" id="dreamComingSoon" style="display:none;">
-              Collective Dream processes your entire team's shared memories overnight.
-              Coming soon for this hive.
-            </div>
-          </div>
-        </div>
-
-      </div><!-- /tab-content -->
-    </div><!-- /hive-workspace -->
-
-  </div><!-- /right-panel -->
-</div><!-- /app -->
+</div>
 
 <!-- CREATE HIVE MODAL -->
 <div class="modal-overlay" id="createModal" onclick="handleModalOverlayClick(event)">
@@ -940,51 +1122,47 @@
 
     <div class="modal-actions">
       <button class="btn btn-ghost" onclick="closeCreateModal()">Cancel</button>
-      <button class="btn" id="createHiveBtn" onclick="createHive()">Create Hive</button>
+      <button class="btn btn-primary" id="createHiveBtn" onclick="createHive()">Create Hive</button>
     </div>
   </div>
 </div>
 
-<!-- TOAST CONTAINER -->
+<!-- TOAST -->
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
   // ─── STATE ───────────────────────────────────────────────────────────────────
-  let currentKey    = null;
-  let hives         = [];
-  let activeHive    = null;
-  let searchTimer   = null;
+  let currentKey  = null;
+  let hives       = [];
+  let activeHive  = null;
+  let searchTimer = null;
 
   // ─── AUTH + BOOT ─────────────────────────────────────────────────────────────
   async function init() {
     try {
       const r = await fetch('/v1/auth/session', { credentials: 'include' });
-      if (!r.ok) { window.location.href = '/'; return; }
+      if (!r.ok) { window.location.replace('/'); return; }
       const session = await r.json();
       currentKey = session.api_key;
+      const email = session.user?.email || session.email || '';
+      if (email) document.getElementById('navEmail').textContent = email;
       await loadHives();
     } catch (e) {
       showToast('Authentication failed. Redirecting…', 'error');
-      setTimeout(() => { window.location.href = '/'; }, 1500);
+      setTimeout(() => window.location.replace('/'), 1500);
     }
   }
 
   function headers() {
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${currentKey}`
-    };
+    return { 'Content-Type': 'application/json', 'Authorization': `Bearer ${currentKey}` };
   }
 
-  // ─── LOAD HIVE LIST ───────────────────────────────────────────────────────────
+  // ─── LOAD HIVES ──────────────────────────────────────────────────────────────
   async function loadHives() {
     const list = document.getElementById('hiveList');
-    list.innerHTML = '<div class="loading-state"><span class="spinner"></span> Loading hives…</div>';
+    list.innerHTML = '<div class="loading-state"><span class="spinner"></span></div>';
     try {
-      const r = await fetch('/v1/memory/share/list', {
-        credentials: 'include',
-        headers: headers()
-      });
+      const r = await fetch('/v1/memory/share/list', { credentials: 'include', headers: headers() });
       if (!r.ok) throw new Error(`HTTP ${r.status}`);
       const data = await r.json();
       if (!data.ok) throw new Error(data.error || 'Failed to load hives');
@@ -992,8 +1170,8 @@
       renderHiveList();
       if (hives.length > 0) openHive(hives[0]);
     } catch (e) {
-      list.innerHTML = `<div class="empty-state">
-        <div class="empty-state-icon">⚠️</div>
+      list.innerHTML = `<div class="sidebar-empty">
+        <div class="sidebar-empty-icon">⚠️</div>
         ${esc(e.message)}
       </div>`;
     }
@@ -1002,166 +1180,79 @@
   function renderHiveList() {
     const list = document.getElementById('hiveList');
     if (hives.length === 0) {
-      list.innerHTML = `<div class="empty-state">
-        <div class="empty-state-icon">🐝</div>
+      list.innerHTML = `<div class="sidebar-empty">
+        <div class="sidebar-empty-icon">🐝</div>
         No hives yet — create your first shared memory space
       </div>`;
       return;
     }
-    list.innerHTML = hives.map(hiveCardHTML).join('');
+    list.innerHTML = hives.map(hiveItemHTML).join('');
   }
 
-  function hiveCardHTML(h) {
-    const role       = (h.role || 'viewer').toLowerCase();
-    const badgeCls   = role === 'owner' ? 'badge-owner' : role === 'editor' ? 'badge-editor' : 'badge-viewer';
-    const desc       = (h.description || 'No description').substring(0, 60);
-    const isActive   = activeHive && activeHive.id === h.id ? 'active' : '';
-    const timeStr    = h.joined ? relTime(h.joined) : '';
-    return `<div class="hive-card ${isActive}" id="hcard-${h.id}" onclick='openHive(${JSON.stringify(h)})'>
-      <div class="hive-card-name">${esc(h.name)}</div>
-      <div class="hive-card-desc">${esc(desc)}${(h.description||'').length > 60 ? '…' : ''}</div>
-      <div class="hive-card-meta">
+  function hiveItemHTML(h) {
+    const role    = (h.role || 'viewer').toLowerCase();
+    const badgeCls = role === 'owner' ? 'badge-owner' : role === 'editor' ? 'badge-editor' : 'badge-viewer';
+    const isActive = activeHive && activeHive.id === h.id ? 'active' : '';
+    return `<div class="hive-item ${isActive}" id="hcard-${h.id}" onclick='openHive(${JSON.stringify(h)})'>
+      <div class="hive-item-name">🐝 ${esc(h.name)}</div>
+      <div class="hive-item-meta">
         <span class="badge ${badgeCls}">${role}</span>
-        ${timeStr ? `<span class="hive-meta-text">joined ${timeStr}</span>` : ''}
+        ${h.member_count != null ? `<span>${h.member_count} members</span>` : ''}
       </div>
     </div>`;
   }
 
-  // ─── OPEN HIVE ────────────────────────────────────────────────────────────────
+  // ─── OPEN HIVE ───────────────────────────────────────────────────────────────
   async function openHive(hive) {
     activeHive = hive;
 
-    // update sidebar active state
-    document.querySelectorAll('.hive-card').forEach(c => c.classList.remove('active'));
+    document.querySelectorAll('.hive-item').forEach(c => c.classList.remove('active'));
     const card = document.getElementById(`hcard-${hive.id}`);
     if (card) card.classList.add('active');
 
-    // show workspace
     document.getElementById('emptyWorkspace').style.display = 'none';
     document.getElementById('hiveWorkspace').style.display = 'flex';
 
-    // fill header
     document.getElementById('wsHiveName').textContent = hive.name;
     document.getElementById('wsHiveDesc').textContent = hive.description || '';
     document.getElementById('wsHiveId').textContent   = hive.id;
     document.getElementById('shareSpaceId').textContent       = hive.id;
     document.getElementById('shareSpaceIdViewer').textContent = hive.id;
 
-    const role    = (hive.role || 'viewer').toLowerCase();
-    const badge   = document.getElementById('wsRoleBadge');
+    const role  = (hive.role || 'viewer').toLowerCase();
+    const badge = document.getElementById('wsRoleBadge');
     badge.textContent = role;
     badge.className   = 'badge ' + (role === 'owner' ? 'badge-owner' : role === 'editor' ? 'badge-editor' : 'badge-viewer');
 
     const isOwner = role === 'owner';
-    document.getElementById('inviteBox').style.display        = isOwner ? 'block' : 'none';
-    document.getElementById('shareInfoViewer').style.display  = isOwner ? 'none'  : 'block';
+    document.getElementById('inviteBox').style.display       = isOwner ? 'block' : 'none';
+    document.getElementById('shareInfoViewer').style.display = isOwner ? 'none'  : 'block';
 
-    // reset to memories tab
+    // reset to Members tab
     document.querySelectorAll('.tab-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
     document.querySelectorAll('.tab-pane').forEach((p, i) => p.classList.toggle('active', i === 0));
 
-    // reset dream state
     document.getElementById('dreamResult').style.display     = 'none';
     document.getElementById('dreamComingSoon').style.display = 'none';
     document.getElementById('memSearchInput').value = '';
 
-    await searchMemories();
     loadMembers();
+
+    // close sidebar on mobile after selection
+    if (window.innerWidth < 768) closeSidebar();
   }
 
-  // ─── MEMORIES ─────────────────────────────────────────────────────────────────
-  function debounceSearch() {
-    clearTimeout(searchTimer);
-    searchTimer = setTimeout(searchMemories, 400);
-  }
-
-  async function searchMemories() {
-    if (!activeHive) return;
-    const query = document.getElementById('memSearchInput').value.trim();
-    const list  = document.getElementById('memoryList');
-    list.innerHTML = '<div class="loading-state"><span class="spinner"></span></div>';
-    try {
-      const r = await fetch('/v1/memory/share/search', {
-        method: 'POST',
-        credentials: 'include',
-        headers: headers(),
-        body: JSON.stringify({ space_id: activeHive.id, query, limit: 20 })
-      });
-      const data = await r.json();
-      if (!data.ok) throw new Error(data.error || 'Search failed');
-      renderMemories(data.results || []);
-    } catch (e) {
-      list.innerHTML = `<div class="no-results">Could not load memories: ${esc(e.message)}</div>`;
-    }
-  }
-
-  function renderMemories(results) {
-    const list = document.getElementById('memoryList');
-    if (results.length === 0) {
-      list.innerHTML = '<div class="no-results">No memories found</div>';
-      return;
-    }
-    list.innerHTML = results.map(m => {
-      const val      = (m.value || '');
-      const preview  = val.substring(0, 280) + (val.length > 280 ? '…' : '');
-      const addedBy  = m.written_by ? `by ${m.written_by}` : '';
-      const ts       = m.updated ? relTime(m.updated) : '';
-      const score    = m.score != null
-        ? `<span class="memory-score">${Math.round(m.score * 100)}%</span>`
-        : '';
-      return `<div class="memory-row">
-        <div class="memory-key">${esc(m.key || '')}</div>
-        <div class="memory-value">${esc(preview)}</div>
-        <div class="memory-meta">
-          ${score}
-          ${addedBy ? esc(addedBy) : ''}
-          ${ts ? `<span>${ts}</span>` : ''}
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  async function storeMemory() {
-    if (!activeHive) return;
-    const key   = document.getElementById('memKey').value.trim();
-    const value = document.getElementById('memValue').value.trim();
-    if (!key || !value) { showToast('Key and value are required', 'error'); return; }
-    try {
-      const r = await fetch('/v1/memory/share/set', {
-        method: 'POST',
-        credentials: 'include',
-        headers: headers(),
-        body: JSON.stringify({ space_id: activeHive.id, key, value })
-      });
-      const data = await r.json();
-      if (!data.ok) throw new Error(data.error || 'Failed to store');
-      showToast('Memory stored', 'success');
-      document.getElementById('memKey').value   = '';
-      document.getElementById('memValue').value = '';
-      await searchMemories();
-    } catch (e) {
-      showToast(e.message, 'error');
-    }
-  }
-
-  // ─── MEMBERS ──────────────────────────────────────────────────────────────────
+  // ─── MEMBERS ─────────────────────────────────────────────────────────────────
   async function loadMembers() {
     const list = document.getElementById('memberList');
     list.innerHTML = '<div class="loading-state"><span class="spinner"></span></div>';
     try {
-      const r = await fetch(`/v1/memory/share/${activeHive.id}`, {
-        credentials: 'include',
-        headers: headers()
-      });
+      const r = await fetch(`/v1/memory/share/${activeHive.id}`, { credentials: 'include', headers: headers() });
       const data = await r.json();
-      // try multiple response shapes
-      const members = data.members
-        || (data.space && data.space.members)
-        || (data.ok && []);
+      const members = data.members || (data.space && data.space.members) || [];
       if (members && members.length > 0) {
         renderMembers(members);
       } else {
-        // fallback: current user
         renderMembers([{ name: 'You', key: currentKey, role: activeHive.role || 'owner' }]);
       }
     } catch (e) {
@@ -1209,7 +1300,82 @@
     }
   }
 
-  // ─── COLLECTIVE DREAM ─────────────────────────────────────────────────────────
+  // ─── SHARED MEMORY ───────────────────────────────────────────────────────────
+  function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(searchMemories, 400);
+  }
+
+  async function searchMemories() {
+    if (!activeHive) return;
+    const query = document.getElementById('memSearchInput').value.trim();
+    const list  = document.getElementById('memoryList');
+    list.innerHTML = '<div class="loading-state"><span class="spinner"></span></div>';
+    try {
+      const r = await fetch('/v1/memory/share/search', {
+        method: 'POST',
+        credentials: 'include',
+        headers: headers(),
+        body: JSON.stringify({ space_id: activeHive.id, query, limit: 20 })
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.error || 'Search failed');
+      renderMemories(data.results || []);
+    } catch (e) {
+      list.innerHTML = `<div class="no-results">Could not load memories: ${esc(e.message)}</div>`;
+    }
+  }
+
+  function renderMemories(results) {
+    const list = document.getElementById('memoryList');
+    if (results.length === 0) {
+      list.innerHTML = '<div class="no-results">No memories found in this hive</div>';
+      return;
+    }
+    list.innerHTML = results.map(m => {
+      const val     = (m.value || '');
+      const preview = val.substring(0, 280) + (val.length > 280 ? '…' : '');
+      const addedBy = m.written_by ? `by ${m.written_by}` : '';
+      const ts      = m.updated ? relTime(m.updated) : '';
+      const score   = m.score != null
+        ? `<span class="memory-score">${Math.round(m.score * 100)}%</span>`
+        : '';
+      return `<div class="memory-card">
+        <div class="memory-key">${esc(m.key || '')}</div>
+        <div class="memory-value">${esc(preview)}</div>
+        <div class="memory-meta">
+          ${score}
+          ${addedBy ? esc(addedBy) : ''}
+          ${ts ? `<span>${ts}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function storeMemory() {
+    if (!activeHive) return;
+    const key   = document.getElementById('memKey').value.trim();
+    const value = document.getElementById('memValue').value.trim();
+    if (!key || !value) { showToast('Key and value are required', 'error'); return; }
+    try {
+      const r = await fetch('/v1/memory/share/set', {
+        method: 'POST',
+        credentials: 'include',
+        headers: headers(),
+        body: JSON.stringify({ space_id: activeHive.id, key, value })
+      });
+      const data = await r.json();
+      if (!data.ok) throw new Error(data.error || 'Failed to store');
+      showToast('Memory stored', 'success');
+      document.getElementById('memKey').value   = '';
+      document.getElementById('memValue').value = '';
+      await searchMemories();
+    } catch (e) {
+      showToast(e.message, 'error');
+    }
+  }
+
+  // ─── COLLECTIVE DREAM ────────────────────────────────────────────────────────
   async function runCollectiveDream() {
     if (!activeHive) return;
     const strategies = Array.from(
@@ -1218,8 +1384,8 @@
     if (strategies.length === 0) { showToast('Select at least one strategy', 'error'); return; }
 
     const btn = document.getElementById('dreamBtn');
-    btn.disabled    = true;
-    btn.innerHTML   = '<span class="spinner"></span> Running…';
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="spinner"></span> Running…';
     document.getElementById('dreamResult').style.display     = 'none';
     document.getElementById('dreamComingSoon').style.display = 'none';
 
@@ -1231,7 +1397,7 @@
         body: JSON.stringify({ space_id: activeHive.id, strategies, max_memories: 50 })
       });
 
-      if (r.status === 404 || r.status === 501 || r.status === 502 || r.status === 503) {
+      if ([404, 501, 502, 503].includes(r.status)) {
         document.getElementById('dreamComingSoon').style.display = 'block';
         return;
       }
@@ -1253,11 +1419,11 @@
       document.getElementById('dreamComingSoon').style.display = 'block';
     } finally {
       btn.disabled  = false;
-      btn.innerHTML = 'Run Collective Dream';
+      btn.innerHTML = 'Run Collective Dream →';
     }
   }
 
-  // ─── CREATE HIVE ──────────────────────────────────────────────────────────────
+  // ─── CREATE HIVE ─────────────────────────────────────────────────────────────
   function openCreateModal() {
     document.getElementById('createModal').classList.add('open');
     setTimeout(() => document.getElementById('createName').focus(), 100);
@@ -1275,9 +1441,9 @@
   }
 
   async function createHive() {
-    const name      = document.getElementById('createName').value.trim();
+    const name        = document.getElementById('createName').value.trim();
     const description = document.getElementById('createDesc').value.trim();
-    const retention = document.getElementById('createRetention').value;
+    const retention   = document.getElementById('createRetention').value;
     if (!name) { showToast('Hive name is required', 'error'); return; }
 
     const btn = document.getElementById('createHiveBtn');
@@ -1314,7 +1480,7 @@
     }
   }
 
-  // ─── TABS ─────────────────────────────────────────────────────────────────────
+  // ─── TABS ────────────────────────────────────────────────────────────────────
   function switchTab(tab, clickedBtn) {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     if (clickedBtn) clickedBtn.classList.add('active');
@@ -1323,11 +1489,11 @@
     const pane = document.getElementById(`tab-${tab}`);
     if (pane) pane.classList.add('active');
 
-    // lazy load members when tab opened
-    if (tab === 'members' && activeHive) loadMembers();
+    // lazy load when switching to memory tab
+    if (tab === 'memory' && activeHive) searchMemories();
   }
 
-  // ─── COPY SPACE ID ────────────────────────────────────────────────────────────
+  // ─── COPY SPACE ID ───────────────────────────────────────────────────────────
   function copySpaceId() {
     if (!activeHive) return;
     navigator.clipboard.writeText(activeHive.id)
@@ -1335,7 +1501,16 @@
       .catch(() => showToast('Copy failed', 'error'));
   }
 
-  // ─── TOAST ────────────────────────────────────────────────────────────────────
+  // ─── SIDEBAR TOGGLE (mobile) ─────────────────────────────────────────────────
+  function toggleSidebar() {
+    document.getElementById('sidebar').classList.toggle('open');
+  }
+
+  function closeSidebar() {
+    document.getElementById('sidebar').classList.remove('open');
+  }
+
+  // ─── TOAST ───────────────────────────────────────────────────────────────────
   function showToast(msg, type) {
     const el = document.createElement('div');
     el.className   = `toast ${type || 'info'}`;
@@ -1344,7 +1519,7 @@
     setTimeout(() => el.remove(), 2900);
   }
 
-  // ─── UTILS ────────────────────────────────────────────────────────────────────
+  // ─── UTILS ───────────────────────────────────────────────────────────────────
   function esc(s) {
     return String(s ?? '')
       .replace(/&/g, '&amp;')
@@ -1375,7 +1550,7 @@
     }
   });
 
-  // ─── START ────────────────────────────────────────────────────────────────────
+  // ─── START ───────────────────────────────────────────────────────────────────
   init();
 </script>
 </body>

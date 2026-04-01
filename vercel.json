@@ -25,9 +25,15 @@
     { "source": "/dashboard.html", "destination": "/brain", "permanent": true },
     { "source": "/signup", "destination": "/home", "permanent": false },
     { "source": "/login", "destination": "/home", "permanent": false },
-    { "source": "/consumer", "destination": "/home", "permanent": true }
+    { "source": "/consumer", "destination": "/remlabs", "permanent": true },
+    { "source": "/_internal/(.*)", "destination": "/404", "permanent": false },
+    { "source": "/research-os", "destination": "/research-os", "permanent": false },
+    { "source": "/finance-os", "destination": "/finance-os", "permanent": false },
+    { "source": "/legal-os", "destination": "/legal-os", "permanent": false },
+    { "source": "/creative-os", "destination": "/creative-os", "permanent": false }
   ],
   "rewrites": [
+    { "source": "/developers", "destination": "/home" },
     { "source": "/v1/:path*", "destination": "https://slopshop-production.up.railway.app/v1/:path*" },
     { "source": "/auth/:path*", "destination": "https://slopshop-production.up.railway.app/auth/:path*" },
     { "source": "/zapier/:path*", "destination": "https://slopshop-production.up.railway.app/zapier/:path*" },

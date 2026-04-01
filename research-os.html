@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Research OS — REM Labs</title>
+<meta name="description" content="AI research assistant with persistent memory that synthesizes literature, tracks citations, and generates hypothesis trees overnight.">
+<meta name="keywords" content="AI research assistant, literature synthesis, citation graph, hypothesis tracking, REM Labs, persistent memory">
+<link rel="canonical" href="https://remlabs.ai/research-os">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://remlabs.ai/research-os">
+<meta property="og:title" content="Research OS — REM Labs">
+<meta property="og:description" content="AI research assistant with persistent memory that synthesizes literature, tracks citations, and generates hypothesis trees overnight.">
+<meta property="og:image" content="https://remlabs.ai/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@remlabsai">
+<meta name="twitter:title" content="Research OS — REM Labs">
+<meta name="twitter:description" content="Your research assistant remembers every paper. And connects them while you sleep.">
+<meta name="twitter:image" content="https://remlabs.ai/og.png">
+<meta name="theme-color" content="#0a0f1c">
+<link rel="icon" href="/favicon-rem.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Design Tokens ── */
+:root {
+  --bg:       #0a0f1c;
+  --bg2:      #0d1424;
+  --bg3:      #111827;
+  --surface:  rgba(255,255,255,0.04);
+  --surface2: rgba(255,255,255,0.07);
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.14);
+  --text:     #f8fafc;
+  --text2:    rgba(248,250,252,0.6);
+  --text3:    rgba(248,250,252,0.35);
+  --purple:   #a855f7;
+  --purple2:  #c084fc;
+  --purple-dim: rgba(168,85,247,0.12);
+  --purple-border: rgba(168,85,247,0.25);
+  --cyan:     #67e8f9;
+  --cyan-dim: rgba(103,232,249,0.1);
+  --cyan-border: rgba(103,232,249,0.2);
+  --green:    #4ade80;
+  --accent:   #a855f7;
+  --accent2:  #c084fc;
+  --accent-dim: rgba(168,85,247,0.12);
+  --accent-border: rgba(168,85,247,0.25);
+  --font:     'Inter', -apple-system, sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+  --nav-h:    60px;
+  --max-w:    1120px;
+  --r:        12px;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  line-height: 1.7;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; }
+img { display: block; max-width: 100%; }
+
+/* ── Scroll Reveal ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(.22,1,.36,1), transform 0.7s cubic-bezier(.22,1,.36,1);
+}
+.reveal.vis { opacity: 1; transform: none; }
+.rv2 { transition-delay: 0.1s; }
+.rv3 { transition-delay: 0.2s; }
+.rv4 { transition-delay: 0.3s; }
+.rv5 { transition-delay: 0.4s; }
+.rv6 { transition-delay: 0.5s; }
+
+/* ── Nav ── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: var(--nav-h);
+  background: rgba(10,15,28,0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.nav.scrolled {
+  background: rgba(10,15,28,0.97);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 8px 40px rgba(0,0,0,0.6);
+}
+.nav::after {
+  content: ''; position: absolute; bottom: -1px; left: 0; height: 2px;
+  background: linear-gradient(90deg, #a855f7, #67e8f9);
+  animation: navLoad 1.2s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes navLoad { from{width:0;opacity:0} 60%{opacity:1} to{width:100%;opacity:0} }
+.nav-inner {
+  max-width: var(--max-w); margin: 0 auto; padding: 0 32px;
+  height: 100%; display: flex; align-items: center; gap: 8px;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 800; font-size: 1.05rem; letter-spacing: -0.04em;
+  color: var(--text); text-decoration: none; flex-shrink: 0; margin-right: 16px;
+  transition: opacity 0.2s;
+}
+.nav-logo:hover { opacity: 0.85; }
+.rem-mark {
+  width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+  background: linear-gradient(135deg, #a855f7, #67e8f9);
+  display: flex; align-items: center; justify-content: center;
+}
+.rem-mark svg { width: 14px; height: 14px; fill: white; }
+.nav-links { display: flex; gap: 2px; flex: 1; }
+.nav-link {
+  padding: 6px 12px; border-radius: 7px; font-size: 0.84rem; font-weight: 500;
+  color: var(--text2); text-decoration: none; transition: color 0.15s, background 0.15s;
+}
+.nav-link:hover { color: var(--text); background: var(--surface2); }
+.nav-link.active { color: var(--purple2); background: var(--purple-dim); }
+.nav-spacer { flex: 1; }
+.nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.nav-login {
+  font-size: 0.82rem; font-weight: 500; color: var(--text2);
+  padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.nav-login:hover { color: var(--text); border-color: var(--border2); background: var(--surface); }
+.nav-start {
+  font-size: 0.82rem; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  padding: 8px 18px; border-radius: 8px; text-decoration: none;
+  transition: opacity 0.15s, box-shadow 0.15s; white-space: nowrap;
+  box-shadow: 0 0 0 0 rgba(168,85,247,0);
+}
+.nav-start:hover { opacity: 0.9; box-shadow: 0 4px 20px rgba(168,85,247,0.4); }
+.nav-hb {
+  display: none; flex-direction: column; gap: 5px; background: transparent;
+  padding: 8px; border-radius: 7px; margin-left: auto;
+  transition: background 0.15s; width: 38px; height: 38px;
+  justify-content: center;
+}
+.nav-hb:hover { background: var(--surface2); }
+.nav-hb span { display: block; width: 20px; height: 2px; background: rgba(248,250,252,0.7); border-radius: 2px; transition: all 0.22s; }
+.nav-hb.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hb.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav-hb.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.nav-mob {
+  display: none; position: fixed; top: var(--nav-h); left: 0; right: 0; z-index: 199;
+  background: rgba(10,15,28,0.98); backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border); padding: 16px 20px 28px; flex-direction: column; gap: 4px;
+}
+.nav-mob.open { display: flex; }
+.nav-mob a {
+  padding: 10px 14px; border-radius: 8px; font-size: 0.875rem;
+  color: var(--text2); text-decoration: none; transition: color 0.15s, background 0.15s;
+}
+.nav-mob a:hover { color: var(--text); background: var(--surface2); }
+.nav-mob .mob-divider { height: 1px; background: var(--border); margin: 6px 0; }
+.nav-mob .mob-cta {
+  margin-top: 4px; text-align: center; background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: #fff; font-weight: 700;
+}
+@media(max-width: 768px) { .nav-links, .nav-login { display: none; } .nav-hb { display: flex; } }
+@media(max-width: 480px) { .nav-inner { padding: 0 16px; } }
+
+/* ── Hero ── */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: calc(var(--nav-h) + 80px) 32px 100px;
+  position: relative; overflow: hidden;
+}
+.hero-glow {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 800px 600px at 50% 20%, rgba(168,85,247,0.13) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 15% 80%, rgba(168,85,247,0.06) 0%, transparent 60%),
+    radial-gradient(ellipse 500px 300px at 85% 70%, rgba(103,232,249,0.05) 0%, transparent 60%);
+}
+.hero-grid {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.025;
+  background-image:
+    linear-gradient(rgba(168,85,247,0.8) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(168,85,247,0.8) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.hero-content { position: relative; z-index: 1; max-width: 860px; }
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 100px;
+  background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25);
+  font-size: 0.78rem; font-weight: 600; color: var(--purple2);
+  letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 28px;
+}
+.hero-eyebrow::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--purple); animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+.hero-h1 {
+  font-size: clamp(2.5rem, 5.5vw, 4.6rem); font-weight: 900;
+  letter-spacing: -0.04em; line-height: 1.07; margin-bottom: 28px;
+  color: var(--text);
+}
+.hero-h1 .grad {
+  background: linear-gradient(135deg, #a855f7, #67e8f9);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  font-size: clamp(1rem, 2vw, 1.15rem); color: var(--text2); line-height: 1.7;
+  max-width: 660px; margin: 0 auto 40px; font-weight: 400;
+}
+.hero-sub strong { color: var(--text); font-weight: 600; }
+.hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 48px; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px; border-radius: 10px; font-size: 0.95rem; font-weight: 700;
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: #fff; text-decoration: none; border: none; cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 24px rgba(168,85,247,0.35);
+}
+.btn-primary:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(168,85,247,0.45); }
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px; border-radius: 10px; font-size: 0.95rem; font-weight: 600;
+  background: transparent; color: var(--text2); border: 1px solid var(--border2);
+  text-decoration: none; cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.btn-secondary:hover { color: var(--text); border-color: rgba(168,85,247,0.4); background: rgba(168,85,247,0.06); }
+.hero-stats {
+  display: flex; align-items: center; gap: 24px; justify-content: center;
+  flex-wrap: wrap; font-size: 0.8rem; color: var(--text3);
+}
+.hero-stats .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border2); }
+.stat-item { display: flex; align-items: center; gap: 6px; color: var(--text2); }
+.stat-item strong { color: var(--purple2); font-weight: 700; }
+
+/* ── Breadcrumb ── */
+.breadcrumb {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 0.78rem; color: var(--text3); margin-bottom: 20px;
+  justify-content: center;
+}
+.breadcrumb a { color: var(--text3); transition: color 0.15s; }
+.breadcrumb a:hover { color: var(--text2); }
+.breadcrumb .sep { opacity: 0.4; }
+.breadcrumb .current { color: var(--purple2); font-weight: 600; }
+
+/* ── Section base ── */
+section { padding: 100px 32px; }
+.section-inner { max-width: var(--max-w); margin: 0 auto; }
+.section-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--purple); margin-bottom: 16px;
+}
+.section-label::before { content: ''; width: 18px; height: 2px; background: var(--purple); border-radius: 2px; }
+h2.section-h {
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 800; letter-spacing: -0.035em;
+  line-height: 1.15; margin-bottom: 16px;
+}
+.section-sub {
+  font-size: 1rem; color: var(--text2); max-width: 560px; line-height: 1.75; margin-bottom: 56px;
+}
+
+/* ── Feature Cards Grid ── */
+.features-section { background: var(--bg2); }
+.features-grid {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 48px;
+}
+.feat-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 28px 24px; transition: border-color 0.25s, background 0.25s;
+  position: relative; overflow: hidden;
+}
+.feat-card:hover { border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.04); }
+.feat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #a855f7, #c084fc); opacity: 0;
+  transition: opacity 0.25s;
+}
+.feat-card:hover::before { opacity: 1; }
+.feat-icon { font-size: 1.6rem; margin-bottom: 14px; }
+.feat-title { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; color: var(--text); }
+.feat-desc { font-size: 0.82rem; color: var(--text2); line-height: 1.65; }
+
+/* ── Use Cases ── */
+.use-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 48px;
+}
+.use-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 24px 20px; text-align: center;
+  transition: border-color 0.25s, background 0.25s, transform 0.25s;
+}
+.use-card:hover { border-color: rgba(168,85,247,0.3); background: rgba(168,85,247,0.05); transform: translateY(-2px); }
+.use-icon { font-size: 1.8rem; margin-bottom: 12px; }
+.use-title { font-size: 0.9rem; font-weight: 700; color: var(--text); margin-bottom: 6px; letter-spacing: -0.02em; }
+.use-desc { font-size: 0.78rem; color: var(--text2); line-height: 1.6; }
+
+/* ── How It Works ── */
+.how-section { background: var(--bg2); }
+.how-steps {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 48px;
+  position: relative;
+}
+.how-steps::before {
+  content: ''; position: absolute; top: 36px; left: calc(16.66% + 20px); right: calc(16.66% + 20px);
+  height: 1px; background: linear-gradient(90deg, rgba(168,85,247,0.4), rgba(168,85,247,0.4));
+  pointer-events: none;
+}
+.how-step { text-align: center; padding: 0 24px; }
+.how-num {
+  width: 72px; height: 72px; border-radius: 50%; margin: 0 auto 20px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem; font-weight: 900; letter-spacing: -0.03em;
+  background: rgba(168,85,247,0.1); border: 1px solid rgba(168,85,247,0.25);
+  color: var(--purple2); position: relative; z-index: 1;
+}
+.how-step.center .how-num {
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: #fff; border-color: transparent;
+  box-shadow: 0 0 32px rgba(168,85,247,0.4);
+}
+.how-title { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 8px; letter-spacing: -0.02em; }
+.how-desc { font-size: 0.82rem; color: var(--text2); line-height: 1.65; }
+
+/* ── CTA Banner ── */
+.cta-banner {
+  text-align: center; padding: 100px 32px;
+  background: linear-gradient(135deg, rgba(168,85,247,0.08) 0%, rgba(103,232,249,0.04) 100%);
+  border-top: 1px solid var(--border);
+}
+.cta-banner h2 {
+  font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; letter-spacing: -0.04em;
+  line-height: 1.1; margin-bottom: 16px;
+}
+.cta-banner .grad {
+  background: linear-gradient(135deg, #a855f7, #67e8f9);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.cta-banner p { font-size: 1rem; color: var(--text2); margin-bottom: 36px; max-width: 520px; margin-left: auto; margin-right: auto; }
+.cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.cta-note { margin-top: 16px; font-size: 0.78rem; color: var(--text3); }
+
+/* ── Footer ── */
+footer {
+  background: var(--bg); border-top: 1px solid var(--border);
+  padding: 56px 32px 40px;
+}
+.footer-inner { max-width: var(--max-w); margin: 0 auto; }
+.footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+.footer-brand p { font-size: 0.82rem; color: var(--text3); margin-top: 12px; max-width: 280px; line-height: 1.7; }
+.footer-col h4 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 14px; }
+.footer-col a { display: block; font-size: 0.82rem; color: var(--text2); margin-bottom: 8px; transition: color 0.15s; }
+.footer-col a:hover { color: var(--text); }
+.footer-bottom {
+  border-top: 1px solid var(--border); padding-top: 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.75rem; color: var(--text3); gap: 12px; flex-wrap: wrap;
+}
+.footer-disclaimer {
+  background: rgba(168,85,247,0.05); border: 1px solid rgba(168,85,247,0.12);
+  border-radius: 8px; padding: 14px 16px;
+  font-size: 0.73rem; color: var(--text3); line-height: 1.6; margin-bottom: 24px;
+}
+.footer-disclaimer strong { color: var(--text2); }
+.footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+.footer-links a { font-size: 0.75rem; color: var(--text3); transition: color 0.15s; }
+.footer-links a:hover { color: var(--text); }
+.built-on { display: inline-flex; align-items: center; gap: 6px; font-size: 0.72rem; color: var(--text3); }
+.built-on a { color: var(--cyan); }
+.built-on a:hover { color: #22e0ff; }
+
+/* ── Responsive ── */
+@media(max-width: 960px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .use-grid { grid-template-columns: repeat(2, 1fr); }
+  .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+@media(max-width: 720px) {
+  section { padding: 72px 24px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .use-grid { grid-template-columns: 1fr 1fr; }
+  .how-steps { grid-template-columns: 1fr; gap: 40px; }
+  .how-steps::before { display: none; }
+  .hero-ctas { flex-direction: column; align-items: center; }
+  .footer-top { grid-template-columns: 1fr; }
+}
+@media(max-width: 480px) {
+  section { padding: 56px 16px; }
+  .hero { padding-left: 20px; padding-right: 20px; }
+  .use-grid { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav" id="rem-nav">
+  <div class="nav-inner">
+    <a href="remlabs.html" class="nav-logo">
+      <div class="rem-mark">
+        <svg viewBox="0 0 14 14"><path d="M7 1C3.7 1 1 3.7 1 7s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 2c.8 0 1.5.3 2 .8L4.8 9c-.5-.5-.8-1.2-.8-2C4 5.3 5.3 3 7 3zm0 8c-.8 0-1.5-.3-2-.8l4.2-4.2c.5.5.8 1.2.8 2 0 1.7-1.3 3-3 3z"/></svg>
+      </div>
+      REM Labs
+    </a>
+    <div class="nav-links">
+      <a href="remlabs.html#features" class="nav-link">Features</a>
+      <a href="remlabs.html#verticals" class="nav-link active">OS Editions</a>
+      <a href="remlabs.html#pricing" class="nav-link">Pricing</a>
+      <a href="https://slopshop.gg/docs" class="nav-link">Docs</a>
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="nav-actions">
+      <a href="https://slopshop.gg/login" class="nav-login">Log in</a>
+      <a href="https://slopshop.gg/home" class="nav-start">Start for Free</a>
+    </div>
+    <button class="nav-hb" id="nav-hb" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="nav-mob" id="nav-mob">
+  <a href="remlabs.html#features">Features</a>
+  <a href="remlabs.html#verticals">OS Editions</a>
+  <a href="remlabs.html#pricing">Pricing</a>
+  <a href="https://slopshop.gg/docs">Docs</a>
+  <div class="mob-divider"></div>
+  <a href="https://slopshop.gg/login">Log in</a>
+  <a href="https://slopshop.gg/home" class="mob-cta">Start for Free →</a>
+</div>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="breadcrumb reveal">
+      <a href="remlabs.html">REM Labs</a>
+      <span class="sep">›</span>
+      <span class="current">Research OS</span>
+    </div>
+    <div class="hero-eyebrow reveal">Research OS · REM Labs</div>
+    <h1 class="hero-h1 reveal rv2">
+      Your research assistant<br>remembers every paper.
+      <br><span class="grad">And connects them while you sleep.</span>
+    </h1>
+    <p class="hero-sub reveal rv3">
+      Research OS gives academics, analysts, and knowledge workers a <strong>persistent research brain</strong> — one that synthesizes literature, detects contradictions, tracks citation graphs, and <strong>evolves hypotheses overnight.</strong>
+    </p>
+    <div class="hero-ctas reveal rv4">
+      <a href="https://slopshop.gg/home" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.5 7.5h-3v3a.5.5 0 01-1 0v-3h-3a.5.5 0 010-1h3v-3a.5.5 0 011 0v3h3a.5.5 0 010 1z"/></svg>
+        Start Research OS Free
+      </a>
+      <a href="remlabs.html#verticals" class="btn-secondary">
+        ← See all OS Editions
+      </a>
+    </div>
+    <div class="hero-stats reveal rv5">
+      <div class="stat-item"><strong>12.4×</strong> faster literature synthesis</div>
+      <div class="dot"></div>
+      <div class="stat-item"><strong>847-paper</strong> memory graphs</div>
+      <div class="dot"></div>
+      <div class="stat-item">Zero data leaves your instance</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Feature Cards ── -->
+<section class="features-section" id="features">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Capabilities</div>
+      <h2 class="section-h">What Research OS does overnight</h2>
+      <p class="section-sub">While you sleep, your research agent runs a full dream cycle — consolidating everything you've fed it into structured, compounding knowledge.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card reveal">
+        <div class="feat-icon">📚</div>
+        <div class="feat-title">Literature Synthesis</div>
+        <div class="feat-desc">Reads papers you feed it and consolidates all claims, counterarguments, and methodologies into structured insight sets overnight. No more re-reading the same paper twice.</div>
+      </div>
+      <div class="feat-card reveal rv2">
+        <div class="feat-icon">🕸️</div>
+        <div class="feat-title">Citation Graph Memory</div>
+        <div class="feat-desc">Builds a living knowledge graph of how papers cite and contradict each other. See the full intellectual lineage of any idea, automatically mapped across your corpus.</div>
+      </div>
+      <div class="feat-card reveal rv3">
+        <div class="feat-icon">🌱</div>
+        <div class="feat-title">Hypothesis Evolution</div>
+        <div class="feat-desc">Tracks how your hypotheses change across dream cycles. Watch your thinking evolve in real time, with a full audit trail of what evidence shifted each assumption.</div>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">⚡</div>
+        <div class="feat-title">Contradiction Detection</div>
+        <div class="feat-desc">Flags when Paper A contradicts Paper B and surfaces the exact disagreement. Your agent finds the conflicts you'd miss, so you can adjudicate them before writing.</div>
+      </div>
+      <div class="feat-card reveal rv2">
+        <div class="feat-icon">📈</div>
+        <div class="feat-title">Trend Forecasting</div>
+        <div class="feat-desc">Predicts which research directions will dominate based on citation velocity, emerging author networks, and semantic momentum within your field.</div>
+      </div>
+      <div class="feat-card reveal rv3">
+        <div class="feat-icon">🌅</div>
+        <div class="feat-title">Morning Research Brief</div>
+        <div class="feat-desc">Daily intelligence brief with what your agent synthesized overnight, top insights, detected contradictions, and recommended next reads — delivered at 7 AM.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Use Cases ── -->
+<section id="use-cases" style="padding:100px 32px;">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">Who It's For</div>
+      <h2 class="section-h">Built for deep knowledge work</h2>
+      <p class="section-sub">Research OS adapts to any domain where reading comprehensively, connecting ideas, and tracking evolving knowledge is the core work.</p>
+    </div>
+    <div class="use-grid">
+      <div class="use-card reveal">
+        <div class="use-icon">🎓</div>
+        <div class="use-title">Academic Researcher</div>
+        <div class="use-desc">Feed your entire literature review corpus. Wake up with synthesized insights, gap analyses, and citation trails already mapped — weeks of work, done overnight.</div>
+      </div>
+      <div class="use-card reveal rv2">
+        <div class="use-icon">💼</div>
+        <div class="use-title">Investment Analyst</div>
+        <div class="use-desc">Track research reports, earnings analyses, and macro papers across thousands of documents. Your agent builds the thesis map so you focus on the decision.</div>
+      </div>
+      <div class="use-card reveal rv3">
+        <div class="use-icon">🏛️</div>
+        <div class="use-title">Policy Researcher</div>
+        <div class="use-desc">Synthesize legislative documents, academic evidence, and competing policy frameworks. Detect contradictions between studies before they surface in testimony.</div>
+      </div>
+      <div class="use-card reveal rv4">
+        <div class="use-icon">🔍</div>
+        <div class="use-title">Competitive Intelligence</div>
+        <div class="use-desc">Ingest patents, white papers, and technical blogs. Track how competitor thinking evolves and forecast where their R&D is heading before they publish.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How It Works ── -->
+<section class="how-section" id="how-it-works">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center;max-width:560px;margin:0 auto 0;">
+      <div class="section-label">How It Works</div>
+      <h2 class="section-h">Three steps to a research brain that never forgets</h2>
+    </div>
+    <div class="how-steps">
+      <div class="how-step reveal">
+        <div class="how-num">1</div>
+        <div class="how-title">Feed papers</div>
+        <div class="how-desc">Upload PDFs, paste URLs, or connect integrations like Zotero, Notion, or Google Scholar. Your agent ingests everything — no formatting required.</div>
+      </div>
+      <div class="how-step center reveal rv2">
+        <div class="how-num">
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <circle cx="14" cy="14" r="5" fill="white" opacity="0.9"/>
+            <circle cx="14" cy="14" r="10" stroke="white" stroke-width="1.5" opacity="0.3"/>
+            <circle cx="14" cy="14" r="13" stroke="white" stroke-width="1" opacity="0.15"/>
+          </svg>
+        </div>
+        <div class="how-title">Dream Engine synthesizes</div>
+        <div class="how-desc">Overnight, the 9-stage REM cycle runs across your entire corpus — consolidating, connecting, validating, and evolving your knowledge graph while you sleep.</div>
+      </div>
+      <div class="how-step reveal rv3">
+        <div class="how-num">3</div>
+        <div class="how-title">Wake up smarter</div>
+        <div class="how-desc">Open your Morning Research Brief at 7 AM to find synthesized insights, contradiction flags, trend forecasts, and recommended next reads — ready for your work session.</div>
+      </div>
+    </div>
+
+    <!-- Preview Card -->
+    <div class="reveal" style="max-width:620px;margin:64px auto 0;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,0.5);">
+        <div style="padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;">
+          <div style="display:flex;gap:6px;">
+            <span style="width:10px;height:10px;border-radius:50%;background:#ef4444;display:block;"></span>
+            <span style="width:10px;height:10px;border-radius:50%;background:#f59e0b;display:block;"></span>
+            <span style="width:10px;height:10px;border-radius:50%;background:#22c55e;display:block;"></span>
+          </div>
+          <div style="flex:1;text-align:center;font-size:0.75rem;color:var(--text3);font-family:var(--mono);">Morning Research Brief — Research OS</div>
+        </div>
+        <div style="padding:28px;">
+          <div style="font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--text3);margin-bottom:6px;">Wednesday, April 2 · 7:00 AM</div>
+          <div style="font-size:1rem;font-weight:700;color:var(--text);margin-bottom:20px;">Dream Report: Transformer Memory Literature</div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
+            <div style="width:52px;height:52px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,#a855f7,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:1.1rem;font-weight:900;color:#fff;">94</div>
+            <div>
+              <div style="font-size:0.85rem;font-weight:700;margin-bottom:2px;">Intelligence Score: 94.1</div>
+              <div style="font-size:0.75rem;color:var(--text3);">+8.7 from last night · 847 papers synthesized</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;gap:10px;align-items:flex-start;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.12);border-radius:8px;padding:10px 12px;font-size:0.8rem;color:var(--text2);line-height:1.5;">
+              <span style="color:var(--purple);flex-shrink:0;font-weight:700;">↑</span>
+              Synthesized 847 papers into 61 structured insights across 9 theme clusters overnight
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.12);border-radius:8px;padding:10px 12px;font-size:0.8rem;color:var(--text2);line-height:1.5;">
+              <span style="color:var(--purple);flex-shrink:0;font-weight:700;">↑</span>
+              Contradiction detected: Smith (2024) claims 8k context window sufficiency; Zhang (2025) refutes with 32k benchmark data
+            </div>
+            <div style="display:flex;gap:10px;align-items:flex-start;background:rgba(168,85,247,0.06);border:1px solid rgba(168,85,247,0.12);border-radius:8px;padding:10px 12px;font-size:0.8rem;color:var(--text2);line-height:1.5;">
+              <span style="color:var(--purple);flex-shrink:0;font-weight:700;">↑</span>
+              Trend: episodic memory augmentation papers citing 3.1× faster — recommend exploring Episodic-RAG thread next
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA Banner ── -->
+<section class="cta-banner">
+  <div style="max-width:640px;margin:0 auto;">
+    <h2 class="reveal">Ready to build a research brain<br><span class="grad">that never forgets?</span></h2>
+    <p class="reveal rv2">Start free. Feed your first papers tonight. Wake up to your first Research Brief tomorrow morning.</p>
+    <div class="cta-row reveal rv3">
+      <a href="https://slopshop.gg/home" class="btn-primary" style="font-size:1rem;padding:15px 32px;">
+        Start Research OS Free
+      </a>
+      <a href="remlabs.html#verticals" class="btn-secondary" style="font-size:1rem;padding:15px 28px;">
+        See all OS Editions
+      </a>
+    </div>
+    <div class="cta-note reveal rv4">
+      Built on <a href="https://slopshop.gg" style="color:var(--cyan)">slopshop.gg</a> · Free forever · No code required · Zero data leaves your instance
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-disclaimer">
+      <strong>Note:</strong> REM Labs (remlabs.ai) is the consumer product layer built on the slopshop.gg platform. REM Labs is not affiliated with <strong>remlabs.co</strong>, an unrelated company focused on autonomous engineering. If you were looking for remlabs.co, please visit that site directly.
+    </div>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:1rem;letter-spacing:-0.03em;color:var(--text);">
+          <div class="rem-mark"><svg viewBox="0 0 14 14" fill="white" width="12" height="12"><path d="M7 1C3.7 1 1 3.7 1 7s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 2c.8 0 1.5.3 2 .8L4.8 9c-.5-.5-.8-1.2-.8-2C4 5.3 5.3 3 7 3zm0 8c-.8 0-1.5-.3-2-.8l4.2-4.2c.5.5.8 1.2.8 2 0 1.7-1.3 3-3 3z"/></svg></div>
+          REM Labs
+        </div>
+        <p>Research OS — the no-code AI research brain that compounds knowledge overnight. Powered by the Slopshop Dream Engine.</p>
+      </div>
+      <div class="footer-col">
+        <h4>Research OS</h4>
+        <a href="#features">Features</a>
+        <a href="#use-cases">Use Cases</a>
+        <a href="#how-it-works">How It Works</a>
+        <a href="https://slopshop.gg/home">Start Free</a>
+      </div>
+      <div class="footer-col">
+        <h4>REM Labs</h4>
+        <a href="remlabs.html">Home</a>
+        <a href="remlabs.html#verticals">OS Editions</a>
+        <a href="finance-os.html">Finance OS</a>
+        <a href="remlabs.html#pricing">Pricing</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="https://slopshop.gg/about">About</a>
+        <a href="https://slopshop.gg/docs">API Docs</a>
+        <a href="mailto:dev@slopshop.gg">Contact</a>
+        <a href="https://twitter.com/remlabsai">X / Twitter</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 REM Labs · <span class="built-on">powered by <a href="https://slopshop.gg">slopshop.gg</a></span></div>
+      <div class="footer-links">
+        <a href="https://slopshop.gg/legal">Terms</a>
+        <a href="https://slopshop.gg/legal#privacy">Privacy</a>
+        <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── Nav scroll + mobile ──
+(function(){
+  var nav = document.getElementById('rem-nav');
+  var hb  = document.getElementById('nav-hb');
+  var mob = document.getElementById('nav-mob');
+  if(nav) window.addEventListener('scroll', function(){
+    nav.classList[scrollY > 30 ? 'add' : 'remove']('scrolled');
+  }, {passive: true});
+  if(hb && mob) {
+    hb.addEventListener('click', function(){
+      mob.classList.toggle('open');
+      hb.classList.toggle('open');
+    });
+    mob.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', function(){
+        mob.classList.remove('open');
+        hb.classList.remove('open');
+      });
+    });
+  }
+})();
+
+// ── Scroll reveal ──
+(function(){
+  var els = document.querySelectorAll('.reveal');
+  if(!els.length) return;
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('vis'); io.unobserve(e.target); }
+    });
+  }, {threshold: 0.12, rootMargin: '0px 0px -40px 0px'});
+  els.forEach(function(el){ io.observe(el); });
+})();
+</script>
+</body>
+</html>

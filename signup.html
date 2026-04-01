@@ -15,11 +15,10 @@
 body{font-family:var(--sans);background:var(--bg);color:var(--t);min-height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
 a{color:var(--r);text-decoration:none;transition:opacity .15s}a:hover{opacity:.8}
 .topbar{display:flex;align-items:center;padding:0 32px;height:56px;border-bottom:1px solid var(--b);background:rgba(5,5,5,.9);backdrop-filter:blur(20px);position:sticky;top:0;z-index:10}
-.topbar-logo{font-family:var(--mono);font-weight:700;font-size:.95rem;letter-spacing:.08em;color:var(--r);text-decoration:none}
-.topbar-logo span{color:var(--t3);font-size:.7rem;font-weight:500;margin-left:2px}
+.topbar-logo{font-family:var(--sans);font-weight:700;font-size:1rem;letter-spacing:-.03em;color:#f0f0f0;text-decoration:none;flex-shrink:0}
 .topbar-spacer{flex:1}
-.topbar-link{font-size:.8rem;color:var(--t3);text-decoration:none;transition:color .15s;margin-left:20px}
-.topbar-link:hover{color:var(--t)}
+.topbar-link{font-size:.8125rem;color:rgba(240,240,240,.55);text-decoration:none;transition:color .15s;margin-left:20px}
+.topbar-link:hover{color:#f0f0f0}
 .page{flex:1;display:flex;align-items:center;justify-content:center;padding:48px 20px}
 .card{width:440px;max-width:100%}
 .card-header{text-align:center;margin-bottom:28px}
@@ -95,9 +94,9 @@ table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:1
 <body>
 
 <div class="topbar">
-  <a href="/" class="topbar-logo">SLOPSHOP<span>.gg</span></a>
+  <a href="/" class="topbar-logo">Slopshop</a>
   <div class="topbar-spacer"></div>
-  <a href="/?mode=login" class="topbar-link">Already have an account?</a>
+  <a href="/?mode=login" class="topbar-link">Already have an account? Sign in →</a>
 </div>
 
 <div class="page">

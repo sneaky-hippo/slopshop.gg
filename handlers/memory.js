@@ -437,6 +437,10 @@ module.exports = function (db) {
     const existing = stmts.memGet.get(namespace, key);
     const existed = !!existing;
     if (existed) {
+      // Protect locked (core) memories from deletion
+      if (existing.locked) {
+        return { _engine: 'real', error: 'memory_protected', message: 'This memory is protected (locked) and cannot be deleted. Use POST /v1/memory/lock with locked:false to unprotect it first.', key, namespace };
+      }
       // Record final value in history before deleting
       histRecord(namespace, key, existing.value, existing.version, Date.now());
       stmts.memDelete.run(namespace, key);

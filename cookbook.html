@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Agent Cookbook — 15+ Copy-Paste Recipes | Slopshop</title>
+<meta name="description" content="15+ production-ready agent code recipes for Slopshop APIs. Copy, paste, ship. Research, Finance, Support, Code, Multi-Agent patterns.">
+<meta name="robots" content="index,follow">
+<link rel="canonical" href="https://slopshop.gg/cookbook">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/cookbook">
+<meta property="og:title" content="Agent Cookbook — 15+ Copy-Paste Recipes | Slopshop">
+<meta property="og:description" content="15+ production-ready agent patterns. Each recipe uses real Slopshop APIs. Copy, paste, ship.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<meta name="theme-color" content="#ff3333">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --y:#ffcc00;--yg:rgba(255,204,0,0.1);
+  --mono:'JetBrains Mono',monospace;
+  --sans:'Inter',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth;scroll-padding-top:80px}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;font-size:0.875rem;line-height:1.7;overflow-x:hidden}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:opacity 0.15s}
+a:hover{opacity:0.8}
+button{cursor:pointer;font-family:var(--sans)}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--s1)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ── SITE NAV ── */
+.site-nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:56px;
+  background:rgba(5,5,5,0.88);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+  display:flex;align-items:center;padding:0 32px;
+}
+.site-nav-inner{
+  max-width:1240px;width:100%;margin:0 auto;
+  display:flex;align-items:center;gap:0;
+}
+.site-nav-logo{
+  font-family:var(--mono);font-weight:800;font-size:1rem;
+  color:#f5f5f5;letter-spacing:0.06em;text-decoration:none;
+  flex-shrink:0;margin-right:28px;
+}
+.site-nav-links{display:flex;gap:2px;flex:1;align-items:center}
+.site-nav-links a{
+  font-size:0.775rem;color:rgba(245,245,245,0.5);
+  text-decoration:none;padding:6px 12px;border-radius:7px;
+  transition:color 0.15s,background 0.15s;white-space:nowrap;
+}
+.site-nav-links a:hover{color:#f5f5f5;background:rgba(255,255,255,0.06)}
+.site-nav-actions{display:flex;gap:8px;align-items:center;margin-left:auto;flex-shrink:0}
+.site-nav-app{
+  font-size:0.775rem;font-weight:500;color:rgba(245,245,245,0.75);
+  text-decoration:none;padding:7px 14px;border-radius:7px;
+  border:1px solid rgba(255,255,255,0.12);
+  transition:all 0.15s;
+}
+.site-nav-app:hover{color:#f5f5f5;border-color:rgba(255,255,255,0.22);background:rgba(255,255,255,0.05)}
+.site-nav-signup{
+  font-size:0.775rem;font-weight:700;color:#000;background:#00D4FF;
+  padding:7px 16px;border-radius:7px;text-decoration:none;
+  transition:opacity 0.15s;
+}
+.site-nav-signup:hover{opacity:0.85}
+@media(max-width:700px){
+  .site-nav-links{display:none}
+  .site-nav-app{display:none}
+}
+
+/* ── PAGE WRAP ── */
+.page-wrap{padding-top:56px}
+.page-inner{max-width:1240px;margin:0 auto;padding:0 24px 100px}
+
+/* ── HERO ── */
+.hero{
+  text-align:center;padding:72px 24px 56px;
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:800px;height:450px;
+  background:radial-gradient(ellipse at 50% 0%, rgba(255,51,51,0.07) 0%, rgba(136,85,255,0.05) 45%, transparent 70%);
+  pointer-events:none;
+}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--rg);border:1px solid rgba(255,51,51,0.2);
+  color:var(--r);font-family:var(--mono);font-size:0.67rem;font-weight:700;
+  padding:5px 14px;border-radius:20px;letter-spacing:0.08em;text-transform:uppercase;
+  margin-bottom:24px;
+}
+.hero-tag-dot{
+  width:6px;height:6px;border-radius:50%;background:var(--r);
+  animation:blink 2s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.35;transform:scale(0.6)}}
+.hero h1{
+  font-family:var(--mono);
+  font-size:clamp(2.1rem,5.5vw,3.5rem);
+  font-weight:800;letter-spacing:-0.03em;line-height:1.07;
+  margin-bottom:18px;
+}
+.hero h1 .accent{color:var(--r)}
+.hero-sub{
+  color:var(--t2);font-size:1rem;max-width:540px;
+  margin:0 auto 0;line-height:1.75;
+}
+.hero-meta{
+  display:flex;align-items:center;justify-content:center;gap:28px;
+  margin-top:40px;flex-wrap:wrap;
+}
+.hero-stat{text-align:center}
+.hero-stat-num{font-family:var(--mono);font-size:1.5rem;font-weight:800}
+.hero-stat-num.cr{color:var(--r)}
+.hero-stat-num.cg{color:var(--g)}
+.hero-stat-num.cc{color:var(--c)}
+.hero-stat-num.cv{color:var(--v)}
+.hero-stat-lbl{font-size:0.67rem;color:var(--t4);margin-top:2px;font-family:var(--mono);letter-spacing:0.06em;text-transform:uppercase}
+.hero-sep{width:1px;height:36px;background:var(--b2)}
+
+/* ── FILTER BAR ── */
+.filter-wrap{
+  background:var(--s1);border:1px solid var(--b2);border-radius:12px;
+  padding:14px 20px;margin-bottom:36px;
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+}
+.filter-label{
+  font-family:var(--mono);font-size:0.64rem;color:var(--t4);
+  text-transform:uppercase;letter-spacing:0.1em;white-space:nowrap;flex-shrink:0;
+}
+.filter-pills{display:flex;gap:6px;flex-wrap:wrap;align-items:center;flex:1}
+.fpill{
+  background:var(--b2);border:1px solid rgba(255,255,255,0.06);
+  color:var(--t3);font-family:var(--mono);font-size:0.71rem;font-weight:600;
+  padding:5px 14px;border-radius:20px;
+  transition:all 0.15s;border-width:1px;
+  outline:none;
+}
+.fpill:hover{color:var(--t);border-color:var(--t4)}
+.fpill.active{background:var(--rg);border-color:rgba(255,51,51,0.35);color:var(--r)}
+.filter-sep{width:1px;height:22px;background:var(--b2);flex-shrink:0}
+.filter-count{font-family:var(--mono);font-size:0.69rem;color:var(--t4);white-space:nowrap;flex-shrink:0}
+.filter-count span{color:var(--r)}
+
+/* ── RECIPE GRID ── */
+.recipe-grid{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:18px;
+}
+@media(max-width:1080px){.recipe-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:640px){.recipe-grid{grid-template-columns:1fr}}
+
+/* ── RECIPE CARD ── */
+.recipe-card{
+  background:var(--s1);border:1px solid var(--b2);border-radius:14px;
+  overflow:hidden;display:flex;flex-direction:column;
+  transition:border-color 0.2s,transform 0.2s,box-shadow 0.2s;
+  position:relative;
+}
+.recipe-card:hover{
+  transform:translateY(-3px);
+  box-shadow:0 10px 36px rgba(0,0,0,0.55);
+}
+.card-accent-bar{height:3px;width:100%;flex-shrink:0}
+.card-body{padding:18px 18px 14px;flex:1;display:flex;flex-direction:column;gap:10px}
+.card-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.card-badges{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.cat-badge{
+  font-family:var(--mono);font-size:0.59rem;font-weight:700;
+  padding:3px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:0.06em;
+  white-space:nowrap;flex-shrink:0;
+}
+.cat-research{background:var(--cg);color:var(--c);border:1px solid rgba(0,170,255,0.2)}
+.cat-finance{background:var(--og);color:var(--o);border:1px solid rgba(255,136,0,0.2)}
+.cat-support{background:var(--gg);color:var(--g);border:1px solid rgba(0,204,102,0.2)}
+.cat-code{background:var(--vg);color:var(--v);border:1px solid rgba(136,85,255,0.2)}
+.cat-multi-agent{background:var(--rg);color:var(--r2);border:1px solid rgba(255,51,51,0.2)}
+.cat-vertical{background:var(--yg);color:var(--y);border:1px solid rgba(255,204,0,0.2)}
+
+.diff-badge{
+  font-family:var(--mono);font-size:0.58rem;font-weight:700;
+  padding:3px 8px;border-radius:5px;text-transform:uppercase;letter-spacing:0.05em;
+  white-space:nowrap;flex-shrink:0;
+}
+.diff-starter{background:var(--gg);color:var(--g);border:1px solid rgba(0,204,102,0.2)}
+.diff-intermediate{background:var(--og);color:var(--o);border:1px solid rgba(255,136,0,0.2)}
+.diff-advanced{background:var(--rg);color:var(--r2);border:1px solid rgba(255,51,51,0.2)}
+
+.card-title{
+  font-family:var(--mono);font-size:0.91rem;font-weight:700;
+  color:var(--t);line-height:1.3;
+}
+.card-desc{font-size:0.79rem;color:var(--t3);line-height:1.6}
+
+/* ── CODE BLOCK ── */
+.code-wrap{
+  background:var(--bg);border:1px solid var(--b2);border-radius:10px;
+  overflow:hidden;flex:1;
+  display:flex;flex-direction:column;
+  min-height:0;
+}
+.code-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:8px 12px;border-bottom:1px solid var(--b2);
+  background:rgba(255,255,255,0.02);flex-shrink:0;
+}
+.code-lang{
+  font-family:var(--mono);font-size:0.62rem;color:var(--t4);
+  text-transform:uppercase;letter-spacing:0.08em;
+}
+.copy-btn{
+  font-family:var(--mono);font-size:0.62rem;font-weight:600;
+  color:var(--t4);background:var(--b2);border:1px solid rgba(255,255,255,0.08);
+  padding:4px 10px;border-radius:5px;
+  transition:all 0.15s;display:flex;align-items:center;gap:5px;
+}
+.copy-btn:hover{color:var(--t);border-color:var(--t4)}
+.copy-btn.copied{color:var(--g);border-color:rgba(0,204,102,0.3);background:var(--gg)}
+.code-scroll{overflow-x:auto;overflow-y:auto;max-height:280px}
+.code-scroll pre{
+  font-family:var(--mono);font-size:0.71rem;line-height:1.65;
+  color:#c9d1d9;padding:14px 16px;white-space:pre;
+  min-width:max-content;
+}
+/* Syntax-ish tinting via CSS custom properties — light pass */
+.code-scroll pre .kw{color:#ff7b72}
+.code-scroll pre .str{color:#a5d6ff}
+.code-scroll pre .cm{color:var(--t4);font-style:italic}
+.code-scroll pre .fn{color:#d2a8ff}
+.code-scroll pre .num{color:#f2cc60}
+
+/* ── CARD FOOTER ── */
+.card-footer{
+  padding:10px 18px;border-top:1px solid var(--b2);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  flex-shrink:0;
+}
+.credits-tag{
+  font-family:var(--mono);font-size:0.65rem;color:var(--t4);
+  display:flex;align-items:center;gap:5px;
+}
+.credits-tag .credits-num{color:var(--o);font-weight:700}
+.credits-icon{font-size:0.75rem}
+.card-number{
+  font-family:var(--mono);font-size:0.62rem;color:var(--b2);font-weight:700;
+}
+
+/* ── SECTION DIVIDER ── */
+.section-hd{
+  display:flex;align-items:center;gap:12px;margin-bottom:20px;
+}
+.section-lbl{
+  font-family:var(--mono);font-size:0.66rem;font-weight:700;
+  color:var(--t4);text-transform:uppercase;letter-spacing:0.12em;
+  white-space:nowrap;flex-shrink:0;
+}
+.section-line{flex:1;height:1px;background:var(--b2)}
+
+/* ── CTA STRIP ── */
+.cta-strip{
+  margin-top:72px;
+  background:var(--s1);border:1px solid var(--b2);border-radius:16px;
+  padding:48px 40px;text-align:center;
+  position:relative;overflow:hidden;
+}
+.cta-strip::before{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:500px;height:200px;
+  background:radial-gradient(ellipse at 50% 0%, rgba(255,51,51,0.07) 0%, transparent 70%);
+  pointer-events:none;
+}
+.cta-strip h2{
+  font-family:var(--mono);font-size:clamp(1.5rem,3vw,2.2rem);
+  font-weight:800;letter-spacing:-0.03em;margin-bottom:12px;
+}
+.cta-strip p{color:var(--t2);font-size:0.9rem;max-width:440px;margin:0 auto 28px;line-height:1.7}
+.cta-btns{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.btn-primary{
+  font-size:0.85rem;font-weight:700;color:#fff;
+  background:var(--r);padding:12px 28px;border-radius:9px;
+  text-decoration:none;transition:opacity 0.15s;display:inline-flex;align-items:center;gap:8px;
+}
+.btn-primary:hover{opacity:0.85}
+.btn-secondary{
+  font-size:0.85rem;font-weight:600;color:var(--t2);
+  background:var(--b2);border:1px solid rgba(255,255,255,0.1);
+  padding:12px 28px;border-radius:9px;
+  text-decoration:none;transition:all 0.15s;
+}
+.btn-secondary:hover{color:var(--t);border-color:rgba(255,255,255,0.2)}
+
+@media(max-width:640px){
+  .cta-strip{padding:36px 20px}
+  .hero{padding:60px 16px 40px}
+}
+
+/* ── Nav enhanced ── */
+.site-nav{transition:background 0.3s,box-shadow 0.3s;z-index:200}
+.site-nav.sn-scrolled{background:rgba(5,5,5,0.97)!important;box-shadow:0 1px 0 rgba(255,255,255,0.04),0 8px 32px rgba(0,0,0,0.5)}
+.site-nav::after{content:'';position:absolute;bottom:-1px;left:0;height:2px;background:linear-gradient(90deg,#00D4FF,#0099cc);animation:snLoad 1s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes snLoad{from{width:0;opacity:0}60%{opacity:1}to{width:100%;opacity:0}}
+.sn-mark{display:inline-block;width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,#00D4FF,#0088cc);flex-shrink:0;margin-right:6px;vertical-align:middle}
+.site-nav-drop{position:relative;flex-shrink:0;margin-right:4px}
+.sn-drop-btn{display:flex;align-items:center;gap:5px;padding:6px 11px;background:transparent;border:none;color:rgba(240,240,240,0.6);font-size:0.84rem;font-weight:500;cursor:pointer;border-radius:7px;transition:color 0.15s,background 0.15s;font-family:inherit}
+.sn-drop-btn:hover,.site-nav-drop.open .sn-drop-btn{color:#f0f0f0;background:rgba(255,255,255,0.06)}
+.sn-chev{transition:transform 0.2s;flex-shrink:0}
+.site-nav-drop.open .sn-chev{transform:rotate(180deg)}
+.sn-drop-panel{display:none;position:absolute;top:calc(100% + 10px);left:-8px;width:260px;background:#111113;border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:6px;flex-direction:column;gap:2px;box-shadow:0 20px 48px rgba(0,0,0,0.75),inset 0 1px 0 rgba(255,255,255,0.04)}
+.site-nav-drop.open .sn-drop-panel{display:flex}
+.sn-drop-item{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:8px;text-decoration:none;color:#f0f0f0;transition:background 0.12s}
+.sn-drop-item:hover{background:rgba(255,255,255,0.06)}
+.sdi-icon{font-size:0.95rem;opacity:0.55;flex-shrink:0;margin-top:2px;line-height:1.4;width:18px;text-align:center}
+.sn-drop-item b{display:block;font-size:0.84rem;font-weight:600;color:#f0f0f0;line-height:1.3}
+.sn-drop-item em{display:block;font-size:0.73rem;color:rgba(240,240,240,0.42);font-style:normal;margin-top:2px}
+.sn-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;background:transparent;border:none;cursor:pointer;padding:8px;margin-left:auto;border-radius:7px;transition:background 0.15s;width:38px;height:38px}
+.sn-hamburger:hover{background:rgba(255,255,255,0.06)}
+.sn-hamburger span{display:block;width:20px;height:2px;background:rgba(240,240,240,0.75);border-radius:2px;transition:all 0.22s}
+.sn-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.sn-hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.sn-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.sn-mobile{display:none;flex-direction:column;background:#0a0a0a;border-top:1px solid rgba(255,255,255,0.055);padding:12px 16px 24px;gap:2px}
+.sn-mobile.open{display:flex}
+.sn-mobile a{padding:9px 13px;border-radius:8px;font-size:0.875rem;color:rgba(240,240,240,0.72);text-decoration:none;transition:color 0.15s,background 0.15s}
+.sn-mobile a:hover{color:#f0f0f0;background:rgba(255,255,255,0.06)}
+.sn-divider{height:1px;background:rgba(255,255,255,0.055);margin:6px 0}
+.snm-app{border:1px solid rgba(255,255,255,0.12)!important;color:rgba(240,240,240,0.85)!important;text-align:center;margin-top:4px}
+.snm-signup{background:#00D4FF!important;color:#000!important;font-weight:600!important;text-align:center;margin-top:4px}
+@media(max-width:768px){.site-nav-drop,.site-nav-links{display:none!important}.site-nav-app{display:none!important}.sn-hamburger{display:flex!important}}
+</style>
+</head>
+<body>
+
+<nav class="site-nav" id="site-nav">
+  <div class="site-nav-inner">
+    <a href="/" class="site-nav-logo"><span class="sn-mark"></span>Slopshop</a>
+    <div class="site-nav-drop">
+      <button class="sn-drop-btn">Product <svg class="sn-chev" width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="sn-drop-panel">
+        <a href="/dream-studio" class="sn-drop-item"><span class="sdi-icon">◑</span><span><b>Dream Engine</b><em>9-stage overnight synthesis</em></span></a>
+        <a href="/memory-hub" class="sn-drop-item"><span class="sdi-icon">⬡</span><span><b>Memory Hub</b><em>Persistent knowledge store</em></span></a>
+        <a href="/dream-studio" class="sn-drop-item"><span class="sdi-icon">◈</span><span><b>Dream Studio</b><em>Configure dream cycles</em></span></a>
+        <a href="/team-hives" class="sn-drop-item"><span class="sdi-icon">⧖</span><span><b>Hive</b><em>Multiplayer memory for teams</em></span></a>
+        <a href="/playground" class="sn-drop-item"><span class="sdi-icon">◊</span><span><b>Playground</b><em>Test 1,300+ APIs live</em></span></a>
+      </div>
+    </div>
+    <div class="site-nav-links">
+      <a href="/developers" class="site-nav-link">Developers</a>
+      <a href="/pricing" class="site-nav-link">Pricing</a>
+      <a href="/docs" class="site-nav-link">Docs</a>
+    </div>
+    <div class="site-nav-actions">
+      <a href="/brain" class="site-nav-app">Open App ↗</a>
+      <a href="/home" class="site-nav-signup">Sign up free</a>
+    </div>
+    <button class="sn-hamburger" id="sn-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+  <div class="sn-mobile" id="sn-mobile">
+    <a href="/dream-studio">Dream Engine</a>
+    <a href="/memory-hub">Memory Hub</a>
+    <a href="/team-hives">Hive</a>
+    <a href="/playground">Playground</a>
+    <div class="sn-divider"></div>
+    <a href="/developers">Developers</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <div class="sn-divider"></div>
+    <a href="/brain" class="snm-app">Open App ↗</a>
+    <a href="/home" class="snm-signup">Sign up free</a>
+  </div>
+</nav>
+
+<div class="page-wrap">
+<div class="page-inner">
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-tag">
+    <span class="hero-tag-dot"></span>
+    AGENT COOKBOOK
+  </div>
+  <h1>Copy-Paste <span class="accent">Agent Recipes</span></h1>
+  <p class="hero-sub">15+ production-ready agent patterns. Each recipe uses real Slopshop APIs. Copy, paste, ship.</p>
+  <div class="hero-meta">
+    <div class="hero-stat">
+      <div class="hero-stat-num cr">15+</div>
+      <div class="hero-stat-lbl">Recipes</div>
+    </div>
+    <div class="hero-sep"></div>
+    <div class="hero-stat">
+      <div class="hero-stat-num cg">Python</div>
+      <div class="hero-stat-lbl">Language</div>
+    </div>
+    <div class="hero-sep"></div>
+    <div class="hero-stat">
+      <div class="hero-stat-num cc">6</div>
+      <div class="hero-stat-lbl">Categories</div>
+    </div>
+    <div class="hero-sep"></div>
+    <div class="hero-stat">
+      <div class="hero-stat-num cv">Real APIs</div>
+      <div class="hero-stat-lbl">No mocks</div>
+    </div>
+  </div>
+</section>
+
+<!-- FILTER BAR -->
+<div class="filter-wrap">
+  <span class="filter-label">Filter</span>
+  <div class="filter-pills">
+    <button class="fpill active" data-filter="all" onclick="setFilter('all',this)">All</button>
+    <button class="fpill" data-filter="research" onclick="setFilter('research',this)">Research</button>
+    <button class="fpill" data-filter="finance" onclick="setFilter('finance',this)">Finance</button>
+    <button class="fpill" data-filter="support" onclick="setFilter('support',this)">Support</button>
+    <button class="fpill" data-filter="code" onclick="setFilter('code',this)">Code</button>
+    <button class="fpill" data-filter="multi-agent" onclick="setFilter('multi-agent',this)">Multi-Agent</button>
+    <button class="fpill" data-filter="vertical" onclick="setFilter('vertical',this)">Vertical</button>
+  </div>
+  <div class="filter-sep"></div>
+  <div class="filter-count">Showing <span id="recipe-count">15</span> recipes</div>
+</div>
+
+<!-- RECIPE GRID -->
+<div class="section-hd">
+  <span class="section-lbl">Recipes</span>
+  <div class="section-line"></div>
+</div>
+
+<div class="recipe-grid" id="recipe-grid">
+
+<!-- 1. Research Agent with Persistent Memory -->
+<div class="recipe-card" data-categories="research">
+  <div class="card-accent-bar" style="background:var(--c)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-research">Research</span>
+        <span class="diff-badge diff-starter">Starter</span>
+      </div>
+    </div>
+    <div class="card-title">Research Agent with Persistent Memory</div>
+    <div class="card-desc">Searches existing knowledge before running tools, then stores results for future queries — each run builds on the last.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def research_and_remember(topic):
+    # Search existing knowledge first
+    existing = slop.memory.search(topic, namespace="research")
+    if existing.results:
+        return existing.results[0].value
+
+    # Run research tools
+    result = slop.tools.run("llm-search", {"query": topic})
+
+    # Store for future queries
+    slop.memory.set(
+        f"research:{topic}",
+        result.output,
+        namespace="research"
+    )
+    return result.output
+
+# Each run builds on previous knowledge
+answer = research_and_remember(
+    "quantum computing breakthroughs 2026"
+)</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~5</span>
+    </div>
+    <span class="card-number">#01</span>
+  </div>
+</div>
+
+<!-- 2. Customer Support Swarm with Escalation -->
+<div class="recipe-card" data-categories="support">
+  <div class="card-accent-bar" style="background:var(--g)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-support">Support</span>
+        <span class="diff-badge diff-intermediate">Intermediate</span>
+      </div>
+    </div>
+    <div class="card-title">Customer Support Swarm with Escalation</div>
+    <div class="card-desc">Classifies intent, resolves autonomously, and escalates to a human agent when confidence is low — with full interaction history.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def support_swarm(ticket_id, user_message):
+    # Check user history
+    history = slop.memory.get(
+        f"user:{ticket_id}", namespace="support"
+    )
+
+    # Classify intent
+    intent = slop.tools.run("llm-classify", {
+        "text": user_message,
+        "categories": ["billing", "technical",
+                        "general", "escalate"]
+    })
+
+    if intent.output == "escalate":
+        slop.memory.set(
+            f"escalated:{ticket_id}",
+            user_message,
+            namespace="support"
+        )
+        return {"action": "escalate", "to": "human_agent"}
+
+    # Store interaction
+    slop.memory.set(
+        f"user:{ticket_id}",
+        f"Last: {user_message}",
+        namespace="support"
+    )
+    return {"action": "resolve", "intent": intent.output}</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~8</span>
+    </div>
+    <span class="card-number">#02</span>
+  </div>
+</div>
+
+<!-- 3. Trading Bot with Dream Cycles -->
+<div class="recipe-card" data-categories="finance">
+  <div class="card-accent-bar" style="background:var(--o)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-finance">Finance</span>
+        <span class="diff-badge diff-advanced">Advanced</span>
+      </div>
+    </div>
+    <div class="card-title">Trading Bot with Dream Cycles</div>
+    <div class="card-desc">Stores market signals throughout the day, then runs nightly Dream Engine synthesis to generate tomorrow's forecast scenarios.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+import schedule
+import time
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def store_market_signal(symbol, price, sentiment):
+    slop.memory.set(
+        f"signal:{symbol}:{int(time.time())}",
+        f"price={price} sentiment={sentiment}",
+        namespace="trading"
+    )
+
+def nightly_analysis():
+    # Dream Engine synthesizes overnight
+    session = slop.dream.start(
+        namespace="trading",
+        strategy="forecast",  # Monte Carlo scenarios
+        model="claude-opus-4-5"
+    )
+    report = slop.dream.wait(session.dream_id)
+    print(f"Intelligence Score: {report.intelligence_score}")
+    return report.entries  # tomorrow's scenarios
+
+# Store signals throughout the day
+store_market_signal("BTC", 95000, "bullish")
+
+# Schedule nightly synthesis
+schedule.every().day.at("02:00").do(nightly_analysis)</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~50</span>
+    </div>
+    <span class="card-number">#03</span>
+  </div>
+</div>
+
+<!-- 4. Code Review Pipeline -->
+<div class="recipe-card" data-categories="code">
+  <div class="card-accent-bar" style="background:var(--v)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-code">Code</span>
+        <span class="diff-badge diff-intermediate">Intermediate</span>
+      </div>
+    </div>
+    <div class="card-title">Code Review Pipeline</div>
+    <div class="card-desc">Scores PR complexity, surfaces similar past issues from memory, and recommends approve or request-changes automatically.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def review_pr(diff_content, pr_id):
+    # Check complexity
+    complexity = slop.tools.run(
+        "code-complexity-score",
+        {"code": diff_content}
+    )
+
+    # Find similar past issues
+    similar = slop.memory.search(
+        f"complexity:{complexity.output}",
+        namespace="reviews"
+    )
+
+    # Store patterns for future learning
+    slop.memory.set(
+        f"pr:{pr_id}",
+        f"complexity={complexity.output} "
+        f"issues={len(similar.results)}",
+        namespace="reviews"
+    )
+
+    return {
+        "complexity": complexity.output,
+        "similar_issues": similar.results[:3],
+        "recommendation": (
+            "request_changes"
+            if int(complexity.output) > 50
+            else "approve"
+        )
+    }</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~4</span>
+    </div>
+    <span class="card-number">#04</span>
+  </div>
+</div>
+
+<!-- 5. Auto-summarizing Slack Bot -->
+<div class="recipe-card" data-categories="support">
+  <div class="card-accent-bar" style="background:var(--g)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-support">Support</span>
+        <span class="diff-badge diff-starter">Starter</span>
+      </div>
+    </div>
+    <div class="card-title">Auto-summarizing Slack Bot</div>
+    <div class="card-desc">Summarizes any Slack channel's messages with an LLM and stores the result for searchable channel history.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+from datetime import date
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def summarize_channel(channel_id, messages):
+    # Summarize with LLM
+    summary = slop.tools.run("llm-summarize", {
+        "text": "\n".join(messages),
+        "max_length": 200
+    })
+
+    # Store for searchable history
+    slop.memory.set(
+        f"summary:{channel_id}:{date.today()}",
+        summary.output,
+        namespace="slack"
+    )
+
+    return summary.output
+
+# Example usage
+msgs = fetch_slack_messages("#eng-general", limit=200)
+daily_summary = summarize_channel("eng-general", msgs)
+print(daily_summary)</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~3</span>
+    </div>
+    <span class="card-number">#05</span>
+  </div>
+</div>
+
+<!-- 6. Daily Intelligence Brief Generator -->
+<div class="recipe-card" data-categories="research">
+  <div class="card-accent-bar" style="background:var(--c)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-research">Research</span>
+        <span class="diff-badge diff-intermediate">Intermediate</span>
+      </div>
+    </div>
+    <div class="card-title">Daily Intelligence Brief Generator</div>
+    <div class="card-desc">Reads your latest Dream Engine report each morning and formats a structured intelligence brief with themes and compression metrics.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def morning_brief(namespace="default"):
+    # Check yesterday's dream report
+    sessions = slop.dream.list(namespace=namespace, limit=1)
+    if not sessions:
+        return "No dream data yet. Run a dream cycle first."
+
+    report = slop.dream.report(sessions[0].dream_id)
+
+    return {
+        "intelligence_score": report.intelligence_score,
+        "top_insights": report.entries[:5],
+        "compression_ratio":
+            report.compression_metrics["ratio"],
+        "themes":
+            report.hierarchy_metadata["themes_generated"]
+    }
+
+brief = morning_brief(namespace="work")
+print(
+    f"IS: {brief['intelligence_score']} | "
+    f"{brief['themes']} themes synthesized"
+)</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~2</span>
+    </div>
+    <span class="card-number">#06</span>
+  </div>
+</div>
+
+<!-- 7. Memory-Augmented RAG Pipeline -->
+<div class="recipe-card" data-categories="research">
+  <div class="card-accent-bar" style="background:var(--c)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-research">Research</span>
+        <span class="diff-badge diff-intermediate">Intermediate</span>
+      </div>
+    </div>
+    <div class="card-title">Memory-Augmented RAG Pipeline</div>
+    <div class="card-desc">Ingests documents into persistent memory, retrieves via semantic search, and generates grounded answers using retrieved context.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def rag_with_memory(query, docs, namespace="rag"):
+    # Store docs in memory
+    for i, doc in enumerate(docs):
+        slop.memory.set(
+            f"doc:{i}", doc["content"],
+            namespace=namespace
+        )
+
+    # Search with semantic similarity
+    results = slop.memory.search(
+        query, namespace=namespace, limit=5
+    )
+
+    # Build context from top results
+    context = "\n---\n".join(
+        [r.value for r in results.results]
+    )
+
+    # Generate answer with context
+    answer = slop.tools.run("llm-think", {
+        "prompt":
+            f"Context:\n{context}\n\nQuestion: {query}"
+    })
+
+    return answer.output</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~10</span>
+    </div>
+    <span class="card-number">#07</span>
+  </div>
+</div>
+
+<!-- 8. Self-Improving Agent -->
+<div class="recipe-card" data-categories="research">
+  <div class="card-accent-bar" style="background:var(--c)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-research">Research</span>
+        <span class="diff-badge diff-advanced">Advanced</span>
+      </div>
+    </div>
+    <div class="card-title">Self-Improving Agent (Dream + Evolve)</div>
+    <div class="card-desc">Agent stores task outcomes during the day, then runs an evolve Dream cycle overnight for Bayesian belief updates and self-improvement.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+
+class SelfImprovingAgent:
+    def __init__(self, namespace="agent"):
+        self.slop = slopshop.Client(api_key="YOUR_KEY")
+        self.namespace = namespace
+        self.session_count = 0
+
+    def act(self, task):
+        result = self.slop.tools.run(
+            "llm-think", {"prompt": task}
+        )
+        # Store outcome for learning
+        self.slop.memory.set(
+            f"outcome:{self.session_count}",
+            f"task={task[:50]} result_quality=0.8",
+            namespace=self.namespace
+        )
+        self.session_count += 1
+        return result.output
+
+    def evolve(self):
+        # Dream with evolve strategy — Bayesian belief updates
+        session = self.slop.dream.start(
+            namespace=self.namespace,
+            strategy="evolve"
+        )
+        return self.slop.dream.wait(session.dream_id)
+
+agent = SelfImprovingAgent()
+agent.act("Summarize AI trends for Q2 2026")
+report = agent.evolve()  # Agent gets smarter overnight</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~35</span>
+    </div>
+    <span class="card-number">#08</span>
+  </div>
+</div>
+
+<!-- 9. Multi-Agent Debate with Shared Memory -->
+<div class="recipe-card" data-categories="multi-agent">
+  <div class="card-accent-bar" style="background:var(--r)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-multi-agent">Multi-Agent</span>
+        <span class="diff-badge diff-advanced">Advanced</span>
+      </div>
+    </div>
+    <div class="card-title">Multi-Agent Debate with Shared Memory</div>
+    <div class="card-desc">Two agents argue opposite sides of a topic, each reading the other's arguments from a shared namespace before responding.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+SHARED_NS = "debate-room-001"
+
+def agent_argue(position, agent_id, topic):
+    # Read opposing arguments from shared memory
+    counter = slop.memory.search(
+        f"argument:{topic}", namespace=SHARED_NS
+    )
+
+    # Generate argument considering counter-positions
+    context = "\n".join(
+        [r.value for r in counter.results[-3:]]
+    )
+    arg = slop.tools.run("llm-think", {
+        "prompt":
+            f"Argue {position} on '{topic}'. "
+            f"Counter-arguments: {context}"
+    })
+
+    # Store in shared namespace
+    slop.memory.set(
+        f"argument:{topic}:{agent_id}",
+        arg.output,
+        namespace=SHARED_NS
+    )
+    return arg.output
+
+# Two agents debate
+arg1 = agent_argue("for",     "agent_alpha",
+                   "AGI will arrive by 2027")
+arg2 = agent_argue("against", "agent_beta",
+                   "AGI will arrive by 2027")</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~15</span>
+    </div>
+    <span class="card-number">#09</span>
+  </div>
+</div>
+
+<!-- 10. PDF Knowledge Base + Dream Synthesis -->
+<div class="recipe-card" data-categories="research">
+  <div class="card-accent-bar" style="background:var(--c)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-research">Research</span>
+        <span class="diff-badge diff-intermediate">Intermediate</span>
+      </div>
+    </div>
+    <div class="card-title">PDF Knowledge Base + Dream Synthesis</div>
+    <div class="card-desc">Chunks a PDF into memory, then runs insight_generate Dream to surface cross-domain discoveries you'd never find manually.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def ingest_pdf_and_dream(pdf_text, namespace="kb"):
+    # Chunk and store
+    chunks = [
+        pdf_text[i:i+500]
+        for i in range(0, len(pdf_text), 500)
+    ]
+    for i, chunk in enumerate(chunks):
+        slop.memory.set(
+            f"chunk:{i}", chunk, namespace=namespace
+        )
+
+    print(f"Stored {len(chunks)} chunks")
+
+    # Run synthesis Dream
+    session = slop.dream.start(
+        namespace=namespace,
+        strategy="insight_generate",  # Cross-domain discovery
+        model="claude-sonnet-4-6"
+    )
+
+    report = slop.dream.wait(session.dream_id)
+    print(f"Synthesized {report.insights_generated} insights")
+    print(
+        f"Compression: "
+        f"{report.compression_metrics['ratio']}x"
+    )
+    return report</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~40</span>
+    </div>
+    <span class="card-number">#10</span>
+  </div>
+</div>
+
+<!-- 11. Autonomous Research Agent (LangChain + Slopshop) -->
+<div class="recipe-card" data-categories="research">
+  <div class="card-accent-bar" style="background:var(--c)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-research">Research</span>
+        <span class="diff-badge diff-advanced">Advanced</span>
+      </div>
+    </div>
+    <div class="card-title">LangChain Agent + Slopshop Memory</div>
+    <div class="card-desc">Drop-in persistent memory upgrade for any LangChain agent — replaces in-process buffers with durable, searchable Slopshop memory.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>from langchain.agents import AgentExecutor
+import slopshop
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+# Use Slopshop as the memory layer for LangChain agents
+class SlopMemory:
+    def save_context(self, inputs, outputs):
+        slop.memory.set(
+            f"ctx:{hash(str(inputs))}",
+            str(outputs),
+            namespace="langchain"
+        )
+
+    def load_memory_variables(self, inputs):
+        results = slop.memory.search(
+            str(inputs), namespace="langchain"
+        )
+        return {
+            "history": [
+                r.value for r in results.results[:3]
+            ]
+        }
+
+# Drop-in memory upgrade for any LangChain agent
+memory = SlopMemory()
+
+# Pass to your existing AgentExecutor
+# agent = AgentExecutor(agent=..., memory=memory)</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~5</span>
+    </div>
+    <span class="card-number">#11</span>
+  </div>
+</div>
+
+<!-- 12. Memory Replay Debugger -->
+<div class="recipe-card" data-categories="code">
+  <div class="card-accent-bar" style="background:var(--v)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-code">Code</span>
+        <span class="diff-badge diff-intermediate">Intermediate</span>
+      </div>
+    </div>
+    <div class="card-title">Memory Replay Debugger</div>
+    <div class="card-desc">Replays a full agent session timeline from a timestamp, printing every memory event and Dream report in chronological order.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def replay_agent_session(namespace, from_timestamp):
+    # List all memories since timestamp
+    memories = slop.memory.list(namespace=namespace)
+
+    # Filter and sort
+    timeline = sorted(
+        [
+            m for m in memories.keys
+            if m.created_at >= from_timestamp
+        ],
+        key=lambda m: m.created_at
+    )
+
+    print(f"Replaying {len(timeline)} memory events...")
+    for event in timeline:
+        val = slop.memory.get(
+            event.key, namespace=namespace
+        )
+        print(
+            f"[{event.created_at}] "
+            f"{event.key}: {val.value[:80]}..."
+        )
+
+    # Fetch any dream reports in this window
+    sessions = slop.dream.list(namespace=namespace)
+    for s in sessions:
+        if s.started_at >= from_timestamp:
+            report = slop.dream.report(s.dream_id)
+            print(
+                f"[DREAM] IS={report.intelligence_score} "
+                f"strategy={report.strategy}"
+            )</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~3</span>
+    </div>
+    <span class="card-number">#12</span>
+  </div>
+</div>
+
+<!-- 13. Collective Dream Namespace (Hive) -->
+<div class="recipe-card" data-categories="multi-agent">
+  <div class="card-accent-bar" style="background:var(--r)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-multi-agent">Multi-Agent</span>
+        <span class="diff-badge diff-advanced">Advanced</span>
+      </div>
+    </div>
+    <div class="card-title">Collective Dream Namespace (Hive)</div>
+    <div class="card-desc">Multiple agents contribute insights to a shared Hive namespace throughout the day, then a collective Dream synthesizes all team intelligence overnight.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+import time
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+HIVE_NS = "team-hive-v1"
+
+def contribute_to_hive(agent_id, insight):
+    slop.memory.set(
+        f"insight:{agent_id}:{int(time.time())}",
+        insight,
+        namespace=HIVE_NS
+    )
+
+def run_collective_dream():
+    # All team agents' memories synthesized together
+    session = slop.dream.start(
+        namespace=HIVE_NS,
+        strategy="full_cycle",
+        model="claude-opus-4-6"
+    )
+    report = slop.dream.wait(session.dream_id)
+    print(f"Collective IS: {report.intelligence_score}")
+    print(
+        f"Themes: "
+        f"{report.hierarchy_metadata['themes_generated']}"
+    )
+    return report
+
+# Agents contribute throughout the day
+contribute_to_hive(
+    "agent_sales",
+    "Q2 pipeline looking strong, 3 enterprise deals"
+)
+contribute_to_hive(
+    "agent_eng",
+    "Latency improved 40% after caching layer"
+)
+run_collective_dream()  # Collective intelligence synthesized</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~55</span>
+    </div>
+    <span class="card-number">#13</span>
+  </div>
+</div>
+
+<!-- 14. Portfolio Risk Memory Agent -->
+<div class="recipe-card" data-categories="finance vertical">
+  <div class="card-accent-bar" style="background:var(--y, #f59e0b)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-finance">Finance</span>
+        <span class="cat-badge cat-vertical">Vertical</span>
+        <span class="diff-badge diff-advanced">Advanced</span>
+      </div>
+    </div>
+    <div class="card-title">Portfolio Risk Memory Agent</div>
+    <div class="card-desc">Tracks all portfolio positions in persistent memory, then runs a forecast Dream for Monte Carlo risk scenarios and causal edge analysis.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def track_portfolio_risk(portfolio_id, positions):
+    for symbol, data in positions.items():
+        slop.memory.set(
+            f"position:{symbol}",
+            f"qty={data['qty']} price={data['price']} "
+            f"risk={data['beta']}",
+            namespace=f"portfolio:{portfolio_id}"
+        )
+
+    # Dream with forecast strategy for risk scenarios
+    session = slop.dream.start(
+        namespace=f"portfolio:{portfolio_id}",
+        strategy="forecast",  # Monte Carlo scenarios
+        model="claude-sonnet-4-6"
+    )
+    report = slop.dream.wait(session.dream_id)
+
+    # Extract risk scenarios from forecast entries
+    risk_scenarios = [
+        e for e in report.entries
+        if e.get("type") == "forecast"
+    ]
+    return {
+        "intelligence_score": report.intelligence_score,
+        "risk_scenarios": risk_scenarios[:5],
+        "causal_edges":
+            report.hierarchy_metadata["causal_edges_added"]
+    }</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~50</span>
+    </div>
+    <span class="card-number">#14</span>
+  </div>
+</div>
+
+<!-- 15. Memory Backup + Migration CLI Script -->
+<div class="recipe-card" data-categories="code">
+  <div class="card-accent-bar" style="background:var(--v)"></div>
+  <div class="card-body">
+    <div class="card-top">
+      <div class="card-badges">
+        <span class="cat-badge cat-code">Code</span>
+        <span class="diff-badge diff-starter">Starter</span>
+      </div>
+    </div>
+    <div class="card-title">Memory Backup + Migration CLI Script</div>
+    <div class="card-desc">Exports an entire namespace to a JSON file and restores it to any target namespace — perfect for migrations, snapshots, and disaster recovery.</div>
+    <div class="code-wrap">
+      <div class="code-header">
+        <span class="code-lang">Python</span>
+        <button class="copy-btn" onclick="copyCode(this)">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Copy
+        </button>
+      </div>
+      <div class="code-scroll"><pre>import slopshop
+import json
+
+slop = slopshop.Client(api_key="YOUR_KEY")
+
+def backup_namespace(namespace, output_file):
+    all_memories = slop.memory.list(
+        namespace=namespace, limit=1000
+    )
+
+    backup = []
+    for key in all_memories.keys:
+        val = slop.memory.get(key, namespace=namespace)
+        backup.append({
+            "key": key,
+            "value": val.value,
+            "namespace": namespace
+        })
+
+    with open(output_file, "w") as f:
+        json.dump(backup, f, indent=2)
+
+    print(f"Backed up {len(backup)} memories to {output_file}")
+
+def restore_namespace(input_file, target_namespace):
+    with open(input_file) as f:
+        backup = json.load(f)
+
+    for item in backup:
+        slop.memory.set(
+            item["key"], item["value"],
+            namespace=target_namespace
+        )
+
+    print(
+        f"Restored {len(backup)} memories "
+        f"to {target_namespace}"
+    )
+
+# Usage
+backup_namespace("production", "backup_2026_04_01.json")
+# restore_namespace("backup_2026_04_01.json", "production_v2")</pre></div>
+    </div>
+  </div>
+  <div class="card-footer">
+    <div class="credits-tag">
+      <span class="credits-icon">⚡</span>
+      Credits per run: <span class="credits-num">~1</span>
+    </div>
+    <span class="card-number">#15</span>
+  </div>
+</div>
+
+</div><!-- /recipe-grid -->
+
+<!-- CTA STRIP -->
+<div class="cta-strip">
+  <h2>Ready to ship your agent?</h2>
+  <p>Get an API key, install the SDK, and your first recipe will be running in under 5 minutes.</p>
+  <div class="cta-btns">
+    <a href="/home" class="btn-primary">Get API key — free ↗</a>
+    <a href="/docs" class="btn-secondary">Read the docs</a>
+  </div>
+</div>
+
+</div><!-- /page-inner -->
+</div><!-- /page-wrap -->
+
+<script>
+(function(){var nav=document.getElementById('site-nav');if(nav)window.addEventListener('scroll',function(){nav.classList[scrollY>20?'add':'remove']('sn-scrolled');},{passive:true});document.querySelectorAll('.site-nav-drop').forEach(function(d){d.querySelector('.sn-drop-btn').addEventListener('click',function(e){e.stopPropagation();d.classList.toggle('open');});});document.addEventListener('click',function(){document.querySelectorAll('.site-nav-drop.open').forEach(function(d){d.classList.remove('open');});});var hb=document.getElementById('sn-hamburger'),mob=document.getElementById('sn-mobile');if(hb&&mob){hb.addEventListener('click',function(){mob.classList.toggle('open');hb.classList.toggle('open');});}})();
+// ── FILTER ──
+function setFilter(cat, btn) {
+  document.querySelectorAll('.fpill').forEach(function(p) {
+    p.classList.remove('active');
+  });
+  btn.classList.add('active');
+
+  var cards = document.querySelectorAll('.recipe-card');
+  var visible = 0;
+  cards.forEach(function(card) {
+    if (cat === 'all') {
+      card.style.display = '';
+      visible++;
+    } else {
+      var cats = (card.dataset.categories || '').split(' ');
+      if (cats.indexOf(cat) !== -1) {
+        card.style.display = '';
+        visible++;
+      } else {
+        card.style.display = 'none';
+      }
+    }
+  });
+  document.getElementById('recipe-count').textContent = visible;
+}
+
+// ── COPY CODE ──
+function copyCode(btn) {
+  var pre = btn.closest('.code-wrap').querySelector('pre');
+  var text = pre ? pre.textContent : '';
+  if (!navigator.clipboard) {
+    // Fallback
+    var ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    try { document.execCommand('copy'); } catch(e) {}
+    document.body.removeChild(ta);
+    flashCopied(btn);
+    return;
+  }
+  navigator.clipboard.writeText(text).then(function() {
+    flashCopied(btn);
+  });
+}
+
+function flashCopied(btn) {
+  var orig = btn.innerHTML;
+  btn.classList.add('copied');
+  btn.innerHTML = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+  setTimeout(function() {
+    btn.classList.remove('copied');
+    btn.innerHTML = orig;
+  }, 2000);
+}
+</script>
+
+</body>
+</html>

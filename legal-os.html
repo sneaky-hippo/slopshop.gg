@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Legal OS — REM Labs</title>
+<meta name="description" content="AI legal assistant with persistent memory — consolidates case law, tracks precedent evolution, and flags cross-jurisdiction conflicts overnight.">
+<meta name="keywords" content="legal AI, AI legal assistant, case law, precedent tracking, REM Labs, Legal OS, legal memory">
+<link rel="canonical" href="https://remlabs.ai/legal-os">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://remlabs.ai/legal-os">
+<meta property="og:title" content="Legal OS — REM Labs">
+<meta property="og:description" content="AI legal assistant with persistent memory — consolidates case law, tracks precedent evolution, and flags cross-jurisdiction conflicts overnight.">
+<meta property="og:image" content="https://remlabs.ai/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@remlabsai">
+<meta name="twitter:title" content="Legal OS — REM Labs">
+<meta name="twitter:description" content="Your legal AI remembers every precedent. And maps the law while you sleep.">
+<meta name="theme-color" content="#0a0f1c">
+<link rel="icon" href="/favicon-rem.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ── Design Tokens ── */
+:root {
+  --bg:       #0a0f1c;
+  --bg2:      #0d1424;
+  --bg3:      #111827;
+  --surface:  rgba(255,255,255,0.04);
+  --surface2: rgba(255,255,255,0.07);
+  --border:   rgba(255,255,255,0.08);
+  --border2:  rgba(255,255,255,0.14);
+  --text:     #f8fafc;
+  --text2:    rgba(248,250,252,0.6);
+  --text3:    rgba(248,250,252,0.35);
+  --purple:   #a855f7;
+  --purple2:  #c084fc;
+  --purple-dim: rgba(168,85,247,0.12);
+  --purple-border: rgba(168,85,247,0.25);
+  --cyan:     #67e8f9;
+  --cyan-dim: rgba(103,232,249,0.1);
+  --cyan-border: rgba(103,232,249,0.2);
+  --green:    #4ade80;
+  --amber:    #f59e0b;
+  --amber2:   #fbbf24;
+  --amber-dim: rgba(245,158,11,0.12);
+  --amber-border: rgba(245,158,11,0.25);
+  --font:     'Inter', -apple-system, sans-serif;
+  --mono:     'JetBrains Mono', monospace;
+  --nav-h:    60px;
+  --max-w:    1120px;
+  --r:        12px;
+}
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
+  line-height: 1.7;
+}
+a { color: inherit; text-decoration: none; }
+button { font-family: inherit; cursor: pointer; border: none; }
+img { display: block; max-width: 100%; }
+
+/* ── Scroll Reveal ── */
+.reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.7s cubic-bezier(.22,1,.36,1), transform 0.7s cubic-bezier(.22,1,.36,1);
+}
+.reveal.vis { opacity: 1; transform: none; }
+.rv2 { transition-delay: 0.1s; }
+.rv3 { transition-delay: 0.2s; }
+.rv4 { transition-delay: 0.3s; }
+.rv5 { transition-delay: 0.4s; }
+.rv6 { transition-delay: 0.5s; }
+
+/* ── Nav ── */
+.nav {
+  position: fixed; top: 0; left: 0; right: 0; z-index: 200;
+  height: var(--nav-h);
+  background: rgba(10,15,28,0.85);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+  transition: background 0.3s, box-shadow 0.3s;
+}
+.nav.scrolled {
+  background: rgba(10,15,28,0.97);
+  box-shadow: 0 1px 0 rgba(255,255,255,0.04), 0 8px 40px rgba(0,0,0,0.6);
+}
+.nav::after {
+  content: ''; position: absolute; bottom: -1px; left: 0; height: 2px;
+  background: linear-gradient(90deg, #f59e0b, #a855f7);
+  animation: navLoad 1.2s cubic-bezier(.4,0,.2,1) forwards;
+}
+@keyframes navLoad { from{width:0;opacity:0} 60%{opacity:1} to{width:100%;opacity:0} }
+.nav-inner {
+  max-width: var(--max-w); margin: 0 auto; padding: 0 32px;
+  height: 100%; display: flex; align-items: center; gap: 8px;
+}
+.nav-logo {
+  display: flex; align-items: center; gap: 8px;
+  font-weight: 800; font-size: 1.05rem; letter-spacing: -0.04em;
+  color: var(--text); text-decoration: none; flex-shrink: 0; margin-right: 16px;
+  transition: opacity 0.2s;
+}
+.nav-logo:hover { opacity: 0.85; }
+.rem-mark {
+  width: 26px; height: 26px; border-radius: 7px; flex-shrink: 0;
+  background: linear-gradient(135deg, #a855f7, #67e8f9);
+  display: flex; align-items: center; justify-content: center;
+}
+.rem-mark svg { width: 14px; height: 14px; fill: white; }
+.nav-links { display: flex; gap: 2px; flex: 1; }
+.nav-link {
+  padding: 6px 12px; border-radius: 7px; font-size: 0.84rem; font-weight: 500;
+  color: var(--text2); text-decoration: none; transition: color 0.15s, background 0.15s;
+}
+.nav-link:hover { color: var(--text); background: var(--surface2); }
+.nav-spacer { flex: 1; }
+.nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.nav-login {
+  font-size: 0.82rem; font-weight: 500; color: var(--text2);
+  padding: 7px 14px; border-radius: 7px; border: 1px solid var(--border);
+  transition: all 0.15s;
+}
+.nav-login:hover { color: var(--text); border-color: var(--border2); background: var(--surface); }
+.nav-start {
+  font-size: 0.82rem; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, #a855f7, #7c3aed);
+  padding: 8px 18px; border-radius: 8px; text-decoration: none;
+  transition: opacity 0.15s, box-shadow 0.15s; white-space: nowrap;
+  box-shadow: 0 0 0 0 rgba(168,85,247,0);
+}
+.nav-start:hover { opacity: 0.9; box-shadow: 0 4px 20px rgba(168,85,247,0.4); }
+.nav-hb {
+  display: none; flex-direction: column; gap: 5px; background: transparent;
+  padding: 8px; border-radius: 7px; margin-left: auto;
+  transition: background 0.15s; width: 38px; height: 38px;
+  justify-content: center;
+}
+.nav-hb:hover { background: var(--surface2); }
+.nav-hb span { display: block; width: 20px; height: 2px; background: rgba(248,250,252,0.7); border-radius: 2px; transition: all 0.22s; }
+.nav-hb.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-hb.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+.nav-hb.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+.nav-mob {
+  display: none; position: fixed; top: var(--nav-h); left: 0; right: 0; z-index: 199;
+  background: rgba(10,15,28,0.98); backdrop-filter: blur(24px);
+  border-bottom: 1px solid var(--border); padding: 16px 20px 28px; flex-direction: column; gap: 4px;
+}
+.nav-mob.open { display: flex; }
+.nav-mob a {
+  padding: 10px 14px; border-radius: 8px; font-size: 0.875rem;
+  color: var(--text2); text-decoration: none; transition: color 0.15s, background 0.15s;
+}
+.nav-mob a:hover { color: var(--text); background: var(--surface2); }
+.nav-mob .mob-divider { height: 1px; background: var(--border); margin: 6px 0; }
+.nav-mob .mob-cta {
+  margin-top: 4px; text-align: center; background: linear-gradient(135deg, #a855f7, #7c3aed);
+  color: #fff; font-weight: 700;
+}
+@media(max-width: 768px) { .nav-links, .nav-login { display: none; } .nav-hb { display: flex; } }
+@media(max-width: 480px) { .nav-inner { padding: 0 16px; } }
+
+/* ── Hero ── */
+.hero {
+  min-height: 100vh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  text-align: center; padding: calc(var(--nav-h) + 80px) 32px 100px;
+  position: relative; overflow: hidden;
+}
+.hero-glow {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse 800px 600px at 50% 20%, rgba(245,158,11,0.1) 0%, transparent 70%),
+    radial-gradient(ellipse 600px 400px at 20% 80%, rgba(168,85,247,0.07) 0%, transparent 60%),
+    radial-gradient(ellipse 500px 300px at 80% 70%, rgba(245,158,11,0.05) 0%, transparent 60%);
+}
+.hero-grid {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.02;
+  background-image:
+    linear-gradient(rgba(245,158,11,0.8) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,158,11,0.8) 1px, transparent 1px);
+  background-size: 60px 60px;
+}
+.hero-content { position: relative; z-index: 1; max-width: 860px; }
+.hero-eyebrow {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 6px 14px; border-radius: 100px;
+  background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.25);
+  font-size: 0.78rem; font-weight: 600; color: var(--amber2);
+  letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 28px;
+}
+.hero-eyebrow::before {
+  content: ''; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--amber); animation: pulse 2s infinite;
+}
+@keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(0.8)} }
+.hero-h1 {
+  font-size: clamp(2.6rem, 6vw, 5rem); font-weight: 900;
+  letter-spacing: -0.04em; line-height: 1.07; margin-bottom: 28px;
+  color: var(--text);
+}
+.hero-h1 .line2 {
+  background: linear-gradient(135deg, #f59e0b, #a855f7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-sub {
+  font-size: clamp(1rem, 2vw, 1.15rem); color: var(--text2); line-height: 1.7;
+  max-width: 660px; margin: 0 auto 40px; font-weight: 400;
+}
+.hero-sub strong { color: var(--text); font-weight: 600; }
+.hero-ctas { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 40px; }
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px; border-radius: 10px; font-size: 0.95rem; font-weight: 700;
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff; text-decoration: none; border: none; cursor: pointer;
+  transition: opacity 0.15s, transform 0.15s, box-shadow 0.15s;
+  box-shadow: 0 4px 24px rgba(245,158,11,0.35);
+}
+.btn-primary:hover { opacity: 0.92; transform: translateY(-1px); box-shadow: 0 8px 32px rgba(245,158,11,0.45); }
+.btn-secondary {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 14px 28px; border-radius: 10px; font-size: 0.95rem; font-weight: 600;
+  background: transparent; color: var(--text2); border: 1px solid var(--border2);
+  text-decoration: none; cursor: pointer;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+.btn-secondary:hover { color: var(--text); border-color: rgba(245,158,11,0.4); background: rgba(245,158,11,0.06); }
+.hero-stats {
+  display: flex; align-items: center; gap: 24px; justify-content: center;
+  flex-wrap: wrap; font-size: 0.8rem; color: var(--text3); margin-bottom: 16px;
+}
+.hero-stats .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--border2); }
+.hero-stat { display: flex; align-items: center; gap: 6px; color: var(--text2); font-weight: 500; }
+.hero-disclaimer {
+  font-size: 0.72rem; color: var(--text3); margin-top: 4px;
+  background: rgba(245,158,11,0.05); border: 1px solid rgba(245,158,11,0.12);
+  border-radius: 8px; padding: 8px 16px; display: inline-block;
+}
+
+/* ── Section base ── */
+section { padding: 100px 32px; }
+.section-inner { max-width: var(--max-w); margin: 0 auto; }
+.section-label {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--amber); margin-bottom: 16px;
+}
+.section-label::before { content: ''; width: 18px; height: 2px; background: var(--amber); border-radius: 2px; }
+h2.section-h {
+  font-size: clamp(1.8rem, 3.5vw, 2.8rem); font-weight: 800; letter-spacing: -0.035em;
+  line-height: 1.15; margin-bottom: 16px;
+}
+.section-sub {
+  font-size: 1rem; color: var(--text2); max-width: 560px; line-height: 1.75; margin-bottom: 56px;
+}
+
+/* ── Feature Cards ── */
+.features-section { background: var(--bg2); }
+.features-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-top: 48px; }
+.feat-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 28px 24px; transition: border-color 0.25s, background 0.25s;
+  position: relative; overflow: hidden;
+}
+.feat-card:hover { border-color: var(--amber-border); background: rgba(245,158,11,0.04); }
+.feat-card::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(90deg, #f59e0b, #a855f7); opacity: 0; transition: opacity 0.25s;
+}
+.feat-card:hover::before { opacity: 1; }
+.feat-icon { font-size: 1.6rem; margin-bottom: 14px; }
+.feat-title { font-size: 1rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; color: var(--text); }
+.feat-desc { font-size: 0.82rem; color: var(--text2); line-height: 1.65; }
+
+/* ── Use Cases ── */
+.use-cases-section { background: var(--bg); }
+.use-cases-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-top: 48px; }
+.use-card {
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--r);
+  padding: 28px 22px; transition: border-color 0.25s, background 0.25s, transform 0.25s;
+  text-align: center;
+}
+.use-card:hover { border-color: var(--amber-border); background: rgba(245,158,11,0.04); transform: translateY(-2px); }
+.use-icon { font-size: 2rem; margin-bottom: 14px; }
+.use-title { font-size: 0.95rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 8px; color: var(--text); }
+.use-desc { font-size: 0.78rem; color: var(--text2); line-height: 1.6; }
+
+/* ── How It Works ── */
+.how-section { background: var(--bg2); }
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 48px; position: relative; }
+.steps::before {
+  content: ''; position: absolute; top: 36px; left: calc(16.67% + 24px); right: calc(16.67% + 24px);
+  height: 1px; background: linear-gradient(90deg, var(--amber-border), rgba(245,158,11,0.1));
+  pointer-events: none;
+}
+.step {
+  padding: 32px 28px; text-align: center; position: relative;
+}
+.step-num {
+  width: 56px; height: 56px; border-radius: 50%; margin: 0 auto 20px;
+  background: rgba(245,158,11,0.1); border: 1px solid var(--amber-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.1rem; font-weight: 900; color: var(--amber); font-family: var(--mono);
+  position: relative; z-index: 1;
+}
+.step-title { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 10px; letter-spacing: -0.02em; }
+.step-desc { font-size: 0.82rem; color: var(--text2); line-height: 1.65; }
+.step-arrow {
+  position: absolute; top: 36px; right: -12px;
+  color: var(--amber); font-size: 1.2rem; z-index: 2; opacity: 0.6;
+  transform: translateY(-50%);
+}
+
+/* ── Disclaimer Notice ── */
+.disclaimer-section { background: var(--bg); }
+.notice-box {
+  max-width: 680px; margin: 0 auto;
+  background: rgba(245,158,11,0.06); border: 1px solid rgba(245,158,11,0.2);
+  border-radius: 16px; padding: 32px 36px;
+  text-align: center;
+}
+.notice-box .notice-icon { font-size: 2rem; margin-bottom: 16px; }
+.notice-box h3 { font-size: 1rem; font-weight: 700; color: var(--text); margin-bottom: 12px; }
+.notice-box p { font-size: 0.85rem; color: var(--text2); line-height: 1.75; }
+.notice-box strong { color: var(--text); }
+
+/* ── CTA Banner ── */
+.cta-banner {
+  text-align: center; padding: 100px 32px;
+  background: linear-gradient(135deg, rgba(245,158,11,0.07) 0%, rgba(168,85,247,0.05) 100%);
+  border-top: 1px solid var(--border);
+}
+.cta-banner h2 {
+  font-size: clamp(2rem, 4vw, 3.2rem); font-weight: 900; letter-spacing: -0.04em;
+  line-height: 1.1; margin-bottom: 16px;
+}
+.cta-banner .grad {
+  background: linear-gradient(135deg, #f59e0b, #a855f7);
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+}
+.cta-banner p { font-size: 1rem; color: var(--text2); margin-bottom: 36px; max-width: 540px; margin-left: auto; margin-right: auto; }
+.cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.cta-note { margin-top: 16px; font-size: 0.78rem; color: var(--text3); }
+
+/* ── Footer ── */
+footer {
+  background: var(--bg); border-top: 1px solid var(--border);
+  padding: 56px 32px 40px;
+}
+.footer-inner { max-width: var(--max-w); margin: 0 auto; }
+.footer-top { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 48px; margin-bottom: 48px; }
+.footer-brand p { font-size: 0.82rem; color: var(--text3); margin-top: 12px; max-width: 280px; line-height: 1.7; }
+.footer-col h4 { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text3); margin-bottom: 14px; }
+.footer-col a { display: block; font-size: 0.82rem; color: var(--text2); margin-bottom: 8px; transition: color 0.15s; }
+.footer-col a:hover { color: var(--text); }
+.footer-bottom {
+  border-top: 1px solid var(--border); padding-top: 24px;
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.75rem; color: var(--text3); gap: 12px; flex-wrap: wrap;
+}
+.footer-disclaimer {
+  background: rgba(168,85,247,0.05); border: 1px solid rgba(168,85,247,0.12);
+  border-radius: 8px; padding: 14px 16px;
+  font-size: 0.73rem; color: var(--text3); line-height: 1.6; margin-bottom: 24px;
+}
+.footer-disclaimer strong { color: var(--text2); }
+.footer-links { display: flex; gap: 20px; flex-wrap: wrap; }
+.footer-links a { font-size: 0.75rem; color: var(--text3); transition: color 0.15s; }
+.footer-links a:hover { color: var(--text); }
+.built-on {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 0.72rem; color: var(--text3);
+}
+.built-on a { color: var(--cyan); }
+.built-on a:hover { color: #22e0ff; }
+
+/* ── Responsive ── */
+@media(max-width: 960px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .use-cases-grid { grid-template-columns: repeat(2, 1fr); }
+  .footer-top { grid-template-columns: 1fr 1fr; gap: 32px; }
+}
+@media(max-width: 720px) {
+  section { padding: 72px 24px; }
+  .features-grid { grid-template-columns: 1fr; }
+  .use-cases-grid { grid-template-columns: repeat(2, 1fr); }
+  .steps { grid-template-columns: 1fr; }
+  .steps::before { display: none; }
+  .step-arrow { display: none; }
+  .hero-ctas { flex-direction: column; align-items: center; }
+  .footer-top { grid-template-columns: 1fr; }
+}
+@media(max-width: 480px) {
+  section { padding: 56px 16px; }
+  .hero { padding-left: 20px; padding-right: 20px; }
+  .use-cases-grid { grid-template-columns: 1fr; }
+  .notice-box { padding: 24px 20px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Navigation ── -->
+<nav class="nav" id="rem-nav">
+  <div class="nav-inner">
+    <a href="/remlabs" class="nav-logo">
+      <div class="rem-mark">
+        <svg viewBox="0 0 14 14"><path d="M7 1C3.7 1 1 3.7 1 7s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 2c.8 0 1.5.3 2 .8L4.8 9c-.5-.5-.8-1.2-.8-2C4 5.3 5.3 3 7 3zm0 8c-.8 0-1.5-.3-2-.8l4.2-4.2c.5.5.8 1.2.8 2 0 1.7-1.3 3-3 3z"/></svg>
+      </div>
+      REM Labs
+    </a>
+    <div class="nav-links">
+      <a href="/remlabs#features" class="nav-link">Features</a>
+      <a href="/remlabs#verticals" class="nav-link">OS Editions</a>
+      <a href="/remlabs#pricing" class="nav-link">Pricing</a>
+      <a href="https://slopshop.gg/docs" class="nav-link">Docs</a>
+    </div>
+    <div class="nav-spacer"></div>
+    <div class="nav-actions">
+      <a href="https://slopshop.gg/login" class="nav-login">Log in</a>
+      <a href="https://slopshop.gg/home" class="nav-start">Start for Free</a>
+    </div>
+    <button class="nav-hb" id="nav-hb" aria-label="Menu">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+<div class="nav-mob" id="nav-mob">
+  <a href="/remlabs#features">Features</a>
+  <a href="/remlabs#verticals">OS Editions</a>
+  <a href="/remlabs#pricing">Pricing</a>
+  <a href="https://slopshop.gg/docs">Docs</a>
+  <div class="mob-divider"></div>
+  <a href="https://slopshop.gg/login">Log in</a>
+  <a href="https://slopshop.gg/home" class="mob-cta">Start for Free →</a>
+</div>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-grid"></div>
+  <div class="hero-content">
+    <div class="hero-eyebrow reveal">Legal OS · REM Labs</div>
+    <h1 class="hero-h1 reveal rv2">
+      Your legal AI remembers<br>every precedent.
+      <br><span class="line2">And maps the law while you sleep.</span>
+    </h1>
+    <p class="hero-sub reveal rv3">
+      Legal OS gives lawyers, paralegals, and legal researchers a <strong>persistent legal brain</strong> — one that consolidates case law, tracks precedent evolution, detects cross-jurisdiction conflicts, and surfaces relevant decisions overnight.
+    </p>
+    <div class="hero-ctas reveal rv4">
+      <a href="https://slopshop.gg/home" class="btn-primary">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.5 7.5h-3v3a.5.5 0 01-1 0v-3h-3a.5.5 0 010-1h3v-3a.5.5 0 011 0v3h3a.5.5 0 010 1z"/></svg>
+        Start Legal OS Free
+      </a>
+      <a href="#how-it-works" class="btn-secondary">
+        See how it works →
+      </a>
+    </div>
+    <div class="hero-stats reveal rv5">
+      <div class="hero-stat">Case law consolidation</div>
+      <div class="dot"></div>
+      <div class="hero-stat">Precedent graph memory</div>
+      <div class="dot"></div>
+      <div class="hero-stat">Cross-jurisdiction conflict detection</div>
+    </div>
+    <div class="hero-disclaimer reveal rv6">
+      Not legal advice. REM Labs is a memory tool, not a licensed legal service.
+    </div>
+  </div>
+</section>
+
+<!-- ── Feature Section ── -->
+<section class="features-section" id="features">
+  <div class="section-inner">
+    <div class="reveal">
+      <div class="section-label">What Legal OS Does Overnight</div>
+      <h2 class="section-h">Six capabilities working<br>while you're not.</h2>
+      <p class="section-sub">Every night, Legal OS runs a complete Dream Engine cycle across your legal materials — synthesizing, connecting, and surfacing everything relevant before you wake up.</p>
+    </div>
+    <div class="features-grid">
+      <div class="feat-card reveal">
+        <div class="feat-icon">⚖️</div>
+        <div class="feat-title">Case Law Consolidation</div>
+        <div class="feat-desc">Synthesizes decisions, holdings, concurrences, and dissents into structured memory. Every ruling stored with context, citation chain, and jurisdictional weight — never lose a relevant case again.</div>
+      </div>
+      <div class="feat-card reveal rv2">
+        <div class="feat-icon">🕸️</div>
+        <div class="feat-title">Precedent Graph Memory</div>
+        <div class="feat-desc">Maps how cases cite each other — from foundational landmark decisions all the way through to the most recent rulings in your practice areas. The precedent web becomes navigable overnight.</div>
+      </div>
+      <div class="feat-card reveal rv3">
+        <div class="feat-icon">🗺️</div>
+        <div class="feat-title">Cross-Jurisdiction Conflict Detection</div>
+        <div class="feat-desc">Automatically flags when jurisdictions disagree on the same legal question. Surfaces circuit splits, state divergences, and international inconsistencies before they become surprises in your research.</div>
+      </div>
+      <div class="feat-card reveal">
+        <div class="feat-icon">📡</div>
+        <div class="feat-title">Regulatory Change Tracking</div>
+        <div class="feat-desc">Monitors for new regulations and agency guidance, then flags the downstream impact on existing matters in your memory. Compliance gaps surface automatically — you wake up with the delta, not the noise.</div>
+      </div>
+      <div class="feat-card reveal rv2">
+        <div class="feat-icon">📄</div>
+        <div class="feat-title">Document Memory</div>
+        <div class="feat-desc">Remembers contracts, briefs, motions, and memos across every matter you've ever worked. Surface relevant clauses on demand — your entire document history becomes a searchable, connected knowledge graph.</div>
+      </div>
+      <div class="feat-card reveal rv3">
+        <div class="feat-icon">☀️</div>
+        <div class="feat-title">Morning Legal Brief</div>
+        <div class="feat-desc">Daily summary of new decisions, regulatory updates, and case developments in your practice areas — synthesized from your memory and delivered before the workday begins. Relevance ranked. Noise filtered.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Use Cases ── -->
+<section class="use-cases-section">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center;">
+      <div class="section-label" style="justify-content:center;">Who It's Built For</div>
+      <h2 class="section-h">For every legal professional<br>who runs on knowledge.</h2>
+      <p class="section-sub" style="margin:0 auto 56px;text-align:center;">Legal OS compounds knowledge across every practice type, from solo litigators to large compliance teams.</p>
+    </div>
+    <div class="use-cases-grid">
+      <div class="use-card reveal">
+        <div class="use-icon">🏛️</div>
+        <div class="use-title">Litigation Attorney</div>
+        <div class="use-desc">Build a persistent precedent map for every matter. Wake up each morning with the decisions, holdings, and dissents most relevant to your current cases — already consolidated and cross-referenced.</div>
+      </div>
+      <div class="use-card reveal rv2">
+        <div class="use-icon">🏢</div>
+        <div class="use-title">In-House Counsel</div>
+        <div class="use-desc">Track regulatory changes across every jurisdiction your company operates in. Legal OS flags compliance gaps before they become liabilities, with full context on how the law changed and why it matters.</div>
+      </div>
+      <div class="use-card reveal rv3">
+        <div class="use-icon">🔬</div>
+        <div class="use-title">Legal Researcher</div>
+        <div class="use-desc">Build an ever-growing, auto-connected research graph across entire bodies of law. Precedent chains, doctrinal evolution, and cross-jurisdiction comparison — synthesized, not searched, every night.</div>
+      </div>
+      <div class="use-card reveal rv4">
+        <div class="use-icon">🛡️</div>
+        <div class="use-title">Compliance Officer</div>
+        <div class="use-desc">Monitor regulatory change across dozens of agencies simultaneously. Get morning alerts on new rules, updated guidance, and enforcement actions — with automatic impact analysis against your existing policies.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── How It Works ── -->
+<section class="how-section" id="how-it-works">
+  <div class="section-inner">
+    <div class="reveal" style="text-align:center;">
+      <div class="section-label" style="justify-content:center;">How It Works</div>
+      <h2 class="section-h">Three steps. Overnight.<br>Compounding every day.</h2>
+      <p class="section-sub" style="margin:0 auto 0;text-align:center;">Legal OS runs automatically using the Dream Engine's 9-stage REM cycle — designed to synthesize knowledge the same way your brain consolidates memory during sleep.</p>
+    </div>
+    <div class="steps">
+      <div class="step reveal">
+        <div class="step-num">01</div>
+        <div class="step-title">Feed case materials</div>
+        <div class="step-desc">Add case law, briefs, contracts, regulations, and research notes. Paste text, upload PDFs, or connect your document sources. Legal OS ingests everything.</div>
+        <div class="step-arrow">→</div>
+      </div>
+      <div class="step reveal rv2">
+        <div class="step-num">02</div>
+        <div class="step-title">Dream Engine consolidates</div>
+        <div class="step-desc">Overnight, the 9-stage REM cycle runs across your legal memory — synthesizing decisions, mapping precedent chains, detecting conflicts, and compressing everything into structured knowledge.</div>
+        <div class="step-arrow">→</div>
+      </div>
+      <div class="step reveal rv3">
+        <div class="step-num">03</div>
+        <div class="step-title">Wake up with precedent map</div>
+        <div class="step-desc">Your morning brief surfaces the overnight synthesis — new connections, conflict flags, regulatory deltas, and the case law most relevant to your active matters. The map grows every night.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Legal Disclaimer Notice ── -->
+<section class="disclaimer-section">
+  <div class="section-inner">
+    <div class="notice-box reveal">
+      <div class="notice-icon">⚠️</div>
+      <h3>Important Notice</h3>
+      <p>REM Labs provides memory and synthesis tools for legal professionals. <strong>Nothing on this platform constitutes legal advice.</strong> Legal OS is a research and knowledge management tool — it consolidates and organizes legal information, but does not provide legal counsel, legal opinions, or legal services of any kind. Always consult with a <strong>licensed attorney</strong> for legal matters affecting your rights, obligations, or legal strategy.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── CTA Banner ── -->
+<section class="cta-banner">
+  <div style="max-width:640px;margin:0 auto;">
+    <h2 class="reveal">Ready to build a legal brain<br><span class="grad">that compounds every night?</span></h2>
+    <p class="reveal rv2">Give your legal practice a persistent memory that grows automatically. Case law, precedent, regulatory change — synthesized overnight, delivered every morning. Free to start.</p>
+    <div class="cta-row reveal rv3">
+      <a href="https://slopshop.gg/home" class="btn-primary" style="font-size:1rem;padding:15px 32px;">
+        Start Legal OS Free
+      </a>
+    </div>
+    <div class="cta-note reveal rv4">
+      Built on <a href="https://slopshop.gg" style="color:var(--cyan)">slopshop.gg</a> · Not legal advice · REM Labs is a memory tool
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-disclaimer">
+      <strong>Note:</strong> REM Labs (remlabs.ai) is the consumer product layer built on the slopshop.gg platform. REM Labs is not affiliated with <strong>remlabs.co</strong>, an unrelated company focused on autonomous engineering. If you were looking for remlabs.co, please visit that site directly.
+    </div>
+    <div class="footer-top">
+      <div class="footer-brand">
+        <div style="display:flex;align-items:center;gap:8px;font-weight:800;font-size:1rem;letter-spacing:-0.03em;color:var(--text);">
+          <div class="rem-mark"><svg viewBox="0 0 14 14" fill="white" width="12" height="12"><path d="M7 1C3.7 1 1 3.7 1 7s2.7 6 6 6 6-2.7 6-6-2.7-6-6-6zm0 2c.8 0 1.5.3 2 .8L4.8 9c-.5-.5-.8-1.2-.8-2C4 5.3 5.3 3 7 3zm0 8c-.8 0-1.5-.3-2-.8l4.2-4.2c.5.5.8 1.2.8 2 0 1.7-1.3 3-3 3z"/></svg></div>
+          REM Labs
+        </div>
+        <p>The no-code consumer layer for AI memory. Powered by the Slopshop Dream Engine — the only 9-stage REM cycle for AI agents.</p>
+      </div>
+      <div class="footer-col">
+        <h4>OS Editions</h4>
+        <a href="/legal-os">Legal OS</a>
+        <a href="/creative-os">Creative OS</a>
+        <a href="/remlabs#verticals">Research OS</a>
+        <a href="/remlabs#verticals">Finance OS</a>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="/remlabs#features">Features</a>
+        <a href="/remlabs#pricing">Pricing</a>
+        <a href="https://slopshop.gg/docs">API Docs</a>
+        <a href="https://slopshop.gg">Slopshop.gg →</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="https://slopshop.gg/about">About</a>
+        <a href="https://slopshop.gg/legal">Legal</a>
+        <a href="mailto:dev@slopshop.gg">Contact</a>
+        <a href="https://twitter.com/remlabsai">X / Twitter</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <div>© 2026 REM Labs · <span class="built-on">powered by <a href="https://slopshop.gg">slopshop.gg</a></span></div>
+      <div class="footer-links">
+        <a href="https://slopshop.gg/legal">Terms</a>
+        <a href="https://slopshop.gg/legal#privacy">Privacy</a>
+        <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── Nav scroll + mobile ──
+(function(){
+  var nav = document.getElementById('rem-nav');
+  var hb  = document.getElementById('nav-hb');
+  var mob = document.getElementById('nav-mob');
+  if(nav) window.addEventListener('scroll', function(){
+    nav.classList[scrollY > 30 ? 'add' : 'remove']('scrolled');
+  }, {passive: true});
+  if(hb && mob) {
+    hb.addEventListener('click', function(){
+      mob.classList.toggle('open');
+      hb.classList.toggle('open');
+    });
+    mob.querySelectorAll('a').forEach(function(a){
+      a.addEventListener('click', function(){
+        mob.classList.remove('open');
+        hb.classList.remove('open');
+      });
+    });
+  }
+})();
+
+// ── Scroll reveal ──
+(function(){
+  var els = document.querySelectorAll('.reveal');
+  if(!els.length) return;
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ e.target.classList.add('vis'); io.unobserve(e.target); }
+    });
+  }, {threshold: 0.12, rootMargin: '0px 0px -40px 0px'});
+  els.forEach(function(el){ io.observe(el); });
+})();
+</script>
+</body>
+</html>

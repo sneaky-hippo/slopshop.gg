@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>REM Labs — Your AI Actually Remembers</title>
+<meta name="description" content="REM Labs gives every AI agent persistent Memory 2.0 — knowledge that compounds every night through a 9-stage Dream Engine.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset + Tokens ─────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0a0a;--surface:#111111;--surface2:#161616;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#f0f0f0;--text2:rgba(240,240,240,0.55);--text3:rgba(240,240,240,0.28);
+  --green:#22c55e;--yellow:#f59e0b;--red:#ef4444;
+  --font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono','Fira Code',monospace;
+  --nav-h:56px;--max-w:1200px;--section-pad:120px;
+  --accent:#818cf8;--accent-dim:rgba(129,140,248,0.08);
+  --accent-border:rgba(129,140,248,0.20);--accent-glow:rgba(129,140,248,0.15);
+  --accent2:#6366f1;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+img,svg{display:block;}
+button{cursor:pointer;border:none;background:none;font:inherit;}
+
+/* ── Scroll Reveal ──────────────────────────────────────────────────────── */
+.r{opacity:0;transform:translateY(22px);transition:opacity .55s ease,transform .55s ease;}
+.r.on{opacity:1;transform:none;}
+.d1{transition-delay:.05s;}.d2{transition-delay:.12s;}.d3{transition-delay:.20s;}.d4{transition-delay:.28s;}.d5{transition-delay:.36s;}
+@media(prefers-reduced-motion:reduce){.r{opacity:1;transform:none;transition:none;}}
+
+/* ── Site Nav ───────────────────────────────────────────────────────────── */
+.site-nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:var(--nav-h);background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .2s,background .2s;}
+.site-nav.sn-scrolled{border-color:var(--border);background:rgba(10,10,10,0.95);}
+.site-nav-inner{max-width:var(--max-w);margin:0 auto;padding:0 24px;height:100%;display:flex;align-items:center;gap:8px;}
+.site-nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem;letter-spacing:-.02em;color:var(--text);margin-right:12px;flex-shrink:0;}
+.sn-mark{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#818cf8,#6366f1);flex-shrink:0;}
+.site-nav-drop{position:relative;}
+.sn-drop-btn{display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;font-size:.88rem;color:var(--text2);transition:color .15s,background .15s;white-space:nowrap;}
+.sn-drop-btn:hover{color:var(--text);background:rgba(255,255,255,0.05);}
+.sn-chev{transition:transform .2s;}
+.site-nav-drop.open .sn-chev{transform:rotate(180deg);}
+.sn-drop-panel{position:absolute;top:calc(100% + 8px);left:0;min-width:240px;background:#161616;border:1px solid var(--border2);border-radius:12px;padding:6px;display:none;box-shadow:0 16px 48px rgba(0,0,0,0.6);}
+.site-nav-drop.open .sn-drop-panel{display:block;}
+.sn-drop-item{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;color:var(--text2);font-size:.85rem;transition:background .15s,color .15s;}
+.sn-drop-item:hover{background:rgba(255,255,255,0.05);color:var(--text);}
+.sdi-icon{font-size:1.1rem;width:24px;text-align:center;flex-shrink:0;}
+.sn-drop-item b{display:block;font-weight:600;color:var(--text);font-size:.85rem;}
+.sn-drop-item em{display:block;font-style:normal;font-size:.77rem;color:var(--text3);margin-top:1px;}
+.site-nav-links{display:flex;align-items:center;gap:2px;margin-left:4px;}
+.site-nav-link{padding:6px 10px;border-radius:8px;font-size:.88rem;color:var(--text2);transition:color .15s,background .15s;}
+.site-nav-link:hover{color:var(--text);background:rgba(255,255,255,0.05);}
+.site-nav-actions{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.site-nav-app{padding:6px 14px;border-radius:8px;font-size:.88rem;color:var(--text2);transition:color .15s;}
+.site-nav-app:hover{color:var(--text);}
+.site-nav-signup{padding:7px 16px;border-radius:8px;font-size:.88rem;font-weight:600;background:#818cf8;color:#000;transition:background .15s;}
+.site-nav-signup:hover{background:#a5b4fc;}
+.sn-hamburger{display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:36px;height:36px;border-radius:8px;margin-left:8px;}
+.sn-hamburger span{display:block;width:18px;height:1.5px;background:var(--text2);border-radius:2px;transition:all .2s;}
+.sn-hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
+.sn-hamburger.open span:nth-child(2){opacity:0;}
+.sn-hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
+.sn-mobile{display:none;flex-direction:column;gap:2px;padding:12px 16px 16px;background:rgba(10,10,10,0.98);border-bottom:1px solid var(--border);}
+.sn-mobile.open{display:flex;}
+.sn-mobile a{padding:10px 12px;border-radius:8px;font-size:.9rem;color:var(--text2);transition:background .15s,color .15s;}
+.sn-mobile a:hover{background:rgba(255,255,255,0.05);color:var(--text);}
+.sn-divider{height:1px;background:var(--border);margin:6px 0;}
+.snm-app{color:var(--text2)!important;}
+.snm-signup{background:#818cf8!important;color:#000!important;font-weight:600!important;}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:13px 28px;border-radius:10px;font-size:1rem;font-weight:700;background:#818cf8;color:#000;transition:background .15s,transform .1s,box-shadow .15s;box-shadow:0 0 24px rgba(129,140,248,0.3);}
+.btn-primary:hover{background:#a5b4fc;transform:translateY(-1px);box-shadow:0 0 36px rgba(129,140,248,0.45);}
+.btn-ghost{display:inline-flex;align-items:center;gap:6px;padding:13px 28px;border-radius:10px;font-size:1rem;font-weight:600;background:transparent;color:var(--text2);border:1px solid var(--border2);transition:border-color .15s,color .15s,transform .1s;}
+.btn-ghost:hover{border-color:var(--accent-border);color:var(--text);transform:translateY(-1px);}
+
+/* ── Eyebrow ─────────────────────────────────────────────────────────────── */
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;font-weight:700;}
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.hero{min-height:100vh;display:flex;align-items:center;padding:calc(var(--nav-h) + 80px) 32px 100px;position:relative;overflow:hidden;text-align:center;}
+.hero-grid-bg{position:absolute;inset:0;pointer-events:none;}
+.hero-grid-bg::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 50%,black 20%,transparent 80%);mask-image:radial-gradient(ellipse 80% 70% at 50% 50%,black 20%,transparent 80%);}
+.hero-grid-bg::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(129,140,248,0.06),transparent 70%);}
+.hero-inner{position:relative;z-index:1;max-width:var(--max-w);margin:0 auto;width:100%;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:100px;background:var(--accent-dim);border:1px solid var(--accent-border);color:var(--accent);font-size:.8rem;font-weight:600;margin-bottom:28px;letter-spacing:.01em;}
+.hero-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse-dot 2s ease-in-out infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
+.hero-h1{font-size:clamp(3.5rem,8vw,7rem);font-weight:800;letter-spacing:-.04em;line-height:1.04;margin-bottom:20px;display:flex;flex-direction:column;align-items:center;}
+.hero-h1 .line1{color:var(--text);}
+.hero-h1 .line2{background:linear-gradient(135deg,#ffffff,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub1{font-size:1.2rem;font-weight:400;color:var(--text);margin-bottom:10px;}
+.hero-sub2{font-size:1rem;font-weight:300;color:var(--text2);max-width:560px;margin:0 auto 36px;}
+.hero-ctas{display:flex;align-items:center;justify-content:center;gap:14px;flex-wrap:wrap;margin-bottom:20px;}
+.hero-fine{font-size:.78rem;color:var(--text3);margin-bottom:28px;}
+.hero-models{display:flex;align-items:center;justify-content:center;gap:10px;flex-wrap:wrap;}
+.hero-models-label{font-size:.8rem;color:var(--text3);font-weight:500;}
+.hero-model-pill{padding:4px 10px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);font-size:.75rem;color:var(--text2);font-weight:500;}
+
+/* ── Brief Window ─────────────────────────────────────────────────────────── */
+.brief-window{max-width:860px;margin:64px auto 0;border-radius:16px;overflow:hidden;border:1px solid rgba(255,255,255,0.10);box-shadow:0 0 0 1px rgba(129,140,248,0.08),0 40px 120px rgba(0,0,0,0.8),0 16px 48px rgba(0,0,0,0.5);}
+.bw-bar{background:#181818;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.bw-dots{display:flex;gap:6px;}
+.bw-dot{width:12px;height:12px;border-radius:50%;}
+.bw-dot.red{background:#ef4444;}.bw-dot.yellow{background:#f59e0b;}.bw-dot.green{background:#22c55e;}
+.bw-title{font-family:var(--mono);font-size:.72rem;color:var(--text3);margin-left:6px;}
+.bw-body{display:grid;grid-template-columns:200px 1fr;min-height:360px;}
+.bw-sidebar{background:#111111;border-right:1px solid var(--border);padding:16px 12px;}
+.bw-sidebar-label{font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:0 8px;margin-bottom:8px;}
+.bw-nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:7px;font-size:.8rem;color:var(--text2);cursor:pointer;transition:background .15s,color .15s;}
+.bw-nav-item.active{background:var(--accent-dim);border-left:3px solid var(--accent);padding-left:7px;color:var(--text);}
+.bw-nav-item:not(.active):hover{background:rgba(255,255,255,0.04);}
+.bw-main{background:#0e0e0e;padding:24px 28px;}
+.bw-main-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;}
+.bw-main-title{font-size:.9rem;font-weight:700;color:var(--text);}
+.bw-main-date{font-family:var(--mono);font-size:.72rem;color:var(--text3);}
+.bw-metrics{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px;}
+.bw-metric{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+.bw-metric-val{font-family:var(--mono);font-size:1.6rem;font-weight:700;line-height:1;margin-bottom:4px;}
+.bw-metric-lbl{font-family:var(--mono);font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);}
+.bw-insights-label{font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;}
+.bw-insight{display:flex;align-items:flex-start;gap:8px;padding:7px 0;border-top:1px solid var(--border);}
+.bw-insight:first-of-type{border-top:none;}
+.bw-insight-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:5px;flex-shrink:0;}
+.bw-insight-text{font-size:.78rem;color:var(--text2);line-height:1.45;}
+
+/* ── Demo Section ─────────────────────────────────────────────────────────── */
+.demo-section{padding:var(--section-pad) 32px;text-align:center;}
+.demo-section h2{font-size:2.2rem;font-weight:800;letter-spacing:-.03em;margin-bottom:10px;}
+.demo-section .demo-sub{font-size:1rem;color:var(--text2);margin-bottom:44px;}
+.terminal{max-width:720px;margin:0 auto;border-radius:14px;overflow:hidden;border:1px solid var(--border2);box-shadow:0 24px 80px rgba(0,0,0,0.6);}
+.terminal-bar{background:#181818;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.terminal-dots{display:flex;gap:6px;}
+.t-dot{width:12px;height:12px;border-radius:50%;}
+.t-dot.r{background:#ef4444;opacity:1;transform:none;transition:none;}.t-dot.y{background:#f59e0b;}.t-dot.g{background:#22c55e;}
+.terminal-title{font-family:var(--mono);font-size:.72rem;color:var(--text3);margin-left:6px;}
+.terminal-body{background:#0d0d0d;padding:24px;}
+.try-label{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:12px;}
+.try-input-row{display:flex;gap:8px;margin-bottom:16px;}
+#try-in{flex:1;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;padding:10px 14px;color:var(--text);font-family:var(--mono);font-size:.85rem;outline:none;transition:border-color .15s;}
+#try-in:focus{border-color:var(--accent-border);}
+#try-in::placeholder{color:var(--text3);}
+#try-go{padding:10px 18px;border-radius:8px;background:var(--accent);color:#000;font-weight:700;font-size:.85rem;font-family:var(--mono);transition:background .15s;}
+#try-go:hover{background:#a5b4fc;}
+.try-count-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.try-count-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);}
+#try-count{font-family:var(--mono);font-size:.8rem;color:var(--accent);font-weight:700;}
+.try-memories{display:flex;flex-direction:column;gap:6px;min-height:40px;}
+.try-mem{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;font-size:.8rem;animation:mem-in .2s ease;}
+@keyframes mem-in{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:none;}}
+.try-mem-id{font-family:var(--mono);font-size:.72rem;color:var(--accent);flex-shrink:0;}
+.try-mem-val{color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.try-empty{font-family:var(--mono);font-size:.8rem;color:var(--text3);text-align:center;padding:16px;}
+.try-hint{margin-top:14px;padding:12px 16px;background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:8px;font-size:.8rem;color:var(--accent);font-family:var(--mono);text-align:left;}
+
+/* ── Trust Bar ─────────────────────────────────────────────────────────────── */
+.trust-bar{padding:24px 32px;background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.trust-bar-inner{max-width:var(--max-w);margin:0 auto;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;}
+.trust-left{font-size:.88rem;color:var(--text2);}
+.trust-left strong{color:var(--text);font-weight:700;}
+.trust-center{display:flex;align-items:center;gap:8px;}
+.trust-stars{color:var(--yellow);font-size:.95rem;letter-spacing:1px;}
+.trust-rating{font-size:.82rem;color:var(--text3);}
+.trust-right{display:flex;gap:8px;}
+.trust-badge{padding:4px 10px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);font-size:.72rem;color:var(--text3);}
+
+/* ── How it Works ──────────────────────────────────────────────────────────── */
+.how-section{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:80px 32px;}
+.how-inner{max-width:var(--max-w);margin:0 auto;}
+.how-header{text-align:center;margin-bottom:56px;}
+.section-h{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-.03em;line-height:1.15;margin-bottom:14px;}
+.steps{display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+.step{padding:32px 24px;position:relative;}
+.step:not(:last-child){border-right:1px solid var(--border);}
+.step-num{font-family:var(--mono);font-size:3.5rem;font-weight:700;color:rgba(129,140,248,0.12);line-height:1;margin-bottom:12px;}
+.step-icon{font-size:1.4rem;margin-bottom:12px;}
+.step-title{font-size:1.05rem;font-weight:700;margin-bottom:8px;color:var(--text);}
+.step-body{font-size:.88rem;color:var(--text2);line-height:1.55;}
+
+/* ── Section Layout ───────────────────────────────────────────────────────── */
+.section{padding:var(--section-pad) 32px;}
+.section-inner{max-width:var(--max-w);margin:0 auto;}
+.section-split{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:center;}
+.section-split.rev{direction:rtl;}
+.section-split.rev>*{direction:ltr;}
+.section-copy{max-width:460px;}
+.section-copy p{font-size:1rem;color:var(--text2);line-height:1.65;margin-bottom:24px;}
+.section-link{color:var(--accent);font-weight:600;font-size:.95rem;display:inline-flex;align-items:center;gap:4px;transition:opacity .15s;}
+.section-link:hover{opacity:.75;}
+
+/* ── Product Windows ──────────────────────────────────────────────────────── */
+.product-window{border-radius:14px;overflow:hidden;border:1px solid var(--border2);box-shadow:0 24px 80px rgba(0,0,0,0.55);}
+.pw-bar{background:#181818;padding:11px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.pw-dots{display:flex;gap:6px;}
+.pw-dot{width:11px;height:11px;border-radius:50%;}
+.pw-dot.r{background:#ef4444;}.pw-dot.y{background:#f59e0b;}.pw-dot.g{background:#22c55e;}
+.pw-title{font-family:var(--mono);font-size:.7rem;color:var(--text3);margin-left:4px;}
+.pw-body{display:grid;}
+.pw-sidebar{background:#111111;border-right:1px solid var(--border);padding:14px 10px;}
+.pw-sidebar-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);padding:0 8px;margin-bottom:8px;}
+.pw-main{background:#0d0d0d;padding:18px 20px;overflow:hidden;}
+
+/* ── Memory Hub Window ────────────────────────────────────────────────────── */
+.mh-window .pw-body{grid-template-columns:180px 1fr;}
+.mh-ns-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;font-size:.78rem;color:var(--text2);cursor:pointer;transition:background .15s;}
+.mh-ns-item.active{background:var(--accent-dim);border-left:3px solid var(--accent);padding-left:7px;color:var(--text);}
+.mh-ns-item:hover:not(.active){background:rgba(255,255,255,0.04);}
+.mh-ns-count{font-family:var(--mono);font-size:.65rem;color:var(--text3);}
+.mh-new{padding:7px 10px;font-size:.75rem;color:var(--text3);cursor:pointer;}
+.mh-toolbar{display:flex;gap:8px;margin-bottom:14px;}
+.mh-search{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 12px;color:var(--text2);font-family:var(--mono);font-size:.75rem;outline:none;}
+.mh-store-btn{padding:7px 12px;border-radius:7px;background:var(--accent);color:#000;font-weight:700;font-size:.75rem;font-family:var(--mono);}
+.mem-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mem-card{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px 14px;}
+.mem-key{font-family:var(--mono);font-size:.7rem;color:var(--text3);margin-bottom:6px;}
+.mem-tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:.62rem;font-weight:700;letter-spacing:.04em;margin-bottom:6px;}
+.tag-note{background:rgba(129,140,248,0.15);color:#818cf8;}
+.tag-fact{background:rgba(34,197,94,0.15);color:#22c55e;}
+.tag-code{background:rgba(129,140,248,0.15);color:var(--accent);}
+.tag-event{background:rgba(245,158,11,0.15);color:#f59e0b;}
+.mem-val{font-size:.74rem;color:var(--text2);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+
+/* ── Dream Studio Window ─────────────────────────────────────────────────── */
+.ds-window .pw-body{grid-template-columns:240px 1fr;}
+.ds-config{background:#111111;border-right:1px solid var(--border);padding:16px 14px;}
+.ds-strat-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:10px;}
+.ds-strategy{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:6px;font-family:var(--mono);font-size:.75rem;color:var(--text2);cursor:pointer;transition:background .15s;}
+.ds-strategy:hover{background:rgba(255,255,255,0.04);}
+.ds-strategy.checked{color:var(--accent);}
+.ds-cb{width:13px;height:13px;border-radius:3px;border:1px solid var(--border2);flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.ds-strategy.checked .ds-cb{background:var(--accent);border-color:var(--accent);}
+.ds-cb-tick{width:7px;height:7px;color:#000;font-size:8px;font-weight:900;}
+.ds-count{font-family:var(--mono);font-size:.65rem;color:var(--text3);margin-top:10px;padding:0 8px;}
+.ds-start-btn{width:100%;margin-top:14px;padding:9px;border-radius:8px;background:var(--accent);color:#000;font-weight:700;font-size:.8rem;font-family:var(--mono);transition:background .15s;}
+.ds-start-btn:hover{background:#a5b4fc;}
+.ds-run-panel{padding:18px;}
+.ds-cycle-card{background:var(--accent-dim);border:1px solid var(--accent-border);border-radius:10px;padding:14px 16px;margin-bottom:14px;}
+.ds-cycle-header{display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:.72rem;color:var(--text2);margin-bottom:12px;}
+.ds-pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse-dot 1.5s ease-in-out infinite;flex-shrink:0;}
+.ds-stage-row{display:flex;align-items:center;gap:8px;padding:5px 0;border-top:1px solid rgba(129,140,248,0.1);}
+.ds-stage-row:first-of-type{border-top:none;}
+.ds-stage-name{font-family:var(--mono);font-size:.7rem;color:var(--text3);text-transform:uppercase;width:90px;flex-shrink:0;}
+.ds-stage-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.ds-stage-dot.done{background:var(--green);}
+.ds-stage-dot.running{background:var(--accent);animation:pulse-dot 1.2s infinite;}
+.ds-stage-dot.pending{background:var(--text3);}
+.ds-stage-status{font-family:var(--mono);font-size:.68rem;}
+.ds-stage-status.done{color:var(--green);}
+.ds-stage-status.running{color:var(--accent);}
+.ds-stage-status.pending{color:var(--text3);}
+.ds-score-row{display:flex;align-items:center;justify-content:space-between;}
+.ds-score-label{font-family:var(--mono);font-size:.65rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);}
+.ds-score-val{font-family:var(--mono);font-size:2.2rem;font-weight:700;color:var(--accent);line-height:1;}
+.ds-rank-badge{padding:3px 8px;border-radius:4px;background:rgba(239,68,68,0.15);color:var(--red);font-family:var(--mono);font-size:.65rem;font-weight:700;margin-left:8px;}
+
+/* ── Section Stats ────────────────────────────────────────────────────────── */
+.stat-row{display:flex;gap:20px;flex-wrap:wrap;margin-top:28px;}
+.stat-mini{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:14px 18px;min-width:100px;}
+.stat-mini-val{font-family:var(--mono);font-size:1.6rem;font-weight:700;color:var(--accent);line-height:1;margin-bottom:4px;}
+.stat-mini-lbl{font-size:.72rem;color:var(--text3);}
+.stat-mini-sub{font-size:.65rem;color:var(--text3);margin-top:2px;font-family:var(--mono);}
+
+/* ── Dream Reports Window ─────────────────────────────────────────────────── */
+.dr-window .pw-body{display:block;padding:18px 20px;}
+.dr-header{margin-bottom:14px;}
+.dr-title{font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:3px;}
+.dr-sub{font-family:var(--mono);font-size:.7rem;color:var(--text3);}
+.dr-stats{display:grid;grid-template-columns:auto 1fr 1fr 1fr;gap:14px;align-items:center;margin-bottom:18px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.dr-glow-box{width:52px;height:52px;border:2px solid var(--accent);border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.dr-glow-val{font-family:var(--mono);font-size:1.3rem;font-weight:700;color:var(--accent);line-height:1;}
+.dr-glow-rank{padding:2px 5px;border-radius:3px;background:rgba(239,68,68,0.15);color:var(--red);font-family:var(--mono);font-size:.58rem;font-weight:700;margin-top:2px;}
+.dr-stat-col{text-align:center;}
+.dr-stat-val{font-family:var(--mono);font-size:1.4rem;font-weight:700;line-height:1;margin-bottom:3px;}
+.dr-stat-lbl{font-family:var(--mono);font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);}
+.dr-chart{margin-bottom:16px;}
+.dr-chart-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.dr-bars{display:flex;align-items:flex-end;gap:5px;height:60px;}
+.dr-bar{flex:1;background:var(--accent);border-radius:3px 3px 0 0;opacity:.7;transition:opacity .15s;}
+.dr-bar:hover{opacity:1;}
+.dr-insights-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.dr-insight{display:flex;align-items:flex-start;gap:7px;padding:5px 0;border-top:1px solid var(--border);}
+.dr-insight:first-of-type{border-top:none;}
+.dr-insight-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);margin-top:4px;flex-shrink:0;}
+.dr-insight-text{font-size:.75rem;color:var(--text2);line-height:1.4;}
+
+/* ── Team Hives Window ───────────────────────────────────────────────────── */
+.th-window .pw-body{grid-template-columns:180px 1fr;}
+.th-hive-item{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;border-radius:7px;font-size:.78rem;color:var(--text2);cursor:pointer;transition:background .15s;margin-bottom:2px;}
+.th-hive-item.active{background:var(--accent-dim);border-left:3px solid var(--accent);padding-left:7px;color:var(--text);}
+.th-hive-item:hover:not(.active){background:rgba(255,255,255,0.04);}
+.th-hive-meta{font-size:.65rem;color:var(--text3);}
+.th-hive-new{padding:7px 10px;font-size:.75rem;color:var(--text3);border-top:1px solid var(--border);margin-top:6px;cursor:pointer;}
+.th-main-title{font-size:.88rem;font-weight:700;color:var(--text);margin-bottom:2px;}
+.th-main-desc{font-size:.73rem;color:var(--text3);margin-bottom:14px;font-family:var(--mono);}
+.th-members-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.th-member-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:14px;}
+.th-member{display:flex;align-items:center;justify-content:space-between;padding:7px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:7px;}
+.th-member-name{font-family:var(--mono);font-size:.73rem;color:var(--text);}
+.th-role{padding:2px 6px;border-radius:4px;font-family:var(--mono);font-size:.6rem;font-weight:700;}
+.th-role.owner{background:rgba(34,197,94,0.15);color:var(--green);}
+.th-role.editor{background:var(--accent-dim);color:var(--accent);}
+.th-role.viewer{background:rgba(255,255,255,0.05);color:var(--text3);}
+.th-mems-label{font-family:var(--mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;}
+.th-mem-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border);}
+.th-mem-key{font-family:var(--mono);font-size:.72rem;color:var(--text2);}
+.th-mem-type{padding:2px 6px;border-radius:3px;font-family:var(--mono);font-size:.58rem;font-weight:700;}
+.th-run-btn{width:100%;margin-top:12px;padding:9px;border-radius:8px;background:transparent;border:1px solid var(--accent-border);color:var(--accent);font-weight:600;font-size:.8rem;font-family:var(--mono);transition:background .15s;}
+.th-run-btn:hover{background:var(--accent-dim);}
+
+/* ── Memory Explorer Window ───────────────────────────────────────────────── */
+.me-window .pw-body{display:block;}
+.me-toolbar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+.me-filter-pill{padding:4px 10px;border-radius:100px;font-size:.73rem;cursor:pointer;border:1px solid var(--border);color:var(--text3);transition:background .15s,color .15s;}
+.me-filter-pill.active{background:var(--accent-dim);border-color:var(--accent-border);color:var(--accent);}
+.me-spacer{flex:1;}
+.me-export{font-size:.73rem;color:var(--text3);cursor:pointer;}
+.graph-canvas{height:280px;background:radial-gradient(ellipse 60% 60% at 50% 50%,rgba(129,140,248,0.04),transparent 70%);overflow:hidden;}
+.graph-canvas svg{width:100%;height:100%;}
+.me-stats{display:grid;grid-template-columns:1fr 1fr 1fr;border-top:1px solid var(--border);}
+.me-stat{padding:10px;text-align:center;border-right:1px solid var(--border);}
+.me-stat:last-child{border-right:none;}
+.me-stat-val{font-family:var(--mono);font-size:.85rem;font-weight:700;color:var(--text);margin-bottom:2px;}
+.me-stat-lbl{font-family:var(--mono);font-size:.6rem;color:var(--text3);}
+
+/* ── OS Editions ─────────────────────────────────────────────────────────── */
+.vert{padding:var(--section-pad) 32px;}
+.vert-inner{max-width:var(--max-w);margin:0 auto;}
+.vert-header{text-align:center;margin-bottom:16px;}
+.vert-sub{text-align:center;font-size:.95rem;color:var(--text2);max-width:540px;margin:0 auto 52px;}
+.vert-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:1px;background:var(--border);border-radius:14px;overflow:hidden;}
+.vc{background:var(--surface);padding:28px 24px;transition:background .2s;}
+.vc:hover{background:#141414;}
+.vc-icon{font-size:1.6rem;margin-bottom:14px;}
+.vc-tag{display:inline-block;padding:3px 9px;border-radius:4px;font-family:var(--mono);font-size:.65rem;font-weight:700;letter-spacing:.05em;margin-bottom:14px;}
+.vc-tag.cyan{background:rgba(0,212,255,0.12);color:#67e8f9;}
+.vc-tag.gn{background:rgba(34,197,94,0.12);color:var(--green);}
+.vc-tag.amber{background:rgba(245,158,11,0.12);color:var(--yellow);}
+.vc-tag.purple{background:rgba(129,140,248,0.15);color:var(--accent);}
+.vc h3{font-size:1rem;font-weight:700;margin-bottom:6px;}
+.vc-meta{font-size:.78rem;color:var(--text3);margin-bottom:10px;}
+.vc p{font-size:.82rem;color:var(--text2);line-height:1.55;margin-bottom:16px;}
+.vc-link{font-size:.8rem;color:var(--accent);font-weight:600;}
+
+/* ── Dev Section ─────────────────────────────────────────────────────────── */
+.dev-section{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:var(--section-pad) 32px;}
+.dev-inner{max-width:var(--max-w);margin:0 auto;}
+.dev-split{display:grid;grid-template-columns:1fr 1fr;gap:72px;align-items:start;}
+.dev-links{display:flex;flex-direction:column;gap:10px;margin-bottom:20px;}
+.dev-link{color:var(--accent);font-weight:600;font-size:.95rem;}
+.dev-bridge{font-size:.8rem;color:var(--text3);margin-top:16px;line-height:1.6;}
+.code-panel{border-radius:14px;overflow:hidden;border:1px solid var(--border2);box-shadow:0 24px 80px rgba(0,0,0,0.5);}
+.code-bar{background:#181818;padding:11px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.code-dots{display:flex;gap:6px;}
+.code-dot{width:11px;height:11px;border-radius:50%;}
+.code-dot.r{background:#ef4444;}.code-dot.y{background:#f59e0b;}.code-dot.g{background:#22c55e;}
+.code-title{font-family:var(--mono);font-size:.7rem;color:var(--text3);margin-left:4px;}
+.code-body{background:#0d0d0d;padding:22px 24px;font-family:var(--mono);font-size:.8rem;line-height:1.7;}
+.c-cmt{color:var(--text3);}
+.c-kw{color:#f472b6;}
+.c-str{color:var(--green);}
+.c-prop{color:#7dd3fc;}
+.c-fn{color:var(--yellow);}
+.c-cls{color:var(--accent);}
+
+/* ── Testimonials ────────────────────────────────────────────────────────── */
+.testimonials{padding:var(--section-pad) 32px;}
+.testimonials-inner{max-width:var(--max-w);margin:0 auto;}
+.testimonials-header{text-align:center;margin-bottom:8px;}
+.testimonials-sub{text-align:center;font-size:.95rem;color:var(--text2);margin-bottom:52px;}
+.tgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;}
+.tcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px 22px;transition:border-color .2s;}
+.tcard:hover{border-color:var(--accent-border);}
+.tcard-quote{font-size:.92rem;color:var(--text2);line-height:1.6;margin-bottom:18px;position:relative;padding-left:16px;}
+.tcard-quote::before{content:'\201C';position:absolute;left:0;top:-4px;font-size:1.6rem;color:var(--accent);line-height:1;font-family:Georgia,serif;}
+.tcard-person{display:flex;align-items:center;gap:10px;}
+.tcard-avatar{width:34px;height:34px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent-border);display:flex;align-items:center;justify-content:center;font-size:.95rem;flex-shrink:0;}
+.tcard-name{font-size:.85rem;font-weight:700;color:var(--text);}
+.tcard-meta{font-size:.75rem;color:var(--text3);}
+.tcard-product{display:inline-block;padding:2px 8px;border-radius:4px;background:var(--accent-dim);color:var(--accent);font-size:.7rem;font-family:var(--mono);margin-top:4px;}
+
+/* ── Pricing ──────────────────────────────────────────────────────────────── */
+.pricing-section{padding:var(--section-pad) 32px;background:var(--surface);border-top:1px solid var(--border);}
+.pricing-inner{max-width:var(--max-w);margin:0 auto;}
+.pricing-header{text-align:center;margin-bottom:8px;}
+.pricing-sub{text-align:center;font-size:.95rem;color:var(--text2);margin-bottom:52px;}
+.pricing-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:16px;overflow:hidden;}
+.plan{background:var(--bg);padding:32px 28px;position:relative;}
+.plan.featured{background:#0e0e14;}
+.plan-badge{position:absolute;top:0;left:50%;transform:translateX(-50%);padding:4px 16px;border-radius:0 0 8px 8px;background:var(--accent);color:#000;font-size:.72rem;font-weight:700;font-family:var(--mono);letter-spacing:.04em;}
+.plan-name{font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);font-family:var(--mono);margin-bottom:10px;}
+.plan-price{font-size:2.8rem;font-weight:800;letter-spacing:-.04em;line-height:1;margin-bottom:4px;}
+.plan-price span{font-size:1rem;font-weight:400;color:var(--text3);}
+.plan-tagline{font-size:.82rem;color:var(--text3);margin-bottom:20px;}
+.plan-specs{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:20px;}
+.plan-spec{display:flex;justify-content:space-between;align-items:center;padding:4px 0;font-family:var(--mono);font-size:.72rem;}
+.plan-spec:not(:last-child){border-bottom:1px solid var(--border);}
+.plan-spec-key{color:var(--text3);}
+.plan-spec-val{color:var(--text);}
+.plan-features{list-style:none;margin-bottom:28px;}
+.plan-features li{display:flex;align-items:flex-start;gap:8px;padding:5px 0;font-size:.85rem;color:var(--text2);}
+.plan-features li::before{content:'✓';color:var(--green);font-size:.8rem;margin-top:1px;flex-shrink:0;}
+.plan-features li.no::before{content:'✗';color:var(--text3);}
+.plan-features li.no{color:var(--text3);}
+.plan-cta{display:block;width:100%;padding:12px;border-radius:10px;text-align:center;font-weight:700;font-size:.92rem;transition:all .15s;}
+.plan-cta.ghost{border:1px solid var(--border2);color:var(--text2);}
+.plan-cta.ghost:hover{border-color:var(--accent-border);color:var(--text);}
+.plan-cta.primary{background:var(--accent);color:#000;}
+.plan-cta.primary:hover{background:#a5b4fc;}
+
+/* ── Finale ──────────────────────────────────────────────────────────────── */
+.finale{padding:var(--section-pad) 32px;text-align:center;background:radial-gradient(ellipse 70% 50% at 50% 50%,rgba(129,140,248,0.05),transparent 70%);}
+.finale-inner{max-width:640px;margin:0 auto;}
+.finale-h{font-size:clamp(2.8rem,6vw,5rem);font-weight:800;letter-spacing:-.04em;line-height:1.08;margin-bottom:20px;display:flex;flex-direction:column;align-items:center;}
+.finale-h .line1{color:var(--text);}
+.finale-h .line2{background:linear-gradient(135deg,#ffffff,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.finale-sub{font-size:1rem;color:var(--text2);margin-bottom:36px;line-height:1.65;}
+.finale-note{margin-top:20px;font-size:.8rem;color:var(--text3);}
+.finale-note a{color:var(--accent);}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.footer-disclaimer{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 32px;font-size:.78rem;color:var(--text3);text-align:center;}
+.footer{padding:64px 32px 32px;}
+.footer-inner{max-width:var(--max-w);margin:0 auto;}
+.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px;}
+.footer-brand-logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:1rem;margin-bottom:12px;}
+.footer-mark{width:22px;height:22px;border-radius:5px;background:linear-gradient(135deg,#818cf8,#6366f1);}
+.footer-tagline{font-size:.82rem;color:var(--text3);line-height:1.6;margin-bottom:16px;}
+.footer-badges{display:flex;gap:8px;flex-wrap:wrap;}
+.footer-badge{padding:4px 10px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);font-size:.7rem;color:var(--text3);}
+.footer-col h4{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;font-family:var(--mono);}
+.footer-col a{display:block;font-size:.85rem;color:var(--text3);margin-bottom:9px;transition:color .15s;}
+.footer-col a:hover{color:var(--text);}
+.footer-bottom{border-top:1px solid var(--border);padding-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.footer-copy{font-size:.78rem;color:var(--text3);}
+.footer-bottom-links{display:flex;gap:16px;}
+.footer-bottom-links a{font-size:.78rem;color:var(--text3);transition:color .15s;}
+.footer-bottom-links a:hover{color:var(--text);}
+
+/* ── Responsive ────────────────────────────────────────────────────────────── */
+@media(max-width:1024px){
+  .section-split{grid-template-columns:1fr;gap:48px;}
+  .section-split.rev{direction:ltr;}
+  .section-copy{max-width:100%;}
+  .vert-grid{grid-template-columns:1fr 1fr;}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:32px;}
+  .steps{grid-template-columns:1fr 1fr;}
+  .step:nth-child(2){border-right:none;}
+  .step:nth-child(1),.step:nth-child(2){border-bottom:1px solid var(--border);}
+  .dev-split{grid-template-columns:1fr;gap:40px;}
+  .bw-body{grid-template-columns:1fr;}
+  .bw-sidebar{display:none;}
+  .mh-window .pw-body{grid-template-columns:1fr;}
+  .pw-sidebar{display:none;}
+  .ds-window .pw-body{grid-template-columns:1fr;}
+  .ds-config{display:none;}
+  .th-window .pw-body{grid-template-columns:1fr;}
+}
+@media(max-width:768px){
+  :root{--section-pad:80px;}
+  .hero{padding:calc(var(--nav-h) + 60px) 24px 80px;}
+  .hero-h1{font-size:clamp(2.8rem,10vw,4.5rem);}
+  .site-nav-links{display:none;}
+  .site-nav-actions{display:none;}
+  .sn-hamburger{display:flex;}
+  .pricing-grid{grid-template-columns:1fr;}
+  .vert-grid{grid-template-columns:1fr;}
+  .footer-grid{grid-template-columns:1fr;}
+  .trust-bar-inner{flex-direction:column;align-items:flex-start;gap:12px;}
+  .steps{grid-template-columns:1fr 1fr;}
+  .brief-window{margin-top:40px;}
+  .me-window .pw-body{display:block;}
+}
+@media(max-width:480px){
+  :root{--section-pad:60px;}
+  .section{padding:60px 20px;}
+  .hero-ctas{flex-direction:column;align-items:stretch;text-align:center;}
+  .btn-primary,.btn-ghost{justify-content:center;}
+  .steps{grid-template-columns:1fr;}
+  .step:not(:last-child){border-right:none;border-bottom:1px solid var(--border);}
+  .hero-models{display:none;}
+  .bw-metrics{grid-template-columns:1fr 1fr;}
+  .mem-grid{grid-template-columns:1fr;}
+  .th-member-grid{grid-template-columns:1fr;}
+  .footer-grid{gap:24px;}
+  .pricing-grid{gap:16px;background:none;}
+  .plan{border:1px solid var(--border);border-radius:14px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Nav ─────────────────────────────────────────────────────────────────── -->
+<nav class="site-nav" id="site-nav">
+  <div class="site-nav-inner">
+    <a href="/remlabs" class="site-nav-logo"><span class="sn-mark"></span>REM Labs</a>
+    <div class="site-nav-drop" id="drop-products">
+      <button class="sn-drop-btn">Products <svg class="sn-chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="sn-drop-panel">
+        <a href="/memory-hub" class="sn-drop-item"><span class="sdi-icon">🧠</span><div><b>Memory Hub</b><em>Persistent memory store</em></div></a>
+        <a href="/dream-studio" class="sn-drop-item"><span class="sdi-icon">💤</span><div><b>Dream Studio</b><em>Configure dream cycles</em></div></a>
+        <a href="/dream-reports" class="sn-drop-item"><span class="sdi-icon">📊</span><div><b>Dream Reports</b><em>Morning Intelligence Brief</em></div></a>
+        <a href="/team-hives" class="sn-drop-item"><span class="sdi-icon">🐝</span><div><b>Team Hives</b><em>Multiplayer memory</em></div></a>
+        <a href="/memory-explorer" class="sn-drop-item"><span class="sdi-icon">🔭</span><div><b>Memory Explorer</b><em>Knowledge graph</em></div></a>
+      </div>
+    </div>
+    <div class="site-nav-links">
+      <a href="#how" class="site-nav-link">How it works</a>
+      <a href="#pricing" class="site-nav-link">Pricing</a>
+    </div>
+    <div class="site-nav-actions">
+      <a href="https://slopshop.gg/home" class="site-nav-app">Log in</a>
+      <a href="https://slopshop.gg/home" class="site-nav-signup">Start for free →</a>
+    </div>
+    <button class="sn-hamburger" id="sn-hb" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+  <div class="sn-mobile" id="sn-mob">
+    <a href="/memory-hub">🧠 Memory Hub</a>
+    <a href="/dream-studio">💤 Dream Studio</a>
+    <a href="/dream-reports">📊 Dream Reports</a>
+    <a href="/team-hives">🐝 Team Hives</a>
+    <a href="/memory-explorer">🔭 Memory Explorer</a>
+    <div class="sn-divider"></div>
+    <a href="#how">How it works</a>
+    <a href="#pricing">Pricing</a>
+    <div class="sn-divider"></div>
+    <a href="https://slopshop.gg/home" class="snm-app">Log in</a>
+    <a href="https://slopshop.gg/home" class="snm-signup">Start for free →</a>
+  </div>
+</nav>
+
+<!-- ── Hero ────────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-inner">
+    <div class="hero-badge r"><span class="hero-badge-dot"></span>Memory 2.0 is here</div>
+    <h1 class="hero-h1 r d1">
+      <span class="line1">Your AI actually</span>
+      <span class="line2">remembers.</span>
+    </h1>
+    <p class="hero-sub1 r d2">And it dreams while you sleep.</p>
+    <p class="hero-sub2 r d3">REM Labs gives every AI agent persistent Memory 2.0 — knowledge that compounds every night through a 9-stage Dream Engine.</p>
+    <div class="hero-ctas r d3">
+      <a href="https://slopshop.gg/home" class="btn-primary">Start for free →</a>
+      <a href="#how" class="btn-ghost">See how it works ↓</a>
+    </div>
+    <p class="hero-fine r d4" id="hero-count-line">No credit card · Memory always free · 1,406 agents dreaming tonight</p>
+    <div class="hero-models r d4">
+      <span class="hero-models-label">Works with:</span>
+      <span class="hero-model-pill">Claude</span>
+      <span class="hero-model-pill">GPT-4o</span>
+      <span class="hero-model-pill">Llama 3</span>
+      <span class="hero-model-pill">Gemini</span>
+      <span class="hero-model-pill">Mistral</span>
+    </div>
+
+    <!-- Morning Brief Window -->
+    <div class="brief-window r d5">
+      <div class="bw-bar">
+        <div class="bw-dots"><div class="bw-dot red"></div><div class="bw-dot yellow"></div><div class="bw-dot green"></div></div>
+        <span class="bw-title">Morning Brief &middot; April 2, 2026 &middot; 08:04 AM</span>
+      </div>
+      <div class="bw-body">
+        <div class="bw-sidebar">
+          <div class="bw-sidebar-label">Workspace</div>
+          <div class="bw-nav-item active">🧠 Memory Hub</div>
+          <div class="bw-nav-item">💤 Dream Studio</div>
+          <div class="bw-nav-item">📊 Reports</div>
+          <div class="bw-nav-item">🐝 Hives</div>
+          <div class="bw-nav-item">🔭 Explorer</div>
+        </div>
+        <div class="bw-main">
+          <div class="bw-main-header">
+            <span class="bw-main-title">Morning Intelligence Brief</span>
+            <span class="bw-main-date">Apr 2, 2026</span>
+          </div>
+          <div class="bw-metrics">
+            <div class="bw-metric"><div class="bw-metric-val" style="color:var(--accent)">84</div><div class="bw-metric-lbl">Brain Glow Score</div></div>
+            <div class="bw-metric"><div class="bw-metric-val" style="color:#67e8f9">9</div><div class="bw-metric-lbl">Dream Cycles</div></div>
+            <div class="bw-metric"><div class="bw-metric-val" style="color:var(--green)">2,341</div><div class="bw-metric-lbl">Memories Stored</div></div>
+            <div class="bw-metric"><div class="bw-metric-val" style="color:var(--green)">+12</div><div class="bw-metric-lbl">Insights Today</div></div>
+          </div>
+          <div class="bw-insights-label">Top Insights</div>
+          <div class="bw-insight"><div class="bw-insight-dot"></div><div class="bw-insight-text">Rate limiting follows exponential back-off — update client accordingly</div></div>
+          <div class="bw-insight"><div class="bw-insight-dot"></div><div class="bw-insight-text">Auth pattern shared across 3 APIs — abstraction recommended</div></div>
+          <div class="bw-insight"><div class="bw-insight-dot"></div><div class="bw-insight-text">Sprint 4 deadline risk: 2 blockers still unresolved</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Demo Section ─────────────────────────────────────────────────────────── -->
+<section class="demo-section">
+  <div style="max-width:var(--max-w);margin:0 auto;">
+    <h2 class="r">Try it now. No signup.</h2>
+    <p class="demo-sub r d1">Type anything your AI should remember. See it stored instantly.</p>
+    <div class="terminal r d2">
+      <div class="terminal-bar">
+        <div class="terminal-dots"><div class="t-dot r"></div><div class="t-dot y"></div><div class="t-dot g"></div></div>
+        <span class="terminal-title">Memory Store — Live Preview</span>
+      </div>
+      <div class="terminal-body">
+        <div class="try-label">Add a Memory</div>
+        <div class="try-input-row">
+          <input id="try-in" type="text" placeholder="e.g. User prefers concise responses...">
+          <button id="try-go">Store →</button>
+        </div>
+        <div class="try-count-row">
+          <span class="try-count-label">Memory Store</span>
+          <span id="try-count" style="font-family:var(--mono);font-size:.8rem;color:var(--accent);font-weight:700;">0 memories</span>
+        </div>
+        <div class="try-memories" id="try-mems"></div>
+        <div class="try-empty" id="try-empty">No memories yet. Add one above ↑</div>
+        <div class="try-hint" id="try-hint" style="display:none;">💤 After 2+ memories are stored, the Dream Engine can synthesize them overnight — compressing patterns, generating insights, and raising your Brain Glow Score.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Trust Bar ────────────────────────────────────────────────────────────── -->
+<div class="trust-bar">
+  <div class="trust-bar-inner">
+    <div class="trust-left"><strong id="trust-count">1,406</strong> agents dreaming right now</div>
+    <div class="trust-center">
+      <span class="trust-stars">★★★★★</span>
+      <span class="trust-rating">4.9 / 5 from 312 users</span>
+    </div>
+    <div class="trust-right">
+      <span class="trust-badge">TEE Security</span>
+      <span class="trust-badge">SOC 2 in progress</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── How it Works ─────────────────────────────────────────────────────────── -->
+<section class="how-section" id="how">
+  <div class="how-inner">
+    <div class="how-header">
+      <div class="eyebrow r">How it Works</div>
+      <h2 class="section-h r d1">From first thought to overnight insight.</h2>
+    </div>
+    <div class="steps">
+      <div class="step r">
+        <div class="step-num">01</div>
+        <div class="step-icon">🔌</div>
+        <div class="step-title">Connect your AI</div>
+        <div class="step-body">Add one line to your system prompt or install the MCP. Memory starts recording automatically — zero configuration.</div>
+      </div>
+      <div class="step r d1">
+        <div class="step-num">02</div>
+        <div class="step-icon">🌙</div>
+        <div class="step-title">It learns overnight</div>
+        <div class="step-body">Every night at 2AM your time, the Dream Engine runs 9 synthesis strategies across all your memories.</div>
+      </div>
+      <div class="step r d2">
+        <div class="step-num">03</div>
+        <div class="step-icon">☀️</div>
+        <div class="step-title">Wake up smarter</div>
+        <div class="step-body">Your Morning Brief is ready. Brain Glow Score, top insights, TMR cues — generated while you slept.</div>
+      </div>
+      <div class="step r d3">
+        <div class="step-num">04</div>
+        <div class="step-icon">♾️</div>
+        <div class="step-title">Compounds forever</div>
+        <div class="step-body">Each dream cycle links new knowledge to old. Your AI doesn't just remember — it understands more every week.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Memory Hub Section ───────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-split">
+      <div class="section-copy r">
+        <div class="eyebrow">Memory Hub</div>
+        <h2 class="section-h">Never lose context again.</h2>
+        <p>Every fact, note, code snippet, and conversation — stored with type labels, scored for relevance, organized into namespaces. Your AI's second brain, searchable in milliseconds.</p>
+        <a href="/memory-hub" class="section-link">Open Memory Hub →</a>
+      </div>
+      <div class="r d1">
+        <div class="product-window mh-window">
+          <div class="pw-bar">
+            <div class="pw-dots"><div class="pw-dot r"></div><div class="pw-dot y"></div><div class="pw-dot g"></div></div>
+            <span class="pw-title">Memory Hub &middot; research-agent</span>
+          </div>
+          <div class="pw-body">
+            <div class="pw-sidebar">
+              <div class="pw-sidebar-label">Namespaces</div>
+              <div class="mh-ns-item active">research <span class="mh-ns-count">24</span></div>
+              <div class="mh-ns-item">finance <span class="mh-ns-count">8</span></div>
+              <div class="mh-ns-item">archive <span class="mh-ns-count">5</span></div>
+              <div class="mh-new">+ New namespace</div>
+            </div>
+            <div class="pw-main">
+              <div class="mh-toolbar">
+                <input class="mh-search" type="text" placeholder="Search memories..." readonly>
+                <button class="mh-store-btn">Store ＋</button>
+              </div>
+              <div class="mem-grid">
+                <div class="mem-card">
+                  <div class="mem-key">api_rate_limits</div>
+                  <span class="mem-tag tag-note">note</span>
+                  <div class="mem-val">Rate limits vary by tier. Implement exponential back-off for 429 responses...</div>
+                </div>
+                <div class="mem-card">
+                  <div class="mem-key">gpt4o_context</div>
+                  <span class="mem-tag tag-fact">fact</span>
+                  <div class="mem-val">GPT-4o supports 128k context window with vision and function calling...</div>
+                </div>
+                <div class="mem-card">
+                  <div class="mem-key">async_fetch_pattern</div>
+                  <span class="mem-tag tag-code">code</span>
+                  <div class="mem-val">async function fetchWithRetry(url, maxRetries = 3) {...</div>
+                </div>
+                <div class="mem-card">
+                  <div class="mem-key">sprint_4_kickoff</div>
+                  <span class="mem-tag tag-event">event</span>
+                  <div class="mem-val">Sprint 4 planning: auth refactor, memory integration...</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Dream Studio Section ──────────────────────────────────────────────────── -->
+<section class="section" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="section-inner">
+    <div class="section-split rev">
+      <div class="section-copy r">
+        <div class="eyebrow">Dream Studio</div>
+        <h2 class="section-h">9 strategies. Your AI gets smarter every night.</h2>
+        <p>Not just storage — synthesis. Choose from 9 REM strategies: pattern extraction, insight generation, knowledge compression, association mapping, and more. Schedule once. Your AI improves itself while you sleep.</p>
+        <a href="/dream-studio" class="section-link">Open Dream Studio →</a>
+        <div class="stat-row">
+          <div class="stat-mini">
+            <div class="stat-mini-val">84</div>
+            <div class="stat-mini-lbl">Brain Glow after 30 days</div>
+            <div class="stat-mini-sub">vs 41 on day 1</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-val">9</div>
+            <div class="stat-mini-lbl">synthesis strategies per run</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-mini-val">2×</div>
+            <div class="stat-mini-lbl">faster recall after 2 weeks</div>
+          </div>
+        </div>
+      </div>
+      <div class="r d1">
+        <div class="product-window ds-window">
+          <div class="pw-bar">
+            <div class="pw-dots"><div class="pw-dot r"></div><div class="pw-dot y"></div><div class="pw-dot g"></div></div>
+            <span class="pw-title">Dream Studio</span>
+          </div>
+          <div class="pw-body" style="grid-template-columns:240px 1fr;">
+            <div class="ds-config">
+              <div class="ds-strat-label">Strategies</div>
+              <div class="ds-strategy checked"><div class="ds-cb"><span class="ds-cb-tick">✓</span></div>synthesize</div>
+              <div class="ds-strategy checked"><div class="ds-cb"><span class="ds-cb-tick">✓</span></div>pattern_extract</div>
+              <div class="ds-strategy checked"><div class="ds-cb"><span class="ds-cb-tick">✓</span></div>insight_generate</div>
+              <div class="ds-strategy"><div class="ds-cb"></div>compress</div>
+              <div class="ds-strategy"><div class="ds-cb"></div>associate</div>
+              <div class="ds-strategy"><div class="ds-cb"></div>validate</div>
+              <div class="ds-strategy"><div class="ds-cb"></div>evolve</div>
+              <div class="ds-strategy"><div class="ds-cb"></div>forecast</div>
+              <div class="ds-strategy"><div class="ds-cb"></div>reflect</div>
+              <div class="ds-count">3 of 9 selected</div>
+              <div class="ds-count">12 memories selected</div>
+              <button class="ds-start-btn">Start Dream →</button>
+            </div>
+            <div class="ds-run-panel">
+              <div class="ds-cycle-card">
+                <div class="ds-cycle-header"><div class="ds-pulse"></div>REM Cycle &middot; Running &middot; 02:14 AM</div>
+                <div class="ds-stage-row"><span class="ds-stage-name">ORIENT</span><div class="ds-stage-dot done"></div><span class="ds-stage-status done">✓ done</span></div>
+                <div class="ds-stage-row"><span class="ds-stage-name">GATHER</span><div class="ds-stage-dot done"></div><span class="ds-stage-status done">✓ done</span></div>
+                <div class="ds-stage-row"><span class="ds-stage-name">CONSOLIDATE</span><div class="ds-stage-dot running"></div><span class="ds-stage-status running">● running</span></div>
+                <div class="ds-stage-row"><span class="ds-stage-name">VALIDATE</span><div class="ds-stage-dot pending"></div><span class="ds-stage-status pending">—</span></div>
+                <div class="ds-stage-row"><span class="ds-stage-name">EVOLVE</span><div class="ds-stage-dot pending"></div><span class="ds-stage-status pending">—</span></div>
+              </div>
+              <div class="ds-score-row">
+                <span class="ds-score-label">Score so far</span>
+                <div style="display:flex;align-items:baseline;gap:8px;">
+                  <span class="ds-score-val">84</span>
+                  <span class="ds-rank-badge">Inferno</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Dream Reports Section ────────────────────────────────────────────────── -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-split">
+      <div class="section-copy r">
+        <div class="eyebrow">Dream Reports</div>
+        <h2 class="section-h">A Morning Brief, not a data dump.</h2>
+        <p>Every dream session distilled into what matters: your Brain Glow Score (0–100), top insights, procedural skills extracted, and TMR cues queued for today. Ready before your first coffee.</p>
+        <a href="/dream-reports" class="section-link">See a sample report →</a>
+      </div>
+      <div class="r d1">
+        <div class="product-window dr-window">
+          <div class="pw-bar">
+            <div class="pw-dots"><div class="pw-dot r"></div><div class="pw-dot y"></div><div class="pw-dot g"></div></div>
+            <span class="pw-title">Dream Reports &middot; Morning Intelligence Brief</span>
+          </div>
+          <div class="pw-body">
+            <div class="dr-header">
+              <div class="dr-title">Morning Intelligence Brief</div>
+              <div class="dr-sub">April 2, 2026 &middot; 08:04 AM</div>
+            </div>
+            <div class="dr-stats">
+              <div class="dr-glow-box">
+                <div class="dr-glow-val">84</div>
+                <div class="dr-glow-rank">Inferno</div>
+              </div>
+              <div class="dr-stat-col"><div class="dr-stat-val" style="color:var(--green)">+12</div><div class="dr-stat-lbl">Insights</div></div>
+              <div class="dr-stat-col"><div class="dr-stat-val" style="color:var(--accent)">9</div><div class="dr-stat-lbl">Dreams</div></div>
+              <div class="dr-stat-col"><div class="dr-stat-val" style="color:var(--green)">↑7%</div><div class="dr-stat-lbl">Trend</div></div>
+            </div>
+            <div class="dr-chart">
+              <div class="dr-chart-label">Score Trend — Last 7 Sessions</div>
+              <div class="dr-bars">
+                <div class="dr-bar" style="height:30%"></div>
+                <div class="dr-bar" style="height:45%"></div>
+                <div class="dr-bar" style="height:55%"></div>
+                <div class="dr-bar" style="height:60%"></div>
+                <div class="dr-bar" style="height:70%"></div>
+                <div class="dr-bar" style="height:80%"></div>
+                <div class="dr-bar" style="height:100%;opacity:1"></div>
+              </div>
+            </div>
+            <div class="dr-insights-label">Top Insights</div>
+            <div class="dr-insight"><div class="dr-insight-dot"></div><div class="dr-insight-text">Rate limiting follows exponential back-off — update client accordingly</div></div>
+            <div class="dr-insight"><div class="dr-insight-dot"></div><div class="dr-insight-text">3 APIs share same auth pattern — abstraction recommended</div></div>
+            <div class="dr-insight"><div class="dr-insight-dot"></div><div class="dr-insight-text">Sprint 4: 2 blockers unresolved — deadline risk detected</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Team Hives Section ───────────────────────────────────────────────────── -->
+<section class="section" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="section-inner">
+    <div class="section-split rev">
+      <div class="section-copy r">
+        <div class="eyebrow">Team Hives</div>
+        <h2 class="section-h">Intelligence that grows with your team.</h2>
+        <p>Shared namespaces. Role-based access. Collective Dream runs across your entire hive. When your whole team uses REM, everyone's AI learns from everyone's insights — every single night.</p>
+        <a href="/team-hives" class="section-link">Create a free hive →</a>
+      </div>
+      <div class="r d1">
+        <div class="product-window th-window">
+          <div class="pw-bar">
+            <div class="pw-dots"><div class="pw-dot r"></div><div class="pw-dot y"></div><div class="pw-dot g"></div></div>
+            <span class="pw-title">Team Hives</span>
+          </div>
+          <div class="pw-body" style="grid-template-columns:180px 1fr;">
+            <div class="pw-sidebar">
+              <div class="pw-sidebar-label">Hives</div>
+              <div class="th-hive-item active">
+                <div><div>Engineering</div><div class="th-hive-meta">4 members</div></div>
+              </div>
+              <div class="th-hive-item">
+                <div><div>Research</div><div class="th-hive-meta">2 members</div></div>
+              </div>
+              <div class="th-hive-item">
+                <div><div>Finance</div><div class="th-hive-meta">3 members</div></div>
+              </div>
+              <div class="th-hive-new">+ New Hive</div>
+            </div>
+            <div class="pw-main">
+              <div class="th-main-title">Engineering Hive</div>
+              <div class="th-main-desc">4 members &middot; Last dream: 2h ago</div>
+              <div class="th-members-label">Members</div>
+              <div class="th-member-grid">
+                <div class="th-member"><span class="th-member-name">@alice</span><span class="th-role owner">Owner</span></div>
+                <div class="th-member"><span class="th-member-name">@bob</span><span class="th-role editor">Editor</span></div>
+                <div class="th-member"><span class="th-member-name">@carla</span><span class="th-role editor">Editor</span></div>
+                <div class="th-member"><span class="th-member-name">@david</span><span class="th-role viewer">Viewer</span></div>
+              </div>
+              <div class="th-mems-label">Shared Memories (156)</div>
+              <div class="th-mem-row"><span class="th-mem-key">sprint_4_goals</span><span class="mem-tag tag-fact" style="font-size:.6rem;padding:1px 5px;">fact</span></div>
+              <div class="th-mem-row"><span class="th-mem-key">api_migration_plan</span><span class="mem-tag tag-note" style="font-size:.6rem;padding:1px 5px;">note</span></div>
+              <button class="th-run-btn">Run Collective Dream →</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Memory Explorer Section ─────────────────────────────────────────────── -->
+<section class="section">
+  <div class="section-inner">
+    <div class="section-split">
+      <div class="section-copy r">
+        <div class="eyebrow">Memory Explorer</div>
+        <h2 class="section-h">See every connection your AI makes.</h2>
+        <p>An interactive knowledge graph of every memory — force-directed, filterable by type, date, or tag. Click any node to see connections, context, and confidence score. Your AI's mind, made visible.</p>
+        <a href="/memory-explorer" class="section-link">Open Memory Explorer →</a>
+      </div>
+      <div class="r d1">
+        <div class="product-window me-window">
+          <div class="pw-bar">
+            <div class="pw-dots"><div class="pw-dot r"></div><div class="pw-dot y"></div><div class="pw-dot g"></div></div>
+            <span class="pw-title">Memory Explorer &middot; research-agent</span>
+          </div>
+          <div class="pw-body">
+            <div class="me-toolbar">
+              <span class="me-filter-pill active">All</span>
+              <span class="me-filter-pill">Regular</span>
+              <span class="me-filter-pill">Dream</span>
+              <span class="me-spacer"></span>
+              <span class="me-export">Export</span>
+            </div>
+            <div class="graph-canvas">
+              <svg viewBox="0 0 600 280" xmlns="http://www.w3.org/2000/svg">
+                <!-- Edges -->
+                <g stroke="rgba(255,255,255,0.12)" stroke-width="1" fill="none">
+                  <line x1="300" y1="140" x2="180" y2="100"/>
+                  <line x1="300" y1="140" x2="420" y2="100"/>
+                  <line x1="180" y1="100" x2="120" y2="160"/>
+                  <line x1="420" y1="100" x2="480" y2="160"/>
+                  <line x1="120" y1="160" x2="480" y2="160"/>
+                  <line x1="480" y1="160" x2="380" y2="200"/>
+                  <line x1="380" y1="200" x2="220" y2="210"/>
+                  <line x1="220" y1="210" x2="150" y2="240"/>
+                  <line x1="150" y1="240" x2="460" y2="230"/>
+                  <line x1="460" y1="230" x2="560" y2="120"/>
+                  <line x1="560" y1="120" x2="520" y2="60"/>
+                  <line x1="180" y1="100" x2="60" y2="80"/>
+                  <line x1="420" y1="100" x2="540" y2="200"/>
+                  <line x1="520" y1="60" x2="540" y2="20"/>
+                </g>
+                <!-- Nodes -->
+                <circle cx="300" cy="140" r="20" fill="rgba(129,140,248,0.75)" stroke="#818cf8" stroke-width="2"/>
+                <circle cx="180" cy="100" r="14" fill="rgba(0,212,255,0.6)"/>
+                <circle cx="420" cy="100" r="14" fill="rgba(0,212,255,0.6)"/>
+                <circle cx="120" cy="160" r="12" fill="rgba(129,140,248,0.5)"/>
+                <circle cx="480" cy="160" r="12" fill="rgba(129,140,248,0.5)"/>
+                <circle cx="380" cy="200" r="10" fill="rgba(34,197,94,0.55)"/>
+                <circle cx="220" cy="210" r="10" fill="rgba(34,197,94,0.55)"/>
+                <circle cx="150" cy="240" r="8" fill="rgba(0,212,255,0.4)"/>
+                <circle cx="460" cy="230" r="8" fill="rgba(129,140,248,0.4)"/>
+                <circle cx="560" cy="120" r="9" fill="rgba(0,212,255,0.4)"/>
+                <circle cx="520" cy="60" r="8" fill="rgba(245,158,11,0.55)"/>
+                <circle cx="60" cy="80" r="9" fill="rgba(0,212,255,0.4)"/>
+                <circle cx="540" cy="200" r="8" fill="rgba(129,140,248,0.35)"/>
+                <circle cx="540" cy="20" r="7" fill="rgba(245,158,11,0.45)"/>
+                <!-- Labels -->
+                <g fill="rgba(240,240,240,0.45)" font-size="8" font-family="monospace" text-anchor="middle">
+                  <text x="300" y="168">api_patterns</text>
+                  <text x="180" y="122">auth_methods</text>
+                  <text x="420" y="122">rate_limits</text>
+                  <text x="120" y="180">jwt_tokens</text>
+                  <text x="480" y="180">backoff_algo</text>
+                  <text x="380" y="218">associations</text>
+                  <text x="220" y="228">patterns</text>
+                  <text x="150" y="256">sprint_4</text>
+                  <text x="460" y="248">forecast_1</text>
+                  <text x="560" y="138">gpt4o_ctx</text>
+                  <text x="520" y="78">forecast_2</text>
+                  <text x="60" y="98">async_fetch</text>
+                  <text x="540" y="218">memory_v2</text>
+                  <text x="540" y="36">predict_3</text>
+                </g>
+              </svg>
+            </div>
+            <div class="me-stats">
+              <div class="me-stat"><div class="me-stat-val">42 Keys</div><div class="me-stat-lbl">total nodes</div></div>
+              <div class="me-stat"><div class="me-stat-val">12 Dreams</div><div class="me-stat-lbl">synthesized</div></div>
+              <div class="me-stat"><div class="me-stat-val">3 NS</div><div class="me-stat-lbl">namespaces</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── OS Editions ──────────────────────────────────────────────────────────── -->
+<section class="vert" id="verticals" style="background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);">
+  <div class="vert-inner">
+    <div class="vert-header r">
+      <div class="eyebrow">OS Editions</div>
+      <h2 class="section-h">Purpose-built for your domain.</h2>
+    </div>
+    <p class="vert-sub r d1">Each edition ships with domain-specific memory templates, dream strategies, and integrations pre-configured for your industry.</p>
+    <div class="vert-grid r d2">
+      <div class="vc">
+        <div class="vc-icon">🔬</div>
+        <span class="vc-tag cyan">Research OS</span>
+        <h3>Research OS</h3>
+        <div class="vc-meta">For researchers &amp; analysts</div>
+        <p>Synthesize literature across hundreds of papers. Surface contradictions, track citations, and let the Dream Engine grow your hypothesis graph overnight.</p>
+        <a href="/research-os" class="vc-link">Explore →</a>
+      </div>
+      <div class="vc">
+        <div class="vc-icon">📈</div>
+        <span class="vc-tag gn">Finance OS</span>
+        <h3>Finance OS</h3>
+        <div class="vc-meta">For traders &amp; analysts</div>
+        <p>Digest earnings calls, track sentiment drift, and watch the Dream Engine surface recurrent market patterns from months of compounding memory.</p>
+        <a href="/finance-os" class="vc-link">Explore →</a>
+      </div>
+      <div class="vc">
+        <div class="vc-icon">⚖️</div>
+        <span class="vc-tag amber">Legal OS</span>
+        <h3>Legal OS</h3>
+        <div class="vc-meta">For lawyers &amp; paralegals</div>
+        <p>Build living case law repositories. Surface precedent graphs, track cross-jurisdiction conflicts, and extract procedural patterns from every matter.</p>
+        <a href="/legal-os" class="vc-link">Explore →</a>
+      </div>
+      <div class="vc">
+        <div class="vc-icon">🎨</div>
+        <span class="vc-tag purple">Creative OS</span>
+        <h3>Creative OS</h3>
+        <div class="vc-meta">For creators &amp; designers</div>
+        <p>Track your creative history, identify style patterns, and surface unexpected cross-project connections that unlock your next breakthrough.</p>
+        <a href="/creative-os" class="vc-link">Explore →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── For Developers ────────────────────────────────────────────────────────── -->
+<section class="dev-section">
+  <div class="dev-inner">
+    <div class="dev-split">
+      <div class="r">
+        <div class="eyebrow">For Developers</div>
+        <h2 class="section-h">Zero config. Three lines.</h2>
+        <p style="font-size:1rem;color:var(--text2);line-height:1.65;margin-bottom:24px;">REM Labs is built on slopshop.gg — the developer API for AI memory. Full REST API, CLI, MCP server, Python + Node SDKs.</p>
+        <div class="dev-links">
+          <a href="https://slopshop.gg/home" class="dev-link">View API docs →</a>
+          <a href="https://slopshop.gg/home" class="dev-link">npm package →</a>
+          <a href="https://slopshop.gg/home" class="dev-link">GitHub →</a>
+        </div>
+        <p class="dev-bridge">Consumer on REM Labs. Developer on <a href="https://slopshop.gg" style="color:var(--accent)">slopshop.gg</a>. Same backend — two frontends.</p>
+      </div>
+      <div class="r d1">
+        <div class="code-panel">
+          <div class="code-bar">
+            <div class="code-dots"><div class="code-dot r"></div><div class="code-dot y"></div><div class="code-dot g"></div></div>
+            <span class="code-title">SDK Quick Start</span>
+          </div>
+          <div class="code-body">
+<span class="c-cmt">// Install the MCP server</span>
+<span class="c-fn">npx</span> @slopshop/mcp
+
+<span class="c-cmt">// Or REST API</span>
+<span class="c-kw">const</span> { <span class="c-cls">Rem</span> } = <span class="c-fn">require</span>(<span class="c-str">'@slopshop/sdk'</span>);
+<span class="c-kw">const</span> rem = <span class="c-kw">new</span> <span class="c-cls">Rem</span>({ <span class="c-prop">key</span>: process.<span class="c-prop">env</span>.<span class="c-prop">REM_API_KEY</span> });
+
+<span class="c-kw">await</span> rem.<span class="c-fn">store</span>({
+  <span class="c-prop">key</span>: <span class="c-str">'user_pref_theme'</span>,
+  <span class="c-prop">value</span>: <span class="c-str">'dark mode, dense UI'</span>,
+  <span class="c-prop">namespace</span>: <span class="c-str">'my-agent'</span>
+});
+
+<span class="c-cmt">// Run a dream cycle</span>
+<span class="c-kw">await</span> rem.<span class="c-prop">dream</span>.<span class="c-fn">start</span>({
+  <span class="c-prop">strategy</span>: <span class="c-str">'synthesize'</span>
+});
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Testimonials ──────────────────────────────────────────────────────────── -->
+<section class="testimonials">
+  <div class="testimonials-inner">
+    <div class="testimonials-header r">
+      <h2 class="section-h">Real people. Real memory.</h2>
+    </div>
+    <p class="testimonials-sub r d1">From researchers to founders, across 40+ countries.</p>
+    <div class="tgrid">
+      <div class="tcard r">
+        <div class="tcard-quote">I manage 40 clients. REM means I never forget a preference again.</div>
+        <div class="tcard-person">
+          <div class="tcard-avatar">🌍</div>
+          <div>
+            <div class="tcard-name">Maya A.</div>
+            <div class="tcard-meta">Freelance Writer &middot; Lagos, NG</div>
+            <span class="tcard-product">Memory Hub</span>
+          </div>
+        </div>
+      </div>
+      <div class="tcard r d1">
+        <div class="tcard-quote">Integrated in 10 minutes. Our agent's context quality jumped in the first week.</div>
+        <div class="tcard-person">
+          <div class="tcard-avatar">👨‍💻</div>
+          <div>
+            <div class="tcard-name">David L.</div>
+            <div class="tcard-meta">ML Engineer &middot; San Francisco</div>
+            <span class="tcard-product">Dream Studio</span>
+          </div>
+        </div>
+      </div>
+      <div class="tcard r d2">
+        <div class="tcard-quote">The Morning Brief is the first thing I read. Better than my own notes.</div>
+        <div class="tcard-person">
+          <div class="tcard-avatar">📚</div>
+          <div>
+            <div class="tcard-name">Carla M.</div>
+            <div class="tcard-meta">Research Scientist &middot; Buenos Aires</div>
+            <span class="tcard-product">Dream Reports</span>
+          </div>
+        </div>
+      </div>
+      <div class="tcard r d3">
+        <div class="tcard-quote">Our whole team shares a Hive. Everyone's AI learned from each other overnight.</div>
+        <div class="tcard-person">
+          <div class="tcard-avatar">🏢</div>
+          <div>
+            <div class="tcard-name">Yuki T.</div>
+            <div class="tcard-meta">Startup Founder &middot; Tokyo</div>
+            <span class="tcard-product">Team Hives</span>
+          </div>
+        </div>
+      </div>
+      <div class="tcard r d4">
+        <div class="tcard-quote">The graph visualization surfaced connections in my research I'd missed for months.</div>
+        <div class="tcard-person">
+          <div class="tcard-avatar">🎓</div>
+          <div>
+            <div class="tcard-name">Priya S.</div>
+            <div class="tcard-meta">PhD Student &middot; Bangalore</div>
+            <span class="tcard-product">Memory Explorer</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Pricing ───────────────────────────────────────────────────────────────── -->
+<section class="pricing-section" id="pricing">
+  <div class="pricing-inner">
+    <div class="pricing-header r">
+      <h2 class="section-h">Start free. Dream every night.</h2>
+    </div>
+    <p class="pricing-sub r d1">Memory storage is free forever. Pay only for advanced dream strategies and premium compute.</p>
+    <div class="pricing-grid r d2">
+      <!-- Free -->
+      <div class="plan">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">$0<span>/mo</span></div>
+        <div class="plan-tagline">For individuals getting started</div>
+        <div class="plan-specs">
+          <div class="plan-spec"><span class="plan-spec-key">Storage</span><span class="plan-spec-val">Unlimited</span></div>
+          <div class="plan-spec"><span class="plan-spec-key">API calls</span><span class="plan-spec-val">500/mo</span></div>
+          <div class="plan-spec"><span class="plan-spec-key">Dreams/day</span><span class="plan-spec-val">1 (basic)</span></div>
+        </div>
+        <ul class="plan-features">
+          <li>Unlimited memory storage</li>
+          <li>Basic dream cycle (1/day)</li>
+          <li>Morning Intelligence Brief</li>
+          <li>Memory Graph Explorer</li>
+          <li>Brain Glow Score</li>
+          <li>500 API calls/mo</li>
+          <li class="no">Advanced dream strategies</li>
+          <li class="no">Team Hives</li>
+        </ul>
+        <a href="https://slopshop.gg/home" class="plan-cta ghost">Start free →</a>
+      </div>
+      <!-- Pro -->
+      <div class="plan featured">
+        <div class="plan-badge">Most Popular</div>
+        <div class="plan-name" style="margin-top:20px;">Pro</div>
+        <div class="plan-price">$29<span>/mo</span></div>
+        <div class="plan-tagline">For power users and professionals</div>
+        <div class="plan-specs">
+          <div class="plan-spec"><span class="plan-spec-key">Storage</span><span class="plan-spec-val">50,000 memories</span></div>
+          <div class="plan-spec"><span class="plan-spec-key">API calls</span><span class="plan-spec-val">20,000/mo</span></div>
+          <div class="plan-spec"><span class="plan-spec-key">Dreams/day</span><span class="plan-spec-val">Unlimited (all 9)</span></div>
+        </div>
+        <ul class="plan-features">
+          <li>Everything in Free</li>
+          <li>All 9 dream strategies (unlimited)</li>
+          <li>50,000 memories</li>
+          <li>20,000 API calls/mo</li>
+          <li>3 Team Hives</li>
+          <li>Voice Memory Journal</li>
+          <li>TEE Security</li>
+          <li>99.9% SLA uptime</li>
+        </ul>
+        <a href="https://slopshop.gg/home" class="plan-cta primary">Start Pro Trial →</a>
+      </div>
+      <!-- Enterprise -->
+      <div class="plan">
+        <div class="plan-name">Enterprise</div>
+        <div class="plan-price" style="font-size:2rem;">Custom</div>
+        <div class="plan-tagline">For teams and organizations</div>
+        <div class="plan-specs">
+          <div class="plan-spec"><span class="plan-spec-key">Storage</span><span class="plan-spec-val">Unlimited</span></div>
+          <div class="plan-spec"><span class="plan-spec-key">API calls</span><span class="plan-spec-val">Unlimited</span></div>
+          <div class="plan-spec"><span class="plan-spec-key">Dreams/day</span><span class="plan-spec-val">Custom schedule</span></div>
+        </div>
+        <ul class="plan-features">
+          <li>Everything in Pro</li>
+          <li>TEE Security (Nitro/TDX)</li>
+          <li>Unlimited memories + API calls</li>
+          <li>Unlimited Team seats</li>
+          <li>Self-hosted option</li>
+          <li>SOC 2 / HIPAA ready</li>
+          <li>Custom dream schedules</li>
+          <li>99.99% SLA + dedicated support</li>
+        </ul>
+        <a href="mailto:dev@slopshop.gg" class="plan-cta ghost">Talk to us →</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Final CTA ─────────────────────────────────────────────────────────────── -->
+<section class="finale">
+  <div class="finale-inner">
+    <h2 class="finale-h r">
+      <span class="line1">Start your first dream</span>
+      <span class="line2">tonight.</span>
+    </h2>
+    <p class="finale-sub r d1">Free forever. No credit card. Works with any AI model. Your first Dream Report in 24 hours.</p>
+    <a href="https://slopshop.gg/home" class="btn-primary r d2" style="font-size:1.1rem;padding:16px 36px;">Start for free →</a>
+    <p class="finale-note r d3">Powered by <a href="https://slopshop.gg">slopshop.gg</a> &middot; The Developer API for AI Memory</p>
+  </div>
+</section>
+
+<!-- ── Footer ────────────────────────────────────────────────────────────────── -->
+<div class="footer-disclaimer">
+  Note: REM Labs (remlabs.ai) is not affiliated with remlabs.co, an unrelated company focused on autonomous engineering. &copy; 2026 REM Labs.
+</div>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand-logo"><div class="footer-mark"></div>REM Labs</div>
+        <p class="footer-tagline">The no-code consumer layer for AI memory. Powered by the Dream Engine — the only 9-stage REM cycle for AI agents.</p>
+        <div class="footer-badges">
+          <span class="footer-badge">TEE Security available</span>
+          <span class="footer-badge">SOC 2 in progress</span>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="#how">How it works</a>
+        <a href="#verticals">OS Editions</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/benchmarks">Benchmarks</a>
+      </div>
+      <div class="footer-col">
+        <h4>Developers</h4>
+        <a href="https://slopshop.gg">Slopshop API</a>
+        <a href="https://slopshop.gg/home">API Docs</a>
+        <a href="https://slopshop.gg/home">Cookbook</a>
+        <a href="https://slopshop.gg/home">Playground</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="/legal">Legal</a>
+        <a href="mailto:dev@slopshop.gg">Contact</a>
+        <a href="https://twitter.com">Twitter / X</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">&copy; 2026 REM Labs &middot; Powered by slopshop.gg</span>
+      <div class="footer-bottom-links">
+        <a href="/legal">Terms</a>
+        <a href="/legal">Privacy</a>
+        <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── Site nav scroll ──────────────────────────────────────────────────────────
+(function(){
+  var nav = document.querySelector('.site-nav');
+  window.addEventListener('scroll',function(){
+    nav.classList[window.scrollY>20?'add':'remove']('sn-scrolled');
+  },{passive:true});
+})();
+
+// ── Dropdown menus ───────────────────────────────────────────────────────────
+document.querySelectorAll('.site-nav-drop').forEach(function(drop){
+  var btn=drop.querySelector('.sn-drop-btn');
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var isOpen=drop.classList.contains('open');
+    document.querySelectorAll('.site-nav-drop.open').forEach(function(d){d.classList.remove('open');});
+    if(!isOpen) drop.classList.add('open');
+  });
+});
+document.addEventListener('click',function(){
+  document.querySelectorAll('.site-nav-drop.open').forEach(function(d){d.classList.remove('open');});
+});
+
+// ── Hamburger ────────────────────────────────────────────────────────────────
+(function(){
+  var hb=document.getElementById('sn-hb'),mob=document.getElementById('sn-mob');
+  if(!hb||!mob) return;
+  hb.addEventListener('click',function(){hb.classList.toggle('open');mob.classList.toggle('open');});
+})();
+
+// ── Scroll reveal ────────────────────────────────────────────────────────────
+(function(){
+  var els=document.querySelectorAll('.r');
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}});
+  },{threshold:0.1,rootMargin:'0px 0px -40px 0px'});
+  els.forEach(function(el){io.observe(el);});
+})();
+
+// ── Live try-it memory demo ──────────────────────────────────────────────────
+(function(){
+  var input=document.getElementById('try-in');
+  var btn=document.getElementById('try-go');
+  var mems=document.getElementById('try-mems');
+  var empty=document.getElementById('try-empty');
+  var hint=document.getElementById('try-hint');
+  var count=document.getElementById('try-count');
+  var n=0;
+  var ids=['mem_4f9z','mem_7a2k','mem_3d8x','mem_9b1p','mem_5e6r'];
+  function store(){
+    var val=input.value.trim();
+    if(!val) return;
+    if(empty) empty.style.display='none';
+    n++;
+    count.textContent=n+(n===1?' memory':' memories');
+    var el=document.createElement('div');
+    el.className='try-mem';
+    var id=ids[n-1]||('mem_'+Math.random().toString(36).slice(2,6));
+    el.innerHTML='<span class="try-mem-id">'+id+'</span><span class="try-mem-val">'+val+'</span>';
+    mems.appendChild(el);
+    input.value='';
+    input.focus();
+    if(n>=2&&hint) hint.style.display='block';
+  }
+  btn.addEventListener('click',store);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter')store();});
+})();
+
+// ── Live agent counter ───────────────────────────────────────────────────────
+(function(){
+  fetch('/v1/metrics/public')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d&&d.live_instances){
+        var n=Number(d.live_instances).toLocaleString();
+        var el=document.getElementById('trust-count');
+        if(el) el.textContent=n;
+        var hf=document.querySelector('.hero-fine');
+        if(hf) hf.textContent='No credit card · Memory always free · '+n+' agents dreaming tonight';
+      }
+    }).catch(function(){});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>FedMosaic — Federated Memory Intelligence | Slopshop</title>
+<meta name="description" content="FedMosaic: slopshop.gg's federated memory intelligence framework. Instances collaborate on memory intelligence without ever sharing raw data. Binary mask aggregation. +23% Intelligence Score boost.">
+<meta name="keywords" content="federated memory, federated RAG, federated learning, private memory, self-hosted AI memory, slopshop, LoRA, binary mask, intelligence score">
+<link rel="canonical" href="https://slopshop.gg/fedmosaic">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://slopshop.gg/fedmosaic">
+<meta property="og:title" content="FedMosaic — Federated Memory Intelligence | Slopshop">
+<meta property="og:description" content="Every Dream cycle makes every agent smarter — privately. Binary mask aggregation. Zero raw data shared. +23% IS boost.">
+<meta property="og:image" content="https://slopshop.gg/og.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@slopshopgg">
+<meta name="twitter:title" content="FedMosaic — Federated Memory Intelligence | Slopshop">
+<meta name="twitter:description" content="Federated memory intelligence. Zero raw data shared. +23% Intelligence Score boost.">
+<meta name="twitter:image" content="https://slopshop.gg/og.png">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦞</text></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&display=swap');
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#050505;--s1:#0f0f0f;--s2:#1a1a1a;--s3:#2a2a2a;
+  --b:#1a1a1a;--b2:#2a2a2a;
+  --t:#f5f5f5;--t2:#999;--t3:#666;--t4:#444;
+  --r:#ff3333;--r2:#ff5555;--rg:rgba(255,51,51,0.08);
+  --o:#ff8800;--og:rgba(255,136,0,0.1);
+  --g:#00cc66;--gg:rgba(0,204,102,0.1);
+  --c:#00aaff;--cg:rgba(0,170,255,0.1);
+  --v:#8855ff;--vg:rgba(136,85,255,0.1);
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',system-ui,sans-serif;
+}
+html{scroll-behavior:smooth}
+body{font-family:var(--sans);background:var(--bg);color:var(--t);-webkit-font-smoothing:antialiased;overflow-x:hidden;line-height:1.7}
+::selection{background:var(--r);color:#fff}
+a{color:var(--r);text-decoration:none;transition:opacity 0.15s}
+a:hover{opacity:0.75}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
+
+/* ── NAV ── */
+.site-nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  height:56px;
+  background:rgba(10,10,10,0.88);
+  backdrop-filter:blur(20px) saturate(180%);
+  -webkit-backdrop-filter:blur(20px) saturate(180%);
+  border-bottom:1px solid rgba(255,255,255,0.07);
+}
+.site-nav-inner{
+  max-width:1120px;margin:0 auto;
+  height:100%;display:flex;align-items:center;padding:0 32px;gap:24px;
+}
+.site-nav-logo{
+  font-size:1rem;font-weight:700;color:#f0f0f0;
+  letter-spacing:-0.03em;text-decoration:none;flex-shrink:0;
+}
+.site-nav-links{display:flex;gap:4px;flex:1}
+.site-nav-links a{
+  font-size:0.8125rem;color:rgba(240,240,240,0.55);text-decoration:none;
+  padding:6px 12px;border-radius:7px;transition:color 0.15s,background 0.15s;
+  white-space:nowrap;
+}
+.site-nav-links a:hover{color:#f0f0f0;background:rgba(255,255,255,0.06);opacity:1}
+.site-nav-links a.active{color:#f0f0f0;background:rgba(255,255,255,0.09);border-radius:7px}
+.site-nav-actions{display:flex;gap:8px;align-items:center;flex-shrink:0;margin-left:auto}
+.site-nav-app{
+  font-size:0.8125rem;font-weight:500;color:rgba(240,240,240,0.8);
+  text-decoration:none;padding:7px 14px;border-radius:7px;
+  border:1px solid rgba(255,255,255,0.12);transition:all 0.15s;
+}
+.site-nav-app:hover{color:#f0f0f0;border-color:rgba(255,255,255,0.2);background:rgba(255,255,255,0.05);opacity:1}
+.site-nav-signup{
+  font-size:0.8125rem;font-weight:600;color:#000;
+  background:#00D4FF;padding:7px 16px;border-radius:7px;
+  text-decoration:none;transition:opacity 0.15s;
+}
+.site-nav-signup:hover{opacity:0.88}
+@media(max-width:640px){
+  .site-nav-inner{padding:0 16px;gap:12px}
+  .site-nav-links{display:none}
+  .site-nav-actions{gap:6px}
+  .site-nav-app{display:none}
+  .site-nav-signup{padding:6px 12px}
+}
+
+/* ── HERO ── */
+@media(max-width:700px){.hero{padding:88px 20px 48px;}}
+.hero{
+  padding:128px 32px 80px;
+  text-align:center;
+  position:relative;
+  overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-180px;left:50%;transform:translateX(-50%);
+  width:1000px;height:700px;
+  background:radial-gradient(ellipse at center,rgba(255,51,51,0.05) 0%,rgba(255,136,0,0.03) 35%,transparent 65%);
+  pointer-events:none;
+}
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  background:var(--rg);border:1px solid rgba(255,51,51,0.2);
+  color:var(--r2);padding:5px 14px;border-radius:99px;
+  font-family:var(--mono);font-size:0.68rem;font-weight:700;letter-spacing:0.1em;
+  text-transform:uppercase;margin-bottom:28px;
+}
+.hero-eyebrow .dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--r);animation:blink 2s ease-in-out infinite;
+}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:0.4;transform:scale(0.75)}}
+.hero h1{
+  font-family:var(--mono);
+  font-size:clamp(2rem,5.2vw,3.6rem);
+  font-weight:900;letter-spacing:-0.03em;line-height:1.07;
+  margin-bottom:22px;color:var(--t);
+}
+.hero h1 .acc-r{color:var(--r)}
+.hero h1 .acc-o{color:var(--o)}
+.hero .sub{
+  color:var(--t2);font-size:clamp(0.92rem,1.6vw,1.05rem);
+  max-width:580px;margin:0 auto 48px;line-height:1.85;
+}
+.hero .sub b{color:var(--t);font-weight:600}
+
+/* STATS BAR */
+.stats-bar{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:0;
+  border:1px solid var(--b2);border-radius:12px;
+  max-width:800px;margin:0 auto;
+  overflow:hidden;background:var(--s1);
+}
+.stat-item{
+  flex:1;min-width:180px;
+  padding:18px 24px;
+  border-right:1px solid var(--b2);
+  text-align:center;
+  position:relative;
+}
+.stat-item:last-child{border-right:none}
+.stat-val{
+  font-family:var(--mono);font-size:1.3rem;font-weight:800;
+  line-height:1;margin-bottom:6px;
+}
+.stat-val.green{color:var(--g)}
+.stat-val.orange{color:var(--o)}
+.stat-val.red{color:var(--r)}
+.stat-val.cyan{color:var(--c)}
+.stat-label{font-size:0.72rem;color:var(--t3);font-weight:500}
+@media(max-width:700px){
+  .stats-bar{border-radius:8px}
+  .stat-item{min-width:140px}
+}
+@media(max-width:600px){
+  .stat-item{border-right:none;border-bottom:1px solid rgba(255,255,255,0.08)}
+  .stat-item:last-child{border-bottom:none}
+}
+
+/* ── LAYOUT ── */
+.wrap{max-width:960px;margin:0 auto;padding:0 32px 120px}
+@media(max-width:640px){.wrap{padding:0 16px 80px}}
+
+/* ── SECTION ── */
+.section{margin-bottom:80px}
+.sec-label{
+  font-family:var(--mono);font-size:0.62rem;font-weight:700;
+  letter-spacing:0.18em;text-transform:uppercase;
+  color:var(--r);margin-bottom:10px;
+}
+.section h2{
+  font-family:var(--mono);font-size:clamp(1.1rem,2.4vw,1.5rem);
+  font-weight:800;color:var(--t);margin-bottom:16px;letter-spacing:-0.02em;
+}
+.section p{color:var(--t2);font-size:0.875rem;line-height:1.85;margin-bottom:14px}
+.section p b{color:var(--t)}
+.section p code{
+  font-family:var(--mono);font-size:0.78rem;color:var(--r);
+  background:var(--rg);padding:1px 6px;border-radius:4px;
+}
+.arxiv-ref{
+  display:inline-flex;align-items:center;gap:7px;
+  background:var(--s1);border:1px solid var(--b2);
+  border-radius:8px;padding:10px 16px;
+  font-family:var(--mono);font-size:0.72rem;color:var(--t3);
+  margin-top:8px;
+}
+.arxiv-ref .label{color:var(--o);font-weight:700}
+
+/* ── DIVIDER ── */
+.divider{border:none;border-top:1px solid var(--b);margin:72px 0}
+
+/* ── HOW IT WORKS — FLOW ── */
+.flow{position:relative;display:grid;grid-template-columns:1fr 1fr;gap:32px;margin-top:32px}
+@media(max-width:700px){.flow{grid-template-columns:1fr;gap:24px}}
+
+/* connector lines between cards (desktop) */
+.flow-connector{
+  position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);
+  width:calc(100% - 40px);height:2px;
+  background:linear-gradient(90deg,transparent,rgba(255,51,51,0.25),rgba(255,136,0,0.25),transparent);
+  pointer-events:none;z-index:0;
+}
+@media(max-width:700px){.flow-connector{display:none}}
+
+.flow-card{
+  background:var(--s1);border:1px solid var(--b2);border-radius:14px;
+  padding:28px 24px;position:relative;z-index:1;
+  transition:border-color 0.2s,transform 0.2s;
+}
+.flow-card:hover{border-color:rgba(255,51,51,0.3);transform:translateY(-2px)}
+.flow-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:30px;height:30px;border-radius:50%;
+  font-family:var(--mono);font-size:0.72rem;font-weight:800;
+  margin-bottom:14px;
+  flex-shrink:0;
+}
+.flow-num.n1{background:var(--rg);border:1px solid rgba(255,51,51,0.25);color:var(--r)}
+.flow-num.n2{background:var(--og);border:1px solid rgba(255,136,0,0.25);color:var(--o)}
+.flow-num.n3{background:var(--vg);border:1px solid rgba(136,85,255,0.25);color:var(--v)}
+.flow-num.n4{background:var(--gg);border:1px solid rgba(0,204,102,0.25);color:var(--g)}
+.flow-card h3{
+  font-family:var(--mono);font-size:0.85rem;font-weight:700;
+  color:var(--t);margin-bottom:8px;
+}
+.flow-card p{color:var(--t2);font-size:0.8rem;line-height:1.75;margin-bottom:0}
+.flow-card p em{color:var(--o);font-style:normal;font-weight:600}
+.flow-card .tag{
+  display:inline-block;font-family:var(--mono);font-size:0.6rem;font-weight:700;
+  padding:2px 8px;border-radius:4px;margin-top:10px;letter-spacing:0.06em;
+  text-transform:uppercase;
+}
+.flow-card .tag.r{background:var(--rg);color:var(--r2);border:1px solid rgba(255,51,51,0.18)}
+.flow-card .tag.o{background:var(--og);color:var(--o);border:1px solid rgba(255,136,0,0.2)}
+.flow-card .tag.v{background:var(--vg);color:var(--v);border:1px solid rgba(136,85,255,0.2)}
+.flow-card .tag.g{background:var(--gg);color:var(--g);border:1px solid rgba(0,204,102,0.2)}
+
+/* arrow between rows (mobile) */
+.flow-arrow{
+  display:none;
+  text-align:center;font-size:1.2rem;color:var(--t4);
+  margin:-8px 0;
+}
+@media(max-width:700px){.flow-arrow{display:block}}
+
+/* ── TECH SPEC ── */
+.formula-block{
+  background:var(--s1);border:1px solid var(--b2);border-radius:12px;
+  overflow:hidden;margin:24px 0;
+}
+.formula-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:10px 18px;border-bottom:1px solid var(--b2);
+  background:var(--s2);
+}
+.formula-lang{
+  font-family:var(--mono);font-size:0.6rem;font-weight:700;
+  letter-spacing:0.14em;text-transform:uppercase;color:var(--t4);
+}
+.formula-label{font-family:var(--mono);font-size:0.68rem;color:var(--r)}
+.formula-body{
+  padding:24px 24px 20px;
+  font-family:var(--mono);font-size:0.9rem;line-height:1.6;
+  color:var(--t);text-align:center;letter-spacing:0.01em;
+  overflow-x:auto;white-space:nowrap;
+}
+.formula-body .op{color:var(--r2)}
+.formula-body .var{color:var(--o)}
+.formula-body .sub-v{color:var(--c);font-size:0.78rem}
+.sub-v,.formula sub{vertical-align:sub;font-size:0.72em}
+
+.where-list{
+  display:grid;grid-template-columns:max-content 1fr;gap:6px 16px;
+  margin:16px 0 0;
+  background:var(--s1);border:1px solid var(--b2);border-radius:10px;
+  padding:18px 20px;
+}
+.where-list dt{
+  font-family:var(--mono);font-size:0.78rem;font-weight:700;color:var(--o);
+  display:flex;align-items:flex-start;padding-top:1px;
+}
+.where-list dd{color:var(--t2);font-size:0.8rem;line-height:1.65}
+.where-list .complexity{
+  grid-column:1/-1;border-top:1px solid var(--b);margin-top:10px;padding-top:12px;
+  font-family:var(--mono);font-size:0.72rem;color:var(--t3);
+}
+.where-list .complexity b{color:var(--c)}
+
+.stats-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
+  gap:12px;margin-top:24px;
+}
+.stat-card{
+  background:var(--s1);border:1px solid var(--b2);border-radius:10px;
+  padding:18px 20px;
+}
+.stat-card .sc-val{
+  font-family:var(--mono);font-size:1.5rem;font-weight:800;
+  line-height:1;margin-bottom:6px;color:var(--o);
+}
+.stat-card .sc-label{font-family:var(--mono);font-size:0.65rem;font-weight:700;color:var(--t3);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:4px}
+.stat-card .sc-note{font-size:0.72rem;color:var(--t4)}
+
+/* ── PRIVACY CARDS ── */
+.guarantee-grid{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+  gap:16px;margin-top:24px;
+}
+.guarantee-card{
+  background:var(--s1);border:1px solid var(--b2);border-radius:12px;
+  padding:24px 22px;transition:border-color 0.2s;
+}
+.guarantee-card:hover{border-color:rgba(0,204,102,0.3)}
+.guarantee-card .gc-icon{
+  width:36px;height:36px;border-radius:8px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;margin-bottom:14px;
+  background:var(--gg);border:1px solid rgba(0,204,102,0.2);
+}
+.guarantee-card h3{
+  font-family:var(--mono);font-size:0.82rem;font-weight:700;
+  color:var(--t);margin-bottom:8px;
+}
+.guarantee-card p{color:var(--t2);font-size:0.79rem;line-height:1.75;margin-bottom:0}
+
+/* ── COMPARISON TABLE ── */
+.compare-wrap{
+  background:var(--s1);border:1px solid var(--b2);border-radius:12px;
+  overflow:hidden;margin-top:24px;
+}
+table{width:100%;border-collapse:collapse;font-size:0.82rem}
+thead tr{background:var(--s2)}
+th{
+  padding:12px 18px;text-align:left;
+  font-family:var(--mono);font-size:0.65rem;font-weight:700;
+  text-transform:uppercase;letter-spacing:0.1em;color:var(--t3);
+  border-bottom:1px solid var(--b2);
+}
+th.th-us{color:var(--g);border-bottom:2px solid rgba(0,204,102,0.3)}
+th.th-them{color:var(--r);border-bottom:2px solid rgba(255,51,51,0.2)}
+td{
+  padding:11px 18px;border-bottom:1px solid var(--b);
+  vertical-align:middle;color:var(--t2);
+}
+td:first-child{color:var(--t);font-weight:500}
+tr:last-child td{border-bottom:none}
+.td-us{color:var(--t)!important}
+.td-them{color:var(--t3)}
+.check{color:var(--g);font-weight:700;font-family:var(--mono)}
+.cross{color:var(--r);font-weight:700;font-family:var(--mono)}
+.boost{color:var(--o);font-family:var(--mono);font-weight:700}
+.na{color:var(--t4);font-family:var(--mono);font-size:0.75rem}
+@media(max-width:700px){
+  .compare-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:540px}
+}
+
+/* ── CTA / WAITLIST ── */
+.cta-section{
+  background:var(--s1);border:1px solid var(--b2);border-radius:16px;
+  padding:48px 40px;text-align:center;
+  position:relative;overflow:hidden;
+  margin-top:80px;
+}
+.cta-section::before{
+  content:'';position:absolute;top:-120px;left:50%;transform:translateX(-50%);
+  width:600px;height:400px;
+  background:radial-gradient(ellipse,rgba(255,51,51,0.06),transparent 65%);
+  pointer-events:none;
+}
+.cta-section h2{
+  font-family:var(--mono);font-size:clamp(1.2rem,2.5vw,1.8rem);
+  font-weight:800;color:var(--t);margin-bottom:12px;letter-spacing:-0.02em;
+  position:relative;z-index:1;
+}
+.cta-section .cta-sub{
+  color:var(--t2);font-size:0.9rem;max-width:460px;margin:0 auto 32px;
+  line-height:1.8;position:relative;z-index:1;
+}
+.waitlist-form{
+  display:flex;gap:10px;justify-content:center;flex-wrap:wrap;
+  margin-bottom:24px;position:relative;z-index:1;
+}
+.waitlist-input{
+  background:var(--bg);border:1px solid var(--b2);color:var(--t);
+  font-family:var(--sans);font-size:0.82rem;padding:11px 16px;
+  border-radius:8px;width:280px;max-width:100%;
+  transition:border-color 0.15s;outline:none;
+}
+.waitlist-input::placeholder{color:var(--t4)}
+.waitlist-input:focus{border-color:rgba(255,51,51,0.4)}
+.btn-join{
+  background:var(--r);color:#fff;
+  font-family:var(--mono);font-size:0.8rem;font-weight:700;
+  padding:11px 24px;border-radius:8px;border:none;cursor:pointer;
+  transition:background 0.15s,transform 0.1s;white-space:nowrap;
+}
+.btn-join:hover{background:var(--r2);transform:translateY(-1px)}
+.waitlist-success{
+  display:none;
+  background:var(--gg);border:1px solid rgba(0,204,102,0.25);
+  border-radius:8px;padding:12px 20px;
+  font-family:var(--mono);font-size:0.8rem;color:var(--g);
+  margin:0 auto 24px;max-width:460px;
+  position:relative;z-index:1;
+}
+.cta-api{
+  font-family:var(--mono);font-size:0.78rem;color:var(--t3);
+  position:relative;z-index:1;
+}
+.cta-api a{color:var(--c)}
+.cta-api code{
+  background:var(--s2);border:1px solid var(--b2);
+  padding:2px 8px;border-radius:5px;color:var(--o);font-size:0.74rem;
+}
+@media(max-width:480px){
+  .cta-section{padding:32px 20px}
+  .waitlist-input{width:100%}
+  .btn-join{width:100%}
+  .waitlist-form{flex-direction:column;align-items:stretch;max-width:320px;margin-left:auto;margin-right:auto}
+}
+
+/* ── FOOTER ── */
+footer{border-top:1px solid var(--b);padding:48px 32px 0;background:var(--s1)}
+.footer-inner{
+  max-width:1120px;margin:0 auto;
+  display:flex;justify-content:space-between;align-items:flex-start;
+  flex-wrap:wrap;gap:40px;
+  padding-bottom:40px;
+}
+.footer-brand .logo-text{
+  font-family:var(--mono);font-weight:700;font-size:1rem;
+  color:var(--t);letter-spacing:-0.03em;
+}
+.footer-brand p{color:var(--t4);font-size:0.75rem;margin-top:8px;max-width:200px;line-height:1.6}
+.footer-links{display:flex;gap:48px;flex-wrap:wrap}
+.footer-col h5{
+  font-family:var(--mono);font-size:0.6rem;font-weight:700;
+  letter-spacing:0.16em;text-transform:uppercase;color:var(--t4);margin-bottom:14px;
+}
+.footer-col a{
+  display:block;color:var(--t3);font-size:0.78rem;
+  margin-bottom:9px;transition:color 0.15s;
+}
+.footer-col a:hover{color:var(--t);opacity:1}
+.footer-bottom{
+  border-top:1px solid var(--b);padding:20px 32px;text-align:center;
+}
+.footer-bottom p{color:var(--t4);font-size:0.72rem;font-family:var(--mono)}
+@media(max-width:640px){
+  footer{padding:40px 16px 0}
+  .footer-inner{gap:28px}
+  .footer-links{gap:28px}
+  .footer-bottom{padding:16px}
+}
+
+/* ── Nav enhanced ── */
+.site-nav{transition:background 0.3s,box-shadow 0.3s;z-index:200}
+.site-nav.sn-scrolled{background:rgba(5,5,5,0.97)!important;box-shadow:0 1px 0 rgba(255,255,255,0.04),0 8px 32px rgba(0,0,0,0.5)}
+.site-nav::after{content:'';position:absolute;bottom:-1px;left:0;height:2px;background:linear-gradient(90deg,#00D4FF,#0099cc);animation:snLoad 1s cubic-bezier(.4,0,.2,1) forwards}
+@keyframes snLoad{from{width:0;opacity:0}60%{opacity:1}to{width:100%;opacity:0}}
+.sn-mark{display:inline-block;width:20px;height:20px;border-radius:5px;background:linear-gradient(135deg,#00D4FF,#0088cc);flex-shrink:0;margin-right:6px;vertical-align:middle}
+.site-nav-drop{position:relative;flex-shrink:0;margin-right:4px}
+.sn-drop-btn{display:flex;align-items:center;gap:5px;padding:6px 11px;background:transparent;border:none;color:rgba(240,240,240,0.6);font-size:0.84rem;font-weight:500;cursor:pointer;border-radius:7px;transition:color 0.15s,background 0.15s;font-family:inherit}
+.sn-drop-btn:hover,.site-nav-drop.open .sn-drop-btn{color:#f0f0f0;background:rgba(255,255,255,0.06)}
+.sn-chev{transition:transform 0.2s;flex-shrink:0}
+.site-nav-drop.open .sn-chev{transform:rotate(180deg)}
+.sn-drop-panel{display:none;position:absolute;top:calc(100% + 10px);left:-8px;width:260px;background:#111113;border:1px solid rgba(255,255,255,0.09);border-radius:12px;padding:6px;flex-direction:column;gap:2px;box-shadow:0 20px 48px rgba(0,0,0,0.75),inset 0 1px 0 rgba(255,255,255,0.04)}
+.site-nav-drop.open .sn-drop-panel{display:flex}
+.sn-drop-item{display:flex;align-items:flex-start;gap:10px;padding:9px 11px;border-radius:8px;text-decoration:none;color:#f0f0f0;transition:background 0.12s}
+.sn-drop-item:hover{background:rgba(255,255,255,0.06)}
+.sdi-icon{font-size:0.95rem;opacity:0.55;flex-shrink:0;margin-top:2px;line-height:1.4;width:18px;text-align:center}
+.sn-drop-item b{display:block;font-size:0.84rem;font-weight:600;color:#f0f0f0;line-height:1.3}
+.sn-drop-item em{display:block;font-size:0.73rem;color:rgba(240,240,240,0.42);font-style:normal;margin-top:2px}
+.sn-hamburger{display:none;flex-direction:column;justify-content:center;gap:5px;background:transparent;border:none;cursor:pointer;padding:8px;margin-left:auto;border-radius:7px;transition:background 0.15s;width:38px;height:38px}
+.sn-hamburger:hover{background:rgba(255,255,255,0.06)}
+.sn-hamburger span{display:block;width:20px;height:2px;background:rgba(240,240,240,0.75);border-radius:2px;transition:all 0.22s}
+.sn-hamburger.open span:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.sn-hamburger.open span:nth-child(2){opacity:0;transform:scaleX(0)}
+.sn-hamburger.open span:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
+.sn-mobile{display:none;flex-direction:column;background:#0a0a0a;border-top:1px solid rgba(255,255,255,0.055);padding:12px 16px 24px;gap:2px}
+.sn-mobile.open{display:flex}
+.sn-mobile a{padding:9px 13px;border-radius:8px;font-size:0.875rem;color:rgba(240,240,240,0.72);text-decoration:none;transition:color 0.15s,background 0.15s}
+.sn-mobile a:hover{color:#f0f0f0;background:rgba(255,255,255,0.06)}
+.sn-divider{height:1px;background:rgba(255,255,255,0.055);margin:6px 0}
+.snm-app{border:1px solid rgba(255,255,255,0.12)!important;color:rgba(240,240,240,0.85)!important;text-align:center;margin-top:4px}
+.snm-signup{background:#00D4FF!important;color:#000!important;font-weight:600!important;text-align:center;margin-top:4px}
+@media(max-width:768px){.site-nav-drop,.site-nav-links{display:none!important}.site-nav-app{display:none!important}.sn-hamburger{display:flex!important}}
+</style>
+</head>
+<body>
+
+<!-- ── NAV ── -->
+<nav class="site-nav" id="site-nav">
+  <div class="site-nav-inner">
+    <a href="/" class="site-nav-logo"><span class="sn-mark"></span>Slopshop</a>
+    <div class="site-nav-drop">
+      <button class="sn-drop-btn">Product <svg class="sn-chev" width="11" height="11" viewBox="0 0 12 12" fill="none"><path d="M2.5 4.5L6 8L9.5 4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="sn-drop-panel">
+        <a href="/dream-studio" class="sn-drop-item"><span class="sdi-icon">◑</span><span><b>Dream Engine</b><em>9-stage overnight synthesis</em></span></a>
+        <a href="/memory-hub" class="sn-drop-item"><span class="sdi-icon">⬡</span><span><b>Memory Hub</b><em>Persistent knowledge store</em></span></a>
+        <a href="/dream-studio" class="sn-drop-item"><span class="sdi-icon">◈</span><span><b>Dream Studio</b><em>Configure dream cycles</em></span></a>
+        <a href="/team-hives" class="sn-drop-item"><span class="sdi-icon">⧖</span><span><b>Hive</b><em>Multiplayer memory for teams</em></span></a>
+        <a href="/playground" class="sn-drop-item"><span class="sdi-icon">◊</span><span><b>Playground</b><em>Test 1,300+ APIs live</em></span></a>
+      </div>
+    </div>
+    <div class="site-nav-links">
+      <a href="/developers" class="site-nav-link">Developers</a>
+      <a href="/pricing" class="site-nav-link">Pricing</a>
+      <a href="/docs" class="site-nav-link">Docs</a>
+    </div>
+    <div class="site-nav-actions">
+      <a href="/brain" class="site-nav-app">Open App ↗</a>
+      <a href="/home" class="site-nav-signup">Sign up free</a>
+    </div>
+    <button class="sn-hamburger" id="sn-hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+  <div class="sn-mobile" id="sn-mobile">
+    <a href="/dream-studio">Dream Engine</a>
+    <a href="/memory-hub">Memory Hub</a>
+    <a href="/team-hives">Hive</a>
+    <a href="/playground">Playground</a>
+    <div class="sn-divider"></div>
+    <a href="/developers">Developers</a>
+    <a href="/pricing">Pricing</a>
+    <a href="/docs">Docs</a>
+    <div class="sn-divider"></div>
+    <a href="/brain" class="snm-app">Open App ↗</a>
+    <a href="/home" class="snm-signup">Sign up free</a>
+  </div>
+</nav>
+
+<!-- ── HERO ── -->
+<section class="hero">
+  <div class="hero-eyebrow">
+    <span class="dot"></span>
+    FedMosaic &mdash; Coming Soon
+  </div>
+  <h1>Federated Memory<br><span class="acc-r">Intelligence</span></h1>
+  <p class="sub">
+    Every Dream cycle makes every agent smarter &mdash; <b>privately</b>.
+    FedMosaic lets self-hosted Slopshop instances collaborate on memory intelligence
+    without ever sharing raw data.
+  </p>
+
+  <div class="stats-bar">
+    <div class="stat-item">
+      <div class="stat-val green">+23%</div>
+      <div class="stat-label">Intelligence Score boost</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val orange">91.4%</div>
+      <div class="stat-label">less data transmitted</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val red">Zero</div>
+      <div class="stat-label">raw memory shared</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-val cyan">TEE-ready</div>
+      <div class="stat-label">trusted execution env</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MAIN CONTENT ── -->
+<div class="wrap">
+
+  <!-- SECTION 1: What is FedMosaic? -->
+  <div class="section">
+    <div class="sec-label">Overview</div>
+    <h2>What is FedMosaic?</h2>
+    <p>
+      FedMosaic is a <b>parametric federated RAG framework</b>. Instead of sending your memories
+      to a central server, your instance trains tiny LoRA adapters on local document clusters
+      &mdash; called <b>mosaics</b>. Only compressed binary masks
+      (which parameters matter) leave your instance. Never your actual data.
+    </p>
+    <p>
+      Each binary mask is 82&ndash;92% sparse, encoding parameter relevance rather than
+      parameter values. The federation coordinator aggregates these masks using a
+      selective conflict-aware algorithm that maximises collective intelligence while
+      penalising conflicting adapters across instances. The result: your next Dream cycle
+      is smarter, but nothing you know ever left your machine.
+    </p>
+    <a href="https://arxiv.org/abs/2602.05235" target="_blank" rel="noopener" class="arxiv-ref">
+      <span class="label">arXiv 2602.05235</span>
+      <span>Built on the first federated RAG framework with selective conflict-aware aggregation</span>
+    </a>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 2: How It Works -->
+  <div class="section">
+    <div class="sec-label">How It Works</div>
+    <h2>Four-stage federation pipeline</h2>
+    <p>
+      FedMosaic integrates directly with the Dream Engine. Each Dream cycle
+      optionally participates in the global federation round &mdash; entirely opt-in,
+      with no changes to your existing setup required.
+    </p>
+
+    <div class="flow">
+      <!-- invisible horizontal connector line between top row and bottom row -->
+      <div class="flow-connector" style="top:25%"></div>
+      <div class="flow-connector" style="top:75%"></div>
+
+      <!-- Step 1 -->
+      <div class="flow-card">
+        <div class="flow-num n1">1</div>
+        <h3>Local Dream Cycle</h3>
+        <p>
+          Your Dream Engine runs privately on your namespace. Insights are generated,
+          GraphRAG is updated, Intelligence Score is computed &mdash; all on your instance.
+          Nothing leaves until you explicitly enable federation.
+        </p>
+        <span class="tag r">On-device</span>
+      </div>
+
+      <!-- Step 2 -->
+      <div class="flow-card">
+        <div class="flow-num n2">2</div>
+        <h3>Binary Mask Extraction</h3>
+        <p>
+          After each Dream, document-specific binary masks are extracted from the LoRA
+          adapters. These tiny packed arrays encode <em>what parameters matter</em>, not
+          <em>what you know</em>. Sparsity: 82&ndash;92%. Adapter footprint: 8&ndash;18% of full weights.
+        </p>
+        <span class="tag o">82–92% sparse</span>
+      </div>
+
+      <div class="flow-arrow">&#8595;</div>
+
+      <!-- Step 3 -->
+      <div class="flow-card">
+        <div class="flow-num n3">3</div>
+        <h3>Selective Aggregation</h3>
+        <p>
+          Only <code style="font-family:var(--mono);font-size:0.75rem;color:var(--o);background:var(--og);padding:1px 5px;border-radius:3px">(score, packed_mask)</code> payloads
+          leave your instance. The federation coordinator applies the selective aggregation
+          algorithm &mdash; maximising relevance while penalising conflicting adapters.
+          91.4% less data vs. raw transmission.
+        </p>
+        <span class="tag v">Conflict-aware</span>
+      </div>
+
+      <!-- Step 4 -->
+      <div class="flow-card">
+        <div class="flow-num n4">4</div>
+        <h3>IS Boost Applied</h3>
+        <p>
+          Non-conflicting adapter weights are merged into your local model. Your next
+          Dream cycle incorporates collective intelligence from the network.
+          Average Intelligence Score boost: <em>+23%</em>.
+        </p>
+        <span class="tag g">+23% IS avg</span>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 3: Technical Specification -->
+  <div class="section">
+    <div class="sec-label">Technical Specification</div>
+    <h2>Selective Aggregation Algorithm</h2>
+    <p>
+      The aggregation objective maximises the average relevance score of selected mosaics
+      while penalising adapter overlap. Overlapping binary masks indicate
+      redundant or conflicting knowledge clusters, which are down-weighted by the
+      <b>overlap penalty</b> term.
+    </p>
+
+    <div class="formula-block">
+      <div class="formula-header">
+        <span class="formula-lang">Optimisation Objective</span>
+        <span class="formula-label">Selective Aggregation — FedMosaic Core</span>
+      </div>
+      <div class="formula-body">
+        <span class="op">max</span><sub class="sub-v">S</sub>&nbsp;&nbsp;
+        [&nbsp;&nbsp;
+          (<span class="op">1</span>/<span class="op">|S|</span>)&nbsp;<span class="op">&Sigma;</span>&nbsp;<span class="var">s<sub>i</sub></span>
+          &nbsp;&nbsp;<span class="op">&minus;</span>&nbsp;&nbsp;
+          (<span class="op">2&lambda;<sub>ol</sub></span>&nbsp;/&nbsp;<span class="op">|S|(|S|&minus;1)</span>)&nbsp;
+          <span class="op">&Sigma;</span>&nbsp;
+          &langle;<span class="var">M<sub>i</sub></span>,&nbsp;<span class="var">M<sub>j</sub></span>&rangle;&nbsp;/&nbsp;<span class="var">d</span>
+        &nbsp;&nbsp;]
+      </div>
+    </div>
+
+    <dl class="where-list">
+      <dt>s<sub>i</sub></dt>
+      <dd>Relevance score of mosaic <em>i</em> &mdash; computed by the local Dream Engine based on IS contribution</dd>
+
+      <dt>M<sub>i</sub></dt>
+      <dd>Binary mask vector of mosaic <em>i</em> &mdash; packed bit array encoding which LoRA parameters are active</dd>
+
+      <dt>&lambda;<sub>ol</sub></dt>
+      <dd>Overlap penalty hyperparameter (conflict weight) &mdash; controls how aggressively conflicting adapters are penalised</dd>
+
+      <dt>&langle;M<sub>i</sub>,M<sub>j</sub>&rangle;/d</dt>
+      <dd>Normalised mask overlap &mdash; the conflict measure between adapter <em>i</em> and <em>j</em> over parameter dimension <em>d</em></dd>
+
+      <dt class="complexity"><b>Complexity:</b> O(k&sup2;) per federation round — greedy approximation with k&nbsp;=&nbsp;selected mosaic count</dt>
+    </dl>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="sc-label">Sparsity achieved</div>
+        <div class="sc-val">82–92%</div>
+        <div class="sc-note">of mask bits are zero per mosaic</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-label">Adapter size vs. full weights</div>
+        <div class="sc-val">8–18%</div>
+        <div class="sc-note">LoRA adapter footprint relative to full model</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-label">Communication reduction</div>
+        <div class="sc-val">91.4%</div>
+        <div class="sc-note">vs. transmitting raw memory data</div>
+      </div>
+      <div class="stat-card">
+        <div class="sc-label">Storage reduction</div>
+        <div class="sc-val">78–86%</div>
+        <div class="sc-note">relative to full federated model snapshots</div>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 4: Privacy Guarantees -->
+  <div class="section">
+    <div class="sec-label">Privacy Guarantees</div>
+    <h2>What never leaves your instance</h2>
+    <p>
+      FedMosaic is designed with a zero-egress-of-raw-data guarantee at the protocol level.
+      Privacy is not a configuration option &mdash; it is enforced by the architecture.
+    </p>
+
+    <div class="guarantee-grid">
+      <div class="guarantee-card">
+        <div class="gc-icon">&#128274;</div>
+        <h3>Zero Raw Data</h3>
+        <p>
+          No memory keys, values, or content ever leaves your instance. The federation
+          protocol operates purely on abstract parameter space. Your knowledge stays yours.
+        </p>
+      </div>
+      <div class="guarantee-card">
+        <div class="gc-icon">&#128737;</div>
+        <h3>TEE-Ready</h3>
+        <p>
+          Designed for Trusted Execution Environments. Future support for attestation proofs
+          so you can verify the coordinator never sees unencrypted masks. SGX and TDX roadmapped.
+        </p>
+      </div>
+      <div class="guarantee-card">
+        <div class="gc-icon">&#9989;</div>
+        <h3>Opt-In Only</h3>
+        <p>
+          Federation is completely opt-in. Your Dream cycles always run privately by default.
+          Enable with a single API call when you're ready &mdash; disable just as easily.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- SECTION 5: vs. Centralized Memory (Mem0) -->
+  <div class="section">
+    <div class="sec-label">Comparison</div>
+    <h2>FedMosaic vs. Centralized Memory (Mem0)</h2>
+    <p>
+      Centralized memory systems require your raw data to travel to and live on their servers.
+      FedMosaic achieves collective intelligence without that trade-off.
+    </p>
+
+    <div class="compare-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Feature</th>
+            <th class="th-us">FedMosaic (Slopshop)</th>
+            <th class="th-them">Mem0 (Centralized)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Raw data location</td>
+            <td class="td-us">Your instance only</td>
+            <td class="td-them">Their cloud servers</td>
+          </tr>
+          <tr>
+            <td>Raw data shared</td>
+            <td class="td-us"><span class="check">Never</span></td>
+            <td class="td-them"><span class="cross">Yes (required)</span></td>
+          </tr>
+          <tr>
+            <td>Collective intelligence</td>
+            <td class="td-us"><span class="check">&#10003;</span> via binary masks</td>
+            <td class="td-them"><span class="cross">&#10007;</span></td>
+          </tr>
+          <tr>
+            <td>Self-hostable</td>
+            <td class="td-us"><span class="check">&#10003;</span></td>
+            <td class="td-them"><span class="cross">&#10007;</span></td>
+          </tr>
+          <tr>
+            <td>Air-gapped mode</td>
+            <td class="td-us"><span class="check">&#10003;</span></td>
+            <td class="td-them"><span class="cross">&#10007;</span></td>
+          </tr>
+          <tr>
+            <td>IS boost from network</td>
+            <td class="td-us"><span class="boost">+23%</span></td>
+            <td class="td-them"><span class="na">N/A</span></td>
+          </tr>
+          <tr>
+            <td>GDPR / HIPAA</td>
+            <td class="td-us"><span class="check">&#10003;</span> zero egress</td>
+            <td class="td-them">Audit required</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- SECTION 6: Waitlist CTA -->
+  <div class="cta-section">
+    <h2>Join the FedMosaic Waitlist</h2>
+    <p class="cta-sub">
+      Be among the first instances to join the collective intelligence network.
+      Early adopters get founder-tier federation priority.
+    </p>
+
+    <div class="waitlist-success" id="waitlist-success">
+      &#10003;&nbsp; You're on the list. We'll reach out before launch.
+    </div>
+
+    <form class="waitlist-form" id="waitlist-form" onsubmit="joinWaitlist(event)">
+      <input
+        type="email"
+        class="waitlist-input"
+        placeholder="you@yourinstance.dev"
+        required
+        autocomplete="email"
+        id="waitlist-email"
+      >
+      <button type="submit" class="btn-join">Join Waitlist &#8594;</button>
+    </form>
+
+    <p class="cta-api">
+      Already have an account?&nbsp;&nbsp;
+      <a href="/docs#fedmosaic">Enable federation now</a>
+      &rarr;&nbsp;
+      <code>POST /v1/memory/dream/federate</code>
+    </p>
+  </div>
+
+</div><!-- /.wrap -->
+
+<!-- ── FOOTER ── -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <div class="logo-text">Slopshop</div>
+      <p>The self-hostable AI Agent OS. Memory, tools, vault, and identity in one API.</p>
+    </div>
+    <div class="footer-links">
+      <div class="footer-col">
+        <h5>Product</h5>
+        <a href="/docs">Docs</a>
+        <a href="/pricing">Pricing</a>
+        <a href="/developers">Developers</a>
+      </div>
+      <div class="footer-col">
+        <h5>Features</h5>
+        <a href="/dream">Dream Engine</a>
+        <a href="/fedmosaic">FedMosaic</a>
+        <a href="/verifiable-memory">Verifiable Memory</a>
+        <a href="/vault">Credential Vault</a>
+      </div>
+      <div class="footer-col">
+        <h5>Company</h5>
+        <a href="/about">About</a>
+        <a href="/security">Security</a>
+        <a href="/legal">Legal</a>
+        <a href="https://x.com/slopshopgg" target="_blank" rel="noopener">Twitter / X</a>
+      </div>
+    </div>
+  </div>
+</footer>
+<div class="footer-bottom">
+  <p>&copy; 2026 Slopshop. Self-host it. Own your memory.</p>
+</div>
+
+<script>
+(function(){var nav=document.getElementById('site-nav');if(nav)window.addEventListener('scroll',function(){nav.classList[scrollY>20?'add':'remove']('sn-scrolled');},{passive:true});document.querySelectorAll('.site-nav-drop').forEach(function(d){d.querySelector('.sn-drop-btn').addEventListener('click',function(e){e.stopPropagation();d.classList.toggle('open');});});document.addEventListener('click',function(){document.querySelectorAll('.site-nav-drop.open').forEach(function(d){d.classList.remove('open');});});var hb=document.getElementById('sn-hamburger'),mob=document.getElementById('sn-mobile');if(hb&&mob){hb.addEventListener('click',function(){mob.classList.toggle('open');hb.classList.toggle('open');});}})();
+function joinWaitlist(e) {
+  e.preventDefault();
+  var email = document.getElementById('waitlist-email').value.trim();
+  if (!email) return;
+  var form = document.getElementById('waitlist-form');
+  var success = document.getElementById('waitlist-success');
+  form.style.display = 'none';
+  success.style.display = 'block';
+}
+</script>
+</body>
+</html>
