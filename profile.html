@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>slopshop — Profile & Settings</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
+    body {
+      background: #09090b;
+      color: #ffffff;
+      font-family: 'Inter', -apple-system, sans-serif;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    /* ── NAV ── */
+    .nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 58px;
+      background: rgba(9,9,11,0.90);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      z-index: 100;
+    }
+
+    .nav-logo {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #ffffff;
+      text-decoration: none;
+      letter-spacing: -0.03em;
+    }
+
+    .nav-center {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .nav-center a {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: rgba(255,255,255,0.45);
+      text-decoration: none;
+      font-size: 0.875rem;
+      font-weight: 500;
+      padding: 6px 13px;
+      border-radius: 8px;
+      transition: color 0.15s, background 0.15s;
+    }
+    .nav-center a:hover { color: #ffffff; background: rgba(255,255,255,0.06); }
+    .nav-center a .nav-icon { font-size: 0.9rem; }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .nav-email {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.38);
+      font-weight: 400;
+    }
+
+    .btn-signout {
+      padding: 6px 14px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 7px;
+      background: none;
+      color: rgba(255,255,255,0.45);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-signout:hover { border-color: rgba(255,255,255,0.22); color: #ffffff; }
+
+    /* ── LAYOUT ── */
+    .main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 92px 28px 80px;
+    }
+
+    /* ── PAGE HEADER ── */
+    .page-header {
+      margin-bottom: 40px;
+    }
+
+    .page-title {
+      font-size: 1.875rem;
+      font-weight: 300;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      margin-bottom: 6px;
+    }
+
+    .page-sub {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.35);
+    }
+
+    /* ── SECTION ── */
+    .section {
+      margin-bottom: 32px;
+    }
+
+    .section-label {
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.28);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 12px;
+    }
+
+    .card {
+      background: #111113;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .card-body {
+      padding: 24px;
+    }
+
+    .card-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .card-row:last-child { border-bottom: none; }
+
+    .card-row-label {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.38);
+      font-weight: 400;
+      min-width: 110px;
+    }
+
+    .card-row-value {
+      font-size: 0.875rem;
+      color: #ffffff;
+      font-weight: 400;
+      text-align: right;
+    }
+
+    /* ── AVATAR ── */
+    .account-head {
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 22px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+
+    .avatar {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      background: rgba(0,212,255,0.15);
+      border: 1px solid rgba(0,212,255,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.125rem;
+      font-weight: 600;
+      color: #00D4FF;
+      flex-shrink: 0;
+      letter-spacing: -0.01em;
+    }
+
+    .account-meta { flex: 1; min-width: 0; }
+
+    .account-email {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 4px;
+    }
+
+    .account-since {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.32);
+    }
+
+    /* ── TIER BADGE ── */
+    .tier-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .tier-free   { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.5); }
+    .tier-pro    { background: rgba(0,212,255,0.12); color: #00D4FF; border: 1px solid rgba(0,212,255,0.25); }
+    .tier-kraken { background: rgba(251,191,36,0.12); color: #FBBF24; border: 1px solid rgba(251,191,36,0.3); }
+
+    /* ── API KEY ── */
+    .apikey-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .apikey-input {
+      flex: 1;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
+      padding: 10px 14px;
+      color: rgba(255,255,255,0.6);
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.8125rem;
+      letter-spacing: 0.02em;
+      outline: none;
+      cursor: default;
+      user-select: all;
+    }
+
+    .icon-btn {
+      padding: 10px 15px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
+      background: none;
+      color: rgba(255,255,255,0.45);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .icon-btn:hover { border-color: rgba(255,255,255,0.2); color: #ffffff; }
+    .icon-btn.copied { color: #10b981; border-color: rgba(16,185,129,0.3); }
+    .icon-btn.danger { color: rgba(239,68,68,0.7); border-color: rgba(239,68,68,0.18); }
+    .icon-btn.danger:hover { color: #ef4444; border-color: rgba(239,68,68,0.4); }
+
+    .key-notice {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.28);
+      line-height: 1.6;
+      margin-bottom: 0;
+    }
+
+    .key-notice strong {
+      color: rgba(255,255,255,0.5);
+      font-weight: 500;
+    }
+
+    /* ── NEW KEY BANNER ── */
+    .new-key-banner {
+      display: none;
+      background: rgba(0,212,255,0.07);
+      border: 1px solid rgba(0,212,255,0.2);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-top: 14px;
+    }
+
+    .new-key-banner.visible { display: block; }
+
+    .new-key-banner p {
+      font-size: 0.8125rem;
+      color: #00D4FF;
+      margin-bottom: 10px;
+      font-weight: 500;
+    }
+
+    .new-key-value {
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.8);
+      word-break: break-all;
+      background: rgba(0,0,0,0.3);
+      padding: 10px 14px;
+      border-radius: 7px;
+      margin-bottom: 10px;
+      user-select: all;
+    }
+
+    .new-key-warn {
+      font-size: 0.75rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ── USAGE ── */
+    .usage-balance {
+      font-size: 2rem;
+      font-weight: 300;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      margin-bottom: 4px;
+    }
+
+    .usage-label {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.32);
+      margin-bottom: 18px;
+    }
+
+    .btn-primary {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 20px;
+      background: #00D4FF;
+      border: none;
+      border-radius: 8px;
+      color: #000000;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: 'Inter', sans-serif;
+      transition: opacity 0.15s;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+
+    /* ── CLI ── */
+    .cli-block {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 14px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.9;
+    }
+
+    .cli-block .cmd { color: #00D4FF; }
+    .cli-block .comment { color: rgba(255,255,255,0.2); }
+
+    .cli-desc {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.32);
+      line-height: 1.6;
+    }
+
+    /* ── DANGER ── */
+    .danger-card {
+      background: rgba(239,68,68,0.04);
+      border: 1px solid rgba(239,68,68,0.12);
+      border-radius: 14px;
+      padding: 22px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+    }
+
+    .danger-text h4 {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.75);
+      margin-bottom: 3px;
+    }
+
+    .danger-text p {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.3);
+    }
+
+    .btn-danger {
+      padding: 9px 18px;
+      border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 8px;
+      background: none;
+      color: rgba(239,68,68,0.75);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      white-space: nowrap;
+      transition: border-color 0.15s, color 0.15s, background 0.15s;
+      flex-shrink: 0;
+    }
+    .btn-danger:hover { border-color: #ef4444; color: #ef4444; background: rgba(239,68,68,0.07); }
+
+    /* ── MODAL OVERLAY ── */
+    .overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .overlay.visible { display: flex; }
+
+    .modal {
+      background: #111113;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 16px;
+      padding: 32px;
+      max-width: 420px;
+      width: 90%;
+    }
+
+    .modal h3 {
+      font-size: 1.0625rem;
+      font-weight: 600;
+      color: #ffffff;
+      margin-bottom: 10px;
+      letter-spacing: -0.02em;
+    }
+
+    .modal p {
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.45);
+      line-height: 1.6;
+      margin-bottom: 24px;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+    }
+
+    .btn-cancel {
+      padding: 9px 18px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      background: none;
+      color: rgba(255,255,255,0.45);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-cancel:hover { border-color: rgba(255,255,255,0.2); color: #ffffff; }
+
+    .btn-confirm-danger {
+      padding: 9px 18px;
+      border: none;
+      border-radius: 8px;
+      background: #ef4444;
+      color: #ffffff;
+      font-size: 0.875rem;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: 'Inter', sans-serif;
+      transition: opacity 0.15s;
+    }
+    .btn-confirm-danger:hover { opacity: 0.85; }
+
+    /* ── SKELETON ── */
+    @keyframes shimmer {
+      0%   { background-position: -600px 0; }
+      100% { background-position:  600px 0; }
+    }
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 1200px 100%;
+      animation: shimmer 1.5s infinite linear;
+      border-radius: 6px;
+    }
+    .sk-line  { height: 14px; border-radius: 4px; margin-bottom: 6px; }
+    .sk-key   { flex: 1; height: 40px; border-radius: 8px; }
+    .sk-stat  { height: 36px; width: 100px; border-radius: 6px; }
+
+    /* ── FOOTER ── */
+    .page-footer {
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 26px 0 0;
+      margin-top: 48px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      flex-wrap: wrap;
+    }
+    .page-footer a {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.22);
+      text-decoration: none;
+      transition: color 0.15s;
+    }
+    .page-footer a:hover { color: rgba(255,255,255,0.5); }
+
+    /* ── RESPONSIVE ── */
+    @media (max-width: 768px) {
+      .nav-center { display: none; }
+      .danger-card { flex-direction: column; align-items: flex-start; }
+    }
+
+    @media (max-width: 520px) {
+      .main { padding: 76px 16px 60px; }
+      .nav-email { display: none; }
+      .apikey-row { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- NAV -->
+  <nav class="nav">
+    <a class="nav-logo" href="/brain">slopshop</a>
+
+    <div class="nav-center">
+      <a href="/memory-hub">
+        <span class="nav-icon">🧠</span> Memory
+      </a>
+      <a href="/dream-studio">
+        <span class="nav-icon">✨</span> Dreams
+      </a>
+      <a href="/team-hives">
+        <span class="nav-icon">🐝</span> Hive
+      </a>
+      <a href="/brain">
+        <span class="nav-icon">📊</span> Dashboard
+      </a>
+    </div>
+
+    <div class="nav-right">
+      <span class="nav-email" id="navEmail"></span>
+      <button class="btn-signout" id="signOutBtn">Sign out</button>
+    </div>
+  </nav>
+
+  <!-- ROTATE KEY MODAL -->
+  <div class="overlay" id="rotateModal">
+    <div class="modal">
+      <h3>Rotate API Key?</h3>
+      <p>Your current key will be invalidated immediately. Any integrations using it will stop working until you update them with the new key.</p>
+      <div class="modal-actions">
+        <button class="btn-cancel" id="rotateCancelBtn">Cancel</button>
+        <button class="btn-confirm-danger" id="rotateConfirmBtn">Rotate Key</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- Page Header -->
+    <div class="page-header">
+      <h1 class="page-title">Profile &amp; Settings</h1>
+      <p class="page-sub">Manage your account, API key, and access.</p>
+    </div>
+
+    <!-- Account Section -->
+    <div class="section">
+      <div class="section-label">Account</div>
+      <div class="card">
+        <div class="account-head">
+          <div class="avatar" id="avatar">…</div>
+          <div class="account-meta">
+            <div class="account-email" id="accountEmail">Loading…</div>
+            <div class="account-since" id="accountSince">Member since …</div>
+          </div>
+          <div id="tierBadgeWrap">
+            <span class="skeleton" style="display:inline-block;height:22px;width:56px;border-radius:20px;"></span>
+          </div>
+        </div>
+        <div class="card-row">
+          <span class="card-row-label">Email</span>
+          <span class="card-row-value" id="rowEmail">—</span>
+        </div>
+        <div class="card-row">
+          <span class="card-row-label">Plan</span>
+          <span class="card-row-value" id="rowPlan">—</span>
+        </div>
+        <div class="card-row">
+          <span class="card-row-label">Member since</span>
+          <span class="card-row-value" id="rowSince">—</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- API Key Section -->
+    <div class="section">
+      <div class="section-label">API Key</div>
+      <div class="card">
+        <div class="card-body">
+          <div class="apikey-row">
+            <input class="apikey-input" id="apiKeyInput" type="password" readonly value="Loading…">
+            <button class="icon-btn" id="copyKeyBtn">Copy</button>
+            <button class="icon-btn" id="toggleKeyBtn">Show</button>
+            <button class="icon-btn danger" id="rotateKeyBtn">Rotate</button>
+          </div>
+
+          <p class="key-notice">
+            Your API key gives <strong>full access</strong> to all Slopshop products from any environment.
+            Keep it secret — don't commit it to version control.
+          </p>
+
+          <!-- New key reveal after rotate -->
+          <div class="new-key-banner" id="newKeyBanner">
+            <p>New API key generated. Save it now — it won't be shown again.</p>
+            <div class="new-key-value" id="newKeyValue"></div>
+            <button class="icon-btn" id="copyNewKeyBtn" style="margin-bottom:8px;">Copy new key</button>
+            <p class="new-key-warn">Your old key has been revoked.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Usage Section -->
+    <div class="section">
+      <div class="section-label">Usage &amp; Credits</div>
+      <div class="card">
+        <div class="card-body">
+          <div class="usage-balance" id="usageBalance">
+            <span class="skeleton sk-stat" style="display:inline-block;"></span>
+          </div>
+          <div class="usage-label">Credits remaining</div>
+          <a class="btn-primary" href="/pricing">Buy Credits &rarr;</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- CLI Section -->
+    <div class="section">
+      <div class="section-label">CLI Access</div>
+      <div class="card">
+        <div class="card-body">
+          <div class="cli-block">
+            <div><span class="comment"># Install globally</span></div>
+            <div><span class="cmd">npm install -g slopshop</span></div>
+            <div>&nbsp;</div>
+            <div><span class="comment"># Authenticate</span></div>
+            <div><span class="cmd">slopshop login --key YOUR_KEY</span></div>
+            <div>&nbsp;</div>
+            <div><span class="comment"># Store a memory</span></div>
+            <div><span class="cmd">slopshop memory set my-key "hello world"</span></div>
+          </div>
+          <p class="cli-desc">
+            Everything you do in the browser also works from your terminal.
+            The CLI is open source and uses the same API your agents use.
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Danger Zone -->
+    <div class="section">
+      <div class="section-label">Danger Zone</div>
+      <div class="danger-card">
+        <div class="danger-text">
+          <h4>Sign out</h4>
+          <p>End your current session. Your data stays intact.</p>
+        </div>
+        <button class="btn-danger" id="dangerSignOutBtn">Sign out</button>
+      </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="page-footer">
+      <a href="/brain">&larr; Dashboard</a>
+      <a href="/privacy">Privacy</a>
+      <a href="/terms">Terms</a>
+      <a href="/docs">Docs</a>
+      <a href="/pricing">Pricing</a>
+    </footer>
+
+  </main>
+
+  <script>
+    // ── STATE ─────────────────────────────────────────────────────────────────
+    let currentKey = null;
+
+    // ── HELPERS ───────────────────────────────────────────────────────────────
+
+    function initials(email) {
+      if (!email) return '?';
+      const local = email.split('@')[0];
+      const parts = local.split(/[._-]/);
+      if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
+      return local.slice(0, 2).toUpperCase();
+    }
+
+    function fmtDate(ts) {
+      if (!ts) return 'Unknown';
+      return new Date(ts).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+    }
+
+    function fmtNumber(n) {
+      if (n === null || n === undefined) return '—';
+      return Number(n).toLocaleString();
+    }
+
+    function esc(s) {
+      if (!s) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    function tierClass(tier) {
+      const t = (tier || 'free').toLowerCase();
+      if (t === 'kraken') return 'tier-kraken';
+      if (t === 'pro') return 'tier-pro';
+      return 'tier-free';
+    }
+
+    // ── SIGN OUT ──────────────────────────────────────────────────────────────
+
+    async function signOut() {
+      try {
+        await fetch('/v1/auth/logout', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
+      } catch (_) {}
+      window.location.replace('/');
+    }
+
+    document.getElementById('signOutBtn').addEventListener('click', signOut);
+    document.getElementById('dangerSignOutBtn').addEventListener('click', signOut);
+
+    // ── POPULATE ACCOUNT ──────────────────────────────────────────────────────
+
+    function populateAccount(email, me, session) {
+      const displayEmail = email || me?.user?.email || me?.email || '';
+      const tier = (me?.tier || me?.plan || 'free');
+      const created = me?.user?.created || me?.created_at || me?.created || session?.user?.created_at || session?.created || null;
+
+      document.getElementById('avatar').textContent = initials(displayEmail);
+      document.getElementById('accountEmail').textContent = displayEmail || 'Unknown';
+      document.getElementById('accountSince').textContent = created ? `Member since ${fmtDate(created)}` : 'Member';
+      document.getElementById('navEmail').textContent = displayEmail;
+
+      document.getElementById('tierBadgeWrap').innerHTML =
+        `<span class="tier-badge ${tierClass(tier)}">${esc(tier)}</span>`;
+
+      document.getElementById('rowEmail').textContent = displayEmail || '—';
+      document.getElementById('rowPlan').innerHTML =
+        `<span class="tier-badge ${tierClass(tier)}">${esc(tier)}</span>`;
+      document.getElementById('rowSince').textContent = fmtDate(created);
+    }
+
+    // ── POPULATE CREDITS ──────────────────────────────────────────────────────
+
+    function populateCredits(me) {
+      const balance = me?.balance ?? me?.credits ?? me?.credit_balance ?? null;
+      document.getElementById('usageBalance').textContent =
+        balance !== null ? fmtNumber(balance) : '—';
+    }
+
+    // ── API KEY SETUP ─────────────────────────────────────────────────────────
+
+    function setupApiKey(key) {
+      const input = document.getElementById('apiKeyInput');
+      if (!key) {
+        input.value = 'No key — contact support';
+        return;
+      }
+      input.value = key;
+      currentKey = key;
+
+      const copyBtn = document.getElementById('copyKeyBtn');
+      const toggleBtn = document.getElementById('toggleKeyBtn');
+
+      // Copy
+      copyBtn.onclick = () => {
+        navigator.clipboard.writeText(key).then(() => {
+          copyBtn.textContent = 'Copied!';
+          copyBtn.classList.add('copied');
+          setTimeout(() => {
+            copyBtn.textContent = 'Copy';
+            copyBtn.classList.remove('copied');
+          }, 2000);
+        }).catch(() => { input.select(); document.execCommand('copy'); });
+      };
+
+      // Show/hide
+      toggleBtn.onclick = () => {
+        if (input.type === 'password') {
+          input.type = 'text';
+          toggleBtn.textContent = 'Hide';
+        } else {
+          input.type = 'password';
+          toggleBtn.textContent = 'Show';
+        }
+      };
+    }
+
+    // ── ROTATE KEY ────────────────────────────────────────────────────────────
+
+    const rotateModal = document.getElementById('rotateModal');
+
+    document.getElementById('rotateKeyBtn').addEventListener('click', () => {
+      rotateModal.classList.add('visible');
+    });
+
+    document.getElementById('rotateCancelBtn').addEventListener('click', () => {
+      rotateModal.classList.remove('visible');
+    });
+
+    rotateModal.addEventListener('click', e => {
+      if (e.target === rotateModal) rotateModal.classList.remove('visible');
+    });
+
+    document.getElementById('rotateConfirmBtn').addEventListener('click', async () => {
+      const btn = document.getElementById('rotateConfirmBtn');
+      btn.textContent = 'Rotating…';
+      btn.disabled = true;
+
+      try {
+        const r = await fetch('/v1/auth/rotate-key', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Authorization': 'Bearer ' + currentKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ key: currentKey })
+        });
+
+        rotateModal.classList.remove('visible');
+
+        if (!r.ok) {
+          alert('Failed to rotate key. Please try again.');
+          btn.textContent = 'Rotate Key';
+          btn.disabled = false;
+          return;
+        }
+
+        const data = await r.json();
+        const newKey = data.new_key || data.api_key || data.key || data.data?.new_key || null;
+
+        if (newKey) {
+          currentKey = newKey;
+
+          // Update the input with new key
+          const input = document.getElementById('apiKeyInput');
+          input.value = newKey;
+          input.type = 'text';
+          document.getElementById('toggleKeyBtn').textContent = 'Hide';
+
+          // Show new key banner
+          document.getElementById('newKeyValue').textContent = newKey;
+          document.getElementById('newKeyBanner').classList.add('visible');
+
+          // Copy new key button
+          document.getElementById('copyNewKeyBtn').onclick = () => {
+            navigator.clipboard.writeText(newKey).then(() => {
+              document.getElementById('copyNewKeyBtn').textContent = 'Copied!';
+              setTimeout(() => {
+                document.getElementById('copyNewKeyBtn').textContent = 'Copy new key';
+              }, 2000);
+            });
+          };
+
+          // Re-setup the main key
+          setupApiKey(newKey);
+        } else {
+          alert('Key rotated but could not retrieve new value. Please refresh.');
+        }
+      } catch (err) {
+        rotateModal.classList.remove('visible');
+        alert('Error rotating key: ' + err.message);
+      } finally {
+        btn.textContent = 'Rotate Key';
+        btn.disabled = false;
+      }
+    });
+
+    // ── INIT ──────────────────────────────────────────────────────────────────
+
+    async function init() {
+      // Auth check
+      let session;
+      try {
+        const r = await fetch('/v1/auth/session', { credentials: 'include' });
+        if (!r.ok) { window.location.replace('/'); return; }
+        session = await r.json();
+      } catch (_) {
+        window.location.replace('/');
+        return;
+      }
+
+      currentKey = session.api_key || null;
+      const emailFromSession = session.user?.email || session.email || '';
+
+      // Optimistic render from session
+      if (emailFromSession) {
+        document.getElementById('navEmail').textContent = emailFromSession;
+        document.getElementById('avatar').textContent = initials(emailFromSession);
+        document.getElementById('accountEmail').textContent = emailFromSession;
+        document.getElementById('rowEmail').textContent = emailFromSession;
+      }
+      if (currentKey) setupApiKey(currentKey);
+
+      // Fetch /me for full data
+      const headers = currentKey
+        ? { 'Authorization': 'Bearer ' + currentKey, 'Content-Type': 'application/json' }
+        : { 'Content-Type': 'application/json' };
+
+      let me = null;
+      try {
+        const meRes = await fetch('/v1/auth/me', { credentials: 'include', headers });
+        if (meRes.ok) me = await meRes.json();
+      } catch (_) {}
+
+      const finalEmail = me?.user?.email || me?.email || emailFromSession;
+
+      // Update key if fresher
+      if (me?.api_key && !currentKey) {
+        currentKey = me.api_key;
+        setupApiKey(currentKey);
+      }
+
+      populateAccount(finalEmail, me, session);
+      populateCredits(me);
+    }
+
+    init().catch(err => {
+      console.error('Profile init error:', err);
+    });
+  </script>
+</body>
+</html>

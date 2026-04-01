@@ -1,1724 +1,1561 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Memory Hub — Slopshop.gg</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #09090b;
-    --s1: #111113;
-    --s2: #18181b;
-    --b: #1e1e22;
-    --b2: #27272a;
-    --t: #fafafa;
-    --t2: #a1a1aa;
-    --t3: #71717a;
-    --t4: #52525b;
-    --r: #06b6d4;
-    --r2: #22d3ee;
-    --rg: rgba(6,182,212,0.06);
-    --o: #a78bfa;
-    --og: rgba(167,139,250,0.08);
-    --g: #34d399;
-    --gg: rgba(52,211,153,0.08);
-    --v: #818cf8;
-    --mono: 'JetBrains Mono', monospace;
-    --sans: 'Inter', system-ui, sans-serif;
-  }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>slopshop / memory</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #09090b;
+      --surface: #111113;
+      --surface2: #18181b;
+      --surface3: #1e1e22;
+      --border: #1e1e22;
+      --border-hover: rgba(0,212,255,0.3);
+      --accent: #00D4FF;
+      --accent-dim: rgba(0,212,255,0.08);
+      --accent-dim2: rgba(0,212,255,0.04);
+      --text: #fafafa;
+      --muted: #71717a;
+      --muted2: #52525b;
+      --danger: #ef4444;
+      --danger-dim: rgba(239,68,68,0.12);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --radius: 8px;
+      --font: 'Inter', sans-serif;
+      --mono: 'JetBrains Mono', monospace;
+    }
 
-  body {
-    background: var(--bg);
-    color: var(--t);
-    font-family: var(--sans);
-    font-size: 14px;
-    min-height: 100vh;
-    overflow-x: hidden;
-  }
+    html, body { height: 100%; }
+    body {
+      font-family: var(--font);
+      background: var(--bg);
+      color: var(--text);
+      font-size: 14px;
+      line-height: 1.5;
+      overflow: hidden;
+    }
 
-  /* NAV */
-  nav {
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 56px;
-    background: rgba(9,9,11,0.85);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
-    display: flex;
-    align-items: center;
-    padding: 0 24px;
-    z-index: 100;
-    gap: 24px;
-  }
-  .nav-logo {
-    font-family: var(--mono);
-    font-size: 16px;
-    font-weight: 600;
-    color: var(--t);
-    text-decoration: none;
-    letter-spacing: -0.5px;
-    margin-right: auto;
-  }
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-  .nav-links a {
-    color: var(--t2);
-    text-decoration: none;
-    font-size: 13px;
-    font-weight: 500;
-    padding: 6px 12px;
-    border-radius: 6px;
-    transition: color 0.15s, background 0.15s;
-  }
-  .nav-links a:hover { color: var(--t); background: var(--b); }
-  .btn-signup {
-    background: var(--r) !important;
-    color: var(--bg) !important;
-    font-weight: 600 !important;
-    padding: 6px 16px !important;
-    border-radius: 6px;
-    transition: opacity 0.15s !important;
-  }
-  .btn-signup:hover { opacity: 0.9; background: var(--r) !important; }
+    /* ── NAV ── */
+    #nav {
+      position: fixed;
+      top: 0; left: 0; right: 0;
+      height: 52px;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      gap: 24px;
+      z-index: 100;
+    }
+    #nav-logo {
+      font-family: var(--mono);
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--text);
+      white-space: nowrap;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 0;
+    }
+    #nav-logo .slash { color: var(--muted); margin: 0 4px; }
+    #nav-logo .section { color: var(--accent); }
+    #nav-links {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      flex: 1;
+    }
+    #nav-links a {
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 500;
+      padding: 5px 10px;
+      border-radius: 6px;
+      transition: color 0.15s, background 0.15s;
+    }
+    #nav-links a:hover { color: var(--text); background: var(--surface2); }
+    #nav-links a.active { color: var(--accent); background: var(--accent-dim); }
+    #nav-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-left: auto;
+    }
+    #ns-global-select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 11px;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #ns-global-select:focus { border-color: var(--accent); }
+    #user-email {
+      font-size: 12px;
+      color: var(--muted);
+      max-width: 180px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
 
-  /* LAYOUT */
-  .layout {
-    display: flex;
-    padding-top: 70px;
-    min-height: 100vh;
-  }
+    /* ── LAYOUT ── */
+    #app {
+      display: flex;
+      height: 100vh;
+      padding-top: 52px;
+    }
 
-  /* SIDEBAR */
-  .sidebar {
-    width: 240px;
-    position: fixed;
-    top: 56px;
-    left: 0;
-    bottom: 0;
-    background: var(--s1);
-    border-right: 1px solid rgba(255,255,255,0.05);
-    padding: 16px 8px;
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .sidebar-section-label {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--t4);
-    padding: 8px 12px 4px;
-    font-family: var(--mono);
-  }
-  .sidebar-item {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 8px 12px;
-    border-radius: 6px;
-    color: var(--t3);
-    cursor: pointer;
-    transition: background 0.12s, color 0.12s;
-    font-size: 13px;
-    font-weight: 500;
-    user-select: none;
-  }
-  .sidebar-item:hover { background: var(--b); color: var(--t2); }
-  .sidebar-item.active { background: var(--rg); color: var(--r); }
-  .sidebar-item .icon { font-size: 15px; width: 18px; text-align: center; }
-  .sidebar-badge {
-    margin-left: auto;
-    background: var(--b2);
-    color: var(--t3);
-    font-size: 10px;
-    font-family: var(--mono);
-    padding: 1px 6px;
-    border-radius: 10px;
-    font-weight: 600;
-  }
-  .sidebar-item.active .sidebar-badge { background: var(--r); color: var(--bg); }
+    /* ── SIDEBAR ── */
+    #sidebar {
+      width: 192px;
+      flex-shrink: 0;
+      background: var(--surface);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      padding: 10px 8px 20px;
+    }
+    #sidebar::-webkit-scrollbar { width: 3px; }
+    #sidebar::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
 
-  /* CONTENT */
-  .content {
-    flex: 1;
-    margin-left: 240px;
-    padding: 24px 28px 48px;
-    max-width: calc(100vw - 240px);
-  }
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--muted2);
+      padding: 8px 8px 4px;
+    }
+    .sidebar-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 500;
+      transition: background 0.12s, color 0.12s;
+      user-select: none;
+      gap: 6px;
+    }
+    .sidebar-item:hover { background: var(--surface2); color: var(--text); }
+    .sidebar-item.active { background: var(--accent-dim); color: var(--accent); }
+    .sidebar-item .ns-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .sidebar-item .badge {
+      background: var(--surface3);
+      color: var(--muted2);
+      font-size: 10px;
+      font-weight: 600;
+      padding: 1px 6px;
+      border-radius: 10px;
+      min-width: 18px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .sidebar-item.active .badge { background: rgba(0,212,255,0.15); color: var(--accent); }
 
-  .page-section {
-    display: none;
-  }
-  .page-section.active {
-    display: block;
-  }
+    #search-shortcut {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 12px;
+      border: 1px solid var(--border);
+      margin: 2px 0 6px;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    #search-shortcut:hover { border-color: var(--accent); color: var(--text); }
+    #search-shortcut .shortcut-key {
+      margin-left: auto;
+      background: var(--surface2);
+      font-size: 10px;
+      font-family: var(--mono);
+      padding: 1px 5px;
+      border-radius: 4px;
+      color: var(--muted2);
+    }
 
-  /* PAGE HEADER */
-  .page-header {
-    margin-bottom: 24px;
-  }
-  .page-header h1 {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--t);
-    margin-bottom: 4px;
-  }
-  .page-header p {
-    color: var(--t3);
-    font-size: 13px;
-  }
+    .sidebar-divider {
+      height: 1px;
+      background: var(--border);
+      margin: 8px 0;
+    }
 
-  /* INTELLIGENCE SCORE */
-  .intel-score-card {
-    background: var(--s1);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px;
-    padding: 28px;
-    display: flex;
-    gap: 32px;
-    align-items: center;
-    margin-bottom: 20px;
-    position: relative;
-    overflow: hidden;
-  }
-  .intel-score-card::before {
-    content: '';
-    position: absolute;
-    top: -60px; right: -60px;
-    width: 220px; height: 220px;
-    background: radial-gradient(circle, rgba(6,182,212,0.08) 0%, transparent 70%);
-    pointer-events: none;
-  }
-  .gauge-wrap {
-    position: relative;
-    width: 130px;
-    height: 130px;
-    flex-shrink: 0;
-  }
-  .gauge-svg { width: 130px; height: 130px; transform: rotate(-90deg); }
-  .gauge-track { fill: none; stroke: var(--b2); stroke-width: 10; }
-  .gauge-fill {
-    fill: none;
-    stroke: var(--r);
-    stroke-width: 10;
-    stroke-linecap: round;
-    stroke-dasharray: 339.292;
-    stroke-dashoffset: 339.292;
-    transition: stroke-dashoffset 1.2s cubic-bezier(0.34,1.56,0.64,1);
-    filter: drop-shadow(0 0 6px rgba(6,182,212,0.5));
-  }
-  .gauge-center {
-    position: absolute;
-    top: 50%; left: 50%;
-    transform: translate(-50%,-50%);
-    text-align: center;
-  }
-  .gauge-score {
-    font-family: var(--mono);
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--r);
-    line-height: 1;
-  }
-  .gauge-label {
-    font-size: 10px;
-    color: var(--t4);
-    font-family: var(--mono);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-top: 2px;
-  }
-  .intel-meta {
-    flex: 1;
-  }
-  .intel-meta h2 {
-    font-size: 18px;
-    font-weight: 700;
-    color: var(--t);
-    margin-bottom: 6px;
-  }
-  .intel-tagline {
-    color: var(--t3);
-    font-size: 12px;
-    margin-bottom: 18px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-  .intel-tagline::before {
-    content: '●';
-    color: var(--g);
-    font-size: 8px;
-    animation: pulse-dot 2s ease-in-out infinite;
-  }
-  @keyframes pulse-dot {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-  .intel-breakdown {
-    display: flex;
-    gap: 24px;
-  }
-  .intel-stat {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .intel-stat-val {
-    font-family: var(--mono);
-    font-size: 18px;
-    font-weight: 600;
-    color: var(--t);
-  }
-  .intel-stat-label {
-    font-size: 11px;
-    color: var(--t3);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-  .intel-formula {
-    margin-top: 16px;
-    background: var(--b);
-    border-radius: 6px;
-    padding: 8px 12px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--t3);
-    border: 1px solid rgba(255,255,255,0.05);
-  }
-  .intel-formula .hl { color: var(--r2); }
+    #add-namespace-btn {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px dashed var(--border);
+      margin-top: 4px;
+      transition: border-color 0.15s, color 0.15s;
+      background: none;
+      width: 100%;
+      text-align: left;
+      font-family: var(--font);
+    }
+    #add-namespace-btn:hover { border-color: var(--accent); color: var(--accent); }
 
-  /* STATS ROW */
-  .stats-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 12px;
-    margin-bottom: 20px;
-  }
-  .stat-card {
-    background: var(--s1);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 10px;
-    padding: 18px 20px;
-    transition: border-color 0.15s;
-  }
-  .stat-card:hover { border-color: rgba(255,255,255,0.1); }
-  .stat-card-label {
-    font-size: 11px;
-    color: var(--t3);
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    margin-bottom: 10px;
-    font-weight: 600;
-  }
-  .stat-card-val {
-    font-family: var(--mono);
-    font-size: 26px;
-    font-weight: 700;
-    color: var(--t);
-    line-height: 1;
-    margin-bottom: 4px;
-  }
-  .stat-card-sub {
-    font-size: 11px;
-    color: var(--t4);
-  }
-  .stat-card.cyan .stat-card-val { color: var(--r); }
-  .stat-card.purple .stat-card-val { color: var(--o); }
-  .stat-card.green .stat-card-val { color: var(--g); }
-  .stat-card.indigo .stat-card-val { color: var(--v); }
+    /* ── MAIN ── */
+    #main {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      min-width: 0;
+    }
 
-  /* SECTION CARD */
-  .section-card {
-    background: var(--s1);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 12px;
-    margin-bottom: 20px;
-    overflow: hidden;
-  }
-  .section-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-  }
-  .section-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--t);
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-  .section-title .icon { font-size: 15px; }
+    /* ── LIST AREA ── */
+    #list-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      min-width: 0;
+    }
 
-  /* TABLE */
-  .data-table {
-    width: 100%;
-    border-collapse: collapse;
-  }
-  .data-table th {
-    text-align: left;
-    padding: 10px 16px;
-    font-size: 11px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--t4);
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    font-family: var(--mono);
-  }
-  .data-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-    vertical-align: middle;
-  }
-  .data-table tr:last-child td { border-bottom: none; }
-  .data-table tr:hover td { background: rgba(255,255,255,0.02); }
-  .data-table .mono { font-family: var(--mono); font-size: 12px; color: var(--t3); }
+    #list-header {
+      padding: 14px 20px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      flex-shrink: 0;
+      background: var(--surface);
+    }
 
-  /* BADGES */
-  .badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 3px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
-    font-family: var(--mono);
-    white-space: nowrap;
-  }
-  .badge-pending { background: rgba(251,191,36,0.12); color: #fbbf24; }
-  .badge-running { background: var(--rg); color: var(--r); }
-  .badge-running::before {
-    content: '●';
-    animation: pulse-dot 1s ease-in-out infinite;
-  }
-  .badge-complete { background: var(--gg); color: var(--g); }
-  .badge-error { background: rgba(239,68,68,0.12); color: #ef4444; }
+    #list-title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    #list-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    #new-memory-btn {
+      background: var(--accent);
+      color: #09090b;
+      border: none;
+      border-radius: 6px;
+      padding: 6px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: opacity 0.15s;
+      letter-spacing: 0.01em;
+    }
+    #new-memory-btn:hover { opacity: 0.85; }
 
-  .strategy-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 11px;
-    font-family: var(--mono);
-    font-weight: 500;
-    background: var(--og);
-    color: var(--o);
-  }
+    #search-bar-wrap {
+      position: relative;
+    }
+    #search-icon-el {
+      position: absolute;
+      left: 11px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+      display: flex;
+      align-items: center;
+    }
+    #search-input {
+      width: 100%;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      padding: 8px 32px 8px 34px;
+      border-radius: var(--radius);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    #search-input:focus { border-color: var(--accent); }
+    #search-input::placeholder { color: var(--muted); }
+    #search-clear-btn {
+      position: absolute;
+      right: 9px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      cursor: pointer;
+      display: none;
+      background: none;
+      border: none;
+      font-size: 15px;
+      line-height: 1;
+      padding: 3px;
+      border-radius: 3px;
+    }
+    #search-clear-btn:hover { color: var(--text); }
 
-  /* BUTTONS */
-  .btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    padding: 6px 14px;
-    border-radius: 6px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    border: none;
-    font-family: var(--sans);
-    transition: opacity 0.15s, background 0.15s;
-    text-decoration: none;
-  }
-  .btn:hover { opacity: 0.85; }
-  .btn-primary { background: var(--r); color: var(--bg); }
-  .btn-secondary { background: var(--b2); color: var(--t2); border: 1px solid rgba(255,255,255,0.06); }
-  .btn-ghost { background: transparent; color: var(--t3); border: 1px solid rgba(255,255,255,0.08); }
-  .btn-ghost:hover { color: var(--t2); background: var(--b); border-color: rgba(255,255,255,0.12); }
-  .btn-sm { padding: 4px 10px; font-size: 11px; }
-  .btn-purple { background: var(--og); color: var(--o); border: 1px solid rgba(167,139,250,0.2); }
-  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    #list-meta {
+      font-size: 11px;
+      color: var(--muted);
+      padding: 6px 20px 0;
+      flex-shrink: 0;
+      height: 24px;
+      display: flex;
+      align-items: center;
+    }
 
-  /* DREAM LAUNCHER */
-  .launcher-body { padding: 20px; }
-  .form-grid {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 14px;
-    margin-bottom: 14px;
-  }
-  .form-group { display: flex; flex-direction: column; gap: 6px; }
-  .form-label {
-    font-size: 11px;
-    font-weight: 600;
-    color: var(--t3);
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-family: var(--mono);
-  }
-  .form-input, .form-select {
-    background: var(--b);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 6px;
-    color: var(--t);
-    font-size: 13px;
-    padding: 8px 12px;
-    font-family: var(--sans);
-    outline: none;
-    transition: border-color 0.15s;
-    width: 100%;
-  }
-  .form-input:focus, .form-select:focus { border-color: var(--r); }
-  .form-select { cursor: pointer; }
-  option { background: var(--b2); }
+    #cards-container {
+      flex: 1;
+      overflow-y: auto;
+      padding: 12px 16px 40px;
+      position: relative;
+    }
+    #cards-container::-webkit-scrollbar { width: 5px; }
+    #cards-container::-webkit-scrollbar-track { background: transparent; }
+    #cards-container::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 4px; }
 
-  .slider-row { display: flex; align-items: center; gap: 12px; }
-  .form-range {
-    flex: 1;
-    -webkit-appearance: none;
-    height: 4px;
-    background: var(--b2);
-    border-radius: 2px;
-    outline: none;
-  }
-  .form-range::-webkit-slider-thumb {
-    -webkit-appearance: none;
-    width: 16px; height: 16px;
-    border-radius: 50%;
-    background: var(--r);
-    cursor: pointer;
-    box-shadow: 0 0 6px rgba(6,182,212,0.4);
-  }
-  .slider-val {
-    font-family: var(--mono);
-    font-size: 13px;
-    color: var(--r);
-    min-width: 36px;
-    text-align: right;
-  }
+    #cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(270px, 1fr));
+      gap: 10px;
+    }
 
-  .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: var(--b);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 6px;
-    padding: 10px 14px;
-    margin-bottom: 14px;
-  }
-  .toggle-label { font-size: 13px; color: var(--t2); }
-  .toggle-sub { font-size: 11px; color: var(--t4); margin-top: 1px; }
-  .toggle {
-    position: relative;
-    width: 40px; height: 22px;
-    cursor: pointer;
-    flex-shrink: 0;
-  }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider {
-    position: absolute;
-    inset: 0;
-    background: var(--b2);
-    border-radius: 11px;
-    transition: background 0.2s;
-  }
-  .toggle-slider::after {
-    content: '';
-    position: absolute;
-    top: 3px; left: 3px;
-    width: 16px; height: 16px;
-    background: var(--t3);
-    border-radius: 50%;
-    transition: transform 0.2s, background 0.2s;
-  }
-  .toggle input:checked + .toggle-slider { background: var(--r); }
-  .toggle input:checked + .toggle-slider::after {
-    transform: translateX(18px);
-    background: var(--bg);
-  }
+    /* ── LOADING OVERLAY ── */
+    #loading-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(9,9,11,0.75);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+      backdrop-filter: blur(2px);
+    }
+    .loading-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 28px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
 
-  .launcher-footer { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-  .result-box {
-    background: var(--b);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 8px;
-    padding: 14px;
-    margin-top: 14px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--t2);
-    line-height: 1.6;
-    display: none;
-  }
-  .result-box.visible { display: block; }
-  .result-box.success { border-color: rgba(52,211,153,0.2); color: var(--g); }
-  .result-box.error { border-color: rgba(239,68,68,0.2); color: #ef4444; }
+    /* ── EMPTY STATE ── */
+    #empty-state {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 64px 24px;
+      text-align: center;
+      gap: 14px;
+    }
+    .empty-icon {
+      width: 60px;
+      height: 60px;
+      background: var(--surface2);
+      border-radius: 16px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 26px;
+    }
+    #empty-state h3 { font-size: 15px; font-weight: 600; }
+    #empty-state p { font-size: 12px; color: var(--muted); max-width: 260px; line-height: 1.6; }
+    #empty-cta {
+      background: var(--accent);
+      color: #09090b;
+      border: none;
+      border-radius: 6px;
+      padding: 7px 16px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: var(--font);
+      margin-top: 4px;
+    }
+    #empty-cta:hover { opacity: 0.85; }
 
-  /* TMR */
-  .tmr-body { padding: 20px; }
-  .tmr-cue-item {
-    background: var(--b);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 8px;
-    padding: 14px;
-    margin-bottom: 10px;
-  }
-  .tmr-cue-meta {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-bottom: 10px;
-    flex-wrap: wrap;
-  }
-  .tmr-cue-id {
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--t4);
-  }
-  .code-block {
-    background: var(--s2);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-radius: 6px;
-    padding: 10px 12px;
-    font-family: var(--mono);
-    font-size: 11px;
-    color: var(--t2);
-    line-height: 1.5;
-    position: relative;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-  .copy-btn {
-    position: absolute;
-    top: 8px; right: 8px;
-    background: var(--b2);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 4px;
-    color: var(--t3);
-    font-size: 10px;
-    font-family: var(--mono);
-    padding: 3px 7px;
-    cursor: pointer;
-    transition: color 0.15s;
-  }
-  .copy-btn:hover { color: var(--t); }
+    /* ── MEMORY CARD ── */
+    .memory-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 14px;
+      cursor: pointer;
+      position: relative;
+      transition: border-color 0.15s, background 0.15s;
+      overflow: hidden;
+    }
+    .memory-card:hover { border-color: var(--border-hover); }
+    .memory-card:hover .card-delete { opacity: 1; pointer-events: all; }
+    .memory-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-dim2);
+    }
+    .card-key {
+      font-family: var(--mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--accent);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 6px;
+      padding-right: 40px;
+    }
+    .card-value {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.55;
+      display: -webkit-box;
+      -webkit-line-clamp: 3;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      margin-bottom: 10px;
+      word-break: break-word;
+    }
+    .card-footer {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+    .type-badge {
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 7px;
+      border-radius: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .type-note    { background: rgba(139,92,246,0.15); color: #a78bfa; }
+    .type-fact    { background: rgba(34,197,94,0.12);  color: #4ade80; }
+    .type-event   { background: rgba(245,158,11,0.12); color: #fbbf24; }
+    .type-project { background: rgba(59,130,246,0.12); color: #60a5fa; }
+    .type-code    { background: rgba(0,212,255,0.12);  color: var(--accent); }
+    .type-general { background: rgba(113,113,122,0.18); color: var(--muted); }
+    .card-score {
+      font-size: 10px;
+      color: var(--muted2);
+      font-family: var(--mono);
+    }
+    .card-date {
+      font-size: 10px;
+      color: var(--muted2);
+      margin-left: auto;
+    }
+    .card-delete {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      opacity: 0;
+      pointer-events: none;
+      background: var(--danger-dim);
+      border: 1px solid rgba(239,68,68,0.2);
+      color: var(--danger);
+      border-radius: 5px;
+      padding: 2px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .card-delete:hover { background: rgba(239,68,68,0.22); }
+    .score-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      height: 2px;
+      border-radius: 0 2px 0 var(--radius);
+    }
 
-  /* MEMORY BROWSER */
-  .memory-browser-body { padding: 20px; display: flex; gap: 16px; }
-  .memory-list-col { width: 280px; flex-shrink: 0; }
-  .memory-detail-col {
-    flex: 1;
-    background: var(--b);
-    border: 1px solid rgba(255,255,255,0.06);
-    border-radius: 8px;
-    padding: 14px;
-    min-height: 200px;
-  }
-  .memory-key-item {
-    padding: 8px 12px;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.1s;
-    border-bottom: 1px solid rgba(255,255,255,0.03);
-  }
-  .memory-key-item:hover { background: var(--b); }
-  .memory-key-item.selected { background: var(--rg); }
-  .memory-key-text {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--t2);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-  .memory-key-ns {
-    font-size: 10px;
-    color: var(--t4);
-    margin-top: 2px;
-    font-family: var(--mono);
-  }
-  .memory-detail-key {
-    font-family: var(--mono);
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--r);
-    margin-bottom: 10px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-  }
-  .memory-detail-val {
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--t2);
-    line-height: 1.6;
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-  .memory-detail-meta {
-    margin-top: 12px;
-    padding-top: 12px;
-    border-top: 1px solid rgba(255,255,255,0.05);
-    display: flex;
-    gap: 16px;
-    flex-wrap: wrap;
-  }
-  .meta-chip {
-    font-family: var(--mono);
-    font-size: 10px;
-    color: var(--t4);
-  }
-  .meta-chip span { color: var(--t3); }
+    /* ── RIGHT PANEL ── */
+    #right-panel {
+      width: 0;
+      flex-shrink: 0;
+      border-left: none;
+      background: var(--surface);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: width 0.18s ease, border 0.18s;
+    }
+    #right-panel.open {
+      width: 380px;
+      border-left: 1px solid var(--border);
+    }
 
-  /* MODAL */
-  .modal-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(0,0,0,0.7);
-    backdrop-filter: blur(4px);
-    z-index: 200;
-    display: none;
-    align-items: center;
-    justify-content: center;
-  }
-  .modal-overlay.open { display: flex; }
-  .modal {
-    background: var(--s1);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    width: 460px;
-    max-width: 95vw;
-    padding: 24px;
-  }
-  .modal-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 20px;
-  }
-  .modal-title { font-size: 16px; font-weight: 600; }
-  .modal-close {
-    background: none;
-    border: none;
-    color: var(--t3);
-    font-size: 18px;
-    cursor: pointer;
-    padding: 2px 6px;
-    border-radius: 4px;
-    transition: color 0.15s;
-  }
-  .modal-close:hover { color: var(--t); }
-  .modal-form { display: flex; flex-direction: column; gap: 14px; }
-  .modal-footer { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+    #panel-header {
+      padding: 12px 14px 10px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-shrink: 0;
+    }
+    #panel-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+    }
+    #panel-close {
+      background: none;
+      border: none;
+      color: var(--muted);
+      cursor: pointer;
+      font-size: 17px;
+      line-height: 1;
+      padding: 3px 5px;
+      border-radius: 4px;
+      transition: color 0.12s, background 0.12s;
+    }
+    #panel-close:hover { color: var(--text); background: var(--surface2); }
 
-  /* AUTH OVERLAY */
-  .auth-overlay {
-    position: fixed;
-    inset: 0;
-    background: rgba(9,9,11,0.95);
-    backdrop-filter: blur(8px);
-    z-index: 500;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-direction: column;
-    gap: 16px;
-    text-align: center;
-    padding: 24px;
-  }
-  .auth-overlay h2 { font-size: 20px; font-weight: 700; }
-  .auth-overlay p { color: var(--t3); max-width: 360px; font-size: 13px; line-height: 1.6; }
-  .auth-key-input-row {
-    display: flex;
-    gap: 8px;
-    width: 100%;
-    max-width: 420px;
-  }
-  .auth-key-input-row .form-input { flex: 1; }
+    #panel-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    #panel-body::-webkit-scrollbar { width: 4px; }
+    #panel-body::-webkit-scrollbar-track { background: transparent; }
+    #panel-body::-webkit-scrollbar-thumb { background: var(--surface3); border-radius: 3px; }
 
-  /* EMPTY STATE */
-  .empty-state {
-    padding: 40px 20px;
-    text-align: center;
-    color: var(--t4);
-    font-size: 13px;
-  }
-  .empty-state .empty-icon { font-size: 28px; margin-bottom: 10px; }
+    #panel-footer {
+      padding: 10px 14px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 8px;
+      flex-shrink: 0;
+    }
 
-  /* LOADING */
-  .loading-row td { color: var(--t4); font-style: italic; }
-  .spinner {
-    display: inline-block;
-    width: 14px; height: 14px;
-    border: 2px solid rgba(255,255,255,0.1);
-    border-top-color: var(--r);
-    border-radius: 50%;
-    animation: spin 0.7s linear infinite;
-    vertical-align: middle;
-    margin-right: 6px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+    /* ── FORM ELEMENTS ── */
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+    .field-label {
+      font-size: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted);
+    }
+    .field-label .opt {
+      color: var(--muted2);
+      text-transform: none;
+      letter-spacing: 0;
+      font-weight: 400;
+      font-size: 10px;
+    }
+    .field-input, .field-textarea, .field-select {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      color: var(--text);
+      font-family: var(--font);
+      font-size: 13px;
+      padding: 7px 10px;
+      border-radius: 6px;
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+    .field-input:focus, .field-textarea:focus, .field-select:focus {
+      border-color: var(--accent);
+    }
+    .field-input::placeholder, .field-textarea::placeholder { color: var(--muted2); }
+    .field-textarea {
+      resize: vertical;
+      min-height: 90px;
+      line-height: 1.6;
+      font-size: 12px;
+    }
+    .field-textarea.large { min-height: 140px; }
+    .field-select { cursor: pointer; }
+    .mono { font-family: var(--mono); font-size: 12px; }
 
-  /* MISC */
-  .text-muted { color: var(--t3); }
-  .text-mono { font-family: var(--mono); font-size: 12px; }
-  .flex-row { display: flex; align-items: center; gap: 8px; }
-  .divider { height: 1px; background: rgba(255,255,255,0.05); margin: 12px 0; }
-  .pill {
-    display: inline-block;
-    background: var(--b2);
-    border-radius: 20px;
-    padding: 2px 8px;
-    font-size: 10px;
-    font-family: var(--mono);
-    color: var(--t3);
-  }
-html,body{overflow-x:hidden;max-width:100vw}
-img,video,iframe{max-width:100%}
-pre,code{overflow-x:auto;max-width:100%}
-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
-@media(max-width:640px){
-  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
-  nav{padding:0 16px}
-}
-</style>
+    /* Detail key row */
+    .detail-key-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 10px;
+    }
+    .detail-key-text {
+      font-family: var(--mono);
+      font-size: 11px;
+      color: var(--accent);
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .copy-btn {
+      background: var(--surface3);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-family: var(--font);
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: color 0.12s, border-color 0.12s;
+      font-weight: 500;
+    }
+    .copy-btn:hover { color: var(--accent); border-color: rgba(0,212,255,0.4); }
+
+    /* Meta grid */
+    .meta-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+    }
+    .meta-cell {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 7px 9px;
+    }
+    .meta-cell-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      color: var(--muted2);
+      margin-bottom: 2px;
+    }
+    .meta-cell-value {
+      font-size: 11px;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    .tags-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px;
+    }
+    .tag-chip {
+      background: var(--accent-dim);
+      color: var(--accent);
+      border: 1px solid rgba(0,212,255,0.2);
+      font-size: 10px;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+
+    /* Buttons */
+    .btn {
+      border: none;
+      border-radius: 6px;
+      padding: 7px 14px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: var(--font);
+      transition: opacity 0.15s;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      white-space: nowrap;
+    }
+    .btn:hover { opacity: 0.85; }
+    .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .btn-primary { background: var(--accent); color: #09090b; }
+    .btn-danger  { background: var(--danger-dim); color: var(--danger); border: 1px solid rgba(239,68,68,0.2); }
+    .btn-ghost   { background: var(--surface2); color: var(--muted); border: 1px solid var(--border); }
+    .btn-ghost:hover { color: var(--text); opacity: 1; }
+    .btn-expand { flex: 1; }
+
+    /* Spinner */
+    .spinner {
+      display: inline-block;
+      width: 13px;
+      height: 13px;
+      border: 2px solid rgba(0,212,255,0.2);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── TOASTS ── */
+    #toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 9px 14px;
+      font-size: 12px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 9px;
+      min-width: 220px;
+      max-width: 320px;
+      pointer-events: all;
+      animation: toastIn 0.18s ease;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+    .toast.success { border-left: 3px solid var(--success); }
+    .toast.error   { border-left: 3px solid var(--danger); }
+    .toast.info    { border-left: 3px solid var(--accent); }
+    .toast-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+    .toast.success .toast-dot { background: var(--success); }
+    .toast.error   .toast-dot { background: var(--danger); }
+    .toast.info    .toast-dot { background: var(--accent); }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateX(16px); }
+      to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes toastOut {
+      from { opacity: 1; max-height: 60px; }
+      to   { opacity: 0; max-height: 0; padding: 0; margin: 0; }
+    }
+
+    /* ── NAMESPACE MODAL ── */
+    #modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.65);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    #modal-backdrop.open { display: flex; }
+    #ns-modal {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 22px;
+      width: 340px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+    }
+    #ns-modal h3 { font-size: 14px; font-weight: 600; }
+    #ns-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+  </style>
 </head>
 <body>
 
 <!-- NAV -->
-<nav>
-  <a href="/" class="nav-logo">SLOPSHOP<span style="color:#71717a">.gg</span></a>
-  <div class="nav-links">
-    <a href="/memory-hub" style="color:var(--g)">Memory Hub</a>
-    <a href="/dream-studio" style="color:var(--r)">Dream Studio</a>
-    <a href="/dream-recipes">Dream Recipes</a>
-    <a href="/team-hives" style="color:var(--o)">Team Hives</a>
-    <a href="/memory-copilot">Memory Copilot</a>
-    <a href="/dashboard">Dashboard</a>
-    <a href="/signup" class="btn-signup">Sign Up</a>
+<nav id="nav">
+  <a href="/" id="nav-logo">
+    slopshop<span class="slash">/</span><span class="section">memory</span>
+  </a>
+  <div id="nav-links">
+    <a href="/brain">Dashboard</a>
+    <a href="/dream-studio">Dreams</a>
+    <a href="/team-hives">Hive</a>
+    <a href="/memory-hub" class="active">Memory</a>
+    <a href="/profile">Profile</a>
+  </div>
+  <div id="nav-right">
+    <select id="ns-global-select" title="Active namespace"></select>
+    <div id="user-email">—</div>
   </div>
 </nav>
 
-<!-- AUTH OVERLAY -->
-<div class="auth-overlay" id="authOverlay">
-  <div style="font-size:32px">🧠</div>
-  <h2>Memory Hub requires authentication</h2>
-  <p>Enter your Slopshop API key to access your agent memory, Dream Engine sessions, and TMR cues.</p>
-  <div class="auth-key-input-row">
-    <input type="password" class="form-input" id="authKeyInput" placeholder="slop_live_..." autocomplete="off">
-    <button class="btn btn-primary" onclick="submitAuthKey()">Connect</button>
-  </div>
-  <p style="font-size:11px;color:var(--t4)">No account? <a href="/signup" style="color:var(--r);text-decoration:none">Sign up free</a> — or paste your key from the <a href="/dashboard" style="color:var(--r);text-decoration:none">dashboard</a>.</p>
-</div>
-
-<!-- LAYOUT -->
-<div class="layout">
+<!-- APP -->
+<div id="app">
 
   <!-- SIDEBAR -->
-  <aside class="sidebar">
-    <div class="sidebar-section-label">Memory Hub</div>
-    <div class="sidebar-item active" onclick="showSection('overview', this)">
-      <span class="icon">◈</span> Overview
+  <aside id="sidebar">
+    <div class="sidebar-section-label">Quick</div>
+    <div id="search-shortcut" title="Focus search (⌘K)">
+      <svg width="11" height="11" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="6.5" cy="6.5" r="5"/><path d="m11 11 3 3"/></svg>
+      Search
+      <span class="shortcut-key">⌘K</span>
     </div>
-    <div class="sidebar-item" onclick="showSection('dreams', this)">
-      <span class="icon">◉</span> Dream Sessions
-      <span class="sidebar-badge" id="dreamCountBadge">–</span>
-    </div>
-    <div class="sidebar-item" onclick="showSection('memory', this)">
-      <span class="icon">◫</span> Memory Explorer
-      <span class="sidebar-badge" id="memCountBadge">–</span>
-    </div>
-    <div class="sidebar-item" onclick="showSection('skills', this)">
-      <span class="icon">◌</span> Skills
-    </div>
-    <div class="sidebar-item" onclick="showSection('tmr', this)">
-      <span class="icon">◎</span> TMR Cues
-      <span class="sidebar-badge" id="tmrCountBadge">–</span>
-    </div>
-    <div class="sidebar-item" onclick="showSection('hives', this)">
-      <span class="icon">⬡</span> Team Hives
-    </div>
-    <div class="divider" style="margin:8px 4px"></div>
-    <div class="sidebar-section-label">System</div>
-    <div class="sidebar-item" onclick="showSection('settings', this)">
-      <span class="icon">◧</span> Settings
-    </div>
+
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-label">Namespaces</div>
+    <div id="ns-list"></div>
+    <button id="add-namespace-btn">+ New Namespace</button>
   </aside>
 
-  <!-- CONTENT -->
-  <main class="content">
+  <!-- MAIN -->
+  <div id="main">
 
-    <!-- OVERVIEW -->
-    <section class="page-section active" id="section-overview">
-      <div class="page-header">
-        <h1>Brain Cockpit</h1>
-        <p>Central command for your agent memory and Dream Engine intelligence.</p>
+    <!-- LIST AREA -->
+    <div id="list-area">
+      <div id="list-header">
+        <div id="list-title-row">
+          <div id="list-title">All Memories</div>
+          <button id="new-memory-btn">+ New Memory</button>
+        </div>
+        <div id="search-bar-wrap">
+          <span id="search-icon-el">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="6.5" cy="6.5" r="5"/><path d="m11 11 3 3"/></svg>
+          </span>
+          <input id="search-input" type="text" placeholder="Search your memories..." autocomplete="off" spellcheck="false" />
+          <button id="search-clear-btn" title="Clear">&#x2715;</button>
+        </div>
       </div>
 
-      <!-- INTELLIGENCE SCORE -->
-      <div class="intel-score-card" id="intelCard">
-        <div class="gauge-wrap">
-          <svg class="gauge-svg" viewBox="0 0 120 120">
-            <circle class="gauge-track" cx="60" cy="60" r="54"/>
-            <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="54"/>
-          </svg>
-          <div class="gauge-center">
-            <div class="gauge-score" id="gaugeScore">–</div>
-            <div class="gauge-label">/ 100</div>
+      <div id="list-meta"></div>
+
+      <div id="cards-container">
+        <div id="loading-overlay">
+          <div class="loading-card">
+            <div class="spinner"></div>
+            Loading memories…
           </div>
         </div>
-        <div class="intel-meta">
-          <h2>Intelligence Score</h2>
-          <div class="intel-tagline" id="intelTagline">Your agents are getting smarter</div>
-          <div class="intel-breakdown" id="intelBreakdown">
-            <div class="intel-stat">
-              <div class="intel-stat-val" id="iInsights">–</div>
-              <div class="intel-stat-label">Insights</div>
-            </div>
-            <div class="intel-stat">
-              <div class="intel-stat-val" id="iDepth">–</div>
-              <div class="intel-stat-label">Strategy Depth</div>
-            </div>
-            <div class="intel-stat">
-              <div class="intel-stat-val" id="iDuration">–</div>
-              <div class="intel-stat-label">Duration (s)</div>
-            </div>
-            <div class="intel-stat">
-              <div class="intel-stat-val" id="iStrategy">–</div>
-              <div class="intel-stat-label">Strategy</div>
-            </div>
-          </div>
-          <div class="intel-formula">
-            score = <span class="hl">(insights × strategy_depth × 10)</span> / <span class="hl">duration_sec</span>
-            &nbsp;·&nbsp; capped at 100
-          </div>
-        </div>
-      </div>
 
-      <!-- STATS -->
-      <div class="stats-grid" id="statsGrid">
-        <div class="stat-card cyan">
-          <div class="stat-card-label">Total Memories</div>
-          <div class="stat-card-val" id="statMemories"><span class="spinner"></span></div>
-          <div class="stat-card-sub">across all namespaces</div>
+        <div id="empty-state">
+          <div class="empty-icon">🧠</div>
+          <h3>No memories yet</h3>
+          <p>Start building your memory bank — store facts, notes, code snippets, events, and more.</p>
+          <button id="empty-cta">Store First Memory</button>
         </div>
-        <div class="stat-card purple">
-          <div class="stat-card-label">Dream Sessions</div>
-          <div class="stat-card-val" id="statDreams"><span class="spinner"></span></div>
-          <div class="stat-card-sub">total runs logged</div>
-        </div>
-        <div class="stat-card green">
-          <div class="stat-card-label">Latest Intel Score</div>
-          <div class="stat-card-val" id="statScore"><span class="spinner"></span></div>
-          <div class="stat-card-sub">most recent session</div>
-        </div>
-        <div class="stat-card indigo">
-          <div class="stat-card-label">Active Schedules</div>
-          <div class="stat-card-val" id="statSchedules"><span class="spinner"></span></div>
-          <div class="stat-card-sub">dream auto-runs</div>
-        </div>
-      </div>
 
-      <!-- RECENT DREAMS SUMMARY -->
-      <div class="section-card">
-        <div class="section-header">
-          <div class="section-title"><span class="icon">◉</span> Recent Dream Sessions</div>
-          <button class="btn btn-ghost btn-sm" onclick="showSection('dreams', document.querySelector('[onclick*=dreams]'))">View all →</button>
-        </div>
-        <div id="overviewDreamsTable">
-          <table class="data-table">
-            <thead><tr>
-              <th>ID</th><th>Strategy</th><th>Status</th><th>Keys</th><th>Insights</th><th>Duration</th><th>Started</th><th>Actions</th>
-            </tr></thead>
-            <tbody id="overviewDreamsTbody">
-              <tr class="loading-row"><td colspan="8"><span class="spinner"></span>Loading sessions…</td></tr>
-            </tbody>
-          </table>
-        </div>
+        <div id="cards-grid"></div>
       </div>
+    </div>
 
-      <!-- QUICK LAUNCHER (overview copy) -->
-      <div class="section-card">
-        <div class="section-header">
-          <div class="section-title"><span class="icon">▶</span> Quick Dream Launcher</div>
-          <span class="pill">POST /v1/memory/dream/start</span>
-        </div>
-        <div class="launcher-body">
-          <div class="form-grid">
-            <div class="form-group">
-              <label class="form-label">Namespace</label>
-              <input type="text" class="form-input" id="launchNs" placeholder="default" value="default">
-            </div>
-            <div class="form-group">
-              <label class="form-label">Strategy</label>
-              <select class="form-select" id="launchStrategy">
-                <option value="synthesize">🔮 synthesize</option>
-                <option value="pattern_extract">🔍 pattern_extract</option>
-                <option value="insight_generate">💡 insight_generate</option>
-                <option value="compress">📦 compress</option>
-                <option value="associate">🔗 associate</option>
-                <option value="validate">✓ validate</option>
-                <option value="evolve">⚡ evolve</option>
-                <option value="forecast">📈 forecast</option>
-                <option value="reflect">🪞 reflect</option>
-                <option value="full_cycle">✨ Full REM Cycle (All 9 Stages)</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Model</label>
-              <select class="form-select" id="launchModel">
-                <option value="claude-haiku-4-5">claude-haiku-4-5</option>
-                <option value="claude-sonnet-4-6" selected>claude-sonnet-4-6</option>
-                <option value="gpt-4o-mini">gpt-4o-mini</option>
-              </select>
-            </div>
-            <div class="form-group">
-              <label class="form-label">Memory Budget: <span id="budgetVal">30</span></label>
-              <div class="slider-row">
-                <input type="range" class="form-range" id="launchBudget" min="10" max="100" value="30" oninput="document.getElementById('budgetVal').textContent=this.value">
-                <span class="slider-val" id="budgetDisplay"></span>
-              </div>
-            </div>
-          </div>
-          <div class="toggle-row">
-            <div>
-              <div class="toggle-label">Dry Run</div>
-              <div class="toggle-sub">Simulate without persisting results</div>
-            </div>
-            <label class="toggle">
-              <input type="checkbox" id="launchDryRun">
-              <span class="toggle-slider"></span>
-            </label>
-          </div>
-          <div class="launcher-footer">
-            <button class="btn btn-primary" id="launchBtn" onclick="launchDream()">
-              <span>▶</span> Launch Dream
-            </button>
-            <span class="text-muted" id="launchStatus" style="font-size:12px"></span>
-          </div>
-          <div class="result-box" id="launchResult"></div>
-        </div>
+    <!-- RIGHT PANEL -->
+    <div id="right-panel">
+      <div id="panel-header">
+        <div id="panel-title">New Memory</div>
+        <button id="panel-close" title="Close (Esc)">&#x2715;</button>
       </div>
-    </section>
+      <div id="panel-body"></div>
+      <div id="panel-footer"></div>
+    </div>
 
-    <!-- DREAM SESSIONS -->
-    <section class="page-section" id="section-dreams">
-      <div class="page-header">
-        <h1>Dream Sessions</h1>
-        <p>Full history of Dream Engine runs. Click a session to view the full report.</p>
-      </div>
-      <div class="section-card">
-        <div class="section-header">
-          <div class="section-title"><span class="icon">◉</span> All Sessions</div>
-          <button class="btn btn-ghost btn-sm" onclick="loadDreams()">↻ Refresh</button>
-        </div>
-        <table class="data-table">
-          <thead><tr>
-            <th>ID</th><th>Strategy</th><th>Status</th><th>Keys</th><th>Insights</th><th>Duration</th><th>Started</th><th>Actions</th>
-          </tr></thead>
-          <tbody id="allDreamsTbody">
-            <tr class="loading-row"><td colspan="8"><span class="spinner"></span>Loading…</td></tr>
-          </tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- MEMORY EXPLORER -->
-    <section class="page-section" id="section-memory">
-      <div class="page-header">
-        <h1>Memory Explorer</h1>
-        <p>Browse and inspect your stored agent memories by namespace and key.</p>
-      </div>
-      <div class="section-card">
-        <div class="section-header">
-          <div class="section-title"><span class="icon">◫</span> Namespace Browser</div>
-          <div class="flex-row">
-            <input type="text" class="form-input" id="memNsFilter" placeholder="Filter by namespace…" style="width:200px" oninput="filterMemoryList()">
-            <button class="btn btn-ghost btn-sm" onclick="loadMemoryList()">↻ Refresh</button>
-          </div>
-        </div>
-        <div class="memory-browser-body">
-          <div class="memory-list-col">
-            <div id="memoryKeyList">
-              <div class="empty-state"><span class="spinner"></span> Loading memories…</div>
-            </div>
-          </div>
-          <div class="memory-detail-col" id="memoryDetail">
-            <div class="empty-state">
-              <div class="empty-icon">◫</div>
-              Select a memory key to inspect its value.
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SKILLS -->
-    <section class="page-section" id="section-skills">
-      <div class="page-header">
-        <h1>Skills</h1>
-        <p>Procedural skills extracted by the Dream Engine. If X → run tool Y patterns.</p>
-      </div>
-      <div class="section-card">
-        <div class="section-header">
-          <div class="section-title"><span class="icon">◌</span> Procedural Skills</div>
-          <button class="btn btn-ghost btn-sm" onclick="loadSkillsSection()">↻ Refresh</button>
-        </div>
-        <div id="skills-section-loading" style="padding:40px 20px;text-align:center;display:none">
-          <span class="spinner"></span><span style="color:var(--t3);margin-left:8px">Loading skills…</span>
-        </div>
-        <div id="skills-section-list" style="padding:0 20px 20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:16px"></div>
-        <div id="skills-section-empty" class="empty-state" style="padding:60px 20px;display:none">
-          <div class="empty-icon">◌</div>
-          <div style="margin-bottom:8px;color:var(--t3)">No skills found</div>
-          <div style="color:var(--t4);font-size:12px">Run the Dream Engine with a <code style="font-family:var(--mono);font-size:11px;color:var(--r)">forecast</code> or <code style="font-family:var(--mono);font-size:11px;color:var(--r)">evolve</code> strategy to extract skills.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- TMR CUES -->
-    <section class="page-section" id="section-tmr">
-      <div class="page-header">
-        <h1>TMR Cues</h1>
-        <p>Targeted Memory Reactivation — pending cues queued for your agents.</p>
-      </div>
-      <div class="section-card">
-        <div class="section-header">
-          <div class="section-title"><span class="icon">◎</span> Pending Cues</div>
-          <div class="flex-row">
-            <button class="btn btn-ghost btn-sm" onclick="loadTmrCues()">↻ Refresh</button>
-            <button class="btn btn-primary btn-sm" onclick="openTmrModal()">+ Queue New Cue</button>
-          </div>
-        </div>
-        <div class="tmr-body" id="tmrBody">
-          <div class="empty-state"><span class="spinner"></span> Loading cues…</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- HIVES -->
-    <section class="page-section" id="section-hives">
-      <div class="page-header">
-        <h1>Team Hives</h1>
-        <p>Shared agent memory pools for your organization.</p>
-      </div>
-      <div class="section-card">
-        <div class="section-header">
-          <div class="section-title"><span class="icon">⬡</span> Hive Directory</div>
-        </div>
-        <div class="empty-state" style="padding:60px 20px">
-          <div class="empty-icon">⬡</div>
-          <div style="margin-bottom:8px;color:var(--t3)">No hives created yet</div>
-          <div style="color:var(--t4);font-size:12px">Create a team hive via the API or upgrade to a team plan.</div>
-        </div>
-      </div>
-    </section>
-
-    <!-- SETTINGS -->
-    <section class="page-section" id="section-settings">
-      <div class="page-header">
-        <h1>Settings</h1>
-        <p>API key, preferences, and account configuration.</p>
-      </div>
-      <div class="section-card">
-        <div class="section-header">
-          <div class="section-title"><span class="icon">◧</span> API Key</div>
-        </div>
-        <div style="padding:20px;display:flex;flex-direction:column;gap:14px">
-          <div class="form-group">
-            <label class="form-label">Current API Key</label>
-            <div class="flex-row">
-              <input type="password" class="form-input" id="settingsKeyInput" placeholder="slop_live_..." style="max-width:380px">
-              <button class="btn btn-secondary" onclick="saveSettingsKey()">Save</button>
-              <button class="btn btn-ghost" onclick="clearKey()">Clear</button>
-            </div>
-          </div>
-          <div class="form-group" id="settingsKeyStatus" style="font-size:12px;color:var(--t4)"></div>
-        </div>
-      </div>
-    </section>
-
-  </main>
+  </div>
 </div>
 
-<!-- TMR MODAL -->
-<div class="modal-overlay" id="tmrModal">
-  <div class="modal">
-    <div class="modal-header">
-      <div class="modal-title">Queue New TMR Cue</div>
-      <button class="modal-close" onclick="closeTmrModal()">✕</button>
+<!-- TOASTS -->
+<div id="toast-container"></div>
+
+<!-- NEW NAMESPACE MODAL -->
+<div id="modal-backdrop">
+  <div id="ns-modal">
+    <h3>New Namespace</h3>
+    <div class="field-group">
+      <label class="field-label">Name</label>
+      <input id="ns-modal-input" class="field-input mono" type="text" placeholder="my-project" autocomplete="off" spellcheck="false" maxlength="64" />
     </div>
-    <div class="modal-form">
-      <div class="form-group">
-        <label class="form-label">Namespace</label>
-        <input type="text" class="form-input" id="tmrNs" placeholder="default">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Memory Keys (comma-separated)</label>
-        <input type="text" class="form-input" id="tmrKeys" placeholder="key1, key2, key3">
-      </div>
-      <div class="form-group">
-        <label class="form-label">Context / Prompt Override (optional)</label>
-        <input type="text" class="form-input" id="tmrContext" placeholder="Reactivate these memories in context of…">
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-ghost" onclick="closeTmrModal()">Cancel</button>
-        <button class="btn btn-primary" onclick="submitTmrCue()">Queue Cue</button>
-      </div>
-      <div class="result-box" id="tmrResult"></div>
+    <div id="ns-modal-actions">
+      <button class="btn btn-ghost" id="ns-cancel-btn">Cancel</button>
+      <button class="btn btn-primary" id="ns-create-btn">Create</button>
     </div>
   </div>
 </div>
 
 <script>
-// ─── AUTH ─────────────────────────────────────────────────────────────────────
-let API_KEY = localStorage.getItem('slopshop_api_key') || localStorage.getItem('slop_api_key') || '';
-let dreamPollInterval = null;
-let allMemoryData = [];
+'use strict';
 
-function renderNoAuthBanner() {
-  if (API_KEY) return;
-  const existing = document.getElementById('no-auth-banner');
-  if (existing) return;
-  const banner = document.createElement('div');
-  banner.id = 'no-auth-banner';
-  banner.style.cssText = 'background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.3);border-radius:10px;padding:12px 18px;margin:0 0 18px 0;display:flex;align-items:center;gap:12px;font-size:14px;color:#ffd700;position:sticky;top:8px;z-index:50;';
-  banner.innerHTML = '<span style="font-size:18px">⚠</span><span style="flex:1">Add your API key to unlock live data.</span><a href="/login" style="color:#a855f7;font-weight:600;white-space:nowrap;text-decoration:none;">Add your API key to unlock live data →</a>';
-  const mainContent = document.querySelector('.main-content') || document.querySelector('main') || document.body;
-  mainContent.insertBefore(banner, mainContent.firstChild);
-}
+// ─────────────────────────────────────────────
+//  STATE
+// ─────────────────────────────────────────────
+let currentKey    = null;
+let currentEmail  = '';
+let currentNs     = 'default';
+let namespaces    = ['default'];
+let memories      = []; // [{key,value,type,created,updated,tags,score?}]
+let selectedKey   = null;
+let panelMode     = null; // 'new' | 'detail'
+let searchTimer   = null;
+let isSearchMode  = false;
 
-function checkAuth() {
-  if (!API_KEY) {
-    renderNoAuthBanner();
-    document.getElementById('authOverlay').style.display = 'flex';
-  } else {
-    document.getElementById('authOverlay').style.display = 'none';
-    initDashboard();
-  }
-}
+const BASE = '';
 
-function submitAuthKey() {
-  const val = document.getElementById('authKeyInput').value.trim();
-  if (!val) return;
-  API_KEY = val;
-  localStorage.setItem('slopshop_api_key', val);
-  document.getElementById('authOverlay').style.display = 'none';
-  initDashboard();
-}
-
-document.getElementById('authKeyInput').addEventListener('keydown', e => {
-  if (e.key === 'Enter') submitAuthKey();
-});
-
-// ─── NAVIGATION ───────────────────────────────────────────────────────────────
-function showSection(id, el) {
-  document.querySelectorAll('.page-section').forEach(s => s.classList.remove('active'));
-  document.querySelectorAll('.sidebar-item').forEach(s => s.classList.remove('active'));
-  document.getElementById('section-' + id).classList.add('active');
-  if (el) el.classList.add('active');
-  if (id === 'dreams') loadDreams();
-  if (id === 'memory') loadMemoryList();
-  if (id === 'tmr') loadTmrCues();
-  if (id === 'skills') loadSkillsSection();
-  if (id === 'settings') populateSettings();
-}
-
-// ─── API HELPER ───────────────────────────────────────────────────────────────
-async function apiFetch(path, options = {}) {
-  const res = await fetch(path, {
-    ...options,
-    headers: {
-      'X-API-Key': API_KEY,
-      'Content-Type': 'application/json',
-      ...(options.headers || {})
-    }
-  });
-  if (!res.ok) {
-    const txt = await res.text();
-    throw new Error(`${res.status}: ${txt}`);
-  }
-  return res.json();
-}
-
-// ─── STRATEGY CONFIG ──────────────────────────────────────────────────────────
-const STRATEGY_META = {
-  synthesize:       { icon: '🔮', depth: 9 },
-  pattern_extract:  { icon: '🔍', depth: 7 },
-  insight_generate: { icon: '💡', depth: 8 },
-  compress:         { icon: '📦', depth: 5 },
-  associate:        { icon: '🔗', depth: 6 },
-  validate:         { icon: '✓',  depth: 6 },
-  evolve:           { icon: '⚡', depth: 8 },
-  forecast:         { icon: '📈', depth: 9 },
-  reflect:          { icon: '🪞', depth: 7 },
-};
-
-function stratDepth(strategy) {
-  return (STRATEGY_META[strategy] || { depth: 5 }).depth;
-}
-
-function stratIcon(strategy) {
-  return (STRATEGY_META[strategy] || { icon: '◈' }).icon;
-}
-
-function computeScore(session) {
-  const insights = session.insights_generated ?? session.insights ?? 0;
-  const depth = stratDepth(session.strategy);
-  const dur = session.duration_seconds ?? session.duration_sec ?? session.duration ?? 1;
-  const raw = (insights * depth * 10) / Math.max(dur, 0.1);
-  return Math.min(100, Math.round(raw));
-}
-
-// ─── INTELLIGENCE SCORE ───────────────────────────────────────────────────────
-function renderIntelScore(session) {
-  if (!session) {
-    document.getElementById('gaugeScore').textContent = 'N/A';
-    return;
-  }
-  const score = computeScore(session);
-  const insights = session.insights_generated ?? session.insights ?? 0;
-  const depth = stratDepth(session.strategy);
-  const dur = session.duration_seconds ?? session.duration_sec ?? session.duration ?? 0;
-
-  document.getElementById('gaugeScore').textContent = score;
-  document.getElementById('iInsights').textContent = insights;
-  document.getElementById('iDepth').textContent = depth;
-  document.getElementById('iDuration').textContent = typeof dur === 'number' ? dur.toFixed(1) : dur;
-  document.getElementById('iStrategy').textContent = session.strategy || '–';
-
-  // Animate gauge
-  const circumference = 339.292;
-  const offset = circumference - (score / 100) * circumference;
-  setTimeout(() => {
-    document.getElementById('gaugeFill').style.strokeDashoffset = offset;
-  }, 100);
-
-  // Color gauge by score
-  const fill = document.getElementById('gaugeFill');
-  if (score >= 70) { fill.style.stroke = 'var(--g)'; document.getElementById('gaugeScore').style.color = 'var(--g)'; }
-  else if (score >= 40) { fill.style.stroke = 'var(--r)'; document.getElementById('gaugeScore').style.color = 'var(--r)'; }
-  else { fill.style.stroke = '#fbbf24'; document.getElementById('gaugeScore').style.color = '#fbbf24'; }
-}
-
-// ─── DREAMS ───────────────────────────────────────────────────────────────────
-let dreamData = [];
-
-async function loadDreams() {
+// ─────────────────────────────────────────────
+//  INIT
+// ─────────────────────────────────────────────
+async function init() {
   try {
-    const data = await apiFetch('/v1/memory/dream/log');
-    dreamData = Array.isArray(data) ? data : (data.sessions || data.logs || data.data || []);
-    renderDreamsTable(dreamData, 'overviewDreamsTbody', 5);
-    renderDreamsTable(dreamData, 'allDreamsTbody', null);
-    updateDreamStats(dreamData);
-    updateSidebarBadge('dreamCountBadge', dreamData.length);
-  } catch (e) {
-    setTableError('overviewDreamsTbody', 8, e.message);
-    setTableError('allDreamsTbody', 8, e.message);
-    document.getElementById('statDreams').textContent = 'Err';
-    document.getElementById('statScore').textContent = 'Err';
+    const r = await fetch(`${BASE}/v1/auth/session`, { credentials: 'include' });
+    if (!r.ok) { window.location.href = '/'; return; }
+    const session = await r.json();
+    currentKey   = session.api_key;
+    currentEmail = session.user?.email || session.email || '';
+    document.getElementById('user-email').textContent = currentEmail || 'logged in';
+    loadNamespaces();
+    await fetchMemories();
+  } catch (err) {
+    toast('Auth failed — redirecting…', 'error');
+    setTimeout(() => { window.location.href = '/'; }, 1800);
   }
 }
 
-function updateDreamStats(sessions) {
-  document.getElementById('statDreams').textContent = sessions.length;
-  const completed = sessions.filter(s => s.status === 'complete' || s.status === 'completed');
-  if (completed.length > 0) {
-    const latest = completed[0];
-    const score = computeScore(latest);
-    document.getElementById('statScore').textContent = score;
-    renderIntelScore(latest);
-  } else {
-    document.getElementById('statScore').textContent = '–';
-    document.getElementById('gaugeScore').textContent = '–';
-  }
-
-  // Active schedules: check for pending/running
-  const active = sessions.filter(s => s.status === 'running' || s.status === 'pending').length;
-  document.getElementById('statSchedules').textContent = active;
-}
-
-function renderDreamsTable(sessions, tbodyId, limit) {
-  const tbody = document.getElementById(tbodyId);
-  if (!tbody) return;
-  const rows = limit ? sessions.slice(0, limit) : sessions;
-  if (rows.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="padding:24px 16px;color:var(--t4);text-align:center">No dream sessions found. Launch your first dream below.</td></tr>';
-    return;
-  }
-  tbody.innerHTML = rows.map(s => {
-    const id = s.dream_id || s.id || '–';
-    const shortId = typeof id === 'string' ? id.slice(0, 8) + '…' : id;
-    const strategy = s.strategy || '–';
-    const status = s.status || 'unknown';
-    const keys = s.keys_sampled ?? s.num_keys ?? s.key_count ?? '–';
-    const insights = s.insights_generated ?? s.insights ?? '–';
-    const dur = s.duration_seconds ?? s.duration_sec ?? s.duration;
-    const durStr = dur != null ? (typeof dur === 'number' ? dur.toFixed(1) + 's' : dur) : '–';
-    const started = s.started_at || s.created_at || s.timestamp;
-    const startedStr = started ? new Date(started).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '–';
-    return `<tr>
-      <td class="mono" title="${id}">${shortId}</td>
-      <td><span class="strategy-badge">${stratIcon(strategy)} ${strategy}</span></td>
-      <td>${statusBadge(status)}</td>
-      <td class="mono">${keys}</td>
-      <td class="mono">${insights}</td>
-      <td class="mono">${durStr}</td>
-      <td class="mono">${startedStr}</td>
-      <td>
-        <div class="flex-row">
-          <a href="/dream-reports?id=${encodeURIComponent(id)}" class="btn btn-ghost btn-sm">Report</a>
-          <button class="btn btn-purple btn-sm" onclick="runAgain('${strategy}')">Run Again</button>
-        </div>
-      </td>
-    </tr>`;
-  }).join('');
-}
-
-function statusBadge(status) {
-  const map = {
-    pending: 'badge-pending',
-    running: 'badge-running',
-    complete: 'badge-complete',
-    completed: 'badge-complete',
-    error: 'badge-error',
-    failed: 'badge-error',
+// ─────────────────────────────────────────────
+//  API
+// ─────────────────────────────────────────────
+function authHeaders() {
+  return {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${currentKey}`
   };
-  const cls = map[status] || 'badge-pending';
-  return `<span class="badge ${cls}">${status}</span>`;
 }
 
-function setTableError(tbodyId, cols, msg) {
-  const tbody = document.getElementById(tbodyId);
-  if (tbody) tbody.innerHTML = `<tr><td colspan="${cols}" style="padding:16px;color:#ef4444;font-size:12px;font-family:var(--mono)">Error: ${msg}</td></tr>`;
-}
-
-function runAgain(strategy) {
-  showSection('overview', document.querySelector('[onclick*=overview]'));
-  if (strategy && strategy !== '–') {
-    document.getElementById('launchStrategy').value = strategy;
+async function api(path, body) {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: authHeaders(),
+    credentials: 'include',
+    body: JSON.stringify(body)
+  });
+  const json = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    throw new Error(json.error || json.message || `HTTP ${res.status}`);
   }
-  document.getElementById('launchBtn').focus();
+  return json;
 }
 
-// ─── DREAM LAUNCHER ───────────────────────────────────────────────────────────
-async function launchDream() {
-  const btn = document.getElementById('launchBtn');
-  const resultBox = document.getElementById('launchResult');
-  const statusEl = document.getElementById('launchStatus');
+// Unwrap nested data object (API may return {data:{...}} or flat)
+function unwrap(json, key) {
+  return json?.data?.[key] ?? json?.[key];
+}
 
-  const ns = document.getElementById('launchNs').value.trim() || 'default';
-  const strategy = document.getElementById('launchStrategy').value;
-  const model = document.getElementById('launchModel').value;
-  const budget = parseInt(document.getElementById('launchBudget').value);
-  const dryRun = document.getElementById('launchDryRun').checked;
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span> Launching…';
-  statusEl.textContent = '';
-  resultBox.className = 'result-box';
-  resultBox.style.display = 'none';
-
+// ─────────────────────────────────────────────
+//  NAMESPACES
+// ─────────────────────────────────────────────
+function loadNamespaces() {
   try {
-    const isFullCycle = strategy === 'full_cycle';
-    const body = isFullCycle
-      ? { namespace: ns, strategy: 'full_cycle', model, max_keys: budget, dry_run: dryRun }
-      : { namespace: ns, strategies: [strategy], model, max_keys: budget, dry_run: dryRun };
-    const data = await apiFetch('/v1/memory/dream/start', {
-      method: 'POST',
-      body: JSON.stringify(body)
-    });
-
-    const dreamId = data.dream_id || data.id || 'unknown';
-    resultBox.className = 'result-box visible success';
-    resultBox.textContent = `Dream started ✓\nID: ${dreamId}\nStatus: ${data.status || 'pending'}\n${dryRun ? '[Dry Run — no changes persisted]' : ''}`;
-
-    if (data.status === 'running' || data.status === 'pending') {
-      statusEl.textContent = 'Polling for completion…';
-      startDreamPoll(dreamId);
-    }
-    loadDreams();
-  } catch (e) {
-    resultBox.className = 'result-box visible error';
-    resultBox.textContent = `Launch failed: ${e.message}`;
-  } finally {
-    btn.disabled = false;
-    btn.innerHTML = '<span>▶</span> Launch Dream';
+    const stored = JSON.parse(localStorage.getItem('slop_ns') || '[]');
+    namespaces = [...new Set(['default', ...stored])];
+  } catch (_) {
+    namespaces = ['default'];
   }
+  renderSidebar();
+  renderGlobalNsSelect();
 }
 
-function startDreamPoll(dreamId) {
-  clearInterval(dreamPollInterval);
-  let attempts = 0;
-  const statusEl = document.getElementById('launchStatus');
-  dreamPollInterval = setInterval(async () => {
-    attempts++;
-    if (attempts > 40) {
-      clearInterval(dreamPollInterval);
-      statusEl.textContent = 'Polling timed out.';
+function saveNamespaces() {
+  localStorage.setItem('slop_ns', JSON.stringify(namespaces.filter(n => n !== 'default')));
+}
+
+function renderSidebar() {
+  const list = document.getElementById('ns-list');
+  list.innerHTML = '';
+  namespaces.forEach(ns => {
+    const el = document.createElement('div');
+    el.className = 'sidebar-item' + (ns === currentNs ? ' active' : '');
+    el.innerHTML = `<span class="ns-name">${esc(ns)}</span><span class="badge" id="badge-${esc(ns)}">—</span>`;
+    el.onclick = () => switchNs(ns);
+    list.appendChild(el);
+  });
+}
+
+function renderGlobalNsSelect() {
+  const sel = document.getElementById('ns-global-select');
+  sel.innerHTML = namespaces.map(n =>
+    `<option value="${esc(n)}" ${n === currentNs ? 'selected' : ''}>${esc(n)}</option>`
+  ).join('');
+}
+
+function setBadge(ns, count) {
+  const el = document.getElementById(`badge-${esc(ns)}`);
+  if (el) el.textContent = count >= 0 ? count : '—';
+}
+
+async function switchNs(ns) {
+  if (ns === currentNs && memories.length > 0) return;
+  currentNs = ns;
+  isSearchMode = false;
+  document.getElementById('search-input').value = '';
+  document.getElementById('search-clear-btn').style.display = 'none';
+  renderSidebar();
+  renderGlobalNsSelect();
+  closePanel();
+  await fetchMemories();
+}
+
+function openNsModal() {
+  document.getElementById('ns-modal-input').value = '';
+  document.getElementById('modal-backdrop').classList.add('open');
+  setTimeout(() => document.getElementById('ns-modal-input').focus(), 60);
+}
+function closeNsModal() {
+  document.getElementById('modal-backdrop').classList.remove('open');
+}
+
+async function createNamespace() {
+  const raw = document.getElementById('ns-modal-input').value.trim();
+  const ns  = raw.toLowerCase().replace(/[^a-z0-9_\-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  if (!ns) { toast('Enter a valid namespace name', 'error'); return; }
+  if (!namespaces.includes(ns)) {
+    namespaces.push(ns);
+    saveNamespaces();
+  }
+  closeNsModal();
+  await switchNs(ns);
+}
+
+// ─────────────────────────────────────────────
+//  FETCH MEMORIES
+// ─────────────────────────────────────────────
+async function fetchMemories() {
+  showLoading(true);
+  try {
+    const listRes = await api('/v1/memory-list', { namespace: currentNs, limit: 50, offset: 0 });
+    const allKeys = (unwrap(listRes, 'keys') || []);
+    const keys    = allKeys.slice(0, 20); // batch first 20
+
+    setBadge(currentNs, allKeys.length);
+
+    if (keys.length === 0) {
+      memories = [];
+      renderCards([], false);
+      setMeta(0, allKeys.length, false, '');
+      showLoading(false);
       return;
     }
-    try {
-      const data = await apiFetch(`/v1/memory/dream/status/${encodeURIComponent(dreamId)}`);
-      const status = data.status || 'unknown';
-      statusEl.textContent = `Status: ${status} (${attempts * 3}s)`;
-      if (status === 'complete' || status === 'completed' || status === 'error' || status === 'failed') {
-        clearInterval(dreamPollInterval);
-        statusEl.textContent = `Completed: ${status}`;
-        loadDreams();
-      }
-    } catch (_) {
-      // silently retry
-    }
-  }, 3000);
-}
 
-// ─── MEMORY BROWSER ───────────────────────────────────────────────────────────
-async function loadMemoryList() {
-  document.getElementById('memoryKeyList').innerHTML = '<div class="empty-state"><span class="spinner"></span> Loading…</div>';
-  try {
-    const data = await apiFetch('/v1/memory/list');
-    allMemoryData = Array.isArray(data) ? data : (data.memories || data.keys || data.data || []);
-    updateSidebarBadge('memCountBadge', allMemoryData.length);
-    document.getElementById('statMemories').textContent = allMemoryData.length;
-    renderMemoryList(allMemoryData);
-  } catch (e) {
-    document.getElementById('memoryKeyList').innerHTML = `<div class="empty-state" style="color:#ef4444;font-size:12px">${e.message}</div>`;
-    document.getElementById('statMemories').textContent = 'Err';
-  }
-}
+    const results = await Promise.allSettled(
+      keys.map(k => api('/v1/memory-get', { key: k, namespace: currentNs }).then(r => ({
+        key:     k,
+        value:   unwrap(r, 'value')   ?? '',
+        type:    unwrap(r, 'type')    ?? 'general',
+        created: unwrap(r, 'created') ?? null,
+        updated: unwrap(r, 'updated') ?? null,
+        tags:    unwrap(r, 'tags')    ?? [],
+        score:   null
+      })))
+    );
 
-function filterMemoryList() {
-  const q = document.getElementById('memNsFilter').value.toLowerCase();
-  const filtered = allMemoryData.filter(m => {
-    const key = m.key || m.memory_key || '';
-    const ns = m.namespace || '';
-    return key.toLowerCase().includes(q) || ns.toLowerCase().includes(q);
-  });
-  renderMemoryList(filtered);
-}
-
-function renderMemoryList(items) {
-  const container = document.getElementById('memoryKeyList');
-  if (!items.length) {
-    container.innerHTML = '<div class="empty-state">No memories found.</div>';
-    return;
-  }
-  container.innerHTML = items.slice(0, 200).map((m, i) => {
-    const key = m.key || m.memory_key || `item_${i}`;
-    const ns = m.namespace || 'default';
-    return `<div class="memory-key-item" onclick="showMemoryDetail(${i})" data-idx="${i}">
-      <div class="memory-key-text" title="${key}">${key}</div>
-      <div class="memory-key-ns">${ns}</div>
-    </div>`;
-  }).join('');
-}
-
-function showMemoryDetail(idx) {
-  document.querySelectorAll('.memory-key-item').forEach(el => el.classList.remove('selected'));
-  const el = document.querySelector(`.memory-key-item[data-idx="${idx}"]`);
-  if (el) el.classList.add('selected');
-
-  const m = allMemoryData[idx];
-  if (!m) return;
-  const key = m.key || m.memory_key || '';
-  const val = m.value || m.content || m.data || JSON.stringify(m, null, 2);
-  const detail = document.getElementById('memoryDetail');
-
-  detail.innerHTML = `
-    <div class="memory-detail-key">${key}</div>
-    <div class="memory-detail-val">${escHtml(typeof val === 'string' ? val : JSON.stringify(val, null, 2))}</div>
-    <div class="memory-detail-meta">
-      ${m.namespace ? `<div class="meta-chip">namespace <span>${m.namespace}</span></div>` : ''}
-      ${m.created_at ? `<div class="meta-chip">created <span>${new Date(m.created_at).toLocaleString()}</span></div>` : ''}
-      ${m.updated_at ? `<div class="meta-chip">updated <span>${new Date(m.updated_at).toLocaleString()}</span></div>` : ''}
-      ${m.score != null ? `<div class="meta-chip">score <span>${m.score}</span></div>` : ''}
-      ${m.decay_rate != null ? `<div class="meta-chip">decay <span>${m.decay_rate}</span></div>` : ''}
-    </div>`;
-}
-
-// ─── TMR CUES ─────────────────────────────────────────────────────────────────
-async function loadTmrCues() {
-  document.getElementById('tmrBody').innerHTML = '<div class="empty-state"><span class="spinner"></span> Loading cues…</div>';
-  try {
-    const data = await apiFetch('/v1/memory/tmr/cues');
-    const cues = Array.isArray(data) ? data : (data.cues || data.data || []);
-    updateSidebarBadge('tmrCountBadge', cues.length);
-    renderTmrCues(cues);
-  } catch (e) {
-    document.getElementById('tmrBody').innerHTML = `<div class="empty-state" style="color:#ef4444;font-size:12px">${e.message}</div>`;
-  }
-}
-
-function renderTmrCues(cues) {
-  const body = document.getElementById('tmrBody');
-  if (!cues.length) {
-    body.innerHTML = '<div class="empty-state"><div class="empty-icon">◎</div>No pending TMR cues.<br><span style="font-size:11px;color:var(--t4)">Queue a cue to schedule memory reactivation for your agents.</span></div>';
-    return;
-  }
-  body.innerHTML = cues.map(c => {
-    const id = c.cue_id || c.id || '–';
-    const ns = c.namespace || 'default';
-    const prompt = c.combined_reactivation_prompt || c.prompt || c.reactivation_prompt || '';
-    const keys = Array.isArray(c.memory_keys) ? c.memory_keys.join(', ') : (c.memory_keys || '–');
-    const created = c.created_at ? new Date(c.created_at).toLocaleString() : '';
-    return `<div class="tmr-cue-item">
-      <div class="tmr-cue-meta">
-        <span class="tmr-cue-id">ID: ${id}</span>
-        <span class="badge badge-pending">${c.status || 'pending'}</span>
-        <span class="pill">${ns}</span>
-        ${created ? `<span style="font-size:11px;color:var(--t4)">${created}</span>` : ''}
-      </div>
-      ${keys !== '–' ? `<div style="font-size:11px;color:var(--t3);margin-bottom:8px">Keys: <span style="font-family:var(--mono);color:var(--t2)">${escHtml(keys)}</span></div>` : ''}
-      ${prompt ? `<div style="position:relative"><div class="code-block">${escHtml(prompt)}</div><button class="copy-btn" onclick="copyText(this, ${JSON.stringify(prompt)})">copy</button></div>` : '<div style="color:var(--t4);font-size:11px;font-style:italic">No reactivation prompt generated yet.</div>'}
-    </div>`;
-  }).join('');
-}
-
-function openTmrModal() {
-  document.getElementById('tmrModal').classList.add('open');
-}
-function closeTmrModal() {
-  document.getElementById('tmrModal').classList.remove('open');
-  document.getElementById('tmrResult').className = 'result-box';
-  document.getElementById('tmrResult').style.display = 'none';
-}
-
-async function submitTmrCue() {
-  const ns = document.getElementById('tmrNs').value.trim() || 'default';
-  const keysRaw = document.getElementById('tmrKeys').value.trim();
-  const context = document.getElementById('tmrContext').value.trim();
-  const resultBox = document.getElementById('tmrResult');
-
-  if (!keysRaw) {
-    resultBox.className = 'result-box visible error';
-    resultBox.textContent = 'Please enter at least one memory key.';
-    return;
-  }
-
-  const keys = keysRaw.split(',').map(k => k.trim()).filter(Boolean);
-  try {
-    const body = { namespace: ns, target_keys: keys };
-    if (context) body.personalization = context;
-    const data = await apiFetch('/v1/memory/tmr/queue', { method: 'POST', body: JSON.stringify(body) });
-    resultBox.className = 'result-box visible success';
-    resultBox.textContent = `Cue queued ✓\nID: ${data.cue_id || data.id || 'created'}`;
-    setTimeout(() => { closeTmrModal(); loadTmrCues(); }, 1500);
-  } catch (e) {
-    resultBox.className = 'result-box visible error';
-    resultBox.textContent = `Error: ${e.message}`;
-  }
-}
-
-// ─── SKILLS ───────────────────────────────────────────────────────────────────
-async function loadSkillsSection() {
-  const loadEl  = document.getElementById('skills-section-loading');
-  const listEl  = document.getElementById('skills-section-list');
-  const emptyEl = document.getElementById('skills-section-empty');
-  loadEl.style.display = 'block';
-  listEl.style.display = 'none';
-  emptyEl.style.display = 'none';
-  listEl.innerHTML = '';
-
-  try {
-    const ns = localStorage.getItem('slopshop_ns') || 'default';
-    const data = await apiFetch(`/v1/memory/skills?namespace=${encodeURIComponent(ns)}&min_confidence=0.6`);
-    const skills = Array.isArray(data.skills) ? data.skills :
-                   Array.isArray(data.memories) ? data.memories :
-                   Array.isArray(data) ? data : [];
-    loadEl.style.display = 'none';
-    if (!skills.length) { emptyEl.style.display = 'block'; return; }
-    listEl.style.display = 'grid';
-    listEl.innerHTML = skills.map(sk => {
-      const conf  = Math.round((sk.confidence ?? sk.probability ?? 0) * 100);
-      const src   = sk.source || sk.strategy || 'dream';
-      const title = sk.title || sk.key || sk.id || 'Unnamed Skill';
-      const trigger = sk.trigger || sk.trigger_condition || sk.condition || '—';
-      const action  = sk.action || sk.action_description || sk.description || '—';
-      return `<div style="background:var(--s1);border:1px solid var(--b2);border-radius:10px;padding:16px;display:flex;flex-direction:column;gap:10px">
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <div style="font-family:var(--mono);font-size:12px;font-weight:600;color:var(--t)">${esc(title)}</div>
-          <span class="strategy-badge">${esc(src)}</span>
-        </div>
-        <div style="font-size:11px;color:var(--t3)"><span style="color:var(--t4);font-family:var(--mono);font-size:10px">TRIGGER</span><br>${esc(trigger)}</div>
-        <div style="font-size:11px;color:var(--t2)">${esc(action)}</div>
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
-          <div style="font-family:var(--mono);font-size:11px;color:var(--g)">${conf}% confidence</div>
-          <button class="btn btn-ghost btn-sm" onclick="navigator.clipboard.writeText(${JSON.stringify('IF ' + trigger + '\nTHEN ' + action)});this.textContent='Copied!'">Copy as Prompt</button>
-        </div>
-      </div>`;
-    }).join('');
+    memories = results.filter(r => r.status === 'fulfilled').map(r => r.value);
+    renderCards(memories, false);
+    setMeta(memories.length, allKeys.length, false, '');
   } catch (err) {
-    loadEl.style.display = 'none';
-    emptyEl.style.display = 'block';
-    console.warn('Skills fetch failed:', err.message);
+    toast('Load failed: ' + err.message, 'error');
+    memories = [];
+    renderCards([], false);
+  } finally {
+    showLoading(false);
   }
 }
 
-function esc(s) {
-  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// ─────────────────────────────────────────────
+//  SEARCH
+// ─────────────────────────────────────────────
+async function doSearch(query) {
+  query = query.trim();
+  if (!query) {
+    isSearchMode = false;
+    document.getElementById('list-title').textContent = titleForNs(currentNs);
+    await fetchMemories();
+    return;
+  }
+  isSearchMode = true;
+  showLoading(true);
+  try {
+    const res = await api('/v1/memory-search', { query, namespace: currentNs, limit: 30 });
+    const raw = unwrap(res, 'results') || [];
+    memories = raw.map(r => ({
+      key:     r.key,
+      value:   r.value   ?? '',
+      type:    r.type    ?? 'general',
+      created: r.created ?? null,
+      updated: r.updated ?? null,
+      tags:    r.tags    ?? [],
+      score:   r.score   ?? null
+    }));
+    document.getElementById('list-title').textContent = 'Search Results';
+    renderCards(memories, true);
+    setMeta(memories.length, null, true, query);
+  } catch (err) {
+    toast('Search error: ' + err.message, 'error');
+  } finally {
+    showLoading(false);
+  }
 }
 
-// ─── SETTINGS ─────────────────────────────────────────────────────────────────
-function populateSettings() {
-  const inp = document.getElementById('settingsKeyInput');
-  if (inp) inp.value = API_KEY;
-  const status = document.getElementById('settingsKeyStatus');
-  if (status) status.textContent = API_KEY ? `Connected — key ending in …${API_KEY.slice(-6)}` : 'No key saved.';
+// ─────────────────────────────────────────────
+//  RENDER CARDS
+// ─────────────────────────────────────────────
+function renderCards(items, isSearch) {
+  const grid  = document.getElementById('cards-grid');
+  const empty = document.getElementById('empty-state');
+  grid.innerHTML = '';
+
+  if (!items.length) {
+    empty.style.display = 'flex';
+    return;
+  }
+  empty.style.display = 'none';
+
+  items.forEach(mem => grid.appendChild(makeCard(mem, isSearch)));
 }
 
-function saveSettingsKey() {
-  const val = document.getElementById('settingsKeyInput').value.trim();
-  if (!val) return;
-  API_KEY = val;
-  localStorage.setItem('slopshop_api_key', val);
-  document.getElementById('settingsKeyStatus').textContent = `Saved — key ending in …${val.slice(-6)}`;
-}
+function makeCard(mem, isSearch) {
+  const div = document.createElement('div');
+  div.className = 'memory-card' + (mem.key === selectedKey ? ' selected' : '');
+  div.dataset.key = mem.key;
 
-function clearKey() {
-  API_KEY = '';
-  localStorage.removeItem('slopshop_api_key');
-  localStorage.removeItem('slop_api_key');
-  document.getElementById('settingsKeyInput').value = '';
-  document.getElementById('settingsKeyStatus').textContent = 'Key cleared.';
-}
+  const preview  = (mem.value || '').slice(0, 120) + ((mem.value || '').length > 120 ? '…' : '');
+  const typeCls  = `type-${(mem.type || 'general').toLowerCase()}`;
+  const dateStr  = fmtDate(mem.updated || mem.created);
+  const scoreStr = (isSearch && mem.score != null) ? `<span class="card-score">${Math.round(mem.score * 100)}%</span>` : '';
+  const scoreBar = (isSearch && mem.score != null)
+    ? `<div class="score-bar" style="width:${Math.round(mem.score*100)}%;background:${scoreColor(mem.score)};"></div>`
+    : '';
 
-// ─── UTILS ────────────────────────────────────────────────────────────────────
-function updateSidebarBadge(id, count) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = count > 0 ? count : '0';
-}
+  div.innerHTML = `
+    <div class="card-key">${esc(mem.key)}</div>
+    <div class="card-value">${preview ? esc(preview) : '<span style="color:var(--muted2);font-style:italic;font-size:11px;">empty</span>'}</div>
+    <div class="card-footer">
+      <span class="type-badge ${typeCls}">${esc(mem.type || 'general')}</span>
+      ${scoreStr}
+      <span class="card-date">${dateStr}</span>
+    </div>
+    <button class="card-delete" data-memkey="${escAttr(mem.key)}">Delete</button>
+    ${scoreBar}
+  `;
 
-function copyText(btn, text) {
-  navigator.clipboard.writeText(text).then(() => {
-    btn.textContent = 'copied!';
-    setTimeout(() => btn.textContent = 'copy', 1800);
+  div.addEventListener('click', e => {
+    if (e.target.classList.contains('card-delete')) return;
+    openDetail(mem);
   });
+  div.querySelector('.card-delete').addEventListener('click', e => {
+    e.stopPropagation();
+    confirmDelete(mem.key);
+  });
+  return div;
 }
 
-function escHtml(str) {
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
+function scoreColor(s) {
+  if (s >= 0.75) return '#22c55e';
+  if (s >= 0.45) return '#f59e0b';
+  return '#52525b';
 }
 
-// ─── INIT ─────────────────────────────────────────────────────────────────────
-async function initDashboard() {
-  // Load all data in parallel
-  await Promise.allSettled([loadDreams(), loadMemoryList()]);
+// ─────────────────────────────────────────────
+//  META LINE
+// ─────────────────────────────────────────────
+function setMeta(shown, total, isSearch, query) {
+  const el = document.getElementById('list-meta');
+  if (isSearch) {
+    el.textContent = `${shown} result${shown !== 1 ? 's' : ''} for "${query}" in ${currentNs}`;
+  } else {
+    const extra = total > shown ? ` · showing ${shown} of ${total}` : '';
+    el.textContent = `${shown} memor${shown !== 1 ? 'ies' : 'y'} in ${currentNs}${extra}`;
+    document.getElementById('list-title').textContent = titleForNs(currentNs);
+  }
 }
 
-// Boot
-checkAuth();
+function titleForNs(ns) {
+  return ns === 'default' ? 'All Memories' : ns;
+}
+
+// ─────────────────────────────────────────────
+//  LOADING
+// ─────────────────────────────────────────────
+function showLoading(show) {
+  document.getElementById('loading-overlay').style.display = show ? 'flex' : 'none';
+}
+
+// ─────────────────────────────────────────────
+//  PANEL CONTROL
+// ─────────────────────────────────────────────
+function openPanel() {
+  document.getElementById('right-panel').classList.add('open');
+}
+function closePanel() {
+  document.getElementById('right-panel').classList.remove('open');
+  selectedKey = null;
+  panelMode   = null;
+  document.querySelectorAll('.memory-card.selected').forEach(c => c.classList.remove('selected'));
+}
+
+// ─────────────────────────────────────────────
+//  NEW MEMORY PANEL
+// ─────────────────────────────────────────────
+function openNew() {
+  panelMode   = 'new';
+  selectedKey = null;
+  document.querySelectorAll('.memory-card.selected').forEach(c => c.classList.remove('selected'));
+  document.getElementById('panel-title').textContent = 'New Memory';
+  renderNewForm();
+  openPanel();
+}
+
+function nsOptions(selected) {
+  return namespaces.map(n => `<option value="${escAttr(n)}" ${n === selected ? 'selected' : ''}>${esc(n)}</option>`).join('');
+}
+function typeOptions(selected) {
+  return ['general','note','fact','event','project','code'].map(t =>
+    `<option value="${t}" ${t === selected ? 'selected' : ''}>${t}</option>`
+  ).join('');
+}
+
+function renderNewForm() {
+  document.getElementById('panel-body').innerHTML = `
+    <div class="field-group">
+      <label class="field-label">Key <span style="color:var(--danger)">*</span></label>
+      <input id="f-key" class="field-input mono" type="text" placeholder="user-preferences" autocomplete="off" spellcheck="false" />
+    </div>
+    <div class="field-group">
+      <label class="field-label">Value <span style="color:var(--danger)">*</span></label>
+      <textarea id="f-value" class="field-textarea large" placeholder="Enter value…"></textarea>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Namespace</label>
+      <select id="f-ns" class="field-select mono">${nsOptions(currentNs)}</select>
+    </div>
+    <div class="field-group">
+      <label class="field-label">Tags <span class="opt">(comma-separated)</span></label>
+      <input id="f-tags" class="field-input" type="text" placeholder="ai, research, important" autocomplete="off" />
+    </div>
+    <div class="field-group">
+      <label class="field-label">Type</label>
+      <select id="f-type" class="field-select">${typeOptions('general')}</select>
+    </div>
+  `;
+  document.getElementById('panel-footer').innerHTML = `
+    <button class="btn btn-ghost" id="pf-cancel">Cancel</button>
+    <button class="btn btn-primary btn-expand" id="pf-store">Store Memory</button>
+  `;
+  document.getElementById('pf-cancel').onclick = closePanel;
+  document.getElementById('pf-store').onclick  = storeMemory;
+  document.getElementById('f-key').focus();
+}
+
+async function storeMemory() {
+  const key   = document.getElementById('f-key').value.trim();
+  const value = document.getElementById('f-value').value.trim();
+  const ns    = document.getElementById('f-ns').value;
+  const tags  = document.getElementById('f-tags').value
+    .split(',').map(t => t.trim()).filter(Boolean);
+  const type  = document.getElementById('f-type').value;
+
+  if (!key)   { toast('Key is required', 'error'); return; }
+  if (!value) { toast('Value is required', 'error'); return; }
+
+  const btn = document.getElementById('pf-store');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Storing…';
+
+  try {
+    const res = await api('/v1/memory-set', { key, value, namespace: ns, tags, type });
+    // Accept if data.status === 'stored', or any 2xx
+    toast('Memory stored', 'success');
+    closePanel();
+    if (ns !== currentNs) await switchNs(ns);
+    else await fetchMemories();
+  } catch (err) {
+    toast('Store failed: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = 'Store Memory';
+  }
+}
+
+// ─────────────────────────────────────────────
+//  DETAIL PANEL
+// ─────────────────────────────────────────────
+function openDetail(mem) {
+  panelMode   = 'detail';
+  selectedKey = mem.key;
+
+  document.querySelectorAll('.memory-card.selected').forEach(c => c.classList.remove('selected'));
+  const card = document.querySelector(`.memory-card[data-key="${CSS.escape(mem.key)}"]`);
+  if (card) card.classList.add('selected');
+
+  document.getElementById('panel-title').textContent = 'Memory Detail';
+  renderDetailForm(mem);
+  openPanel();
+}
+
+function renderDetailForm(mem) {
+  const tags = Array.isArray(mem.tags) ? mem.tags : [];
+
+  document.getElementById('panel-body').innerHTML = `
+    <div class="field-group">
+      <div class="field-label">Key</div>
+      <div class="detail-key-row">
+        <span class="detail-key-text" title="${escAttr(mem.key)}">${esc(mem.key)}</span>
+        <button class="copy-btn" id="copy-key-btn">Copy</button>
+      </div>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Value <span class="opt">(editable — save to update)</span></label>
+      <textarea id="d-value" class="field-textarea large">${esc(mem.value || '')}</textarea>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Type</label>
+      <select id="d-type" class="field-select">${typeOptions(mem.type || 'general')}</select>
+    </div>
+
+    <div class="field-group">
+      <label class="field-label">Tags <span class="opt">(comma-separated)</span></label>
+      <input id="d-tags" class="field-input" type="text" value="${escAttr(tags.join(', '))}" />
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-cell">
+        <div class="meta-cell-label">Created</div>
+        <div class="meta-cell-value">${fmtDateFull(mem.created) || '—'}</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-cell-label">Updated</div>
+        <div class="meta-cell-value">${fmtDateFull(mem.updated) || '—'}</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-cell-label">Namespace</div>
+        <div class="meta-cell-value" style="font-family:var(--mono);font-size:10px;">${esc(currentNs)}</div>
+      </div>
+      <div class="meta-cell">
+        <div class="meta-cell-label">Score</div>
+        <div class="meta-cell-value">${mem.score != null ? Math.round(mem.score * 100) + '%' : '—'}</div>
+      </div>
+    </div>
+
+    ${tags.length ? `
+      <div class="field-group">
+        <div class="field-label">Tags</div>
+        <div class="tags-row">${tags.map(t => `<span class="tag-chip">${esc(t)}</span>`).join('')}</div>
+      </div>
+    ` : ''}
+  `;
+
+  document.getElementById('panel-footer').innerHTML = `
+    <button class="btn btn-danger" id="pf-delete">Delete</button>
+    <button class="btn btn-primary btn-expand" id="pf-save">Save Changes</button>
+  `;
+
+  document.getElementById('copy-key-btn').onclick = () => copyText(mem.key, document.getElementById('copy-key-btn'));
+  document.getElementById('pf-delete').onclick    = () => confirmDelete(mem.key);
+  document.getElementById('pf-save').onclick      = () => saveDetail(mem.key);
+}
+
+async function saveDetail(key) {
+  const value = document.getElementById('d-value').value.trim();
+  const type  = document.getElementById('d-type').value;
+  const tags  = document.getElementById('d-tags').value
+    .split(',').map(t => t.trim()).filter(Boolean);
+
+  if (!value) { toast('Value cannot be empty', 'error'); return; }
+
+  const btn = document.getElementById('pf-save');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Saving…';
+
+  try {
+    await api('/v1/memory-set', { key, value, namespace: currentNs, tags, type });
+    toast('Memory updated', 'success');
+    closePanel();
+    await fetchMemories();
+  } catch (err) {
+    toast('Save failed: ' + err.message, 'error');
+    btn.disabled = false;
+    btn.innerHTML = 'Save Changes';
+  }
+}
+
+// ─────────────────────────────────────────────
+//  DELETE
+// ─────────────────────────────────────────────
+function confirmDelete(key) {
+  if (!confirm(`Delete memory:\n"${key}"\n\nThis cannot be undone.`)) return;
+  deleteMemory(key);
+}
+
+async function deleteMemory(key) {
+  try {
+    const res = await api('/v1/memory-delete', { key, namespace: currentNs });
+    const deleted = unwrap(res, 'deleted');
+    if (deleted === true || deleted === 'true' || res.ok !== false) {
+      toast('Memory deleted', 'success');
+      if (selectedKey === key) closePanel();
+      await fetchMemories();
+    } else {
+      throw new Error('Server did not confirm delete');
+    }
+  } catch (err) {
+    toast('Delete failed: ' + err.message, 'error');
+  }
+}
+
+// ─────────────────────────────────────────────
+//  TOASTS
+// ─────────────────────────────────────────────
+function toast(msg, type = 'info') {
+  const container = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.innerHTML = `<span class="toast-dot"></span><span>${esc(msg)}</span>`;
+  container.appendChild(el);
+  setTimeout(() => {
+    el.style.animation = 'toastOut 0.2s ease forwards';
+    setTimeout(() => el.remove(), 210);
+  }, 3200);
+}
+
+// ─────────────────────────────────────────────
+//  UTILS
+// ─────────────────────────────────────────────
+function esc(s) {
+  return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return String(s ?? '').replace(/'/g,'&#39;').replace(/"/g,'&quot;');
+}
+
+function fmtDate(ts) {
+  if (!ts) return '';
+  const d = new Date(typeof ts === 'number' && ts < 1e12 ? ts * 1000 : ts);
+  if (isNaN(d)) return String(ts);
+  const diff = (Date.now() - d) / 1000;
+  if (diff < 60)     return 'just now';
+  if (diff < 3600)   return `${Math.floor(diff / 60)}m ago`;
+  if (diff < 86400)  return `${Math.floor(diff / 3600)}h ago`;
+  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function fmtDateFull(ts) {
+  if (!ts) return '';
+  const d = new Date(typeof ts === 'number' && ts < 1e12 ? ts * 1000 : ts);
+  if (isNaN(d)) return String(ts);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function copyText(text, btn) {
+  navigator.clipboard.writeText(text).then(() => {
+    const orig = btn.textContent;
+    btn.textContent = 'Copied!';
+    btn.style.color = 'var(--success)';
+    setTimeout(() => { btn.textContent = orig; btn.style.color = ''; }, 1600);
+  }).catch(() => toast('Copy failed', 'error'));
+}
+
+// ─────────────────────────────────────────────
+//  EVENT WIRING
+// ─────────────────────────────────────────────
+document.getElementById('panel-close').onclick   = closePanel;
+document.getElementById('new-memory-btn').onclick = openNew;
+document.getElementById('empty-cta').onclick      = openNew;
+document.getElementById('add-namespace-btn').onclick = openNsModal;
+document.getElementById('ns-cancel-btn').onclick  = closeNsModal;
+document.getElementById('ns-create-btn').onclick  = createNamespace;
+document.getElementById('search-shortcut').onclick = () => {
+  const inp = document.getElementById('search-input');
+  inp.focus(); inp.select();
+};
+
+// Global namespace selector in nav
+document.getElementById('ns-global-select').onchange = function() {
+  switchNs(this.value);
+};
+
+// Modal backdrop click
+document.getElementById('modal-backdrop').onclick = e => {
+  if (e.target === document.getElementById('modal-backdrop')) closeNsModal();
+};
+
+// Modal enter/esc
+document.getElementById('ns-modal-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter')  createNamespace();
+  if (e.key === 'Escape') closeNsModal();
+});
+
+// Search
+const searchInput = document.getElementById('search-input');
+const searchClear = document.getElementById('search-clear-btn');
+
+searchInput.addEventListener('input', e => {
+  const val = e.target.value;
+  searchClear.style.display = val ? 'block' : 'none';
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(() => doSearch(val), 400);
+});
+searchInput.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    searchInput.value = '';
+    searchClear.style.display = 'none';
+    doSearch('');
+  }
+});
+searchClear.onclick = () => {
+  searchInput.value = '';
+  searchClear.style.display = 'none';
+  doSearch('');
+  searchInput.focus();
+};
+
+// Cmd+K / Ctrl+K
+document.addEventListener('keydown', e => {
+  if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+    e.preventDefault();
+    const inp = document.getElementById('search-input');
+    inp.focus(); inp.select();
+  }
+  if (e.key === 'Escape' && panelMode) closePanel();
+});
+
+// ─────────────────────────────────────────────
+//  BOOT
+// ─────────────────────────────────────────────
+init();
 </script>
 </body>
 </html>

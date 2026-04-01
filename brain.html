@@ -3,37 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Slopshop — Dashboard</title>
+  <title>slopshop — Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg:            #050505;
-      --surface:       #0c0c0c;
-      --surface-2:     #141414;
-      --surface-3:     #1a1a1a;
-      --border:        #1c1c1c;
-      --border-hover:  #2e2e2e;
-      --text:          #ffffff;
-      --text-2:        #9a9a9a;
-      --text-3:        #5a5a5a;
-      --accent:        #00D4FF;
-      --accent-bg:     rgba(0,212,255,0.06);
-      --accent-border: rgba(0,212,255,0.2);
-      --green:         #10b981;
-      --green-bg:      rgba(16,185,129,0.08);
-      --font:          'Inter', -apple-system, sans-serif;
-      --radius:        14px;
-      --radius-sm:     8px;
-    }
-
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html { font-size: 16px; -webkit-font-smoothing: antialiased; }
+
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: var(--font);
+      background: #09090b;
+      color: #ffffff;
+      font-family: 'Inter', -apple-system, sans-serif;
       min-height: 100vh;
       line-height: 1.5;
     }
@@ -42,112 +23,149 @@
     .nav {
       position: fixed;
       top: 0; left: 0; right: 0;
-      height: 56px;
-      background: rgba(5,5,5,0.92);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border-bottom: 1px solid var(--border);
+      height: 58px;
+      background: rgba(9,9,11,0.90);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 24px;
+      padding: 0 28px;
       z-index: 100;
     }
 
     .nav-logo {
       font-size: 1rem;
       font-weight: 700;
-      color: var(--text);
+      color: #ffffff;
       text-decoration: none;
-      letter-spacing: -0.02em;
+      letter-spacing: -0.03em;
     }
 
-    .nav-links {
+    .nav-center {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 2px;
     }
 
-    .nav-links a {
-      color: var(--text-2);
+    .nav-center a {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: rgba(255,255,255,0.45);
       text-decoration: none;
       font-size: 0.875rem;
       font-weight: 500;
-      padding: 6px 12px;
+      padding: 6px 13px;
       border-radius: 8px;
       transition: color 0.15s, background 0.15s;
     }
-    .nav-links a:hover { color: var(--text); background: var(--surface-3); }
-    .nav-links a.active { color: var(--text); }
+    .nav-center a:hover { color: #ffffff; background: rgba(255,255,255,0.06); }
+    .nav-center a.active { color: #ffffff; background: rgba(255,255,255,0.07); }
+    .nav-center a .nav-icon { font-size: 0.9rem; }
 
     .nav-right {
       display: flex;
       align-items: center;
-      gap: 12px;
-      position: relative;
+      gap: 14px;
     }
 
-    .user-info {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .user-email {
+    .nav-email {
       font-size: 0.8125rem;
+      color: rgba(255,255,255,0.38);
       font-weight: 400;
-      color: var(--text-2);
     }
 
-    .signout-btn {
+    .btn-signout {
       padding: 6px 14px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 7px;
       background: none;
-      color: var(--text-2);
+      color: rgba(255,255,255,0.45);
       font-size: 0.8125rem;
       font-weight: 500;
       cursor: pointer;
-      font-family: var(--font);
+      font-family: 'Inter', sans-serif;
       transition: border-color 0.15s, color 0.15s;
     }
-    .signout-btn:hover { border-color: var(--border-hover); color: var(--text); }
+    .btn-signout:hover { border-color: rgba(255,255,255,0.22); color: #ffffff; }
 
-    /* ── MAIN ── */
+    /* ── LAYOUT ── */
     .main {
-      max-width: 900px;
+      max-width: 960px;
       margin: 0 auto;
-      padding: 80px 24px 80px;
+      padding: 96px 28px 80px;
     }
 
-    /* ── GREETING ── */
-    .greeting-row {
-      display: flex;
-      align-items: baseline;
-      justify-content: space-between;
-      margin-bottom: 6px;
+    /* ── HERO ── */
+    .hero {
+      margin-bottom: 48px;
     }
 
-    .greeting-text {
-      font-size: 1.5rem;
+    .hero-greeting {
+      font-size: 2.5rem;
       font-weight: 300;
-      color: var(--text);
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      line-height: 1.15;
+      margin-bottom: 8px;
+    }
+
+    .hero-sub {
+      font-size: 1rem;
+      font-weight: 400;
+      color: rgba(255,255,255,0.38);
       letter-spacing: -0.01em;
     }
 
-    .greeting-email {
-      font-size: 0.875rem;
-      color: var(--text-3);
-      font-weight: 400;
+    /* ── STATS ROW ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 40px;
     }
 
-    .section-divider {
-      border: none;
-      border-bottom: 1px solid var(--border);
-      margin: 20px 0 32px;
+    .stat-card {
+      background: #111113;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 20px 22px;
     }
 
-    /* ── SECTION HEADER ── */
+    .stat-label {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .stat-value {
+      font-size: 1.75rem;
+      font-weight: 300;
+      color: #ffffff;
+      letter-spacing: -0.03em;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+
+    .tier-badge {
+      display: inline-block;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+    .tier-free   { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.5); }
+    .tier-pro    { background: rgba(0,212,255,0.12); color: #00D4FF; border: 1px solid rgba(0,212,255,0.25); }
+    .tier-kraken { background: rgba(251,191,36,0.12); color: #FBBF24; border: 1px solid rgba(251,191,36,0.3); }
+
+    /* ── SECTION ── */
     .section-header {
       display: flex;
       align-items: center;
@@ -156,199 +174,208 @@
     }
 
     .section-title {
-      font-size: 0.8125rem;
+      font-size: 0.75rem;
       font-weight: 500;
-      color: var(--text-3);
+      color: rgba(255,255,255,0.3);
       text-transform: uppercase;
-      letter-spacing: 0.08em;
+      letter-spacing: 0.09em;
     }
 
     .section-link {
       font-size: 0.8125rem;
-      color: var(--accent);
+      color: #00D4FF;
       text-decoration: none;
       font-weight: 400;
       transition: opacity 0.15s;
     }
-    .section-link:hover { opacity: 0.75; }
+    .section-link:hover { opacity: 0.7; }
 
     /* ── PRODUCT TILES ── */
     .product-tiles {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 12px;
-      margin-bottom: 32px;
+      margin-bottom: 44px;
     }
 
     .product-tile {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 28px 24px;
+      background: #111113;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 26px 24px 22px;
       text-decoration: none;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      transition: border-color 0.15s, transform 0.15s;
+      gap: 0;
+      transition: border-color 0.18s, transform 0.18s, box-shadow 0.18s;
+      cursor: pointer;
     }
     .product-tile:hover {
-      border-color: var(--border-hover);
-      transform: translateY(-2px);
+      border-color: rgba(0,212,255,0.2);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.35);
     }
 
-    .tile-label {
-      font-size: 0.7rem;
-      font-weight: 500;
-      color: var(--text-3);
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
+    .tile-icon {
+      font-size: 1.5rem;
+      margin-bottom: 14px;
+      display: block;
     }
 
-    .tile-name {
-      font-size: 1.0625rem;
+    .tile-title {
+      font-size: 1rem;
       font-weight: 600;
-      color: var(--text);
-      letter-spacing: -0.01em;
-    }
-
-    .tile-stat {
-      font-size: 1.75rem;
-      font-weight: 300;
-      color: var(--text);
+      color: #ffffff;
       letter-spacing: -0.02em;
-      line-height: 1;
+      margin-bottom: 6px;
     }
 
-    .tile-stat-label {
+    .tile-desc {
       font-size: 0.8125rem;
-      color: var(--text-3);
+      color: rgba(255,255,255,0.4);
+      line-height: 1.55;
+      margin-bottom: 18px;
+      flex: 1;
+    }
+
+    .tile-stat-line {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.25);
+      margin-bottom: 14px;
       font-weight: 400;
     }
 
-    .tile-arrow {
-      font-size: 0.75rem;
-      color: var(--accent);
-      margin-top: auto;
+    .tile-cta {
+      font-size: 0.8125rem;
       font-weight: 500;
+      color: #00D4FF;
+      display: block;
     }
 
-    /* ── QUICK ACTIONS ── */
-    .quick-actions {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 36px;
-      flex-wrap: wrap;
-    }
-
-    .action-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 10px 18px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: none;
-      color: var(--text-2);
-      font-size: 0.875rem;
-      font-weight: 500;
-      cursor: pointer;
-      text-decoration: none;
-      font-family: var(--font);
-      transition: border-color 0.15s, color 0.15s, background 0.15s;
-    }
-    .action-btn:hover {
-      border-color: var(--accent-border);
-      color: var(--text);
-      background: var(--accent-bg);
-    }
-
-    .action-btn.primary {
-      background: var(--accent);
-      border-color: transparent;
-      color: #000;
-      font-weight: 600;
-    }
-    .action-btn.primary:hover { opacity: 0.88; background: var(--accent); }
-
-    /* ── ACTIVITY FEED ── */
-    .activity-feed {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
+    /* ── MEMORIES LIST ── */
+    .memories-card {
+      background: #111113;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
       overflow: hidden;
-      margin-bottom: 32px;
+      margin-bottom: 40px;
     }
 
-    .activity-item {
+    .memory-row {
       display: flex;
       align-items: flex-start;
-      gap: 14px;
-      padding: 16px 20px;
-      border-bottom: 1px solid var(--border);
-      transition: background 0.1s;
+      gap: 16px;
+      padding: 15px 20px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      transition: background 0.12s;
     }
-    .activity-item:last-child { border-bottom: none; }
-    .activity-item:hover { background: var(--surface-2); }
+    .memory-row:last-child { border-bottom: none; }
+    .memory-row:hover { background: rgba(255,255,255,0.025); }
 
-    .activity-dot {
-      width: 6px;
-      height: 6px;
+    .memory-dot {
+      width: 5px;
+      height: 5px;
       border-radius: 50%;
-      background: var(--border-hover);
-      margin-top: 6px;
+      background: #00D4FF;
+      margin-top: 7px;
       flex-shrink: 0;
+      opacity: 0.6;
     }
-    .activity-dot.memory { background: var(--accent); }
-    .activity-dot.dream  { background: #a78bfa; }
-    .activity-dot.hive   { background: var(--green); }
 
-    .activity-body { flex: 1; min-width: 0; }
+    .memory-body { flex: 1; min-width: 0; }
 
-    .activity-text {
-      font-size: 0.875rem;
-      color: var(--text-2);
-      line-height: 1.5;
+    .memory-key {
+      font-size: 0.8125rem;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+      color: rgba(255,255,255,0.7);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-bottom: 2px;
+    }
+
+    .memory-value {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.35);
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
 
-    .activity-meta {
+    .memory-date {
       font-size: 0.75rem;
-      color: var(--text-3);
-      margin-top: 2px;
+      color: rgba(255,255,255,0.2);
+      white-space: nowrap;
+      flex-shrink: 0;
+      align-self: center;
     }
 
-    .activity-empty {
-      padding: 40px 20px;
+    .memories-empty {
+      padding: 52px 24px;
       text-align: center;
-      font-size: 0.875rem;
-      color: var(--text-3);
     }
 
-    /* ── API KEY ── */
+    .memories-empty p {
+      font-size: 0.9rem;
+      color: rgba(255,255,255,0.28);
+      margin-bottom: 18px;
+    }
+
+    .btn-outline {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 9px 18px;
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: 8px;
+      background: none;
+      color: rgba(255,255,255,0.55);
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      text-decoration: none;
+      font-family: 'Inter', sans-serif;
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .btn-outline:hover { border-color: rgba(0,212,255,0.3); color: #00D4FF; }
+
+    /* ── API KEY CARD ── */
     .apikey-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      padding: 24px;
-      margin-bottom: 32px;
+      background: #111113;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 14px;
+      padding: 26px 24px;
+      margin-bottom: 40px;
+    }
+
+    .apikey-card-title {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: #ffffff;
+      letter-spacing: -0.02em;
+      margin-bottom: 5px;
+    }
+
+    .apikey-card-sub {
+      font-size: 0.8125rem;
+      color: rgba(255,255,255,0.38);
+      margin-bottom: 18px;
     }
 
     .apikey-row {
       display: flex;
       align-items: center;
       gap: 10px;
-      margin-top: 14px;
+      margin-bottom: 14px;
     }
 
     .apikey-input {
       flex: 1;
-      background: var(--surface-2);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 8px;
       padding: 10px 14px;
-      color: var(--text-2);
+      color: rgba(255,255,255,0.6);
       font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 0.8125rem;
       letter-spacing: 0.02em;
@@ -357,74 +384,87 @@
       user-select: all;
     }
 
-    .copy-btn {
-      padding: 10px 16px;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
+    .icon-btn {
+      padding: 10px 15px;
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 8px;
       background: none;
-      color: var(--text-2);
+      color: rgba(255,255,255,0.45);
       font-size: 0.8125rem;
       font-weight: 500;
       cursor: pointer;
-      font-family: var(--font);
+      font-family: 'Inter', sans-serif;
       white-space: nowrap;
       transition: border-color 0.15s, color 0.15s;
     }
-    .copy-btn:hover { border-color: var(--border-hover); color: var(--text); }
-    .copy-btn.copied { color: var(--green); border-color: rgba(16,185,129,0.3); }
+    .icon-btn:hover { border-color: rgba(255,255,255,0.2); color: #ffffff; }
+    .icon-btn.copied { color: #10b981; border-color: rgba(16,185,129,0.3); }
 
-    .apikey-hint {
+    .cli-snippet {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-family: 'SF Mono', 'Fira Code', 'Consolas', monospace;
       font-size: 0.8125rem;
-      color: var(--text-3);
-      margin-top: 10px;
-      line-height: 1.5;
+      color: rgba(255,255,255,0.45);
+      margin-bottom: 14px;
+    }
+
+    .cli-snippet span { color: #00D4FF; }
+
+    .apikey-links {
+      display: flex;
+      align-items: center;
+      gap: 18px;
     }
 
     /* ── SKELETON ── */
     @keyframes shimmer {
-      0%   { background-position: -400px 0; }
-      100% { background-position:  400px 0; }
+      0%   { background-position: -600px 0; }
+      100% { background-position:  600px 0; }
     }
     .skeleton {
-      background: linear-gradient(90deg, #111 25%, #1c1c1c 50%, #111 75%);
-      background-size: 800px 100%;
-      animation: shimmer 1.4s infinite linear;
+      background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.07) 50%, rgba(255,255,255,0.04) 75%);
+      background-size: 1200px 100%;
+      animation: shimmer 1.5s infinite linear;
       border-radius: 6px;
     }
-    .sk-num   { width: 80px;  height: 40px; border-radius: 6px; }
-    .sk-label { width: 100px; height: 16px; margin-top: 8px; }
-    .sk-text  { width: 100%;  height: 18px; }
-    .sk-row   { height: 52px; border-radius: 6px; margin-bottom: 8px; }
-    .sk-key   { flex: 1; height: 40px; border-radius: 6px; }
+    .sk-stat  { height: 42px; width: 90px; border-radius: 6px; }
+    .sk-label { height: 13px; width: 110px; margin-top: 7px; border-radius: 4px; }
+    .sk-text  { height: 15px; width: 100%; border-radius: 4px; margin-bottom: 6px; }
+    .sk-row   { height: 50px; border-radius: 6px; margin-bottom: 8px; }
+    .sk-key   { flex: 1; height: 40px; border-radius: 8px; }
 
     /* ── FOOTER ── */
     .page-footer {
-      border-top: 1px solid var(--border);
-      padding: 24px 0;
+      border-top: 1px solid rgba(255,255,255,0.05);
+      padding: 26px 0 0;
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 24px;
       flex-wrap: wrap;
     }
     .page-footer a {
       font-size: 0.8125rem;
-      color: var(--text-3);
+      color: rgba(255,255,255,0.22);
       text-decoration: none;
       transition: color 0.15s;
     }
-    .page-footer a:hover { color: var(--text-2); }
+    .page-footer a:hover { color: rgba(255,255,255,0.5); }
 
     /* ── RESPONSIVE ── */
     @media (max-width: 768px) {
-      .nav-links { display: none; }
+      .nav-center { display: none; }
+      .stats-row { grid-template-columns: 1fr 1fr; }
       .product-tiles { grid-template-columns: 1fr; }
-      .greeting-row { flex-direction: column; gap: 4px; }
+      .hero-greeting { font-size: 1.875rem; }
     }
 
-    @media (max-width: 480px) {
-      .main { padding: 72px 16px 60px; }
-      .user-email { display: none; }
+    @media (max-width: 520px) {
+      .main { padding: 76px 16px 60px; }
+      .nav-email { display: none; }
+      .stats-row { grid-template-columns: 1fr; }
     }
   </style>
 </head>
@@ -432,93 +472,101 @@
 
   <!-- NAV -->
   <nav class="nav">
-    <a class="nav-logo" href="/brain.html">Slopshop</a>
+    <a class="nav-logo" href="/brain">slopshop</a>
 
-    <div class="nav-links">
-      <a href="/brain.html" class="active">Dashboard</a>
-      <a href="/dream-studio">Dream Studio</a>
-      <a href="/memory-explorer">Memory</a>
-      <a href="/team-hives">Hive</a>
+    <div class="nav-center">
+      <a href="/memory-hub">
+        <span class="nav-icon">🧠</span> Memory
+      </a>
+      <a href="/dream-studio">
+        <span class="nav-icon">✨</span> Dreams
+      </a>
+      <a href="/team-hives">
+        <span class="nav-icon">🐝</span> Hive
+      </a>
+      <a href="/profile">
+        <span class="nav-icon">👤</span> Profile
+      </a>
     </div>
 
     <div class="nav-right">
-      <div class="user-info">
-        <span class="user-email" id="userEmail">Loading…</span>
-      </div>
-      <button class="signout-btn" id="signOutBtn">Sign out</button>
+      <span class="nav-email" id="navEmail"></span>
+      <button class="btn-signout" id="signOutBtn">Sign out</button>
     </div>
   </nav>
 
   <!-- MAIN -->
   <main class="main">
 
-    <!-- Greeting -->
-    <div class="greeting-row">
-      <p class="greeting-text">Good <span id="timeOfDay">morning</span>, <span id="greetingName">…</span></p>
-      <span id="greetingDate" style="font-size:0.875rem;color:var(--text-3);font-weight:400;"></span>
+    <!-- Hero -->
+    <div class="hero">
+      <h1 class="hero-greeting">Good <span id="timeOfDay">morning</span>, <span id="greetingName">…</span></h1>
+      <p class="hero-sub">Here's what your AI remembers.</p>
     </div>
-    <hr class="section-divider">
+
+    <!-- Stats Row -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Memories Stored</div>
+        <div class="stat-value" id="statMemories">
+          <span class="skeleton sk-stat" style="display:inline-block;"></span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Credits</div>
+        <div class="stat-value" id="statCredits">
+          <span class="skeleton sk-stat" style="display:inline-block;"></span>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Tier</div>
+        <div class="stat-value" id="statTier" style="font-size:1rem;padding-top:6px;">
+          <span class="skeleton sk-stat" style="display:inline-block;height:26px;width:70px;"></span>
+        </div>
+      </div>
+    </div>
 
     <!-- Product Tiles -->
     <div class="section-header">
-      <span class="section-title">Your Products</span>
+      <span class="section-title">Products</span>
     </div>
 
     <div class="product-tiles">
 
-      <a class="product-tile" href="/memory-explorer">
-        <span class="tile-label">Memory API</span>
-        <span class="tile-name">Memory</span>
-        <div id="memStat">
-          <div class="skeleton sk-num"></div>
-          <div class="skeleton sk-label"></div>
-        </div>
-        <span class="tile-arrow">Open Memory &rarr;</span>
+      <a class="product-tile" href="/memory-hub">
+        <span class="tile-icon">🧠</span>
+        <span class="tile-title">Memory</span>
+        <p class="tile-desc">Store, search, and retrieve everything your AI knows</p>
+        <p class="tile-stat-line" id="tileMemStat">Loading…</p>
+        <span class="tile-cta">Open Memory &rarr;</span>
       </a>
 
       <a class="product-tile" href="/dream-studio">
-        <span class="tile-label">Dream Engine</span>
-        <span class="tile-name">Dreams</span>
-        <div id="dreamStat">
-          <div class="skeleton sk-num"></div>
-          <div class="skeleton sk-label"></div>
-        </div>
-        <span class="tile-arrow">Open Dream Studio &rarr;</span>
+        <span class="tile-icon">✨</span>
+        <span class="tile-title">Dream Engine</span>
+        <p class="tile-desc">Synthesize knowledge overnight with 9 cognitive strategies</p>
+        <p class="tile-stat-line" id="tileDreamStat">Run a dream to get started</p>
+        <span class="tile-cta">Open Dream Studio &rarr;</span>
       </a>
 
       <a class="product-tile" href="/team-hives">
-        <span class="tile-label">Hive</span>
-        <span class="tile-name">Multiplayer Memory</span>
-        <div id="hiveStat">
-          <div class="skeleton sk-num"></div>
-          <div class="skeleton sk-label"></div>
-        </div>
-        <span class="tile-arrow">Open Hive &rarr;</span>
+        <span class="tile-icon">🐝</span>
+        <span class="tile-title">Hive</span>
+        <p class="tile-desc">Share memory spaces with your team</p>
+        <p class="tile-stat-line" id="tileHiveStat">Loading…</p>
+        <span class="tile-cta">Open Hive &rarr;</span>
       </a>
 
     </div>
 
-    <!-- Quick Actions -->
+    <!-- Recent Memories -->
     <div class="section-header">
-      <span class="section-title">Quick Actions</span>
+      <span class="section-title">Recent Memories</span>
+      <a class="section-link" href="/memory-hub">View all &rarr;</a>
     </div>
 
-    <div class="quick-actions">
-      <a class="action-btn primary" href="/memory-explorer">Store a memory</a>
-      <a class="action-btn" href="/dream-studio">Run a Dream</a>
-      <a class="action-btn" href="/team-hives">Create a Hive</a>
-      <a class="action-btn" href="/dev-console.html">Developer Console</a>
-    </div>
-
-    <!-- Recent Activity -->
-    <div class="section-header">
-      <span class="section-title">Recent Activity</span>
-      <a class="section-link" href="/memory-explorer">View all &rarr;</a>
-    </div>
-
-    <div class="activity-feed" id="activityFeed">
-      <div style="padding:20px;">
-        <div class="skeleton sk-row"></div>
+    <div class="memories-card" id="memoriesCard">
+      <div style="padding: 16px 20px;">
         <div class="skeleton sk-row"></div>
         <div class="skeleton sk-row"></div>
         <div class="skeleton sk-row" style="margin-bottom:0;"></div>
@@ -527,32 +575,47 @@
 
     <!-- API Key -->
     <div class="section-header">
-      <span class="section-title">API Key</span>
-      <a class="section-link" href="/dev-console.html">Developer Console &rarr;</a>
+      <span class="section-title">Developer Access</span>
+      <a class="section-link" href="/dev-console">Open Developer Console &rarr;</a>
     </div>
 
     <div class="apikey-card">
-      <p style="font-size:0.875rem;color:var(--text-2);font-weight:400;line-height:1.5;">Use this key to authenticate API requests from your agent or application.</p>
+      <p class="apikey-card-title">API Key</p>
+      <p class="apikey-card-sub">Use this key to authenticate from any environment.</p>
+
       <div class="apikey-row">
         <input class="apikey-input" id="apiKeyInput" type="password" readonly value="Loading…">
-        <button class="copy-btn" id="copyKeyBtn">Copy</button>
-        <button class="copy-btn" id="toggleKeyBtn">Show</button>
+        <button class="icon-btn" id="copyKeyBtn">Copy</button>
+        <button class="icon-btn" id="toggleKeyBtn">Show</button>
       </div>
-      <p class="apikey-hint">Pass as <code style="font-family:monospace;color:var(--accent);">Authorization: Bearer &lt;key&gt;</code> or as the <code style="font-family:monospace;color:var(--accent);">x-api-key</code> header.</p>
+
+      <div class="cli-snippet">
+        <span>slopshop</span> --key YOUR_KEY
+      </div>
+
+      <div class="apikey-links">
+        <a class="section-link" href="/dev-console">Developer Console &rarr;</a>
+        <a class="section-link" href="/profile">Manage Key &rarr;</a>
+      </div>
     </div>
 
     <!-- Footer -->
     <footer class="page-footer">
       <a href="/privacy">Privacy</a>
       <a href="/terms">Terms</a>
-      <a href="/dev-console.html">Developer Console</a>
       <a href="/docs">Docs</a>
+      <a href="/pricing">Pricing</a>
+      <a href="/profile">Profile &amp; Settings</a>
     </footer>
 
   </main>
 
   <script>
-    // ── HELPERS ──────────────────────────────────────────────────────────────
+    // ── STATE ─────────────────────────────────────────────────────────────────
+    let currentKey = null;
+    let userEmail = null;
+
+    // ── HELPERS ───────────────────────────────────────────────────────────────
 
     function getTimeOfDay() {
       const h = new Date().getHours();
@@ -561,115 +624,167 @@
       return 'evening';
     }
 
-    function formatDate(d) {
-      return d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+    function firstName(email) {
+      if (!email) return 'there';
+      return email.split('@')[0].split('.')[0].split('_')[0];
     }
 
-    function formatRelativeTime(ts) {
+    function fmtNumber(n) {
+      if (n === null || n === undefined) return '—';
+      return Number(n).toLocaleString();
+    }
+
+    function fmtDate(ts) {
       if (!ts) return '';
-      const diff = Date.now() - new Date(ts).getTime();
+      const d = new Date(ts);
+      const now = new Date();
+      const diff = now - d;
       const m = Math.round(diff / 60000);
       const h = Math.round(diff / 3600000);
       const day = Math.round(diff / 86400000);
-      if (m < 2)  return 'Just now';
+      if (m < 2) return 'just now';
       if (m < 60) return `${m}m ago`;
       if (h < 24) return `${h}h ago`;
-      if (day === 1) return 'Yesterday';
-      if (day < 7)   return `${day}d ago`;
-      return new Date(ts).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (day === 1) return 'yesterday';
+      if (day < 7) return `${day}d ago`;
+      return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
 
-    function truncate(str, len) {
-      if (!str) return '';
-      return str.length > len ? str.slice(0, len).trimEnd() + '\u2026' : str;
+    function truncate(s, n) {
+      if (!s) return '';
+      return s.length > n ? s.slice(0, n).trimEnd() + '\u2026' : s;
     }
 
-    // ── SIGN OUT ─────────────────────────────────────────────────────────────
+    function esc(s) {
+      if (!s) return '';
+      return String(s)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    // ── SIGN OUT ──────────────────────────────────────────────────────────────
 
     async function signOut() {
       try {
-        await fetch('/v1/auth/logout', { method: 'POST', credentials: 'include' });
+        await fetch('/v1/auth/logout', {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({})
+        });
       } catch (_) {}
-      window.location.replace('/consumer.html');
+      window.location.replace('/');
     }
 
-    document.getElementById('signOutBtn')?.addEventListener('click', signOut);
+    document.getElementById('signOutBtn').addEventListener('click', signOut);
 
-    // ── POPULATE GREETING ────────────────────────────────────────────────────
+    // ── GREET ─────────────────────────────────────────────────────────────────
 
-    function populateGreeting(me) {
-      const name = me?.name || me?.display_name || me?.email?.split('@')[0] || 'there';
-      const email = me?.email || '';
+    function setGreeting(email) {
       document.getElementById('timeOfDay').textContent = getTimeOfDay();
-      document.getElementById('greetingName').textContent = name.split(' ')[0];
-      document.getElementById('greetingDate').textContent = formatDate(new Date());
-      document.getElementById('userEmail').textContent = email;
+      document.getElementById('greetingName').textContent = firstName(email);
+      if (email) {
+        document.getElementById('navEmail').textContent = email;
+        userEmail = email;
+      }
     }
 
-    // ── POPULATE TILES ───────────────────────────────────────────────────────
+    // ── STATS ─────────────────────────────────────────────────────────────────
 
-    function populateTiles(status, memList) {
-      // Memory tile
-      const memEl = document.getElementById('memStat');
-      const memCount = memList?.memories?.length ?? memList?.total ?? status?.memory_nodes ?? 0;
-      memEl.innerHTML = `
-        <div class="tile-stat">${memCount.toLocaleString()}</div>
-        <div class="tile-stat-label">memories stored</div>
-      `;
+    function setStats(memTotal, me) {
+      document.getElementById('statMemories').textContent = fmtNumber(memTotal);
 
-      // Dream tile
-      const dreamEl = document.getElementById('dreamStat');
-      const dreamCount = status?.dream_sessions ?? 0;
-      dreamEl.innerHTML = `
-        <div class="tile-stat">${dreamCount.toLocaleString()}</div>
-        <div class="tile-stat-label">${dreamCount === 1 ? 'dream run' : 'dream runs'}</div>
-      `;
+      const balance = me?.balance ?? me?.credits ?? me?.credit_balance ?? null;
+      document.getElementById('statCredits').textContent = balance !== null ? fmtNumber(balance) : '—';
 
-      // Hive tile — try to show something useful, or prompt to create
-      const hiveEl = document.getElementById('hiveStat');
-      hiveEl.innerHTML = `
-        <div class="tile-stat" style="font-size:1.25rem;color:var(--text-3);">No hive yet</div>
-        <div class="tile-stat-label">Create one to share memory</div>
-      `;
+      const tier = (me?.tier || me?.plan || 'free').toLowerCase();
+      const tierClass = tier === 'kraken' ? 'tier-kraken' : tier === 'pro' ? 'tier-pro' : 'tier-free';
+      document.getElementById('statTier').innerHTML =
+        `<span class="tier-badge ${tierClass}">${esc(tier)}</span>`;
     }
 
-    // ── POPULATE ACTIVITY ────────────────────────────────────────────────────
+    // ── TILES ─────────────────────────────────────────────────────────────────
 
-    function populateActivity(memories) {
-      const feed = document.getElementById('activityFeed');
-      const items = memories?.memories || memories?.items || (Array.isArray(memories) ? memories : []);
+    function setTileStats(memTotal, hiveSpaces) {
+      const memStat = document.getElementById('tileMemStat');
+      memStat.textContent = memTotal !== null
+        ? `${fmtNumber(memTotal)} ${memTotal === 1 ? 'memory' : 'memories'} stored`
+        : 'No memories yet';
 
-      if (!items || items.length === 0) {
-        feed.innerHTML = `<div class="activity-empty">No memories yet. Store your first memory to see activity here.</div>`;
+      const hiveStat = document.getElementById('tileHiveStat');
+      if (hiveSpaces !== null) {
+        hiveStat.textContent = `${fmtNumber(hiveSpaces)} shared ${hiveSpaces === 1 ? 'space' : 'spaces'}`;
+      } else {
+        hiveStat.textContent = 'No shared spaces yet';
+      }
+    }
+
+    // ── MEMORIES LIST ─────────────────────────────────────────────────────────
+
+    async function loadRecentMemories(keys) {
+      const card = document.getElementById('memoriesCard');
+
+      if (!keys || keys.length === 0) {
+        card.innerHTML = `
+          <div class="memories-empty">
+            <p>No memories yet. Start storing knowledge.</p>
+            <a class="btn-outline" href="/memory-hub">Go to Memory &rarr;</a>
+          </div>`;
         return;
       }
 
-      feed.innerHTML = items.slice(0, 5).map(m => {
-        const content = m.content ?? m.text ?? m.value ?? '';
-        const ts = m.created_at ?? m.timestamp ?? m.ts ?? null;
-        const type = m.type ?? 'memory';
-        const dotClass = type === 'dream' ? 'dream' : type === 'hive' ? 'hive' : 'memory';
+      // Fetch each memory's value
+      const fetches = keys.slice(0, 5).map(k =>
+        fetch('/v1/memory-get', {
+          method: 'POST',
+          credentials: 'include',
+          headers: {
+            'Authorization': 'Bearer ' + currentKey,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ key: k, namespace: 'default' })
+        })
+        .then(r => r.ok ? r.json() : null)
+        .catch(() => null)
+      );
+
+      const results = await Promise.all(fetches);
+
+      const rowItems = keys.slice(0, 5).map((k, i) => {
+        const data = results[i];
+        if (!data || data?.data?.found === false) return null;
+        const value = data?.data?.value ?? data?.value ?? data?.memory?.value ?? '';
+        const ts = data?.data?.updated ?? data?.data?.created ?? data?.updated_at ?? data?.created_at ?? null;
         return `
-          <div class="activity-item">
-            <span class="activity-dot ${dotClass}"></span>
-            <div class="activity-body">
-              <div class="activity-text">${truncate(content, 100)}</div>
-              ${ts ? `<div class="activity-meta">${formatRelativeTime(ts)}</div>` : ''}
+          <div class="memory-row">
+            <div class="memory-dot"></div>
+            <div class="memory-body">
+              <div class="memory-key">${esc(k)}</div>
+              <div class="memory-value">${esc(truncate(String(value), 90))}</div>
             </div>
-          </div>
-        `;
-      }).join('');
+            ${ts ? `<div class="memory-date">${fmtDate(ts)}</div>` : ''}
+          </div>`;
+      });
+
+      const filteredRows = rowItems.filter(Boolean).join('');
+      card.innerHTML = filteredRows || `
+        <div class="memories-empty">
+          <p>Could not load memories.</p>
+        </div>`;
     }
 
-    // ── API KEY ──────────────────────────────────────────────────────────────
+    // ── API KEY ───────────────────────────────────────────────────────────────
 
-    function populateApiKey(key) {
+    function setupApiKey(key) {
       const input = document.getElementById('apiKeyInput');
       if (!key) {
-        input.value = 'No key found — visit Developer Console';
+        input.value = 'No key — visit Developer Console';
         return;
       }
       input.value = key;
+      currentKey = key;
 
       const copyBtn = document.getElementById('copyKeyBtn');
       const toggleBtn = document.getElementById('toggleKeyBtn');
@@ -699,55 +814,112 @@
       });
     }
 
-    // ── INIT ─────────────────────────────────────────────────────────────────
+    // ── INIT ──────────────────────────────────────────────────────────────────
 
     async function init() {
-      // Set date immediately
+      // Set time of day immediately
       document.getElementById('timeOfDay').textContent = getTimeOfDay();
-      document.getElementById('greetingDate').textContent = formatDate(new Date());
 
       // Auth check
-      let sessionRes;
+      let session;
       try {
-        sessionRes = await fetch('/v1/auth/session', { credentials: 'include' });
+        const r = await fetch('/v1/auth/session', { credentials: 'include' });
+        if (!r.ok) { window.location.replace('/'); return; }
+        session = await r.json();
       } catch (_) {
-        window.location.replace('/consumer.html');
-        return;
-      }
-      if (!sessionRes.ok) {
-        window.location.replace('/consumer.html');
+        window.location.replace('/');
         return;
       }
 
-      const session = await sessionRes.json().catch(() => null);
+      currentKey = session.api_key || null;
+      const email = session.user?.email || session.email || '';
+      setGreeting(email);
+      if (currentKey) setupApiKey(currentKey);
 
-      // Use session data for greeting + API key right away
-      if (session) {
-        populateGreeting(session);
-        if (session.api_key) populateApiKey(session.api_key);
-      }
+      // Parallel data fetch
+      const headers = currentKey
+        ? { 'Authorization': 'Bearer ' + currentKey, 'Content-Type': 'application/json' }
+        : { 'Content-Type': 'application/json' };
 
-      // Fetch remaining data in parallel
-      const [meRes, statusRes, memListRes] = await Promise.all([
-        fetch('/v1/auth/me', { credentials: 'include' }).catch(() => null),
-        fetch('/v1/demo/status', { credentials: 'include' }).catch(() => null),
-        fetch('/v1/memory/list?limit=5', { credentials: 'include' }).catch(() => null),
+      const [meRes, memRes, hiveRes] = await Promise.all([
+        fetch('/v1/auth/me', { credentials: 'include', headers }).catch(() => null),
+        fetch('/v1/memory-list', {
+          method: 'POST',
+          credentials: 'include',
+          headers,
+          body: JSON.stringify({ namespace: 'default', limit: 5 })
+        }).catch(() => null),
+        fetch('/v1/memory/share/list', {
+          credentials: 'include',
+          headers
+        }).catch(() => null)
       ]);
 
-      const me       = (meRes     && meRes.ok)     ? await meRes.json().catch(() => null)     : null;
-      const status   = (statusRes && statusRes.ok) ? await statusRes.json().catch(() => null) : null;
-      const memList  = (memListRes && memListRes.ok) ? await memListRes.json().catch(() => null) : null;
+      const me = meRes?.ok ? await meRes.json().catch(() => null) : null;
+      const memData = memRes?.ok ? await memRes.json().catch(() => null) : null;
+      const hiveData = hiveRes?.ok ? await hiveRes.json().catch(() => null) : null;
 
-      if (me) {
-        populateGreeting(me);
-        if (me.api_key && !session?.api_key) populateApiKey(me.api_key);
+      // Update key from /me if we didn't have one
+      if (me?.api_key && !currentKey) {
+        currentKey = me.api_key;
+        setupApiKey(currentKey);
       }
 
-      populateTiles(status, memList);
-      populateActivity(memList);
+      // Update greeting with better email
+      const finalEmail = me?.user?.email || me?.email || email;
+      if (finalEmail) setGreeting(finalEmail);
+
+      // Memory stats — API returns {ok, data:{keys, count, total, ...}}
+      const memTotal = memData?.data?.total ?? memData?.total ?? memData?.memories?.length ?? null;
+      const memKeys = memData?.data?.keys || memData?.keys || [];
+
+      // Hive spaces
+      const hiveSpaces = hiveData?.spaces?.length ?? hiveData?.data?.length ?? null;
+
+      setStats(memTotal, me);
+      setTileStats(memTotal, hiveSpaces);
+
+      // Load recent memories (need keys → then memory-get each)
+      if (memKeys.length > 0) {
+        await loadRecentMemories(memKeys);
+      } else if (memData?.memories && Array.isArray(memData.memories)) {
+        // Some endpoints return full memory objects directly
+        const card = document.getElementById('memoriesCard');
+        if (memData.memories.length === 0) {
+          card.innerHTML = `
+            <div class="memories-empty">
+              <p>No memories yet. Start storing knowledge.</p>
+              <a class="btn-outline" href="/memory-hub">Go to Memory &rarr;</a>
+            </div>`;
+        } else {
+          card.innerHTML = memData.memories.slice(0, 5).map(m => {
+            const k = m.key || m.id || '';
+            const v = m.value || m.content || m.text || '';
+            const ts = m.updated_at || m.created_at || null;
+            return `
+              <div class="memory-row">
+                <div class="memory-dot"></div>
+                <div class="memory-body">
+                  <div class="memory-key">${esc(k)}</div>
+                  <div class="memory-value">${esc(truncate(String(v), 90))}</div>
+                </div>
+                ${ts ? `<div class="memory-date">${fmtDate(ts)}</div>` : ''}
+              </div>`;
+          }).join('');
+        }
+      } else {
+        const card = document.getElementById('memoriesCard');
+        card.innerHTML = `
+          <div class="memories-empty">
+            <p>No memories yet. Start storing knowledge.</p>
+            <a class="btn-outline" href="/memory-hub">Go to Memory &rarr;</a>
+          </div>`;
+      }
     }
 
-    init().catch(console.error);
+    init().catch(err => {
+      console.error('Dashboard init error:', err);
+    });
   </script>
 </body>
 </html>

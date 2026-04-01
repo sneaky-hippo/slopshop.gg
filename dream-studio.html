@@ -1,966 +1,1374 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Dream Engine Studio — Slopshop</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Dream Engine — slopshop</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#09090b;--s1:#111113;--s2:#18181b;--b:#1e1e22;--b2:#27272a;
-  --t:#fafafa;--t2:#a1a1aa;--t3:#71717a;--t4:#52525b;
-  --r:#06b6d4;--r2:#22d3ee;--rg:rgba(6,182,212,0.06);
-  --o:#a78bfa;--og:rgba(167,139,250,0.08);
-  --g:#34d399;--gg:rgba(52,211,153,0.08);
-  --v:#818cf8;
-  --font-mono:'JetBrains Mono',monospace;
-  --font-sans:'Inter',sans-serif;
-  --nav-h:56px;
-}
-html{scroll-behavior:smooth}
-body{background:var(--bg);color:var(--t);font-family:var(--font-sans);font-size:14px;line-height:1.6;min-height:100vh}
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-/* NAV */
-nav{
-  position:fixed;top:0;left:0;right:0;height:var(--nav-h);z-index:100;
-  background:rgba(9,9,11,0.85);backdrop-filter:blur(16px);
-  border-bottom:1px solid rgba(255,255,255,0.06);
-  display:flex;align-items:center;justify-content:space-between;padding:0 24px;
-}
-.nav-logo{font-family:var(--font-mono);font-weight:600;font-size:15px;color:var(--t);text-decoration:none;display:flex;align-items:center;gap:8px}
-.nav-logo-dot{width:8px;height:8px;border-radius:50%;background:var(--r);box-shadow:0 0 8px var(--r)}
-.nav-links{display:flex;align-items:center;gap:4px}
-.nav-link{color:var(--t2);text-decoration:none;font-size:13px;padding:6px 12px;border-radius:6px;transition:color .15s,background .15s}
-.nav-link:hover{color:var(--t);background:var(--s2)}
-.nav-btn{background:var(--r);color:#000;font-weight:600;font-size:13px;padding:6px 14px;border-radius:6px;text-decoration:none;transition:background .15s}
-.nav-btn:hover{background:var(--r2)}
+  :root {
+    --bg: #09090b;
+    --surface: #111113;
+    --surface2: #18181b;
+    --surface3: #1f1f23;
+    --border: #27272a;
+    --border2: #3f3f46;
+    --accent: #00D4FF;
+    --accent-dim: rgba(0, 212, 255, 0.12);
+    --accent-glow: rgba(0, 212, 255, 0.25);
+    --text: #fafafa;
+    --text-muted: #71717a;
+    --text-dim: #52525b;
+    --yellow: #fbbf24;
+    --yellow-dim: rgba(251, 191, 36, 0.15);
+    --green: #22c55e;
+    --green-dim: rgba(34, 197, 94, 0.15);
+    --red: #ef4444;
+    --red-dim: rgba(239, 68, 68, 0.15);
+    --font: 'Inter', sans-serif;
+    --mono: 'JetBrains Mono', monospace;
+  }
 
-/* MAIN */
-main{padding-top:var(--nav-h)}
+  html, body {
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font);
+    font-size: 14px;
+    line-height: 1.6;
+  }
 
-/* HERO */
-.hero{text-align:center;padding:64px 24px 48px;max-width:720px;margin:0 auto}
-.hero-badge{
-  display:inline-flex;align-items:center;gap:6px;
-  background:var(--rg);border:1px solid rgba(6,182,212,0.2);
-  color:var(--r);font-size:11px;font-family:var(--font-mono);font-weight:500;
-  padding:4px 12px;border-radius:20px;margin-bottom:20px;letter-spacing:.04em;
-}
-.hero h1{font-size:36px;font-weight:700;letter-spacing:-.02em;line-height:1.15;margin-bottom:12px}
-.hero h1 span{color:var(--r)}
-.hero p{color:var(--t2);font-size:15px;max-width:480px;margin:0 auto}
+  /* ── NAV ── */
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(9, 9, 11, 0.88);
+    backdrop-filter: blur(14px);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 28px;
+    height: 56px;
+  }
 
-/* SECTION */
-.section{padding:0 24px 48px;max-width:1200px;margin:0 auto}
-.section-title{font-size:11px;font-family:var(--font-mono);font-weight:500;letter-spacing:.1em;color:var(--t3);text-transform:uppercase;margin-bottom:16px;display:flex;align-items:center;gap:8px}
-.section-title::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.06)}
+  .nav-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-decoration: none;
+    color: var(--text);
+  }
 
-/* PIPELINE STEPPER */
-.pipeline-wrap{display:grid;grid-template-columns:1fr 320px;gap:24px;margin-bottom:48px}
-@media(max-width:900px){.pipeline-wrap{grid-template-columns:1fr}}
-.stages-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
-@media(max-width:600px){.stages-grid{grid-template-columns:repeat(2,1fr)}}
-.stage-card{
-  background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:10px;
-  padding:14px;cursor:pointer;transition:border-color .15s,background .15s,transform .1s;
-  position:relative;overflow:hidden;
-}
-.stage-card:hover{border-color:rgba(6,182,212,0.3);background:var(--s2);transform:translateY(-1px)}
-.stage-card.active{border-color:var(--r);background:var(--rg)}
-.stage-card.active::before{
-  content:'';position:absolute;top:0;left:0;right:0;height:2px;
-  background:linear-gradient(90deg,var(--r),var(--r2));
-}
-.stage-num{font-family:var(--font-mono);font-size:10px;color:var(--t4);margin-bottom:6px;font-weight:500}
-.stage-icon{font-size:20px;margin-bottom:6px;display:block}
-.stage-name{font-family:var(--font-mono);font-weight:600;font-size:13px;color:var(--t);margin-bottom:4px}
-.stage-desc{font-size:11px;color:var(--t3);line-height:1.4}
-.stage-cost{
-  display:inline-flex;align-items:center;gap:3px;margin-top:8px;
-  background:rgba(167,139,250,0.12);color:var(--o);
-  font-family:var(--font-mono);font-size:10px;font-weight:500;
-  padding:2px 7px;border-radius:4px;
-}
+  .nav-icon {
+    width: 26px; height: 26px;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: #000; font-weight: 700;
+  }
 
-/* STAGE DETAIL PANEL */
-.stage-detail{
-  background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:12px;
-  padding:20px;position:sticky;top:calc(var(--nav-h) + 16px);align-self:start;
-}
-.detail-label{font-size:10px;font-family:var(--font-mono);color:var(--t4);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
-.detail-name{font-size:18px;font-weight:700;color:var(--t);margin-bottom:4px;font-family:var(--font-mono)}
-.detail-desc{font-size:13px;color:var(--t2);margin-bottom:16px;line-height:1.5}
-.detail-props{display:grid;gap:10px}
-.detail-prop{background:var(--b);border-radius:8px;padding:10px 12px}
-.detail-prop-label{font-size:10px;color:var(--t4);font-family:var(--font-mono);margin-bottom:3px}
-.detail-prop-val{font-size:12px;color:var(--t2);font-family:var(--font-mono)}
-.detail-flow{display:flex;flex-direction:column;gap:4px;margin-top:14px}
-.flow-item{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--t3);padding:4px 0}
-.flow-item::before{content:'→';color:var(--r);font-family:var(--font-mono);font-size:11px}
+  .nav-brand { font-weight: 600; font-size: 15px; }
+  .nav-sep { color: var(--text-dim); margin: 0 1px; }
+  .nav-product {
+    font-weight: 600; font-size: 15px;
+    background: linear-gradient(135deg, var(--accent), #a78bfa);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 
-/* CONFIG PANEL */
-.config-grid{display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start}
-@media(max-width:900px){.config-grid{grid-template-columns:1fr}}
+  .nav-links { display: flex; align-items: center; gap: 4px; }
+  .nav-links a {
+    color: var(--text-muted);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 12px;
+    border-radius: 6px;
+    transition: color 0.15s, background 0.15s;
+  }
+  .nav-links a:hover { color: var(--text); background: var(--surface2); }
 
-.strategies-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:20px}
-@media(max-width:500px){.strategies-grid{grid-template-columns:repeat(2,1fr)}}
-.strategy-card{
-  background:var(--b);border:1px solid rgba(255,255,255,0.06);border-radius:8px;
-  padding:12px;cursor:pointer;transition:border-color .15s,background .15s;
-}
-.strategy-card:hover{border-color:rgba(6,182,212,0.25)}
-.strategy-card.selected{border-color:var(--r);background:var(--rg)}
-.strategy-card input[type=checkbox]{display:none}
-.strat-name{font-family:var(--font-mono);font-size:11px;font-weight:600;color:var(--t);margin-bottom:2px}
-.strat-desc{font-size:10px;color:var(--t3);line-height:1.3}
-.strat-cost{font-family:var(--font-mono);font-size:10px;color:var(--o);margin-top:6px}
+  /* ── PAGE HEADER ── */
+  .page-header {
+    padding: 28px 28px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .page-header h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .page-header p { color: var(--text-muted); font-size: 13px; }
 
-/* FORM CONTROLS */
-.form-group{margin-bottom:16px}
-.form-label{display:block;font-size:11px;font-family:var(--font-mono);color:var(--t3);margin-bottom:6px;font-weight:500}
-.form-input{
-  width:100%;background:var(--b);border:1px solid rgba(255,255,255,0.08);
-  border-radius:7px;padding:9px 12px;font-family:var(--font-mono);font-size:13px;
-  color:var(--t);outline:none;transition:border-color .15s;
-}
-.form-input:focus{border-color:rgba(6,182,212,0.4);box-shadow:0 0 0 3px rgba(6,182,212,0.06)}
-.form-input option{background:var(--b2)}
-.form-select{
-  width:100%;background:var(--b);border:1px solid rgba(255,255,255,0.08);
-  border-radius:7px;padding:9px 12px;font-family:var(--font-mono);font-size:13px;
-  color:var(--t);outline:none;cursor:pointer;transition:border-color .15s;
-  appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%2371717a' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
-  background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;
-}
-.form-select:focus{border-color:rgba(6,182,212,0.4)}
-.slider-wrap{display:flex;align-items:center;gap:10px}
-input[type=range]{
-  flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;
-  background:var(--b2);outline:none;cursor:pointer;
-}
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
-  background:var(--r);cursor:pointer;border:2px solid var(--bg);
-  box-shadow:0 0 6px rgba(6,182,212,0.4);
-}
-.slider-val{font-family:var(--font-mono);font-size:12px;color:var(--r);min-width:32px;text-align:right}
+  /* ── ACTIVE RUN CARD (full-width between header and columns) ── */
+  #active-run {
+    display: none;
+    margin: 20px 28px 0;
+    border-radius: 12px;
+    overflow: hidden;
+    position: relative;
+  }
+  #active-run.visible { display: block; }
 
-/* TOGGLE */
-.toggle-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,0.04)}
-.toggle-label{font-size:13px;color:var(--t2)}
-.toggle{position:relative;display:inline-flex;align-items:center;cursor:pointer}
-.toggle input{opacity:0;position:absolute;width:0;height:0}
-.toggle-track{
-  width:36px;height:20px;background:var(--b2);border-radius:10px;
-  transition:background .2s;display:block;position:relative;
-}
-.toggle-track::after{
-  content:'';position:absolute;top:3px;left:3px;width:14px;height:14px;
-  border-radius:50%;background:var(--t4);transition:transform .2s,background .2s;
-}
-.toggle input:checked+.toggle-track{background:rgba(6,182,212,0.3);border:1px solid rgba(6,182,212,0.4)}
-.toggle input:checked+.toggle-track::after{transform:translateX(16px);background:var(--r)}
+  @keyframes gradBorder {
+    0%   { background-position: 0% 50%; }
+    50%  { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
+  }
 
-/* RUN BUTTON */
-.run-btn{
-  width:100%;padding:13px;background:var(--r);color:#000;
-  font-family:var(--font-mono);font-weight:700;font-size:14px;
-  border:none;border-radius:8px;cursor:pointer;transition:background .15s,transform .1s;
-  margin-top:16px;letter-spacing:.02em;
-}
-.run-btn:hover{background:var(--r2);transform:translateY(-1px)}
-.run-btn:active{transform:translateY(0)}
-.run-btn:disabled{background:var(--b2);color:var(--t4);cursor:not-allowed;transform:none}
+  #active-run::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--accent), #a78bfa, #f472b6, var(--accent));
+    background-size: 300% 300%;
+    animation: gradBorder 3s ease infinite;
+    z-index: 0;
+  }
 
-/* SIDE CONFIG PANEL */
-.config-side{background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:12px;padding:20px;position:sticky;top:calc(var(--nav-h)+16px)}
-.cost-display{
-  background:var(--og);border:1px solid rgba(167,139,250,0.15);border-radius:8px;
-  padding:12px;margin-bottom:16px;display:flex;align-items:center;justify-content:space-between;
-}
-.cost-label{font-size:11px;color:var(--t3);font-family:var(--font-mono)}
-.cost-val{font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--o)}
+  .run-card-inner {
+    background: var(--surface);
+    border-radius: 12px;
+    padding: 20px 24px;
+    position: relative;
+    z-index: 1;
+  }
 
-/* EXECUTION PANEL */
-.exec-panel{
-  background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:12px;
-  padding:24px;margin-bottom:48px;display:none;
-}
-.exec-panel.visible{display:block}
-.exec-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.exec-id{font-family:var(--font-mono);font-size:12px;color:var(--t3)}
-.status-badge{
-  font-family:var(--font-mono);font-size:11px;font-weight:600;
-  padding:4px 10px;border-radius:20px;
-}
-.status-badge.pending{background:rgba(113,113,122,0.2);color:var(--t3)}
-.status-badge.running{background:rgba(6,182,212,0.15);color:var(--r);animation:pulse-badge 1.5s ease-in-out infinite}
-.status-badge.complete{background:rgba(52,211,153,0.15);color:var(--g)}
-.status-badge.failed{background:rgba(239,68,68,0.15);color:#f87171}
-@keyframes pulse-badge{0%,100%{opacity:1}50%{opacity:.6}}
+  .run-header { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
 
-/* PROGRESS STAGES */
-.progress-stages{display:flex;gap:0;margin-bottom:24px;overflow-x:auto;padding-bottom:4px}
-.prog-stage{
-  flex:1;min-width:80px;display:flex;flex-direction:column;align-items:center;
-  gap:6px;padding:8px 4px;position:relative;
-}
-.prog-stage:not(:last-child)::after{
-  content:'';position:absolute;top:20px;right:-1px;width:2px;height:16px;
-  background:rgba(255,255,255,0.06);z-index:1;
-}
-.prog-dot{
-  width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,0.1);
-  background:var(--b);display:flex;align-items:center;justify-content:center;
-  font-size:13px;transition:all .3s;
-}
-.prog-dot.done{border-color:var(--g);background:var(--gg)}
-.prog-dot.active{border-color:var(--r);background:var(--rg);animation:pulse-dot 1s ease-in-out infinite}
-@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 rgba(6,182,212,0.3)}50%{box-shadow:0 0 0 6px rgba(6,182,212,0)}}
-.prog-label{font-family:var(--font-mono);font-size:9px;color:var(--t4);text-align:center}
+  @keyframes pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.8); }
+  }
 
-/* RESULT */
-.result-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
-.result-stat{background:var(--b);border-radius:8px;padding:14px;text-align:center}
-.result-stat-val{font-family:var(--font-mono);font-size:22px;font-weight:700;color:var(--r);margin-bottom:4px}
-.result-stat-label{font-size:11px;color:var(--t3)}
-.result-brief{
-  background:var(--b);border:1px solid rgba(255,255,255,0.06);border-radius:8px;
-  padding:14px;margin-top:12px;font-size:13px;color:var(--t2);line-height:1.6;
-  font-family:var(--font-mono);
-}
+  .run-pulse {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 1.4s ease-in-out infinite;
+    box-shadow: 0 0 8px var(--accent);
+    flex-shrink: 0;
+  }
 
-/* RECIPE GALLERY */
-.recipes-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-bottom:48px}
-.recipe-card{
-  background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:10px;
-  padding:16px;cursor:pointer;transition:border-color .15s,background .15s,transform .1s;
-}
-.recipe-card:hover{border-color:rgba(6,182,212,0.3);background:var(--s2);transform:translateY(-1px)}
-.recipe-name{font-weight:600;font-size:13px;margin-bottom:4px}
-.recipe-meta{font-size:11px;color:var(--t3);margin-bottom:10px}
-.recipe-tags{display:flex;flex-wrap:wrap;gap:4px}
-.recipe-tag{
-  font-family:var(--font-mono);font-size:10px;padding:2px 7px;border-radius:4px;
-  background:var(--b2);color:var(--t3);
-}
-.recipe-tag.cyan{background:var(--rg);color:var(--r)}
-.recipe-icon{font-size:22px;margin-bottom:8px}
+  .run-title { font-weight: 700; font-size: 15px; }
+  .run-id-meta { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 2px; }
 
-/* SDK CODE GEN */
-.code-panel{background:var(--s1);border:1px solid rgba(255,255,255,0.06);border-radius:12px;overflow:hidden;margin-bottom:48px}
-.code-tabs{display:flex;border-bottom:1px solid rgba(255,255,255,0.06)}
-.code-tab{
-  padding:10px 18px;font-family:var(--font-mono);font-size:12px;font-weight:500;
-  color:var(--t3);cursor:pointer;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;
-  background:none;border-top:none;border-left:none;border-right:none;
-}
-.code-tab:hover{color:var(--t2)}
-.code-tab.active{color:var(--r);border-bottom-color:var(--r)}
-.code-copy-btn{
-  margin-left:auto;margin-right:8px;padding:6px 12px;background:var(--b);border:1px solid rgba(255,255,255,0.08);
-  border-radius:5px;color:var(--t3);font-family:var(--font-mono);font-size:11px;cursor:pointer;
-  align-self:center;transition:color .15s,border-color .15s;
-}
-.code-copy-btn:hover{color:var(--t);border-color:rgba(255,255,255,0.15)}
-.code-body{padding:20px;overflow-x:auto}
-pre{font-family:var(--font-mono);font-size:12px;color:var(--t2);line-height:1.7;white-space:pre;tab-size:2}
-.tok-key{color:var(--o)}
-.tok-str{color:var(--g)}
-.tok-num{color:#fb923c}
-.tok-cmt{color:var(--t4)}
-.tok-fn{color:var(--r)}
-.tok-kw{color:var(--v)}
+  .run-strategy-wrap { margin-left: auto; text-align: right; }
+  .run-strategy-wrap .lbl { font-size: 11px; color: var(--text-muted); }
+  .run-strategy-wrap .val { font-family: var(--mono); font-size: 12px; color: var(--accent); }
 
-/* AUTH OVERLAY */
-.auth-overlay{
-  position:fixed;inset:0;background:rgba(9,9,11,0.92);backdrop-filter:blur(12px);
-  z-index:200;display:flex;align-items:center;justify-content:center;
-}
-.auth-box{
-  background:var(--s1);border:1px solid rgba(255,255,255,0.08);border-radius:14px;
-  padding:32px;max-width:420px;width:90%;text-align:center;
-}
-.auth-icon{font-size:36px;margin-bottom:12px}
-.auth-title{font-size:20px;font-weight:700;margin-bottom:6px}
-.auth-sub{color:var(--t2);font-size:13px;margin-bottom:24px}
-.auth-input-wrap{display:flex;gap:8px;margin-bottom:12px}
-.auth-key-input{
-  flex:1;background:var(--b);border:1px solid rgba(255,255,255,0.08);
-  border-radius:7px;padding:10px 12px;font-family:var(--font-mono);font-size:13px;
-  color:var(--t);outline:none;
-}
-.auth-key-input:focus{border-color:rgba(6,182,212,0.4)}
-.auth-submit{
-  background:var(--r);color:#000;font-weight:700;font-family:var(--font-mono);
-  font-size:13px;padding:10px 18px;border:none;border-radius:7px;cursor:pointer;white-space:nowrap;
-}
-.auth-note{font-size:11px;color:var(--t4)}
+  .run-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
 
-/* UTILITIES */
-.mt-8{margin-top:8px}.mt-12{margin-top:12px}.mt-16{margin-top:16px}
-.hidden{display:none!important}
-.schedule-extra{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05)}
-html,body{overflow-x:hidden;max-width:100vw}
-img,video,iframe{max-width:100%}
-pre,code{overflow-x:auto;max-width:100%}
-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
-@media(max-width:640px){
-  .sec,.build-section{padding-left:16px!important;padding-right:16px!important}
-  nav{padding:0 16px}
-}
+  .run-stat { text-align: center; }
+  .run-stat .val { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--accent); }
+  .run-stat .lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 2px; }
+
+  .run-progress-bar { height: 3px; background: var(--border); border-radius: 2px; margin-top: 14px; overflow: hidden; }
+
+  @keyframes progressShimmer {
+    0%   { transform: translateX(-100%); }
+    100% { transform: translateX(400%); }
+  }
+
+  .run-progress-fill {
+    height: 100%; width: 25%;
+    background: linear-gradient(90deg, transparent, var(--accent), transparent);
+    animation: progressShimmer 1.8s ease-in-out infinite;
+  }
+
+  .run-status-text { font-size: 11px; color: var(--text-dim); margin-top: 8px; }
+
+  /* ── LAYOUT ── */
+  .content {
+    display: flex;
+    flex: 1;
+    min-height: calc(100vh - 56px - 85px);
+  }
+
+  /* ── LEFT COLUMN ── */
+  .left-col {
+    width: 420px;
+    min-width: 420px;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    max-height: calc(100vh - 56px - 85px);
+  }
+
+  .panel { padding: 20px; border-bottom: 1px solid var(--border); }
+
+  .panel-title {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 16px;
+  }
+
+  /* ── FORM ── */
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 12px; font-weight: 500; color: var(--text-muted); margin-bottom: 6px; }
+
+  input[type="text"] {
+    width: 100%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 9px 12px;
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.15s;
+  }
+  input[type="text"]:focus { border-color: var(--accent); }
+
+  /* ── STRATEGY CHECKBOXES ── */
+  .strategy-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .strategy-header label { font-size: 12px; font-weight: 500; color: var(--text-muted); margin: 0; }
+  .strategy-presets { display: flex; gap: 6px; }
+
+  .preset-btn {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text-muted);
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 10px;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .preset-btn:hover { border-color: var(--accent); color: var(--accent); }
+
+  .strategies { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+
+  .strategy-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.15s;
+    background: var(--surface2);
+    user-select: none;
+  }
+  .strategy-item:hover { border-color: var(--border2); }
+  .strategy-item.checked { border-color: var(--accent); background: var(--accent-dim); }
+  .strategy-item input[type="checkbox"] { display: none; }
+
+  .strat-check {
+    width: 15px; height: 15px;
+    border: 2px solid var(--border2);
+    border-radius: 4px;
+    flex-shrink: 0;
+    margin-top: 1px;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+  }
+  .strategy-item.checked .strat-check { background: var(--accent); border-color: var(--accent); }
+  .strat-check::after {
+    content: '';
+    width: 7px; height: 4px;
+    border-left: 2px solid #000;
+    border-bottom: 2px solid #000;
+    transform: rotate(-45deg) translateY(-1px);
+    display: none;
+  }
+  .strategy-item.checked .strat-check::after { display: block; }
+
+  .strat-info .strat-name { font-family: var(--mono); font-size: 12px; font-weight: 600; color: var(--text); margin-bottom: 1px; }
+  .strat-info .strat-desc { font-size: 11px; color: var(--text-muted); line-height: 1.4; }
+
+  /* ── SLIDER ── */
+  .slider-row { display: flex; align-items: center; gap: 10px; }
+  .slider-edge { font-size: 11px; color: var(--text-dim); }
+  .slider-val { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent); min-width: 36px; text-align: right; }
+
+  input[type="range"] {
+    flex: 1;
+    -webkit-appearance: none;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border2);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 0 8px var(--accent-glow);
+  }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    border-radius: 8px;
+    font-family: var(--font);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    border: none;
+    outline: none;
+    text-decoration: none;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .btn-primary {
+    width: 100%;
+    padding: 12px 20px;
+    font-size: 14px;
+    background: var(--accent);
+    color: #000;
+  }
+  .btn-primary:not(:disabled):hover {
+    background: #00bbdf;
+    box-shadow: 0 0 24px var(--accent-glow);
+  }
+
+  .btn-ghost {
+    padding: 7px 14px;
+    font-size: 12px;
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { color: var(--text); border-color: var(--border2); background: var(--surface2); }
+
+  .btn-accent-outline {
+    padding: 7px 14px;
+    font-size: 12px;
+    background: transparent;
+    color: var(--accent);
+    border: 1px solid var(--accent);
+  }
+  .btn-accent-outline:hover { background: var(--accent-dim); }
+
+  /* ── SCHEDULE SECTION ── */
+  .schedule-soon {
+    border: 1px dashed var(--border2);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    color: var(--text-dim);
+  }
+  .schedule-soon .s-icon { font-size: 28px; margin-bottom: 8px; }
+  .schedule-soon p { font-size: 12px; line-height: 1.6; }
+
+  /* ── RIGHT COLUMN ── */
+  .right-col {
+    flex: 1;
+    overflow-y: auto;
+    max-height: calc(100vh - 56px - 85px);
+    padding: 24px 28px;
+  }
+
+  /* ── HISTORY ── */
+  .history-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .history-header h2 { font-size: 16px; font-weight: 700; }
+
+  .session-list { display: flex; flex-direction: column; gap: 10px; }
+
+  .session-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    transition: border-color 0.15s;
+  }
+  .session-card:hover { border-color: var(--border2); }
+
+  .session-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 8px;
+  }
+
+  .session-id {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text-muted);
+    background: var(--surface2);
+    padding: 2px 8px;
+    border-radius: 4px;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .badge-running { background: var(--yellow-dim); color: var(--yellow); }
+  .badge-complete { background: var(--green-dim); color: var(--green); }
+  .badge-failed { background: var(--red-dim); color: var(--red); }
+
+  @keyframes dotPulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+  .badge-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: dotPulse 1.2s ease-in-out infinite;
+  }
+
+  .session-tags { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 10px; }
+  .strat-tag {
+    font-family: var(--mono);
+    font-size: 10px;
+    background: var(--surface3);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 1px 6px;
+    color: var(--text-dim);
+  }
+
+  .session-row {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 12px;
+    align-items: end;
+  }
+
+  .stat-block .lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+  .stat-block .val { font-family: var(--mono); font-size: 13px; font-weight: 600; }
+
+  .intel-big { font-size: 32px !important; font-weight: 700 !important; line-height: 1; }
+  .c-cyan  { color: var(--accent); }
+  .c-green { color: var(--green); }
+  .c-yellow { color: var(--yellow); }
+  .c-muted { color: var(--text-dim); }
+
+  .session-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+  .session-footer-meta { font-size: 11px; color: var(--text-dim); }
+
+  /* ── EMPTY STATE ── */
+  .empty-state { text-align: center; padding: 56px 20px; color: var(--text-dim); }
+  .empty-state .e-icon { font-size: 36px; margin-bottom: 12px; opacity: 0.3; }
+  .empty-state p { font-size: 13px; line-height: 1.7; }
+
+  /* ── REPORT VIEW ── */
+  #report-view { display: none; }
+  #report-view.visible { display: block; }
+  #history-view.hidden { display: none; }
+
+  .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-muted);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    margin-bottom: 20px;
+    transition: color 0.15s;
+    background: none;
+    border: none;
+    outline: none;
+    font-family: var(--font);
+    padding: 0;
+  }
+  .back-btn:hover { color: var(--text); }
+
+  .report-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .report-dream-id { font-family: var(--mono); font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .report-ts { font-size: 12px; color: var(--text-dim); }
+
+  /* Score block */
+  .score-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px 24px;
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    margin-bottom: 16px;
+  }
+
+  .score-num {
+    font-family: var(--mono);
+    font-size: 64px;
+    font-weight: 700;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .score-meta { flex: 1; }
+  .score-meta .score-label { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+  .score-meta .score-sub { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin-bottom: 10px; }
+
+  .score-bar-bg { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), #a78bfa);
+    transition: width 1.2s ease;
+  }
+
+  /* Brief */
+  .brief-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+  .brief-block .brief-title { font-size: 12px; font-weight: 700; color: var(--text); margin-bottom: 8px; }
+  .brief-block p { font-size: 13px; color: var(--text-muted); line-height: 1.7; }
+
+  /* Report stats */
+  .report-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .report-stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+  }
+  .report-stat .val { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--accent); }
+  .report-stat .lbl { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+
+  /* Entries */
+  .entries-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .entries-header h3 { font-size: 14px; font-weight: 700; }
+
+  .entry-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+
+  .entry-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px;
+    transition: border-color 0.15s;
+  }
+  .entry-card:hover { border-color: var(--border2); }
+
+  .entry-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 6px;
+  }
+  .entry-title { font-size: 13px; font-weight: 600; }
+  .entry-type {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 600;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: var(--accent-dim);
+    color: var(--accent);
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .entry-content { font-size: 12px; color: var(--text-muted); line-height: 1.6; }
+
+  /* ── TOAST ── */
+  #toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+
+  @keyframes toastIn {
+    from { transform: translateY(10px); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+
+  .toast {
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    border-radius: 8px;
+    padding: 11px 16px;
+    font-size: 13px;
+    color: var(--text);
+    max-width: 300px;
+    animation: toastIn 0.2s ease;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+  }
+  .toast.error   { border-color: var(--red); color: var(--red); }
+  .toast.success { border-color: var(--green); color: var(--green); }
+  .toast.info    { border-color: var(--accent); color: var(--accent); }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
 </style>
 </head>
 <body>
 
-<!-- AUTH OVERLAY -->
-<div class="auth-overlay" id="authOverlay">
-  <div class="auth-box">
-    <div class="auth-icon">🔑</div>
-    <div class="auth-title">API Key Required</div>
-    <div class="auth-sub">Enter your Slopshop API key to access Dream Engine Studio</div>
-    <div class="auth-input-wrap">
-      <input class="auth-key-input" id="authInput" type="password" placeholder="slop_sk_...">
-      <button class="auth-submit" onclick="saveApiKey()">Connect</button>
-    </div>
-    <div class="auth-note">Your key is stored locally and never sent to our servers unencrypted</div>
-  </div>
-</div>
-
-<!-- NAV -->
+<!-- ── NAV ── -->
 <nav>
-  <a href="/" class="nav-logo"><span class="nav-logo-dot"></span>slopshop</a>
+  <a href="/" class="nav-logo">
+    <div class="nav-icon">✦</div>
+    <span class="nav-brand">slopshop</span>
+    <span class="nav-sep"> / </span>
+    <span class="nav-product">dream engine</span>
+  </a>
   <div class="nav-links">
-    <a href="/memory-hub" class="nav-link" style="color:var(--g)">Memory Hub</a>
-    <a href="/dream-studio" class="nav-link" style="color:var(--r)">Dream Studio</a>
-    <a href="/dream-recipes" class="nav-link">Dream Recipes</a>
-    <a href="/team-hives" class="nav-link" style="color:var(--o)">Team Hives</a>
-    <a href="/memory-copilot" class="nav-link">Memory Copilot</a>
-    <a href="/dashboard" class="nav-link">Dashboard</a>
-    <a href="/signup" class="nav-btn">Sign Up</a>
+    <a href="/memory-hub">Memory</a>
+    <a href="/team-hives">Hive</a>
+    <a href="/brain">Dashboard</a>
+    <a href="/profile">Profile</a>
   </div>
 </nav>
 
-<main>
-  <!-- HERO -->
-  <div class="hero">
-    <div class="hero-badge">Neuroscience-grounded · Multi-model · Zero-code</div>
-    <h1>Dream Engine <span>Studio</span></h1>
-    <p>Configure 9-stage REM-cycle memory synthesis for your agents</p>
-  </div>
+<!-- ── PAGE HEADER ── -->
+<div class="page-header">
+  <h1>Dream Engine</h1>
+  <p>Run 9-stage memory synthesis pipelines — extract patterns, generate insights, and evolve your knowledge base overnight.</p>
+</div>
 
-  <!-- PIPELINE STEPPER -->
-  <div class="section">
-    <div class="section-title">9-Stage REM Pipeline</div>
-    <div class="pipeline-wrap">
-      <div class="stages-grid" id="stagesGrid"></div>
-      <div class="stage-detail" id="stageDetail">
-        <div class="detail-label">Select a stage to inspect</div>
-        <div class="detail-name" id="detailName">—</div>
-        <div class="detail-desc" id="detailDesc">Click any stage card to see its internals, inputs, outputs, and credit cost.</div>
-        <div class="detail-props" id="detailProps"></div>
-        <div class="detail-flow" id="detailFlow"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CONFIG + SIDE PANEL -->
-  <div class="section">
-    <div class="section-title">Dream Configuration</div>
-    <div class="config-grid">
+<!-- ── ACTIVE RUN CARD (full-width) ── -->
+<div id="active-run">
+  <div class="run-card-inner">
+    <div class="run-header">
+      <div class="run-pulse"></div>
       <div>
-        <div class="section-title" style="font-size:10px;margin-bottom:10px">Select Strategies (multi-select)</div>
-        <div class="strategies-grid" id="strategiesGrid"></div>
+        <div class="run-title">Dream Engine is running...</div>
+        <div class="run-id-meta" id="run-id-display">dream-xxx</div>
+      </div>
+      <div class="run-strategy-wrap">
+        <div class="lbl">Active strategies</div>
+        <div class="val" id="run-strat-display"></div>
+      </div>
+    </div>
+    <div class="run-stats">
+      <div class="run-stat">
+        <div class="val" id="run-elapsed">0s</div>
+        <div class="lbl">Elapsed</div>
+      </div>
+      <div class="run-stat">
+        <div class="val" id="run-keys">—</div>
+        <div class="lbl">Keys Sampled</div>
+      </div>
+      <div class="run-stat">
+        <div class="val" id="run-mems">—</div>
+        <div class="lbl">Memories Created</div>
+      </div>
+    </div>
+    <div class="run-progress-bar"><div class="run-progress-fill"></div></div>
+    <div class="run-status-text" id="run-status-txt">Initializing dream pipeline...</div>
+  </div>
+</div>
 
-        <div class="form-group">
-          <label class="form-label" for="nsInput">Namespace</label>
-          <input class="form-input" id="nsInput" type="text" placeholder="agent:assistant:main" value="agent:assistant:main">
-        </div>
+<!-- ── COLUMNS ── -->
+<div class="content">
 
-        <div class="form-group">
-          <label class="form-label">Memory Budget — <span id="budgetLabel">20 memories</span></label>
-          <div class="slider-wrap">
-            <input type="range" id="budgetSlider" min="10" max="100" value="20" step="5">
-            <span class="slider-val" id="budgetVal">20</span>
-          </div>
-        </div>
+  <!-- LEFT COLUMN: Launcher -->
+  <div class="left-col">
 
-        <div class="form-group">
-          <label class="form-label" for="modelSelect">Model</label>
-          <select class="form-select" id="modelSelect">
-            <option value="auto">auto (recommended)</option>
-            <option value="claude-haiku-4-5">claude-haiku-4-5</option>
-            <option value="claude-sonnet-4-6" selected>claude-sonnet-4-6</option>
-            <option value="gpt-4o-mini">gpt-4o-mini</option>
-          </select>
-        </div>
+    <!-- Section 1: New Dream Run -->
+    <div class="panel">
+      <div class="panel-title">New Dream Run</div>
 
-        <div class="toggle-row">
-          <span class="toggle-label">Dry Run (free preview)</span>
-          <label class="toggle"><input type="checkbox" id="dryRunToggle"><span class="toggle-track"></span></label>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-label">Schedule (recurring)</span>
-          <label class="toggle"><input type="checkbox" id="scheduleToggle" onchange="toggleSchedule()"><span class="toggle-track"></span></label>
-        </div>
-        <div class="schedule-extra hidden" id="scheduleExtra">
-          <div class="form-group" style="margin-top:12px;margin-bottom:0">
-            <label class="form-label" for="intervalInput">Interval (hours)</label>
-            <input class="form-input" id="intervalInput" type="number" min="1" max="168" value="24" placeholder="24">
-          </div>
+      <!-- Namespace -->
+      <div class="field">
+        <label for="ns-input">Namespace</label>
+        <input type="text" id="ns-input" value="default" placeholder="default" />
+      </div>
+
+      <!-- Strategy selector -->
+      <div class="strategy-header">
+        <label>Strategies</label>
+        <div class="strategy-presets">
+          <button class="preset-btn" onclick="selectAll()">Select All</button>
+          <button class="preset-btn" onclick="quickRun()">Quick (top 3)</button>
         </div>
       </div>
 
-      <div class="config-side">
-        <div class="cost-display">
-          <div>
-            <div class="cost-label">Estimated Cost</div>
-            <div style="font-size:10px;color:var(--t4);font-family:var(--font-mono)">based on selected strategies</div>
-          </div>
-          <div class="cost-val" id="totalCost">0 cr</div>
-        </div>
+      <div class="strategies" id="strategy-list"></div>
 
-        <div style="margin-bottom:12px">
-          <div class="detail-label" style="margin-bottom:8px">Selected</div>
-          <div id="selectedSummary" style="font-family:var(--font-mono);font-size:11px;color:var(--t3)">No strategies selected</div>
+      <!-- Max memories slider -->
+      <div class="field">
+        <label>Max Memories</label>
+        <div class="slider-row">
+          <span class="slider-edge">20</span>
+          <input type="range" id="mem-slider" min="0" max="3" step="1" value="2" oninput="onSlider(this.value)" />
+          <span class="slider-edge">200</span>
+          <span class="slider-val" id="slider-val">100</span>
         </div>
+      </div>
 
-        <div style="margin-bottom:12px">
-          <div class="detail-label" style="margin-bottom:8px">Model</div>
-          <div id="modelSummary" style="font-family:var(--font-mono);font-size:12px;color:var(--r)">claude-sonnet-4-6</div>
+      <!-- Start button -->
+      <button class="btn btn-primary" id="start-btn" onclick="startDream()">
+        Start Dream Run →
+      </button>
+    </div>
+
+    <!-- Section 2: Schedule -->
+    <div class="panel">
+      <div class="panel-title">Schedule</div>
+      <div class="schedule-soon">
+        <div class="s-icon">🌙</div>
+        <p>Coming soon: nightly auto-dreams<br/>Set a schedule and wake up to fresh insights every morning.</p>
+      </div>
+    </div>
+
+  </div><!-- /left-col -->
+
+  <!-- RIGHT COLUMN: Sessions & Reports -->
+  <div class="right-col">
+
+    <!-- History view -->
+    <div id="history-view">
+      <div class="history-header">
+        <h2>Dream History</h2>
+        <button class="btn btn-ghost" onclick="renderSessions()">↻ Refresh</button>
+      </div>
+      <div class="session-list" id="session-list">
+        <div class="empty-state">
+          <div class="e-icon">✦</div>
+          <p>Run your first dream to see results here.<br/>Configure and launch a dream run on the left.</p>
         </div>
+      </div>
+    </div>
 
+    <!-- Report view -->
+    <div id="report-view">
+      <button class="back-btn" onclick="showHistory()">← Back to history</button>
+
+      <div class="report-top">
         <div>
-          <div class="detail-label" style="margin-bottom:8px">Namespace</div>
-          <div id="nsSummary" style="font-family:var(--font-mono);font-size:12px;color:var(--t2);word-break:break-all">agent:assistant:main</div>
+          <div class="report-dream-id" id="rpt-id">dream-xxx</div>
+          <div class="report-ts" id="rpt-ts"></div>
         </div>
-
-        <button class="run-btn" id="runBtn" onclick="runDream()">Run Dream</button>
-        <div id="runError" style="font-size:11px;color:#f87171;text-align:center;margin-top:8px;font-family:var(--font-mono);display:none"></div>
+        <span class="badge" id="rpt-badge"></span>
       </div>
-    </div>
-  </div>
 
-  <!-- EXECUTION PANEL -->
-  <div class="section">
-    <div class="exec-panel" id="execPanel">
-      <div class="exec-header">
-        <div>
-          <div class="detail-label">Dream Execution</div>
-          <div class="exec-id" id="execId">dream_—</div>
+      <!-- Intelligence Score -->
+      <div class="score-block">
+        <div class="score-num" id="rpt-score">—</div>
+        <div class="score-meta">
+          <div class="score-label" id="rpt-score-label">Intelligence Score</div>
+          <div class="score-sub">Measures synthesis quality, pattern density, and insight depth across all dream stages.</div>
+          <div class="score-bar-bg">
+            <div class="score-bar-fill" id="rpt-score-bar" style="width:0%"></div>
+          </div>
         </div>
-        <div class="status-badge pending" id="statusBadge">pending</div>
       </div>
-      <div class="progress-stages" id="progressStages"></div>
-      <div id="execResult" class="hidden">
-        <div class="result-grid">
-          <div class="result-stat"><div class="result-stat-val" id="resInsights">—</div><div class="result-stat-label">Insights</div></div>
-          <div class="result-stat"><div class="result-stat-val" id="resScore">—</div><div class="result-stat-label">Intelligence Score</div></div>
-          <div class="result-stat"><div class="result-stat-val" id="resDuration">—</div><div class="result-stat-label">Duration (s)</div></div>
+
+      <!-- Brief -->
+      <div class="brief-block">
+        <div class="brief-title">Dream Summary</div>
+        <p id="rpt-brief">No summary available.</p>
+      </div>
+
+      <!-- Stats -->
+      <div class="report-stats">
+        <div class="report-stat">
+          <div class="val" id="rpt-keys">—</div>
+          <div class="lbl">Keys Sampled</div>
         </div>
-        <div class="result-brief" id="resBrief"></div>
+        <div class="report-stat">
+          <div class="val" id="rpt-mems">—</div>
+          <div class="lbl">Memories Created</div>
+        </div>
+        <div class="report-stat">
+          <div class="val" id="rpt-insights">—</div>
+          <div class="lbl">Insights</div>
+        </div>
+        <div class="report-stat">
+          <div class="val" id="rpt-duration">—</div>
+          <div class="lbl">Duration</div>
+        </div>
       </div>
-    </div>
-  </div>
 
-  <!-- RECIPE GALLERY -->
-  <div class="section">
-    <div class="section-title">Recipe Gallery</div>
-    <div class="recipes-grid" id="recipesGrid"></div>
-  </div>
-
-  <!-- SDK CODE GEN -->
-  <div class="section">
-    <div class="section-title">SDK Code Generator</div>
-    <div class="code-panel">
-      <div class="code-tabs" id="codeTabs">
-        <button class="code-tab active" data-lang="curl" onclick="switchLang('curl')">cURL</button>
-        <button class="code-tab" data-lang="python" onclick="switchLang('python')">Python</button>
-        <button class="code-tab" data-lang="node" onclick="switchLang('node')">Node.js</button>
-        <button class="code-copy-btn" onclick="copyCode()">Copy</button>
+      <!-- Entries -->
+      <div class="entries-header">
+        <h3 id="entries-heading">Memory Entries</h3>
+        <button class="btn btn-accent-outline" id="store-btn" onclick="storeInsights()">Store these insights</button>
       </div>
-      <div class="code-body"><pre id="codeOutput"></pre></div>
+      <div class="entry-list" id="entry-list"></div>
     </div>
-  </div>
-</main>
+
+  </div><!-- /right-col -->
+</div><!-- /content -->
+
+<!-- TOAST -->
+<div id="toast-container"></div>
 
 <script>
-const STAGES = [
-  {num:1,icon:'🧭',name:'ORIENT',desc:'Sample memories (recent 60% + random 40%)',input:'namespace, budget',output:'memory_sample[]',timeout:'5s',credits:'~2 cr',flow:['Read recent memories (60%)','Random sample remaining (40%)','Deduplicate & rank by relevance']},
-  {num:2,icon:'📋',name:'GATHER',desc:'Build strategy-specific LLM prompt',input:'memory_sample[], strategy',output:'prompt_context',timeout:'3s',credits:'~1 cr',flow:['Select strategy template','Inject memory excerpts','Attach system instructions']},
-  {num:3,icon:'🧠',name:'CONSOLIDATE',desc:'LLM synthesis (90s timeout)',input:'prompt_context, model',output:'raw_synthesis',timeout:'90s',credits:'varies by model',flow:['Submit to LLM endpoint','Stream response chunks','Enforce 90s hard timeout']},
-  {num:4,icon:'✅',name:'VALIDATE',desc:'Cross-check consistency & accuracy',input:'raw_synthesis',output:'validated_synthesis',timeout:'10s',credits:'~3 cr',flow:['Extract factual claims','Check cross-memory consistency','Flag contradictions']},
-  {num:5,icon:'📈',name:'EVOLVE',desc:'Bayesian belief updating',input:'validated_synthesis, priors',output:'updated_beliefs',timeout:'15s',credits:'~5 cr',flow:['Load prior belief weights','Apply Bayesian update rule','Write posterior estimates']},
-  {num:6,icon:'🔮',name:'FORECAST',desc:'Monte-Carlo probabilistic forecasting',input:'updated_beliefs',output:'forecast_distribution',timeout:'20s',credits:'~8 cr',flow:['Sample N=1000 trajectories','Compute percentile distribution','Attach confidence intervals']},
-  {num:7,icon:'🔍',name:'EXTRACT',desc:'Parse & structure LLM output',input:'raw_synthesis',output:'structured_insights[]',timeout:'5s',credits:'~2 cr',flow:['Parse JSON or markdown blocks','Normalize field schemas','Score each insight']},
-  {num:8,icon:'💾',name:'STORE',desc:'Write dream outputs to namespace:dreams',input:'structured_insights[]',output:'dream_record',timeout:'5s',credits:'~1 cr',flow:['Serialize to memory format','Write to namespace:dreams','Index for retrieval']},
-  {num:9,icon:'🪞',name:'REFLECT',desc:'Metacognitive self-analysis',input:'dream_record',output:'meta_report',timeout:'30s',credits:'~5 cr',flow:['Analyze synthesis quality','Rate insight novelty','Update agent self-model']},
-];
+// ─────────────────────────────────────────────
+// STATE
+// ─────────────────────────────────────────────
+let currentKey    = null;
+let activeDreamId = null;
+let pollTimer     = null;
+let elapsedTimer  = null;
+let elapsedSec    = 0;
+let sessions      = [];      // persisted in localStorage
+let reportEntries = [];      // currently displayed report entries
+
+const SLIDER_VALS = [20, 50, 100, 200];
 
 const STRATEGIES = [
-  {id:'synthesize',name:'synthesize',desc:'Consolidate themes & patterns',credits:25},
-  {id:'pattern_extract',name:'pattern_extract',desc:'Find recurring patterns & gaps',credits:20},
-  {id:'insight_generate',name:'insight_generate',desc:'Novel cross-memory connections',credits:30},
-  {id:'compress',name:'compress',desc:'Eliminate redundancy, preserve signal',credits:15},
-  {id:'associate',name:'associate',desc:'Build knowledge graph links',credits:20},
-  {id:'validate',name:'validate',desc:'Check consistency & flag conflicts',credits:20},
-  {id:'evolve',name:'evolve',desc:'Bayesian belief updates',credits:30},
-  {id:'forecast',name:'forecast',desc:'Monte-Carlo probabilistic forecasts',credits:35},
-  {id:'reflect',name:'reflect',desc:'Metacognitive self-analysis',credits:25},
-  {id:'full_cycle',name:'full_cycle',desc:'Full REM Cycle — All 9 Stages in sequence',credits:200,color:'#a855f7'},
+  { id: 'synthesize',       desc: 'Combine memories into higher-order insights' },
+  { id: 'pattern_extract',  desc: 'Find recurring patterns across memories' },
+  { id: 'insight_generate', desc: 'Generate novel cross-domain insights' },
+  { id: 'compress',         desc: 'Reduce redundancy, keep signal' },
+  { id: 'associate',        desc: 'Build associative memory links' },
+  { id: 'validate',         desc: 'Fact-check and strengthen memory accuracy' },
+  { id: 'evolve',           desc: 'Update outdated memories' },
+  { id: 'forecast',         desc: 'Project future implications' },
+  { id: 'reflect',          desc: 'Meta-cognitive reflection on memory quality' },
 ];
 
-const RECIPES = [
-  {icon:'🌙',name:'Overnight Synthesis',meta:'Budget 50 · Scheduled nightly',strategies:['synthesize'],budget:50,model:'claude-sonnet-4-6',schedule:true,interval:8,tags:['synthesize','nightly','budget:50']},
-  {icon:'🕵️',name:'Pattern Hunter',meta:'Budget 30 · On-demand',strategies:['pattern_extract','associate'],budget:30,model:'claude-haiku-4-5',schedule:false,interval:null,tags:['pattern_extract','associate','budget:30']},
-  {icon:'🎲',name:'Bayesian Update',meta:'Budget 20 · Fast cycle',strategies:['evolve','validate'],budget:20,model:'auto',schedule:false,interval:null,tags:['evolve','validate','budget:20']},
-  {icon:'💤',name:'Full REM Cycle',meta:'All 9 strategies · Budget 100',strategies:['synthesize','pattern_extract','insight_generate','compress','associate','validate','evolve','forecast','reflect'],budget:100,model:'claude-sonnet-4-6',schedule:true,interval:24,tags:['all strategies','budget:100','full']},
-];
+// ─────────────────────────────────────────────
+// INIT
+// ─────────────────────────────────────────────
+async function init() {
+  buildStrategyList();
+  loadLocalSessions();
+  renderSessions();
 
-let selectedStage = null;
-let selectedStrategies = new Set();
-let currentLang = 'curl';
-let pollInterval = null;
-let currentDreamId = null;
-let currentStageIdx = -1;
-
-// --- AUTH ---
-function getApiKey(){
-  return localStorage.getItem('slopshop_api_key') || localStorage.getItem('slop_api_key') || '';
-}
-function saveApiKey(){
-  const v = document.getElementById('authInput').value.trim();
-  if(!v){return;}
-  localStorage.setItem('slopshop_api_key', v);
-  document.getElementById('authOverlay').style.display = 'none';
-  updateCode();
-}
-function checkAuth(){
-  if(getApiKey()){
-    document.getElementById('authOverlay').style.display = 'none';
+  try {
+    const r = await fetch('/v1/auth/session', { credentials: 'include' });
+    if (!r.ok) { window.location.href = '/'; return; }
+    const data = await r.json();
+    currentKey = data.api_key;
+  } catch (e) {
+    toast('Running in preview mode — auth unreachable', 'info');
   }
 }
-function renderNoAuthBanner(){
-  if(getApiKey()) return;
-  const existing = document.getElementById('no-auth-banner');
-  if(existing) return;
-  const banner = document.createElement('div');
-  banner.id = 'no-auth-banner';
-  banner.style.cssText = 'background:rgba(255,204,0,0.08);border:1px solid rgba(255,204,0,0.3);border-radius:10px;padding:12px 18px;margin:0 0 18px 0;display:flex;align-items:center;gap:12px;font-size:14px;color:#ffd700;';
-  banner.innerHTML = '<span style="font-size:18px">⚠</span><span style="flex:1">No API key detected — live dream runs will not work.</span><a href="/login" style="color:#a855f7;font-weight:600;white-space:nowrap;text-decoration:none;">Add your API key to unlock live data →</a>';
-  const configGrid = document.querySelector('.config-grid');
-  if(configGrid && configGrid.parentNode) configGrid.parentNode.insertBefore(banner, configGrid);
-}
-document.getElementById('authInput').addEventListener('keydown', e => { if(e.key === 'Enter') saveApiKey(); });
 
-// --- STAGES ---
-function renderStages(){
-  const grid = document.getElementById('stagesGrid');
-  grid.innerHTML = STAGES.map(s => `
-    <div class="stage-card" data-stage="${s.num}" onclick="selectStage(${s.num})">
-      <div class="stage-num">Stage ${s.num}</div>
-      <span class="stage-icon">${s.icon}</span>
-      <div class="stage-name">${s.name}</div>
-      <div class="stage-desc">${s.desc}</div>
-      <div class="stage-cost">${s.credits}</div>
-    </div>
-  `).join('');
-}
-
-function selectStage(num){
-  document.querySelectorAll('.stage-card').forEach(c => c.classList.remove('active'));
-  document.querySelector(`.stage-card[data-stage="${num}"]`).classList.add('active');
-  const s = STAGES.find(x => x.num === num);
-  document.getElementById('detailName').textContent = `${s.icon} ${s.name}`;
-  document.getElementById('detailDesc').textContent = s.desc;
-  document.getElementById('detailProps').innerHTML = `
-    <div class="detail-prop"><div class="detail-prop-label">Input</div><div class="detail-prop-val">${s.input}</div></div>
-    <div class="detail-prop"><div class="detail-prop-label">Output</div><div class="detail-prop-val">${s.output}</div></div>
-    <div class="detail-prop"><div class="detail-prop-label">Timeout</div><div class="detail-prop-val">${s.timeout}</div></div>
-    <div class="detail-prop"><div class="detail-prop-label">Credits</div><div class="detail-prop-val" style="color:var(--o)">${s.credits}</div></div>
-  `;
-  document.getElementById('detailFlow').innerHTML = `
-    <div class="detail-label" style="margin-top:4px">Execution Flow</div>
-    ${s.flow.map(f => `<div class="flow-item">${f}</div>`).join('')}
-  `;
+// ─────────────────────────────────────────────
+// STRATEGY LIST
+// ─────────────────────────────────────────────
+function buildStrategyList() {
+  const container = document.getElementById('strategy-list');
+  container.innerHTML = '';
+  STRATEGIES.forEach(s => {
+    const el = document.createElement('label');
+    el.className = 'strategy-item checked';
+    el.dataset.sid = s.id;
+    el.innerHTML = `
+      <input type="checkbox" checked data-strat="${s.id}" />
+      <div class="strat-check"></div>
+      <div class="strat-info">
+        <div class="strat-name">${s.id}</div>
+        <div class="strat-desc">${s.desc}</div>
+      </div>`;
+    el.addEventListener('click', e => {
+      e.preventDefault();
+      const cb = el.querySelector('input');
+      cb.checked = !cb.checked;
+      el.classList.toggle('checked', cb.checked);
+    });
+    container.appendChild(el);
+  });
 }
 
-// --- STRATEGIES ---
-function renderStrategies(){
-  const grid = document.getElementById('strategiesGrid');
-  grid.innerHTML = STRATEGIES.map(s => {
-    const extraStyle = s.color ? `border-color:${s.color}40;` : '';
-    const nameStyle = s.color ? `color:${s.color}` : '';
-    const badge = s.id === 'full_cycle' ? `<span style="font-size:9px;font-family:var(--font-mono);font-weight:700;padding:1px 6px;border-radius:99px;background:rgba(168,85,247,0.15);color:#a855f7;border:1px solid rgba(168,85,247,0.3);margin-left:4px">All 9</span>` : '';
-    return `<div class="strategy-card" id="sc-${s.id}" onclick="toggleStrategy('${s.id}')" style="${extraStyle}">
-      <div class="strat-name" style="${nameStyle}">${s.name}${badge}</div>
-      <div class="strat-desc">${s.desc}</div>
-      <div class="strat-cost">${s.credits} cr</div>
+function getSelected() {
+  return [...document.querySelectorAll('#strategy-list input:checked')].map(c => c.dataset.strat);
+}
+
+function selectAll() {
+  document.querySelectorAll('#strategy-list .strategy-item').forEach(el => {
+    el.classList.add('checked');
+    el.querySelector('input').checked = true;
+  });
+}
+
+function quickRun() {
+  document.querySelectorAll('#strategy-list .strategy-item').forEach((el, i) => {
+    const on = i < 3;
+    el.classList.toggle('checked', on);
+    el.querySelector('input').checked = on;
+  });
+}
+
+// ─────────────────────────────────────────────
+// SLIDER
+// ─────────────────────────────────────────────
+function onSlider(v) {
+  document.getElementById('slider-val').textContent = SLIDER_VALS[+v];
+}
+function getMaxMem() {
+  return SLIDER_VALS[+document.getElementById('mem-slider').value];
+}
+
+// ─────────────────────────────────────────────
+// START DREAM
+// ─────────────────────────────────────────────
+async function startDream() {
+  const strategies = getSelected();
+  if (!strategies.length) { toast('Select at least one strategy', 'error'); return; }
+
+  const namespace   = (document.getElementById('ns-input').value.trim()) || 'default';
+  const max_memories = getMaxMem();
+  const btn = document.getElementById('start-btn');
+
+  btn.disabled = true;
+  btn.textContent = 'Starting...';
+
+  try {
+    const headers = { 'Content-Type': 'application/json' };
+    if (currentKey) headers['Authorization'] = `Bearer ${currentKey}`;
+
+    const res = await fetch('/v1/memory/dream/start', {
+      method: 'POST',
+      credentials: 'include',
+      headers,
+      body: JSON.stringify({ namespace, strategies, max_memories }),
+    });
+
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || data.message || 'Start failed');
+
+    const dreamId = data.dream_id;
+    activeDreamId = dreamId;
+
+    // Store locally
+    const entry = {
+      dream_id: dreamId,
+      status: 'running',
+      strategies,
+      namespace,
+      started_at: new Date().toISOString(),
+      completed_at: null,
+      keys_sampled: null,
+      memories_created: null,
+      intelligence_score: null,
+      insights_generated: null,
+      brief: null,
+      duration_ms: null,
+      entries: null,
+    };
+    sessions.unshift(entry);
+    saveLocal();
+    renderSessions();
+
+    showActiveRun(dreamId, strategies);
+    toast('Dream started!', 'success');
+    beginPolling(dreamId);
+  } catch (e) {
+    toast('Failed to start: ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Start Dream Run →';
+  }
+}
+
+// ─────────────────────────────────────────────
+// ACTIVE RUN CARD
+// ─────────────────────────────────────────────
+function showActiveRun(dreamId, strategies) {
+  document.getElementById('active-run').classList.add('visible');
+  document.getElementById('run-id-display').textContent = dreamId;
+  document.getElementById('run-strat-display').textContent =
+    strategies.slice(0, 3).join(', ') + (strategies.length > 3 ? ` +${strategies.length - 3}` : '');
+  document.getElementById('run-keys').textContent = '—';
+  document.getElementById('run-mems').textContent = '—';
+  document.getElementById('run-status-txt').textContent = 'Initializing dream pipeline...';
+
+  elapsedSec = 0;
+  clearInterval(elapsedTimer);
+  elapsedTimer = setInterval(() => {
+    elapsedSec++;
+    const m = Math.floor(elapsedSec / 60);
+    const s = elapsedSec % 60;
+    document.getElementById('run-elapsed').textContent = m > 0 ? `${m}m ${s}s` : `${s}s`;
+  }, 1000);
+}
+
+function hideActiveRun() {
+  document.getElementById('active-run').classList.remove('visible');
+  clearInterval(elapsedTimer);
+}
+
+// ─────────────────────────────────────────────
+// POLLING
+// ─────────────────────────────────────────────
+function beginPolling(dreamId) {
+  clearInterval(pollTimer);
+  pollTimer = setInterval(() => pollStatus(dreamId), 3000);
+}
+
+async function pollStatus(dreamId) {
+  try {
+    const headers = {};
+    if (currentKey) headers['Authorization'] = `Bearer ${currentKey}`;
+
+    const res = await fetch(`/v1/memory/dream/status/${dreamId}`, {
+      credentials: 'include',
+      headers,
+    });
+    if (!res.ok) return;
+    const data = await res.json();
+
+    document.getElementById('run-keys').textContent = data.keys_sampled ?? '—';
+    document.getElementById('run-mems').textContent = data.memories_created ?? '—';
+    document.getElementById('run-status-txt').textContent =
+      data.brief || (data.strategy ? `Running: ${data.strategy}` : `Status: ${data.status}`);
+
+    // Patch local session
+    patchSession(dreamId, {
+      status: data.status,
+      keys_sampled: data.keys_sampled,
+      memories_created: data.memories_created,
+      brief: data.brief,
+      duration_ms: data.duration_ms,
+    });
+
+    const isDone = data.status === 'complete' || data.status === 'completed';
+    const isFailed = data.status === 'failed' || data.status === 'error';
+    if (isDone || isFailed) {
+      clearInterval(pollTimer);
+      hideActiveRun();
+      activeDreamId = null;
+      if (isDone) {
+        toast('Dream complete! Loading report...', 'success');
+        await fetchReport(dreamId);
+      } else {
+        toast('Dream failed: ' + (data.brief || 'unknown error'), 'error');
+      }
+      saveLocal();
+      renderSessions();
+    }
+  } catch (_) {
+    // swallow poll errors silently
+  }
+}
+
+// ─────────────────────────────────────────────
+// REPORT
+// ─────────────────────────────────────────────
+async function fetchReport(dreamId) {
+  try {
+    const headers = {};
+    if (currentKey) headers['Authorization'] = `Bearer ${currentKey}`;
+
+    const res = await fetch(`/v1/memory/dream/report/${dreamId}`, {
+      credentials: 'include',
+      headers,
+    });
+    const data = await res.json();
+    if (!res.ok || !data.ok) throw new Error(data.error || 'Report unavailable');
+
+    patchSession(dreamId, {
+      status: data.status,
+      intelligence_score: data.intelligence_score,
+      keys_sampled: data.keys_sampled,
+      memories_created: data.memories_created,
+      insights_generated: data.insights_generated,
+      brief: data.brief,
+      duration_ms: data.duration_ms,
+      entries: data.entries,
+      completed_at: data.completed_at,
+    });
+    saveLocal();
+    renderSessions();
+    displayReport(dreamId, data);
+  } catch (e) {
+    toast('Could not load report: ' + e.message, 'error');
+  }
+}
+
+function displayReport(dreamId, data) {
+  document.getElementById('history-view').classList.add('hidden');
+  document.getElementById('report-view').classList.add('visible');
+
+  document.getElementById('rpt-id').textContent = dreamId;
+  document.getElementById('rpt-ts').textContent = data.started_at
+    ? new Date(data.started_at).toLocaleString() : '';
+
+  const badge = document.getElementById('rpt-badge');
+  if (data.status === 'complete' || data.status === 'completed') {
+    badge.className = 'badge badge-complete';
+    badge.textContent = 'Complete';
+  } else if (data.status === 'running') {
+    badge.className = 'badge badge-running';
+    badge.innerHTML = '<span class="badge-dot"></span> Running';
+  } else {
+    badge.className = 'badge badge-failed';
+    badge.textContent = 'Failed';
+  }
+
+  const score = data.intelligence_score ?? 0;
+  const scoreEl = document.getElementById('rpt-score');
+  scoreEl.textContent = score > 0 ? Number(score).toFixed(1) : '—';
+  scoreEl.className = 'score-num ' + scoreClass(score);
+
+  document.getElementById('rpt-score-bar').style.width = Math.min(score, 100) + '%';
+
+  const grade = score >= 71 ? 'Excellent' : score >= 31 ? 'Good' : score >= 1 ? 'Low' : 'Not scored';
+  document.getElementById('rpt-score-label').textContent = `Intelligence Score — ${grade}`;
+
+  document.getElementById('rpt-brief').textContent = data.brief || 'No summary available.';
+  document.getElementById('rpt-keys').textContent = data.keys_sampled ?? '—';
+  document.getElementById('rpt-mems').textContent = data.memories_created ?? '—';
+  document.getElementById('rpt-insights').textContent = data.insights_generated ?? '—';
+  document.getElementById('rpt-duration').textContent = fmtDuration(data.duration_ms);
+
+  reportEntries = data.entries || [];
+  const heading = `Memory Entries (${reportEntries.length})`;
+  document.getElementById('entries-heading').textContent = heading;
+
+  const list = document.getElementById('entry-list');
+  if (!reportEntries.length) {
+    list.innerHTML = '<div style="font-size:12px;color:var(--text-dim);padding:8px 0;">No entries in this report.</div>';
+  } else {
+    list.innerHTML = reportEntries.map(e => `
+      <div class="entry-card">
+        <div class="entry-top">
+          <div class="entry-title">${esc(e.title || e.key || 'Untitled')}</div>
+          <span class="entry-type">${esc(e.type || e.strategy || 'insight')}</span>
+        </div>
+        <div class="entry-content">${esc(trunc(e.content || e.value || e.summary || '', 220))}</div>
+      </div>`).join('');
+  }
+}
+
+function showHistory() {
+  document.getElementById('report-view').classList.remove('visible');
+  document.getElementById('history-view').classList.remove('hidden');
+}
+
+// ─────────────────────────────────────────────
+// STORE INSIGHTS
+// ─────────────────────────────────────────────
+async function storeInsights() {
+  if (!reportEntries.length) { toast('No entries to store', 'error'); return; }
+
+  const btn = document.getElementById('store-btn');
+  btn.disabled = true;
+  btn.textContent = 'Storing...';
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (currentKey) headers['Authorization'] = `Bearer ${currentKey}`;
+
+  let ok = 0, fail = 0;
+  for (const entry of reportEntries) {
+    try {
+      const r = await fetch('/v1/memory-set', {
+        method: 'POST',
+        credentials: 'include',
+        headers,
+        body: JSON.stringify({
+          key: entry.key || entry.title || `dream-insight-${Date.now()}`,
+          value: entry.content || entry.value || entry.summary || '',
+          namespace: 'default',
+        }),
+      });
+      r.ok ? ok++ : fail++;
+    } catch { fail++; }
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Store these insights';
+  toast(`Stored ${ok} insight${ok !== 1 ? 's' : ''}${fail ? `, ${fail} failed` : ''}`, ok ? 'success' : 'error');
+}
+
+// ─────────────────────────────────────────────
+// SESSION STORE
+// ─────────────────────────────────────────────
+function loadLocalSessions() {
+  try {
+    const raw = localStorage.getItem('dream_sessions_v2');
+    if (raw) sessions = JSON.parse(raw);
+  } catch { sessions = []; }
+}
+
+function saveLocal() {
+  try { localStorage.setItem('dream_sessions_v2', JSON.stringify(sessions.slice(0, 50))); } catch {}
+}
+
+function patchSession(dreamId, patch) {
+  const idx = sessions.findIndex(s => s.dream_id === dreamId);
+  if (idx !== -1) Object.assign(sessions[idx], patch);
+}
+
+function renderSessions() {
+  const list = document.getElementById('session-list');
+  if (!sessions.length) {
+    list.innerHTML = `<div class="empty-state">
+      <div class="e-icon">✦</div>
+      <p>Run your first dream to see results here.<br/>Configure and launch a dream run on the left.</p>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = sessions.map(s => {
+    const score = s.intelligence_score;
+    const hasScore = score != null && score > 0;
+
+    const badgeHtml = s.status === 'running'
+      ? `<span class="badge badge-running"><span class="badge-dot"></span> Running</span>`
+      : (s.status === 'complete' || s.status === 'completed')
+      ? `<span class="badge badge-complete">Complete</span>`
+      : `<span class="badge badge-failed">Failed</span>`;
+
+    const tags = (s.strategies || []).slice(0, 4)
+      .map(t => `<span class="strat-tag">${t}</span>`).join('')
+      + (s.strategies && s.strategies.length > 4
+         ? `<span class="strat-tag">+${s.strategies.length - 4}</span>` : '');
+
+    const footerMeta = s.duration_ms != null
+      ? fmtDuration(s.duration_ms)
+      : (s.started_at ? new Date(s.started_at).toLocaleDateString() : '');
+
+    const actionBtn = (s.status === 'complete' || s.status === 'completed')
+      ? `<button class="btn btn-ghost" style="font-size:12px;padding:5px 12px;" onclick="viewReport('${s.dream_id}')">View Report →</button>`
+      : s.status === 'running'
+      ? `<button class="btn btn-ghost" style="font-size:12px;padding:5px 12px;" onclick="pollStatus('${s.dream_id}')">Check Status</button>`
+      : '';
+
+    return `<div class="session-card">
+      <div class="session-top">
+        <span class="session-id">${s.dream_id}</span>
+        ${badgeHtml}
+      </div>
+      ${tags ? `<div class="session-tags">${tags}</div>` : ''}
+      <div class="session-row">
+        <div class="stat-block">
+          <div class="lbl">Score</div>
+          <div class="val intel-big ${scoreClass(score)}">${hasScore ? Number(score).toFixed(1) : '—'}</div>
+        </div>
+        <div class="stat-block">
+          <div class="lbl">Keys Sampled</div>
+          <div class="val">${s.keys_sampled ?? '—'}</div>
+        </div>
+        <div class="stat-block">
+          <div class="lbl">Memories</div>
+          <div class="val">${s.memories_created ?? '—'}</div>
+        </div>
+      </div>
+      <div class="session-footer">
+        <span class="session-footer-meta">${footerMeta}</span>
+        ${actionBtn}
+      </div>
     </div>`;
   }).join('');
 }
 
-function toggleStrategy(id){
-  if(selectedStrategies.has(id)){
-    selectedStrategies.delete(id);
-    document.getElementById(`sc-${id}`).classList.remove('selected');
+async function viewReport(dreamId) {
+  const cached = sessions.find(s => s.dream_id === dreamId);
+  if (cached && cached.entries) {
+    displayReport(dreamId, cached);
   } else {
-    selectedStrategies.add(id);
-    document.getElementById(`sc-${id}`).classList.add('selected');
+    await fetchReport(dreamId);
   }
-  updateSummary();
-  updateCode();
 }
 
-function setStrategies(ids){
-  selectedStrategies.clear();
-  document.querySelectorAll('.strategy-card').forEach(c => c.classList.remove('selected'));
-  ids.forEach(id => {
-    selectedStrategies.add(id);
-    const el = document.getElementById(`sc-${id}`);
-    if(el) el.classList.add('selected');
-  });
-  updateSummary();
-  updateCode();
+// ─────────────────────────────────────────────
+// HELPERS
+// ─────────────────────────────────────────────
+function scoreClass(score) {
+  if (!score || score === 0) return 'c-muted';
+  if (score >= 71) return 'c-green';
+  if (score >= 31) return 'c-cyan';
+  return 'c-yellow';
 }
 
-function updateSummary(){
-  const sel = [...selectedStrategies];
-  const total = sel.reduce((sum,id) => { const s = STRATEGIES.find(x => x.id===id); return sum + (s ? s.credits : 0); }, 0);
-  document.getElementById('totalCost').textContent = total ? `${total} cr` : '0 cr';
-  document.getElementById('selectedSummary').textContent = sel.length ? sel.join(', ') : 'No strategies selected';
-  document.getElementById('modelSummary').textContent = document.getElementById('modelSelect').value;
-  document.getElementById('nsSummary').textContent = document.getElementById('nsInput').value || '—';
+function fmtDuration(ms) {
+  if (ms == null) return '—';
+  if (ms < 1000) return ms + 'ms';
+  if (ms < 60000) return (ms / 1000).toFixed(1) + 's';
+  const m = Math.floor(ms / 60000);
+  const s = Math.floor((ms % 60000) / 1000);
+  return `${m}m ${s}s`;
 }
 
-// --- SLIDER ---
-document.getElementById('budgetSlider').addEventListener('input', function(){
-  document.getElementById('budgetVal').textContent = this.value;
-  document.getElementById('budgetLabel').textContent = `${this.value} memories`;
-  updateCode();
-});
-
-document.getElementById('modelSelect').addEventListener('change', () => { updateSummary(); updateCode(); });
-document.getElementById('nsInput').addEventListener('input', () => { updateSummary(); updateCode(); });
-
-// --- SCHEDULE TOGGLE ---
-function toggleSchedule(){
-  const on = document.getElementById('scheduleToggle').checked;
-  document.getElementById('scheduleExtra').classList.toggle('hidden', !on);
-  updateCode();
-}
-document.getElementById('intervalInput').addEventListener('input', updateCode);
-document.getElementById('dryRunToggle').addEventListener('change', updateCode);
-
-// --- RECIPES ---
-function renderRecipes(){
-  const grid = document.getElementById('recipesGrid');
-  grid.innerHTML = RECIPES.map(r => `
-    <div class="recipe-card" onclick='applyRecipe(${JSON.stringify(r)})'>
-      <div class="recipe-icon">${r.icon}</div>
-      <div class="recipe-name">${r.name}</div>
-      <div class="recipe-meta">${r.meta}</div>
-      <div class="recipe-tags">${r.tags.map(t => `<span class="recipe-tag${t.includes(':')?' cyan':''}">${t}</span>`).join('')}</div>
-    </div>
-  `).join('');
+function esc(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
-function applyRecipe(r){
-  setStrategies(r.strategies);
-  document.getElementById('budgetSlider').value = r.budget;
-  document.getElementById('budgetVal').textContent = r.budget;
-  document.getElementById('budgetLabel').textContent = `${r.budget} memories`;
-  document.getElementById('modelSelect').value = r.model;
-  document.getElementById('scheduleToggle').checked = r.schedule;
-  document.getElementById('scheduleExtra').classList.toggle('hidden', !r.schedule);
-  if(r.interval) document.getElementById('intervalInput').value = r.interval;
-  updateSummary();
-  updateCode();
-  document.querySelector('.config-grid').scrollIntoView({behavior:'smooth',block:'start'});
+function trunc(str, n) {
+  return str.length > n ? str.slice(0, n) + '…' : str;
 }
 
-// --- RUN DREAM ---
-async function runDream(){
-  const sel = [...selectedStrategies];
-  const errEl = document.getElementById('runError');
-  errEl.style.display = 'none';
-  if(!sel.length){ errEl.textContent = 'Select at least one strategy'; errEl.style.display = 'block'; return; }
-  const ns = document.getElementById('nsInput').value.trim();
-  if(!ns){ errEl.textContent = 'Namespace is required'; errEl.style.display = 'block'; return; }
-  const apiKey = getApiKey();
-  const btn = document.getElementById('runBtn');
-  btn.disabled = true;
-  btn.textContent = 'Launching...';
-  const isDry = document.getElementById('dryRunToggle').checked;
-  const isScheduled = document.getElementById('scheduleToggle').checked;
-  const isFullCycle = sel.length === 1 && sel[0] === 'full_cycle';
-  const payload = {
-    namespace: ns,
-    ...(isFullCycle ? { strategy: 'full_cycle' } : { strategies: sel }),
-    budget: parseInt(document.getElementById('budgetSlider').value),
-    model: document.getElementById('modelSelect').value,
-    dry_run: isDry,
-    ...(isScheduled ? { schedule: { interval_hours: parseInt(document.getElementById('intervalInput').value)||24 } } : {})
-  };
-  showExecPanel();
-  const endpoint = isScheduled ? '/v1/memory/dream/schedule' : '/v1/memory/dream/start';
-  try {
-    const res = await fetch(endpoint, {
-      method:'POST',
-      headers:{'Content-Type':'application/json','X-API-Key':apiKey},
-      body:JSON.stringify(payload)
-    });
-    const data = await res.json().catch(() => ({}));
-    const dreamId = data.dream_id || data.id || `dream_${Math.random().toString(36).slice(2,10)}`;
-    currentDreamId = dreamId;
-    document.getElementById('execId').textContent = dreamId;
-    if(!res.ok){
-      setStatus('failed');
-      btn.disabled = false;
-      btn.textContent = 'Run Dream';
-      return;
-    }
-    if(isDry){
-      setStatus('complete');
-      showResult({insights:0,score:'N/A',duration:0,brief:'Dry run complete — no credits consumed. Configuration is valid.'});
-    } else {
-      setStatus('running');
-      startPolling(dreamId);
-    }
-  } catch(e) {
-    // Demo mode for UI preview
-    const dreamId = `dream_${Math.random().toString(36).slice(2,10)}`;
-    currentDreamId = dreamId;
-    document.getElementById('execId').textContent = dreamId;
-    if(isDry){
-      setStatus('complete');
-      showResult({insights:0,score:'N/A',duration:0,brief:'Dry run complete (demo mode) — no API endpoint reachable.'});
-    } else {
-      setStatus('running');
-      simulateProgress();
-    }
-  }
-  btn.disabled = false;
-  btn.textContent = 'Run Dream';
-}
-
-function showExecPanel(){
-  const panel = document.getElementById('execPanel');
-  panel.classList.add('visible');
-  document.getElementById('execResult').classList.add('hidden');
-  currentStageIdx = -1;
-  renderProgressStages();
-  panel.scrollIntoView({behavior:'smooth',block:'start'});
-}
-
-function renderProgressStages(){
-  const wrap = document.getElementById('progressStages');
-  wrap.innerHTML = STAGES.map((s,i) => `
-    <div class="prog-stage" id="ps-${i}">
-      <div class="prog-dot" id="pd-${i}">${s.icon}</div>
-      <div class="prog-label">${s.name}</div>
-    </div>
-  `).join('');
-}
-
-function setStageProgress(idx){
-  STAGES.forEach((_,i) => {
-    const dot = document.getElementById(`pd-${i}`);
-    if(!dot) return;
-    dot.className = 'prog-dot';
-    if(i < idx) dot.classList.add('done');
-    else if(i === idx) dot.classList.add('active');
-  });
-  currentStageIdx = idx;
-}
-
-function setStatus(s){
-  const el = document.getElementById('statusBadge');
-  el.className = `status-badge ${s}`;
-  el.textContent = s;
-}
-
-function showResult(data){
-  const el = document.getElementById('execResult');
-  el.classList.remove('hidden');
-  document.getElementById('resInsights').textContent = data.insights ?? '—';
-  document.getElementById('resScore').textContent = data.score ?? '—';
-  document.getElementById('resDuration').textContent = data.duration ?? '—';
-  document.getElementById('resBrief').textContent = data.brief || 'Dream synthesis complete.';
-}
-
-async function startPolling(id){
-  let tries = 0;
-  pollInterval = setInterval(async () => {
-    tries++;
-    try {
-      const res = await fetch(`/v1/memory/dream/status/${id}`, {
-        headers:{'X-API-Key':getApiKey()}
-      });
-      const data = await res.json().catch(() => ({}));
-      const stage = data.current_stage ?? Math.min(tries - 1, 8);
-      setStageProgress(stage);
-      if(data.status === 'complete' || stage >= 8){
-        clearInterval(pollInterval);
-        setStageProgress(9);
-        setStatus('complete');
-        showResult({
-          insights: data.insights_count ?? data.insights ?? '—',
-          score: data.intelligence_score ?? data.score ?? '—',
-          duration: data.duration_seconds ?? '—',
-          brief: data.brief ?? data.summary ?? 'Dream synthesis complete.'
-        });
-      } else if(data.status === 'failed'){
-        clearInterval(pollInterval);
-        setStatus('failed');
-      }
-    } catch(e){ }
+function toast(msg, type = 'info') {
+  const c = document.getElementById('toast-container');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.3s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 320);
   }, 3000);
 }
 
-function simulateProgress(){
-  let stage = 0;
-  const tick = () => {
-    setStageProgress(stage);
-    stage++;
-    if(stage < 9){ setTimeout(tick, 900 + Math.random()*600); }
-    else {
-      setStageProgress(9);
-      setStatus('complete');
-      showResult({
-        insights: Math.floor(8+Math.random()*12),
-        score: (0.7+Math.random()*0.25).toFixed(2),
-        duration: Math.floor(12+Math.random()*20),
-        brief: 'Dream synthesis complete (demo). ' + [...selectedStrategies].length + ' strateg' + (selectedStrategies.size===1?'y':'ies') + ' applied to ' + document.getElementById('nsInput').value + '.'
-      });
-    }
-  };
-  setTimeout(tick, 600);
-}
-
-// --- CODE GEN ---
-function switchLang(lang){
-  currentLang = lang;
-  document.querySelectorAll('.code-tab').forEach(t => t.classList.toggle('active', t.dataset.lang===lang));
-  updateCode();
-}
-
-function copyCode(){
-  const text = document.getElementById('codeOutput').textContent;
-  navigator.clipboard.writeText(text).then(() => {
-    const btn = document.querySelector('.code-copy-btn');
-    btn.textContent = 'Copied!';
-    setTimeout(() => btn.textContent = 'Copy', 1500);
-  });
-}
-
-function buildPayload(){
-  const sel = [...selectedStrategies];
-  const ns = document.getElementById('nsInput').value || 'agent:assistant:main';
-  const budget = parseInt(document.getElementById('budgetSlider').value);
-  const model = document.getElementById('modelSelect').value;
-  const dry = document.getElementById('dryRunToggle').checked;
-  const sched = document.getElementById('scheduleToggle').checked;
-  const interval = parseInt(document.getElementById('intervalInput').value)||24;
-  return {sel,ns,budget,model,dry,sched,interval};
-}
-
-function h(s){return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
-
-function updateCode(){
-  const {sel,ns,budget,model,dry,sched,interval} = buildPayload();
-  const endpoint = sched ? '/v1/memory/dream/schedule' : '/v1/memory/dream/start';
-  const apiKeyPlaceholder = 'YOUR_API_KEY';
-  let out = '';
-  if(currentLang==='curl'){
-    const body = JSON.stringify({
-      namespace: ns,
-      strategies: sel,
-      budget,
-      model,
-      dry_run: dry,
-      ...(sched?{schedule:{interval_hours:interval}}:{})
-    }, null, 2);
-    out = `<span class="tok-fn">curl</span> -X POST \\
-  <span class="tok-str">https://api.slopshop.gg${h(endpoint)}</span> \\
-  -H <span class="tok-str">"Authorization: Bearer ${apiKeyPlaceholder}"</span> \\
-  -H <span class="tok-str">"Content-Type: application/json"</span> \\
-  -d <span class="tok-str">'${h(body)}'</span>`;
-    if(!dry){
-      out += `\n\n<span class="tok-cmt"># Poll status</span>\n<span class="tok-fn">curl</span> -X GET \\
-  <span class="tok-str">https://api.slopshop.gg/v1/memory/dream/status/{dream_id}</span> \\
-  -H <span class="tok-str">"Authorization: Bearer ${apiKeyPlaceholder}"</span>`;
-    }
-  } else if(currentLang==='python'){
-    const stratsStr = sel.map(s=>`"${s}"`).join(', ');
-    out = `<span class="tok-kw">import</span> requests
-
-<span class="tok-kw">API_KEY</span> = <span class="tok-str">"${apiKeyPlaceholder}"</span>
-<span class="tok-kw">BASE</span>   = <span class="tok-str">"https://api.slopshop.gg"</span>
-headers = {<span class="tok-str">"Authorization"</span>: <span class="tok-fn">f</span><span class="tok-str">"Bearer {API_KEY}"</span>, <span class="tok-str">"Content-Type"</span>: <span class="tok-str">"application/json"</span>}
-
-payload = {
-    <span class="tok-str">"namespace"</span>:   <span class="tok-str">"${h(ns)}"</span>,
-    <span class="tok-str">"strategies"</span>:  [${stratsStr}],
-    <span class="tok-str">"budget"</span>:      <span class="tok-num">${budget}</span>,
-    <span class="tok-str">"model"</span>:       <span class="tok-str">"${model}"</span>,
-    <span class="tok-str">"dry_run"</span>:     <span class="tok-kw">${dry?'True':'False'}</span>,${sched?`\n    <span class="tok-str">"schedule"</span>:    {<span class="tok-str">"interval_hours"</span>: <span class="tok-num">${interval}</span>},`:''}
-}
-
-res  = requests.<span class="tok-fn">post</span>(<span class="tok-fn">f</span><span class="tok-str">"{BASE}${h(endpoint)}"</span>, json=payload, headers=headers)
-data = res.<span class="tok-fn">json</span>()
-print(<span class="tok-str">f"Dream ID: {data['dream_id']}"</span>)
-${!dry?`
-<span class="tok-kw">import</span> time
-
-<span class="tok-kw">while</span> <span class="tok-kw">True</span>:
-    s = requests.<span class="tok-fn">get</span>(<span class="tok-fn">f</span><span class="tok-str">"{BASE}/v1/memory/dream/status/{data['dream_id']}"</span>, headers=headers).<span class="tok-fn">json</span>()
-    print(<span class="tok-str">f"Status: {s['status']} | Stage: {s.get('current_stage', '?')}"</span>)
-    <span class="tok-kw">if</span> s[<span class="tok-str">'status'</span>] <span class="tok-kw">in</span> (<span class="tok-str">'complete'</span>, <span class="tok-str">'failed'</span>):
-        <span class="tok-kw">break</span>
-    time.<span class="tok-fn">sleep</span>(<span class="tok-num">3</span>)`:''}`;
-  } else {
-    const stratsStr = JSON.stringify(sel);
-    out = `<span class="tok-kw">const</span> <span class="tok-fn">slopshop</span> = <span class="tok-fn">require</span>(<span class="tok-str">"@slopshop/sdk"</span>); <span class="tok-cmt">// npm i @slopshop/sdk</span>
-
-<span class="tok-kw">const</span> client = <span class="tok-kw">new</span> <span class="tok-fn">slopshop</span>.<span class="tok-fn">Client</span>({ apiKey: <span class="tok-str">"${apiKeyPlaceholder}"</span> });
-
-<span class="tok-kw">async function</span> <span class="tok-fn">main</span>() {
-  <span class="tok-kw">const</span> dream = <span class="tok-kw">await</span> client.memory.dream.<span class="tok-fn">start</span>({
-    namespace:  <span class="tok-str">"${h(ns)}"</span>,
-    strategies: <span class="tok-num">${h(stratsStr)}</span>,
-    budget:     <span class="tok-num">${budget}</span>,
-    model:      <span class="tok-str">"${model}"</span>,
-    dry_run:    <span class="tok-kw">${dry}</span>,${sched?`\n    schedule:   { interval_hours: <span class="tok-num">${interval}</span> },`:''}
-  });
-
-  console.<span class="tok-fn">log</span>(<span class="tok-str">\`Dream started: \${dream.dream_id}\`</span>);
-${!dry?`
-  <span class="tok-cmt">// Poll until complete</span>
-  <span class="tok-kw">const</span> result = <span class="tok-kw">await</span> dream.<span class="tok-fn">waitForCompletion</span>({ pollInterval: <span class="tok-num">3000</span> });
-  console.<span class="tok-fn">log</span>(<span class="tok-str">\`Insights: \${result.insights_count}, Score: \${result.intelligence_score}\`</span>);`:''}
-}
-
-<span class="tok-fn">main</span>().<span class="tok-fn">catch</span>(console.error);`;
-  }
-  document.getElementById('codeOutput').innerHTML = out;
-}
-
-// --- INIT ---
-function init(){
-  checkAuth();
-  renderNoAuthBanner();
-  renderStages();
-  renderStrategies();
-  renderRecipes();
-  selectStage(1);
-  updateSummary();
-  updateCode();
-}
-
+// Boot
 init();
 </script>
 </body>
