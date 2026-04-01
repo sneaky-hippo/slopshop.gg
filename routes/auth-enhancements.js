@@ -21,7 +21,10 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
   // ── Helpers ─────────────────────────────────────────────────────────────────
 
   function appUrl() {
-    return process.env.APP_URL || 'https://slopshop.gg';
+    const raw = process.env.BASE_URL || process.env.APP_URL || 'https://slopshop.gg';
+    // Ensure scheme is present
+    if (raw.startsWith('http')) return raw.replace(/\/$/, '');
+    return 'https://' + raw.replace(/\/$/, '');
   }
 
   function hashKey(key) {
