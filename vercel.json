@@ -19,6 +19,13 @@
     { "source": "/sitemap.xml", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }] },
     { "source": "/llms.txt", "headers": [{ "key": "Cache-Control", "value": "public, max-age=3600" }] }
   ],
+  "redirects": [
+    { "source": "/developer", "destination": "/dev-console", "permanent": false },
+    { "source": "/dashboard", "destination": "/brain", "permanent": false },
+    { "source": "/dashboard.html", "destination": "/brain", "permanent": true },
+    { "source": "/signup", "destination": "/consumer", "permanent": false },
+    { "source": "/login", "destination": "/consumer", "permanent": false }
+  ],
   "rewrites": [
     { "source": "/v1/:path*", "destination": "https://slopshop-production.up.railway.app/v1/:path*" },
     { "source": "/auth/:path*", "destination": "https://slopshop-production.up.railway.app/auth/:path*" },
