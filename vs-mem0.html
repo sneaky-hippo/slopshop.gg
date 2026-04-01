@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Slopshop vs. Mem0 — Compare persistent memory APIs for AI agents. Dream Engine synthesis, unlimited free memory, 1,303+ endpoints.">
+  <meta property="og:title" content="Slopshop vs. Mem0 — AI Memory API Comparison">
+  <meta property="og:type" content="website">
+  <title>Slopshop vs. Mem0 — AI Memory API Comparison</title>
+  <link rel="canonical" href="https://slopshop.gg/vs/mem0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.13);
+      --text: #e8e8e8;
+      --text2: rgba(232,232,232,0.5);
+      --text3: rgba(232,232,232,0.25);
+      --accent: #00D4FF;
+      --accent-dim: rgba(0,212,255,0.07);
+      --green: #22c55e;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 60px 28px 120px; }
+
+    .vs-nav {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 60px; font-size: 11px; color: var(--text3);
+    }
+    .vs-nav a { color: var(--accent); transition: opacity 0.12s; }
+    .vs-nav a:hover { opacity: 0.75; }
+
+    .vs-eyebrow {
+      font-size: 11px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--text3); margin-bottom: 12px;
+    }
+    h1 {
+      font-family: var(--sans);
+      font-size: clamp(1.6rem, 5vw, 2.4rem);
+      font-weight: 300; letter-spacing: -0.02em; line-height: 1.18;
+      color: var(--text); margin-bottom: 16px;
+    }
+    h1 strong { font-weight: 500; }
+    .vs-sub {
+      font-family: var(--sans); font-size: 0.9375rem; font-weight: 300;
+      line-height: 1.75; color: var(--text2); max-width: 580px; margin-bottom: 48px;
+    }
+
+    .vs-table { width: 100%; border-collapse: collapse; margin-bottom: 56px; }
+    .vs-table th, .vs-table td {
+      padding: 14px 18px; text-align: left;
+      border-bottom: 1px solid var(--border); font-size: 12px;
+    }
+    .vs-table thead tr { background: var(--surface); }
+    .vs-table th { color: var(--text3); font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; }
+    .vs-table th:first-child { width: 35%; }
+    .vs-table th.col-slop { color: var(--accent); }
+    .vs-table tbody tr { background: var(--bg); transition: background 0.1s; }
+    .vs-table tbody tr:hover { background: var(--surface); }
+    .vs-table td:first-child { color: var(--text2); }
+    .vs-table td.slop-val { color: var(--text); }
+    .vs-table td.comp-val { color: var(--text3); }
+    .vs-table { border: 1px solid var(--border2); border-radius: 10px; overflow: hidden; }
+
+    .cta-block { text-align: center; padding: 48px 0 0; }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent); color: #000;
+      font-family: var(--mono); font-size: 12px; font-weight: 600;
+      padding: 12px 24px; border-radius: 6px;
+      border: none; cursor: pointer; transition: opacity 0.15s;
+      text-transform: uppercase; letter-spacing: 0.06em;
+    }
+    .btn-primary:hover { opacity: 0.85; }
+
+    .footer-links {
+      display: flex; gap: 24px; flex-wrap: wrap;
+      font-size: 11px; color: var(--text3);
+      border-top: 1px solid var(--border); padding-top: 28px; margin-top: 56px;
+    }
+    .footer-links a { transition: color 0.12s; }
+    .footer-links a:hover { color: var(--text2); }
+    .footer-links span { color: var(--border2); }
+
+    @media (max-width: 480px) {
+      .wrap { padding: 40px 20px 80px; }
+      .vs-table th, .vs-table td { padding: 10px 12px; font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <nav class="vs-nav">
+    <a href="/">← slopshop.gg</a>
+    <span style="opacity:0.35;">A REM Labs product</span>
+  </nav>
+
+  <div class="vs-eyebrow">Comparison</div>
+  <h1>Slopshop vs. <strong>Mem0</strong></h1>
+  <p class="vs-sub">An honest comparison. We believe you should choose based on real data.</p>
+
+  <table class="vs-table">
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th class="col-slop">Slopshop</th>
+        <th>Mem0</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Memory types</td>
+        <td class="slop-val">KV + vector + graph + semantic</td>
+        <td class="comp-val">Vector-based</td>
+      </tr>
+      <tr>
+        <td>Dream Engine synthesis</td>
+        <td class="slop-val">Yes, 9 stages</td>
+        <td class="comp-val">No — memories are static</td>
+      </tr>
+      <tr>
+        <td>Intelligence Score</td>
+        <td class="slop-val">Yes</td>
+        <td class="comp-val">No</td>
+      </tr>
+      <tr>
+        <td>Free memory</td>
+        <td class="slop-val">Unlimited forever</td>
+        <td class="comp-val">Limited free tier</td>
+      </tr>
+      <tr>
+        <td>Self-hostable</td>
+        <td class="slop-val">Yes</td>
+        <td class="comp-val">Open source core</td>
+      </tr>
+      <tr>
+        <td>Tool APIs beyond memory</td>
+        <td class="slop-val">1,303+ endpoints</td>
+        <td class="comp-val">Memory only</td>
+      </tr>
+      <tr>
+        <td>MCP server</td>
+        <td class="slop-val">Yes</td>
+        <td class="comp-val">Yes</td>
+      </tr>
+      <tr>
+        <td>Team/multiplayer</td>
+        <td class="slop-val">Yes — Team Hive</td>
+        <td class="comp-val">No</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="cta-block">
+    <a href="https://remlabs.ai/auth/google" class="btn-primary">▸ Try Slopshop free — No card required</a>
+  </div>
+
+  <div class="footer-links">
+    <span style="opacity:0.35;">A REM Labs product</span>
+    <span>·</span>
+    <a href="/dev-console">Console</a>
+    <span>·</span>
+    <a href="/brain">Dashboard</a>
+    <span>·</span>
+    <a href="/pricing">Pricing</a>
+    <span>·</span>
+    <a href="https://remlabs.ai" target="_blank" rel="noopener">remlabs.ai ↗</a>
+    <span>·</span>
+    <a href="/legal">Terms</a>
+  </div>
+
+</div>
+</body>
+</html>

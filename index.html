@@ -186,6 +186,14 @@
     .footer-links a:hover { color: var(--text2); }
     .footer-links span { color: var(--border2); }
 
+    .term-demo { margin-bottom: 48px; font-size: 11px; line-height: 2; }
+    .term-line { display: flex; gap: 8px; }
+    .term-line.hidden { opacity: 0; }
+    .term-prompt { color: var(--accent); }
+    .term-cmd { color: var(--text); }
+    .term-out { color: var(--green); padding-left: 16px; }
+    .term-score { color: var(--accent); }
+
     @media (max-width: 480px) {
       .wrap { padding: 48px 20px 80px; }
       .stats { grid-template-columns: repeat(2, 1fr); }
@@ -203,7 +211,7 @@
 /____/_____/\____/_/</pre>
 
   <div class="tagline">S T A T E L E S S &nbsp;·&nbsp; L I G H T W E I G H T &nbsp;·&nbsp; O P E R A T I N G &nbsp; P R I M I T I V E S</div>
-  <div class="version-line"><span>slopshop.gg</span> &nbsp;v4.0 &nbsp;·&nbsp; AI Agent Operating System</div>
+  <div class="version-line"><a href="https://remlabs.ai" style="color:var(--accent);opacity:0.7;" target="_blank" rel="noopener">REM Labs</a> &nbsp;·&nbsp; <span>slopshop.gg</span> &nbsp;v4.0 &nbsp;·&nbsp; AI Agent Operating System</div>
 
   <div class="perks">
     <div class="perk"><span class="perk-dot"></span>Free persistent memory</div>
@@ -223,6 +231,15 @@
   <div class="install-block">
     <div class="install-pre">npm install -g slopshop &amp;&amp; slop start</div>
     <button class="install-copy" onclick="copyInstall(this)">copy</button>
+  </div>
+
+  <div class="term-demo" id="term-demo">
+    <div class="term-line" data-delay="0"><span class="term-prompt">$</span> <span class="term-cmd">slop memory store "User prefers dark mode, senior engineer"</span></div>
+    <div class="term-line hidden" data-delay="800"><span class="term-out">✓ mem_9a3z stored</span></div>
+    <div class="term-line hidden" data-delay="1400"><span class="term-prompt">$</span> <span class="term-cmd">slop dream run --strategy synthesize,compress</span></div>
+    <div class="term-line hidden" data-delay="2200"><span class="term-out">⊙ Dream running... Intelligence Score: <span class="term-score">87.4</span></span></div>
+    <div class="term-line hidden" data-delay="3000"><span class="term-prompt">$</span> <span class="term-cmd">slop memory search "preferences"</span></div>
+    <div class="term-line hidden" data-delay="3800"><span class="term-out">→ dark mode (conf: 0.97) · senior engineer (conf: 0.95)</span></div>
   </div>
 
   <div class="stats">
@@ -262,6 +279,8 @@
   </div>
 
   <div class="footer-links">
+    <span style="opacity:0.35;">A REM Labs product</span>
+    <span>·</span>
     <a href="/dev-console">Console</a>
     <span>·</span>
     <a href="/brain">Dashboard</a>
@@ -283,6 +302,13 @@ function copyInstall(btn) {
     setTimeout(function() { btn.textContent = orig; btn.style.color = ''; }, 2000);
   });
 }
+(function(){
+  var lines = document.querySelectorAll('.term-line[data-delay]');
+  lines.forEach(function(l){
+    var d = parseInt(l.dataset.delay)||0;
+    setTimeout(function(){ l.classList.remove('hidden'); }, d + 500);
+  });
+})();
 </script>
 </body>
 </html>
