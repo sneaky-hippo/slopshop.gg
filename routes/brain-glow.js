@@ -437,16 +437,54 @@ module.exports = function (app, db, apiKeys) {
 
     const recommended_strategies = [...strategies].slice(0, 3);
 
+    // ── creative_leaps: pull from latest BiOtA session ────────────────────
+    let creative_leaps = [];
+    try {
+      const biotaRow = db.prepare(
+        `SELECT creative_leaps, rem_score, convergence_score
+         FROM biota_sessions
+         WHERE api_key_hash = ? AND status = 'complete'
+         ORDER BY created_at DESC LIMIT 1`
+      ).get(keyHash);
+      if (biotaRow && biotaRow.creative_leaps) {
+        const parsed = JSON.parse(biotaRow.creative_leaps);
+        creative_leaps = (Array.isArray(parsed) ? parsed : []).slice(0, 3).map(l =>
+          typeof l === 'string' ? l : (l.leap || l.description || JSON.stringify(l))
+        );
+      }
+    } catch (_) { creative_leaps = []; }
+
+    // ── context_dream_summary: last 7-day stats ───────────────────────────
+    let context_dream_summary = null;
+    try {
+      const cdRow = db.prepare(
+        `SELECT COUNT(*) AS cnt, SUM(tokens_saved) AS total_saved, AVG(savings_pct) AS avg_pct
+         FROM context_dream_packs
+         WHERE api_key_hash = ? AND created_at >= ?`
+      ).get(keyHash, now - 7 * 24 * 60 * 60 * 1000);
+      if (cdRow && cdRow.cnt > 0) {
+        context_dream_summary = {
+          packs_this_week: cdRow.cnt,
+          total_tokens_saved: cdRow.total_saved || 0,
+          avg_savings_pct: parseFloat((cdRow.avg_pct || 0).toFixed(1)),
+        };
+      }
+    } catch (_) { context_dream_summary = null; }
+
     // ── date ──────────────────────────────────────────────────────────────
     const date = new Date(now).toISOString().split('T')[0];
 
     ok(res, {
       brain_glow,
+      rem_score: brain_glow.score,
+      rem_rank: brain_glow.rank,
       dream_recap,
       top_insights,
+      creative_leaps,
       tmr_cues,
       emotional_summary,
       recommended_strategies,
+      context_dream_summary,
       date,
     });
   });

@@ -2366,6 +2366,9 @@ try { require('./routes/dream-engine-v2')(app, db, apiKeys); console.log('Route 
 try { require('./routes/brain-glow')(app, db, apiKeys); console.log('Route loaded: brain-glow'); } catch (e) { console.error('Route load FAILED: brain-glow -', e.message, e.stack); }
 try { require('./routes/background-extractors')(app, db, apiKeys); console.log('Route loaded: background-extractors'); } catch (e) { console.error('Route load FAILED: background-extractors -', e.message, e.stack); }
 try { require('./routes/voice-wearable')(app, db, apiKeys); console.log('Route loaded: voice-wearable'); } catch (e) { console.error('Route load FAILED: voice-wearable -', e.message, e.stack); }
+// ===== STRAT 20 ROUTE MODULES (BiOtA + OAMS) =====
+try { require('./routes/biota')(app, db, apiKeys); console.log('Route loaded: biota'); } catch (e) { console.error('Route load FAILED: biota -', e.message, e.stack); }
+try { require('./routes/oams')(app, db, apiKeys); console.log('Route loaded: oams'); } catch (e) { console.error('Route load FAILED: oams -', e.message, e.stack); }
 // ===== PUBLIC DEMO ROUTES (no auth required) =====
 try { require('./routes/demo')(app, db, apiKeys); console.log('Route loaded: demo'); } catch (e) { console.error('Route load FAILED: demo -', e.message, e.stack); }
 // ===== AUTH ENHANCEMENTS (server-side OAuth2, anomaly detection, portal routing) =====
