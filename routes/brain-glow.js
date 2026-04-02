@@ -133,23 +133,16 @@ function computeScore(db, keyHash) {
     collective_boost = clamp(1 + hiveCount / 5, 1.0, 1.5);
   } catch (_) { collective_boost = 1.0; }
 
-  // ── duration_sec: time since first dream session ──────────────────────────
-  let duration_sec = 1;
-  try {
-    const durRow = db.prepare(
-      `SELECT MIN(created_at) AS first FROM dream_sessions WHERE api_key_hash = ?`
-    ).get(keyHash);
-    if (durRow && durRow.first != null) {
-      const daysSince = (now - durRow.first) / 86400000;
-      duration_sec = Math.max(1, daysSince * 86400);
-    }
-  } catch (_) { duration_sec = 1; }
-
-  // ── raw score ─────────────────────────────────────────────────────────────
-  const rawScore =
-    (insights * relevance * dream_depth * emotional_depth * user_shaping * collective_boost)
-    / duration_sec;
-  const score = clamp(rawScore * 100000, 0, 100); // scale to 0-100 range
+  // ── score: additive quality + volume formula (no time penalty) ───────────
+  // insightPts: 0–60 (8 pts per completed dream, cap at ~7-8 dreams)
+  const insightPts = Math.min(60, insights * 8);
+  // depthPts: 0–20 (full 9-stage = 20, default ~11)
+  const depthPts = dream_depth * 20;
+  // engagePts: 0–~17 (emotional_depth + user_shaping + collective_boost contributions)
+  const engagePts = ((emotional_depth - 1) + (user_shaping - 1) + (collective_boost - 1)) * 6.67;
+  // relevanceMult: 0.8–1.3× based on avg consumer score history
+  const relevanceMult = clamp(0.8 + relevance * 0.5, 0.8, 1.3);
+  const score = clamp((insightPts + depthPts + engagePts) * relevanceMult, 0, 100);
 
   // ── streak_days ───────────────────────────────────────────────────────────
   let streak_days = 0;

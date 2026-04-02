@@ -63,7 +63,15 @@ app.use(helmet({
   crossOriginEmbedderPolicy: false
 }));
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || '*',
+  origin: function(origin, callback) {
+    const raw = process.env.CORS_ORIGIN || '';
+    const allowed = raw.split(',').map(s => s.trim()).filter(Boolean);
+    if (!allowed.length || allowed[0] === '*' || !origin || allowed.includes(origin)) {
+      callback(null, origin || '*');
+    } else {
+      callback(null, false);
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-API-Key', 'X-Request-Id', 'X-Admin-Secret'],
   exposedHeaders: [
@@ -12944,6 +12952,115 @@ app.get('/v1/budget', auth, (req, res) => {
 });
 
 
+
+// ===== REST MEMORY ALIASES (convenience routes mapping to slug handlers) =====
+// These expose marketed REST paths that delegate to the underlying slug dispatcher logic.
+
+// Helper: call a handler by slug, return JSON result
+async function callSlugHandler(slug, input, req) {
+  const handler = allHandlers[slug];
+  if (!handler) return null;
+  return handler(input, req);
+}
+
+// POST /v1/memory/store  → memory-set
+app.post('/v1/memory/store', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
+  const result = await callSlugHandler('memory-set', req.body, req);
+  if (!result) return res.status(501).json({ error: { code: 'handler_missing', slug: 'memory-set' } });
+  try { return res.json({ ok: true, ...result }); }
+  catch (e) { return res.status(500).json({ ok: false, error: { code: 'internal', message: e.message } }); }
+});
+
+// GET /v1/memory/search  → memory-search (query params)
+app.get('/v1/memory/search', auth, memoryAuth, async (req, res) => {
+  try {
+    const result = await callSlugHandler('memory-search', { ...req.query }, req);
+    if (!result) return res.status(501).json({ error: { code: 'handler_missing', slug: 'memory-search' } });
+    return res.json({ ok: true, ...result });
+  } catch (e) { return res.status(500).json({ ok: false, error: { code: 'internal', message: e.message } }); }
+});
+
+// POST /v1/memory/search  → memory-search (query in body)
+app.post('/v1/memory/search', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
+  try {
+    const result = await callSlugHandler('memory-search', req.body, req);
+    if (!result) return res.status(501).json({ error: { code: 'handler_missing', slug: 'memory-search' } });
+    return res.json({ ok: true, ...result });
+  } catch (e) { return res.status(500).json({ ok: false, error: { code: 'internal', message: e.message } }); }
+});
+
+// GET /v1/memory/list  → memory-list
+app.get('/v1/memory/list', auth, memoryAuth, async (req, res) => {
+  try {
+    const result = await callSlugHandler('memory-list', { ...req.query }, req);
+    if (!result) return res.status(501).json({ error: { code: 'handler_missing', slug: 'memory-list' } });
+    return res.json({ ok: true, ...result });
+  } catch (e) { return res.status(500).json({ ok: false, error: { code: 'internal', message: e.message } }); }
+});
+
+// POST /v1/memory/extract  → memory-chunk or 501 with hint
+app.post('/v1/memory/extract', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
+  try {
+    const result = await callSlugHandler('memory-extract', req.body, req) || await callSlugHandler('memory-chunk', req.body, req);
+    if (!result) return res.status(501).json({ error: { code: 'handler_missing', message: 'Use POST /v1/memory/background/extract for background extraction' } });
+    return res.json({ ok: true, ...result });
+  } catch (e) { return res.status(500).json({ ok: false, error: { code: 'internal', message: e.message } }); }
+});
+
+// GET /v1/memory/namespaces  → memory-list-namespaces or derived from memory-list
+app.get('/v1/memory/namespaces', auth, memoryAuth, async (req, res) => {
+  try {
+    const key = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    const keyHash = require('crypto').createHash('sha256').update(key).digest('hex');
+    const rows = db.prepare(
+      `SELECT DISTINCT namespace FROM memories WHERE api_key_hash = ? ORDER BY namespace`
+    ).all(keyHash);
+    return res.json({ ok: true, namespaces: rows.map(r => r.namespace || 'default') });
+  } catch (e) { return res.status(500).json({ ok: false, error: { code: 'internal', message: e.message } }); }
+});
+
+// GET /.well-known/mcp.json  — MCP discovery manifest (unauthenticated)
+app.get('/.well-known/mcp.json', (req, res) => {
+  const base = process.env.BASE_URL || `https://${req.hostname}`;
+  res.json({
+    schema_version: '2025-03',
+    name: 'slopshop',
+    description: 'Living Agentic Backend OS — 530+ tools, Dream Engine memory consolidation, Multiplayer Memory',
+    server_url: `${base}/mcp`,
+    capabilities: ['tools', 'memory', 'prompts'],
+    tool_count: 530,
+    docs_url: 'https://slopshop.gg/docs',
+  });
+});
+
+// GET /v1/status/public  — unauthenticated health summary
+app.get('/v1/status/public', (req, res) => {
+  res.json({
+    ok: true,
+    status: 'operational',
+    version: process.env.npm_package_version || '2.0.0',
+    uptime_sec: Math.floor(process.uptime()),
+    tool_count: apiMap ? apiMap.size : 0,
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// GET /v1/metrics/public  — unauthenticated public metrics
+app.get('/v1/metrics/public', (req, res) => {
+  try {
+    const totalKeys = db.prepare('SELECT COUNT(*) AS cnt FROM api_keys WHERE active = 1').get();
+    const totalDreams = db.prepare("SELECT COUNT(*) AS cnt FROM dream_sessions WHERE status = 'complete'").get();
+    res.json({
+      ok: true,
+      active_api_keys: totalKeys ? totalKeys.cnt : 0,
+      completed_dream_sessions: totalDreams ? totalDreams.cnt : 0,
+      uptime_sec: Math.floor(process.uptime()),
+      timestamp: new Date().toISOString(),
+    });
+  } catch (e) {
+    res.json({ ok: true, uptime_sec: Math.floor(process.uptime()), timestamp: new Date().toISOString() });
+  }
+});
 
 // ===== WILDCARD: Call any API (MUST BE LAST) =====
 app.post('/v1/:slug', auth, memoryAuth, BODY_LIMIT_COMPUTE, async (req, res) => {
