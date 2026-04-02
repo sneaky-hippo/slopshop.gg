@@ -132,8 +132,9 @@ module.exports = function mountDreamLayer(app, db, apiKeys, allHandlers) {
 
       let dreamRows = [];
       if (searchFn) {
-        // Use search with a broad query to surface most relevant insights
-        const query = dreamSessionId ? dreamSessionId.slice(0, 8) : 'insights synthesis patterns';
+        // Empty query = list all entries in :dreams namespace (no scoring filter)
+        // If session filter, narrow by session prefix in query
+        const query = dreamSessionId ? dreamSessionId.slice(0, 8) : '';
         const sr = searchFn({ namespace: dreamsNs, query, limit });
         dreamRows = (sr.results || []).map(r => ({
           key: r.key,
@@ -146,13 +147,7 @@ module.exports = function mountDreamLayer(app, db, apiKeys, allHandlers) {
           created: r.created || Date.now(), updated: r.updated || Date.now(),
           _from_handler: true
         }));
-        // If session filter, narrow down by key prefix
-        if (dreamSessionId) {
-          const pfx = dreamSessionId.slice(0, 8);
-          dreamRows = dreamRows.filter(r => r.key.includes(pfx));
-        }
       } else {
-        // Fallback: raw SQL
         dreamRows = dreamSessionId
           ? db.prepare(`SELECT key,value,tags,content_type,memory_type,source_type,dream_session_id,created,updated FROM memory WHERE namespace=? AND (dream_session_id=? OR key LIKE ?) ORDER BY created DESC LIMIT ?`).all(dreamsNs, dreamSessionId, '%'+dreamSessionId.slice(0,8)+'%', limit)
           : db.prepare(`SELECT key,value,tags,content_type,memory_type,source_type,dream_session_id,created,updated FROM memory WHERE namespace=? ORDER BY created DESC LIMIT ?`).all(dreamsNs, limit);
