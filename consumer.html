@@ -1302,7 +1302,7 @@
   <script>
     // Redirect to dashboard if already authed
     fetch('/v1/auth/session', { credentials: 'include' })
-      .then(r => { if (r.ok) window.location.replace('/brain.html'); })
+      .then(r => { if (r.ok) window.location.replace('https://remlabs.ai/memory'); })
       .catch(() => {});
 
     // Google Sign In
