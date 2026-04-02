@@ -17913,6 +17913,14 @@ function sampleDreamMemories(namespace, budget) {
   return [...semanticRows, ...breadthRows];
 }
 
+// Strip lone surrogate pairs and other characters that break JSON serialisation.
+// Lone surrogates (U+D800–U+DFFF) are valid in JS strings but invalid in JSON.
+function _sanitizeForLLM(str) {
+  if (typeof str !== 'string') return str;
+  // Replace lone surrogates with the replacement character
+  return str.replace(/[\uD800-\uDFFF]/g, '\uFFFD');
+}
+
 // Format memory rows for LLM consumption.
 // Handles both raw DB rows (value may be ~z~ compressed string) and
 // pre-decompressed handler results (_from_handler=true, value already a string).
@@ -17926,7 +17934,7 @@ function formatMemoriesForLLM(rows) {
       }
       try { val = JSON.parse(val); if (typeof val === 'object') val = JSON.stringify(val); } catch (_) {}
     }
-    val = String(val || '').slice(0, 800);
+    val = _sanitizeForLLM(String(val || '')).slice(0, 800);
     let tags = '';
     try { tags = (Array.isArray(r.tags) ? r.tags : JSON.parse(r.tags || '[]')).join(', '); } catch (_) { tags = r.tags || ''; }
     return '[' + (i + 1) + '] KEY: ' + r.key + '\n    TAGS: ' + (tags || 'none') + '\n    VALUE: ' + val;

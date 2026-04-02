@@ -422,6 +422,8 @@ module.exports = function mountDreamLayer(app, db, apiKeys, allHandlers) {
     } = req.body || {};
 
     if (!content) return res.status(400).json({ ok: false, error: { code: 'missing_content', message: 'content is required' } });
+    // Strip lone surrogates so the content is always valid JSON when passed to LLM
+    const cleanContent = content.replace(/[\uD800-\uDFFF]/g, '');
 
     const VALID_TYPES = ['text', 'poem', 'lyrics', 'code', 'research', 'document', 'business_idea',
                          'notion_page', 'markdown', 'json', 'csv', 'url', 'note'];
@@ -449,12 +451,10 @@ module.exports = function mountDreamLayer(app, db, apiKeys, allHandlers) {
     try {
       const setFn = memSet();
       if (setFn) {
-        // Route through slopshop memory-set handler
-        setFn({ namespace: scopedNs, key: resolvedKey, value: content, tags: allTags, ttl_seconds: ttl || undefined, type: 'project' });
+        setFn({ namespace: scopedNs, key: resolvedKey, value: cleanContent, tags: allTags, ttl_seconds: ttl || undefined, type: 'project' });
       } else {
-        // Fallback raw SQL
         db.prepare(`INSERT OR REPLACE INTO memory (namespace,key,value,tags,content_type,memory_type,source_type,source_url,created,updated,ttl) VALUES (?,?,?,?,?,'core',?,?,?,?,?)`)
-          .run(scopedNs, resolvedKey, content, JSON.stringify(allTags), resolvedType, source_type, source_url || null, now, now, ttl);
+          .run(scopedNs, resolvedKey, cleanContent, JSON.stringify(allTags), resolvedType, source_type, source_url || null, now, now, ttl);
       }
 
       res.json({
@@ -463,7 +463,7 @@ module.exports = function mountDreamLayer(app, db, apiKeys, allHandlers) {
         namespace,
         content_type: resolvedType,
         source_type,
-        size_bytes: Buffer.byteLength(content, 'utf8'),
+        size_bytes: Buffer.byteLength(cleanContent, 'utf8'),
         stored_at: now
       });
     } catch(e) {
