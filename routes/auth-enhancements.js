@@ -313,7 +313,7 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
         path:     '/',
       });
 
-      return res.redirect('/brain.html');
+      return res.redirect((process.env.APP_URL || 'https://remlabs.ai') + '/memory');
 
     } catch (err) {
       console.error('[auth-enhancements] callback error:', err.message);
@@ -450,7 +450,7 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
       const user = db.prepare('SELECT * FROM users WHERE id = ?').get(session.user_id);
       return res.json({
         portal:   'consumer',
-        redirect: '/brain.html',
+        redirect: (process.env.APP_URL || 'https://remlabs.ai') + '/memory',
         email:    user ? user.email : session.email || null,
         name:     user ? (user.name || null) : null,
       });
@@ -463,7 +463,7 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
       if (user) {
         return res.json({
           portal:   'consumer',
-          redirect: '/brain.html',
+          redirect: (process.env.APP_URL || 'https://remlabs.ai') + '/memory',
           email:    user.email,
           name:     user.name || null,
         });

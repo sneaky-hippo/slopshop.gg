@@ -1101,7 +1101,7 @@ app.get('/', (req, res, next) => {
   if (token) {
     const session = (() => { try { return require('./routes/db-compat') && null; } catch(_) { return null; } })();
     // If session cookie exists, send to consumer app; the app itself validates the session
-    return res.redirect('/brain.html');
+    return res.redirect((process.env.APP_URL || 'https://remlabs.ai') + '/memory');
   }
   return res.redirect('/consumer.html');
 });
