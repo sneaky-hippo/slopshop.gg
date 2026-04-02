@@ -2373,7 +2373,7 @@ try { require('./routes/oams')(app, db, apiKeys); console.log('Route loaded: oam
 try { require('./routes/demo')(app, db, apiKeys); console.log('Route loaded: demo'); } catch (e) { console.error('Route load FAILED: demo -', e.message, e.stack); }
 // ===== AUTH ENHANCEMENTS (server-side OAuth2, anomaly detection, portal routing) =====
 try { require('./routes/auth-enhancements')(app, db, apiKeys); console.log('Route loaded: auth-enhancements'); } catch (e) { console.error('Route load FAILED: auth-enhancements -', e.message, e.stack); }
-try { require('./routes/dream-layer')(app, db, apiKeys); console.log('Route loaded: dream-layer'); } catch (e) { console.error('Route load FAILED: dream-layer -', e.message, e.stack); }
+try { require('./routes/dream-layer')(app, db, apiKeys, allHandlers); console.log('Route loaded: dream-layer'); } catch (e) { console.error('Route load FAILED: dream-layer -', e.message, e.stack); }
 // ===== BILLING (Stripe checkout, webhook, portal) =====
 try { require('./routes/billing')(app, db, apiKeys); console.log('[server] billing routes loaded'); } catch(e) { console.error('[server] billing load error:', e.message); }
 // ===================================
@@ -17860,33 +17860,75 @@ const DREAM_CREDITS = {
 };
 
 // Sample memory keys from a namespace: mix of recent + random for breadth
+// sampleDreamMemories — routes through allHandlers['memory-search'] + allHandlers['memory-list']
+// so all decompression, scoring, and access go through the slopshop memory layer.
+// Strategy: semantic-relevant 60% (via memory-search with a broad query) +
+//           breadth sample 40% (via memory-list for keys not already selected).
 function sampleDreamMemories(namespace, budget) {
-  const now = Date.now();
-  const recentRows = db.prepare(
-    'SELECT key, value, tags, updated FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?) ORDER BY updated DESC LIMIT ?'
-  ).all(namespace, now, Math.ceil(budget * 0.6));
+  const searchHandler = allHandlers['memory-search'];
+  const listHandler   = allHandlers['memory-list'];
 
-  const recentKeys = new Set(recentRows.map(function(r) { return r.key; }));
-  const allRows = db.prepare(
-    'SELECT key, value, tags, updated FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?) ORDER BY RANDOM() LIMIT ?'
-  ).all(namespace, now, budget);
-
-  const combined = recentRows.slice();
-  for (let i = 0; i < allRows.length; i++) {
-    const r = allRows[i];
-    if (!recentKeys.has(r.key) && combined.length < budget) combined.push(r);
+  // Fall back to direct SQL only if handlers aren't loaded yet (boot-time edge case)
+  if (!searchHandler || !listHandler) {
+    const now = Date.now();
+    return db.prepare(
+      'SELECT key, value, tags, updated FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?) ORDER BY updated DESC LIMIT ?'
+    ).all(namespace, now, budget);
   }
-  return combined;
+
+  const semanticBudget = Math.ceil(budget * 0.6);
+  const breadthBudget  = budget - semanticBudget;
+
+  // Semantic half — broad query surfaces most content-rich memories regardless of recency
+  const searchResult = searchHandler({ namespace, query: 'key insights themes patterns ideas knowledge', limit: semanticBudget });
+  const semanticRows = (searchResult.results || []).map(function(r) {
+    // memory-search returns value already parsed/decompressed — normalise to string for formatMemoriesForLLM
+    const val = typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value || '');
+    const tags = Array.isArray(r.tags) ? JSON.stringify(r.tags) : (r.tags || '[]');
+    return { key: r.key, value: val, tags, updated: r.updated || Date.now(), _from_handler: true };
+  });
+
+  // Breadth half — list all keys then fetch values for ones not already in semantic set
+  const seenKeys = new Set(semanticRows.map(function(r) { return r.key; }));
+  const listResult = listHandler({ namespace, limit: budget * 3 }); // fetch more keys for random selection
+  const candidateKeys = (listResult.keys || []).filter(function(k) { return !seenKeys.has(k); });
+
+  // Shuffle and take breadthBudget worth
+  for (let i = candidateKeys.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const tmp = candidateKeys[i]; candidateKeys[i] = candidateKeys[j]; candidateKeys[j] = tmp;
+  }
+  const breadthKeys = candidateKeys.slice(0, breadthBudget);
+
+  // Fetch values for breadth keys via memory-get (through handler)
+  const getHandler = allHandlers['memory-get'];
+  const breadthRows = breadthKeys.map(function(k) {
+    const r = getHandler ? getHandler({ namespace, key: k }) : null;
+    if (!r || r._engine === 'not_found') return null;
+    const val = typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value || '');
+    const tags = Array.isArray(r.tags) ? JSON.stringify(r.tags) : (r.tags || '[]');
+    return { key: k, value: val, tags, updated: Date.now(), _from_handler: true };
+  }).filter(Boolean);
+
+  return [...semanticRows, ...breadthRows];
 }
 
-// Format memory rows for LLM consumption
+// Format memory rows for LLM consumption.
+// Handles both raw DB rows (value may be ~z~ compressed string) and
+// pre-decompressed handler results (_from_handler=true, value already a string).
 function formatMemoriesForLLM(rows) {
   return rows.map(function(r, i) {
     let val = r.value;
-    try { val = JSON.parse(val); if (typeof val === 'object') val = JSON.stringify(val); } catch (_) {}
+    // Raw DB rows: decompress ~z~ and unwrap JSON if needed
+    if (!r._from_handler) {
+      if (typeof val === 'string' && val.startsWith('~z~')) {
+        try { val = require('zlib').inflateRawSync(Buffer.from(val.slice(3), 'base64')).toString('utf8'); } catch(_) {}
+      }
+      try { val = JSON.parse(val); if (typeof val === 'object') val = JSON.stringify(val); } catch (_) {}
+    }
     val = String(val || '').slice(0, 800);
     let tags = '';
-    try { tags = JSON.parse(r.tags || '[]').join(', '); } catch (_) { tags = r.tags || ''; }
+    try { tags = (Array.isArray(r.tags) ? r.tags : JSON.parse(r.tags || '[]')).join(', '); } catch (_) { tags = r.tags || ''; }
     return '[' + (i + 1) + '] KEY: ' + r.key + '\n    TAGS: ' + (tags || 'none') + '\n    VALUE: ' + val;
   }).join('\n\n');
 }
@@ -17961,14 +18003,18 @@ async function executeDream(dreamId, apiKey, namespace, strategy, budget, model,
   if (session) session.status = dryRun ? 'dry_run' : 'running';
 
   try {
-    // 1. Orient — sample memories (recent-biased 60% + random 40% for breadth)
+    // 1. Orient — sample memories via slopshop handlers (semantic 60% + breadth 40%)
     let rows;
     if (opts && opts.keysFilter && opts.keysFilter.length > 0) {
-      // User selected specific memory keys to dream from
-      const placeholders = opts.keysFilter.map(() => '?').join(',');
-      rows = db.prepare(
-        `SELECT key, value, tags, updated FROM memory WHERE namespace = ? AND key IN (${placeholders})`
-      ).all(namespace, ...opts.keysFilter);
+      // User selected specific memory keys — fetch each via memory-get handler
+      const getHandler = allHandlers['memory-get'];
+      rows = opts.keysFilter.map(function(k) {
+        const r = getHandler ? getHandler({ namespace, key: k }) : null;
+        if (!r || r._engine === 'not_found') return null;
+        const val = typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value || '');
+        const tags = Array.isArray(r.tags) ? JSON.stringify(r.tags) : (r.tags || '[]');
+        return { key: k, value: val, tags, updated: Date.now(), _from_handler: true };
+      }).filter(Boolean);
       // Fall back to sample if none of the specified keys exist
       if (rows.length === 0) rows = sampleDreamMemories(namespace, budget);
     } else {

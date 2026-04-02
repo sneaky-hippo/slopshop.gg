@@ -23,7 +23,14 @@
 
 const crypto = require('crypto');
 
-module.exports = function mountDreamLayer(app, db, apiKeys) {
+module.exports = function mountDreamLayer(app, db, apiKeys, allHandlers) {
+  // allHandlers may be undefined during tests — fall back to raw DB in that case
+  const memSearch  = () => allHandlers && allHandlers['memory-search'];
+  const memList    = () => allHandlers && allHandlers['memory-list'];
+  const memGet     = () => allHandlers && allHandlers['memory-get'];
+  const memSet     = () => allHandlers && allHandlers['memory-set'];
+  const memDelete  = () => allHandlers && allHandlers['memory-delete'];
+  const memBulkSet = () => allHandlers && allHandlers['memory-bulk-set'];
 
   // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -119,28 +126,53 @@ module.exports = function mountDreamLayer(app, db, apiKeys) {
     const limit = Math.min(parseInt(req.query.limit) || 50, 200);
 
     try {
-      // Query the :dreams sub-namespace (where dream engine actually writes)
-      let dreamRows;
-      if (dreamSessionId) {
-        dreamRows = db.prepare(`
-          SELECT key, value, tags, content_type, memory_type, source_type, source_url, dream_session_id, created, updated
-          FROM memory WHERE namespace = ? AND (dream_session_id = ? OR key LIKE ?)
-          ORDER BY created DESC LIMIT ?
-        `).all(dreamsNs, dreamSessionId, '%' + dreamSessionId.slice(0, 8) + '%', limit);
+      // Query the :dreams sub-namespace via memory-search handler (handles decompression + scoring)
+      const searchFn = memSearch();
+      const listFn   = memList();
+
+      let dreamRows = [];
+      if (searchFn) {
+        // Use search with a broad query to surface most relevant insights
+        const query = dreamSessionId ? dreamSessionId.slice(0, 8) : 'insights synthesis patterns';
+        const sr = searchFn({ namespace: dreamsNs, query, limit });
+        dreamRows = (sr.results || []).map(r => ({
+          key: r.key,
+          value: typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value || ''),
+          tags: Array.isArray(r.tags) ? JSON.stringify(r.tags) : (r.tags || '[]'),
+          content_type: r.content_type || 'text',
+          memory_type: r.memory_type || 'dream_insight',
+          source_type: r.source_type || 'dream',
+          dream_session_id: r.dream_session_id || null,
+          created: r.created || Date.now(), updated: r.updated || Date.now(),
+          _from_handler: true
+        }));
+        // If session filter, narrow down by key prefix
+        if (dreamSessionId) {
+          const pfx = dreamSessionId.slice(0, 8);
+          dreamRows = dreamRows.filter(r => r.key.includes(pfx));
+        }
       } else {
-        dreamRows = db.prepare(`
-          SELECT key, value, tags, content_type, memory_type, source_type, source_url, dream_session_id, created, updated
-          FROM memory WHERE namespace = ?
-          ORDER BY created DESC LIMIT ?
-        `).all(dreamsNs, limit);
+        // Fallback: raw SQL
+        dreamRows = dreamSessionId
+          ? db.prepare(`SELECT key,value,tags,content_type,memory_type,source_type,dream_session_id,created,updated FROM memory WHERE namespace=? AND (dream_session_id=? OR key LIKE ?) ORDER BY created DESC LIMIT ?`).all(dreamsNs, dreamSessionId, '%'+dreamSessionId.slice(0,8)+'%', limit)
+          : db.prepare(`SELECT key,value,tags,content_type,memory_type,source_type,dream_session_id,created,updated FROM memory WHERE namespace=? ORDER BY created DESC LIMIT ?`).all(dreamsNs, limit);
       }
 
-      // Also check for manually-tagged insights in the core namespace
-      const taggedRows = db.prepare(`
-        SELECT key, value, tags, content_type, memory_type, source_type, source_url, dream_session_id, created, updated
-        FROM memory WHERE namespace = ? AND memory_type = 'dream_insight'
-        ORDER BY created DESC LIMIT ?
-      `).all(scopedNs, Math.floor(limit / 2));
+      // Also check for manually-tagged insights in the core namespace via search
+      let taggedRows = [];
+      if (searchFn) {
+        const tr = searchFn({ namespace: scopedNs, query: 'dream insight synthesis', limit: Math.floor(limit / 2) });
+        taggedRows = (tr.results || [])
+          .filter(r => r.memory_type === 'dream_insight')
+          .map(r => ({
+            key: r.key,
+            value: typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value || ''),
+            tags: Array.isArray(r.tags) ? JSON.stringify(r.tags) : (r.tags || '[]'),
+            content_type: r.content_type || 'text', _from_handler: true
+          }));
+      } else {
+        taggedRows = db.prepare(`SELECT key,value,tags,content_type,memory_type,source_type,dream_session_id,created,updated FROM memory WHERE namespace=? AND memory_type='dream_insight' ORDER BY created DESC LIMIT ?`).all(scopedNs, Math.floor(limit / 2));
+      }
 
       const seen = new Set();
       const allRows = [...dreamRows, ...taggedRows].filter(r => {
@@ -150,21 +182,22 @@ module.exports = function mountDreamLayer(app, db, apiKeys) {
 
       const insights = allRows.map(r => {
         let val = r.value || '';
-        // Decompress zlib-compressed values stored by the dream engine
-        if (typeof val === 'string' && val.startsWith('~z~')) {
-          try { val = require('zlib').inflateRawSync(Buffer.from(val.slice(3), 'base64')).toString('utf8'); } catch(_) {}
+        // Only decompress raw DB rows — handler rows are already decompressed
+        if (!r._from_handler) {
+          if (typeof val === 'string' && val.startsWith('~z~')) {
+            try { val = require('zlib').inflateRawSync(Buffer.from(val.slice(3), 'base64')).toString('utf8'); } catch(_) {}
+          }
         }
-        // Dream engine stores value as JSON — parse for display
+        // Unwrap JSON envelope if present
         if (typeof val === 'string') {
           try { const parsed = JSON.parse(val); val = parsed.value || parsed.insight || parsed.summary || val; } catch(_) {}
         }
         return {
           key: r.key, value: val,
-          tags: (() => { try { return JSON.parse(r.tags); } catch(_) { return []; } })(),
+          tags: (() => { try { return Array.isArray(r.tags) ? r.tags : JSON.parse(r.tags); } catch(_) { return []; } })(),
           content_type: r.content_type || 'text',
           source_type: r.source_type || 'dream',
           dream_session_id: r.dream_session_id,
-          from_namespace: r.namespace,
           created: r.created, updated: r.updated
         };
       });
@@ -193,38 +226,48 @@ module.exports = function mountDreamLayer(app, db, apiKeys) {
     const now        = Date.now();
 
     try {
-      // Look in dreams namespace first (canonical dream engine location)
-      let existing = db.prepare(`SELECT * FROM memory WHERE namespace = ? AND key = ?`).get(dreamsNs, memKey);
+      const getFn = memGet();
+      const setFn = memSet();
+      const delFn = memDelete();
+
+      // Look in dreams namespace first via handler
+      let existing = getFn ? getFn({ namespace: dreamsNs, key: memKey }) : null;
       let fromDreams = true;
 
-      // Fall back to core namespace (manually tagged dream_insight)
-      if (!existing) {
-        existing = db.prepare(`SELECT * FROM memory WHERE namespace = ? AND key = ?`).get(scopedNs, memKey);
+      if (!existing || existing._engine === 'not_found' || existing.value === undefined) {
+        // Fall back to core namespace
+        existing = getFn ? getFn({ namespace: scopedNs, key: memKey }) : null;
         fromDreams = false;
       }
 
-      if (!existing) return res.status(404).json({ ok: false, error: { code: 'not_found', message: 'Memory key not found in insights or core namespace' } });
+      if (!existing || existing._engine === 'not_found' || existing.value === undefined) {
+        return res.status(404).json({ ok: false, error: { code: 'not_found', message: 'Memory key not found in insights or core namespace' } });
+      }
 
-      // Parse value — dream engine stores as JSON
+      // Value is already decompressed by memory-get handler
       let value = existing.value;
+      if (typeof value === 'object') value = JSON.stringify(value);
       if (typeof value === 'string') {
         try { const p = JSON.parse(value); value = p.value || p.insight || p.summary || value; } catch(_) {}
       }
 
-      // Insert/update in core namespace
-      const coreExists = db.prepare('SELECT key FROM memory WHERE namespace = ? AND key = ?').get(scopedNs, memKey);
-      if (coreExists) {
-        db.prepare(`UPDATE memory SET value = ?, tags = ?, memory_type = 'core', source_type = 'promoted', updated = ? WHERE namespace = ? AND key = ?`)
-          .run(value, existing.tags, now, scopedNs, memKey);
+      // Write to core namespace via memory-set handler
+      if (setFn) {
+        setFn({
+          namespace: scopedNs, key: memKey, value,
+          tags: Array.isArray(existing.tags) ? existing.tags : [],
+          type: 'project'
+        });
       } else {
-        db.prepare(`INSERT INTO memory (namespace, key, value, tags, content_type, memory_type, source_type, dream_session_id, created, updated, ttl)
-          VALUES (?, ?, ?, ?, ?, 'core', 'promoted', ?, ?, ?, 0)`)
-          .run(scopedNs, memKey, value, existing.tags || '[]', existing.content_type || 'text', existing.dream_session_id, now, now);
+        db.prepare(`INSERT OR REPLACE INTO memory (namespace,key,value,tags,content_type,memory_type,source_type,created,updated,ttl)
+          VALUES (?,?,?,?,?,'core','promoted',?,?,0)`)
+          .run(scopedNs, memKey, value, '[]', 'text', now, now);
       }
 
-      // Optionally remove from dreams namespace
+      // Remove from dreams namespace via memory-delete handler
       if (fromDreams && !keep_original) {
-        db.prepare('DELETE FROM memory WHERE namespace = ? AND key = ?').run(dreamsNs, memKey);
+        if (delFn) { delFn({ namespace: dreamsNs, key: memKey }); }
+        else { db.prepare('DELETE FROM memory WHERE namespace=? AND key=?').run(dreamsNs, memKey); }
       }
 
       res.json({ ok: true, promoted: { key: memKey, namespace, memory_type: 'core', promoted_at: now, from_dreams_ns: fromDreams } });
@@ -258,19 +301,47 @@ module.exports = function mountDreamLayer(app, db, apiKeys) {
       // Dream engine writes to <namespace>:dreams sub-namespace
       const dreamsNs = scopedNs + ':dreams';
 
-      // Get insights generated by this session (in :dreams namespace + by session id)
-      const insights = db.prepare(`
-        SELECT key, value, tags, content_type FROM memory
-        WHERE (namespace = ? OR namespace = ?) AND (dream_session_id = ? OR key LIKE ?)
-        ORDER BY created ASC LIMIT 50
-      `).all(dreamsNs, scopedNs, sessionId, '%dream%');
+      // Get insights via memory-search handler on :dreams namespace
+      const searchFn = memSearch();
+      const listFn   = memList();
+      const getFn    = memGet();
 
-      // Sample core memories from namespace (up to 10 for context)
-      const coreMemories = db.prepare(`
-        SELECT key, value, content_type FROM memory
-        WHERE namespace = ? AND (memory_type = 'core' OR memory_type IS NULL)
-        ORDER BY updated DESC LIMIT 10
-      `).all(scopedNs);
+      let insightRows = [];
+      if (searchFn) {
+        const pfx = sessionId.slice(0, 8);
+        const sr = searchFn({ namespace: dreamsNs, query: pfx + ' insights synthesis patterns', limit: 50 });
+        insightRows = (sr.results || []).map(r => ({
+          key: r.key,
+          value: typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value || ''),
+          tags: r.tags || [],
+          content_type: r.content_type || 'text',
+          _from_handler: true
+        }));
+        // Also check core namespace for promoted insights from this session
+        const csr = searchFn({ namespace: scopedNs, query: pfx, limit: 20 });
+        const coreInsights = (csr.results || []).filter(r => r.key && r.key.includes(pfx)).map(r => ({
+          key: r.key,
+          value: typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value || ''),
+          tags: r.tags || [], content_type: r.content_type || 'text', _from_handler: true
+        }));
+        const seenKeys = new Set(insightRows.map(r => r.key));
+        coreInsights.forEach(r => { if (!seenKeys.has(r.key)) insightRows.push(r); });
+      } else {
+        insightRows = db.prepare(`SELECT key,value,tags,content_type FROM memory WHERE (namespace=? OR namespace=?) AND (dream_session_id=? OR key LIKE ?) ORDER BY created ASC LIMIT 50`).all(dreamsNs, scopedNs, sessionId, '%dream%');
+      }
+
+      // Sample core memories via memory-search handler
+      let coreMemRows = [];
+      if (searchFn) {
+        const cr = searchFn({ namespace: scopedNs, query: 'key concepts themes knowledge', limit: 10 });
+        coreMemRows = (cr.results || []).filter(r => !r.key.includes(':dreams')).slice(0, 10).map(r => ({
+          key: r.key,
+          value: typeof r.value === 'object' ? JSON.stringify(r.value) : String(r.value || ''),
+          content_type: r.content_type || 'text', _from_handler: true
+        }));
+      } else {
+        coreMemRows = db.prepare(`SELECT key,value,content_type FROM memory WHERE namespace=? AND (memory_type='core' OR memory_type IS NULL) ORDER BY updated DESC LIMIT 10`).all(scopedNs);
+      }
 
       // Get brain glow score for session context
       let brainScore = null;
@@ -291,14 +362,16 @@ module.exports = function mountDreamLayer(app, db, apiKeys) {
           started_at: session.started_at,
           completed_at: session.completed_at
         },
-        core_memories: coreMemories.map(r => ({
-          key: r.key,
-          preview: (r.value || '').slice(0, 200),
-          content_type: r.content_type || 'text'
-        })),
-        insights: insights.map(r => {
+        core_memories: coreMemRows.map(r => {
+          let preview = r.value || '';
+          if (!r._from_handler && typeof preview === 'string' && preview.startsWith('~z~')) {
+            try { preview = require('zlib').inflateRawSync(Buffer.from(preview.slice(3), 'base64')).toString('utf8'); } catch(_) {}
+          }
+          return { key: r.key, preview: String(preview).slice(0, 200), content_type: r.content_type || 'text' };
+        }),
+        insights: insightRows.map(r => {
           let val = r.value || '';
-          if (typeof val === 'string' && val.startsWith('~z~')) {
+          if (!r._from_handler && typeof val === 'string' && val.startsWith('~z~')) {
             try { val = require('zlib').inflateRawSync(Buffer.from(val.slice(3), 'base64')).toString('utf8'); } catch(_) {}
           }
           if (typeof val === 'string') {
@@ -306,13 +379,13 @@ module.exports = function mountDreamLayer(app, db, apiKeys) {
           }
           return {
             key: r.key, value: val,
-            tags: (() => { try { return JSON.parse(r.tags); } catch(_) { return []; } })(),
+            tags: (() => { try { return Array.isArray(r.tags) ? r.tags : JSON.parse(r.tags); } catch(_) { return []; } })(),
             content_type: r.content_type || 'text'
           };
         }),
         brain_score: brainScore,
-        insight_count: insights.length,
-        core_count: coreMemories.length
+        insight_count: insightRows.length,
+        core_count: coreMemRows.length
       };
 
       res.json(summary);
@@ -379,18 +452,14 @@ module.exports = function mountDreamLayer(app, db, apiKeys) {
     if (source_type !== 'manual') allTags.push('source:' + source_type);
 
     try {
-      const existing = db.prepare('SELECT key FROM memory WHERE namespace = ? AND key = ?').get(scopedNs, resolvedKey);
-
-      if (existing) {
-        db.prepare(`
-          UPDATE memory SET value = ?, tags = ?, content_type = ?, source_type = ?, source_url = ?, updated = ?, ttl = ?
-          WHERE namespace = ? AND key = ?
-        `).run(content, JSON.stringify(allTags), resolvedType, source_type, source_url || null, now, ttl, scopedNs, resolvedKey);
+      const setFn = memSet();
+      if (setFn) {
+        // Route through slopshop memory-set handler
+        setFn({ namespace: scopedNs, key: resolvedKey, value: content, tags: allTags, ttl_seconds: ttl || undefined, type: 'project' });
       } else {
-        db.prepare(`
-          INSERT INTO memory (namespace, key, value, tags, content_type, memory_type, source_type, source_url, created, updated, ttl)
-          VALUES (?, ?, ?, ?, ?, 'core', ?, ?, ?, ?, ?)
-        `).run(scopedNs, resolvedKey, content, JSON.stringify(allTags), resolvedType, source_type, source_url || null, now, now, ttl);
+        // Fallback raw SQL
+        db.prepare(`INSERT OR REPLACE INTO memory (namespace,key,value,tags,content_type,memory_type,source_type,source_url,created,updated,ttl) VALUES (?,?,?,?,?,'core',?,?,?,?,?)`)
+          .run(scopedNs, resolvedKey, content, JSON.stringify(allTags), resolvedType, source_type, source_url || null, now, now, ttl);
       }
 
       res.json({
@@ -779,34 +848,44 @@ module.exports = function mountDreamLayer(app, db, apiKeys) {
       } catch(_) {}
     }
 
-    // Fetch insights to write back
-    let insightRows;
+    // Fetch insights via memory-search handler (handles decompression)
+    const searchFn = memSearch();
+    const getFn    = memGet();
+    let insights = [];
     try {
-      if (insight_keys && insight_keys.length) {
-        const ph = insight_keys.map(() => '?').join(',');
-        insightRows = db.prepare(`SELECT key, value FROM memory WHERE namespace IN (?,?) AND key IN (${ph}) LIMIT 20`)
-          .all(dreamsNs, scopedNs, ...insight_keys);
-      } else if (dream_session_id) {
-        insightRows = db.prepare(`SELECT key, value FROM memory WHERE namespace = ? AND (dream_session_id = ? OR key LIKE ?) LIMIT 20`)
-          .all(dreamsNs, dream_session_id, '%' + dream_session_id.slice(0, 8) + '%');
+      let rawRows = [];
+      if (insight_keys && insight_keys.length && getFn) {
+        rawRows = insight_keys.map(k => {
+          const r = getFn({ namespace: dreamsNs, key: k }) || getFn({ namespace: scopedNs, key: k });
+          if (!r || r._engine === 'not_found') return null;
+          return { key: k, value: r.value, _from_handler: true };
+        }).filter(Boolean);
+      } else if (searchFn) {
+        const query = dream_session_id ? dream_session_id.slice(0, 8) + ' insights synthesis' : 'insights synthesis patterns themes';
+        const sr = searchFn({ namespace: dreamsNs, query, limit: 20 });
+        rawRows = (sr.results || []).map(r => ({ key: r.key, value: r.value, _from_handler: true }));
+        if (dream_session_id) {
+          const pfx = dream_session_id.slice(0, 8);
+          rawRows = rawRows.filter(r => r.key.includes(pfx));
+        }
       } else {
-        insightRows = db.prepare(`SELECT key, value FROM memory WHERE namespace = ? ORDER BY created DESC LIMIT 10`).all(dreamsNs);
+        rawRows = db.prepare(`SELECT key,value FROM memory WHERE namespace=? ORDER BY created DESC LIMIT 10`).all(dreamsNs);
       }
+
+      insights = rawRows.map(r => {
+        let val = r._from_handler ? r.value : r.value || '';
+        if (!r._from_handler && typeof val === 'string' && val.startsWith('~z~')) {
+          try { val = require('zlib').inflateRawSync(Buffer.from(val.slice(3), 'base64')).toString('utf8'); } catch(_) {}
+        }
+        if (typeof val === 'object') val = JSON.stringify(val);
+        if (typeof val === 'string') {
+          try { const p = JSON.parse(val); val = p.value || p.insight || p.summary || val; } catch(_) {}
+        }
+        return { key: r.key, value: typeof val === 'string' ? val : JSON.stringify(val) };
+      }).filter(i => i.value && !i.key.includes(':manifest'));
     } catch(e) {
       return res.status(500).json({ ok: false, error: { code: 'db_error', message: e.message } });
     }
-
-    // Decompress and parse insight values
-    const insights = insightRows.map(r => {
-      let val = r.value || '';
-      if (typeof val === 'string' && val.startsWith('~z~')) {
-        try { val = require('zlib').inflateRawSync(Buffer.from(val.slice(3), 'base64')).toString('utf8'); } catch(_) {}
-      }
-      if (typeof val === 'string') {
-        try { const p = JSON.parse(val); val = p.value || p.insight || p.summary || val; } catch(_) {}
-      }
-      return { key: r.key, value: typeof val === 'string' ? val : JSON.stringify(val) };
-    }).filter(i => i.value && !i.key.includes(':manifest'));
 
     if (!insights.length) {
       return res.status(404).json({ ok: false, error: { code: 'no_insights', message: 'No insights found to write back. Run a dream first.' } });
