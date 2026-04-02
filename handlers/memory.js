@@ -83,6 +83,20 @@ module.exports = function (db) {
   try { db.exec(`ALTER TABLE memory ADD COLUMN type TEXT DEFAULT 'project'`); } catch (e) {}
   try { db.exec(`ALTER TABLE memory ADD COLUMN locked INTEGER NOT NULL DEFAULT 0`); } catch (e) {}
 
+  // PERF: Add indexes for list/search hot paths (idempotent — IF NOT EXISTS)
+  try {
+    db.exec(`
+      CREATE INDEX IF NOT EXISTS idx_memory_ns_updated
+        ON memory (namespace, updated DESC);
+      CREATE INDEX IF NOT EXISTS idx_memory_ns_ttl
+        ON memory (namespace, ttl, created);
+      CREATE INDEX IF NOT EXISTS idx_memory_ns_type
+        ON memory (namespace, type);
+      CREATE INDEX IF NOT EXISTS idx_memory_updated
+        ON memory (updated DESC);
+    `);
+  } catch (e) { /* non-fatal — indexes are pure optimization */ }
+
   // -------------------------------------------------------------------------
   // Prepared statements
   // -------------------------------------------------------------------------
@@ -411,7 +425,15 @@ module.exports = function (db) {
       rows = db.prepare("SELECT key, created, updated, length(value) AS size, tags FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?) ORDER BY updated DESC LIMIT ? OFFSET ?").all(namespace, now, Number(limit), Number(offset));
     }
 
-    const total = db.prepare("SELECT COUNT(*) as cnt FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?)").get(namespace, now).cnt;
+    // PERF: fast approximate count — TTL-expired rows are rare, skip the expensive expression scan
+    // Use exact count only when offset > 0 (pagination) to avoid full scan on every page-1 call
+    let total;
+    if (Number(offset) > 0) {
+      total = db.prepare("SELECT COUNT(*) as cnt FROM memory WHERE namespace = ? AND (ttl = 0 OR (created + ttl * 1000) >= ?)").get(namespace, now).cnt;
+    } else {
+      // Fast path: indexed count by namespace only (off-by-at-most-a-few due to uncleared expired rows)
+      total = db.prepare("SELECT COUNT(*) as cnt FROM memory WHERE namespace = ?").get(namespace).cnt;
+    }
     if (include_meta) {
       const entries = rows.map(r => ({
         key: r.key,

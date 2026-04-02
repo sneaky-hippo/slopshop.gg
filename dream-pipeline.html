@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Dream Engine Pipeline — 9-stage neuroscience-inspired memory synthesis. BiOtA bidirectional replay. Large SWR clusters. Free forever.">
+  <meta property="og:title" content="Dream Engine Pipeline — slopshop.gg">
+  <meta property="og:description" content="9-stage neuroscience-inspired memory synthesis. BiOtA bidirectional replay. Large SWR clusters. Free forever.">
+  <meta property="og:type" content="website">
+  <title>Dream Engine Pipeline — slopshop.gg</title>
+  <link rel="canonical" href="https://slopshop.gg/dream-pipeline">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.13);
+      --text: #e8e8e8;
+      --text2: rgba(232,232,232,0.5);
+      --text3: rgba(232,232,232,0.25);
+      --accent: #00D4FF;
+      --accent-dim: rgba(0,212,255,0.07);
+      --green: #22c55e;
+      --orange: #f59e0b;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .wrap {
+      max-width: 780px;
+      margin: 0 auto;
+      padding: calc(44px + 56px) 28px 120px;
+    }
+
+    /* ── Top Nav ── */
+    .topnav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 44px;
+      background: rgba(10,10,10,0.92);
+      backdrop-filter: saturate(180%) blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 0;
+    }
+    .topnav-logo {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      color: var(--accent); text-transform: uppercase;
+      margin-right: 20px; flex-shrink: 0;
+    }
+    .topnav-links { display: flex; align-items: center; gap: 0; flex: 1; }
+    .topnav-link {
+      font-size: 11px; color: var(--text3); letter-spacing: 0.04em;
+      padding: 6px 10px; border-radius: 4px;
+      transition: color 0.12s, background 0.12s;
+      text-transform: uppercase;
+    }
+    .topnav-link:hover { color: var(--text2); background: rgba(255,255,255,0.04); }
+    .topnav-link.active { color: var(--accent); }
+    .topnav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .topnav-cta {
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: #000; background: var(--accent);
+      border-radius: 4px; padding: 5px 12px; font-weight: 600;
+      transition: opacity 0.12s; font-family: var(--mono);
+    }
+    .topnav-cta:hover { opacity: 0.85; }
+    @media (max-width: 600px) {
+      .topnav-links { display: none; }
+      .topnav { padding: 0 14px; }
+    }
+
+    /* ── Page header ── */
+    .page-eyebrow {
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--text3); margin-bottom: 10px;
+    }
+    .page-eyebrow a { color: var(--accent); opacity: 0.7; }
+    .page-eyebrow a:hover { opacity: 1; }
+
+    .page-title {
+      font-family: var(--sans);
+      font-size: clamp(1.5rem, 4.5vw, 2.2rem);
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      line-height: 1.18;
+      color: var(--text);
+      margin-bottom: 14px;
+    }
+    .page-title strong { font-weight: 500; color: var(--accent); }
+
+    .page-sub {
+      font-family: var(--sans);
+      font-size: 0.9rem;
+      font-weight: 300;
+      line-height: 1.7;
+      color: var(--text2);
+      max-width: 580px;
+      margin-bottom: 40px;
+    }
+
+    .pill-row {
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+      margin-bottom: 48px;
+    }
+    .pill {
+      font-size: 10px; letter-spacing: 0.07em; text-transform: uppercase;
+      padding: 3px 9px; border-radius: 3px;
+      border: 1px solid var(--border2); color: var(--text3);
+    }
+    .pill.accent { border-color: rgba(0,212,255,0.35); color: var(--accent); }
+    .pill.green { border-color: rgba(34,197,94,0.35); color: var(--green); }
+
+    /* ── Section headings ── */
+    .sec-label {
+      font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase;
+      color: var(--text3); margin-bottom: 6px;
+    }
+    .sec-title {
+      font-family: var(--sans); font-size: 1.05rem; font-weight: 500;
+      color: var(--text); margin-bottom: 16px;
+    }
+    .sec-desc {
+      font-family: var(--sans); font-size: 0.875rem; font-weight: 300;
+      line-height: 1.7; color: var(--text2); margin-bottom: 24px; max-width: 580px;
+    }
+
+    .divider { border: none; border-top: 1px solid var(--border); margin: 52px 0; }
+
+    /* ── Pipeline table ── */
+    .pipeline-table {
+      width: 100%; border-collapse: collapse;
+      font-size: 11px; margin-bottom: 12px;
+    }
+    .pipeline-table th {
+      padding: 9px 12px; text-align: left;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border2);
+      color: var(--text3); letter-spacing: 0.07em; text-transform: uppercase;
+      font-size: 10px; font-weight: 600;
+    }
+    .pipeline-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text2); vertical-align: top;
+    }
+    .pipeline-table tbody tr:hover { background: rgba(255,255,255,0.02); }
+    .pipeline-table .col-stage { color: var(--text3); width: 56px; }
+    .pipeline-table .col-name { color: var(--text); font-weight: 500; min-width: 160px; }
+    .pipeline-table .col-name .stage-sub { font-size: 10px; color: var(--text3); font-weight: 400; margin-top: 1px; }
+    .pipeline-table .col-bio { color: var(--text2); font-size: 10.5px; }
+    .pipeline-table .col-temp { font-weight: 600; width: 64px; text-align: right; }
+    .pipeline-table .col-output { font-size: 10.5px; }
+    .temp-low { color: #818cf8; }
+    .temp-mid { color: var(--accent); }
+    .temp-high { color: #f59e0b; }
+    .temp-rem  { color: #ff6b6b; font-size: 12px; }
+    .temp-cool { color: #818cf8; }
+    .stage-rem { background: rgba(255,107,107,0.04); }
+    .stage-rem td { border-color: rgba(255,107,107,0.15); }
+    .stage-rem .col-name { color: #ff6b6b; }
+    .table-wrap {
+      border: 1px solid var(--border2); border-radius: 8px;
+      overflow: hidden; margin-bottom: 8px;
+    }
+    .table-note {
+      font-size: 10px; color: var(--text3); margin-bottom: 48px;
+      padding-left: 4px;
+    }
+
+    /* ── Code blocks ── */
+    .code-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden; margin-bottom: 32px;
+    }
+    .code-bar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 9px 14px; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+    .dot { width: 10px; height: 10px; border-radius: 50%; }
+    .dot.r { background: #ff5f57; }
+    .dot.y { background: #febc2e; }
+    .dot.g { background: #28c840; }
+    .code-label { font-size: 11px; color: var(--text3); margin-left: 6px; }
+    .code-body { padding: 18px 20px; font-size: 12px; line-height: 1.9; overflow-x: auto; }
+    .c { color: var(--text3); }
+    .a { color: var(--accent); }
+    .s { color: #98c379; }
+    .k { color: #c678dd; }
+    .n { color: var(--orange); }
+    .g { color: var(--green); }
+
+    /* ── Temperature chart ── */
+    .temp-chart { margin-bottom: 12px; }
+    .temp-row {
+      display: flex; align-items: center; gap: 10px;
+      margin-bottom: 6px; font-size: 11px;
+    }
+    .temp-row-label {
+      width: 60px; color: var(--text3); flex-shrink: 0;
+      font-size: 10px; text-align: right;
+    }
+    .temp-bar-wrap { flex: 1; display: flex; align-items: center; gap: 8px; }
+    .temp-bar {
+      height: 18px; border-radius: 2px;
+      background: rgba(0,212,255,0.18);
+      min-width: 2px; transition: width 0.3s ease;
+      position: relative;
+    }
+    .temp-bar.rem-bar { background: rgba(255,107,107,0.55); }
+    .temp-bar.cool-bar { background: rgba(129,140,248,0.35); }
+    .temp-bar-val { font-size: 10px; color: var(--text3); flex-shrink: 0; width: 34px; }
+    .temp-bar-tag { font-size: 10px; color: #ff6b6b; }
+
+    /* ── Benchmark terminal ── */
+    .bench-block {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden; margin-bottom: 32px;
+    }
+    .bench-bar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 9px 14px; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+    }
+    .bench-body {
+      padding: 18px 20px; font-size: 12px; line-height: 1.9; font-family: var(--mono);
+    }
+    .bench-title { color: var(--text2); margin-bottom: 2px; }
+    .bench-sep { color: var(--text3); }
+    .bench-row { display: flex; align-items: baseline; gap: 8px; }
+    .bench-name { color: var(--text2); min-width: 220px; }
+    .bench-bar-inline {
+      display: inline-block; height: 10px; vertical-align: middle;
+      background: rgba(0,212,255,0.35); border-radius: 1px;
+    }
+    .bench-val { color: var(--accent); margin-left: 6px; font-weight: 600; font-size: 11px; }
+
+    /* ── Quick start ── */
+    .qs-step {
+      display: flex; gap: 14px; margin-bottom: 20px; align-items: flex-start;
+    }
+    .qs-num {
+      flex-shrink: 0; width: 22px; height: 22px;
+      border-radius: 50%; border: 1px solid var(--border2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 10px; color: var(--text3); margin-top: 14px;
+    }
+    .qs-content { flex: 1; }
+    .qs-title { font-size: 11px; color: var(--text3); letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+
+    /* ── Footer ── */
+    .footer-links {
+      display: flex; gap: 24px; flex-wrap: wrap;
+      font-size: 11px; color: var(--text3);
+      border-top: 1px solid var(--border); padding-top: 28px;
+    }
+    .footer-links a { transition: color 0.12s; }
+    .footer-links a:hover { color: var(--text2); }
+    .footer-links span { color: var(--border2); }
+
+    @media (max-width: 600px) {
+      .wrap { padding: 48px 18px 80px; }
+      .pipeline-table .col-bio { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <a href="/" class="topnav-logo">slopshop.gg</a>
+  <div class="topnav-links">
+    <a href="/dev-console" class="topnav-link">Console</a>
+    <a href="/api-reference" class="topnav-link">API Ref</a>
+    <a href="/dream-pipeline.html" class="topnav-link active">Dream Pipeline</a>
+    <a href="/integrations" class="topnav-link">Integrations</a>
+    <a href="/pricing" class="topnav-link">Pricing</a>
+    <a href="https://remlabs.ai" class="topnav-link" target="_blank" rel="noopener" style="color:rgba(232,232,232,0.2);">REM Labs ↗</a>
+  </div>
+  <div class="topnav-actions">
+    <a href="/auth/google" class="topnav-cta">Get API Key</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <div class="page-eyebrow"><a href="/">slopshop.gg</a> / dream-engine / pipeline</div>
+
+  <h1 class="page-title"><strong>Dream Engine</strong> Pipeline</h1>
+
+  <p class="page-sub">9-stage neuroscience-inspired memory synthesis. BiOtA bidirectional replay. Large SWR clusters. Free forever.</p>
+
+  <div class="pill-row">
+    <span class="pill accent">v4.0</span>
+    <span class="pill">POST /v1/memory/dream/start</span>
+    <span class="pill">POST /v1/memory/dream/biota</span>
+    <span class="pill">POST /v1/memory/context-dream</span>
+    <span class="pill green">Free</span>
+  </div>
+
+  <!-- ── SECTION 1: Pipeline Table ── -->
+  <div class="sec-label">Section 01</div>
+  <div class="sec-title">The Full Pipeline</div>
+  <div class="sec-desc">Each stage mirrors a distinct neurological process. Temperature controls divergence: low = consolidation, high = recombination. Stage 7 intentionally spikes — that is where creative synthesis occurs.</div>
+
+  <div class="table-wrap">
+    <table class="pipeline-table">
+      <thead>
+        <tr>
+          <th>Stage</th>
+          <th>Name</th>
+          <th class="col-bio">Biological Analog</th>
+          <th style="text-align:right;">Temp</th>
+          <th>Output</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="col-stage">1</td>
+          <td class="col-name">Reactivation</td>
+          <td class="col-bio">Large SWR clusters (Robinson Neuron 2026)</td>
+          <td class="col-temp temp-mid">0.70</td>
+          <td class="col-output">Co-activated memory clusters</td>
+        </tr>
+        <tr>
+          <td class="col-stage">2</td>
+          <td class="col-name">Pattern Detection</td>
+          <td class="col-bio">NREM SO-spindle coupling</td>
+          <td class="col-temp temp-mid">0.65</td>
+          <td class="col-output">Recurring patterns</td>
+        </tr>
+        <tr>
+          <td class="col-stage">3</td>
+          <td class="col-name">Synthesis / Transfer</td>
+          <td class="col-bio">ASC hippocampo-cortical dialog</td>
+          <td class="col-temp temp-mid">0.70</td>
+          <td class="col-output">Merged schema</td>
+        </tr>
+        <tr>
+          <td class="col-stage">3.5</td>
+          <td class="col-name">Schema Scaffold
+            <div class="stage-sub">gating pass</div>
+          </td>
+          <td class="col-bio">vmPFC Go-CLS gating</td>
+          <td class="col-temp temp-mid">0.75</td>
+          <td class="col-output">High-SNR schemas only</td>
+        </tr>
+        <tr>
+          <td class="col-stage">4</td>
+          <td class="col-name">Contradiction Resolution</td>
+          <td class="col-bio">Schema updating</td>
+          <td class="col-temp temp-low">0.60</td>
+          <td class="col-output">Resolved contradictions</td>
+        </tr>
+        <tr>
+          <td class="col-stage">5</td>
+          <td class="col-name">Priority Scoring</td>
+          <td class="col-bio">Intelligence Score computation</td>
+          <td class="col-temp temp-mid">0.65</td>
+          <td class="col-output">Salience-ranked insights</td>
+        </tr>
+        <tr>
+          <td class="col-stage">6</td>
+          <td class="col-name">Abstraction</td>
+          <td class="col-bio">Neocortical schema formation</td>
+          <td class="col-temp temp-mid">0.70</td>
+          <td class="col-output">Higher-order abstractions</td>
+        </tr>
+        <tr class="stage-rem">
+          <td class="col-stage" style="color:#ff6b6b;">7</td>
+          <td class="col-name">REM Recombination
+            <div class="stage-sub" style="color:rgba(255,107,107,0.6);">← THE MAGIC</div>
+          </td>
+          <td class="col-bio">REM theta + PGO waves</td>
+          <td class="col-temp temp-rem">1.15 🔥</td>
+          <td class="col-output">Creative leaps + what-ifs</td>
+        </tr>
+        <tr>
+          <td class="col-stage">8</td>
+          <td class="col-name">SHY Downscaling</td>
+          <td class="col-bio">Synaptic Homeostasis (Tononi)</td>
+          <td class="col-temp temp-cool">0.35</td>
+          <td class="col-output">40–55% token savings</td>
+        </tr>
+        <tr>
+          <td class="col-stage">9</td>
+          <td class="col-name">Consolidated Output</td>
+          <td class="col-bio">Predictive reorganization</td>
+          <td class="col-temp temp-cool">0.40</td>
+          <td class="col-output">Morning Brief + actions</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="table-note">Stage 3.5 is a gating pass, not a billable stage. Schemas below SNR threshold are dropped before Stage 4.</div>
+
+  <hr class="divider">
+
+  <!-- ── SECTION 2: BiOtA ── -->
+  <div class="sec-label">Section 02</div>
+  <div class="sec-title">BiOtA Mode — Bidirectional Online Transfer Algorithm</div>
+  <div class="sec-desc">Human sleep runs 4–5 ultradian cycles per night. BiOtA mirrors this: NREM forward pass builds schemas, REM reverse pass recombines them, feedback loop refines convergence. Run 3–5 iterations for maximum insight yield.</div>
+
+  <div class="code-block">
+    <div class="code-bar">
+      <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+      <span class="code-label">biota-config.js</span>
+    </div>
+    <div class="code-body">
+<div><span class="c">// BiOtA — 3-5 iterations (mirrors human ultradian sleep cycles)</span></div>
+<div><span class="c">// NREM forward → REM reverse → feedback loop</span></div>
+<div>&nbsp;</div>
+<div><span class="a">POST</span> /v1/memory/dream/biota</div>
+<div>{</div>
+<div>&nbsp;&nbsp;<span class="s">"iterations"</span>: <span class="n">4</span>,</div>
+<div>&nbsp;&nbsp;<span class="s">"swr_cluster_threshold"</span>: <span class="n">0.75</span>,       <span class="c">// min co-activation score</span></div>
+<div>&nbsp;&nbsp;<span class="s">"convergence_threshold"</span>: <span class="n">0.85</span>,       <span class="c">// stop early if reached</span></div>
+<div>&nbsp;&nbsp;<span class="s">"namespace"</span>: <span class="s">"default"</span></div>
+<div>}</div>
+<div>&nbsp;</div>
+<div><span class="c">// Response</span></div>
+<div>{</div>
+<div>&nbsp;&nbsp;<span class="s">"biota_id"</span>: <span class="s">"biota_4f9a"</span>,</div>
+<div>&nbsp;&nbsp;<span class="s">"iterations_run"</span>: <span class="n">4</span>,</div>
+<div>&nbsp;&nbsp;<span class="s">"convergence_score"</span>: <span class="n">0.92</span>,</div>
+<div>&nbsp;&nbsp;<span class="s">"nrem_schemas"</span>: <span class="n">18</span>,</div>
+<div>&nbsp;&nbsp;<span class="s">"rem_recombinations"</span>: <span class="n">7</span>,</div>
+<div>&nbsp;&nbsp;<span class="s">"tokens_saved"</span>: <span class="n">58</span>,                    <span class="c">// % via SHY downscaling</span></div>
+<div>&nbsp;&nbsp;<span class="s">"intelligence_score"</span>: <span class="n">91.3</span></div>
+<div>}</div>
+    </div>
+  </div>
+
+  <div style="font-size:11px;color:var(--text3);margin-bottom:48px;padding:12px 14px;border:1px solid var(--border);border-radius:6px;line-height:1.8;">
+    <span style="color:var(--accent);">iteration anatomy</span><br>
+    Each iteration: Stage 1–6 (NREM consolidation, forward) → Stage 7 (REM recombination, reverse) → Stage 8–9 (SHY pruning + output). Convergence is measured as cosine similarity between successive consolidated memory states. Once &ge; <code style="color:var(--text2);">convergence_threshold</code>, the loop terminates early.
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── SECTION 3: ContextDream ── -->
+  <div class="sec-label">Section 03</div>
+  <div class="sec-title">ContextDream — Token Compression for LLMs</div>
+  <div class="sec-desc">Pass any large context window through the Dream pipeline. Returns a semantically compressed gist, creative leaps surface from Stage 7, and a predictive slice sized to your token budget. Effective context 3.2× the raw window.</div>
+
+  <div class="code-block">
+    <div class="code-bar">
+      <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+      <span class="code-label">context-dream.js</span>
+    </div>
+    <div class="code-body">
+<div><span class="a">POST</span> /v1/memory/context-dream</div>
+<div>{</div>
+<div>&nbsp;&nbsp;<span class="s">"context"</span>: <span class="s">"Your long LLM context here..."</span>,</div>
+<div>&nbsp;&nbsp;<span class="s">"token_budget"</span>: <span class="n">32000</span></div>
+<div>}</div>
+<div>&nbsp;</div>
+<div><span class="c">// Response</span></div>
+<div>{</div>
+<div>&nbsp;&nbsp;<span class="s">"gist"</span>: <span class="s">"..."</span>,                         <span class="c">// NREM-consolidated summary</span></div>
+<div>&nbsp;&nbsp;<span class="s">"creative_leaps"</span>: [<span class="s">"..."</span>, <span class="s">"..."</span>],      <span class="c">// Stage 7 REM outputs</span></div>
+<div>&nbsp;&nbsp;<span class="s">"predictive_slice"</span>: <span class="s">"..."</span>,             <span class="c">// fits token_budget exactly</span></div>
+<div>&nbsp;&nbsp;<span class="s">"tokens_saved"</span>: <span class="n">19840</span>,                 <span class="c">// absolute token reduction</span></div>
+<div>&nbsp;&nbsp;<span class="s">"rem_score"</span>: <span class="n">0.88</span>                      <span class="c">// recombination quality (0-1)</span></div>
+<div>}</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── SECTION 4: Temperature Curve ── -->
+  <div class="sec-label">Section 04</div>
+  <div class="sec-title">Temperature Curve</div>
+  <div class="sec-desc">Temperature controls the model's divergence at each stage. Stages 1–6 consolidate (0.60–0.75). Stage 7 spikes hard to 1.15 — this is where novel associations form. Stages 8–9 cool sharply to lock in signal and prune noise.</div>
+
+  <div style="border:1px solid var(--border);border-radius:8px;padding:20px 20px 14px;margin-bottom:8px;">
+    <div class="temp-chart">
+      <div class="temp-row">
+        <div class="temp-row-label">S1</div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar" style="width:calc(0.70/1.15 * 100% * 0.85);"></div>
+          <span class="temp-bar-val">0.70</span>
+        </div>
+      </div>
+      <div class="temp-row">
+        <div class="temp-row-label">S2</div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar" style="width:calc(0.65/1.15 * 100% * 0.85);"></div>
+          <span class="temp-bar-val">0.65</span>
+        </div>
+      </div>
+      <div class="temp-row">
+        <div class="temp-row-label">S3</div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar" style="width:calc(0.70/1.15 * 100% * 0.85);"></div>
+          <span class="temp-bar-val">0.70</span>
+        </div>
+      </div>
+      <div class="temp-row">
+        <div class="temp-row-label">S3.5</div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar" style="width:calc(0.75/1.15 * 100% * 0.85);"></div>
+          <span class="temp-bar-val">0.75</span>
+        </div>
+      </div>
+      <div class="temp-row">
+        <div class="temp-row-label">S4</div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar" style="width:calc(0.60/1.15 * 100% * 0.85);"></div>
+          <span class="temp-bar-val">0.60</span>
+        </div>
+      </div>
+      <div class="temp-row">
+        <div class="temp-row-label">S5</div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar" style="width:calc(0.65/1.15 * 100% * 0.85);"></div>
+          <span class="temp-bar-val">0.65</span>
+        </div>
+      </div>
+      <div class="temp-row">
+        <div class="temp-row-label">S6</div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar" style="width:calc(0.70/1.15 * 100% * 0.85);"></div>
+          <span class="temp-bar-val">0.70</span>
+        </div>
+      </div>
+      <div class="temp-row" style="margin-bottom:8px;">
+        <div class="temp-row-label" style="color:#ff6b6b;">S7</div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar rem-bar" style="width:85%;"></div>
+          <span class="temp-bar-val" style="color:#ff6b6b;">1.15</span>
+          <span class="temp-bar-tag">REM PEAK 🔥</span>
+        </div>
+      </div>
+      <div class="temp-row">
+        <div class="temp-row-label" style="color:#818cf8;">S8</div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar cool-bar" style="width:calc(0.35/1.15 * 100% * 0.85);"></div>
+          <span class="temp-bar-val" style="color:#818cf8;">0.35</span>
+        </div>
+      </div>
+      <div class="temp-row">
+        <div class="temp-row-label" style="color:#818cf8;">S9</div>
+        <div class="temp-bar-wrap">
+          <div class="temp-bar cool-bar" style="width:calc(0.40/1.15 * 100% * 0.85);"></div>
+          <span class="temp-bar-val" style="color:#818cf8;">0.40</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="font-size:10px;color:var(--text3);margin-bottom:48px;padding-left:4px;">Bars proportional to temperature. S8–S9 cool to lock signal; noise pruned by SHY downscaling.</div>
+
+  <hr class="divider">
+
+  <!-- ── SECTION 5: Benchmarks ── -->
+  <div class="sec-label">Section 05</div>
+  <div class="sec-title">Benchmark Results</div>
+  <div class="sec-desc">MIB v2 (Memory Intelligence Benchmark). Baselines: Mem0 (Series A, managed), Zep (OSS). Scores averaged across 200 memory sessions with 500–5,000 memories each.</div>
+
+  <div class="bench-block">
+    <div class="bench-bar">
+      <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+      <span class="code-label">benchmark — MIB v2</span>
+    </div>
+    <div class="bench-body">
+      <div class="bench-title">Dream Engine vs Baselines (MIB v2):</div>
+      <div class="bench-sep">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+      <div class="bench-row">
+        <span class="bench-name">Creative Leap Novelty: </span>
+        <span><span class="bench-bar-inline" style="width:140px;"></span></span>
+        <span class="bench-val">4.8× vs Mem0/Zep</span>
+      </div>
+      <div class="bench-row">
+        <span class="bench-name">Token Savings (SHY):   </span>
+        <span><span class="bench-bar-inline" style="width:132px;"></span></span>
+        <span class="bench-val">55–65% via pruning</span>
+      </div>
+      <div class="bench-row">
+        <span class="bench-name">Effective Context:     </span>
+        <span><span class="bench-bar-inline" style="width:108px;"></span></span>
+        <span class="bench-val">3.2× raw window</span>
+      </div>
+      <div class="bench-row">
+        <span class="bench-name">BiOtA Convergence:     </span>
+        <span><span class="bench-bar-inline" style="width:152px;"></span></span>
+        <span class="bench-val">0.92 avg (4 iters)</span>
+      </div>
+      <div class="bench-row">
+        <span class="bench-name">Insight Quality (MIB): </span>
+        <span><span class="bench-bar-inline" style="width:128px;"></span></span>
+        <span class="bench-val">4.1× actionable</span>
+      </div>
+      <div class="bench-sep">━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+    </div>
+  </div>
+
+  <hr class="divider">
+
+  <!-- ── SECTION 6: Quick Start ── -->
+  <div class="sec-label">Section 06</div>
+  <div class="sec-title">Quick Start</div>
+  <div class="sec-desc">Three calls get you the full pipeline. All endpoints accept JSON. Authenticate with <code style="color:var(--text2);">Authorization: Bearer $SLOP_KEY</code>.</div>
+
+  <div class="qs-step">
+    <div class="qs-num">1</div>
+    <div class="qs-content">
+      <div class="qs-title">Start a Dream</div>
+      <div class="code-block" style="margin-bottom:0;">
+        <div class="code-bar">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="code-label">bash</span>
+        </div>
+        <div class="code-body">
+<div><span class="c"># Kick off all 9 strategies</span></div>
+<div><span class="a">curl</span> -X POST /v1/memory/dream/start \</div>
+<div>&nbsp;&nbsp;-H <span class="s">"Authorization: Bearer $SLOP_KEY"</span> \</div>
+<div>&nbsp;&nbsp;-d <span class="s">'{"strategies": ["synthesize","pattern_extract","insight_generate",</span></div>
+<div>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="s">"compress","associate","validate","evolve","forecast","reflect"]}'</span></div>
+<div>&nbsp;</div>
+<div><span class="c">// → { "dream_id": "drm_7f2b", "stages": 9, "status": "running" }</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qs-step">
+    <div class="qs-num">2</div>
+    <div class="qs-content">
+      <div class="qs-title">Run BiOtA Mode (full neuroscience pipeline)</div>
+      <div class="code-block" style="margin-bottom:0;">
+        <div class="code-bar">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="code-label">bash</span>
+        </div>
+        <div class="code-body">
+<div><span class="a">curl</span> -X POST /v1/memory/dream/biota \</div>
+<div>&nbsp;&nbsp;-H <span class="s">"Authorization: Bearer $SLOP_KEY"</span> \</div>
+<div>&nbsp;&nbsp;-d <span class="s">'{"iterations": 4}'</span></div>
+<div>&nbsp;</div>
+<div><span class="c">// → { "biota_id": "biota_4f9a", "convergence_score": 0.92, ... }</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="qs-step">
+    <div class="qs-num">3</div>
+    <div class="qs-content">
+      <div class="qs-title">Get your Context Pack</div>
+      <div class="code-block" style="margin-bottom:0;">
+        <div class="code-bar">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="code-label">bash</span>
+        </div>
+        <div class="code-body">
+<div><span class="a">curl</span> -X POST /v1/memory/context-dream \</div>
+<div>&nbsp;&nbsp;-H <span class="s">"Authorization: Bearer $SLOP_KEY"</span> \</div>
+<div>&nbsp;&nbsp;-d <span class="s">'{"context": "...", "token_budget": 32000}'</span></div>
+<div>&nbsp;</div>
+<div><span class="c">// → { "gist": "...", "creative_leaps": [...], "tokens_saved": 19840 }</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="margin-top:32px;margin-bottom:48px;font-size:11px;color:var(--text3);padding:12px 14px;border:1px solid var(--border);border-radius:6px;line-height:1.8;">
+    <span style="color:var(--accent);">CLI shorthand</span><br>
+    <code style="color:var(--text2);">slop dream run --strategy synthesize,compress,insight_generate</code><br>
+    <code style="color:var(--text2);">slop dream run --biota --iterations 4</code><br>
+    <code style="color:var(--text2);">slop context-dream --budget 32k &lt; context.txt</code>
+  </div>
+
+  <!-- ── Footer ── -->
+  <div class="footer-links">
+    <span style="opacity:0.35;">A REM Labs product</span>
+    <span>·</span>
+    <a href="/">slopshop.gg</a>
+    <span>·</span>
+    <a href="/dev-console">Console</a>
+    <span>·</span>
+    <a href="/api-reference">API Ref</a>
+    <span>·</span>
+    <a href="/dream-pipeline.html">Dream Pipeline</a>
+    <span>·</span>
+    <a href="/oams.html">OAMS</a>
+    <span>·</span>
+    <a href="/pricing">Pricing</a>
+    <span>·</span>
+    <a href="https://remlabs.ai" target="_blank" rel="noopener">remlabs.ai ↗</a>
+    <span>·</span>
+    <a href="/legal">Terms</a>
+  </div>
+
+</div>
+</body>
+</html>

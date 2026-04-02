@@ -43,6 +43,10 @@ const STAGE_NAMES = [
   'consolidate',       // Stage 9  - predictive reorganization
 ];
 
+function nsPrefix(key) {
+  return crypto.createHash('sha256').update(key).digest('hex').slice(0, 16);
+}
+
 function requireAuth(req, res, apiKeys) {
   const key = (req.headers.authorization || '').replace('Bearer ', '').trim();
   if (!key || !apiKeys.get(key)) {
@@ -338,15 +342,16 @@ module.exports = function (app, db, apiKeys) {
       namespace = 'default',
     } = req.body || {};
 
+    const scopedNs = nsPrefix(key) + ':' + namespace;
     const sessionId = crypto.randomUUID();
     const now = Date.now();
 
-    // Fetch memories from DB for this user
+    // Fetch memories from DB for this user (namespace-scoped)
     let memories = [];
     try {
       const rows = db.prepare(
         `SELECT key, value, tags FROM memory WHERE namespace = ? LIMIT 200`
-      ).all(namespace);
+      ).all(scopedNs);
       memories = rows.map(r => ({
         key: r.key,
         value: (() => { try { return JSON.parse(r.value); } catch (_) { return r.value; } })(),
@@ -435,10 +440,12 @@ module.exports = function (app, db, apiKeys) {
       return res.status(400).json({ ok: false, error: { code: 'missing_context', message: 'Provide "context" string to compress' } });
     }
 
-    // Fetch user memories to improve relevance scoring
+    const scopedNs = nsPrefix(key) + ':' + namespace;
+
+    // Fetch user memories to improve relevance scoring (namespace-scoped)
     let memories = [];
     try {
-      memories = db.prepare(`SELECT key FROM memory WHERE namespace = ? LIMIT 50`).all(namespace);
+      memories = db.prepare(`SELECT key FROM memory WHERE namespace = ? LIMIT 50`).all(scopedNs);
     } catch (_) { memories = []; }
 
     const result = runContextDream(context, token_budget, memories);

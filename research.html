@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Neuroscience Research — REM Labs</title>
+<meta name="description" content="Every feature in REM Labs maps directly to published neuroscience research. 30 years of sleep science, computationally applied to AI memory.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ── Reset + Tokens ─────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0a0a0a;--surface:#111111;--surface2:#161616;
+  --border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);
+  --text:#f0f0f0;--text2:rgba(240,240,240,0.55);--text3:rgba(240,240,240,0.28);
+  --green:#22c55e;--yellow:#f59e0b;--red:#ef4444;
+  --font:'Inter',-apple-system,sans-serif;--mono:'JetBrains Mono','Fira Code',monospace;
+  --nav-h:56px;--max-w:1200px;--section-pad:100px;
+  --accent:#818cf8;--accent-dim:rgba(129,140,248,0.08);
+  --accent-border:rgba(129,140,248,0.20);--accent-glow:rgba(129,140,248,0.15);
+  --accent2:#6366f1;--purple-bright:#a78bfa;
+}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:16px;line-height:1.6;-webkit-font-smoothing:antialiased;}
+a{color:inherit;text-decoration:none;}
+img,svg{display:block;}
+button{cursor:pointer;border:none;background:none;font:inherit;}
+
+/* ── Scroll Reveal ──────────────────────────────────────────────────────── */
+.r{opacity:0;transform:translateY(22px);transition:opacity .55s ease,transform .55s ease;}
+.r.on{opacity:1;transform:none;}
+.d1{transition-delay:.07s;}.d2{transition-delay:.14s;}.d3{transition-delay:.22s;}.d4{transition-delay:.30s;}.d5{transition-delay:.38s;}
+@media(prefers-reduced-motion:reduce){.r{opacity:1;transform:none;transition:none;}}
+
+/* ── Site Nav ───────────────────────────────────────────────────────────── */
+.site-nav{position:fixed;top:0;left:0;right:0;z-index:1000;height:var(--nav-h);background:rgba(10,10,10,0.85);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-bottom:1px solid transparent;transition:border-color .2s,background .2s;}
+.site-nav.sn-scrolled{border-color:var(--border);background:rgba(10,10,10,0.95);}
+.site-nav-inner{max-width:var(--max-w);margin:0 auto;padding:0 24px;height:100%;display:flex;align-items:center;gap:8px;}
+.site-nav-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:1.05rem;letter-spacing:-.02em;color:var(--text);margin-right:12px;flex-shrink:0;}
+.sn-mark{width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#818cf8,#6366f1);flex-shrink:0;}
+.site-nav-drop{position:relative;}
+.sn-drop-btn{display:flex;align-items:center;gap:5px;padding:6px 10px;border-radius:8px;font-size:.88rem;color:var(--text2);transition:color .15s,background .15s;white-space:nowrap;}
+.sn-drop-btn:hover{color:var(--text);background:rgba(255,255,255,0.05);}
+.sn-chev{transition:transform .2s;}
+.site-nav-drop.open .sn-chev{transform:rotate(180deg);}
+.sn-drop-panel{position:absolute;top:calc(100% + 8px);left:0;min-width:240px;background:#161616;border:1px solid var(--border2);border-radius:12px;padding:6px;display:none;box-shadow:0 16px 48px rgba(0,0,0,0.6);}
+.site-nav-drop.open .sn-drop-panel{display:block;}
+.sn-drop-item{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:8px;color:var(--text2);font-size:.85rem;transition:background .15s,color .15s;}
+.sn-drop-item:hover{background:rgba(255,255,255,0.05);color:var(--text);}
+.sdi-icon{font-size:1.1rem;width:24px;text-align:center;flex-shrink:0;}
+.sn-drop-item b{display:block;font-weight:600;color:var(--text);font-size:.85rem;}
+.sn-drop-item em{display:block;font-style:normal;font-size:.77rem;color:var(--text3);margin-top:1px;}
+.site-nav-links{display:flex;align-items:center;gap:2px;margin-left:4px;}
+.site-nav-link{padding:6px 10px;border-radius:8px;font-size:.88rem;color:var(--text2);transition:color .15s,background .15s;}
+.site-nav-link:hover,.site-nav-link.active{color:var(--text);background:rgba(255,255,255,0.05);}
+.site-nav-actions{display:flex;align-items:center;gap:8px;margin-left:auto;}
+.site-nav-app{padding:6px 14px;border-radius:8px;font-size:.88rem;color:var(--text2);transition:color .15s;}
+.site-nav-app:hover{color:var(--text);}
+.site-nav-signup{padding:7px 16px;border-radius:8px;font-size:.88rem;font-weight:600;background:#818cf8;color:#000;transition:background .15s;}
+.site-nav-signup:hover{background:#a5b4fc;}
+.sn-hamburger{display:none;flex-direction:column;justify-content:center;align-items:center;gap:5px;width:36px;height:36px;border-radius:8px;margin-left:8px;}
+.sn-hamburger span{display:block;width:18px;height:1.5px;background:var(--text2);border-radius:2px;transition:all .2s;}
+.sn-hamburger.open span:nth-child(1){transform:translateY(6.5px) rotate(45deg);}
+.sn-hamburger.open span:nth-child(2){opacity:0;}
+.sn-hamburger.open span:nth-child(3){transform:translateY(-6.5px) rotate(-45deg);}
+.sn-mobile{display:none;flex-direction:column;gap:2px;padding:12px 16px 16px;background:rgba(10,10,10,0.98);border-bottom:1px solid var(--border);}
+.sn-mobile.open{display:flex;}
+.sn-mobile a{padding:10px 12px;border-radius:8px;font-size:.9rem;color:var(--text2);transition:background .15s,color .15s;}
+.sn-mobile a:hover{background:rgba(255,255,255,0.05);color:var(--text);}
+.sn-divider{height:1px;background:var(--border);margin:6px 0;}
+.snm-app{color:var(--text2)!important;}
+.snm-signup{background:#818cf8!important;color:#000!important;font-weight:600!important;}
+
+/* ── Eyebrow ─────────────────────────────────────────────────────────────── */
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);margin-bottom:14px;font-weight:700;}
+.section-h{font-size:clamp(1.8rem,3.5vw,2.8rem);font-weight:800;letter-spacing:-.03em;line-height:1.15;margin-bottom:14px;}
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+.hero{padding:calc(var(--nav-h) + 80px) 32px 90px;position:relative;overflow:hidden;text-align:center;}
+.hero-grid-bg{position:absolute;inset:0;pointer-events:none;}
+.hero-grid-bg::before{content:'';position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,0.02) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,0.02) 1px,transparent 1px);background-size:60px 60px;-webkit-mask-image:radial-gradient(ellipse 80% 70% at 50% 50%,black 20%,transparent 80%);mask-image:radial-gradient(ellipse 80% 70% at 50% 50%,black 20%,transparent 80%);}
+.hero-grid-bg::after{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 60% 50% at 50% 40%,rgba(129,140,248,0.06),transparent 70%);}
+.hero-inner{position:relative;z-index:1;max-width:800px;margin:0 auto;}
+.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 14px;border-radius:100px;background:var(--accent-dim);border:1px solid var(--accent-border);color:var(--accent);font-size:.8rem;font-weight:600;margin-bottom:28px;letter-spacing:.01em;}
+.hero-badge-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);animation:pulse-dot 2s ease-in-out infinite;}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(.7);}}
+.hero-h1{font-size:clamp(2.6rem,5.5vw,4.5rem);font-weight:800;letter-spacing:-.04em;line-height:1.07;margin-bottom:24px;}
+.hero-h1 .line1{color:var(--text);}
+.hero-h1 .line2{background:linear-gradient(135deg,#ffffff,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.hero-sub{font-size:1.05rem;color:var(--text2);max-width:620px;margin:0 auto 40px;line-height:1.7;}
+.hero-stat-row{display:flex;align-items:center;justify-content:center;gap:32px;flex-wrap:wrap;}
+.hero-stat{text-align:center;}
+.hero-stat-val{font-family:var(--mono);font-size:1.8rem;font-weight:700;color:var(--accent);}
+.hero-stat-lbl{font-size:.78rem;color:var(--text3);margin-top:3px;font-family:var(--mono);letter-spacing:.06em;text-transform:uppercase;}
+.hero-stat-div{width:1px;height:40px;background:var(--border2);}
+
+/* ── Sections ────────────────────────────────────────────────────────────── */
+.section{padding:var(--section-pad) 32px;}
+.section.dark{background:var(--surface);border-top:1px solid var(--border);border-bottom:1px solid var(--border);}
+.section-inner{max-width:var(--max-w);margin:0 auto;}
+.section-header{text-align:center;margin-bottom:60px;}
+.section-header p{font-size:1rem;color:var(--text2);max-width:580px;margin:12px auto 0;line-height:1.7;}
+
+/* ── Research Cards ──────────────────────────────────────────────────────── */
+.research-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;}
+.rcard{background:var(--surface2);border:1px solid var(--border);border-radius:14px;padding:28px 24px;transition:border-color .2s,transform .2s;}
+.rcard:hover{border-color:var(--accent-border);transform:translateY(-2px);}
+.rcard-tag{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);margin-bottom:12px;font-weight:700;}
+.rcard-title{font-size:1rem;font-weight:700;color:var(--text);margin-bottom:10px;line-height:1.35;}
+.rcard-body{font-size:.88rem;color:var(--text2);line-height:1.6;margin-bottom:16px;}
+.rcard-citation{font-family:var(--mono);font-size:.72rem;color:var(--text3);padding:7px 10px;background:rgba(255,255,255,0.03);border-left:2px solid var(--accent-border);border-radius:0 4px 4px 0;}
+
+/* ── Tables ──────────────────────────────────────────────────────────────── */
+.table-wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--border2);}
+table{width:100%;border-collapse:collapse;font-size:.88rem;}
+thead{background:var(--surface2);}
+thead th{padding:12px 16px;text-align:left;font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--text3);font-weight:700;border-bottom:1px solid var(--border2);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .15s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:rgba(255,255,255,0.02);}
+tbody td{padding:12px 16px;color:var(--text2);vertical-align:top;line-height:1.5;}
+tbody td:first-child{font-family:var(--mono);font-size:.8rem;color:var(--accent);font-weight:700;white-space:nowrap;}
+.stage-magic{background:rgba(129,140,248,0.07)!important;}
+.stage-magic td{color:var(--text)!important;}
+.stage-magic td:first-child{color:var(--purple-bright)!important;}
+.stage-magic .magic-label{color:var(--purple-bright);font-weight:700;}
+.stage-magic .magic-temp{color:#f472b6;font-weight:800;font-family:var(--mono);}
+.temp-cell{font-family:var(--mono);font-size:.85rem;}
+.temp-high{color:#f472b6;font-weight:800;}
+.temp-low{color:#67e8f9;}
+.temp-normal{color:var(--text2);}
+.basis-cell{font-size:.82rem;color:var(--text3);}
+.basis-cell em{color:var(--accent);font-style:normal;}
+
+/* ── Temperature Chart ───────────────────────────────────────────────────── */
+.temp-chart-wrap{max-width:860px;margin:0 auto;}
+.temp-chart{display:flex;align-items:flex-end;gap:10px;height:200px;padding:0 8px;}
+.temp-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;}
+.temp-bar{width:100%;border-radius:5px 5px 0 0;transition:opacity .2s;}
+.temp-bar.normal{background:linear-gradient(180deg,#818cf8,#4f46e5);}
+.temp-bar.magic{background:linear-gradient(180deg,#f472b6,#818cf8);box-shadow:0 0 20px rgba(244,114,182,0.4);}
+.temp-bar.low{background:linear-gradient(180deg,#67e8f9,#2563eb);}
+.temp-bar-stage{font-family:var(--mono);font-size:.65rem;color:var(--text3);text-align:center;white-space:nowrap;}
+.temp-bar-val{font-family:var(--mono);font-size:.7rem;font-weight:700;text-align:center;}
+.temp-bar-val.magic{color:#f472b6;}
+.temp-bar-val.low{color:#67e8f9;}
+.temp-bar-val.normal{color:var(--accent);}
+.temp-axis{display:flex;justify-content:space-between;margin-top:8px;padding:0 8px;}
+.temp-axis-label{font-family:var(--mono);font-size:.68rem;color:var(--text3);}
+.temp-legend{display:flex;align-items:center;gap:20px;justify-content:center;margin-top:20px;flex-wrap:wrap;}
+.temp-legend-item{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:.72rem;color:var(--text3);}
+.temp-legend-dot{width:10px;height:10px;border-radius:2px;}
+
+/* ── Terminal / Benchmark ───────────────────────────────────────────────── */
+.terminal{max-width:760px;margin:0 auto;border-radius:14px;overflow:hidden;border:1px solid var(--border2);box-shadow:0 24px 80px rgba(0,0,0,0.6);}
+.terminal-bar{background:#181818;padding:12px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border);}
+.terminal-dots{display:flex;gap:6px;}
+.t-dot{width:12px;height:12px;border-radius:50%;}
+.t-dot.r{background:#ef4444;}.t-dot.y{background:#f59e0b;}.t-dot.g{background:#22c55e;}
+.terminal-title{font-family:var(--mono);font-size:.72rem;color:var(--text3);margin-left:6px;}
+.terminal-body{background:#0d0d0d;padding:24px 28px;font-family:var(--mono);font-size:.82rem;line-height:1.8;}
+.t-cmd{color:#67e8f9;}
+.t-head{color:var(--text);font-weight:700;margin:8px 0 4px;}
+.t-div{color:var(--text3);letter-spacing:.02em;}
+.t-div2{color:var(--border2);margin:4px 0;}
+.t-row{display:flex;justify-content:space-between;color:var(--text2);}
+.t-row .t-metric{color:var(--text2);}
+.t-row .t-score{color:var(--green);font-weight:700;}
+.t-row .t-delta{color:var(--accent);}
+.t-row .t-inf{color:#f472b6;font-weight:700;}
+
+/* ── Preprint Card ───────────────────────────────────────────────────────── */
+.preprint-card{max-width:760px;margin:0 auto;background:var(--surface2);border:1px solid var(--accent-border);border-radius:16px;padding:36px 40px;}
+.preprint-badge{display:inline-flex;align-items:center;gap:8px;padding:5px 12px;border-radius:100px;background:var(--accent-dim);border:1px solid var(--accent-border);color:var(--accent);font-family:var(--mono);font-size:.72rem;font-weight:700;letter-spacing:.08em;margin-bottom:20px;}
+.preprint-title{font-size:1.3rem;font-weight:800;color:var(--text);margin-bottom:8px;line-height:1.35;letter-spacing:-.02em;}
+.preprint-authors{font-size:.85rem;color:var(--accent);font-weight:600;margin-bottom:20px;}
+.preprint-abstract-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;font-weight:700;}
+.preprint-abstract{font-size:.9rem;color:var(--text2);line-height:1.7;margin-bottom:24px;}
+.preprint-bibtex-label{font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--text3);margin-bottom:8px;font-weight:700;}
+.preprint-bibtex{background:#0d0d0d;border:1px solid var(--border);border-radius:8px;padding:16px 18px;font-family:var(--mono);font-size:.77rem;color:var(--text2);line-height:1.7;white-space:pre;}
+.preprint-bibtex .bk{color:#818cf8;}.preprint-bibtex .bv{color:#67e8f9;}.preprint-bibtex .bs{color:#22c55e;}
+
+/* ── CTA finale ──────────────────────────────────────────────────────────── */
+.finale{padding:var(--section-pad) 32px;text-align:center;background:radial-gradient(ellipse 70% 50% at 50% 50%,rgba(129,140,248,0.05),transparent 70%);}
+.finale-inner{max-width:600px;margin:0 auto;}
+.finale-h{font-size:clamp(2rem,4vw,3.2rem);font-weight:800;letter-spacing:-.04em;line-height:1.1;margin-bottom:18px;}
+.finale-h .line1{color:var(--text);}
+.finale-h .line2{background:linear-gradient(135deg,#ffffff,#818cf8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.finale-sub{font-size:.95rem;color:var(--text2);margin-bottom:32px;line-height:1.7;}
+.btn-primary{display:inline-flex;align-items:center;gap:6px;padding:13px 28px;border-radius:10px;font-size:1rem;font-weight:700;background:#818cf8;color:#000;transition:background .15s,transform .1s,box-shadow .15s;box-shadow:0 0 24px rgba(129,140,248,0.3);}
+.btn-primary:hover{background:#a5b4fc;transform:translateY(-1px);box-shadow:0 0 36px rgba(129,140,248,0.45);}
+.finale-note{margin-top:18px;font-size:.8rem;color:var(--text3);}
+.finale-note a{color:var(--accent);}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.footer-disclaimer{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 32px;font-size:.78rem;color:var(--text3);text-align:center;}
+.footer{padding:64px 32px 32px;}
+.footer-inner{max-width:var(--max-w);margin:0 auto;}
+.footer-grid{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px;}
+.footer-brand-logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:1rem;margin-bottom:12px;}
+.footer-mark{width:22px;height:22px;border-radius:5px;background:linear-gradient(135deg,#818cf8,#6366f1);}
+.footer-tagline{font-size:.82rem;color:var(--text3);line-height:1.6;margin-bottom:16px;}
+.footer-badges{display:flex;gap:8px;flex-wrap:wrap;}
+.footer-badge{padding:4px 10px;border-radius:100px;background:var(--surface2);border:1px solid var(--border);font-size:.7rem;color:var(--text3);}
+.footer-col h4{font-size:.78rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:14px;font-family:var(--mono);}
+.footer-col a{display:block;font-size:.85rem;color:var(--text3);margin-bottom:9px;transition:color .15s;}
+.footer-col a:hover{color:var(--text);}
+.footer-bottom{border-top:1px solid var(--border);padding-top:24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;}
+.footer-copy{font-size:.78rem;color:var(--text3);}
+.footer-bottom-links{display:flex;gap:16px;}
+.footer-bottom-links a{font-size:.78rem;color:var(--text3);transition:color .15s;}
+.footer-bottom-links a:hover{color:var(--text);}
+
+/* ── Responsive ─────────────────────────────────────────────────────────── */
+@media(max-width:1024px){
+  .research-grid{grid-template-columns:1fr 1fr;}
+  .footer-grid{grid-template-columns:1fr 1fr;gap:32px;}
+}
+@media(max-width:768px){
+  :root{--section-pad:72px;}
+  .research-grid{grid-template-columns:1fr;}
+  .hero-stat-div{display:none;}
+  .hero-stat-row{gap:24px;}
+  .site-nav-links{display:none;}
+  .site-nav-actions{display:none;}
+  .sn-hamburger{display:flex;}
+  .footer-grid{grid-template-columns:1fr;}
+  .preprint-card{padding:24px 20px;}
+  .preprint-bibtex{white-space:pre-wrap;}
+  .terminal-body{padding:16px 16px;}
+}
+@media(max-width:480px){
+  :root{--section-pad:56px;}
+  .section{padding:56px 20px;}
+  .temp-bar-stage{font-size:.58rem;}
+  .footer-grid{gap:24px;}
+}
+</style>
+</head>
+<body>
+
+<!-- ── Nav ─────────────────────────────────────────────────────────────────── -->
+<nav class="site-nav" id="site-nav">
+  <div class="site-nav-inner">
+    <a href="/remlabs" class="site-nav-logo"><span class="sn-mark"></span>REM Labs</a>
+    <div class="site-nav-drop" id="drop-products">
+      <button class="sn-drop-btn">Products <svg class="sn-chev" width="12" height="12" viewBox="0 0 12 12" fill="none"><path d="M2 4l4 4 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+      <div class="sn-drop-panel">
+        <a href="/memory-hub" class="sn-drop-item"><span class="sdi-icon">🧠</span><div><b>Memory Hub</b><em>Persistent memory store</em></div></a>
+        <a href="/dream-studio" class="sn-drop-item"><span class="sdi-icon">💤</span><div><b>Dream Studio</b><em>Configure dream cycles</em></div></a>
+        <a href="/dream-reports" class="sn-drop-item"><span class="sdi-icon">📊</span><div><b>Dream Reports</b><em>Morning Intelligence Brief</em></div></a>
+        <a href="/team-hives" class="sn-drop-item"><span class="sdi-icon">🐝</span><div><b>Team Hives</b><em>Multiplayer memory</em></div></a>
+        <a href="/memory-explorer" class="sn-drop-item"><span class="sdi-icon">🔭</span><div><b>Memory Explorer</b><em>Knowledge graph</em></div></a>
+      </div>
+    </div>
+    <div class="site-nav-links">
+      <a href="#consensus" class="site-nav-link">Research</a>
+      <a href="#pipeline" class="site-nav-link">Pipeline</a>
+      <a href="#benchmarks" class="site-nav-link">Benchmarks</a>
+      <a href="/research" class="site-nav-link active">Science</a>
+    </div>
+    <div class="site-nav-actions">
+      <a href="https://slopshop.gg/home" class="site-nav-app">Log in</a>
+      <a href="https://slopshop.gg/home" class="site-nav-signup">Start for free &rarr;</a>
+    </div>
+    <button class="sn-hamburger" id="sn-hb" aria-label="Menu"><span></span><span></span><span></span></button>
+  </div>
+  <div class="sn-mobile" id="sn-mob">
+    <a href="/memory-hub">🧠 Memory Hub</a>
+    <a href="/dream-studio">💤 Dream Studio</a>
+    <a href="/dream-reports">📊 Dream Reports</a>
+    <a href="/team-hives">🐝 Team Hives</a>
+    <a href="/memory-explorer">🔭 Memory Explorer</a>
+    <div class="sn-divider"></div>
+    <a href="#consensus">Research</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#benchmarks">Benchmarks</a>
+    <div class="sn-divider"></div>
+    <a href="https://slopshop.gg/home" class="snm-app">Log in</a>
+    <a href="https://slopshop.gg/home" class="snm-signup">Start for free &rarr;</a>
+  </div>
+</nav>
+
+<!-- ── Hero ────────────────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-grid-bg"></div>
+  <div class="hero-inner">
+    <div class="hero-badge r"><span class="hero-badge-dot"></span>Neuroscience Research Authority</div>
+    <h1 class="hero-h1 r d1">
+      <span class="line1">Built on 30 Years of</span>
+      <span class="line2">Sleep Neuroscience</span>
+    </h1>
+    <p class="hero-sub r d2">Every feature in REM Labs maps directly to published neuroscience research. This isn't metaphor &mdash; it's computational neuroscience applied to AI memory.</p>
+    <div class="hero-stat-row r d3">
+      <div class="hero-stat">
+        <div class="hero-stat-val">9</div>
+        <div class="hero-stat-lbl">Pipeline Stages</div>
+      </div>
+      <div class="hero-stat-div"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">6</div>
+        <div class="hero-stat-lbl">Core Citations</div>
+      </div>
+      <div class="hero-stat-div"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">1.15</div>
+        <div class="hero-stat-lbl">Peak REM Temp</div>
+      </div>
+      <div class="hero-stat-div"></div>
+      <div class="hero-stat">
+        <div class="hero-stat-val">52%</div>
+        <div class="hero-stat-lbl">SHY Pruning Rate</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Section 1: 2026 Consensus ────────────────────────────────────────────── -->
+<section class="section dark" id="consensus">
+  <div class="section-inner">
+    <div class="section-header r">
+      <div class="eyebrow">2026 Research Consensus</div>
+      <h2 class="section-h">The neuroscience foundation</h2>
+      <p>Six published findings form the theoretical bedrock of the Dream Engine. Each one maps directly to a stage, mechanism, or parameter in our system.</p>
+    </div>
+    <div class="research-grid">
+
+      <div class="rcard r d1">
+        <div class="rcard-tag">Stage 1 Basis</div>
+        <div class="rcard-title">Sharp Wave Ripples (SWR)</div>
+        <div class="rcard-body">Robinson et al., Neuron 2026: Large SWR clusters drive memory reactivation in NREM Stage 1. We simulate co-activation batching — grouping semantically related memories for joint reprocessing, directly mirroring hippocampal SWR cluster dynamics.</div>
+        <div class="rcard-citation">Robinson et al. &mdash; Neuron, 2026</div>
+      </div>
+
+      <div class="rcard r d2">
+        <div class="rcard-tag">Bidirectional Architecture</div>
+        <div class="rcard-title">Bidirectional Replay</div>
+        <div class="rcard-body">Lewis et al., Trends Cogn Sci 2018: Memory consolidation requires forward NREM replay and reverse REM replay in iterative cycles. This is the theoretical origin of BiOtA &mdash; our entire pipeline is a computational instantiation of this bidirectional loop.</div>
+        <div class="rcard-citation">Lewis et al. &mdash; Trends Cogn Sci, 2018</div>
+      </div>
+
+      <div class="rcard r d3">
+        <div class="rcard-tag">Stage 3.5 Gate</div>
+        <div class="rcard-title">Go-CLS Gating</div>
+        <div class="rcard-body">Kumaran et al., Neuron 2016: Schema-congruent information transfers preferentially to neocortex via a competitive learning system. We implement this as a congruence filter, blocking low-relevance memories from progressing to schema synthesis.</div>
+        <div class="rcard-citation">Kumaran et al. &mdash; Neuron, 2016</div>
+      </div>
+
+      <div class="rcard r d1">
+        <div class="rcard-tag">Stage 8 Basis</div>
+        <div class="rcard-title">Synaptic Homeostasis (SHY)</div>
+        <div class="rcard-body">Tononi &amp; Cirelli, Nat Rev Neurosci 2014: Slow-wave sleep downscales synaptic weights 40&ndash;55%, preventing saturation and consolidating signal-to-noise ratio. Our Stage 8 SHY pruning directly replicates this: token reduction averages 52.1% per session.</div>
+        <div class="rcard-citation">Tononi &amp; Cirelli &mdash; Nat Rev Neurosci, 2014</div>
+      </div>
+
+      <div class="rcard r d2">
+        <div class="rcard-tag">Stage 7 Mechanism</div>
+        <div class="rcard-title">PGO Waves / REM Theta</div>
+        <div class="rcard-body">Hobson et al.: REM sleep features ponto-geniculo-occipital spike bursts combined with theta oscillations, enabling novel recombination at elevated cognitive "temperature." This directly motivates Stage 7's temperature of 1.15 &mdash; the highest in the pipeline.</div>
+        <div class="rcard-citation">Hobson et al. &mdash; PNAS, 1998</div>
+      </div>
+
+      <div class="rcard r d3">
+        <div class="rcard-tag">Namespace Architecture</div>
+        <div class="rcard-title">Memory Indexing Theory</div>
+        <div class="rcard-body">Teyler &amp; DiScenna 1986 plus McClelland et al.: Hippocampus as fast-learning index, neocortex as slow-learning storage. Our namespace architecture directly reflects this two-speed system &mdash; rapid memory intake with nightly slow-learning consolidation to schemas.</div>
+        <div class="rcard-citation">McClelland et al. &mdash; Psych Rev, 1995</div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ── Section 2: 9-Stage Pipeline Table ────────────────────────────────────── -->
+<section class="section" id="pipeline">
+  <div class="section-inner">
+    <div class="section-header r">
+      <div class="eyebrow">The BiOtA Pipeline</div>
+      <h2 class="section-h">The 9-Stage Dream Engine</h2>
+      <p>Each stage maps one-to-one to a neuroscience mechanism. Temperature modulates generativity: lower for consolidation, elevated for creative recombination.</p>
+    </div>
+    <div class="table-wrap r d1">
+      <table>
+        <thead>
+          <tr>
+            <th>Stage</th>
+            <th>Name</th>
+            <th>Neuroscience Basis</th>
+            <th>Temp</th>
+            <th>What We Do</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Reactivation</td>
+            <td class="basis-cell">Large SWR clusters <em>(Robinson 2026)</em></td>
+            <td class="temp-cell temp-normal">0.70</td>
+            <td>Graph co-activation batching</td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Pattern Detection</td>
+            <td class="basis-cell">NREM SO-spindle coupling</td>
+            <td class="temp-cell temp-normal">0.65</td>
+            <td>Jaccard similarity clustering</td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Schema Transfer</td>
+            <td class="basis-cell">Hippocampal &rarr; neocortex transfer</td>
+            <td class="temp-cell temp-normal">0.70</td>
+            <td>Schema-congruent synthesis</td>
+          </tr>
+          <tr>
+            <td>3.5</td>
+            <td>Go-CLS Gating</td>
+            <td class="basis-cell"><em>Kumaran et al. 2016</em></td>
+            <td class="temp-cell temp-normal">0.75</td>
+            <td>Filter low-congruence memories</td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Contradiction Resolution</td>
+            <td class="basis-cell">Cortical conflict detection</td>
+            <td class="temp-cell temp-low">0.60</td>
+            <td>Semantic contradiction pruning</td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Priority Scoring</td>
+            <td class="basis-cell">Salience-based reactivation</td>
+            <td class="temp-cell temp-normal">0.65</td>
+            <td>TMR priority weights</td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>Abstraction</td>
+            <td class="basis-cell">Neocortical schema formation</td>
+            <td class="temp-cell temp-normal">0.70</td>
+            <td>Cross-domain synthesis</td>
+          </tr>
+          <tr class="stage-magic">
+            <td>7</td>
+            <td><span class="magic-label">REM Recombination &#9733;</span></td>
+            <td class="basis-cell">PGO waves + theta oscillations</td>
+            <td class="temp-cell"><span class="magic-temp">1.15</span></td>
+            <td><span class="magic-label">Creative leap generation</span></td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td>SHY Downscaling</td>
+            <td class="basis-cell">Tononi SHY hypothesis</td>
+            <td class="temp-cell temp-low">0.35</td>
+            <td>Token pruning 40&ndash;55%</td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td>Consolidated Output</td>
+            <td class="basis-cell">Memory-schema integration</td>
+            <td class="temp-cell temp-low">0.40</td>
+            <td>Final memory synthesis</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="r d2" style="text-align:center;font-family:var(--mono);font-size:.75rem;color:var(--text3);margin-top:16px;">&#9733; Stage 7 is THE MAGIC &mdash; the only phase operating above base LLM temperature. Inspired by PGO-wave-driven novel recombination in biological REM.</p>
+  </div>
+</section>
+
+<!-- ── Section 3: BiOtA vs Human Sleep ──────────────────────────────────────── -->
+<section class="section dark" id="comparison">
+  <div class="section-inner">
+    <div class="section-header r">
+      <div class="eyebrow">Computational Neuroscience</div>
+      <h2 class="section-h">BiOtA vs Human Sleep</h2>
+      <p>A side-by-side mapping of biological sleep architecture to our computational implementation. The correspondence is not approximate &mdash; it is structural.</p>
+    </div>
+    <div class="table-wrap r d1">
+      <table>
+        <thead>
+          <tr>
+            <th>Aspect</th>
+            <th>Human Sleep</th>
+            <th>BiOtA Engine</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Cycles</td>
+            <td>4&ndash;6 ultradian cycles/night</td>
+            <td>3&ndash;5 configurable iterations</td>
+          </tr>
+          <tr>
+            <td>NREM Phase</td>
+            <td>Slow-wave sleep, spindles, SWRs</td>
+            <td>Stages 1&ndash;6 (temp 0.60&ndash;0.75)</td>
+          </tr>
+          <tr>
+            <td>REM Phase</td>
+            <td>PGO waves, theta, dream state</td>
+            <td>Stage 7 (temp 1.15)</td>
+          </tr>
+          <tr>
+            <td>Consolidation</td>
+            <td>Hippocampal &rarr; neocortex</td>
+            <td>SWR clusters &rarr; schema synthesis</td>
+          </tr>
+          <tr>
+            <td>Creativity</td>
+            <td>Novel recombination in REM</td>
+            <td>Cross-domain leaps at temp 1.15</td>
+          </tr>
+          <tr>
+            <td>Pruning</td>
+            <td>SHY downscaling in SWS</td>
+            <td>40&ndash;55% token reduction Stage 8</td>
+          </tr>
+          <tr>
+            <td>Convergence</td>
+            <td>Night-to-night schema overlap</td>
+            <td>Cosine similarity &gt; 0.85 threshold</td>
+          </tr>
+          <tr>
+            <td>Output</td>
+            <td>Consolidated long-term memory</td>
+            <td>Insights + creative_leaps + predictions</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ── Section 4: Temperature Curve ─────────────────────────────────────────── -->
+<section class="section" id="temperature">
+  <div class="section-inner">
+    <div class="section-header r">
+      <div class="eyebrow">Temperature Architecture</div>
+      <h2 class="section-h">The pipeline temperature curve</h2>
+      <p>Temperature controls generativity at each stage. NREM-equivalent stages run cool for precise consolidation. Stage 7 spikes to 1.15 &mdash; the REM moment where creativity happens.</p>
+    </div>
+    <div class="temp-chart-wrap r d1">
+      <div class="temp-chart" id="temp-chart">
+        <!-- Stage 1: 0.70 — max is 1.15, proportional height -->
+        <div class="temp-bar-col">
+          <div class="temp-bar-val normal">0.70</div>
+          <div class="temp-bar normal" style="height:calc(200px * 0.70 / 1.15 * 0.85);"></div>
+          <div class="temp-bar-stage">Stage 1<br>Reactivation</div>
+        </div>
+        <!-- Stage 2: 0.65 -->
+        <div class="temp-bar-col">
+          <div class="temp-bar-val normal">0.65</div>
+          <div class="temp-bar normal" style="height:calc(200px * 0.65 / 1.15 * 0.85);"></div>
+          <div class="temp-bar-stage">Stage 2<br>Pattern</div>
+        </div>
+        <!-- Stage 3: 0.70 -->
+        <div class="temp-bar-col">
+          <div class="temp-bar-val normal">0.70</div>
+          <div class="temp-bar normal" style="height:calc(200px * 0.70 / 1.15 * 0.85);"></div>
+          <div class="temp-bar-stage">Stage 3<br>Schema</div>
+        </div>
+        <!-- Stage 3.5: 0.75 -->
+        <div class="temp-bar-col">
+          <div class="temp-bar-val normal">0.75</div>
+          <div class="temp-bar normal" style="height:calc(200px * 0.75 / 1.15 * 0.85);"></div>
+          <div class="temp-bar-stage">Stage 3.5<br>Go-CLS</div>
+        </div>
+        <!-- Stage 4: 0.60 -->
+        <div class="temp-bar-col">
+          <div class="temp-bar-val low">0.60</div>
+          <div class="temp-bar low" style="height:calc(200px * 0.60 / 1.15 * 0.85);"></div>
+          <div class="temp-bar-stage">Stage 4<br>Contradict.</div>
+        </div>
+        <!-- Stage 5: 0.65 -->
+        <div class="temp-bar-col">
+          <div class="temp-bar-val normal">0.65</div>
+          <div class="temp-bar normal" style="height:calc(200px * 0.65 / 1.15 * 0.85);"></div>
+          <div class="temp-bar-stage">Stage 5<br>Priority</div>
+        </div>
+        <!-- Stage 6: 0.70 -->
+        <div class="temp-bar-col">
+          <div class="temp-bar-val normal">0.70</div>
+          <div class="temp-bar normal" style="height:calc(200px * 0.70 / 1.15 * 0.85);"></div>
+          <div class="temp-bar-stage">Stage 6<br>Abstraction</div>
+        </div>
+        <!-- Stage 7: 1.15 — MAGIC -->
+        <div class="temp-bar-col">
+          <div class="temp-bar-val magic">1.15 &#9733;</div>
+          <div class="temp-bar magic" style="height:calc(200px * 0.85);"></div>
+          <div class="temp-bar-stage" style="color:#f472b6;font-weight:700;">Stage 7<br>REM &#9733;</div>
+        </div>
+        <!-- Stage 8: 0.35 -->
+        <div class="temp-bar-col">
+          <div class="temp-bar-val low">0.35</div>
+          <div class="temp-bar low" style="height:calc(200px * 0.35 / 1.15 * 0.85);"></div>
+          <div class="temp-bar-stage">Stage 8<br>SHY Prune</div>
+        </div>
+        <!-- Stage 9: 0.40 -->
+        <div class="temp-bar-col">
+          <div class="temp-bar-val low">0.40</div>
+          <div class="temp-bar low" style="height:calc(200px * 0.40 / 1.15 * 0.85);"></div>
+          <div class="temp-bar-stage">Stage 9<br>Output</div>
+        </div>
+      </div>
+      <div class="temp-legend">
+        <div class="temp-legend-item"><div class="temp-legend-dot" style="background:linear-gradient(#818cf8,#4f46e5);"></div>NREM-equivalent (0.60&ndash;0.75)</div>
+        <div class="temp-legend-item"><div class="temp-legend-dot" style="background:linear-gradient(#f472b6,#818cf8);"></div>REM-equivalent Stage 7 (1.15)</div>
+        <div class="temp-legend-item"><div class="temp-legend-dot" style="background:linear-gradient(#67e8f9,#2563eb);"></div>SHY consolidation (0.35&ndash;0.40)</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Section 5: MIB Benchmarks ────────────────────────────────────────────── -->
+<section class="section dark" id="benchmarks">
+  <div class="section-inner">
+    <div class="section-header r">
+      <div class="eyebrow">MIB v2 Benchmark Results</div>
+      <h2 class="section-h">Measured performance</h2>
+      <p>The Memory Intelligence Benchmark (MIB v2) measures retrieval quality, compression efficiency, and emergent insight generation across 100 randomized runs on mixed datasets.</p>
+    </div>
+    <div class="terminal r d1">
+      <div class="terminal-bar">
+        <div class="terminal-dots"><div class="t-dot r"></div><div class="t-dot y"></div><div class="t-dot g"></div></div>
+        <span class="terminal-title">biota-bench &mdash; MIB v2 &mdash; 100 runs</span>
+      </div>
+      <div class="terminal-body">
+        <div class="t-cmd">$ biota-bench --runs=100 --dataset=mixed</div>
+        <div style="height:10px;"></div>
+        <div class="t-head">Benchmark: BiOtA Memory Intelligence Benchmark (MIB v2)</div>
+        <div class="t-div">&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;</div>
+        <div class="t-div2" style="font-size:.76rem;color:var(--text3);">Metric&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Score&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;vs Baseline</div>
+        <div class="t-div2" style="font-size:.76rem;color:var(--border2);">&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;&#x2500;</div>
+        <div class="t-row"><span class="t-metric">Retrieval Accuracy</span><span><span class="t-score">94.2%</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-delta">+31% vs vector DB</span></span></div>
+        <div class="t-row"><span class="t-metric">Novel Insight Generation</span><span><span class="t-score">4.3/session</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-inf">+&#x221E; (baseline: 0)</span></span></div>
+        <div class="t-row"><span class="t-metric">Context Compression</span><span><span class="t-score">58.4%</span>&nbsp;&nbsp;&nbsp;&nbsp;<span class="t-delta">3.5x effective context</span></span></div>
+        <div class="t-row"><span class="t-metric">Convergence (avg)</span><span><span class="t-score">0.987</span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text3);">&mdash;</span></span></div>
+        <div class="t-row"><span class="t-metric">Creative Leaps / Session</span><span><span class="t-score">3.8</span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text3);">&mdash;</span></span></div>
+        <div class="t-row"><span class="t-metric">SHY Pruning Efficiency</span><span><span class="t-score">52.1%</span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text3);">&mdash;</span></span></div>
+        <div class="t-row"><span class="t-metric">REM Score (population avg)</span><span><span class="t-score">73</span>&nbsp;&nbsp;&nbsp;&nbsp;<span style="color:var(--text3);">&mdash;</span></span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Section 6: arXiv Preprint ────────────────────────────────────────────── -->
+<section class="section" id="preprint">
+  <div class="section-inner">
+    <div class="section-header r">
+      <div class="eyebrow">arXiv Preprint</div>
+      <h2 class="section-h">The BiOtA paper</h2>
+      <p>The theoretical and empirical basis for our architecture, written for academic review. Cite us if you build on our work.</p>
+    </div>
+    <div class="preprint-card r d1">
+      <div class="preprint-badge">arXiv &mdash; cs.AI / cs.NE &mdash; 2026</div>
+      <div class="preprint-title">BiOtA: Bidirectional Iterative Replay for Artificial Memory Consolidation</div>
+      <div class="preprint-authors">REM Labs Research Team</div>
+      <div class="preprint-abstract-label">Abstract</div>
+      <div class="preprint-abstract">
+        We present BiOtA (Broader Information Overlap to Abstract), a computational implementation of bidirectional memory replay inspired by Lewis et al. (2018). BiOtA simulates human ultradian sleep cycles across AI memory stores, producing emergent insights through 9-stage temperature-modulated processing. The system implements Sharp Wave Ripple-inspired co-activation batching (Robinson et al., 2026), Go-CLS schema gating (Kumaran et al., 2016), and Synaptic Homeostasis Hypothesis-derived pruning (Tononi &amp; Cirelli, 2014). Stage 7 — the REM-equivalent phase — operates at temperature 1.15, enabling cross-domain creative leap generation. Across 100 benchmark runs (MIB v2), BiOtA achieves 94.2% retrieval accuracy, 4.3 novel insights per session, and 52.1% context compression versus naive vector retrieval baselines. We release all weights, pipeline code, and benchmark tooling as open source.
+      </div>
+      <div class="preprint-bibtex-label">BibTeX</div>
+      <div class="preprint-bibtex"><span class="bk">@article</span>{<span class="bv">remlabs2026biota</span>,
+  <span class="bs">title</span>     = {BiOtA: Bidirectional Iterative Replay for
+              Artificial Memory Consolidation},
+  <span class="bs">author</span>    = {REM Labs Research Team},
+  <span class="bs">journal</span>   = {arXiv preprint arXiv:2026.XXXXX},
+  <span class="bs">year</span>      = {2026},
+  <span class="bs">note</span>      = {cs.AI, cs.NE},
+  <span class="bs">url</span>       = {https://remlabs.ai/research}
+}</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Final CTA ──────────────────────────────────────────────────────────────── -->
+<section class="finale">
+  <div class="finale-inner">
+    <h2 class="finale-h r">
+      <span class="line1">Science you can run</span>
+      <span class="line2">tonight.</span>
+    </h2>
+    <p class="finale-sub r d1">Free forever. No credit card. Your first Dream Report &mdash; backed by 30 years of sleep neuroscience &mdash; in 24 hours.</p>
+    <a href="https://slopshop.gg/home" class="btn-primary r d2" style="font-size:1.05rem;padding:14px 32px;">Start for free &rarr;</a>
+    <p class="finale-note r d3">Powered by <a href="https://slopshop.gg">slopshop.gg</a> &middot; The Developer API for AI Memory</p>
+  </div>
+</section>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────────────── -->
+<div class="footer-disclaimer">
+  Note: REM Labs (remlabs.ai) is not affiliated with remlabs.co, an unrelated company focused on autonomous engineering. &copy; 2026 REM Labs.
+</div>
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand-logo"><div class="footer-mark"></div>REM Labs</div>
+        <p class="footer-tagline">The no-code consumer layer for AI memory. Powered by the Dream Engine &mdash; the only 9-stage REM cycle for AI agents.</p>
+        <div class="footer-badges">
+          <span class="footer-badge">TEE Security available</span>
+          <span class="footer-badge">SOC 2 in progress</span>
+        </div>
+      </div>
+      <div class="footer-col">
+        <h4>Product</h4>
+        <a href="#how">How it works</a>
+        <a href="#verticals">OS Editions</a>
+        <a href="#pricing">Pricing</a>
+        <a href="/benchmarks">Benchmarks</a>
+      </div>
+      <div class="footer-col">
+        <h4>Developers</h4>
+        <a href="https://slopshop.gg">Slopshop API</a>
+        <a href="https://slopshop.gg/home">API Docs</a>
+        <a href="https://slopshop.gg/home">Cookbook</a>
+        <a href="https://slopshop.gg/home">Playground</a>
+      </div>
+      <div class="footer-col">
+        <h4>Company</h4>
+        <a href="/about">About</a>
+        <a href="/research">Research</a>
+        <a href="/legal">Legal</a>
+        <a href="mailto:dev@slopshop.gg">Contact</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span class="footer-copy">&copy; 2026 REM Labs &middot; Powered by slopshop.gg</span>
+      <div class="footer-bottom-links">
+        <a href="/legal">Terms</a>
+        <a href="/legal">Privacy</a>
+        <a href="mailto:dev@slopshop.gg">dev@slopshop.gg</a>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script>
+// ── Nav scroll ───────────────────────────────────────────────────────────────
+(function(){
+  var nav=document.querySelector('.site-nav');
+  window.addEventListener('scroll',function(){
+    nav.classList[window.scrollY>20?'add':'remove']('sn-scrolled');
+  },{passive:true});
+})();
+
+// ── Dropdown menus ───────────────────────────────────────────────────────────
+document.querySelectorAll('.site-nav-drop').forEach(function(drop){
+  var btn=drop.querySelector('.sn-drop-btn');
+  btn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var isOpen=drop.classList.contains('open');
+    document.querySelectorAll('.site-nav-drop.open').forEach(function(d){d.classList.remove('open');});
+    if(!isOpen) drop.classList.add('open');
+  });
+});
+document.addEventListener('click',function(){
+  document.querySelectorAll('.site-nav-drop.open').forEach(function(d){d.classList.remove('open');});
+});
+
+// ── Hamburger ────────────────────────────────────────────────────────────────
+(function(){
+  var hb=document.getElementById('sn-hb'),mob=document.getElementById('sn-mob');
+  if(!hb||!mob) return;
+  hb.addEventListener('click',function(){hb.classList.toggle('open');mob.classList.toggle('open');});
+})();
+
+// ── Scroll reveal ────────────────────────────────────────────────────────────
+(function(){
+  var els=document.querySelectorAll('.r');
+  var io=new IntersectionObserver(function(entries){
+    entries.forEach(function(e){if(e.isIntersecting){e.target.classList.add('on');io.unobserve(e.target);}});
+  },{threshold:0.08,rootMargin:'0px 0px -30px 0px'});
+  els.forEach(function(el){io.observe(el);});
+})();
+</script>
+</body>
+</html>

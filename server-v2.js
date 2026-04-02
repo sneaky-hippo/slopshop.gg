@@ -2373,6 +2373,7 @@ try { require('./routes/oams')(app, db, apiKeys); console.log('Route loaded: oam
 try { require('./routes/demo')(app, db, apiKeys); console.log('Route loaded: demo'); } catch (e) { console.error('Route load FAILED: demo -', e.message, e.stack); }
 // ===== AUTH ENHANCEMENTS (server-side OAuth2, anomaly detection, portal routing) =====
 try { require('./routes/auth-enhancements')(app, db, apiKeys); console.log('Route loaded: auth-enhancements'); } catch (e) { console.error('Route load FAILED: auth-enhancements -', e.message, e.stack); }
+try { require('./routes/dream-layer')(app, db, apiKeys); console.log('Route loaded: dream-layer'); } catch (e) { console.error('Route load FAILED: dream-layer -', e.message, e.stack); }
 // ===== BILLING (Stripe checkout, webhook, portal) =====
 try { require('./routes/billing')(app, db, apiKeys); console.log('[server] billing routes loaded'); } catch(e) { console.error('[server] billing load error:', e.message); }
 // ===================================
@@ -12960,9 +12961,17 @@ app.get('/v1/budget', auth, (req, res) => {
 // These expose marketed REST paths that delegate to the underlying slug dispatcher logic.
 
 // Helper: call a handler by slug, return JSON result
+// Applies the same namespace scoping as the wildcard dispatcher for memory-* slugs.
 async function callSlugHandler(slug, input, req) {
   const handler = allHandlers[slug];
   if (!handler) return null;
+  if (slug.startsWith('memory-') && input) {
+    if (!req.acct._nsPrefix) {
+      req.acct._nsPrefix = crypto.createHash('sha256').update(req.apiKey).digest('hex').slice(0, 16);
+    }
+    const rawNs = input.namespace || 'default';
+    input = { ...input, namespace: req.acct._nsPrefix + ':' + rawNs };
+  }
   return handler(input, req);
 }
 
@@ -17642,7 +17651,7 @@ try {
       status      TEXT NOT NULL DEFAULT 'pending',
       keys_sampled INTEGER NOT NULL DEFAULT 0,
       memories_created INTEGER NOT NULL DEFAULT 0,
-      model       TEXT NOT NULL DEFAULT 'claude-haiku-4-5',
+      model       TEXT NOT NULL DEFAULT 'claude-haiku-4-5-20251001',
       started_at  INTEGER NOT NULL,
       completed_at INTEGER,
       duration_ms INTEGER,
@@ -17663,7 +17672,7 @@ try {
       strategy        TEXT NOT NULL,
       interval_hours  REAL NOT NULL,
       budget          INTEGER NOT NULL DEFAULT 20,
-      model           TEXT NOT NULL DEFAULT 'claude-haiku-4-5',
+      model           TEXT NOT NULL DEFAULT 'claude-haiku-4-5-20251001',
       auto            INTEGER NOT NULL DEFAULT 1,
       credits_per_dream INTEGER NOT NULL DEFAULT 20,
       created_at      TEXT NOT NULL,
@@ -18367,9 +18376,10 @@ async function executeDream(dreamId, apiKey, namespace, strategy, budget, model,
       }
     }
 
-    // 7. Prune — for compress strategy, delete source keys the LLM said it replaced
+    // 7. Prune — for compress strategy, only delete source keys if replace_originals=true (opt-in)
+    // Default is NON-DESTRUCTIVE: compressed entries are written alongside originals.
     let pruned = 0;
-    if (!dryRun && strategy === 'compress') {
+    if (!dryRun && strategy === 'compress' && opts && opts.replaceOriginals) {
       const memDeleteHandler = allHandlers['memory-delete'];
       if (memDeleteHandler) {
         const toDelete = new Set();
@@ -18463,13 +18473,14 @@ app.post('/v1/memory/dream/start', auth, async (req, res) => {
   const namespace = req.acct._nsPrefix + ':' + rawNamespace;
   const strategy = req.body.strategy || 'synthesize';
   const budget = Math.min(Math.max(1, parseInt(req.body.budget) || 20), 100);
-  const model = req.body.model || 'claude-haiku-4-5';
+  const model = req.body.model || 'claude-haiku-4-5-20251001';
   const dryRun = req.body.dry_run === true || req.body.dry_run === 'true';
   const adversarial = req.body.adversarial === true || req.body.adversarial === 'true';
   const salienceThreshold = parseFloat(req.body.salience_threshold) || 0.0;
   const customPrompt = typeof req.body.custom_prompt === 'string' ? req.body.custom_prompt.slice(0, 1000) : null;
   const keysFilter = Array.isArray(req.body.keys_filter) ? req.body.keys_filter.slice(0, 100) : null;
   const multiLlm = req.body.multi_llm === true || req.body.multi_llm === 'true';
+  const replaceOriginals = req.body.replace_originals === true || req.body.replace_originals === 'true';
 
   if (!DREAM_STRATEGIES.includes(strategy)) {
     return res.status(400).json({ error: { code: 'invalid_strategy', message: 'strategy must be one of: ' + DREAM_STRATEGIES.join(', ') } });
@@ -18481,7 +18492,7 @@ app.post('/v1/memory/dream/start', auth, async (req, res) => {
   if (dryRun) {
     const dryId = 'dry-' + Date.now().toString(36) + '-' + crypto.randomBytes(4).toString('hex');
     try {
-      const preview = await executeDream(dryId, req.apiKey, namespace, strategy, budget, model, true, { adversarial, salienceThreshold, customPrompt, keysFilter, multiLlm });
+      const preview = await executeDream(dryId, req.apiKey, namespace, strategy, budget, model, true, { adversarial, salienceThreshold, customPrompt, keysFilter, multiLlm, replaceOriginals });
       return res.json(Object.assign({ ok: true, _dry_run: true, credits_would_charge: credits }, preview));
     } catch (dryErr) {
       return res.status(500).json({ error: { code: 'dry_run_failed', message: dryErr.message } });
@@ -18517,7 +18528,7 @@ app.post('/v1/memory/dream/start', auth, async (req, res) => {
   dbInsertAudit.run(new Date().toISOString(), req.apiKey.slice(0, 12) + '...', 'memory/dream/start', credits, 0, 'llm');
 
   // Fire-and-forget — client polls /v1/memory/dream/status/:id
-  executeDream(dreamId, req.apiKey, namespace, strategy, budget, model, false, { adversarial, salienceThreshold, customPrompt, keysFilter, multiLlm })
+  executeDream(dreamId, req.apiKey, namespace, strategy, budget, model, false, { adversarial, salienceThreshold, customPrompt, keysFilter, multiLlm, replaceOriginals })
     .then(function() { activeDreamSessions.delete(dreamId); })
     .catch(function(err) {
       log.error('Dream execution failed', { dreamId: dreamId, error: err.message });
@@ -18630,7 +18641,7 @@ app.post('/v1/memory/dream/schedule', auth, function(req, res) {
   const strategy = req.body.strategy || 'synthesize';
   const interval_hours = Math.max(0.25, parseFloat(req.body.interval_hours) || 24);
   const budget = Math.min(Math.max(1, parseInt(req.body.budget) || 20), 100);
-  const model = req.body.model || 'claude-haiku-4-5';
+  const model = req.body.model || 'claude-haiku-4-5-20251001';
   const auto = req.body.auto !== false;
 
   if (!DREAM_STRATEGIES.includes(strategy)) {
@@ -19050,7 +19061,7 @@ app.post('/v1/memory/dream/collective', auth, async (req, res) => {
   const spaceId = req.body.space_id || req.body.hive_id; // support both param names
   const strategy = req.body.strategy || 'synthesize';
   const budget = Math.min(Math.max(1, parseInt(req.body.budget) || 30), 100);
-  const model = req.body.model || 'claude-haiku-4-5';
+  const model = req.body.model || 'claude-haiku-4-5-20251001';
 
   if (!spaceId) return res.status(400).json({ error: { code: 'missing_space_id', message: 'space_id is required (a shared_memory_spaces id from POST /v1/memory/share/create)' } });
   if (!DREAM_STRATEGIES.includes(strategy)) {

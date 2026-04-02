@@ -176,7 +176,10 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
 
     try {
       const state = crypto.randomBytes(16).toString('hex'); // 32 hex chars
-      db.prepare('INSERT OR REPLACE INTO oauth_states (state, created_at) VALUES (?, ?)').run(state, Date.now());
+      // Encode optional return_to path in state so callback can redirect back
+      const returnTo = req.query.return_to || '';
+      const statePayload = returnTo ? state + ':' + Buffer.from(returnTo).toString('base64url') : state;
+      db.prepare('INSERT OR REPLACE INTO oauth_states (state, created_at) VALUES (?, ?)').run(statePayload, Date.now());
 
       const params = new URLSearchParams({
         client_id:     process.env.GOOGLE_CLIENT_ID,
@@ -184,7 +187,7 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
         response_type: 'code',
         scope:         'openid email profile',
         access_type:   'online',
-        state,
+        state:         statePayload,
         prompt:        'select_account',
       });
 
@@ -208,13 +211,20 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
       return res.redirect('/home?error=missing_callback_params');
     }
 
-    // Validate CSRF state
+    // Validate CSRF state (state may have :base64url(return_to) suffix)
     const stateRow = db.prepare('SELECT state FROM oauth_states WHERE state = ?').get(state);
     if (!stateRow) {
       return res.redirect('/home?error=invalid_state');
     }
     // Consume the state — delete regardless of subsequent outcome
     db.prepare('DELETE FROM oauth_states WHERE state = ?').run(state);
+
+    // Extract optional return_to from state
+    let returnToPath = null;
+    const colonIdx = state.indexOf(':');
+    if (colonIdx !== -1) {
+      try { returnToPath = Buffer.from(state.slice(colonIdx + 1), 'base64url').toString('utf8'); } catch(_) {}
+    }
 
     try {
       // Exchange code for tokens
@@ -313,7 +323,15 @@ module.exports = function mountAuthEnhancements(app, db, apiKeys) {
         path:     '/',
       });
 
-      return res.redirect((process.env.APP_URL || 'https://remlabs.ai') + '/memory');
+      // Pass API key in URL fragment so cross-domain remlabs.ai pages can store it in
+      // localStorage — the slop_session cookie is set on slopshop.gg and won't be
+      // readable from remlabs.ai requests due to same-site cookie scoping.
+      // CONSUMER_URL separates the post-auth destination from the Google redirect_uri
+      // (APP_URL / BASE_URL), which must match what's registered in Google Console.
+      const consumerUrl = (process.env.CONSUMER_URL || 'https://remlabs.ai').replace(/\/$/, '');
+      // Use return_to path if provided (e.g. /cli-login for device code flow)
+      const destPath = returnToPath && /^\/[a-zA-Z0-9\-_\/?=&%]+$/.test(returnToPath) ? returnToPath : '/memory';
+      return res.redirect(consumerUrl + destPath + '#key=' + encodeURIComponent(user.api_key));
 
     } catch (err) {
       console.error('[auth-enhancements] callback error:', err.message);

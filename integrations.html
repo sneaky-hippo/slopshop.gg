@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="slopshop.gg integrations — MCP for Claude Code, Cursor, LangChain, CrewAI, REST, Docker. One API key. 1,303 tools.">
+  <meta property="og:title" content="slopshop.gg — Integrations">
+  <meta property="og:description" content="One API key. 1,303 tools. Works with Claude Code, Cursor, LangChain, CrewAI — and any REST client.">
+  <meta property="og:type" content="website">
+  <title>slopshop.gg — Integrations</title>
+  <link rel="canonical" href="https://slopshop.gg/integrations">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #111111;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.13);
+      --text: #e8e8e8;
+      --text2: rgba(232,232,232,0.5);
+      --text3: rgba(232,232,232,0.25);
+      --accent: #00D4FF;
+      --accent-dim: rgba(0,212,255,0.07);
+      --green: #22c55e;
+      --mono: 'JetBrains Mono', monospace;
+      --sans: 'Inter', -apple-system, sans-serif;
+    }
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+      min-height: 100vh;
+    }
+    a { color: inherit; text-decoration: none; }
+
+    .wrap {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: calc(44px + 56px) 28px 120px;
+    }
+
+    /* ── Top Nav ── */
+    .topnav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 44px;
+      background: rgba(10,10,10,0.92);
+      backdrop-filter: saturate(180%) blur(16px);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center;
+      padding: 0 20px; gap: 0;
+    }
+    .topnav-logo {
+      font-size: 11px; font-weight: 600; letter-spacing: 0.08em;
+      color: var(--accent); text-transform: uppercase;
+      margin-right: 20px; flex-shrink: 0;
+    }
+    .topnav-links { display: flex; align-items: center; gap: 0; flex: 1; }
+    .topnav-link {
+      font-size: 11px; color: var(--text3); letter-spacing: 0.04em;
+      padding: 6px 10px; border-radius: 4px;
+      transition: color 0.12s, background 0.12s;
+      text-transform: uppercase;
+    }
+    .topnav-link:hover { color: var(--text2); background: rgba(255,255,255,0.04); }
+    .topnav-link.active { color: var(--accent); }
+    .topnav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .topnav-copy {
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text3); background: var(--surface);
+      border: 1px solid var(--border2); border-radius: 4px;
+      padding: 4px 10px; cursor: pointer; transition: all 0.12s;
+      font-family: var(--mono);
+    }
+    .topnav-copy:hover { color: var(--accent); border-color: var(--accent); }
+    .topnav-cta {
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: #000; background: var(--accent);
+      border-radius: 4px; padding: 5px 12px; font-weight: 600;
+      transition: opacity 0.12s; font-family: var(--mono);
+    }
+    .topnav-cta:hover { opacity: 0.85; }
+    @media (max-width: 600px) {
+      .topnav-links { display: none; }
+      .topnav { padding: 0 14px; }
+    }
+
+    /* ── Hero ── */
+    .tagline {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 14px;
+    }
+    .headline {
+      font-family: var(--sans);
+      font-size: clamp(1.5rem, 4.5vw, 2.2rem);
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      line-height: 1.2;
+      color: var(--text);
+      margin-bottom: 18px;
+    }
+    .headline strong { font-weight: 500; }
+    .body-p {
+      font-family: var(--sans);
+      font-size: 0.9375rem;
+      font-weight: 300;
+      line-height: 1.75;
+      color: var(--text2);
+      max-width: 560px;
+      margin-bottom: 48px;
+      padding-bottom: 40px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Section headings ── */
+    .section-label {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 4px;
+      margin-top: 56px;
+    }
+    .section-label:first-of-type { margin-top: 0; }
+    .section-title {
+      font-family: var(--sans);
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    /* ── Integration item ── */
+    .int-item {
+      margin-bottom: 32px;
+    }
+    .int-name {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .int-badge {
+      font-size: 9px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-weight: 500;
+    }
+    .badge-mcp { background: rgba(0,212,255,0.1); color: var(--accent); }
+    .badge-rest { background: rgba(34,197,94,0.1); color: var(--green); }
+    .badge-sdk { background: rgba(232,232,232,0.06); color: var(--text3); }
+    .int-desc {
+      font-size: 11px;
+      color: var(--text3);
+      margin-bottom: 10px;
+      font-family: var(--sans);
+      font-weight: 300;
+    }
+
+    /* ── Code block ── */
+    .snippet {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 0;
+    }
+    .snippet-bar {
+      display: flex; align-items: center; gap: 6px;
+      padding: 8px 14px; border-bottom: 1px solid var(--border);
+      background: rgba(255,255,255,0.02);
+      justify-content: space-between;
+    }
+    .snippet-bar-left { display: flex; align-items: center; gap: 6px; }
+    .dot { width: 8px; height: 8px; border-radius: 50%; }
+    .dot.r { background: #ff5f57; }
+    .dot.y { background: #febc2e; }
+    .dot.g { background: #28c840; }
+    .snippet-label { font-size: 10px; color: var(--text3); margin-left: 4px; letter-spacing: 0.04em; }
+    .copy-btn {
+      font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase;
+      color: var(--text3); background: none;
+      border: 1px solid var(--border2); border-radius: 3px;
+      padding: 2px 8px; cursor: pointer; transition: all 0.12s;
+      font-family: var(--mono);
+    }
+    .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+    .snippet-body {
+      padding: 16px 20px;
+      font-size: 12px;
+      line-height: 1.9;
+      overflow-x: auto;
+    }
+    .snippet-body pre {
+      margin: 0;
+      white-space: pre;
+      font-family: var(--mono);
+    }
+    .c { color: var(--text3); }
+    .a { color: var(--accent); }
+    .s { color: #98c379; }
+    .k { color: #c678dd; }
+    .n { color: #e5c07b; }
+
+    /* ── Requirements list ── */
+    .req-list {
+      list-style: none;
+      font-size: 12px;
+      color: var(--text2);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .req-list li {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .req-list li:last-child { border-bottom: none; }
+    .req-dot { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .req-key { color: var(--text3); min-width: 120px; font-size: 11px; }
+    .req-val { color: var(--text); }
+
+    /* ── Footer ── */
+    .footer-links {
+      display: flex; gap: 24px; flex-wrap: wrap;
+      font-size: 11px; color: var(--text3);
+      border-top: 1px solid var(--border); padding-top: 28px;
+      margin-top: 56px;
+    }
+    .footer-links a { transition: color 0.12s; }
+    .footer-links a:hover { color: var(--text2); }
+    .footer-links span { color: var(--border2); }
+
+    @media (max-width: 480px) {
+      .wrap { padding: 48px 20px 80px; }
+      .snippet-body { font-size: 11px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOP NAV -->
+<nav class="topnav">
+  <span class="topnav-logo">slopshop.gg</span>
+  <div class="topnav-links">
+    <a href="/dev-console" class="topnav-link">Console</a>
+    <a href="/api-reference" class="topnav-link">API Ref</a>
+    <a href="/integrations" class="topnav-link active">Integrations</a>
+    <a href="/pricing" class="topnav-link">Pricing</a>
+    <a href="https://remlabs.ai" class="topnav-link" target="_blank" rel="noopener" style="color:rgba(232,232,232,0.2);">REM Labs ↗</a>
+  </div>
+  <div class="topnav-actions">
+    <button class="topnav-copy" id="nav-copy-cmd" onclick="copyNavCmd(this)">npm install -g slopshop</button>
+    <a href="/auth/google" class="topnav-cta">Get API Key</a>
+  </div>
+</nav>
+
+<div class="wrap">
+
+  <!-- HERO -->
+  <div class="tagline">INTEGRATIONS &nbsp;·&nbsp; ALL PLATFORMS</div>
+  <h1 class="headline">Memory primitives for every<br><strong>IDE, framework, and model.</strong></h1>
+  <p class="body-p">One API key. 1,303 tools. Works with Claude Code, Cursor, LangChain, CrewAI — and any REST client.</p>
+
+  <!-- ─────────────────────────────────────────
+       SECTION 1: IDEs & AI Assistants
+       ───────────────────────────────────────── -->
+  <div class="section-label">Section 01</div>
+  <div class="section-title">IDEs &amp; AI Assistants</div>
+
+  <!-- Claude Desktop / Claude Code -->
+  <div class="int-item">
+    <div class="int-name">
+      Claude Desktop / Claude Code
+      <span class="int-badge badge-mcp">MCP</span>
+    </div>
+    <div class="int-desc">Install the MCP server with one command, then paste the JSON config into Claude Desktop settings.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">terminal</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'npx -y @slopshop/mcp-server')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="a">npx</span> -y @slopshop/mcp-server</pre></div>
+    </div>
+    <div style="height:8px;"></div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">claude_desktop_config.json</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, '{\n  &quot;mcpServers&quot;: {\n    &quot;slopshop&quot;: {\n      &quot;command&quot;: &quot;npx&quot;,\n      &quot;args&quot;: [&quot;-y&quot;, &quot;@slopshop/mcp-server&quot;],\n      &quot;env&quot;: {\n        &quot;SLOP_KEY&quot;: &quot;YOUR_API_KEY&quot;\n      }\n    }\n  }\n}')">copy</button>
+      </div>
+      <div class="snippet-body"><pre>{
+  <span class="n">"mcpServers"</span>: {
+    <span class="n">"slopshop"</span>: {
+      <span class="n">"command"</span>: <span class="s">"npx"</span>,
+      <span class="n">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"@slopshop/mcp-server"</span>],
+      <span class="n">"env"</span>: {
+        <span class="n">"SLOP_KEY"</span>: <span class="s">"YOUR_API_KEY"</span>
+      }
+    }
+  }
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- Cursor / Windsurf / Cline -->
+  <div class="int-item">
+    <div class="int-name">
+      Cursor / Windsurf / Cline
+      <span class="int-badge badge-mcp">MCP</span>
+    </div>
+    <div class="int-desc">Same MCP JSON config. In Cursor: Settings → MCP → Add server. In Cline: MCP Servers panel → paste config.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">.cursor/mcp.json · cline_mcp_settings.json</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, '{\n  &quot;mcpServers&quot;: {\n    &quot;slopshop&quot;: {\n      &quot;command&quot;: &quot;npx&quot;,\n      &quot;args&quot;: [&quot;-y&quot;, &quot;@slopshop/mcp-server&quot;],\n      &quot;env&quot;: {\n        &quot;SLOP_KEY&quot;: &quot;YOUR_API_KEY&quot;\n      }\n    }\n  }\n}')">copy</button>
+      </div>
+      <div class="snippet-body"><pre>{
+  <span class="n">"mcpServers"</span>: {
+    <span class="n">"slopshop"</span>: {
+      <span class="n">"command"</span>: <span class="s">"npx"</span>,
+      <span class="n">"args"</span>: [<span class="s">"-y"</span>, <span class="s">"@slopshop/mcp-server"</span>],
+      <span class="n">"env"</span>: {
+        <span class="n">"SLOP_KEY"</span>: <span class="s">"YOUR_API_KEY"</span>
+      }
+    }
+  }
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- VS Code via Continue.dev -->
+  <div class="int-item">
+    <div class="int-name">
+      VS Code — via Continue.dev
+      <span class="int-badge badge-rest">REST</span>
+    </div>
+    <div class="int-desc">Install the Continue extension, then add slopshop as a context provider in <code style="color:var(--text2);">~/.continue/config.json</code>.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">~/.continue/config.json (contextProviders)</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, '{\n  &quot;name&quot;: &quot;http&quot;,\n  &quot;params&quot;: {\n    &quot;url&quot;: &quot;https://api.slopshop.gg/v1/memory/search&quot;,\n    &quot;title&quot;: &quot;slopshop memory&quot;,\n    &quot;description&quot;: &quot;Search persistent agent memory&quot;,\n    &quot;displayTitle&quot;: &quot;Slopshop&quot;\n  }\n}')">copy</button>
+      </div>
+      <div class="snippet-body"><pre>{
+  <span class="n">"name"</span>: <span class="s">"http"</span>,
+  <span class="n">"params"</span>: {
+    <span class="n">"url"</span>: <span class="s">"https://api.slopshop.gg/v1/memory/search"</span>,
+    <span class="n">"title"</span>: <span class="s">"slopshop memory"</span>,
+    <span class="n">"description"</span>: <span class="s">"Search persistent agent memory"</span>,
+    <span class="n">"displayTitle"</span>: <span class="s">"Slopshop"</span>
+  }
+}</pre></div>
+    </div>
+  </div>
+
+  <!-- JetBrains AI -->
+  <div class="int-item">
+    <div class="int-name">
+      JetBrains AI Assistant
+      <span class="int-badge badge-rest">REST</span>
+    </div>
+    <div class="int-desc">Use slopshop as a context source via the HTTP plugin. Point it at the REST endpoint below with your API key in the header.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">HTTP Tools · plugin.xml endpoint config</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'Endpoint : https://api.slopshop.gg/v1/memory/search\nMethod   : GET\nHeader   : Authorization: Bearer YOUR_API_KEY\nParam    : q={query}')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="c">Endpoint</span> : <span class="a">https://api.slopshop.gg/v1/memory/search</span>
+<span class="c">Method  </span> : GET
+<span class="c">Header  </span> : Authorization: Bearer <span class="s">YOUR_API_KEY</span>
+<span class="c">Param   </span> : q=<span class="n">{query}</span></pre></div>
+    </div>
+  </div>
+
+
+  <!-- ─────────────────────────────────────────
+       SECTION 2: Agent Frameworks
+       ───────────────────────────────────────── -->
+  <div class="section-label">Section 02</div>
+  <div class="section-title">Agent Frameworks</div>
+
+  <!-- LangChain -->
+  <div class="int-item">
+    <div class="int-name">
+      LangChain
+      <span class="int-badge badge-sdk">Python</span>
+    </div>
+    <div class="int-desc">Drop in as a custom memory class. Stores and retrieves from slopshop on every chain run.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">memory.py</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'from slopshop import SlopshopMemory\nfrom langchain.chains import ConversationChain\n\nmemory = SlopshopMemory(\n    api_key=&quot;YOUR_API_KEY&quot;,\n    namespace=&quot;my-agent&quot;\n)\n\nchain = ConversationChain(\n    llm=llm,\n    memory=memory\n)\n\nchain.run(&quot;Summarize what you know about the user&quot;)')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="k">from</span> slopshop <span class="k">import</span> SlopshopMemory
+<span class="k">from</span> langchain.chains <span class="k">import</span> ConversationChain
+
+memory = <span class="a">SlopshopMemory</span>(
+    api_key=<span class="s">"YOUR_API_KEY"</span>,
+    namespace=<span class="s">"my-agent"</span>
+)
+
+chain = <span class="a">ConversationChain</span>(
+    llm=llm,
+    memory=memory
+)
+
+chain.<span class="a">run</span>(<span class="s">"Summarize what you know about the user"</span>)</pre></div>
+    </div>
+  </div>
+
+  <!-- LlamaIndex -->
+  <div class="int-item">
+    <div class="int-name">
+      LlamaIndex
+      <span class="int-badge badge-sdk">Python</span>
+    </div>
+    <div class="int-desc">Use as a custom index or retriever backed by slopshop's vector-adjacent memory layer.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">retriever.py</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'from slopshop.llamaindex import SlopshopRetriever\n\nretriever = SlopshopRetriever(\n    api_key=&quot;YOUR_API_KEY&quot;,\n    namespace=&quot;docs&quot;,\n    top_k=5\n)\n\nnodes = retriever.retrieve(&quot;user preferences for UI&quot;)\nfor node in nodes:\n    print(node.text, node.score)')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="k">from</span> slopshop.llamaindex <span class="k">import</span> SlopshopRetriever
+
+retriever = <span class="a">SlopshopRetriever</span>(
+    api_key=<span class="s">"YOUR_API_KEY"</span>,
+    namespace=<span class="s">"docs"</span>,
+    top_k=<span class="n">5</span>
+)
+
+nodes = retriever.<span class="a">retrieve</span>(<span class="s">"user preferences for UI"</span>)
+<span class="k">for</span> node <span class="k">in</span> nodes:
+    <span class="a">print</span>(node.text, node.score)</pre></div>
+    </div>
+  </div>
+
+  <!-- CrewAI -->
+  <div class="int-item">
+    <div class="int-name">
+      CrewAI
+      <span class="int-badge badge-sdk">Python</span>
+    </div>
+    <div class="int-desc">Register slopshop as a tool available to any agent in your crew.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">crew.py</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'from slopshop.crewai import SlopshopMemoryTool\nfrom crewai import Agent, Task, Crew\n\nmem_tool = SlopshopMemoryTool(api_key=&quot;YOUR_API_KEY&quot;)\n\nresearcher = Agent(\n    role=&quot;Senior Researcher&quot;,\n    goal=&quot;Find and retain key facts&quot;,\n    tools=[mem_tool]\n)\n\ntask = Task(\n    description=&quot;Store findings about competitor pricing&quot;,\n    agent=researcher\n)\n\nCrew(agents=[researcher], tasks=[task]).kickoff()')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="k">from</span> slopshop.crewai <span class="k">import</span> SlopshopMemoryTool
+<span class="k">from</span> crewai <span class="k">import</span> Agent, Task, Crew
+
+mem_tool = <span class="a">SlopshopMemoryTool</span>(api_key=<span class="s">"YOUR_API_KEY"</span>)
+
+researcher = <span class="a">Agent</span>(
+    role=<span class="s">"Senior Researcher"</span>,
+    goal=<span class="s">"Find and retain key facts"</span>,
+    tools=[mem_tool]
+)
+
+task = <span class="a">Task</span>(
+    description=<span class="s">"Store findings about competitor pricing"</span>,
+    agent=researcher
+)
+
+<span class="a">Crew</span>(agents=[researcher], tasks=[task]).<span class="a">kickoff</span>()</pre></div>
+    </div>
+  </div>
+
+  <!-- AutoGPT / LangGraph -->
+  <div class="int-item">
+    <div class="int-name">
+      AutoGPT / LangGraph
+      <span class="int-badge badge-rest">REST</span>
+    </div>
+    <div class="int-desc">Both support arbitrary REST tool calls. Wire slopshop endpoints directly into your graph nodes or AutoGPT plugin manifest.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">langgraph node / autogpt plugin</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'SLOP_BASE = &quot;https://api.slopshop.gg/v1&quot;\nSLOP_KEY  = &quot;YOUR_API_KEY&quot;\n\n# store\nPOST {SLOP_BASE}/memory/store\n  Authorization: Bearer {SLOP_KEY}\n  {&quot;content&quot;: &quot;...&quot;, &quot;namespace&quot;: &quot;autogpt&quot;}\n\n# search\nGET {SLOP_BASE}/memory/search?q=topic&amp;namespace=autogpt\n  Authorization: Bearer {SLOP_KEY}\n\n# dream\nPOST {SLOP_BASE}/memory/dream/start\n  {&quot;strategy&quot;: &quot;synthesize,compress&quot;}')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="n">SLOP_BASE</span> = <span class="s">"https://api.slopshop.gg/v1"</span>
+<span class="n">SLOP_KEY</span>  = <span class="s">"YOUR_API_KEY"</span>
+
+<span class="c"># store</span>
+<span class="a">POST</span> {SLOP_BASE}/memory/store
+  Authorization: Bearer {SLOP_KEY}
+  {<span class="s">"content"</span>: <span class="s">"..."</span>, <span class="s">"namespace"</span>: <span class="s">"autogpt"</span>}
+
+<span class="c"># search</span>
+<span class="a">GET</span> {SLOP_BASE}/memory/search?q=<span class="n">topic</span>&amp;namespace=<span class="n">autogpt</span>
+  Authorization: Bearer {SLOP_KEY}
+
+<span class="c"># dream</span>
+<span class="a">POST</span> {SLOP_BASE}/memory/dream/start
+  {<span class="s">"strategy"</span>: <span class="s">"synthesize,compress"</span>}</pre></div>
+    </div>
+  </div>
+
+
+  <!-- ─────────────────────────────────────────
+       SECTION 3: REST / CLI
+       ───────────────────────────────────────── -->
+  <div class="section-label">Section 03</div>
+  <div class="section-title">REST / CLI</div>
+
+  <!-- Universal curl -->
+  <div class="int-item">
+    <div class="int-name">
+      Universal — curl
+      <span class="int-badge badge-rest">REST</span>
+    </div>
+    <div class="int-desc">Works from any language or shell. Set <code style="color:var(--text2);">SLOP_KEY</code> and hit the endpoint directly.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">shell</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'export SLOP_KEY=&quot;your_api_key_here&quot;\n\n# Store\ncurl -s -X POST https://api.slopshop.gg/v1/memory/store \\\n  -H &quot;Authorization: Bearer $SLOP_KEY&quot; \\\n  -H &quot;Content-Type: application/json&quot; \\\n  -d \'{&quot;content&quot;:&quot;User is a senior Rust engineer. Prefers no comments.&quot;}\'\n\n# Search\ncurl -s &quot;https://api.slopshop.gg/v1/memory/search?q=rust&quot; \\\n  -H &quot;Authorization: Bearer $SLOP_KEY&quot;')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="k">export</span> <span class="n">SLOP_KEY</span>=<span class="s">"your_api_key_here"</span>
+
+<span class="c"># Store</span>
+<span class="a">curl</span> -s -X POST https://api.slopshop.gg/v1/memory/store \
+  -H <span class="s">"Authorization: Bearer $SLOP_KEY"</span> \
+  -H <span class="s">"Content-Type: application/json"</span> \
+  -d <span class="s">'{"content":"User is a senior Rust engineer. Prefers no comments."}'</span>
+
+<span class="c"># Search</span>
+<span class="a">curl</span> -s <span class="s">"https://api.slopshop.gg/v1/memory/search?q=rust"</span> \
+  -H <span class="s">"Authorization: Bearer $SLOP_KEY"</span></pre></div>
+    </div>
+  </div>
+
+  <!-- CLI -->
+  <div class="int-item">
+    <div class="int-name">
+      CLI — slop
+      <span class="int-badge badge-sdk">Node</span>
+    </div>
+    <div class="int-desc">Global CLI. Pipe output from any command directly into memory. Run Dream Engine from cron.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">terminal</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'npm install -g slopshop\n\nslop memory store &quot;User timezone is UTC-5, prefers async&quot;\nslop memory search &quot;timezone&quot;\nslop dream run --strategy synthesize,compress\nslop memory list --limit 20\n\n# pipe any output into memory\ngit log --oneline -20 | slop memory store --stdin')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="a">npm</span> install -g slopshop
+
+<span class="a">slop</span> memory store <span class="s">"User timezone is UTC-5, prefers async"</span>
+<span class="a">slop</span> memory search <span class="s">"timezone"</span>
+<span class="a">slop</span> dream run --strategy <span class="n">synthesize,compress</span>
+<span class="a">slop</span> memory list --limit <span class="n">20</span>
+
+<span class="c"># pipe any output into memory</span>
+<span class="a">git</span> log --oneline -20 | <span class="a">slop</span> memory store --stdin</pre></div>
+    </div>
+  </div>
+
+  <!-- Node.js SDK -->
+  <div class="int-item">
+    <div class="int-name">
+      Node.js SDK
+      <span class="int-badge badge-sdk">Node</span>
+    </div>
+    <div class="int-desc">Promise-based. Zero dependencies beyond <code style="color:var(--text2);">node-fetch</code> for Node 16 compat. Native fetch used in Node 18+.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">index.js</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'npm install @slopshop/sdk')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="a">npm</span> install @slopshop/sdk</pre></div>
+    </div>
+    <div style="height:8px;"></div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">usage</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'import { Slopshop } from &quot;@slopshop/sdk&quot;\n\nconst slop = new Slopshop({ apiKey: process.env.SLOP_KEY })\n\nawait slop.memory.store({\n  content: &quot;User is building a Rust CLI tool.&quot;,\n  namespace: &quot;project-alpha&quot;\n})\n\nconst results = await slop.memory.search(&quot;rust cli&quot;)\nconsole.log(results.memories)\n\nconst dream = await slop.dream.start({\n  strategy: [&quot;synthesize&quot;, &quot;compress&quot;, &quot;insight_generate&quot;]\n})\nconsole.log(dream.dream_id)')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="k">import</span> { Slopshop } <span class="k">from</span> <span class="s">"@slopshop/sdk"</span>
+
+<span class="k">const</span> slop = <span class="k">new</span> <span class="a">Slopshop</span>({ apiKey: process.env.<span class="n">SLOP_KEY</span> })
+
+<span class="k">await</span> slop.memory.<span class="a">store</span>({
+  content: <span class="s">"User is building a Rust CLI tool."</span>,
+  namespace: <span class="s">"project-alpha"</span>
+})
+
+<span class="k">const</span> results = <span class="k">await</span> slop.memory.<span class="a">search</span>(<span class="s">"rust cli"</span>)
+console.<span class="a">log</span>(results.memories)
+
+<span class="k">const</span> dream = <span class="k">await</span> slop.dream.<span class="a">start</span>({
+  strategy: [<span class="s">"synthesize"</span>, <span class="s">"compress"</span>, <span class="s">"insight_generate"</span>]
+})
+console.<span class="a">log</span>(dream.dream_id)</pre></div>
+    </div>
+  </div>
+
+  <!-- Python SDK -->
+  <div class="int-item">
+    <div class="int-name">
+      Python SDK
+      <span class="int-badge badge-sdk">Python</span>
+    </div>
+    <div class="int-desc">Sync and async clients. Compatible with Python 3.9+. Reads <code style="color:var(--text2);">SLOP_KEY</code> from env automatically.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">shell</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'pip install slopshop')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="a">pip</span> install slopshop</pre></div>
+    </div>
+    <div style="height:8px;"></div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">usage.py</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'from slopshop import Slopshop\n\nslop = Slopshop()  # reads SLOP_KEY from env\n\nslop.memory.store(\n    content=&quot;Team ships on Fridays. Deploys blocked after 4pm.&quot;,\n    namespace=&quot;team-rules&quot;\n)\n\nresults = slop.memory.search(&quot;deploy rules&quot;)\nfor m in results[&quot;memories&quot;]:\n    print(m[&quot;content&quot;], m[&quot;confidence&quot;])\n\n# async variant\nimport asyncio\nfrom slopshop import AsyncSlopshop\n\nasync def main():\n    async with AsyncSlopshop() as slop:\n        await slop.memory.store(content=&quot;...&quot;)\n\nasyncio.run(main())')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="k">from</span> slopshop <span class="k">import</span> Slopshop
+
+slop = <span class="a">Slopshop</span>()  <span class="c"># reads SLOP_KEY from env</span>
+
+slop.memory.<span class="a">store</span>(
+    content=<span class="s">"Team ships on Fridays. Deploys blocked after 4pm."</span>,
+    namespace=<span class="s">"team-rules"</span>
+)
+
+results = slop.memory.<span class="a">search</span>(<span class="s">"deploy rules"</span>)
+<span class="k">for</span> m <span class="k">in</span> results[<span class="s">"memories"</span>]:
+    <span class="a">print</span>(m[<span class="s">"content"</span>], m[<span class="s">"confidence"</span>])
+
+<span class="c"># async variant</span>
+<span class="k">import</span> asyncio
+<span class="k">from</span> slopshop <span class="k">import</span> AsyncSlopshop
+
+<span class="k">async def</span> <span class="a">main</span>():
+    <span class="k">async with</span> <span class="a">AsyncSlopshop</span>() <span class="k">as</span> slop:
+        <span class="k">await</span> slop.memory.<span class="a">store</span>(content=<span class="s">"..."</span>)
+
+asyncio.<span class="a">run</span>(main())</pre></div>
+    </div>
+  </div>
+
+
+  <!-- ─────────────────────────────────────────
+       SECTION 4: Self-Host
+       ───────────────────────────────────────── -->
+  <div class="section-label">Section 04</div>
+  <div class="section-title">Self-Host</div>
+
+  <!-- Docker -->
+  <div class="int-item">
+    <div class="int-name">
+      Docker
+      <span class="int-badge badge-rest">One-liner</span>
+    </div>
+    <div class="int-desc">Production-ready container. SQLite persisted to a host volume. Bind any port.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">terminal</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'docker run -d \\\n  -p 3000:3000 \\\n  -v slopshop-data:/data \\\n  -e DB_PATH=/data/slopshop.db \\\n  --name slopshop \\\n  slopshop/server:latest')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="a">docker</span> run -d \
+  -p <span class="n">3000</span>:3000 \
+  -v <span class="n">slopshop-data</span>:/data \
+  -e <span class="n">DB_PATH</span>=/data/slopshop.db \
+  --name slopshop \
+  slopshop/server:latest</pre></div>
+    </div>
+  </div>
+
+  <!-- npm / Node -->
+  <div class="int-item">
+    <div class="int-name">
+      npm / Node.js direct
+      <span class="int-badge badge-sdk">Node</span>
+    </div>
+    <div class="int-desc">Clone the repo and run the server directly. No build step required.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">terminal</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, 'git clone https://github.com/slopshop/server\ncd server\nnpm install\nnode server-v2.js\n\n# custom port\nPORT=8080 node server-v2.js\n\n# with AI handlers unlocked\nANTHROPIC_API_KEY=sk-... node server-v2.js')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="a">git</span> clone https://github.com/slopshop/server
+<span class="a">cd</span> server
+<span class="a">npm</span> install
+<span class="a">node</span> server-v2.js
+
+<span class="c"># custom port</span>
+<span class="n">PORT</span>=8080 <span class="a">node</span> server-v2.js
+
+<span class="c"># with AI handlers unlocked</span>
+<span class="n">ANTHROPIC_API_KEY</span>=sk-... <span class="a">node</span> server-v2.js</pre></div>
+    </div>
+  </div>
+
+  <!-- Requirements -->
+  <div class="int-item">
+    <div class="int-name">System requirements</div>
+    <div class="int-desc">Minimal footprint. Runs on any VPS, Raspberry Pi, or local machine.</div>
+    <ul class="req-list">
+      <li><span class="req-dot"></span><span class="req-key">RAM</span><span class="req-val">512 MB minimum</span></li>
+      <li><span class="req-dot"></span><span class="req-key">Node.js</span><span class="req-val">18+ (LTS recommended)</span></li>
+      <li><span class="req-dot"></span><span class="req-key">Database</span><span class="req-val">SQLite — bundled, zero config</span></li>
+      <li><span class="req-dot"></span><span class="req-key">Disk</span><span class="req-val">~50 MB base + your data</span></li>
+      <li><span class="req-dot"></span><span class="req-key">Network</span><span class="req-val">None required — works fully offline</span></li>
+      <li><span class="req-dot"></span><span class="req-key">External deps</span><span class="req-val">Zero — AI handlers optional via env vars</span></li>
+    </ul>
+  </div>
+
+  <!-- Air-gapped -->
+  <div class="int-item">
+    <div class="int-name">
+      Air-gapped / Offline
+      <span class="int-badge badge-rest">Zero Egress</span>
+    </div>
+    <div class="int-desc">The full server — memory, Dream Engine, 1,303 endpoints — runs with no outbound network calls. LLM handlers are opt-in via API key env vars and are never called unless explicitly configured.</div>
+    <div class="snippet">
+      <div class="snippet-bar">
+        <div class="snippet-bar-left">
+          <div class="dot r"></div><div class="dot y"></div><div class="dot g"></div>
+          <span class="snippet-label">fully offline mode</span>
+        </div>
+        <button class="copy-btn" onclick="copyBlock(this, '# No API keys set = pure local mode\n# All compute handlers run in-process\n# SQLite is the only persistence layer\n# Dream Engine runs all 9 stages locally\n# Zero telemetry. Zero callbacks home.\n\nnode server-v2.js\n# → listening on http://localhost:3000')">copy</button>
+      </div>
+      <div class="snippet-body"><pre><span class="c"># No API keys set = pure local mode</span>
+<span class="c"># All compute handlers run in-process</span>
+<span class="c"># SQLite is the only persistence layer</span>
+<span class="c"># Dream Engine runs all 9 stages locally</span>
+<span class="c"># Zero telemetry. Zero callbacks home.</span>
+
+<span class="a">node</span> server-v2.js
+<span class="c"># → listening on http://localhost:3000</span></pre></div>
+    </div>
+  </div>
+
+
+  <!-- FOOTER -->
+  <div style="font-size:11px;color:var(--text3);margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+    <span style="color:var(--accent);">rem</span> alias: <code style="color:var(--text2);">npm install -g rem-cli</code> — same CLI, <a href="https://remlabs.ai" style="color:var(--accent);opacity:0.7;" target="_blank" rel="noopener">REM Labs</a> branded output
+  </div>
+  <div class="footer-links">
+    <span style="opacity:0.35;">A REM Labs product</span>
+    <span>·</span>
+    <a href="/dev-console">Console</a>
+    <span>·</span>
+    <a href="/brain">Dashboard</a>
+    <span>·</span>
+    <a href="/pricing">Pricing</a>
+    <span>·</span>
+    <a href="https://remlabs.ai" target="_blank" rel="noopener">remlabs.ai ↗</a>
+    <span>·</span>
+    <a href="/integrations">Integrations</a>
+    <span>·</span>
+    <a href="/legal">Terms</a>
+  </div>
+
+</div>
+
+<script>
+function copyNavCmd(btn){
+  navigator.clipboard.writeText('npm install -g slopshop && slop start').then(function(){
+    var orig = btn.textContent;
+    btn.textContent = 'copied!';
+    btn.style.color = '#22c55e';
+    setTimeout(function(){ btn.textContent = orig; btn.style.color = ''; }, 2000);
+  });
+}
+function copyBlock(btn, text) {
+  // decode any HTML entities in the text param before writing to clipboard
+  var ta = document.createElement('textarea');
+  ta.innerHTML = text;
+  var decoded = ta.value;
+  navigator.clipboard.writeText(decoded).then(function() {
+    var orig = btn.textContent;
+    btn.textContent = 'copied!';
+    btn.style.color = '#22c55e';
+    btn.style.borderColor = '#22c55e';
+    setTimeout(function() {
+      btn.textContent = orig;
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }, 2000);
+  });
+}
+</script>
+</body>
+</html>

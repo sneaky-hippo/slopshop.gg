@@ -55,29 +55,21 @@ function safeAll(db, sql, params) {
 
 // ── Core score computation ────────────────────────────────────────────────────
 
-function computeScore(db, keyHash) {
+// dream_sessions table uses api_key (raw) not api_key_hash
+function computeScore(db, keyHash, apiKey) {
   const now = Date.now();
   const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
   const sevenDaysAgo  = now - 7  * 24 * 60 * 60 * 1000;
 
   // ── insights: count completed dream sessions in last 30 days ─────────────
+  // dream_sessions uses api_key column, not api_key_hash
   let insights = 0;
   try {
     const insightRow = db.prepare(
       `SELECT COUNT(*) AS cnt FROM dream_sessions
-       WHERE api_key_hash = ? AND status = 'complete' AND created_at >= ?`
-    ).get(keyHash, thirtyDaysAgo);
+       WHERE api_key = ? AND status = 'complete' AND started_at >= ?`
+    ).get(apiKey, thirtyDaysAgo);
     insights = insightRow ? (insightRow.cnt || 0) : 0;
-
-    // Fallback: also try summing insight_count column if present
-    try {
-      const sumRow = db.prepare(
-        `SELECT SUM(insight_count) AS s FROM dream_sessions
-         WHERE api_key_hash = ? AND created_at >= ?`
-      ).get(keyHash, thirtyDaysAgo);
-      const sumVal = sumRow && sumRow.s != null ? sumRow.s : 0;
-      insights = Math.max(insights, sumVal);
-    } catch (_) { /* column may not exist */ }
   } catch (_) { insights = 0; }
 
   // ── relevance: avg score from consumer_scores history ────────────────────
@@ -92,15 +84,15 @@ function computeScore(db, keyHash) {
     }
   } catch (_) { relevance = 1.0; }
 
-  // ── dream_depth: avg stage_count / 9 ─────────────────────────────────────
+  // ── dream_depth: use completed session count as proxy (stage_count col may not exist)
   let dream_depth = 0.5;
   try {
-    const ddRow = db.prepare(
-      `SELECT AVG(stage_count) AS avg_stages FROM dream_sessions WHERE api_key_hash = ?`
-    ).get(keyHash);
-    if (ddRow && ddRow.avg_stages != null && ddRow.avg_stages > 0) {
-      dream_depth = clamp(ddRow.avg_stages / 9, 0.1, 1.0);
-    }
+    const totalSessions = db.prepare(
+      `SELECT COUNT(*) AS cnt FROM dream_sessions WHERE api_key = ? AND status = 'complete'`
+    ).get(apiKey);
+    const cnt = totalSessions ? (totalSessions.cnt || 0) : 0;
+    // Each dream session = full pipeline; 5+ sessions = full depth
+    if (cnt > 0) dream_depth = clamp(cnt / 5, 0.1, 1.0);
   } catch (_) { dream_depth = 0.5; }
 
   // ── emotional_depth: 1 + (count emotional tags / 100), cap 2.0 ───────────
@@ -149,11 +141,11 @@ function computeScore(db, keyHash) {
   try {
     // Get all completed dream session dates (UTC days) in descending order
     const sessions = db.prepare(
-      `SELECT DISTINCT CAST(created_at / 86400000 AS INTEGER) AS day_bucket
+      `SELECT DISTINCT CAST(started_at / 86400000 AS INTEGER) AS day_bucket
        FROM dream_sessions
-       WHERE api_key_hash = ? AND status = 'complete'
+       WHERE api_key = ? AND status = 'complete'
        ORDER BY day_bucket DESC`
-    ).all(keyHash);
+    ).all(apiKey);
 
     const todayBucket = Math.floor(now / 86400000);
     let expected = todayBucket;
@@ -294,7 +286,7 @@ module.exports = function (app, db, apiKeys) {
     if (!key) return;
     const keyHash = hashKey(key);
 
-    const result = computeScore(db, keyHash);
+    const result = computeScore(db, keyHash, key);
     persistScore(db, keyHash, result);
 
     ok(res, result);
@@ -307,10 +299,7 @@ module.exports = function (app, db, apiKeys) {
     if (!key) return;
     const keyHash = hashKey(key);
 
-    // namespace is accepted but currently used as a tag for future scoping
-    // const { namespace } = req.body || {};
-
-    const result = computeScore(db, keyHash);
+    const result = computeScore(db, keyHash, key);
     persistScore(db, keyHash, result);
 
     ok(res, result);
@@ -328,17 +317,17 @@ module.exports = function (app, db, apiKeys) {
     const threeDaysAgo  = now - 3 * 24 * 60 * 60 * 1000;
 
     // ── brain_glow ────────────────────────────────────────────────────────
-    const brain_glow_result = computeScore(db, keyHash);
+    const brain_glow_result = computeScore(db, keyHash, key);
     persistScore(db, keyHash, brain_glow_result);
     const brain_glow = brain_glow_result;
 
     // ── dream_recap ───────────────────────────────────────────────────────
     const dream_recap = safeAll(db,
-      `SELECT id, strategy, insight_count, created_at
+      `SELECT id, strategy, memories_created AS insight_count, started_at AS created_at
        FROM dream_sessions
-       WHERE api_key_hash = ? AND status = 'complete'
-       ORDER BY created_at DESC LIMIT 3`,
-      [keyHash]
+       WHERE api_key = ? AND status = 'complete'
+       ORDER BY started_at DESC LIMIT 3`,
+      [key]
     );
 
     // ── top_insights ──────────────────────────────────────────────────────

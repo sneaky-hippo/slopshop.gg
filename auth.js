@@ -596,24 +596,41 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey, allHandlers) {
   // GET /v1/auth/session — check session
   // ─────────────────────────────────────────────────────────────────────────
   app.get('/v1/auth/session', (req, res) => {
+    // 1. Try session cookie or sess- Bearer token
     const token = req.cookies?.slop_session ||
       (req.headers.authorization?.startsWith('Bearer sess-') ? req.headers.authorization.slice(7) : null);
-    if (!token) return res.status(401).json({ error: { code: 'no_session' } });
 
-    const session = db.prepare('SELECT * FROM sessions WHERE token = ? AND expires > ?').get(token, Date.now());
-    if (!session) return res.status(401).json({ error: { code: 'session_expired' } });
+    if (token) {
+      const session = db.prepare('SELECT * FROM sessions WHERE token = ? AND expires > ?').get(token, Date.now());
+      if (!session) return res.status(401).json({ error: { code: 'session_expired' } });
+      const user = findUserByKey(session.api_key);
+      const acct = apiKeys.get(session.api_key);
+      return res.json({
+        ok: true,
+        user:            user ? { id: user.id, email: user.email } : null,
+        api_key:         session.api_key,
+        balance:         acct?.balance || 0,
+        tier:            acct?.tier || 'free',
+        session_expires: session.expires,
+      });
+    }
 
-    const user = findUserByKey(session.api_key);
-    const acct = apiKeys.get(session.api_key);
+    // 2. Fall back to regular Bearer API key (covers cross-domain remlabs.ai ↔ slopshop.gg)
+    const rawKey = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    if (rawKey && apiKeys.has(rawKey)) {
+      const user = findUserByKey(rawKey);
+      const acct = apiKeys.get(rawKey);
+      return res.json({
+        ok:              true,
+        user:            user ? { id: user.id, email: user.email } : null,
+        api_key:         rawKey,
+        balance:         acct?.balance || 0,
+        tier:            acct?.tier || 'free',
+        session_expires: Date.now() + 30 * 86400000,
+      });
+    }
 
-    res.json({
-      ok: true,
-      user:            user ? { id: user.id, email: user.email } : null,
-      api_key:         session.api_key,
-      balance:         acct?.balance || 0,
-      tier:            acct?.tier || 'free',
-      session_expires: session.expires,
-    });
+    return res.status(401).json({ error: { code: 'no_session' } });
   });
 
   // ─────────────────────────────────────────────────────────────────────────
