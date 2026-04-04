@@ -164,11 +164,15 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey, allHandlers) {
       }
     }
 
+    const name = req.body.name || null;
+    if (name) { try { db.prepare('UPDATE users SET name = ? WHERE id = ?').run(name, id); } catch (_) {} }
+
     res.status(201).json({
       user_id: id,
       email,
       api_key: key,
       balance: 500,
+      user: { id, email, name: name || undefined },
       message: 'Account created. 500 free credits loaded. Memory APIs are always free.',
     });
   });
@@ -201,6 +205,7 @@ module.exports = function mountAuth(app, db, apiKeys, persistKey, allHandlers) {
       api_key: user.api_key,
       balance: acct ? acct.balance : 0,
       tier:    acct ? acct.tier : 'free',
+      user:    { id: user.id, email: user.email, name: user.name || undefined },
     });
   });
 
